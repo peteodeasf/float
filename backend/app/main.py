@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.routers import auth, patients
+from app.api.routers import auth, patients, treatment_plans
 
 app = FastAPI(
     title="Float API",
@@ -20,6 +20,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(patients.router)
+app.include_router(treatment_plans.router)
 
 @app.get("/health")
 async def health_check():
