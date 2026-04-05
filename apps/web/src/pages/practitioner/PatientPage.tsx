@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getPatient, getPreSessionBrief } from '../../api/patients'
-import { getTreatmentPlan, getTriggers } from '../../api/treatment'
+import { getTreatmentPlan, getTriggers, createTreatmentPlan } from '../../api/treatment'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 function TrendPill({ label, trend }: { label: string; trend: string }) {
   const colors: Record<string, string> = {
@@ -46,6 +47,18 @@ export default function PatientPage() {
     queryKey: ['triggers', plan?.id],
     queryFn: () => getTriggers(plan!.id),
     enabled: !!plan?.id
+  })
+
+  const queryClient = useQueryClient()
+
+  const createPlanMutation = useMutation({
+    mutationFn: () => createTreatmentPlan(patientId!, {
+      clinical_track: 'exposure',
+      parent_visibility_level: 'summary'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
+    }
   })
 
   return (
@@ -173,8 +186,11 @@ export default function PatientPage() {
         {!plan && patient && (
           <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
             <p className="text-slate-400 mb-3">No treatment plan yet</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-              Create treatment plan
+            <button
+              onClick={() => createPlanMutation.mutate()}
+              disabled={createPlanMutation.isPending}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
+              {createPlanMutation.isPending ? 'Creating...' : 'Create treatment plan'}
             </button>
           </div>
         )}

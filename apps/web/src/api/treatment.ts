@@ -90,3 +90,16 @@ export const reviewLadder = async (ladderId: string) => {
   const response = await apiClient.post(`/ladders/${ladderId}/review`)
   return response.data
 }
+
+export interface CreatePlanData {
+  clinical_track: string
+  parent_visibility_level: string
+}
+
+export const createTreatmentPlan = async (
+  patientId: string,
+  data: CreatePlanData
+): Promise<TreatmentPlan> => {
+  const response = await apiClient.post(`/patients/${patientId}/plan`, data)
+  return response.data
+}
