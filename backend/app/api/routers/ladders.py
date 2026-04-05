@@ -1,6 +1,7 @@
 import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.services.ladder_review_service import run_ladder_review
 
 from app.core.database import get_db
 from app.api.routers.patients import get_practitioner_context
@@ -68,3 +69,12 @@ async def reorder_ladder_rungs(
 ):
     _, practitioner = context
     return await reorder_rungs(db, ladder_id, practitioner.organization_id, data.ordered_ids)
+
+@router.post("/ladders/{ladder_id}/review")
+async def review_ladder(
+    ladder_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, practitioner = context
+    return await run_ladder_review(db, ladder_id, practitioner.organization_id)
