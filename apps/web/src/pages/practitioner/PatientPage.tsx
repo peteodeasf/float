@@ -1,8 +1,15 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getPreSessionBrief } from '../../api/patients'
-import { getTreatmentPlan, getTriggers, createTreatmentPlan } from '../../api/treatment'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  getTreatmentPlan,
+  getTriggers,
+  createTreatmentPlan,
+  createTrigger,
+  updatePlanStatus
+} from '../../api/treatment'
+import InlineForm from '../../components/ui/InlineForm'
 
 function TrendPill({ label, trend }: { label: string; trend: string }) {
   const colors: Record<string, string> = {
@@ -24,6 +31,8 @@ function TrendPill({ label, trend }: { label: string; trend: string }) {
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [showTriggerForm, setShowTriggerForm] = useState(false)
 
   const { data: patient } = useQuery({
     queryKey: ['patient', patientId],
@@ -49,8 +58,6 @@ export default function PatientPage() {
     enabled: !!plan?.id
   })
 
-  const queryClient = useQueryClient()
-
   const createPlanMutation = useMutation({
     mutationFn: () => createTreatmentPlan(patientId!, {
       clinical_track: 'exposure',
@@ -60,6 +67,28 @@ export default function PatientPage() {
       queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
     }
   })
+
+  const createTriggerMutation = useMutation({
+    mutationFn: (data: Record<string, any>) => createTrigger(plan!.id, {
+      name: data.name,
+      description: data.description,
+      distress_thermometer_rating: data.distress_thermometer_rating
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] })
+      setShowTriggerForm(false)
+    }
+  })
+
+  const activatePlanMutation = useMutation({
+    mutationFn: () => updatePlanStatus(patientId!, plan!.id, 'active'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
+    }
+  })
+
+  const canActivate = plan?.status === 'setup' &&
+    triggers && triggers.length > 0
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -83,7 +112,6 @@ export default function PatientPage() {
             <h2 className="text-lg font-semibold text-slate-800 mb-4">
               Pre-session brief
             </h2>
-
             <div className="grid grid-cols-2 gap-6 mb-5">
               <div>
                 <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
@@ -102,12 +130,10 @@ export default function PatientPage() {
                 </p>
               </div>
             </div>
-
             <div className="flex gap-6 mb-5">
               <TrendPill label="BIP" trend={brief.bip_trend} />
               <TrendPill label="Distress" trend={brief.distress_thermometer_trend} />
             </div>
-
             <div className="bg-blue-50 rounded-lg px-4 py-3 mb-4">
               <p className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-1">
                 Recommended focus
@@ -116,7 +142,6 @@ export default function PatientPage() {
                 {brief.recommended_focus}
               </p>
             </div>
-
             {brief.recent_learnings.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
@@ -136,60 +161,129 @@ export default function PatientPage() {
         )}
 
         {/* Treatment plan */}
-        {plan && (
+        {plan ? (
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-slate-800">
                 Treatment plan
               </h2>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">
                   {plan.clinical_track}
                 </span>
-                <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  plan.status === 'active'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-slate-100 text-slate-600'
+                }`}>
                   {plan.status}
                 </span>
+                {canActivate && (
+                  <button
+                    onClick={() => activatePlanMutation.mutate()}
+                    disabled={activatePlanMutation.isPending}
+                    className="text-xs px-3 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {activatePlanMutation.isPending ? 'Activating...' : 'Activate plan'}
+                  </button>
+                )}
               </div>
             </div>
 
-            {triggers && triggers.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
+            {/* Trigger situations */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Trigger situations
                 </p>
-                {triggers.map((trigger) => (
-                  <div
-                    key={trigger.id}
-                    onClick={() => navigate(`/patients/${patientId}/triggers/${trigger.id}/ladder`)}
-                    className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
+                {!showTriggerForm && (
+                  <button
+                    onClick={() => setShowTriggerForm(true)}
+                    className="text-xs text-blue-600 font-medium hover:underline"
                   >
-                    <p className="text-sm font-medium text-slate-700">
-                      {trigger.name}
-                    </p>
-                    {trigger.distress_thermometer_rating && (
-                      <span className="text-sm font-medium text-slate-500">
-                        DT {trigger.distress_thermometer_rating}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                    + Add trigger
+                  </button>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-slate-400">
-                No trigger situations added yet
-              </p>
-            )}
-          </div>
-        )}
 
-        {/* No plan yet */}
-        {!plan && patient && (
+              {showTriggerForm && (
+                <div className="mb-3">
+                  <InlineForm
+                    fields={[
+                      {
+                        key: 'name',
+                        label: 'Situation name',
+                        type: 'text',
+                        placeholder: 'e.g. Eating in the cafeteria',
+                        required: true
+                      },
+                      {
+                        key: 'description',
+                        label: 'Description',
+                        type: 'text',
+                        placeholder: 'Brief description'
+                      },
+                      {
+                        key: 'distress_thermometer_rating',
+                        label: 'Distress thermometer (0–10)',
+                        type: 'number',
+                        placeholder: '7'
+                      }
+                    ]}
+                    onSubmit={(data) => createTriggerMutation.mutate(data)}
+                    onCancel={() => setShowTriggerForm(false)}
+                    submitLabel="Add trigger"
+                    isLoading={createTriggerMutation.isPending}
+                  />
+                </div>
+              )}
+
+              {triggers && triggers.length > 0 ? (
+                <div className="space-y-2">
+                  {triggers.map((trigger) => (
+                    <div
+                      key={trigger.id}
+                      onClick={() => navigate(`/patients/${patientId}/triggers/${trigger.id}/ladder`)}
+                      className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-slate-700">
+                          {trigger.name}
+                        </p>
+                        {trigger.description && (
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {trigger.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {trigger.distress_thermometer_rating && (
+                          <span className="text-sm font-medium text-slate-500">
+                            DT {trigger.distress_thermometer_rating}
+                          </span>
+                        )}
+                        <span className="text-slate-300 text-sm">→</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                !showTriggerForm && (
+                  <p className="text-sm text-slate-400">
+                    No trigger situations yet — add one to get started
+                  </p>
+                )
+              )}
+            </div>
+          </div>
+        ) : (
           <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
             <p className="text-slate-400 mb-3">No treatment plan yet</p>
             <button
               onClick={() => createPlanMutation.mutate()}
               disabled={createPlanMutation.isPending}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
               {createPlanMutation.isPending ? 'Creating...' : 'Create treatment plan'}
             </button>
           </div>

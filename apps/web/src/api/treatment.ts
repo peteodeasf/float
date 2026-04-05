@@ -103,3 +103,55 @@ export const createTreatmentPlan = async (
   const response = await apiClient.post(`/patients/${patientId}/plan`, data)
   return response.data
 }
+
+export interface CreateTriggerData {
+  name: string
+  description?: string
+  distress_thermometer_rating?: number
+}
+
+export interface CreateBehaviorData {
+  name: string
+  description?: string
+  behavior_type: string
+  distress_thermometer_when_refraining?: number
+}
+
+export interface CreateRungData {
+  avoidance_behavior_id?: string
+  distress_thermometer_rating?: number
+  rung_order: number
+}
+
+export const createTrigger = async (
+  planId: string,
+  data: CreateTriggerData
+): Promise<TriggerSituation> => {
+  const response = await apiClient.post(`/plans/${planId}/triggers`, data)
+  return response.data
+}
+
+export const createBehavior = async (
+  triggerId: string,
+  data: CreateBehaviorData
+): Promise<AvoidanceBehavior> => {
+  const response = await apiClient.post(`/triggers/${triggerId}/behaviors`, data)
+  return response.data
+}
+
+export const createRung = async (
+  ladderId: string,
+  data: CreateRungData
+): Promise<LadderRung> => {
+  const response = await apiClient.post(`/ladders/${ladderId}/rungs`, data)
+  return response.data
+}
+
+export const updatePlanStatus = async (
+  patientId: string,
+  planId: string,
+  status: string
+): Promise<TreatmentPlan> => {
+  const response = await apiClient.put(`/patients/${patientId}/plan/${planId}`, { status })
+  return response.data
+}
