@@ -147,7 +147,8 @@ export default function PatientPage() {
                 {triggers.map((trigger) => (
                   <div
                     key={trigger.id}
-                    className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg"
+                    onClick={() => navigate(`/patients/${patientId}/triggers/${trigger.id}/ladder`)}
+                    className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                   >
                     <p className="text-sm font-medium text-slate-700">
                       {trigger.name}

@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ui/ProtectedRoute'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
+import LadderPage from './pages/practitioner/LadderPage'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -26,6 +27,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/patients/:patientId" element={
               <ProtectedRoute>
                 <PatientPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/patients/:patientId/triggers/:triggerId/ladder" element={
+              <ProtectedRoute>
+                <LadderPage />
               </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
