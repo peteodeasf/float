@@ -8,6 +8,7 @@ import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
 import LadderPage from './pages/practitioner/LadderPage'
+import NewPatientPage from './pages/practitioner/NewPatientPage'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -22,6 +23,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/patients/new" element={
+              <ProtectedRoute>
+                <NewPatientPage />
               </ProtectedRoute>
             } />
             <Route path="/patients/:patientId" element={

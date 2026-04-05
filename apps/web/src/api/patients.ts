@@ -44,3 +44,14 @@ export const getPreSessionBrief = async (id: string): Promise<PreSessionBrief> =
   return response.data
 }
 export const TEST = "hello"
+
+export interface CreatePatientData {
+  name: string
+  email: string
+  date_of_birth?: string
+}
+
+export const createPatient = async (data: CreatePatientData): Promise<PatientDetail> => {
+  const response = await apiClient.post('/patients', data)
+  return response.data
+}
