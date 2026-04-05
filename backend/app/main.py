@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.api.routers import (
     auth, patients, treatment_plans,
     trigger_situations, avoidance_behaviors,
-    ladders, experiments
+    ladders, experiments, progress
 )
 
 app = FastAPI(
@@ -29,6 +29,7 @@ app.include_router(trigger_situations.router)
 app.include_router(avoidance_behaviors.router)
 app.include_router(ladders.router)
 app.include_router(experiments.router)
+app.include_router(progress.router)
 
 @app.get("/health")
 async def health_check():
