@@ -12,6 +12,7 @@ class PatientCreate(BaseModel):
 
 class PatientResponse(BaseModel):
     id: uuid.UUID
+    user_id: uuid.UUID 
     name: str
     email: str
     date_of_birth: Optional[date] = None

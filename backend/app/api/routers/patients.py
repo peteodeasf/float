@@ -43,7 +43,7 @@ async def list_patients(
     patients = await get_patients_for_practitioner(
         db, practitioner.id, practitioner.organization_id
     )
-    
+
     # Join with user emails
     result = []
     for patient in patients:
@@ -72,6 +72,7 @@ async def create_new_patient(
     )
     return PatientResponse(
         id=patient.id,
+        user_id=patient.user_id,
         name=patient.name,
         email=user.email,
         date_of_birth=patient.date_of_birth,
@@ -96,6 +97,7 @@ async def get_patient(
     user = user_result.scalar_one()
     return PatientResponse(
         id=patient.id,
+        user_id=patient.user_id, 
         name=patient.name,
         email=user.email,
         date_of_birth=patient.date_of_birth,

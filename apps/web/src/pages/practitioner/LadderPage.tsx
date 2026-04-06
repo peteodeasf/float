@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import DownwardArrowPanel from '../../components/ui/DownwardArrowPanel'
 import {
   getTriggers,
   getLadder,
@@ -329,26 +330,29 @@ export default function LadderPage() {
                 .map((rung, index) => {
                   const linkedBehavior = behaviors?.find(b => b.id === rung.avoidance_behavior_id)
                   return (
-                    <div key={rung.id} className="flex items-center gap-4 py-3 px-4 bg-slate-50 rounded-lg">
-                      <span className="text-xs font-medium text-slate-400 w-5">{index + 1}</span>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">
-                          {linkedBehavior?.name ?? 'Unnamed rung'}
-                        </p>
-                        {linkedBehavior && (
-                          <p className="text-xs text-slate-400">{linkedBehavior.behavior_type}</p>
-                        )}
-                      </div>
-                      <DTBadge value={rung.distress_thermometer_rating} />
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        rung.status === 'complete' ? 'bg-green-100 text-green-700' :
-                        rung.status === 'active' ? 'bg-blue-100 text-blue-700' :
-                        'bg-slate-100 text-slate-500'
-                      }`}>
-                        {rung.status}
-                      </span>
-                    </div>
-                  )
+  <div key={rung.id} className="py-3 px-4 bg-slate-50 rounded-lg">
+    <div className="flex items-center gap-4">
+      <span className="text-xs font-medium text-slate-400 w-5">{index + 1}</span>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-slate-700">
+          {linkedBehavior?.name ?? 'Unnamed rung'}
+        </p>
+        {linkedBehavior && (
+          <p className="text-xs text-slate-400">{linkedBehavior.behavior_type}</p>
+        )}
+      </div>
+      <DTBadge value={rung.distress_thermometer_rating} />
+      <span className={`text-xs px-2 py-0.5 rounded-full ${
+        rung.status === 'complete' ? 'bg-green-100 text-green-700' :
+        rung.status === 'active' ? 'bg-blue-100 text-blue-700' :
+        'bg-slate-100 text-slate-500'
+      }`}>
+        {rung.status}
+      </span>
+    </div>
+    <DownwardArrowPanel rungId={rung.id} patientId={patientId!} />
+  </div>
+)
                 })}
             </div>
           )}

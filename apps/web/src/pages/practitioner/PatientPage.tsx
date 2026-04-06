@@ -10,6 +10,7 @@ import {
   updatePlanStatus
 } from '../../api/treatment'
 import InlineForm from '../../components/ui/InlineForm'
+import MessagesPanel from '../../components/ui/MessagesPanel'
 
 function TrendPill({ label, trend }: { label: string; trend: string }) {
   const colors: Record<string, string> = {
@@ -307,7 +308,13 @@ export default function PatientPage() {
             </button>
           </div>
         )}
-
+        {patient && (
+         <MessagesPanel
+           patientId={patientId!}
+           patientUserId={patient.user_id}
+         />
+       )}
+       
       </main>
     </div>
   )

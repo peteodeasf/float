@@ -9,6 +9,7 @@ export type Patient = {
 
 export interface PatientDetail {
   id: string
+  user_id: string          // add this
   name: string
   email: string
   date_of_birth: string | null
@@ -94,5 +95,35 @@ export interface PatientProgress {
 
 export const getPatientProgress = async (id: string): Promise<PatientProgress> => {
   const response = await apiClient.get(`/patients/${id}/progress`)
+  return response.data
+}
+
+export interface Message {
+  id: string
+  sender_user_id: string
+  recipient_user_id: string
+  patient_id: string
+  content: string
+  message_type: string
+  read_at: string | null
+  created_at: string
+}
+
+export const getMessages = async (patientId: string): Promise<Message[]> => {
+  const response = await apiClient.get(`/patients/${patientId}/messages`)
+  return response.data
+}
+
+export const sendMessage = async (
+  patientId: string,
+  recipientUserId: string,
+  content: string,
+  messageType: string = 'general'
+): Promise<Message> => {
+  const response = await apiClient.post(`/patients/${patientId}/messages`, {
+    recipient_user_id: recipientUserId,
+    content,
+    message_type: messageType
+  })
   return response.data
 }
