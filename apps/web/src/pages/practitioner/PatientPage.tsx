@@ -1,4 +1,4 @@
-import { useState } from 'react'
+  import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getPreSessionBrief } from '../../api/patients'
@@ -102,6 +102,25 @@ export default function PatientPage() {
         <h1 className="text-xl font-semibold text-slate-800">
           {patient?.name ?? 'Loading...'}
         </h1>
+      </nav>
+      <nav className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            ← Back
+          </button>
+          <h1 className="text-xl font-semibold text-slate-800">
+            {patient?.name ?? 'Loading...'}
+          </h1>
+        </div>
+        <button
+          onClick={() => navigate(`/patients/${patientId}/progress`)}
+          className="text-sm text-blue-600 font-medium hover:underline"
+        >
+          View progress →
+        </button>
       </nav>
 
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">

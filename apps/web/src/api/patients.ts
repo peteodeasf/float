@@ -55,3 +55,44 @@ export const createPatient = async (data: CreatePatientData): Promise<PatientDet
   const response = await apiClient.post('/patients', data)
   return response.data
 }
+
+export interface ExperimentDataPoint {
+  experiment_id: string
+  completed_date: string | null
+  bip_before: number | null
+  bip_after: number | null
+  distress_thermometer_expected: number | null
+  distress_thermometer_actual: number | null
+  feared_outcome_occurred: boolean | null
+  rung_order: number | null
+}
+
+export interface RungProgress {
+  rung_id: string
+  rung_order: number
+  distress_thermometer_rating: number | null
+  experiments_completed: number
+  latest_bip_before: number | null
+  latest_bip_after: number | null
+  latest_distress_thermometer_actual: number | null
+  data_points: ExperimentDataPoint[]
+}
+
+export interface PatientProgress {
+  summary: {
+    patient_id: string
+    total_experiments_completed: number
+    total_experiments_planned: number
+    average_bip_reduction: number | null
+    average_distress_thermometer_reduction: number | null
+    experiments_where_feared_outcome_occurred: number
+    last_experiment_date: string | null
+  }
+  rung_progress: RungProgress[]
+  recent_experiments: ExperimentDataPoint[]
+}
+
+export const getPatientProgress = async (id: string): Promise<PatientProgress> => {
+  const response = await apiClient.get(`/patients/${id}/progress`)
+  return response.data
+}

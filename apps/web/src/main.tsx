@@ -10,6 +10,7 @@ import PatientPage from './pages/practitioner/PatientPage'
 import LadderPage from './pages/practitioner/LadderPage'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import './index.css'
+import ProgressPage from './pages/practitioner/ProgressPage'
 
 const queryClient = new QueryClient()
 
@@ -33,6 +34,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/patients/:patientId" element={
               <ProtectedRoute>
                 <PatientPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/patients/:patientId/progress" element={
+              <ProtectedRoute>
+                <ProgressPage />
               </ProtectedRoute>
             } />
             <Route path="/patients/:patientId/triggers/:triggerId/ladder" element={
