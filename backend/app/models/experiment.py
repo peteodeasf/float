@@ -83,3 +83,6 @@ class AccommodationBehavior(Base):
         DateTime(timezone=True),
         server_default=text("now()")
     )
+    accommodator: Mapped[str] = mapped_column(
+    String, nullable=False, default="parent"
+    )
