@@ -12,9 +12,6 @@ import {
 import {
   getMonitoringForm,
   sendMonitoringForm,
-  getMonitoringReport,
-  type MonitoringFormData,
-  type MonitoringReport
 } from '../../api/monitoring'
 import InlineForm from '../../components/ui/InlineForm'
 import MessagesPanel from '../../components/ui/MessagesPanel'
@@ -42,7 +39,6 @@ export default function PatientPage() {
   const queryClient = useQueryClient()
   const [showTriggerForm, setShowTriggerForm] = useState(false)
   const [showEntries, setShowEntries] = useState(false)
-  const [showReport, setShowReport] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showSendForm, setShowSendForm] = useState(false)
   const [parentEmail, setParentEmail] = useState('')
@@ -77,12 +73,6 @@ export default function PatientPage() {
     queryKey: ['monitoring-form', patientId],
     queryFn: () => getMonitoringForm(patientId!),
     enabled: !!patientId
-  })
-
-  const { data: monitoringReport } = useQuery({
-    queryKey: ['monitoring-report', patientId],
-    queryFn: () => getMonitoringReport(patientId!),
-    enabled: !!patientId && !!monitoringForm && (monitoringForm.entries_count ?? 0) >= 5 && showReport
   })
 
   const sendFormMutation = useMutation({
@@ -368,66 +358,17 @@ export default function PatientPage() {
                 )}
 
                 {/* Report button */}
-                {(monitoringForm.entries_count ?? 0) >= 5 && (
-                  <div>
-                    <button
-                      onClick={() => setShowReport(!showReport)}
-                      className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
-                        showReport
-                          ? 'bg-slate-100 text-slate-600'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      {showReport ? 'Hide report' : 'View pre-consultation report'}
-                    </button>
-                    {showReport && monitoringReport && (
-                      <div className="mt-4 space-y-4 p-4 bg-blue-50 rounded-lg">
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider">Entries</p>
-                            <p className="text-xl font-semibold text-blue-800">{monitoringReport.total_entries}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider">Days</p>
-                            <p className="text-xl font-semibold text-blue-800">{monitoringReport.date_range?.days ?? '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider">FT range</p>
-                            <p className="text-xl font-semibold text-blue-800">
-                              {monitoringReport.dt_range ? `${monitoringReport.dt_range.min}–${monitoringReport.dt_range.max}` : '—'}
-                            </p>
-                          </div>
-                        </div>
-                        {monitoringReport.top_situations_by_distress.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-2">Highest distress situations</p>
-                            <div className="space-y-1">
-                              {monitoringReport.top_situations_by_distress.map((s, i) => (
-                                <div key={i} className="flex items-center justify-between text-sm">
-                                  <span className="text-blue-800">{s.situation}</span>
-                                  <span className="text-xs font-medium text-blue-600">FT {s.fear_thermometer}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {monitoringReport.top_situations_by_frequency.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-2">Most frequent situations</p>
-                            <div className="space-y-1">
-                              {monitoringReport.top_situations_by_frequency.map((s, i) => (
-                                <div key={i} className="flex items-center justify-between text-sm">
-                                  <span className="text-blue-800">{s.situation}</span>
-                                  <span className="text-xs text-blue-600">{s.count}x</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        <p className="text-xs text-blue-500 italic">{monitoringReport.summary_notes}</p>
-                      </div>
-                    )}
-                  </div>
+                {(monitoringForm.entries_count ?? 0) > 0 && (
+                  <button
+                    onClick={() => navigate(`/patients/${patientId}/monitoring-report`)}
+                    className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
+                      (monitoringForm.entries_count ?? 0) >= 5
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    View pre-consultation report
+                  </button>
                 )}
               </div>
             )}

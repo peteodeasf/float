@@ -15,6 +15,7 @@ import TeenLoginPage from './pages/teen/TeenLoginPage'
 import TeenHomePage from './pages/teen/TeenHomePage'
 import TeenExperimentPage from './pages/teen/TeenExperimentPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
+import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -48,6 +49,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/patients/:patientId/progress" element={
                 <ProtectedRoute><ProgressPage /></ProtectedRoute>
+              } />
+              <Route path="/patients/:patientId/monitoring-report" element={
+                <ProtectedRoute><MonitoringReportPage /></ProtectedRoute>
               } />
 
               {/* Teen routes */}

@@ -178,6 +178,14 @@ async def get_monitoring_report(
 ):
     _, practitioner = context
 
+    # Get patient name
+    patient_result = await db.execute(
+        select(PatientProfile).where(PatientProfile.id == patient_id)
+    )
+    patient = patient_result.scalar_one_or_none()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
     form_result = await db.execute(
         select(MonitoringForm).where(
             MonitoringForm.patient_id == patient_id
@@ -197,28 +205,32 @@ async def get_monitoring_report(
 
     if not entries:
         return {
+            "patient_id": str(patient_id),
+            "patient_name": patient.name,
             "total_entries": 0,
             "date_range": None,
             "dt_range": None,
+            "average_dt": None,
             "top_situations_by_frequency": [],
             "top_situations_by_distress": [],
-            "full_entries": [],
-            "summary_notes": "No observations recorded yet."
+            "parent_response_themes": [],
+            "entries": []
         }
 
     # Date range
     dates = [e.entry_date for e in entries]
     date_range = {
-        "start": min(dates).isoformat(),
-        "end": max(dates).isoformat(),
+        "from": min(dates).isoformat(),
+        "to": max(dates).isoformat(),
         "days": (max(dates) - min(dates)).days + 1
     }
 
-    # DT range
+    # DT stats
     dts = [e.fear_thermometer for e in entries if e.fear_thermometer is not None]
     dt_range = {"min": min(dts), "max": max(dts)} if dts else None
+    average_dt = round(sum(dts) / len(dts), 1) if dts else None
 
-    # Top situations by frequency
+    # Top situations by frequency — top 5 entries grouped by situation
     situations = [e.situation for e in entries if e.situation]
     freq = Counter(situations)
     top_by_freq = [
@@ -226,19 +238,36 @@ async def get_monitoring_report(
         for s, c in freq.most_common(5)
     ]
 
-    # Top situations by distress
-    situation_dt = {}
-    for e in entries:
-        if e.situation and e.fear_thermometer is not None:
-            if e.situation not in situation_dt or e.fear_thermometer > situation_dt[e.situation]:
-                situation_dt[e.situation] = e.fear_thermometer
-    top_by_distress = sorted(
-        [{"situation": s, "fear_thermometer": dt} for s, dt in situation_dt.items()],
-        key=lambda x: x["fear_thermometer"],
-        reverse=True
-    )[:5]
+    # Top situations by distress — top 5 entries sorted by fear_thermometer
+    entries_with_dt = [e for e in entries if e.fear_thermometer is not None]
+    entries_by_distress = sorted(entries_with_dt, key=lambda e: e.fear_thermometer, reverse=True)[:5]
+    top_by_distress = [
+        {
+            "id": str(e.id),
+            "entry_date": e.entry_date.isoformat(),
+            "situation": e.situation,
+            "child_behavior_observed": e.child_behavior_observed,
+            "parent_response": e.parent_response,
+            "fear_thermometer": e.fear_thermometer
+        }
+        for e in entries_by_distress
+    ]
 
-    full_entries = [
+    # Parent response themes — parent_response from top 3 highest DT entries
+    top_3_distress = sorted(entries_with_dt, key=lambda e: e.fear_thermometer, reverse=True)[:3]
+    parent_response_themes = [
+        {
+            "label": "Highest distress responses",
+            "entry_date": e.entry_date.isoformat(),
+            "situation": e.situation,
+            "parent_response": e.parent_response,
+            "fear_thermometer": e.fear_thermometer
+        }
+        for e in top_3_distress
+        if e.parent_response
+    ]
+
+    all_entries = [
         {
             "id": str(e.id),
             "entry_date": e.entry_date.isoformat(),
@@ -251,13 +280,16 @@ async def get_monitoring_report(
     ]
 
     return {
+        "patient_id": str(patient_id),
+        "patient_name": patient.name,
         "total_entries": len(entries),
         "date_range": date_range,
         "dt_range": dt_range,
+        "average_dt": average_dt,
         "top_situations_by_frequency": top_by_freq,
         "top_situations_by_distress": top_by_distress,
-        "full_entries": full_entries,
-        "summary_notes": f"{len(entries)} observations recorded over {date_range['days']} days. Ready for pre-consultation review."
+        "parent_response_themes": parent_response_themes,
+        "entries": all_entries
     }
 
 

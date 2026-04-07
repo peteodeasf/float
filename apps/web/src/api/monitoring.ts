@@ -32,14 +32,32 @@ export interface MonitoringEntryData {
   created_at: string
 }
 
+export interface ReportEntry {
+  id: string
+  entry_date: string
+  situation: string | null
+  child_behavior_observed: string | null
+  parent_response: string | null
+  fear_thermometer: number | null
+}
+
 export interface MonitoringReport {
+  patient_id: string
+  patient_name: string
   total_entries: number
-  date_range: { start: string; end: string; days: number } | null
+  date_range: { from: string; to: string; days: number } | null
   dt_range: { min: number; max: number } | null
+  average_dt: number | null
   top_situations_by_frequency: { situation: string; count: number }[]
-  top_situations_by_distress: { situation: string; fear_thermometer: number }[]
-  full_entries: MonitoringEntryData[]
-  summary_notes: string
+  top_situations_by_distress: ReportEntry[]
+  parent_response_themes: {
+    label: string
+    entry_date: string
+    situation: string | null
+    parent_response: string | null
+    fear_thermometer: number | null
+  }[]
+  entries: ReportEntry[]
 }
 
 export const sendMonitoringForm = async (
