@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
-import { getTreatmentPlan, getTriggers, getLadder } from '../../api/treatment'
-import { apiClient } from '../../api/client'
+import { teenApiClient } from '../../api/client'
+
+// replace all apiClient.get calls with teenApiClient.get
 
 export default function TeenHomePage() {
   const { patientId, logout } = useTeenAuth()
@@ -11,7 +12,7 @@ export default function TeenHomePage() {
   const { data: plan } = useQuery({
     queryKey: ['teen-plan', patientId],
     queryFn: async () => {
-      const response = await apiClient.get(`/patients/${patientId}/plan`)
+      const response = await teenApiClient.get('/patient/plan')
       return response.data
     },
     enabled: !!patientId
@@ -19,7 +20,10 @@ export default function TeenHomePage() {
 
   const { data: triggers } = useQuery({
     queryKey: ['teen-triggers', plan?.id],
-    queryFn: () => getTriggers(plan!.id),
+    queryFn: async () => {
+      const response = await teenApiClient.get('/patient/plan/triggers')
+      return response.data
+    },
     enabled: !!plan?.id
   })
 
@@ -27,13 +31,16 @@ export default function TeenHomePage() {
 
   const { data: ladder } = useQuery({
     queryKey: ['teen-ladder', firstTrigger?.id],
-    queryFn: () => getLadder(firstTrigger!.id),
+    queryFn: async () => {
+      const response = await teenApiClient.get(`/patient/plan/triggers/${firstTrigger!.id}/ladder`)
+      return response.data
+    },
     enabled: !!firstTrigger?.id
   })
 
   const currentRung = ladder?.rungs
-    .sort((a, b) => a.rung_order - b.rung_order)
-    .find(r => r.status !== 'complete')
+    .sort((a: any, b: any) => a.rung_order - b.rung_order)
+    .find((r: any) => r.status !== 'complete')
 
   const handleLogout = () => {
     logout()
@@ -48,7 +55,6 @@ export default function TeenHomePage() {
       margin: '0 auto',
       padding: '0 0 80px'
     }}>
-      {/* Header */}
       <div style={{
         background: '#fff',
         padding: '20px 24px 16px',
@@ -70,8 +76,6 @@ export default function TeenHomePage() {
       </div>
 
       <div style={{ padding: '24px' }}>
-
-        {/* Greeting */}
         <h2 style={{ fontSize: '22px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
           Hey 👋
         </h2>
@@ -79,7 +83,6 @@ export default function TeenHomePage() {
           Here's where things stand today.
         </p>
 
-        {/* Current situation card */}
         {firstTrigger && (
           <div style={{
             background: '#fff',
@@ -102,7 +105,6 @@ export default function TeenHomePage() {
           </div>
         )}
 
-        {/* Current rung */}
         {currentRung && (
           <div style={{
             background: '#eff6ff',
@@ -125,7 +127,6 @@ export default function TeenHomePage() {
           </div>
         )}
 
-        {/* Action button */}
         {currentRung ? (
           <button
             onClick={() => navigate(`/teen/experiment/${currentRung.id}`)}
@@ -155,13 +156,12 @@ export default function TeenHomePage() {
             <p style={{ fontSize: '16px', color: '#166534', fontWeight: '500' }}>
               🎉 All steps complete!
             </p>
-            <p style={{ fontSize: '14px', color: '#4ade80', marginTop: '4px' }}>
+            <p style={{ fontSize: '14px', color: '#16a34a', marginTop: '4px' }}>
               Talk to your practitioner about what's next.
             </p>
           </div>
         )}
 
-        {/* Ladder progress */}
         {ladder && ladder.rungs.length > 0 && (
           <div style={{
             background: '#fff',
@@ -174,8 +174,8 @@ export default function TeenHomePage() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[...ladder.rungs]
-                .sort((a, b) => b.rung_order - a.rung_order)
-                .map((rung, i) => (
+                .sort((a: any, b: any) => b.rung_order - a.rung_order)
+                .map((rung: any, i: number) => (
                   <div key={rung.id} style={{
                     display: 'flex',
                     alignItems: 'center',
