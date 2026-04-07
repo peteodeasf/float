@@ -1,17 +1,24 @@
 import { apiClient } from './client'
 
+export interface SendMonitoringFormParams {
+  parent_email?: string
+  parent_name?: string
+}
+
 export interface MonitoringFormData {
   id: string
   patient_id: string
   status: 'pending' | 'in_progress' | 'submitted'
   access_token: string
   link: string
+  full_link?: string
   sent_at: string | null
   submitted_at: string | null
   created_at: string
   entries_count?: number
   entries?: MonitoringEntryData[]
   practitioner_name?: string
+  email_sent?: boolean
 }
 
 export interface MonitoringEntryData {
@@ -35,8 +42,11 @@ export interface MonitoringReport {
   summary_notes: string
 }
 
-export const sendMonitoringForm = async (patientId: string): Promise<MonitoringFormData> => {
-  const response = await apiClient.post(`/patients/${patientId}/monitoring-form/send`)
+export const sendMonitoringForm = async (
+  patientId: string,
+  params: SendMonitoringFormParams = {}
+): Promise<MonitoringFormData> => {
+  const response = await apiClient.post(`/patients/${patientId}/monitoring-form/send`, params)
   return response.data
 }
 

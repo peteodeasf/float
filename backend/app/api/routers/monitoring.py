@@ -16,6 +16,11 @@ from app.api.routers.patients import get_practitioner_context
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
+class SendMonitoringFormRequest(BaseModel):
+    parent_email: Optional[str] = None
+    parent_name: Optional[str] = None
+
+
 class MonitoringEntryCreate(BaseModel):
     entry_date: Optional[str] = None
     situation: Optional[str] = None
@@ -42,9 +47,13 @@ practitioner_router = APIRouter(tags=["monitoring"])
 @practitioner_router.post("/patients/{patient_id}/monitoring-form/send")
 async def send_monitoring_form(
     patient_id: uuid.UUID,
+    data: SendMonitoringFormRequest = SendMonitoringFormRequest(),
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db)
 ):
+    from app.core.config import settings
+    from app.services.email_service import send_monitoring_form_email
+
     _, practitioner = context
 
     # Check patient belongs to this org
@@ -83,8 +92,19 @@ async def send_monitoring_form(
     await db.commit()
     await db.refresh(form)
 
-    # Get practitioner name for the link context
     practitioner_name = practitioner.name
+    monitoring_link = f"{settings.BASE_URL}/monitor/{form.access_token}"
+
+    # Send email if parent_email provided
+    email_sent = False
+    if data.parent_email:
+        email_sent = await send_monitoring_form_email(
+            to_email=data.parent_email,
+            clinician_name=practitioner_name,
+            monitoring_link=monitoring_link,
+            child_name=patient.name,
+            parent_name=data.parent_name or ""
+        )
 
     return {
         "id": str(form.id),
@@ -92,9 +112,11 @@ async def send_monitoring_form(
         "status": form.status,
         "access_token": form.access_token,
         "link": f"/monitor/{form.access_token}",
+        "full_link": monitoring_link,
         "practitioner_name": practitioner_name,
         "sent_at": form.sent_at.isoformat() if form.sent_at else None,
-        "created_at": form.created_at.isoformat()
+        "created_at": form.created_at.isoformat(),
+        "email_sent": email_sent
     }
 
 

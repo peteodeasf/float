@@ -44,6 +44,10 @@ export default function PatientPage() {
   const [showEntries, setShowEntries] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showSendForm, setShowSendForm] = useState(false)
+  const [parentEmail, setParentEmail] = useState('')
+  const [parentName, setParentName] = useState('')
+  const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
 
   const { data: patient } = useQuery({
     queryKey: ['patient', patientId],
@@ -82,9 +86,22 @@ export default function PatientPage() {
   })
 
   const sendFormMutation = useMutation({
-    mutationFn: () => sendMonitoringForm(patientId!),
-    onSuccess: () => {
+    mutationFn: (params: { parent_email?: string; parent_name?: string } = {}) =>
+      sendMonitoringForm(patientId!, params),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['monitoring-form', patientId] })
+      // Always copy link
+      if (data.full_link) {
+        navigator.clipboard.writeText(data.full_link)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+      if (data.email_sent && parentEmail) {
+        setEmailSentTo(parentEmail)
+      }
+      setShowSendForm(false)
+      setParentEmail('')
+      setParentName('')
     }
   })
 
@@ -95,6 +112,17 @@ export default function PatientPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  const handleSendWithEmail = () => {
+    sendFormMutation.mutate({
+      parent_email: parentEmail || undefined,
+      parent_name: parentName || undefined
+    })
+  }
+
+  const handleSendLinkOnly = () => {
+    sendFormMutation.mutate({})
   }
 
   const daysSinceSent = monitoringForm?.sent_at
@@ -182,15 +210,76 @@ export default function PatientPage() {
                 <p className="text-sm text-slate-500">
                   Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
                 </p>
-                <div className="flex gap-2">
+
+                {emailSentTo && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                    <span>&#10003;</span> Email sent to {emailSentTo}
+                  </div>
+                )}
+
+                {!showSendForm ? (
                   <button
-                    onClick={() => sendFormMutation.mutate()}
-                    disabled={sendFormMutation.isPending}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    onClick={() => setShowSendForm(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                   >
-                    {sendFormMutation.isPending ? 'Sending...' : 'Send monitoring form'}
+                    Send monitoring form
                   </button>
-                </div>
+                ) : (
+                  <div className="space-y-3 bg-slate-50 rounded-lg p-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Parent email (optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={parentEmail}
+                        onChange={e => setParentEmail(e.target.value)}
+                        placeholder="parent@email.com"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Parent name (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={parentName}
+                        onChange={e => setParentName(e.target.value)}
+                        placeholder="e.g. Sarah"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      {parentEmail && (
+                        <button
+                          onClick={handleSendWithEmail}
+                          disabled={sendFormMutation.isPending}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                          {sendFormMutation.isPending ? 'Sending...' : 'Send email + copy link'}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleSendLinkOnly}
+                        disabled={sendFormMutation.isPending}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                          parentEmail
+                            ? 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
+                      </button>
+                      <button
+                        onClick={() => setShowSendForm(false)}
+                        className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
