@@ -559,7 +559,7 @@ Before general availability — not needed for Dr. Walker's initial pilot review
 
 ---
 
-*Float Technical Architecture — Living Document — v0.3 — April 2026*
+*Float Technical Architecture — Living Document — v0.5 — April 2026*
 
 ---
 
@@ -577,8 +577,10 @@ The `status` field on `PatientProfile` (or a new `patient_status` field on `Trea
 
 ### New entities required
 
-**MonitoringForm**
-Sent to parent pre-consultation. Delivered via Float-generated email with a link, or link copied by Dr. Walker for her own email. Parent fills out in Float.
+**MonitoringForm + MonitoringEntry**
+Sent to parent pre-consultation. Delivered via Float-generated email with a link, or link copied by Dr. Walker for her own email. Parent fills out in Float over the course of a week or more — each day's observations are added as individual entries (rows), not a single form submission.
+
+The form is a container; entries are the data. Based on Figure 3 from Anxiety Relief for Kids (Parenting Monitoring Worksheet), each entry captures one observed incident.
 
 ```sql
 CREATE TABLE monitoring_forms (
@@ -586,18 +588,37 @@ CREATE TABLE monitoring_forms (
   patient_id UUID NOT NULL REFERENCES patient_profiles(id),
   organization_id UUID NOT NULL REFERENCES organizations(id),
   status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'submitted')),
+    CHECK (status IN ('pending', 'in_progress', 'submitted')),
   sent_at TIMESTAMPTZ,
   submitted_at TIMESTAMPTZ,
-  -- Form fields (to be finalized once Dr. Walker provides the form)
-  trigger_situations_observed JSONB DEFAULT '[]',
-  behaviors_observed JSONB DEFAULT '[]',
-  distress_notes TEXT,
-  context_notes TEXT,
-  additional_notes TEXT,
+  monitoring_instructions TEXT,   -- optional custom instructions from practitioner
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE monitoring_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  monitoring_form_id UUID NOT NULL REFERENCES monitoring_forms(id),
+  patient_id UUID NOT NULL REFERENCES patient_profiles(id),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
+  -- Core fields from Dr. Walker's monitoring worksheet
+  entry_date DATE NOT NULL,
+  situation TEXT NOT NULL,              -- what was happening (trigger context)
+  child_behavior_observed TEXT NOT NULL, -- what the parent observed the child do
+  parent_response TEXT NOT NULL,        -- how the parent responded (accommodation data)
+  fear_thermometer DECIMAL(3,1),        -- parent-estimated distress 1-10
+  -- Note: fear_thermometer here is PARENT-ESTIMATED, not child-reported
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
+
+**Clinical note on the data:** The `parent_response` field is the primary source of accommodation behavior data. It reveals exactly what accommodating behaviors the parent engaged in during each incident — reassurance, avoidance facilitation, altered routines, etc. This directly informs the parent module's accommodation ladder. The pre-consultation report should surface patterns in `parent_response` alongside trigger frequency and distress levels.
+
+**Pre-consultation report** — generated from monitoring entries. Should include:
+- Most frequent trigger situations (by count)
+- Highest distress situations (by fear_thermometer)
+- Patterns in parent response (accommodation behaviors identified)
+- Timeline of entries (shows monitoring consistency)
+- Raw entry table for Dr. Walker to reference in the consultation
 
 **SessionNote**
 Free text notes captured by practitioner during or after a session. Practitioner-only. Referenced in subsequent sessions.
@@ -787,8 +808,194 @@ CREATE TABLE action_plans (
 - For younger children: parent instructions shown prominently, possibly in a separate parent view
 - For teens/young adults: parent instructions hidden from patient view, shown only to parent
 
+### Confirmed design decisions (April 2026)
+
+- **Authoring timing:** Drafted in session, finished after. The UI must support both — quick capture during a session and refinement afterward before publishing to the patient.
+- **Parent instructions visibility:** Parent instructions stay in the same document as child instructions, consistent with Dr. Walker's current practice. No separate parent section. The full action plan is visible to both child and parent.
+- **Session notes:** Free text, practitioner-only. Not visible to parent at any level.
+
 ### Build priority
 
 - **Phase 3** (notifications/messaging): Basic action plan — practitioner authors, patient views
-- **Phase 4** (parent experience): Parent instructions section, parent visibility toggle
+- **Phase 4** (parent experience): Parent action plan visibility
 - **Pre-launch**: Nickname pre-population, session number auto-increment, plan history view
+
+
+---
+
+## 16. Parent Monitoring Worksheet Design (April 2026)
+
+Based on Figure 3 from Dr. Walker's book and product design discussion.
+
+### Purpose
+
+Sent to parents before consultation 1. Parent monitors their child for at least one week and submits observations. Dr. Walker uses the collected data in consultation 1 and references it throughout treatment — trigger situation list building, psychoeducation, and session notes all draw from this data.
+
+This is a one-time structured observation period with a defined start and end. It is distinct from the ongoing parent monitoring worksheet used during active treatment.
+
+### What gets captured per entry
+
+- Date
+- Situation (where, what was happening)
+- What I observed about my child (behavior, distress response, avoidance)
+- How I responded (what the parent did — captures accommodation behaviors)
+- Fear thermometer (parent's estimate of child's distress, 1–10)
+
+### Key design principles
+
+**Easy to start and return to.** Parents open a link from their email, add observations one at a time throughout the week, and return daily. No login friction — the link itself authenticates them for this specific form. Each entry takes about 5 minutes.
+
+**Mobile-first.** Parents are adding observations on their phone during or shortly after an incident. Large tap targets, minimal typing, quick to open and close.
+
+**Capture now, elaborate later.** An entry can be saved as a draft and completed later. Parent takes a quick note during the day and fleshes it out at end of day.
+
+**Observation guidance built in.** Gentle prompts help parents know what to focus on: "What triggered this?", "What did your child do?", "What did you do in response?", "How distressed did your child seem (1–10)?"
+
+**Progress visibility.** Parent sees how many observations they've added and how many days remain. Encourages completion without pressure.
+
+**Transcription (future).** Voice-to-text for observation fields — parent speaks rather than types. Flag for Phase 4+.
+
+### Authentication
+
+Link-based access — no account required for the parent to fill out the monitoring form. The link contains a time-limited signed token. When the parent eventually creates an account (after deciding to proceed), their submitted monitoring data is linked to their profile.
+
+### Data model
+
+```sql
+CREATE TABLE monitoring_forms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  patient_id UUID NOT NULL REFERENCES patient_profiles(id),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'in_progress', 'submitted')),
+  monitoring_period_start DATE,
+  monitoring_period_end DATE,  -- default: start + 7 days
+  access_token TEXT UNIQUE NOT NULL,  -- for link-based auth
+  access_token_expires_at TIMESTAMPTZ,
+  sent_at TIMESTAMPTZ,
+  submitted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE monitoring_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  monitoring_form_id UUID NOT NULL REFERENCES monitoring_forms(id),
+  entry_date DATE NOT NULL,
+  situation TEXT,
+  child_behavior_observed TEXT,
+  parent_response TEXT,
+  fear_thermometer INTEGER CHECK (fear_thermometer BETWEEN 1 AND 10),
+  is_draft BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+### Pre-consultation report
+
+Generated from submitted monitoring entries. Used by Dr. Walker in consultation 1.
+
+Sections:
+- Total observations submitted, monitoring period covered
+- Highest DT situations (ranked by fear thermometer)
+- Most frequent situations
+- Most common parent responses (early signal of accommodation patterns)
+- Full observation table sorted by date
+
+### API endpoints needed
+
+```
+POST   /patients/{patient_id}/monitoring-form/send
+         — creates form, generates access token, sends email with link
+
+GET    /monitoring/{access_token}
+         — public endpoint, returns form status and entries (link-based auth)
+
+POST   /monitoring/{access_token}/entries
+         — parent adds a new entry (draft or complete)
+
+PUT    /monitoring/{access_token}/entries/{entry_id}
+         — parent updates or completes a draft entry
+
+PUT    /monitoring/{access_token}/submit
+         — parent marks form as submitted
+
+GET    /patients/{patient_id}/monitoring-form
+         — practitioner views form and all entries
+
+GET    /patients/{patient_id}/monitoring-form/report
+         — practitioner gets pre-consultation report
+```
+
+### UI — parent experience
+
+1. Parent receives email with link: "Dr. Walker has asked you to complete a monitoring form before your first meeting"
+2. Opens form — sees brief explanation of what to observe and why
+3. Taps "+ Add observation" — fills in date, situation, behavior, response, DT
+4. Can save as draft and return
+5. Sees list of entries with dates and situations
+6. Progress bar: "5 of 7 monitoring days"
+7. Submits when ready (or form auto-submits at end of monitoring period)
+
+### UI — practitioner experience
+
+1. Send monitoring form button on patient page (pre-consultation status)
+2. Can copy link or trigger email send
+3. Sees form status: pending / in progress (N entries) / submitted
+4. Pre-consultation report available once submitted
+5. Report displayed as reference in patient view
+
+### Configuration decisions (resolved)
+
+- **Monitoring period length** — configurable per patient by practitioner, not enforced. Default: 7 days.
+- **Link expiry** — 14 days from send date.
+- **Submission trigger** — auto-submit at end of monitoring period. Parent can also submit manually at any time.
+- **Minimum entries** — no minimum enforced. Platform shows a recommendation (e.g. "aim for at least 5 observations") but does not block submission.
+
+### Security model
+
+**Link-based authentication** uses a cryptographically signed token — a random 32-byte hex string stored hashed in the database. The public URL looks like:
+
+```
+https://float.app/monitor/a3f9b2c8d4e1f7a2b9c3d8e5f1a4b7c2
+```
+
+Properties:
+- Unique per patient, single-purpose — grants access to that monitoring form only
+- Not guessable — 32 random bytes = 2^256 combinations
+- Stored hashed in the database — token cannot be reconstructed from a DB compromise
+- HTTPS only — cannot be intercepted in transit
+- Rate limited — prevents brute force
+- Deactivated when monitoring period ends (first session notes created or explicitly closed)
+- No PII in the URL itself
+
+Access scope: the token grants no access to any other Float data — not the treatment plan, experiments, session notes, or clinical records. Those are all behind full authentication.
+
+Risk profile: appropriate for this data sensitivity level. Monitoring observations ("child got upset about norovirus") are significantly less sensitive than clinical records. Same model used by Calendly, Typeform, DocuSign for low-friction external access.
+
+Email to parent includes: "This link is personal to you — please don't share it."
+
+### How the parent gets back to the form
+
+Three re-access paths, no account required:
+
+1. **Original email link** — stays active for the full monitoring period. Parent returns to the email Dr. Walker sent and taps the link again. Most natural path — parent is already in email because that's how they got the form. Dr. Walker briefs parents verbally: "Save the email I send you — you'll use that link all week."
+
+2. **Optional re-send** — on the form landing screen, parent can enter their phone number or email to receive the link again. No account created. Useful if the parent deleted the original email.
+
+3. **Bookmark prompt** — after the first observation is saved, the form shows a gentle "Bookmark this page for easy access" prompt. One tap on mobile adds it to the browser home screen.
+
+The combination covers every parent behavior pattern without requiring account creation.
+
+### Confirmed design decisions (April 2026)
+
+- **Monitoring period:** No fixed end date — form stays open until the first session notes are generated, or explicitly closed by the practitioner. Flexible by design; reality is parents monitor until they come in for consultation 1.
+- **Link expiry:** Form link stays active until first session notes are created for the patient, or practitioner explicitly deactivates it.
+- **Submission trigger:** Auto-submit — no explicit parent action required. Form is considered submitted when the monitoring period ends (practitioner closes it or first session notes are created).
+- **Minimum entries:** 5 observations recommended but not enforced. UI shows a gentle prompt if fewer than 5 entries when Dr. Walker goes to generate the report.
+
+### Build priority
+
+- **Phase 3** (notifications/messaging): Basic monitoring form — send link, parent adds entries, practitioner views results
+- **Phase 4** (parent experience): Full parent experience with account creation linked to monitoring data
+- **Pre-launch**: Pre-consultation report generation, voice transcription (future)

@@ -153,7 +153,7 @@ All tools are accessible to practitioners, parents, and children/teens. None are
 - **Guided Discovery** — structured questioning for parents and practitioners
 
 ### Assessment and monitoring tools
-- **Monitoring form** — sent to parents pre-consultation; captures trigger situations, behaviors, distress levels; feeds the pre-consultation report
+- **Monitoring form** — sent to parents pre-consultation via Float-generated email link. Parent logs daily observations over one week or more as individual entries. Each entry captures: date, situation (trigger context), what the parent observed about the child, how the parent responded, and the parent's Fear Thermometer estimate (1–10) of the child's distress. The "how I responded" field is the primary source of accommodation behavior data. Parent-estimated distress, not child-reported. Feeds the pre-consultation report.
 - **Trigger Situation List** — all situations rated with DT
 - **Parent Monitoring Worksheet** — ongoing observation during treatment
 - **Child Monitoring Worksheet** — self-monitoring for older children and teens
@@ -180,7 +180,7 @@ All tools are accessible to practitioners, parents, and children/teens. None are
 
 ### Session management tools
 - **Session notes** — free text, practitioner-only, attached to each session; referenced in subsequent sessions
-- **Pre-consultation report** — generated from monitoring form data; used in consultation 1
+- **Pre-consultation report** — generated from the parent monitoring worksheet data; surfaces highest DT situations, most frequent situations, and most common parent responses (early signal of accommodation patterns). Used by Dr. Walker as reference material in consultation 1.
 - **Pre-session brief** — BIP trend, DT trend, experiment results, open flags, recommended focus
 
 ### OCD/ERP tools
@@ -270,4 +270,4 @@ Three streams: practitioner training, parent psychoeducation, child/teen psychoe
 
 ---
 
-*Float — Internal Working Document — v0.5 — April 2026*
+*Float — Internal Working Document — v0.7 — April 2026*

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -7,6 +8,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
 from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink
+from app.models.experiment import Experiment
 from app.schemas.patient import PatientCreate, PatientResponse, PatientListResponse
 from app.services.patient_service import (
     create_patient,
@@ -204,3 +206,49 @@ async def get_my_ladder(
             for r in rungs
         ]
     }
+
+
+@patient_router.post("/experiments/{experiment_id}/commit")
+async def commit_experiment(
+    experiment_id: uuid.UUID,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    result = await db.execute(
+        select(Experiment).where(
+            Experiment.id == experiment_id,
+            Experiment.patient_id == patient.id
+        )
+    )
+    experiment = result.scalar_one_or_none()
+    if not experiment:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    experiment.status = "committed"
+    experiment.committed_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(experiment)
+    return {"status": experiment.status, "committed_at": experiment.committed_at.isoformat()}
+
+
+@patient_router.post("/experiments/{experiment_id}/too-hard")
+async def too_hard_experiment(
+    experiment_id: uuid.UUID,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    result = await db.execute(
+        select(Experiment).where(
+            Experiment.id == experiment_id,
+            Experiment.patient_id == patient.id
+        )
+    )
+    experiment = result.scalar_one_or_none()
+    if not experiment:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    experiment.status = "too_hard"
+    experiment.too_hard_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(experiment)
+    return {"status": experiment.status, "too_hard_at": experiment.too_hard_at.isoformat()}

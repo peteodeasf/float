@@ -46,6 +46,12 @@ class Experiment(Base):
     )
     bip_after: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     what_learned: Mapped[str | None] = mapped_column(Text, nullable=True)
+    committed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    too_hard_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

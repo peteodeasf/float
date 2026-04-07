@@ -9,6 +9,13 @@ import {
   createTrigger,
   updatePlanStatus
 } from '../../api/treatment'
+import {
+  getMonitoringForm,
+  sendMonitoringForm,
+  getMonitoringReport,
+  type MonitoringFormData,
+  type MonitoringReport
+} from '../../api/monitoring'
 import InlineForm from '../../components/ui/InlineForm'
 import MessagesPanel from '../../components/ui/MessagesPanel'
 
@@ -34,6 +41,9 @@ export default function PatientPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showTriggerForm, setShowTriggerForm] = useState(false)
+  const [showEntries, setShowEntries] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const { data: patient } = useQuery({
     queryKey: ['patient', patientId],
@@ -58,6 +68,40 @@ export default function PatientPage() {
     queryFn: () => getTriggers(plan!.id),
     enabled: !!plan?.id
   })
+
+  const { data: monitoringForm } = useQuery({
+    queryKey: ['monitoring-form', patientId],
+    queryFn: () => getMonitoringForm(patientId!),
+    enabled: !!patientId
+  })
+
+  const { data: monitoringReport } = useQuery({
+    queryKey: ['monitoring-report', patientId],
+    queryFn: () => getMonitoringReport(patientId!),
+    enabled: !!patientId && !!monitoringForm && (monitoringForm.entries_count ?? 0) >= 5 && showReport
+  })
+
+  const sendFormMutation = useMutation({
+    mutationFn: () => sendMonitoringForm(patientId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monitoring-form', patientId] })
+    }
+  })
+
+  const handleCopyLink = () => {
+    if (monitoringForm?.access_token) {
+      const url = `${window.location.origin}/monitor/${monitoringForm.access_token}`
+      navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const daysSinceSent = monitoringForm?.sent_at
+    ? Math.floor((Date.now() - new Date(monitoringForm.sent_at).getTime()) / (1000 * 60 * 60 * 24))
+    : null
+
+  const isPreTreatment = !plan || plan.status === 'setup'
 
   const createPlanMutation = useMutation({
     mutationFn: () => createTreatmentPlan(patientId!, {
@@ -125,6 +169,181 @@ export default function PatientPage() {
       </nav>
 
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">
+
+        {/* Monitoring form */}
+        {isPreTreatment && (
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              Parent monitoring form
+            </h2>
+
+            {!monitoringForm ? (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-500">
+                  Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => sendFormMutation.mutate()}
+                    disabled={sendFormMutation.isPending}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {sendFormMutation.isPending ? 'Sending...' : 'Send monitoring form'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Status row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      monitoringForm.status === 'submitted'
+                        ? 'bg-green-100 text-green-700'
+                        : monitoringForm.status === 'in_progress'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
+                    </span>
+                    {monitoringForm.entries_count != null && (
+                      <span className="text-sm text-slate-500">
+                        {monitoringForm.entries_count} {monitoringForm.entries_count === 1 ? 'entry' : 'entries'}
+                      </span>
+                    )}
+                    {daysSinceSent != null && (
+                      <span className="text-sm text-slate-400">
+                        {daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent}d ago`}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleCopyLink}
+                    className="text-xs text-blue-600 font-medium hover:underline"
+                  >
+                    {copied ? 'Copied!' : 'Copy link'}
+                  </button>
+                </div>
+
+                {/* Entries list (expandable) */}
+                {(monitoringForm.entries_count ?? 0) > 0 && (
+                  <div>
+                    <button
+                      onClick={() => setShowEntries(!showEntries)}
+                      className="text-sm text-blue-600 font-medium hover:underline"
+                    >
+                      {showEntries ? 'Hide entries' : 'View entries'}
+                    </button>
+                    {showEntries && monitoringForm.entries && (
+                      <div className="mt-3 space-y-2">
+                        {monitoringForm.entries.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="py-3 px-4 bg-slate-50 rounded-lg"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-slate-400">
+                                {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </span>
+                              {entry.fear_thermometer != null && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  entry.fear_thermometer >= 7 ? 'bg-red-100 text-red-700' :
+                                  entry.fear_thermometer >= 4 ? 'bg-amber-100 text-amber-700' :
+                                  'bg-green-100 text-green-700'
+                                }`}>
+                                  FT {entry.fear_thermometer}
+                                </span>
+                              )}
+                            </div>
+                            {entry.situation && (
+                              <p className="text-sm text-slate-700">{entry.situation}</p>
+                            )}
+                            {entry.child_behavior_observed && (
+                              <p className="text-xs text-slate-500 mt-1">
+                                <span className="font-medium">Observed:</span> {entry.child_behavior_observed}
+                              </p>
+                            )}
+                            {entry.parent_response && (
+                              <p className="text-xs text-slate-500 mt-1">
+                                <span className="font-medium">Response:</span> {entry.parent_response}
+                              </p>
+                            )}
+                            {entry.is_draft && (
+                              <span className="text-xs text-slate-400 italic">Draft</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Report button */}
+                {(monitoringForm.entries_count ?? 0) >= 5 && (
+                  <div>
+                    <button
+                      onClick={() => setShowReport(!showReport)}
+                      className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
+                        showReport
+                          ? 'bg-slate-100 text-slate-600'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {showReport ? 'Hide report' : 'View pre-consultation report'}
+                    </button>
+                    {showReport && monitoringReport && (
+                      <div className="mt-4 space-y-4 p-4 bg-blue-50 rounded-lg">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider">Entries</p>
+                            <p className="text-xl font-semibold text-blue-800">{monitoringReport.total_entries}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider">Days</p>
+                            <p className="text-xl font-semibold text-blue-800">{monitoringReport.date_range?.days ?? '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider">FT range</p>
+                            <p className="text-xl font-semibold text-blue-800">
+                              {monitoringReport.dt_range ? `${monitoringReport.dt_range.min}–${monitoringReport.dt_range.max}` : '—'}
+                            </p>
+                          </div>
+                        </div>
+                        {monitoringReport.top_situations_by_distress.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-2">Highest distress situations</p>
+                            <div className="space-y-1">
+                              {monitoringReport.top_situations_by_distress.map((s, i) => (
+                                <div key={i} className="flex items-center justify-between text-sm">
+                                  <span className="text-blue-800">{s.situation}</span>
+                                  <span className="text-xs font-medium text-blue-600">FT {s.fear_thermometer}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {monitoringReport.top_situations_by_frequency.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-2">Most frequent situations</p>
+                            <div className="space-y-1">
+                              {monitoringReport.top_situations_by_frequency.map((s, i) => (
+                                <div key={i} className="flex items-center justify-between text-sm">
+                                  <span className="text-blue-800">{s.situation}</span>
+                                  <span className="text-xs text-blue-600">{s.count}x</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <p className="text-xs text-blue-500 italic">{monitoringReport.summary_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Pre-session brief */}
         {brief && (

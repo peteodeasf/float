@@ -13,6 +13,8 @@ import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
 import TeenHomePage from './pages/teen/TeenHomePage'
+import TeenExperimentPage from './pages/teen/TeenExperimentPage'
+import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -53,6 +55,12 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/teen/home" element={
                 <TeenProtectedRoute><TeenHomePage /></TeenProtectedRoute>
               } />
+              <Route path="/teen/experiment/:rungId" element={
+                <TeenProtectedRoute><TeenExperimentPage /></TeenProtectedRoute>
+              } />
+
+              {/* Public monitoring form */}
+              <Route path="/monitor/:token" element={<MonitorLandingPage />} />
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
