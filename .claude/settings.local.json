@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(conda run:*)",
+      "Bash(find /Users/peterodea -path */float/bin/python -type f)",
+      "Bash(conda info:*)",
+      "Bash(conda env:*)",
+      "Bash(npx tsc:*)",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\")",
+      "Bash(find '/Users/peterodea/Documents/Float Project/float/backend' -type f -name *test* -o -name *conftest*)",
+      "Bash(grep -E \"^d|\\\\.py$\")",
+      "Bash(psql -d float -c \"SELECT id, email, role FROM users LIMIT 10;\")",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:/Applications/Postgres.app/Contents/Versions/latest/bin:$PATH\")",
+      "Bash(/usr/local/Cellar/postgresql@14/9.5.3/bin/psql -d float -c \"SELECT id, email, role FROM users;\")",
+      "Bash(curl -s http://127.0.0.1:8000/docs)",
+      "Bash(curl -s http://127.0.0.1:5173/)",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"patient@test.com\"\",\"\"password\"\":\"\"patientpass123\"\"}')",
+      "Bash(lsof -ti:8000)",
+      "Bash(curl -s -I -X OPTIONS http://127.0.0.1:8000/auth/login -H \"Origin: http://localhost:5174\" -H \"Access-Control-Request-Method: POST\")",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://127.0.0.1:8000/health)"
+    ]
+  }
+}
