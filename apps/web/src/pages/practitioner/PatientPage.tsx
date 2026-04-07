@@ -189,7 +189,7 @@ export default function PatientPage() {
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">
 
         {/* Monitoring form */}
-        {isPreTreatment && (
+
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-lg font-semibold text-slate-800 mb-4">
               Parent monitoring form
@@ -373,7 +373,7 @@ export default function PatientPage() {
               </div>
             )}
           </div>
-        )}
+        
 
         {/* Pre-session brief */}
         {brief && (
@@ -563,7 +563,7 @@ export default function PatientPage() {
            patientUserId={patient.user_id}
          />
        )}
-       
+
       </main>
     </div>
   )
