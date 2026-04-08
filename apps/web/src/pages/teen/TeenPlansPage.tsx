@@ -3,29 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { getMyActionPlans, ActionPlan } from '../../api/action_plans'
 
-function PlanSection({ label, items }: { label: string; items: string[] }) {
-  if (items.length === 0) return null
-  return (
-    <div style={{ marginBottom: '16px' }}>
-      <p style={{
-        fontSize: '11px',
-        fontWeight: '600',
-        color: '#94a3b8',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        marginBottom: '6px'
-      }}>
-        {label}
-      </p>
-      <ul style={{ margin: 0, paddingLeft: '16px' }}>
-        {items.map((item, i) => (
-          <li key={i} style={{ fontSize: '14px', color: '#334155', marginBottom: '4px', lineHeight: '1.5' }}>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
+const contentStyles: React.CSSProperties = {
+  fontSize: '14px',
+  color: '#334155',
+  lineHeight: '1.6',
 }
 
 export default function TeenPlansPage() {
@@ -132,28 +113,13 @@ export default function TeenPlansPage() {
               )}
             </div>
 
-            <PlanSection label="Exposures" items={plan.exposures} />
-            <PlanSection label="Behaviors to resist" items={plan.behaviors_to_resist} />
-            <PlanSection label="Parent instructions" items={plan.parent_instructions} />
-            <PlanSection label="Coping tools" items={plan.coping_tools} />
-            <PlanSection label="Cognitive strategies" items={plan.cognitive_strategies} />
-
-            {plan.additional_notes && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#94a3b8',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: '6px'
-                }}>
-                  Notes
-                </p>
-                <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {plan.additional_notes}
-                </p>
-              </div>
+            {/* Rich text content */}
+            {plan.content && (
+              <div
+                className="teen-plan-content"
+                style={contentStyles}
+                dangerouslySetInnerHTML={{ __html: plan.content }}
+              />
             )}
 
             {plan.next_appointment && (
@@ -161,7 +127,7 @@ export default function TeenPlansPage() {
                 background: '#eff6ff',
                 borderRadius: '10px',
                 padding: '12px 14px',
-                marginTop: '8px'
+                marginTop: '12px'
               }}>
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#3b82f6', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Next appointment
@@ -174,6 +140,32 @@ export default function TeenPlansPage() {
           </div>
         ))}
       </div>
+
+      {/* Inline styles for rendered HTML content */}
+      <style>{`
+        .teen-plan-content h2 {
+          font-size: 15px;
+          font-weight: 600;
+          color: #1e293b;
+          margin: 16px 0 6px;
+        }
+        .teen-plan-content h2:first-child {
+          margin-top: 0;
+        }
+        .teen-plan-content ul {
+          margin: 0 0 8px;
+          padding-left: 18px;
+        }
+        .teen-plan-content li {
+          margin-bottom: 4px;
+        }
+        .teen-plan-content p {
+          margin: 0 0 8px;
+        }
+        .teen-plan-content strong {
+          font-weight: 600;
+        }
+      `}</style>
     </div>
   )
 }

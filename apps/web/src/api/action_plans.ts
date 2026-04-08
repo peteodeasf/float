@@ -8,6 +8,7 @@ export interface ActionPlan {
   session_number: number
   session_date: string
   nickname: string | null
+  content: string | null
   exposures: string[]
   behaviors_to_resist: string[]
   parent_instructions: string[]
@@ -24,6 +25,7 @@ export interface ActionPlan {
 export interface CreateActionPlan {
   session_date?: string
   nickname?: string
+  content?: string
   exposures?: string[]
   behaviors_to_resist?: string[]
   parent_instructions?: string[]
@@ -36,6 +38,7 @@ export interface CreateActionPlan {
 export interface UpdateActionPlan {
   session_date?: string
   nickname?: string
+  content?: string
   exposures?: string[]
   behaviors_to_resist?: string[]
   parent_instructions?: string[]

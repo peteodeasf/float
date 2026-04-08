@@ -35,6 +35,7 @@ class ActionPlan(Base):
     parent_instructions: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
     coping_tools: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
     cognitive_strategies: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
     additional_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     next_appointment: Mapped[str | None] = mapped_column(Text, nullable=True)
     visible_to_patient: Mapped[bool] = mapped_column(

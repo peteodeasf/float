@@ -18,6 +18,7 @@ from app.api.routers.patients import get_practitioner_context
 class ActionPlanCreate(BaseModel):
     session_date: Optional[date] = None
     nickname: Optional[str] = None
+    content: Optional[str] = None
     exposures: list[str] = []
     behaviors_to_resist: list[str] = []
     parent_instructions: list[str] = []
@@ -30,6 +31,7 @@ class ActionPlanCreate(BaseModel):
 class ActionPlanUpdate(BaseModel):
     session_date: Optional[date] = None
     nickname: Optional[str] = None
+    content: Optional[str] = None
     exposures: Optional[list[str]] = None
     behaviors_to_resist: Optional[list[str]] = None
     parent_instructions: Optional[list[str]] = None
@@ -47,6 +49,7 @@ class ActionPlanResponse(BaseModel):
     session_number: int
     session_date: date
     nickname: Optional[str]
+    content: Optional[str]
     exposures: list[str]
     behaviors_to_resist: list[str]
     parent_instructions: list[str]
@@ -119,6 +122,7 @@ async def create_action_plan(
         session_number=next_number,
         session_date=data.session_date or date.today(),
         nickname=data.nickname,
+        content=data.content,
         exposures=data.exposures,
         behaviors_to_resist=data.behaviors_to_resist,
         parent_instructions=data.parent_instructions,
@@ -161,6 +165,8 @@ async def update_action_plan(
         plan.session_date = data.session_date
     if data.nickname is not None:
         plan.nickname = data.nickname
+    if data.content is not None:
+        plan.content = data.content
     if data.exposures is not None:
         plan.exposures = data.exposures
     if data.behaviors_to_resist is not None:

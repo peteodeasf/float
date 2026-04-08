@@ -1,4 +1,4 @@
-  import { useState } from 'react'
+  import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getPreSessionBrief } from '../../api/patients'
@@ -28,8 +28,13 @@ import {
   deleteActionPlan,
   ActionPlan,
 } from '../../api/action_plans'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Placeholder from '@tiptap/extension-placeholder'
 import InlineForm from '../../components/ui/InlineForm'
 import MessagesPanel from '../../components/ui/MessagesPanel'
+
+const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
 function TrendPill({ label, trend }: { label: string; trend: string }) {
   const colors: Record<string, string> = {
@@ -71,15 +76,22 @@ export default function PatientPage() {
   const [editingPlan, setEditingPlan] = useState<ActionPlan | null>(null)
   const [planDate, setPlanDate] = useState(new Date().toISOString().split('T')[0])
   const [planNickname, setPlanNickname] = useState('')
-  const [planExposures, setPlanExposures] = useState<string[]>([])
-  const [planBehaviors, setPlanBehaviors] = useState<string[]>([])
-  const [planParentInstructions, setPlanParentInstructions] = useState<string[]>([])
-  const [planCopingTools, setPlanCopingTools] = useState<string[]>([])
-  const [planCognitiveStrategies, setPlanCognitiveStrategies] = useState<string[]>([])
-  const [planNotes, setPlanNotes] = useState('')
   const [planNextAppt, setPlanNextAppt] = useState('')
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null)
-  const [newItemInputs, setNewItemInputs] = useState<Record<string, string>>({})
+  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({ placeholder: 'Start writing your action plan...' }),
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] px-4 py-3',
+      },
+    },
+  })
 
   const { data: patient } = useQuery({
     queryKey: ['patient', patientId],
@@ -270,39 +282,31 @@ export default function PatientPage() {
     enabled: !!patientId
   })
 
+  const getEditorContent = useCallback(() => editor?.getHTML() || '', [editor])
+
   const createPlanActionMutation = useMutation({
     mutationFn: () => createActionPlan(patientId!, {
       session_date: planDate,
       nickname: planNickname || undefined,
-      exposures: planExposures,
-      behaviors_to_resist: planBehaviors,
-      parent_instructions: planParentInstructions,
-      coping_tools: planCopingTools,
-      cognitive_strategies: planCognitiveStrategies,
-      additional_notes: planNotes || undefined,
+      content: getEditorContent(),
       next_appointment: planNextAppt || undefined,
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] })
-      resetPlanEditor()
+      // Switch to editing mode so auto-save works on the created plan
+      setEditingPlan(data)
     }
   })
 
   const updatePlanActionMutation = useMutation({
-    mutationFn: () => updateActionPlan(editingPlan!.id, {
+    mutationFn: (opts: { planId?: string } | void) => updateActionPlan((opts as { planId?: string })?.planId || editingPlan!.id, {
       session_date: planDate,
       nickname: planNickname || undefined,
-      exposures: planExposures,
-      behaviors_to_resist: planBehaviors,
-      parent_instructions: planParentInstructions,
-      coping_tools: planCopingTools,
-      cognitive_strategies: planCognitiveStrategies,
-      additional_notes: planNotes || undefined,
+      content: getEditorContent(),
       next_appointment: planNextAppt || undefined,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] })
-      resetPlanEditor()
     }
   })
 
@@ -320,35 +324,33 @@ export default function PatientPage() {
     }
   })
 
-  const resetPlanEditor = () => {
+  const resetPlanEditor = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearInterval(autoSaveTimerRef.current)
+      autoSaveTimerRef.current = null
+    }
     setShowPlanEditor(false)
     setEditingPlan(null)
     setPlanDate(new Date().toISOString().split('T')[0])
     setPlanNickname('')
-    setPlanExposures([])
-    setPlanBehaviors([])
-    setPlanParentInstructions([])
-    setPlanCopingTools([])
-    setPlanCognitiveStrategies([])
-    setPlanNotes('')
     setPlanNextAppt('')
-    setNewItemInputs({})
-  }
+    editor?.commands.setContent('')
+  }, [editor])
 
-  const startEditPlan = (ap: ActionPlan) => {
+  const startEditPlan = useCallback((ap: ActionPlan) => {
     setEditingPlan(ap)
     setPlanDate(ap.session_date)
     setPlanNickname(ap.nickname || '')
-    setPlanExposures([...ap.exposures])
-    setPlanBehaviors([...ap.behaviors_to_resist])
-    setPlanParentInstructions([...ap.parent_instructions])
-    setPlanCopingTools([...ap.coping_tools])
-    setPlanCognitiveStrategies([...ap.cognitive_strategies])
-    setPlanNotes(ap.additional_notes || '')
     setPlanNextAppt(ap.next_appointment || '')
+    editor?.commands.setContent(ap.content || '')
     setShowPlanEditor(true)
-    setNewItemInputs({})
-  }
+  }, [editor])
+
+  const openNewPlan = useCallback(() => {
+    resetPlanEditor()
+    editor?.commands.setContent(ACTION_PLAN_TEMPLATE)
+    setShowPlanEditor(true)
+  }, [editor, resetPlanEditor])
 
   const handleSavePlan = () => {
     if (editingPlan) {
@@ -360,7 +362,6 @@ export default function PatientPage() {
 
   const handlePublishPlan = () => {
     if (editingPlan) {
-      // Save then publish
       updatePlanActionMutation.mutate(undefined, {
         onSuccess: () => {
           publishPlanMutation.mutate(editingPlan.id)
@@ -370,25 +371,20 @@ export default function PatientPage() {
     }
   }
 
-  const addItemToList = (
-    key: string,
-    list: string[],
-    setList: (v: string[]) => void
-  ) => {
-    const val = (newItemInputs[key] || '').trim()
-    if (val) {
-      setList([...list, val])
-      setNewItemInputs(prev => ({ ...prev, [key]: '' }))
+  // Auto-save every 30 seconds while editor is open with an existing plan
+  useEffect(() => {
+    if (showPlanEditor && editingPlan && editor) {
+      autoSaveTimerRef.current = setInterval(() => {
+        updatePlanActionMutation.mutate()
+      }, 30000)
+      return () => {
+        if (autoSaveTimerRef.current) {
+          clearInterval(autoSaveTimerRef.current)
+          autoSaveTimerRef.current = null
+        }
+      }
     }
-  }
-
-  const removeItemFromList = (
-    list: string[],
-    setList: (v: string[]) => void,
-    index: number
-  ) => {
-    setList(list.filter((_, i) => i !== index))
-  }
+  }, [showPlanEditor, editingPlan, editor]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const canActivate = plan?.status === 'setup' &&
     triggers && triggers.length > 0
@@ -940,7 +936,7 @@ export default function PatientPage() {
             </h2>
             {!showPlanEditor && (
               <button
-                onClick={() => { resetPlanEditor(); setShowPlanEditor(true) }}
+                onClick={openNewPlan}
                 className="text-xs text-blue-600 font-medium hover:underline"
               >
                 + New action plan
@@ -949,7 +945,7 @@ export default function PatientPage() {
           </div>
 
           {showPlanEditor && (
-            <div className="bg-slate-50 rounded-lg p-4 space-y-4 mb-4">
+            <div className="mb-4 space-y-3">
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Session date</label>
@@ -960,7 +956,7 @@ export default function PatientPage() {
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Anxiety nickname</label>
                   <input
                     type="text"
@@ -970,76 +966,55 @@ export default function PatientPage() {
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-              </div>
-
-              {/* Bullet-point list sections */}
-              {([
-                { key: 'exposures', label: 'Exposures', list: planExposures, setList: setPlanExposures },
-                { key: 'behaviors', label: 'Behaviors to resist', list: planBehaviors, setList: setPlanBehaviors },
-                { key: 'parentInstructions', label: 'Parent instructions', list: planParentInstructions, setList: setPlanParentInstructions },
-                { key: 'copingTools', label: 'Coping tools', list: planCopingTools, setList: setPlanCopingTools },
-                { key: 'cognitiveStrategies', label: 'Cognitive strategies', list: planCognitiveStrategies, setList: setPlanCognitiveStrategies },
-              ] as const).map(section => (
-                <div key={section.key}>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{section.label}</label>
-                  {section.list.length > 0 && (
-                    <ul className="space-y-1 mb-2">
-                      {section.list.map((item, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
-                          <span className="text-slate-300">•</span>
-                          <span className="flex-1">{item}</span>
-                          <button
-                            onClick={() => removeItemFromList(section.list, section.setList, i)}
-                            className="text-xs text-red-400 hover:text-red-600"
-                          >
-                            ×
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newItemInputs[section.key] || ''}
-                      onChange={e => setNewItemInputs(prev => ({ ...prev, [section.key]: e.target.value }))}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItemToList(section.key, section.list, section.setList) } }}
-                      placeholder={`Add ${section.label.toLowerCase()}...`}
-                      className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      onClick={() => addItemToList(section.key, section.list, section.setList)}
-                      className="text-xs text-blue-600 font-medium px-2 hover:underline"
-                    >
-                      + Add
-                    </button>
-                  </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Next appointment</label>
+                  <input
+                    type="text"
+                    value={planNextAppt}
+                    onChange={e => setPlanNextAppt(e.target.value)}
+                    placeholder="e.g. Tuesday 3pm"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-              ))}
-
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Additional notes</label>
-                <textarea
-                  value={planNotes}
-                  onChange={e => setPlanNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Any additional notes..."
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Next appointment</label>
-                <input
-                  type="text"
-                  value={planNextAppt}
-                  onChange={e => setPlanNextAppt(e.target.value)}
-                  placeholder="e.g. Tuesday 3pm"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              {/* Tiptap toolbar */}
+              {editor && (
+                <div className="flex items-center gap-1 border border-slate-200 rounded-t-lg bg-slate-50 px-2 py-1.5">
+                  <button
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    className={`px-2 py-1 text-xs font-bold rounded transition-colors ${editor.isActive('bold') ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    B
+                  </button>
+                  <button
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    className={`px-2 py-1 text-xs italic rounded transition-colors ${editor.isActive('italic') ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    I
+                  </button>
+                  <span className="w-px h-4 bg-slate-200 mx-1" />
+                  <button
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${editor.isActive('bulletList') ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    List
+                  </button>
+                  <button
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    className={`px-2 py-1 text-xs font-semibold rounded transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    H2
+                  </button>
+                </div>
+              )}
+
+              {/* Tiptap editor */}
+              <div className="border border-t-0 border-slate-200 rounded-b-lg bg-white [&_.tiptap_h2]:text-base [&_.tiptap_h2]:font-semibold [&_.tiptap_h2]:text-slate-800 [&_.tiptap_h2]:mt-4 [&_.tiptap_h2]:mb-1 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ul]:mb-2 [&_.tiptap_li]:text-sm [&_.tiptap_li]:text-slate-700 [&_.tiptap_p]:text-sm [&_.tiptap_p]:text-slate-700 [&_.tiptap_p.is-editor-empty:first-child::before]:text-slate-300 [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none">
+                <EditorContent editor={editor} />
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleSavePlan}
                   disabled={createPlanActionMutation.isPending || updatePlanActionMutation.isPending}
@@ -1047,7 +1022,7 @@ export default function PatientPage() {
                 >
                   {(createPlanActionMutation.isPending || updatePlanActionMutation.isPending)
                     ? 'Saving...'
-                    : editingPlan ? 'Update draft' : 'Save draft'}
+                    : editingPlan ? 'Save draft' : 'Save draft'}
                 </button>
                 {editingPlan && !editingPlan.visible_to_patient && (
                   <button
@@ -1064,6 +1039,9 @@ export default function PatientPage() {
                 >
                   Cancel
                 </button>
+                {editingPlan && (
+                  <span className="text-xs text-slate-300 ml-auto">Auto-saves every 30s</span>
+                )}
               </div>
             </div>
           )}
@@ -1122,45 +1100,14 @@ export default function PatientPage() {
                   </div>
 
                   {expandedPlanId === ap.id && (
-                    <div className="mt-3 space-y-3 text-sm">
-                      {ap.exposures.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Exposures</p>
-                          <ul className="space-y-0.5">{ap.exposures.map((e, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{e}</li>)}</ul>
-                        </div>
-                      )}
-                      {ap.behaviors_to_resist.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Behaviors to resist</p>
-                          <ul className="space-y-0.5">{ap.behaviors_to_resist.map((b, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{b}</li>)}</ul>
-                        </div>
-                      )}
-                      {ap.parent_instructions.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Parent instructions</p>
-                          <ul className="space-y-0.5">{ap.parent_instructions.map((p, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{p}</li>)}</ul>
-                        </div>
-                      )}
-                      {ap.coping_tools.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Coping tools</p>
-                          <ul className="space-y-0.5">{ap.coping_tools.map((c, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{c}</li>)}</ul>
-                        </div>
-                      )}
-                      {ap.cognitive_strategies.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Cognitive strategies</p>
-                          <ul className="space-y-0.5">{ap.cognitive_strategies.map((s, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{s}</li>)}</ul>
-                        </div>
-                      )}
-                      {ap.additional_notes && (
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Additional notes</p>
-                          <p className="text-slate-700 whitespace-pre-wrap">{ap.additional_notes}</p>
-                        </div>
+                    <div className="mt-3 prose prose-sm max-w-none [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-slate-800 [&_h2]:mt-3 [&_h2]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_li]:text-slate-700 [&_p]:text-slate-700">
+                      {ap.content ? (
+                        <div dangerouslySetInnerHTML={{ __html: ap.content }} />
+                      ) : (
+                        <p className="text-slate-400 italic">No content</p>
                       )}
                       {ap.next_appointment && (
-                        <div>
+                        <div className="mt-3 pt-3 border-t border-slate-200">
                           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Next appointment</p>
                           <p className="text-slate-700">{ap.next_appointment}</p>
                         </div>
