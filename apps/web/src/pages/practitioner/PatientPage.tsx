@@ -13,6 +13,13 @@ import {
   getMonitoringForm,
   sendMonitoringForm,
 } from '../../api/monitoring'
+import {
+  getSessionNotes,
+  createSessionNote,
+  updateSessionNote,
+  deleteSessionNote,
+  SessionNote,
+} from '../../api/session_notes'
 import InlineForm from '../../components/ui/InlineForm'
 import MessagesPanel from '../../components/ui/MessagesPanel'
 
@@ -44,6 +51,12 @@ export default function PatientPage() {
   const [parentEmail, setParentEmail] = useState('')
   const [parentName, setParentName] = useState('')
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
+  const [showNoteForm, setShowNoteForm] = useState(false)
+  const [editingNote, setEditingNote] = useState<SessionNote | null>(null)
+  const [noteType, setNoteType] = useState('weekly_session')
+  const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
+  const [noteContent, setNoteContent] = useState('')
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
 
   const { data: patient } = useQuery({
     queryKey: ['patient', patientId],
@@ -149,6 +162,83 @@ export default function PatientPage() {
       queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
     }
   })
+
+  const { data: sessionNotes } = useQuery({
+    queryKey: ['session-notes', patientId],
+    queryFn: () => getSessionNotes(patientId!),
+    enabled: !!patientId
+  })
+
+  const createNoteMutation = useMutation({
+    mutationFn: () => createSessionNote(patientId!, {
+      session_type: noteType,
+      session_date: noteDate,
+      content: noteContent
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] })
+      resetNoteForm()
+    }
+  })
+
+  const updateNoteMutation = useMutation({
+    mutationFn: () => updateSessionNote(editingNote!.id, {
+      session_type: noteType,
+      session_date: noteDate,
+      content: noteContent
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] })
+      resetNoteForm()
+    }
+  })
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: (noteId: string) => deleteSessionNote(noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] })
+    }
+  })
+
+  const resetNoteForm = () => {
+    setShowNoteForm(false)
+    setEditingNote(null)
+    setNoteType('weekly_session')
+    setNoteDate(new Date().toISOString().split('T')[0])
+    setNoteContent('')
+  }
+
+  const startEditNote = (note: SessionNote) => {
+    setEditingNote(note)
+    setNoteType(note.session_type)
+    setNoteDate(note.session_date)
+    setNoteContent(note.content)
+    setShowNoteForm(true)
+  }
+
+  const handleSaveNote = () => {
+    if (editingNote) {
+      updateNoteMutation.mutate()
+    } else {
+      createNoteMutation.mutate()
+    }
+  }
+
+  const sessionTypeLabels: Record<string, string> = {
+    consultation_1: 'Consultation 1',
+    consultation_2: 'Consultation 2',
+    consultation_3: 'Consultation 3',
+    weekly_session: 'Weekly session',
+    other: 'Other'
+  }
+
+  const sessionTypeBadgeColors: Record<string, string> = {
+    consultation_1: 'bg-purple-100 text-purple-700',
+    consultation_2: 'bg-purple-100 text-purple-700',
+    consultation_3: 'bg-purple-100 text-purple-700',
+    weekly_session: 'bg-blue-100 text-blue-700',
+    other: 'bg-slate-100 text-slate-600'
+  }
 
   const canActivate = plan?.status === 'setup' &&
     triggers && triggers.length > 0
@@ -557,6 +647,141 @@ export default function PatientPage() {
             </button>
           </div>
         )}
+        {/* Session notes */}
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-800">
+              Session notes
+            </h2>
+            {!showNoteForm && (
+              <button
+                onClick={() => { resetNoteForm(); setShowNoteForm(true) }}
+                className="text-xs text-blue-600 font-medium hover:underline"
+              >
+                + Add note
+              </button>
+            )}
+          </div>
+
+          {showNoteForm && (
+            <div className="bg-slate-50 rounded-lg p-4 space-y-3 mb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Session type
+                  </label>
+                  <select
+                    value={noteType}
+                    onChange={e => setNoteType(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="consultation_1">Consultation 1</option>
+                    <option value="consultation_2">Consultation 2</option>
+                    <option value="consultation_3">Consultation 3</option>
+                    <option value="weekly_session">Weekly session</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={noteDate}
+                    onChange={e => setNoteDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={noteContent}
+                  onChange={e => setNoteContent(e.target.value)}
+                  rows={5}
+                  placeholder="Session notes..."
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveNote}
+                  disabled={!noteContent.trim() || createNoteMutation.isPending || updateNoteMutation.isPending}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {(createNoteMutation.isPending || updateNoteMutation.isPending)
+                    ? 'Saving...'
+                    : editingNote ? 'Update note' : 'Save note'}
+                </button>
+                <button
+                  onClick={resetNoteForm}
+                  className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {sessionNotes && sessionNotes.length > 0 ? (
+            <div className="space-y-2">
+              {sessionNotes.map(note => (
+                <div key={note.id} className="py-3 px-4 bg-slate-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sessionTypeBadgeColors[note.session_type] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {sessionTypeLabels[note.session_type] ?? note.session_type}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {new Date(note.session_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEditNote(note)}
+                        className="text-xs text-blue-600 font-medium hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => { if (confirm('Delete this note?')) deleteNoteMutation.mutate(note.id) }}
+                        className="text-xs text-red-500 font-medium hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  <p
+                    className="text-sm text-slate-700 whitespace-pre-wrap cursor-pointer"
+                    onClick={() => setExpandedNoteId(expandedNoteId === note.id ? null : note.id)}
+                  >
+                    {expandedNoteId === note.id
+                      ? note.content
+                      : note.content.length > 100
+                        ? note.content.slice(0, 100) + '...'
+                        : note.content}
+                  </p>
+                  {note.content.length > 100 && expandedNoteId !== note.id && (
+                    <button
+                      onClick={() => setExpandedNoteId(note.id)}
+                      className="text-xs text-blue-600 mt-1 hover:underline"
+                    >
+                      Show more
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            !showNoteForm && (
+              <p className="text-sm text-slate-400">No session notes yet</p>
+            )
+          )}
+        </div>
+
         {patient && (
          <MessagesPanel
            patientId={patientId!}

@@ -7,7 +7,8 @@ from app.api.routers import (
     auth, patients, treatment_plans,
     trigger_situations, avoidance_behaviors,
     ladders, experiments, progress,
-    downward_arrows, messages, monitoring
+    downward_arrows, messages, monitoring,
+    session_notes
 )
 
 app = FastAPI(
@@ -38,6 +39,7 @@ app.include_router(patients_router)
 app.include_router(patient_router)
 app.include_router(monitoring.practitioner_router)
 app.include_router(monitoring.public_router)
+app.include_router(session_notes.router)
 
 @app.get("/health")
 async def health_check():
