@@ -67,12 +67,20 @@ export default function TeenHomePage() {
           <span style={{ fontSize: '20px' }}>🌊</span>
           <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Float</span>
         </div>
-        <button
-          onClick={handleLogout}
-          style={{ fontSize: '13px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          Sign out
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => navigate('/teen/plans')}
+            style={{ fontSize: '13px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+          >
+            My plans
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{ fontSize: '13px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '24px' }}>

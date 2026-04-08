@@ -14,6 +14,7 @@ import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
 import TeenHomePage from './pages/teen/TeenHomePage'
 import TeenExperimentPage from './pages/teen/TeenExperimentPage'
+import TeenPlansPage from './pages/teen/TeenPlansPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
 import './index.css'
@@ -61,6 +62,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/teen/experiment/:rungId" element={
                 <TeenProtectedRoute><TeenExperimentPage /></TeenProtectedRoute>
+              } />
+              <Route path="/teen/plans" element={
+                <TeenProtectedRoute><TeenPlansPage /></TeenProtectedRoute>
               } />
 
               {/* Public monitoring form */}

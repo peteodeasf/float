@@ -252,3 +252,19 @@ async def too_hard_experiment(
     await db.commit()
     await db.refresh(experiment)
     return {"status": experiment.status, "too_hard_at": experiment.too_hard_at.isoformat()}
+
+
+@patient_router.get("/action-plans")
+async def get_my_action_plans(
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    from app.models.action_plan import ActionPlan
+    result = await db.execute(
+        select(ActionPlan).where(
+            ActionPlan.patient_id == patient.id,
+            ActionPlan.visible_to_patient == True
+        ).order_by(ActionPlan.session_number.desc())
+    )
+    return result.scalars().all()

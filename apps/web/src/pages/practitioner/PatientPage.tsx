@@ -20,6 +20,14 @@ import {
   deleteSessionNote,
   SessionNote,
 } from '../../api/session_notes'
+import {
+  getActionPlans,
+  createActionPlan,
+  updateActionPlan,
+  publishActionPlan,
+  deleteActionPlan,
+  ActionPlan,
+} from '../../api/action_plans'
 import InlineForm from '../../components/ui/InlineForm'
 import MessagesPanel from '../../components/ui/MessagesPanel'
 
@@ -57,6 +65,21 @@ export default function PatientPage() {
   const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
   const [noteContent, setNoteContent] = useState('')
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
+
+  // Action plan state
+  const [showPlanEditor, setShowPlanEditor] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<ActionPlan | null>(null)
+  const [planDate, setPlanDate] = useState(new Date().toISOString().split('T')[0])
+  const [planNickname, setPlanNickname] = useState('')
+  const [planExposures, setPlanExposures] = useState<string[]>([])
+  const [planBehaviors, setPlanBehaviors] = useState<string[]>([])
+  const [planParentInstructions, setPlanParentInstructions] = useState<string[]>([])
+  const [planCopingTools, setPlanCopingTools] = useState<string[]>([])
+  const [planCognitiveStrategies, setPlanCognitiveStrategies] = useState<string[]>([])
+  const [planNotes, setPlanNotes] = useState('')
+  const [planNextAppt, setPlanNextAppt] = useState('')
+  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null)
+  const [newItemInputs, setNewItemInputs] = useState<Record<string, string>>({})
 
   const { data: patient } = useQuery({
     queryKey: ['patient', patientId],
@@ -238,6 +261,133 @@ export default function PatientPage() {
     consultation_3: 'bg-purple-100 text-purple-700',
     weekly_session: 'bg-blue-100 text-blue-700',
     other: 'bg-slate-100 text-slate-600'
+  }
+
+  // Action plans
+  const { data: actionPlans } = useQuery({
+    queryKey: ['action-plans', patientId],
+    queryFn: () => getActionPlans(patientId!),
+    enabled: !!patientId
+  })
+
+  const createPlanActionMutation = useMutation({
+    mutationFn: () => createActionPlan(patientId!, {
+      session_date: planDate,
+      nickname: planNickname || undefined,
+      exposures: planExposures,
+      behaviors_to_resist: planBehaviors,
+      parent_instructions: planParentInstructions,
+      coping_tools: planCopingTools,
+      cognitive_strategies: planCognitiveStrategies,
+      additional_notes: planNotes || undefined,
+      next_appointment: planNextAppt || undefined,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] })
+      resetPlanEditor()
+    }
+  })
+
+  const updatePlanActionMutation = useMutation({
+    mutationFn: () => updateActionPlan(editingPlan!.id, {
+      session_date: planDate,
+      nickname: planNickname || undefined,
+      exposures: planExposures,
+      behaviors_to_resist: planBehaviors,
+      parent_instructions: planParentInstructions,
+      coping_tools: planCopingTools,
+      cognitive_strategies: planCognitiveStrategies,
+      additional_notes: planNotes || undefined,
+      next_appointment: planNextAppt || undefined,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] })
+      resetPlanEditor()
+    }
+  })
+
+  const publishPlanMutation = useMutation({
+    mutationFn: (planId: string) => publishActionPlan(planId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] })
+    }
+  })
+
+  const deletePlanMutation = useMutation({
+    mutationFn: (planId: string) => deleteActionPlan(planId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] })
+    }
+  })
+
+  const resetPlanEditor = () => {
+    setShowPlanEditor(false)
+    setEditingPlan(null)
+    setPlanDate(new Date().toISOString().split('T')[0])
+    setPlanNickname('')
+    setPlanExposures([])
+    setPlanBehaviors([])
+    setPlanParentInstructions([])
+    setPlanCopingTools([])
+    setPlanCognitiveStrategies([])
+    setPlanNotes('')
+    setPlanNextAppt('')
+    setNewItemInputs({})
+  }
+
+  const startEditPlan = (ap: ActionPlan) => {
+    setEditingPlan(ap)
+    setPlanDate(ap.session_date)
+    setPlanNickname(ap.nickname || '')
+    setPlanExposures([...ap.exposures])
+    setPlanBehaviors([...ap.behaviors_to_resist])
+    setPlanParentInstructions([...ap.parent_instructions])
+    setPlanCopingTools([...ap.coping_tools])
+    setPlanCognitiveStrategies([...ap.cognitive_strategies])
+    setPlanNotes(ap.additional_notes || '')
+    setPlanNextAppt(ap.next_appointment || '')
+    setShowPlanEditor(true)
+    setNewItemInputs({})
+  }
+
+  const handleSavePlan = () => {
+    if (editingPlan) {
+      updatePlanActionMutation.mutate()
+    } else {
+      createPlanActionMutation.mutate()
+    }
+  }
+
+  const handlePublishPlan = () => {
+    if (editingPlan) {
+      // Save then publish
+      updatePlanActionMutation.mutate(undefined, {
+        onSuccess: () => {
+          publishPlanMutation.mutate(editingPlan.id)
+          resetPlanEditor()
+        }
+      })
+    }
+  }
+
+  const addItemToList = (
+    key: string,
+    list: string[],
+    setList: (v: string[]) => void
+  ) => {
+    const val = (newItemInputs[key] || '').trim()
+    if (val) {
+      setList([...list, val])
+      setNewItemInputs(prev => ({ ...prev, [key]: '' }))
+    }
+  }
+
+  const removeItemFromList = (
+    list: string[],
+    setList: (v: string[]) => void,
+    index: number
+  ) => {
+    setList(list.filter((_, i) => i !== index))
   }
 
   const canActivate = plan?.status === 'setup' &&
@@ -778,6 +928,251 @@ export default function PatientPage() {
           ) : (
             !showNoteForm && (
               <p className="text-sm text-slate-400">No session notes yet</p>
+            )
+          )}
+        </div>
+
+        {/* Action plans */}
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-800">
+              Action plans
+            </h2>
+            {!showPlanEditor && (
+              <button
+                onClick={() => { resetPlanEditor(); setShowPlanEditor(true) }}
+                className="text-xs text-blue-600 font-medium hover:underline"
+              >
+                + New action plan
+              </button>
+            )}
+          </div>
+
+          {showPlanEditor && (
+            <div className="bg-slate-50 rounded-lg p-4 space-y-4 mb-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Session date</label>
+                  <input
+                    type="date"
+                    value={planDate}
+                    onChange={e => setPlanDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Anxiety nickname</label>
+                  <input
+                    type="text"
+                    value={planNickname}
+                    onChange={e => setPlanNickname(e.target.value)}
+                    placeholder="e.g. Obi, Worry Bug"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Bullet-point list sections */}
+              {([
+                { key: 'exposures', label: 'Exposures', list: planExposures, setList: setPlanExposures },
+                { key: 'behaviors', label: 'Behaviors to resist', list: planBehaviors, setList: setPlanBehaviors },
+                { key: 'parentInstructions', label: 'Parent instructions', list: planParentInstructions, setList: setPlanParentInstructions },
+                { key: 'copingTools', label: 'Coping tools', list: planCopingTools, setList: setPlanCopingTools },
+                { key: 'cognitiveStrategies', label: 'Cognitive strategies', list: planCognitiveStrategies, setList: setPlanCognitiveStrategies },
+              ] as const).map(section => (
+                <div key={section.key}>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{section.label}</label>
+                  {section.list.length > 0 && (
+                    <ul className="space-y-1 mb-2">
+                      {section.list.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
+                          <span className="text-slate-300">•</span>
+                          <span className="flex-1">{item}</span>
+                          <button
+                            onClick={() => removeItemFromList(section.list, section.setList, i)}
+                            className="text-xs text-red-400 hover:text-red-600"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newItemInputs[section.key] || ''}
+                      onChange={e => setNewItemInputs(prev => ({ ...prev, [section.key]: e.target.value }))}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItemToList(section.key, section.list, section.setList) } }}
+                      placeholder={`Add ${section.label.toLowerCase()}...`}
+                      className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => addItemToList(section.key, section.list, section.setList)}
+                      className="text-xs text-blue-600 font-medium px-2 hover:underline"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Additional notes</label>
+                <textarea
+                  value={planNotes}
+                  onChange={e => setPlanNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Any additional notes..."
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Next appointment</label>
+                <input
+                  type="text"
+                  value={planNextAppt}
+                  onChange={e => setPlanNextAppt(e.target.value)}
+                  placeholder="e.g. Tuesday 3pm"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSavePlan}
+                  disabled={createPlanActionMutation.isPending || updatePlanActionMutation.isPending}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {(createPlanActionMutation.isPending || updatePlanActionMutation.isPending)
+                    ? 'Saving...'
+                    : editingPlan ? 'Update draft' : 'Save draft'}
+                </button>
+                {editingPlan && !editingPlan.visible_to_patient && (
+                  <button
+                    onClick={handlePublishPlan}
+                    disabled={publishPlanMutation.isPending}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    {publishPlanMutation.isPending ? 'Publishing...' : 'Publish to patient'}
+                  </button>
+                )}
+                <button
+                  onClick={resetPlanEditor}
+                  className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {actionPlans && actionPlans.length > 0 ? (
+            <div className="space-y-2">
+              {actionPlans.map(ap => (
+                <div key={ap.id} className="py-3 px-4 bg-slate-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        Session #{ap.session_number}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {ap.visible_to_patient ? 'Published' : 'Draft'}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </span>
+                      {ap.nickname && (
+                        <span className="text-xs text-slate-400 italic">({ap.nickname})</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!ap.visible_to_patient && (
+                        <>
+                          <button
+                            onClick={() => startEditPlan(ap)}
+                            className="text-xs text-blue-600 font-medium hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => publishPlanMutation.mutate(ap.id)}
+                            className="text-xs text-green-600 font-medium hover:underline"
+                          >
+                            Publish
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => { if (confirm('Delete this action plan?')) deletePlanMutation.mutate(ap.id) }}
+                        className="text-xs text-red-500 font-medium hover:underline"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => setExpandedPlanId(expandedPlanId === ap.id ? null : ap.id)}
+                        className="text-xs text-blue-600 font-medium hover:underline"
+                      >
+                        {expandedPlanId === ap.id ? 'Collapse' : 'View'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {expandedPlanId === ap.id && (
+                    <div className="mt-3 space-y-3 text-sm">
+                      {ap.exposures.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Exposures</p>
+                          <ul className="space-y-0.5">{ap.exposures.map((e, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{e}</li>)}</ul>
+                        </div>
+                      )}
+                      {ap.behaviors_to_resist.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Behaviors to resist</p>
+                          <ul className="space-y-0.5">{ap.behaviors_to_resist.map((b, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{b}</li>)}</ul>
+                        </div>
+                      )}
+                      {ap.parent_instructions.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Parent instructions</p>
+                          <ul className="space-y-0.5">{ap.parent_instructions.map((p, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{p}</li>)}</ul>
+                        </div>
+                      )}
+                      {ap.coping_tools.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Coping tools</p>
+                          <ul className="space-y-0.5">{ap.coping_tools.map((c, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{c}</li>)}</ul>
+                        </div>
+                      )}
+                      {ap.cognitive_strategies.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Cognitive strategies</p>
+                          <ul className="space-y-0.5">{ap.cognitive_strategies.map((s, i) => <li key={i} className="text-slate-700 flex gap-2"><span className="text-slate-300">•</span>{s}</li>)}</ul>
+                        </div>
+                      )}
+                      {ap.additional_notes && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Additional notes</p>
+                          <p className="text-slate-700 whitespace-pre-wrap">{ap.additional_notes}</p>
+                        </div>
+                      )}
+                      {ap.next_appointment && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Next appointment</p>
+                          <p className="text-slate-700">{ap.next_appointment}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            !showPlanEditor && (
+              <p className="text-sm text-slate-400">No action plans yet</p>
             )
           )}
         </div>
