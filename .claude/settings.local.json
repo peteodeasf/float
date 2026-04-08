@@ -18,7 +18,8 @@
       "Bash(lsof -ti:8000)",
       "Bash(curl -s -I -X OPTIONS http://127.0.0.1:8000/auth/login -H \"Origin: http://localhost:5174\" -H \"Access-Control-Request-Method: POST\")",
       "Bash(npm run:*)",
-      "Bash(curl -s http://127.0.0.1:8000/health)"
+      "Bash(curl -s http://127.0.0.1:8000/health)",
+      "Bash(\"/Users/peterodea/Documents/Float Project/float/backend/Procfile\")"
     ]
   }
 }
