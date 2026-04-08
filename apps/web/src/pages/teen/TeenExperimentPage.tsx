@@ -9,7 +9,7 @@ type Step = 'plan' | 'commit' | 'record' | 'done'
 export default function TeenExperimentPage() {
   const { rungId } = useParams<{ rungId: string }>()
   const navigate = useNavigate()
-  const { patientId } = useTeenAuth()
+  const { patientId: _patientId } = useTeenAuth()
   const queryClient = useQueryClient()
   const [step, setStep] = useState<Step>('plan')
 

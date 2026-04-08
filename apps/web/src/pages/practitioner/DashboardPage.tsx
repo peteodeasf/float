@@ -3,19 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getPatients, Patient } from '../../api/patients'
 
-function TrendBadge({ trend }: { trend: string }) {
-  const colors: Record<string, string> = {
-    improving: 'bg-green-100 text-green-700',
-    stable: 'bg-slate-100 text-slate-600',
-    worsening: 'bg-red-100 text-red-700',
-    'insufficient data': 'bg-slate-100 text-slate-400',
-  }
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors[trend] ?? colors['insufficient data']}`}>
-      {trend}
-    </span>
-  )
-}
+// TrendBadge reserved for future use with patient trend indicators
+// function TrendBadge({ trend }: { trend: string }) { ... }
 
 function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   return (

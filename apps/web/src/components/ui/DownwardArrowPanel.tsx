@@ -5,7 +5,6 @@ import {
   createDownwardArrow,
   updateDownwardArrow,
   approveDownwardArrow,
-  DownwardArrow,
   ArrowStep
 } from '../../api/treatment'
 
@@ -14,7 +13,7 @@ interface Props {
   patientId: string
 }
 
-export default function DownwardArrowPanel({ rungId, patientId }: Props) {
+export default function DownwardArrowPanel({ rungId, patientId: _patientId }: Props) {
   const queryClient = useQueryClient()
   const [newQuestion, setNewQuestion] = useState('')
   const [newResponse, setNewResponse] = useState('')
@@ -45,13 +44,8 @@ export default function DownwardArrowPanel({ rungId, patientId }: Props) {
     }
   })
 
-  const updateOutcomeMutation = useMutation({
-    mutationFn: (data: { feared_outcome: string; bip_derived: number }) =>
-      updateDownwardArrow(arrow!.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['downward-arrow', rungId] })
-    }
-  })
+  // updateOutcomeMutation reserved for inline outcome editing
+  // const updateOutcomeMutation = useMutation({...})
 
   const approveMutation = useMutation({
     mutationFn: (data: { feared_outcome: string; bip_derived: number }) =>

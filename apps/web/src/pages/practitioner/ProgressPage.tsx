@@ -124,7 +124,7 @@ export default function ProgressPage() {
                   tickFormatter={v => `${v}%`}
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) => [
+                  formatter={(value, name) => [
                     `${value}%`,
                     name === 'bip_before' ? 'BIP before' : 'BIP after'
                   ]}
@@ -184,7 +184,7 @@ export default function ProgressPage() {
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) => [
+                  formatter={(value, name) => [
                     value,
                     name === 'dt_expected' ? 'Expected' : 'Actual'
                   ]}

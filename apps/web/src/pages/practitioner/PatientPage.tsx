@@ -119,7 +119,7 @@ export default function PatientPage() {
     ? Math.floor((Date.now() - new Date(monitoringForm.sent_at).getTime()) / (1000 * 60 * 60 * 24))
     : null
 
-  const isPreTreatment = !plan || plan.status === 'setup'
+  // const isPreTreatment = !plan || plan.status === 'setup'
 
   const createPlanMutation = useMutation({
     mutationFn: () => createTreatmentPlan(patientId!, {
