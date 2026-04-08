@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://localhost/float"
+    ASYNC_DATABASE_URL: str = ""
 
     @field_validator('DATABASE_URL', mode='before')
     @classmethod
