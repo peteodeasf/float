@@ -42,3 +42,9 @@ app.include_router(monitoring.public_router)
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "version": "0.1.0"}
+
+@app.get("/debug/security")
+async def debug_security():
+    import bcrypt
+    test = bcrypt.hashpw(b"test", bcrypt.gensalt()).decode()
+    return {"bcrypt_working": True, "hash_sample": test[:20]}
