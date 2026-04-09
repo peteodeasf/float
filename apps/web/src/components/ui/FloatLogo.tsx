@@ -2,46 +2,57 @@ interface FloatLogoProps {
   size?: 'sm' | 'md' | 'lg'
 }
 
+const BRAND_BLUE = '#00AEEF'
+
 const sizes = {
-  sm: { wave: 24, text: 'text-lg', gap: 'gap-1.5' },
-  md: { wave: 32, text: 'text-2xl', gap: 'gap-2' },
-  lg: { wave: 40, text: 'text-3xl', gap: 'gap-2.5' },
+  sm: { cloud: 32, fontSize: 16, gap: 6 },
+  md: { cloud: 48, fontSize: 22, gap: 8 },
+  lg: { cloud: 64, fontSize: 28, gap: 10 },
+}
+
+function CloudSvg({ width }: { width: number }) {
+  return (
+    <svg
+      width={width}
+      height={width * 0.7}
+      viewBox="0 0 100 70"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M25 65 C10 65 0 55 0 43 C0 31 10 22 22 22 C22 9 33 0 48 0 C61 0 72 8 74 20 C76 19 79 18 82 18 C92 18 100 27 100 38 C100 49 92 57 82 57 L82 57 C82 62 78 65 73 65 Z"
+        fill={BRAND_BLUE}
+      />
+    </svg>
+  )
 }
 
 export default function FloatLogo({ size = 'md' }: FloatLogoProps) {
   const s = sizes[size]
 
+  const textStyle = {
+    color: BRAND_BLUE,
+    fontSize: `${s.fontSize}px`,
+    fontWeight: 600 as const,
+    letterSpacing: '0.04em',
+    lineHeight: 1,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  }
+
+  // sm renders horizontally for nav bars; md/lg render stacked for login pages
+  if (size === 'sm') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: `${s.gap}px` }}>
+        <CloudSvg width={s.cloud} />
+        <span style={textStyle}>float</span>
+      </div>
+    )
+  }
+
   return (
-    <div className={`flex items-center ${s.gap}`}>
-      <svg
-        width={s.wave}
-        height={s.wave}
-        viewBox="0 0 40 40"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M4 22c3-4 6-7 10-7s6 6 10 6 6-6 10-6c2 0 3.5 1 5 2.5"
-          stroke="var(--float-blue-600, #2563eb)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <path
-          d="M4 30c3-4 6-7 10-7s6 6 10 6 6-6 10-6c2 0 3.5 1 5 2.5"
-          stroke="var(--float-blue-600, #2563eb)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.4"
-        />
-      </svg>
-      <span
-        className={`${s.text} font-semibold tracking-tight`}
-        style={{ color: 'var(--float-grey-800, #1e293b)' }}
-      >
-        Float
-      </span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: `${s.gap}px` }}>
+      <CloudSvg width={s.cloud} />
+      <span style={textStyle}>float</span>
     </div>
   )
 }
