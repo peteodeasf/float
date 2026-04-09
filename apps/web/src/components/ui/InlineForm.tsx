@@ -51,7 +51,7 @@ export default function InlineForm({
             <select
               value={values[field.key]}
               onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               {field.options?.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -67,7 +67,7 @@ export default function InlineForm({
               min={field.type === 'number' ? 0 : undefined}
               max={field.type === 'number' ? 10 : undefined}
               step={field.type === 'number' ? 0.5 : undefined}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           )}
         </div>
@@ -83,7 +83,7 @@ export default function InlineForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="px-4 py-1.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
         >
           {isLoading ? 'Adding...' : submitLabel}
         </button>

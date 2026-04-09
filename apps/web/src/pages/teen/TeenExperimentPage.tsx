@@ -102,7 +102,7 @@ export default function TeenExperimentPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#f0f9ff',
+      background: '#f0fdfa',
       maxWidth: '480px',
       margin: '0 auto'
     }}>
@@ -136,7 +136,7 @@ export default function TeenExperimentPage() {
             width: '10px',
             height: '10px',
             borderRadius: '50%',
-            background: s === step ? '#2563eb' :
+            background: s === step ? '#0d9488' :
               (['plan', 'commit', 'record', 'done'].indexOf(step) > i) ? '#22c55e' : '#cbd5e1'
           }} />
         ))}
@@ -176,7 +176,7 @@ export default function TeenExperimentPage() {
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                   Belief in prediction (BIP)
                 </p>
-                <p style={{ fontSize: '28px', fontWeight: '700', color: '#2563eb' }}>
+                <p style={{ fontSize: '28px', fontWeight: '700', color: '#0d9488' }}>
                   {bipBefore}%
                 </p>
                 <p style={{ fontSize: '13px', color: '#64748b' }}>
@@ -227,7 +227,7 @@ export default function TeenExperimentPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: '#2563eb',
+                background: '#0d9488',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '14px',
@@ -253,14 +253,14 @@ export default function TeenExperimentPage() {
             </p>
 
             <div style={{
-              background: '#eff6ff',
+              background: '#f0fdfa',
               borderRadius: '16px',
               padding: '24px',
               marginBottom: '24px',
-              border: '1px solid #bfdbfe',
+              border: '1px solid #99f6e4',
               textAlign: 'center'
             }}>
-              <p style={{ fontSize: '15px', color: '#1e3a5f', marginBottom: '8px' }}>
+              <p style={{ fontSize: '15px', color: '#134e4a', marginBottom: '8px' }}>
                 The exposure:
               </p>
               <p style={{ fontSize: '17px', fontWeight: '600', color: '#1e293b' }}>
@@ -346,11 +346,11 @@ export default function TeenExperimentPage() {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      border: fearedOccurred === opt.value ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                      background: fearedOccurred === opt.value ? '#eff6ff' : '#fff',
+                      border: fearedOccurred === opt.value ? '2px solid #0d9488' : '1px solid #e2e8f0',
+                      background: fearedOccurred === opt.value ? '#f0fdfa' : '#fff',
                       fontSize: '15px',
                       fontWeight: '600',
-                      color: fearedOccurred === opt.value ? '#2563eb' : '#64748b',
+                      color: fearedOccurred === opt.value ? '#0d9488' : '#64748b',
                       cursor: 'pointer'
                     }}
                   >
@@ -399,7 +399,7 @@ export default function TeenExperimentPage() {
               <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
                 Updated BIP — how much do you believe it now?
               </p>
-              <p style={{ fontSize: '32px', fontWeight: '700', color: '#2563eb', textAlign: 'center', margin: '8px 0' }}>
+              <p style={{ fontSize: '32px', fontWeight: '700', color: '#0d9488', textAlign: 'center', margin: '8px 0' }}>
                 {bipAfter}%
               </p>
               <input
@@ -451,7 +451,7 @@ export default function TeenExperimentPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: '#2563eb',
+                background: '#0d9488',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '14px',
@@ -509,7 +509,7 @@ export default function TeenExperimentPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '2px' }}>BIP after</p>
-                  <p style={{ fontSize: '15px', fontWeight: '600', color: '#2563eb' }}>{bipAfter}%</p>
+                  <p style={{ fontSize: '15px', fontWeight: '600', color: '#0d9488' }}>{bipAfter}%</p>
                 </div>
               </div>
               {whatLearned && (
@@ -525,7 +525,7 @@ export default function TeenExperimentPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: '#2563eb',
+                background: '#0d9488',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '14px',

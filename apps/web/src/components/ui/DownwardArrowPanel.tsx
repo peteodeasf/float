@@ -86,7 +86,7 @@ export default function DownwardArrowPanel({ rungId, patientId: _patientId }: Pr
           <button
             onClick={() => createMutation.mutate()}
             disabled={createMutation.isPending}
-            className="text-xs text-blue-600 font-medium hover:underline"
+            className="text-xs text-teal-600 font-medium hover:underline"
           >
             + Start Downward Arrow
           </button>
@@ -117,11 +117,11 @@ export default function DownwardArrowPanel({ rungId, patientId: _patientId }: Pr
           {arrow.arrow_steps.map((step, i) => (
             <div key={i} className="flex gap-2">
               <div className="flex flex-col items-center">
-                <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-medium shrink-0">
+                <div className="w-5 h-5 rounded-full bg-teal-100 text-teal-600 text-xs flex items-center justify-center font-medium shrink-0">
                   {i + 1}
                 </div>
                 {i < arrow.arrow_steps.length - 1 && (
-                  <div className="w-px h-4 bg-blue-100 mt-1" />
+                  <div className="w-px h-4 bg-teal-100 mt-1" />
                 )}
               </div>
               <div className="pb-2">
@@ -134,8 +134,8 @@ export default function DownwardArrowPanel({ rungId, patientId: _patientId }: Pr
           {arrow.feared_outcome && (
             <div className="flex gap-2 items-start">
               <div className="flex flex-col items-center">
-                <div className="w-px h-2 bg-blue-200" />
-                <span className="text-blue-300 text-lg leading-none">↓</span>
+                <div className="w-px h-2 bg-teal-200" />
+                <span className="text-teal-300 text-lg leading-none">↓</span>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Most feared outcome</p>
@@ -166,19 +166,19 @@ export default function DownwardArrowPanel({ rungId, patientId: _patientId }: Pr
             value={newQuestion}
             onChange={e => setNewQuestion(e.target.value)}
             placeholder="What will happen if...?"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
           <input
             type="text"
             value={newResponse}
             onChange={e => setNewResponse(e.target.value)}
             placeholder="Child's response"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
           <button
             onClick={handleAddStep}
             disabled={!newQuestion || !newResponse || addStepMutation.isPending}
-            className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 disabled:opacity-50"
           >
             Add step
           </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTeenAuth } from '../../context/TeenAuthContext'
+import FloatLogo from '../../components/ui/FloatLogo'
 
 export default function TeenLoginPage() {
   const [email, setEmail] = useState('')
@@ -27,70 +28,33 @@ export default function TeenLoginPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ background: 'var(--float-blue-50)' }}
+      style={{ background: 'var(--float-primary-light)' }}
     >
       <div
-        className="w-full max-w-sm"
+        className="w-full"
         style={{
-          background: '#fff',
-          borderRadius: '20px',
-          padding: '40px 28px',
+          maxWidth: '400px',
+          background: 'var(--float-surface)',
+          borderRadius: 'var(--float-radius-lg)',
+          padding: '44px 32px',
           boxShadow: 'var(--float-shadow-md)',
         }}
       >
-        <div className="flex flex-col items-center mb-8">
-          <div
-            className="flex items-center justify-center mb-4"
-            style={{
-              width: '56px',
-              height: '56px',
-              background: 'var(--float-blue-100)',
-              borderRadius: '16px',
-            }}
-          >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M4 22c3-4 6-7 10-7s6 6 10 6 6-6 10-6c2 0 3.5 1 5 2.5"
-                stroke="var(--float-blue-600, #2563eb)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                fill="none"
-              />
-              <path
-                d="M4 30c3-4 6-7 10-7s6 6 10 6 6-6 10-6c2 0 3.5 1 5 2.5"
-                stroke="var(--float-blue-600, #2563eb)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                fill="none"
-                opacity="0.4"
-              />
-            </svg>
-          </div>
-          <h1
-            className="text-2xl font-semibold"
-            style={{ color: 'var(--float-grey-800)' }}
-          >
-            Float
-          </h1>
+        <div className="flex flex-col items-center" style={{ marginBottom: '32px' }}>
+          <FloatLogo size="lg" />
           <p
-            className="text-sm mt-1"
-            style={{ color: 'var(--float-grey-400)' }}
+            className="text-sm"
+            style={{ color: 'var(--float-text-hint)', marginTop: '12px' }}
           >
             Your anxiety toolkit
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--float-grey-600)' }}
+              style={{ color: 'var(--float-text-secondary)' }}
             >
               Email
             </label>
@@ -99,8 +63,13 @@ export default function TeenLoginPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="w-full px-3.5 py-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              style={{ color: 'var(--float-grey-800)' }}
+              className="w-full px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{
+                color: 'var(--float-text)',
+                border: '1px solid var(--float-border)',
+                borderRadius: 'var(--float-radius-sm)',
+                '--tw-ring-color': 'var(--float-primary)',
+              } as React.CSSProperties}
               placeholder="you@example.com"
             />
           </div>
@@ -108,7 +77,7 @@ export default function TeenLoginPage() {
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--float-grey-600)' }}
+              style={{ color: 'var(--float-text-secondary)' }}
             >
               Password
             </label>
@@ -117,20 +86,32 @@ export default function TeenLoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="w-full px-3.5 py-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              style={{ color: 'var(--float-grey-800)' }}
+              className="w-full px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{
+                color: 'var(--float-text)',
+                border: '1px solid var(--float-border)',
+                borderRadius: 'var(--float-radius-sm)',
+                '--tw-ring-color': 'var(--float-primary)',
+              } as React.CSSProperties}
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
+            <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>
           )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            className="w-full py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
+            style={{
+              background: 'var(--float-primary)',
+              borderRadius: 'var(--float-radius-sm)',
+              border: 'none',
+            }}
+            onMouseOver={(e) => { if (!isLoading) e.currentTarget.style.background = 'var(--float-primary-dark)' }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'var(--float-primary)' }}
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>

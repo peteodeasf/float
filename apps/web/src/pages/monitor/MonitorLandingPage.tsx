@@ -200,7 +200,7 @@ export default function MonitorLandingPage() {
             style={{
               width: '100%',
               padding: '18px',
-              background: '#2563eb',
+              background: '#0d9488',
               color: '#fff',
               border: 'none',
               borderRadius: '14px',
@@ -353,7 +353,7 @@ export default function MonitorLandingPage() {
                   }}
                   style={{
                     padding: '10px 16px',
-                    background: '#2563eb',
+                    background: '#0d9488',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '10px',
@@ -383,14 +383,14 @@ export default function MonitorLandingPage() {
             style={{
               width: '100%',
               padding: '16px',
-              background: '#2563eb',
+              background: '#0d9488',
               color: '#fff',
               border: 'none',
               borderRadius: '14px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.3)'
             }}
           >
             + Add observation
@@ -535,14 +535,14 @@ export default function MonitorLandingPage() {
                     width: '100%',
                     aspectRatio: '1',
                     borderRadius: '12px',
-                    border: fearThermometer === n ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                    border: fearThermometer === n ? '2px solid #0d9488' : '1px solid #e2e8f0',
                     background: fearThermometer === n
-                      ? '#eff6ff'
+                      ? '#f0fdfa'
                       : n >= 8 ? '#fef2f2'
                       : n >= 5 ? '#fffbeb'
                       : '#f0fdf4',
                     color: fearThermometer === n
-                      ? '#2563eb'
+                      ? '#0d9488'
                       : n >= 8 ? '#dc2626'
                       : n >= 5 ? '#d97706'
                       : '#16a34a',
@@ -573,7 +573,7 @@ export default function MonitorLandingPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: '#2563eb',
+                background: '#0d9488',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '14px',

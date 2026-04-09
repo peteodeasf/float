@@ -114,7 +114,7 @@ export default function LadderPage() {
     <div className="min-h-screen bg-slate-50">
       <nav
         className="bg-white px-8 flex items-center gap-4"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-grey-200)' }}
+        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
       >
         <button
           onClick={() => navigate(`/patients/${patientId}`)}
@@ -156,7 +156,7 @@ export default function LadderPage() {
             {!showBehaviorForm && (
               <button
                 onClick={() => setShowBehaviorForm(true)}
-                className="text-xs text-blue-600 font-medium hover:underline"
+                className="text-xs text-teal-600 font-medium hover:underline"
               >
                 + Add behavior
               </button>
@@ -174,7 +174,7 @@ export default function LadderPage() {
                   value={behaviorName}
                   onChange={e => setBehaviorName(e.target.value)}
                   placeholder="e.g. Sit alone at end of table"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <div>
@@ -184,7 +184,7 @@ export default function LadderPage() {
                 <select
                   value={behaviorType}
                   onChange={e => setBehaviorType(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="avoidance">Avoidance</option>
                   <option value="safety">Safety</option>
@@ -202,7 +202,7 @@ export default function LadderPage() {
                   onChange={e => setBehaviorDT(e.target.value)}
                   min={0} max={10} step={0.5}
                   placeholder="6"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <div className="flex gap-2">
@@ -216,7 +216,7 @@ export default function LadderPage() {
                 <button
                   onClick={() => createBehaviorMutation.mutate()}
                   disabled={!behaviorName || createBehaviorMutation.isPending}
-                  className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-1.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50"
                 >
                   {createBehaviorMutation.isPending ? 'Adding...' : 'Add behavior'}
                 </button>
@@ -254,7 +254,7 @@ export default function LadderPage() {
               {!showRungForm && (
                 <button
                   onClick={() => setShowRungForm(true)}
-                  className="text-xs text-blue-600 font-medium hover:underline"
+                  className="text-xs text-teal-600 font-medium hover:underline"
                 >
                   + Add rung
                 </button>
@@ -279,7 +279,7 @@ export default function LadderPage() {
                 <select
                   value={selectedBehaviorId}
                   onChange={e => setSelectedBehaviorId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="">— Select a behavior —</option>
                   {behaviors?.map(b => (
@@ -298,7 +298,7 @@ export default function LadderPage() {
                   onChange={e => setRungDT(e.target.value)}
                   min={0} max={10} step={0.5}
                   placeholder="4"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <div className="flex gap-2">
@@ -312,7 +312,7 @@ export default function LadderPage() {
                 <button
                   onClick={() => createRungMutation.mutate()}
                   disabled={createRungMutation.isPending}
-                  className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-1.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50"
                 >
                   {createRungMutation.isPending ? 'Adding...' : 'Add rung'}
                 </button>
@@ -347,7 +347,7 @@ export default function LadderPage() {
       <DTBadge value={rung.distress_thermometer_rating} />
       <span className={`text-xs px-2 py-0.5 rounded-full ${
         rung.status === 'complete' ? 'bg-green-100 text-green-700' :
-        rung.status === 'active' ? 'bg-blue-100 text-blue-700' :
+        rung.status === 'active' ? 'bg-teal-100 text-teal-700' :
         'bg-slate-100 text-slate-500'
       }`}>
         {rung.status}

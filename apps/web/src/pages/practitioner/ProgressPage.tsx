@@ -53,7 +53,7 @@ export default function ProgressPage() {
     <div className="min-h-screen bg-slate-50">
       <nav
         className="bg-white px-8 flex items-center gap-4"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-grey-200)' }}
+        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
       >
         <button
           onClick={() => navigate(`/patients/${patientId}`)}
@@ -153,9 +153,9 @@ export default function ProgressPage() {
                 <Line
                   type="monotone"
                   dataKey="bip_after"
-                  stroke="#2563eb"
+                  stroke="#0d9488"
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#2563eb' }}
+                  dot={{ r: 4, fill: '#0d9488' }}
                 />
               </LineChart>
             </ResponsiveContainer>

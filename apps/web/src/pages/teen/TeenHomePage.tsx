@@ -50,7 +50,7 @@ export default function TeenHomePage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#f0f9ff',
+      background: '#f0fdfa',
       maxWidth: '480px',
       margin: '0 auto',
       padding: '0 0 80px'
@@ -70,7 +70,7 @@ export default function TeenHomePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             onClick={() => navigate('/teen/plans')}
-            style={{ fontSize: '13px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+            style={{ fontSize: '13px', color: '#0d9488', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}
           >
             My plans
           </button>
@@ -115,20 +115,20 @@ export default function TeenHomePage() {
 
         {currentRung && (
           <div style={{
-            background: '#eff6ff',
+            background: '#f0fdfa',
             borderRadius: '16px',
             padding: '20px',
             marginBottom: '24px',
-            border: '1px solid #bfdbfe'
+            border: '1px solid #99f6e4'
           }}>
-            <p style={{ fontSize: '12px', fontWeight: '600', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+            <p style={{ fontSize: '12px', fontWeight: '600', color: '#14b8a6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
               Current step
             </p>
-            <p style={{ fontSize: '16px', fontWeight: '500', color: '#1e3a5f', marginBottom: '4px' }}>
+            <p style={{ fontSize: '16px', fontWeight: '500', color: '#134e4a', marginBottom: '4px' }}>
               Step {currentRung.rung_order + 1}
             </p>
             {currentRung.distress_thermometer_rating && (
-              <p style={{ fontSize: '13px', color: '#3b82f6' }}>
+              <p style={{ fontSize: '13px', color: '#14b8a6' }}>
                 Distress level {currentRung.distress_thermometer_rating}/10
               </p>
             )}
@@ -141,7 +141,7 @@ export default function TeenHomePage() {
             style={{
               width: '100%',
               padding: '16px',
-              background: '#2563eb',
+              background: '#0d9488',
               color: '#fff',
               border: 'none',
               borderRadius: '14px',
@@ -191,15 +191,15 @@ export default function TeenHomePage() {
                     padding: '10px 12px',
                     borderRadius: '10px',
                     background: rung.status === 'complete' ? '#f0fdf4' :
-                      rung.id === currentRung?.id ? '#eff6ff' : '#f8fafc',
-                    border: rung.id === currentRung?.id ? '1.5px solid #bfdbfe' : '1px solid #e2e8f0'
+                      rung.id === currentRung?.id ? '#f0fdfa' : '#f8fafc',
+                    border: rung.id === currentRung?.id ? '1.5px solid #99f6e4' : '1px solid #e2e8f0'
                   }}>
                     <div style={{
                       width: '28px',
                       height: '28px',
                       borderRadius: '50%',
                       background: rung.status === 'complete' ? '#22c55e' :
-                        rung.id === currentRung?.id ? '#2563eb' : '#e2e8f0',
+                        rung.id === currentRung?.id ? '#0d9488' : '#e2e8f0',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

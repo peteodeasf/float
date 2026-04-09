@@ -1,54 +1,52 @@
-import React from 'react'
-
 interface FloatLogoProps {
   size?: 'sm' | 'md' | 'lg'
-  variant?: 'default' | 'white'
 }
 
 const SIZES = {
-  sm: { cloud: 28, fontSize: 13, gap: 4 },
-  md: { cloud: 42, fontSize: 18, gap: 6 },
-  lg: { cloud: 60, fontSize: 26, gap: 8 },
+  sm: { waveW: 20, waveH: 12, fontSize: 0, gap: 0 },
+  md: { waveW: 32, waveH: 18, fontSize: 17, gap: 8 },
+  lg: { waveW: 48, waveH: 28, fontSize: 24, gap: 10 },
 }
 
-export default function FloatLogo({ size = 'md', variant = 'default' }: FloatLogoProps) {
-  const { cloud, fontSize, gap } = SIZES[size]
-  const color = variant === 'white' ? '#ffffff' : '#2563eb'
-  const w = cloud
-  const h = cloud * 0.72
+function WaveSvg({ width, height }: { width: number; height: number }) {
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 48 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M2 10 C10 2, 14 2, 24 7 C34 12, 38 12, 46 4"
+        stroke="var(--float-primary, #0d9488)"
+        strokeWidth="3"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
+export default function FloatLogo({ size = 'md' }: FloatLogoProps) {
+  const s = SIZES[size]
+
+  // sm: icon only
+  if (size === 'sm') {
+    return <WaveSvg width={s.waveW} height={s.waveH} />
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap }}>
-      <svg
-        width={w}
-        height={h}
-        viewBox="0 0 100 72"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Cloud shape — three overlapping circles + flat bottom rect */}
-        <defs>
-          <clipPath id="cloud-clip">
-            <rect x="0" y="0" width="100" height="72" />
-          </clipPath>
-        </defs>
-        {/* Bottom fill rect to flatten the base */}
-        <rect x="8" y="44" width="84" height="28" fill={color} />
-        {/* Left bump */}
-        <circle cx="30" cy="44" r="22" fill={color} />
-        {/* Right bump */}
-        <circle cx="68" cy="44" r="22" fill={color} />
-        {/* Center top bump — taller */}
-        <circle cx="50" cy="30" r="26" fill={color} />
-      </svg>
+    <div style={{ display: 'flex', alignItems: 'center', gap: `${s.gap}px` }}>
+      <WaveSvg width={s.waveW} height={s.waveH} />
       <span
         style={{
-          fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
-          fontSize,
-          fontWeight: 600,
-          letterSpacing: '0.04em',
-          color,
+          fontSize: `${s.fontSize}px`,
+          fontWeight: 500,
+          letterSpacing: '0.03em',
+          color: 'var(--float-primary, #0d9488)',
           lineHeight: 1,
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         }}
       >
         float

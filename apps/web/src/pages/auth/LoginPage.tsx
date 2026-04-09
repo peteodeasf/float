@@ -28,32 +28,33 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'var(--float-grey-50)' }}
+      style={{ background: 'var(--float-bg)' }}
     >
       <div
-        className="w-full max-w-md"
+        className="w-full"
         style={{
-          background: '#fff',
-          borderRadius: 'var(--float-radius)',
+          maxWidth: '420px',
+          background: 'var(--float-surface)',
+          borderRadius: 'var(--float-radius-lg)',
           boxShadow: 'var(--float-shadow-md)',
-          padding: '48px 40px',
+          padding: '48px',
         }}
       >
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center" style={{ marginBottom: '32px' }}>
           <FloatLogo size="lg" />
           <p
-            className="mt-3 text-sm"
-            style={{ color: 'var(--float-grey-400)' }}
+            className="text-sm"
+            style={{ color: 'var(--float-text-hint)', marginTop: '16px' }}
           >
             Supporting anxious children and their families
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--float-grey-600)' }}
+              style={{ color: 'var(--float-text-secondary)' }}
             >
               Email
             </label>
@@ -61,8 +62,13 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{ color: 'var(--float-grey-800)', '--tw-ring-color': '#2563eb' } as React.CSSProperties}
+              className="w-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{
+                color: 'var(--float-text)',
+                border: '1px solid var(--float-border)',
+                borderRadius: 'var(--float-radius-sm)',
+                '--tw-ring-color': 'var(--float-primary)',
+              } as React.CSSProperties}
               placeholder="you@example.com"
               required
             />
@@ -71,7 +77,7 @@ export default function LoginPage() {
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--float-grey-600)' }}
+              style={{ color: 'var(--float-text-secondary)' }}
             >
               Password
             </label>
@@ -79,24 +85,33 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{ color: 'var(--float-grey-800)', '--tw-ring-color': '#2563eb' } as React.CSSProperties}
+              className="w-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{
+                color: 'var(--float-text)',
+                border: '1px solid var(--float-border)',
+                borderRadius: 'var(--float-radius-sm)',
+                '--tw-ring-color': 'var(--float-primary)',
+              } as React.CSSProperties}
               placeholder="••••••••"
               required
             />
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
+            <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>
           )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-            style={{ background: '#2563eb' }}
-            onMouseOver={(e) => { if (!isLoading) (e.currentTarget.style.background = '#1d4ed8') }}
-            onMouseOut={(e) => { e.currentTarget.style.background = '#2563eb' }}
+            className="w-full py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
+            style={{
+              background: 'var(--float-primary)',
+              borderRadius: 'var(--float-radius-sm)',
+              border: 'none',
+            }}
+            onMouseOver={(e) => { if (!isLoading) e.currentTarget.style.background = 'var(--float-primary-dark)' }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'var(--float-primary)' }}
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>

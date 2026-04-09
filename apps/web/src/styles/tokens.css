@@ -1,17 +1,30 @@
 :root {
-  --float-blue-50: #eff6ff;
-  --float-blue-100: #dbeafe;
-  --float-blue-500: #3b82f6;
-  --float-blue-600: #2563eb;
-  --float-blue-700: #1d4ed8;
-  --float-grey-50: #f8fafc;
-  --float-grey-100: #f1f5f9;
-  --float-grey-200: #e2e8f0;
-  --float-grey-400: #94a3b8;
-  --float-grey-600: #475569;
-  --float-grey-800: #1e293b;
-  --float-radius: 12px;
-  --float-radius-sm: 8px;
+  /* Primary — teal */
+  --float-primary: #0d9488;
+  --float-primary-dark: #0f766e;
+  --float-primary-light: #f0fdfa;
+  --float-primary-mid: #99f6e4;
+  --float-primary-text: #134e4a;
+
+  /* Neutrals */
+  --float-bg: #fafafa;
+  --float-surface: #ffffff;
+  --float-border: #e2e8f0;
+  --float-border-strong: #cbd5e1;
+  --float-text: #1e293b;
+  --float-text-secondary: #64748b;
+  --float-text-hint: #94a3b8;
+
+  /* Semantic */
+  --float-success: #059669;
+  --float-warning: #d97706;
+  --float-danger: #dc2626;
+  --float-info: #0ea5e9;
+
+  /* Layout */
+  --float-radius: 10px;
+  --float-radius-sm: 6px;
+  --float-radius-lg: 16px;
   --float-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --float-shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --float-shadow-md: 0 4px 20px rgba(0,0,0,0.07);
 }

@@ -271,7 +271,7 @@ export default function PatientPage() {
     consultation_1: 'bg-purple-100 text-purple-700',
     consultation_2: 'bg-purple-100 text-purple-700',
     consultation_3: 'bg-purple-100 text-purple-700',
-    weekly_session: 'bg-blue-100 text-blue-700',
+    weekly_session: 'bg-teal-100 text-teal-700',
     other: 'bg-slate-100 text-slate-600'
   }
 
@@ -393,7 +393,7 @@ export default function PatientPage() {
     <div className="min-h-screen bg-slate-50">
       <nav
         className="bg-white px-8 flex items-center justify-between"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-grey-200)' }}
+        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
       >
         <div className="flex items-center gap-4">
           <button
@@ -408,7 +408,7 @@ export default function PatientPage() {
         </div>
         <button
           onClick={() => navigate(`/patients/${patientId}/progress`)}
-          className="text-sm text-blue-600 font-medium hover:underline"
+          className="text-sm text-teal-600 font-medium hover:underline"
         >
           View progress &rarr;
         </button>
@@ -438,7 +438,7 @@ export default function PatientPage() {
                 {!showSendForm ? (
                   <button
                     onClick={() => setShowSendForm(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
                   >
                     Send monitoring form
                   </button>
@@ -453,7 +453,7 @@ export default function PatientPage() {
                         value={parentEmail}
                         onChange={e => setParentEmail(e.target.value)}
                         placeholder="parent@email.com"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                     <div>
@@ -465,7 +465,7 @@ export default function PatientPage() {
                         value={parentName}
                         onChange={e => setParentName(e.target.value)}
                         placeholder="e.g. Sarah"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                     <div className="flex gap-2">
@@ -473,7 +473,7 @@ export default function PatientPage() {
                         <button
                           onClick={handleSendWithEmail}
                           disabled={sendFormMutation.isPending}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                          className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
                         >
                           {sendFormMutation.isPending ? 'Sending...' : 'Send email + copy link'}
                         </button>
@@ -484,7 +484,7 @@ export default function PatientPage() {
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
                           parentEmail
                             ? 'border border-slate-200 text-slate-600 hover:bg-slate-100'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-teal-600 text-white hover:bg-teal-700'
                         }`}
                       >
                         {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
@@ -508,7 +508,7 @@ export default function PatientPage() {
                       monitoringForm.status === 'submitted'
                         ? 'bg-green-100 text-green-700'
                         : monitoringForm.status === 'in_progress'
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-teal-100 text-teal-700'
                         : 'bg-amber-100 text-amber-700'
                     }`}>
                       {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
@@ -526,7 +526,7 @@ export default function PatientPage() {
                   </div>
                   <button
                     onClick={handleCopyLink}
-                    className="text-xs text-blue-600 font-medium hover:underline"
+                    className="text-xs text-teal-600 font-medium hover:underline"
                   >
                     {copied ? 'Copied!' : 'Copy link'}
                   </button>
@@ -537,7 +537,7 @@ export default function PatientPage() {
                   <div>
                     <button
                       onClick={() => setShowEntries(!showEntries)}
-                      className="text-sm text-blue-600 font-medium hover:underline"
+                      className="text-sm text-teal-600 font-medium hover:underline"
                     >
                       {showEntries ? 'Hide entries' : 'View entries'}
                     </button>
@@ -591,7 +591,7 @@ export default function PatientPage() {
                     onClick={() => navigate(`/patients/${patientId}/monitoring-report`)}
                     className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
                       (monitoringForm.entries_count ?? 0) >= 5
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-teal-600 text-white hover:bg-teal-700'
                         : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -631,11 +631,11 @@ export default function PatientPage() {
               <TrendPill label="BIP" trend={brief.bip_trend} />
               <TrendPill label="Distress" trend={brief.distress_thermometer_trend} />
             </div>
-            <div className="bg-blue-50 rounded-lg px-4 py-3 mb-4">
-              <p className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-1">
+            <div className="bg-teal-50 rounded-lg px-4 py-3 mb-4">
+              <p className="text-xs font-medium text-teal-400 uppercase tracking-wider mb-1">
                 Recommended focus
               </p>
-              <p className="text-sm text-blue-800 font-medium">
+              <p className="text-sm text-teal-800 font-medium">
                 {brief.recommended_focus}
               </p>
             </div>
@@ -679,7 +679,7 @@ export default function PatientPage() {
                   <button
                     onClick={() => activatePlanMutation.mutate()}
                     disabled={activatePlanMutation.isPending}
-                    className="text-xs px-3 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="text-xs px-3 py-1 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition-colors disabled:opacity-50"
                   >
                     {activatePlanMutation.isPending ? 'Activating...' : 'Activate plan'}
                   </button>
@@ -696,7 +696,7 @@ export default function PatientPage() {
                 {!showTriggerForm && (
                   <button
                     onClick={() => setShowTriggerForm(true)}
-                    className="text-xs text-blue-600 font-medium hover:underline"
+                    className="text-xs text-teal-600 font-medium hover:underline"
                   >
                     + Add trigger
                   </button>
@@ -779,7 +779,7 @@ export default function PatientPage() {
             <button
               onClick={() => createPlanMutation.mutate()}
               disabled={createPlanMutation.isPending}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
               {createPlanMutation.isPending ? 'Creating...' : 'Create treatment plan'}
             </button>
@@ -794,7 +794,7 @@ export default function PatientPage() {
             {!showNoteForm && (
               <button
                 onClick={() => { resetNoteForm(); setShowNoteForm(true) }}
-                className="text-xs text-blue-600 font-medium hover:underline"
+                className="text-xs text-teal-600 font-medium hover:underline"
               >
                 + Add note
               </button>
@@ -811,7 +811,7 @@ export default function PatientPage() {
                   <select
                     value={noteType}
                     onChange={e => setNoteType(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   >
                     <option value="consultation_1">Consultation 1</option>
                     <option value="consultation_2">Consultation 2</option>
@@ -828,7 +828,7 @@ export default function PatientPage() {
                     type="date"
                     value={noteDate}
                     onChange={e => setNoteDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
@@ -841,14 +841,14 @@ export default function PatientPage() {
                   onChange={e => setNoteContent(e.target.value)}
                   rows={5}
                   placeholder="Session notes..."
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-y"
                 />
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveNote}
                   disabled={!noteContent.trim() || createNoteMutation.isPending || updateNoteMutation.isPending}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
                 >
                   {(createNoteMutation.isPending || updateNoteMutation.isPending)
                     ? 'Saving...'
@@ -880,7 +880,7 @@ export default function PatientPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => startEditNote(note)}
-                        className="text-xs text-blue-600 font-medium hover:underline"
+                        className="text-xs text-teal-600 font-medium hover:underline"
                       >
                         Edit
                       </button>
@@ -905,7 +905,7 @@ export default function PatientPage() {
                   {note.content.length > 100 && expandedNoteId !== note.id && (
                     <button
                       onClick={() => setExpandedNoteId(note.id)}
-                      className="text-xs text-blue-600 mt-1 hover:underline"
+                      className="text-xs text-teal-600 mt-1 hover:underline"
                     >
                       Show more
                     </button>
@@ -929,7 +929,7 @@ export default function PatientPage() {
             {!showPlanEditor && (
               <button
                 onClick={openNewPlan}
-                className="text-xs text-blue-600 font-medium hover:underline"
+                className="text-xs text-teal-600 font-medium hover:underline"
               >
                 + New action plan
               </button>
@@ -945,7 +945,7 @@ export default function PatientPage() {
                     type="date"
                     value={planDate}
                     onChange={e => setPlanDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 <div>
@@ -955,7 +955,7 @@ export default function PatientPage() {
                     value={planNickname}
                     onChange={e => setPlanNickname(e.target.value)}
                     placeholder="e.g. Obi, Worry Bug"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 <div>
@@ -965,7 +965,7 @@ export default function PatientPage() {
                     value={planNextAppt}
                     onChange={e => setPlanNextAppt(e.target.value)}
                     placeholder="e.g. Tuesday 3pm"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
@@ -1010,7 +1010,7 @@ export default function PatientPage() {
                 <button
                   onClick={handleSavePlan}
                   disabled={createPlanActionMutation.isPending || updatePlanActionMutation.isPending}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
                 >
                   {(createPlanActionMutation.isPending || updatePlanActionMutation.isPending)
                     ? 'Saving...'
@@ -1064,7 +1064,7 @@ export default function PatientPage() {
                         <>
                           <button
                             onClick={() => startEditPlan(ap)}
-                            className="text-xs text-blue-600 font-medium hover:underline"
+                            className="text-xs text-teal-600 font-medium hover:underline"
                           >
                             Edit
                           </button>
@@ -1084,7 +1084,7 @@ export default function PatientPage() {
                       </button>
                       <button
                         onClick={() => setExpandedPlanId(expandedPlanId === ap.id ? null : ap.id)}
-                        className="text-xs text-blue-600 font-medium hover:underline"
+                        className="text-xs text-teal-600 font-medium hover:underline"
                       >
                         {expandedPlanId === ap.id ? 'Collapse' : 'View'}
                       </button>
