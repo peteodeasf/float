@@ -17,6 +17,8 @@ import TeenExperimentPage from './pages/teen/TeenExperimentPage'
 import TeenPlansPage from './pages/teen/TeenPlansPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
+import EducationIndexPage from './pages/practitioner/EducationIndexPage'
+import EducationModulePage from './pages/practitioner/EducationModulePage'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -53,6 +55,12 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/patients/:patientId/monitoring-report" element={
                 <ProtectedRoute><MonitoringReportPage /></ProtectedRoute>
+              } />
+              <Route path="/education" element={
+                <ProtectedRoute><EducationIndexPage /></ProtectedRoute>
+              } />
+              <Route path="/education/:moduleId" element={
+                <ProtectedRoute><EducationModulePage /></ProtectedRoute>
               } />
 
               {/* Teen routes */}

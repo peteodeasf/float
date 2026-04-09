@@ -47,15 +47,30 @@ export default function DashboardPage() {
         style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
       >
         <FloatLogo size="md" />
-        <button
-          onClick={handleLogout}
-          className="text-sm transition-colors cursor-pointer bg-transparent border-none"
-          style={{ color: 'var(--float-text-secondary)' }}
-          onMouseOver={(e) => { e.currentTarget.style.color = 'var(--float-primary)' }}
-          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--float-text-secondary)' }}
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/education')}
+            className="flex items-center gap-1.5 text-sm transition-colors cursor-pointer bg-transparent border-none"
+            style={{ color: 'var(--float-text-secondary)' }}
+            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--float-primary)' }}
+            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--float-text-secondary)' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            Education
+          </button>
+          <button
+            onClick={handleLogout}
+            className="text-sm transition-colors cursor-pointer bg-transparent border-none"
+            style={{ color: 'var(--float-text-secondary)' }}
+            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--float-primary)' }}
+            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--float-text-secondary)' }}
+          >
+            Sign out
+          </button>
+        </div>
       </nav>
 
       <main className="px-8 py-8 max-w-5xl mx-auto">

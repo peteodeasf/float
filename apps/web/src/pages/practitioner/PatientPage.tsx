@@ -657,6 +657,17 @@ export default function PatientPage() {
           </div>
         )}
 
+        {/* Education link — show for early-stage patients */}
+        {(!brief || brief.experiments_since_last_session === 0) && (
+          <button
+            onClick={() => navigate('/education')}
+            className="w-full text-left text-sm py-3 px-4 rounded-lg transition-colors cursor-pointer bg-transparent"
+            style={{ color: 'var(--float-text-hint)', border: '1px dashed var(--float-border)' }}
+          >
+            New to this approach? Review the clinician education &rarr;
+          </button>
+        )}
+
         {/* Treatment plan */}
         {plan ? (
           <div className="bg-white rounded-xl border border-slate-200 p-6">
