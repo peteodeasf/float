@@ -61,8 +61,8 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              style={{ color: 'var(--float-grey-800)' }}
+              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ color: 'var(--float-grey-800)', '--tw-ring-color': '#2563eb' } as React.CSSProperties}
               placeholder="you@example.com"
               required
             />
@@ -79,8 +79,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              style={{ color: 'var(--float-grey-800)' }}
+              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ color: 'var(--float-grey-800)', '--tw-ring-color': '#2563eb' } as React.CSSProperties}
               placeholder="••••••••"
               required
             />
@@ -93,7 +93,10 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            className="w-full py-2.5 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            style={{ background: '#2563eb' }}
+            onMouseOver={(e) => { if (!isLoading) (e.currentTarget.style.background = '#1d4ed8') }}
+            onMouseOut={(e) => { e.currentTarget.style.background = '#2563eb' }}
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
