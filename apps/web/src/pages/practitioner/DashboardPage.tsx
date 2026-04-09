@@ -2,15 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getPatients, Patient } from '../../api/patients'
-
-// TrendBadge reserved for future use with patient trend indicators
-// function TrendBadge({ trend }: { trend: string }) { ... }
+import FloatLogo from '../../components/ui/FloatLogo'
 
 function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   return (
     <tr
       onClick={onClick}
-      className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
+      className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
     >
       <td className="px-6 py-4">
         <p className="font-medium text-slate-800">{patient.name}</p>
@@ -18,6 +16,11 @@ function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => voi
       </td>
       <td className="px-6 py-4 text-sm text-slate-500">
         {new Date(patient.created_at).toLocaleDateString()}
+      </td>
+      <td className="px-6 py-4 text-right">
+        <span className="text-slate-300 group-hover:text-slate-400 transition-colors text-sm">
+          &rarr;
+        </span>
       </td>
     </tr>
   )
@@ -39,11 +42,14 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-800">Float</h1>
+      <nav
+        className="bg-white px-8 flex items-center justify-between"
+        style={{ height: '56px', borderBottom: '1px solid var(--float-grey-200)' }}
+      >
+        <FloatLogo size="sm" />
         <button
           onClick={handleLogout}
-          className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
+          className="text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer bg-transparent border-none"
         >
           Sign out
         </button>
@@ -52,8 +58,8 @@ export default function DashboardPage() {
       <main className="px-8 py-8 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-800">Caseload</h2>
-            <p className="text-slate-500 text-sm mt-0.5">
+            <h2 className="text-2xl font-semibold text-slate-800">My patients</h2>
+            <p className="text-sm text-slate-400 mt-0.5">
               {patients?.length ?? 0} patient{patients?.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -65,7 +71,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={{ boxShadow: 'var(--float-shadow)' }}>
           {isLoading && (
             <div className="px-6 py-12 text-center text-slate-400">
               Loading patients...
@@ -79,13 +85,16 @@ export default function DashboardPage() {
           )}
 
           {patients && patients.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-slate-400">No patients yet</p>
+            <div className="px-6 py-16 text-center">
+              <p className="text-lg font-medium text-slate-600 mb-1">No patients yet</p>
+              <p className="text-sm text-slate-400 mb-5">
+                Add your first patient to get started
+              </p>
               <button
                 onClick={() => navigate('/patients/new')}
-                className="mt-3 text-blue-600 text-sm font-medium hover:underline"
+                className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
               >
-                Add your first patient
+                Add patient
               </button>
             </div>
           )}
@@ -100,6 +109,7 @@ export default function DashboardPage() {
                   <th className="px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Added
                   </th>
+                  <th className="px-6 py-3 w-10"></th>
                 </tr>
               </thead>
               <tbody>

@@ -391,26 +391,18 @@ export default function PatientPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 px-8 py-4 flex items-center gap-4">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          ← Back
-        </button>
-        <h1 className="text-xl font-semibold text-slate-800">
-          {patient?.name ?? 'Loading...'}
-        </h1>
-      </nav>
-      <nav className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+      <nav
+        className="bg-white px-8 flex items-center justify-between"
+        style={{ height: '56px', borderBottom: '1px solid var(--float-grey-200)' }}
+      >
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
             className="text-slate-400 hover:text-slate-600 transition-colors"
           >
-            ← Back
+            &larr; Back
           </button>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-lg font-semibold text-slate-800">
             {patient?.name ?? 'Loading...'}
           </h1>
         </div>
@@ -418,7 +410,7 @@ export default function PatientPage() {
           onClick={() => navigate(`/patients/${patientId}/progress`)}
           className="text-sm text-blue-600 font-medium hover:underline"
         >
-          View progress →
+          View progress &rarr;
         </button>
       </nav>
 
