@@ -102,32 +102,41 @@ export default function MessagesPanel({ patientId, patientUserId }: Props) {
 
       {messages && messages.length > 0 ? (
         <div className="space-y-3">
-          {messages.map(msg => (
-            <div key={msg.id} className="flex gap-3">
-              <div className="w-7 h-7 rounded-full bg-teal-100 text-teal-600 text-xs flex items-center justify-center font-medium shrink-0 mt-0.5">
-                P
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                    msg.message_type === 'encouragement' ? 'bg-green-100 text-green-700' :
-                    msg.message_type === 'check_in' ? 'bg-teal-100 text-teal-700' :
-                    msg.message_type === 'adjustment' ? 'bg-amber-100 text-amber-700' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
-                    {msg.message_type.replace('_', ' ')}
-                  </span>
-                  <span className="text-xs text-slate-400">{timeAgo(msg.created_at)}</span>
+          {messages.map(msg => {
+            const isTooHard = msg.message_type === 'too_hard'
+            return (
+              <div key={msg.id} className="flex gap-3" style={isTooHard ? { borderLeft: '3px solid #f59e0b', paddingLeft: '12px' } : undefined}>
+                <div className={`w-7 h-7 rounded-full text-xs flex items-center justify-center font-medium shrink-0 mt-0.5 ${
+                  isTooHard ? 'bg-amber-100 text-amber-600' : 'bg-teal-100 text-teal-600'
+                }`}>
+                  {isTooHard ? '!' : 'P'}
                 </div>
-                <p className="text-sm text-slate-700">{msg.content}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                      isTooHard ? 'bg-amber-100 text-amber-700' :
+                      msg.message_type === 'encouragement' ? 'bg-green-100 text-green-700' :
+                      msg.message_type === 'check_in' ? 'bg-teal-100 text-teal-700' :
+                      msg.message_type === 'adjustment' ? 'bg-amber-100 text-amber-700' :
+                      'bg-slate-100 text-slate-600'
+                    }`}>
+                      {isTooHard ? '⚠ Too hard' : msg.message_type.replace('_', ' ')}
+                    </span>
+                    <span className="text-xs text-slate-400">{timeAgo(msg.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-slate-700">{msg.content}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         !showForm && (
           <p className="text-sm text-slate-400">
-            No messages yet — send a check-in or encouragement between sessions
+            No messages yet &middot;{' '}
+            <button onClick={() => setShowForm(true)} className="text-teal-600 hover:underline bg-transparent border-none cursor-pointer text-sm font-medium">
+              + Send message
+            </button>
           </p>
         )
       )}

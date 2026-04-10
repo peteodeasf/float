@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -9,12 +11,23 @@ from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
 from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink
 from app.models.experiment import Experiment
+from app.models.message import Message
 from app.schemas.patient import PatientCreate, PatientResponse, PatientListResponse
+from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
 from app.services.patient_service import (
     create_patient,
     get_patients_for_practitioner,
     get_patient_by_id
 )
+from app.services.experiment_service import (
+    create_experiment,
+    save_before_state,
+    save_after_state,
+)
+
+
+class TooHardRequest(BaseModel):
+    reason: Optional[str] = None
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 patient_router = APIRouter(prefix="/patient", tags=["patient"])
@@ -237,10 +250,11 @@ async def commit_experiment(
 @patient_router.post("/experiments/{experiment_id}/too-hard")
 async def too_hard_experiment(
     experiment_id: uuid.UUID,
+    body: TooHardRequest,
     context: tuple = Depends(get_patient_context),
     db: AsyncSession = Depends(get_db)
 ):
-    _, patient = context
+    user, patient = context
     result = await db.execute(
         select(Experiment).where(
             Experiment.id == experiment_id,
@@ -252,9 +266,85 @@ async def too_hard_experiment(
         raise HTTPException(status_code=404, detail="Experiment not found")
     experiment.status = "too_hard"
     experiment.too_hard_at = datetime.now(timezone.utc)
+
+    if body.reason:
+        practitioner_result = await db.execute(
+            select(PractitionerProfile).where(
+                PractitionerProfile.id == patient.primary_practitioner_id
+            )
+        )
+        practitioner = practitioner_result.scalar_one_or_none()
+        if practitioner:
+            message = Message(
+                organization_id=patient.organization_id,
+                sender_user_id=user.id,
+                recipient_user_id=practitioner.user_id,
+                patient_id=patient.id,
+                content=f"I found this experiment too hard: {body.reason}. Can you suggest a change?",
+                message_type="too_hard",
+            )
+            db.add(message)
+
     await db.commit()
     await db.refresh(experiment)
     return {"status": experiment.status, "too_hard_at": experiment.too_hard_at.isoformat()}
+
+
+@patient_router.get("/experiments/pending")
+async def get_pending_experiments(
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    result = await db.execute(
+        select(Experiment).where(
+            Experiment.patient_id == patient.id,
+            Experiment.status.in_(["planned", "committed"])
+        ).order_by(Experiment.created_at.desc())
+    )
+    return result.scalars().all()
+
+
+@patient_router.post("/rungs/{rung_id}/experiments", status_code=status.HTTP_201_CREATED)
+async def patient_create_experiment(
+    rung_id: uuid.UUID,
+    data: ExperimentCreate,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    experiment = await create_experiment(
+        db, rung_id, patient.id, patient.organization_id, data
+    )
+    return experiment
+
+
+@patient_router.put("/experiments/{experiment_id}/before")
+async def patient_save_before_state(
+    experiment_id: uuid.UUID,
+    data: ExperimentBeforeState,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    experiment = await save_before_state(
+        db, experiment_id, patient.organization_id, data
+    )
+    return experiment
+
+
+@patient_router.put("/experiments/{experiment_id}/after")
+async def patient_save_after_state(
+    experiment_id: uuid.UUID,
+    data: ExperimentAfterState,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    experiment = await save_after_state(
+        db, experiment_id, patient.organization_id, data
+    )
+    return experiment
 
 
 @patient_router.get("/action-plans")
