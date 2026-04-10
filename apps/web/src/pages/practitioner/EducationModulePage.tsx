@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { clinicianModules, type QuizQuestion, type Exercise } from '../../data/education'
+import PractitionerNav from '../../components/ui/PractitionerNav'
 
 function getProgress(moduleId: string): 'not_started' | 'in_progress' | 'complete' {
   if (localStorage.getItem(`education_complete_${moduleId}`)) return 'complete'
@@ -253,19 +254,14 @@ export default function EducationModulePage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
-      {/* Top nav */}
-      <nav
-        className="bg-white px-8 flex items-center gap-4"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
-      >
-        <button
-          onClick={() => navigate('/education')}
-          className="text-sm cursor-pointer bg-transparent border-none"
-          style={{ color: 'var(--float-text-secondary)' }}
-        >
-          &larr; Education
-        </button>
-      </nav>
+      <PractitionerNav
+        activePage="education"
+        subHeader={{
+          backTo: '/education',
+          backLabel: 'Back to modules',
+          title: `Module ${mod.number}: ${mod.title}`,
+        }}
+      />
 
       <div className="max-w-6xl mx-auto px-8 py-8 flex gap-8">
         {/* Sidebar */}

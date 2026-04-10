@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { clinicianModules } from '../../data/education'
-import FloatLogo from '../../components/ui/FloatLogo'
+import PractitionerNav from '../../components/ui/PractitionerNav'
 
 function getProgress(moduleId: string): 'not_started' | 'in_progress' | 'complete' {
   if (localStorage.getItem(`education_complete_${moduleId}`)) return 'complete'
@@ -20,24 +20,7 @@ export default function EducationIndexPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
-      <nav
-        className="bg-white px-8 flex items-center justify-between"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
-      >
-        <div className="flex items-center gap-6">
-          <button onClick={() => navigate('/dashboard')} className="flex items-center">
-            <FloatLogo size="md" />
-          </button>
-          <span className="text-sm font-medium" style={{ color: 'var(--float-primary)' }}>Education</span>
-        </div>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-sm transition-colors cursor-pointer bg-transparent border-none"
-          style={{ color: 'var(--float-text-secondary)' }}
-        >
-          &larr; Dashboard
-        </button>
-      </nav>
+      <PractitionerNav activePage="education" />
 
       <main className="max-w-4xl mx-auto px-8 py-8">
         <div className="mb-8">

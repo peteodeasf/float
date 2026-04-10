@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getPatients, Patient } from '../../api/patients'
-import { DashboardNav } from '../../components/ui/PractitionerNav'
+import PractitionerNav from '../../components/ui/PractitionerNav'
 
 function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   return (
@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
-      <DashboardNav />
+      <PractitionerNav activePage="patients" />
 
       <main className="px-8 py-8 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">

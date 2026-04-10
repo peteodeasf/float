@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { DetailNav } from '../../components/ui/PractitionerNav'
+import PractitionerNav from '../../components/ui/PractitionerNav'
 import { useQuery } from '@tanstack/react-query'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -52,11 +52,14 @@ export default function ProgressPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <DetailNav
-        backPath={`/patients/${patientId}`}
-        backLabel="Patient"
-        title="Progress"
-        subtitle={patient?.name}
+      <PractitionerNav
+        activePage="patients"
+        subHeader={{
+          backTo: `/patients/${patientId}`,
+          backLabel: 'Back to patient',
+          title: 'Progress',
+          subtitle: patient?.name,
+        }}
       />
 
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">

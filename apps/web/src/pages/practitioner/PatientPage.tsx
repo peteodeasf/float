@@ -33,7 +33,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import InlineForm from '../../components/ui/InlineForm'
 import MessagesPanel from '../../components/ui/MessagesPanel'
-import { DetailNav } from '../../components/ui/PractitionerNav'
+import PractitionerNav from '../../components/ui/PractitionerNav'
 
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
@@ -416,20 +416,23 @@ export default function PatientPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <DetailNav
-        backPath="/dashboard"
-        backLabel="Patients"
-        title={patient?.name ?? 'Loading...'}
-        subtitle={activitySummary}
-        rightAction={
-          <button
-            onClick={() => navigate(`/patients/${patientId}/progress`)}
-            className="text-sm font-medium bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--float-primary)' }}
-          >
-            View progress &rarr;
-          </button>
-        }
+      <PractitionerNav
+        activePage="patients"
+        subHeader={{
+          backTo: '/dashboard',
+          backLabel: 'Back to patients',
+          title: patient?.name ?? 'Loading...',
+          subtitle: activitySummary,
+          rightAction: (
+            <button
+              onClick={() => navigate(`/patients/${patientId}/progress`)}
+              className="text-xs font-medium bg-transparent border-none cursor-pointer"
+              style={{ color: 'var(--float-primary)' }}
+            >
+              View progress &rarr;
+            </button>
+          )
+        }}
       />
 
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">

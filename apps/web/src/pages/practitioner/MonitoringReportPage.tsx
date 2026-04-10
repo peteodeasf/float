@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getMonitoringReport } from '../../api/monitoring'
+import PractitionerNav from '../../components/ui/PractitionerNav'
 
 function DTBadge({ value }: { value: number | null }) {
   if (value == null) return <span className="text-slate-300">--</span>
@@ -35,11 +36,16 @@ export default function MonitoringReportPage() {
   if (!report || report.total_entries === 0) {
     return (
       <div className="min-h-screen bg-white">
-        <nav className="border-b border-slate-200 px-8 py-4 flex items-center gap-4 print:hidden">
-          <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600">
-            &larr; Back
-          </button>
-        </nav>
+        <div className="print:hidden">
+          <PractitionerNav
+            activePage="patients"
+            subHeader={{
+              backTo: `/patients/${patientId}`,
+              backLabel: 'Back to patient',
+              title: 'Pre-consultation report',
+            }}
+          />
+        </div>
         <div className="px-8 py-16 text-center">
           <p className="text-slate-400">No observations recorded yet.</p>
         </div>
@@ -57,20 +63,25 @@ export default function MonitoringReportPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Nav — hidden when printing */}
-      <nav className="border-b border-slate-200 px-8 py-4 flex items-center justify-between print:hidden">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600">
-            &larr; Back
-          </button>
-          <span className="text-sm text-slate-400">Pre-consultation report</span>
-        </div>
-        <button
-          onClick={() => window.print()}
-          className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
-        >
-          Print / Save PDF
-        </button>
-      </nav>
+      <div className="print:hidden">
+        <PractitionerNav
+          activePage="patients"
+          subHeader={{
+            backTo: `/patients/${patientId}`,
+            backLabel: 'Back to patient',
+            title: report.patient_name,
+            subtitle: 'Pre-consultation report',
+            rightAction: (
+              <button
+                onClick={() => window.print()}
+                className="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-900 transition-colors border-none cursor-pointer"
+              >
+                Print / Save PDF
+              </button>
+            )
+          }}
+        />
+      </div>
 
       <main className="max-w-4xl mx-auto px-8 py-8 print:px-0 print:py-4">
         {/* Header */}
