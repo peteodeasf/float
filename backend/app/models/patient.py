@@ -43,6 +43,7 @@ class PatientProfile(Base):
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
     primary_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )
@@ -69,6 +70,7 @@ class ParentPatientLink(Base):
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False
     )
+    phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

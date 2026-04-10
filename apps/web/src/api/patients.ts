@@ -4,14 +4,16 @@ export type Patient = {
   id: string
   name: string
   email: string
+  phone_number?: string | null
   created_at: string
 }
 
 export interface PatientDetail {
   id: string
-  user_id: string          // add this
+  user_id: string
   name: string
   email: string
+  phone_number?: string | null
   date_of_birth: string | null
   primary_practitioner_id: string
   created_at: string
@@ -50,6 +52,7 @@ export interface CreatePatientData {
   name: string
   email: string
   date_of_birth?: string
+  phone_number?: string
 }
 
 export const createPatient = async (data: CreatePatientData): Promise<PatientDetail> => {

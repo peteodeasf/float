@@ -8,6 +8,7 @@ class PatientCreate(BaseModel):
     name: str
     email: EmailStr
     date_of_birth: Optional[date] = None
+    phone_number: Optional[str] = None
 
 
 class PatientResponse(BaseModel):
@@ -16,6 +17,7 @@ class PatientResponse(BaseModel):
     name: str
     email: str
     date_of_birth: Optional[date] = None
+    phone_number: Optional[str] = None
     primary_practitioner_id: Optional[uuid.UUID] = None
     created_at: datetime
 
@@ -27,6 +29,7 @@ class PatientListResponse(BaseModel):
     id: uuid.UUID
     name: str
     email: str
+    phone_number: Optional[str] = None
     created_at: datetime
 
     class Config:

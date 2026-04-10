@@ -72,6 +72,7 @@ async def list_patients(
             id=patient.id,
             name=patient.name,
             email=user.email,
+            phone_number=patient.phone_number,
             created_at=patient.created_at
         ))
     return result
@@ -93,6 +94,7 @@ async def create_new_patient(
         name=patient.name,
         email=user.email,
         date_of_birth=patient.date_of_birth,
+        phone_number=patient.phone_number,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at
     )
@@ -118,6 +120,7 @@ async def get_patient(
         name=patient.name,
         email=user.email,
         date_of_birth=patient.date_of_birth,
+        phone_number=patient.phone_number,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at
     )

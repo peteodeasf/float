@@ -10,6 +10,7 @@ export default function NewPatientPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [dob, setDob] = useState('')
+  const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
 
   const mutation = useMutation({
@@ -29,7 +30,8 @@ export default function NewPatientPage() {
     mutation.mutate({
       name,
       email,
-      date_of_birth: dob || undefined
+      date_of_birth: dob || undefined,
+      phone_number: phone || undefined
     })
   }
 
@@ -73,6 +75,20 @@ export default function NewPatientPage() {
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="jamie@example.com"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Phone number
+                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="(555) 123-4567"
               />
             </div>
 

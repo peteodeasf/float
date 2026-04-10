@@ -33,21 +33,24 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import InlineForm from '../../components/ui/InlineForm'
 import MessagesPanel from '../../components/ui/MessagesPanel'
+import { DetailNav } from '../../components/ui/PractitionerNav'
 
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
 function TrendPill({ label, trend }: { label: string; trend: string }) {
+  const displayTrend = trend === 'insufficient data' ? 'Not enough data yet' : trend
   const colors: Record<string, string> = {
     improving: 'bg-green-100 text-green-700',
     stable: 'bg-slate-100 text-slate-600',
     worsening: 'bg-red-100 text-red-700',
-    'insufficient data': 'bg-slate-100 text-slate-400',
+    'insufficient data': 'bg-slate-50 text-slate-400',
+    'Not enough data yet': 'bg-slate-50 text-slate-400',
   }
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm text-slate-500">{label}</span>
-      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors[trend] ?? colors['insufficient data']}`}>
-        {trend}
+      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors[displayTrend] ?? colors['insufficient data']}`}>
+        {displayTrend}
       </span>
     </div>
   )
@@ -386,40 +389,55 @@ export default function PatientPage() {
     }
   }, [showPlanEditor, editingPlan, editor]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Smart activity summary
+  const activitySummary = (() => {
+    if (monitoringForm?.status === 'in_progress') {
+      const n = monitoringForm.entries_count ?? 0
+      return `Monitoring form in progress \u00B7 ${n} ${n === 1 ? 'entry' : 'entries'}`
+    }
+    if (monitoringForm?.status === 'submitted') {
+      const n = monitoringForm.entries_count ?? 0
+      return `Monitoring form submitted \u00B7 ${n} ${n === 1 ? 'entry' : 'entries'}`
+    }
+    if (!monitoringForm && !plan) return 'No monitoring form sent yet'
+    if (plan?.status === 'active' && brief && brief.experiments_since_last_session > 0) {
+      return `${brief.experiments_since_last_session} exposure${brief.experiments_since_last_session === 1 ? '' : 's'} completed`
+    }
+    if (plan?.status === 'active') return 'Treatment plan active \u00B7 No exposures yet'
+    if (plan?.status === 'setup') {
+      const n = triggers?.length ?? 0
+      return `Treatment plan in setup \u00B7 ${n} trigger situation${n === 1 ? '' : 's'}`
+    }
+    return 'New patient'
+  })()
+
   const canActivate = plan?.status === 'setup' &&
     triggers && triggers.length > 0
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav
-        className="bg-white px-8 flex items-center justify-between"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
-      >
-        <div className="flex items-center gap-4">
+      <DetailNav
+        backPath="/dashboard"
+        backLabel="Patients"
+        title={patient?.name ?? 'Loading...'}
+        subtitle={activitySummary}
+        rightAction={
           <button
-            onClick={() => navigate('/dashboard')}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            onClick={() => navigate(`/patients/${patientId}/progress`)}
+            className="text-sm font-medium bg-transparent border-none cursor-pointer"
+            style={{ color: 'var(--float-primary)' }}
           >
-            &larr; Back
+            View progress &rarr;
           </button>
-          <h1 className="text-lg font-semibold text-slate-800">
-            {patient?.name ?? 'Loading...'}
-          </h1>
-        </div>
-        <button
-          onClick={() => navigate(`/patients/${patientId}/progress`)}
-          className="text-sm text-teal-600 font-medium hover:underline"
-        >
-          View progress &rarr;
-        </button>
-      </nav>
+        }
+      />
 
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">
 
         {/* Monitoring form */}
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 className="text-[15px] font-medium text-slate-700 mb-3">
               Parent monitoring form
             </h2>
 
@@ -622,7 +640,9 @@ export default function PatientPage() {
                 <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                   Open flags
                 </p>
-                <p className={`text-2xl font-semibold ${brief.open_flag_count > 0 ? 'text-amber-500' : 'text-slate-800'}`}>
+                <p className={`text-2xl font-semibold ${brief.open_flag_count > 0 ? '' : 'text-slate-800'}`}
+                   style={brief.open_flag_count > 0 ? { color: 'var(--float-primary)' } : undefined}>
+                  {brief.open_flag_count > 0 && <span className="text-sm mr-1">&#9888;</span>}
                   {brief.open_flag_count}
                 </p>
               </div>
@@ -631,13 +651,15 @@ export default function PatientPage() {
               <TrendPill label="BIP" trend={brief.bip_trend} />
               <TrendPill label="Distress" trend={brief.distress_thermometer_trend} />
             </div>
-            <div className="bg-teal-50 rounded-lg px-4 py-3 mb-4">
-              <p className="text-xs font-medium text-teal-400 uppercase tracking-wider mb-1">
-                Recommended focus
-              </p>
-              <p className="text-sm text-teal-800 font-medium">
-                {brief.recommended_focus}
-              </p>
+            <div className="border-t border-slate-100 pt-4 mb-4">
+              <div className="rounded-lg px-4 py-3" style={{ borderLeft: '4px solid var(--float-primary)', background: '#f0fdfa' }}>
+                <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--float-primary)' }}>
+                  Recommended focus
+                </p>
+                <p className="text-base font-medium" style={{ color: '#134e4a' }}>
+                  {brief.recommended_focus}
+                </p>
+              </div>
             </div>
             {brief.recent_learnings.length > 0 && (
               <div>
@@ -786,20 +808,22 @@ export default function PatientPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
-            <p className="text-slate-400 mb-3">No treatment plan yet</p>
+            <p className="text-slate-500 mb-1">No treatment plan yet</p>
+            <p className="text-sm text-slate-400 mb-4">Create one to start configuring trigger situations and exposure ladders</p>
             <button
               onClick={() => createPlanMutation.mutate()}
               disabled={createPlanMutation.isPending}
-              className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
+              className="text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 border-none cursor-pointer"
+              style={{ background: 'var(--float-primary)' }}
             >
               {createPlanMutation.isPending ? 'Creating...' : 'Create treatment plan'}
             </button>
           </div>
         )}
         {/* Session notes */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-800">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[15px] font-medium text-slate-700">
               Session notes
             </h2>
             {!showNoteForm && (
@@ -926,15 +950,20 @@ export default function PatientPage() {
             </div>
           ) : (
             !showNoteForm && (
-              <p className="text-sm text-slate-400">No session notes yet</p>
+              <p className="text-sm text-slate-400">
+                No notes yet &middot;{' '}
+                <button onClick={() => { resetNoteForm(); setShowNoteForm(true) }} className="text-teal-600 hover:underline bg-transparent border-none cursor-pointer text-sm font-medium">
+                  + Add note
+                </button>
+              </p>
             )
           )}
         </div>
 
         {/* Action plans */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-800">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[15px] font-medium text-slate-700">
               Action plans
             </h2>
             {!showPlanEditor && (
@@ -1122,7 +1151,12 @@ export default function PatientPage() {
             </div>
           ) : (
             !showPlanEditor && (
-              <p className="text-sm text-slate-400">No action plans yet</p>
+              <p className="text-sm text-slate-400">
+                No action plans yet &middot;{' '}
+                <button onClick={openNewPlan} className="text-teal-600 hover:underline bg-transparent border-none cursor-pointer text-sm font-medium">
+                  + New plan
+                </button>
+              </p>
             )
           )}
         </div>

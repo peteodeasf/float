@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { DetailNav } from '../../components/ui/PractitionerNav'
 import { useQuery } from '@tanstack/react-query'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -51,21 +52,12 @@ export default function ProgressPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav
-        className="bg-white px-8 flex items-center gap-4"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
-      >
-        <button
-          onClick={() => navigate(`/patients/${patientId}`)}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          &larr; Back
-        </button>
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800">Progress</h1>
-          {patient && <p className="text-xs text-slate-400">{patient.name}</p>}
-        </div>
-      </nav>
+      <DetailNav
+        backPath={`/patients/${patientId}`}
+        backLabel="Patient"
+        title="Progress"
+        subtitle={patient?.name}
+      />
 
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">
 

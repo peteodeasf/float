@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import { getPatients, Patient } from '../../api/patients'
-import FloatLogo from '../../components/ui/FloatLogo'
+import { DashboardNav } from '../../components/ui/PractitionerNav'
 
 function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   return (
@@ -27,7 +26,6 @@ function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => voi
 }
 
 export default function DashboardPage() {
-  const { logout } = useAuth()
   const navigate = useNavigate()
 
   const { data: patients, isLoading, error } = useQuery({
@@ -35,43 +33,9 @@ export default function DashboardPage() {
     queryFn: getPatients,
   })
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
   return (
     <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
-      <nav
-        className="bg-white px-8 flex items-center justify-between"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
-      >
-        <FloatLogo size="md" />
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/education')}
-            className="flex items-center gap-1.5 text-sm transition-colors cursor-pointer bg-transparent border-none"
-            style={{ color: 'var(--float-text-secondary)' }}
-            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--float-primary)' }}
-            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--float-text-secondary)' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-            </svg>
-            Education
-          </button>
-          <button
-            onClick={handleLogout}
-            className="text-sm transition-colors cursor-pointer bg-transparent border-none"
-            style={{ color: 'var(--float-text-secondary)' }}
-            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--float-primary)' }}
-            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--float-text-secondary)' }}
-          >
-            Sign out
-          </button>
-        </div>
-      </nav>
+      <DashboardNav />
 
       <main className="px-8 py-8 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">

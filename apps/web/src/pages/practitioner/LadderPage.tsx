@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { DetailNav } from '../../components/ui/PractitionerNav'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import DownwardArrowPanel from '../../components/ui/DownwardArrowPanel'
 import {
@@ -112,21 +113,12 @@ export default function LadderPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav
-        className="bg-white px-8 flex items-center gap-4"
-        style={{ height: '56px', borderBottom: '1px solid var(--float-border)' }}
-      >
-        <button
-          onClick={() => navigate(`/patients/${patientId}`)}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          &larr; Back
-        </button>
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800">Exposure Ladder</h1>
-          {trigger && <p className="text-xs text-slate-400">{trigger.name}</p>}
-        </div>
-      </nav>
+      <DetailNav
+        backPath={`/patients/${patientId}`}
+        backLabel="Patient"
+        title="Exposure Ladder"
+        subtitle={trigger?.name}
+      />
 
       <main className="px-8 py-8 max-w-3xl mx-auto space-y-6">
 
