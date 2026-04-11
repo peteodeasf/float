@@ -3,6 +3,7 @@ import { apiClient } from './client'
 export interface SendMonitoringFormParams {
   parent_email?: string
   parent_name?: string
+  parent_phone?: string
 }
 
 export interface MonitoringFormData {
@@ -19,6 +20,7 @@ export interface MonitoringFormData {
   entries?: MonitoringEntryData[]
   practitioner_name?: string
   email_sent?: boolean
+  sms_sent?: boolean
 }
 
 export interface MonitoringEntryData {

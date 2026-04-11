@@ -66,7 +66,9 @@ export default function PatientPage() {
   const [showSendForm, setShowSendForm] = useState(false)
   const [parentEmail, setParentEmail] = useState('')
   const [parentName, setParentName] = useState('')
+  const [parentPhone, setParentPhone] = useState('')
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
+  const [smsSentTo, setSmsSentTo] = useState<string | null>(null)
   const [showNoteForm, setShowNoteForm] = useState(false)
   const [editingNote, setEditingNote] = useState<SessionNote | null>(null)
   const [noteType, setNoteType] = useState('weekly_session')
@@ -127,22 +129,21 @@ export default function PatientPage() {
   })
 
   const sendFormMutation = useMutation({
-    mutationFn: (params: { parent_email?: string; parent_name?: string } = {}) =>
+    mutationFn: (params: { parent_email?: string; parent_name?: string; parent_phone?: string } = {}) =>
       sendMonitoringForm(patientId!, params),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['monitoring-form', patientId] })
-      // Always copy link
       if (data.full_link) {
         navigator.clipboard.writeText(data.full_link)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }
-      if (data.email_sent && parentEmail) {
-        setEmailSentTo(parentEmail)
-      }
+      if (data.email_sent && parentEmail) setEmailSentTo(parentEmail)
+      if (data.sms_sent && parentPhone) setSmsSentTo(parentPhone)
       setShowSendForm(false)
       setParentEmail('')
       setParentName('')
+      setParentPhone('')
     }
   })
 
@@ -155,10 +156,11 @@ export default function PatientPage() {
     }
   }
 
-  const handleSendWithEmail = () => {
+  const handleSendAll = () => {
     sendFormMutation.mutate({
       parent_email: parentEmail || undefined,
-      parent_name: parentName || undefined
+      parent_name: parentName || undefined,
+      parent_phone: parentPhone || undefined
     })
   }
 
@@ -437,6 +439,13 @@ export default function PatientPage() {
 
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">
 
+        {/* Patient contact info */}
+        {patient?.phone_number && (
+          <p className="text-xs" style={{ color: 'var(--float-text-hint)', marginTop: '-8px' }}>
+            {patient.phone_number}
+          </p>
+        )}
+
         {/* Monitoring form */}
 
           <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -450,15 +459,27 @@ export default function PatientPage() {
                   Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
                 </p>
 
-                {emailSentTo && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                    <span>&#10003;</span> Email sent to {emailSentTo}
+                {(emailSentTo || smsSentTo) && (
+                  <div className="space-y-1">
+                    {emailSentTo && (
+                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                        <span>&#10003;</span> Email sent to {emailSentTo}
+                      </div>
+                    )}
+                    {smsSentTo && (
+                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                        <span>&#10003;</span> SMS sent to {smsSentTo}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {!showSendForm ? (
                   <button
-                    onClick={() => setShowSendForm(true)}
+                    onClick={() => {
+                      setShowSendForm(true)
+                      if (patient?.phone_number) setParentPhone(patient.phone_number)
+                    }}
                     className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
                   >
                     Send monitoring form
@@ -489,21 +510,36 @@ export default function PatientPage() {
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
-                    <div className="flex gap-2">
-                      {parentEmail && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Parent phone for SMS (optional)
+                      </label>
+                      <input
+                        type="tel"
+                        value={parentPhone}
+                        onChange={e => setParentPhone(e.target.value)}
+                        placeholder="+1 (555) 123-4567"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(parentEmail || parentPhone) && (
                         <button
-                          onClick={handleSendWithEmail}
+                          onClick={handleSendAll}
                           disabled={sendFormMutation.isPending}
                           className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
                         >
-                          {sendFormMutation.isPending ? 'Sending...' : 'Send email + copy link'}
+                          {sendFormMutation.isPending ? 'Sending...' :
+                            parentEmail && parentPhone ? 'Send both + copy link' :
+                            parentEmail ? 'Send email + copy link' :
+                            'Send SMS + copy link'}
                         </button>
                       )}
                       <button
                         onClick={handleSendLinkOnly}
                         disabled={sendFormMutation.isPending}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                          parentEmail
+                          (parentEmail || parentPhone)
                             ? 'border border-slate-200 text-slate-600 hover:bg-slate-100'
                             : 'bg-teal-600 text-white hover:bg-teal-700'
                         }`}

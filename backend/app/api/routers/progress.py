@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.api.routers.patients import get_practitioner_context
 from app.services.progress_service import get_patient_progress, get_pre_session_brief
 from app.services.missed_experiment_service import detect_missed_experiments
+from app.services.experiment_reminder_service import send_experiment_reminders
 from app.schemas.progress import PatientProgressFull, PreSessionBrief
 
 router = APIRouter(tags=["progress"])
@@ -40,3 +41,12 @@ async def run_missed_experiment_detection(
 ):
     count = await detect_missed_experiments(db)
     return {"missed_experiments_found": count}
+
+
+@router.post("/admin/send-experiment-reminders")
+async def run_experiment_reminders(
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    count = await send_experiment_reminders(db)
+    return {"reminders_sent": count}

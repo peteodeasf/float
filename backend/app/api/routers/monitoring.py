@@ -19,6 +19,7 @@ from app.api.routers.patients import get_practitioner_context
 class SendMonitoringFormRequest(BaseModel):
     parent_email: Optional[str] = None
     parent_name: Optional[str] = None
+    parent_phone: Optional[str] = None
 
 
 class MonitoringEntryCreate(BaseModel):
@@ -95,6 +96,11 @@ async def send_monitoring_form(
     practitioner_name = practitioner.name
     monitoring_link = f"{settings.BASE_URL}/monitor/{form.access_token}"
 
+    # Store parent phone if provided
+    if data.parent_phone:
+        form.parent_phone = data.parent_phone
+        await db.commit()
+
     # Send email if parent_email provided
     email_sent = False
     if data.parent_email:
@@ -104,6 +110,17 @@ async def send_monitoring_form(
             monitoring_link=monitoring_link,
             child_name=patient.name,
             parent_name=data.parent_name or ""
+        )
+
+    # Send SMS if parent_phone provided
+    sms_sent = False
+    if data.parent_phone:
+        from app.services.sms_service import send_monitoring_form_sms
+        sms_sent = await send_monitoring_form_sms(
+            to_number=data.parent_phone,
+            clinician_name=practitioner_name,
+            monitoring_link=monitoring_link,
+            child_name=patient.name
         )
 
     return {
@@ -116,7 +133,8 @@ async def send_monitoring_form(
         "practitioner_name": practitioner_name,
         "sent_at": form.sent_at.isoformat() if form.sent_at else None,
         "created_at": form.created_at.isoformat(),
-        "email_sent": email_sent
+        "email_sent": email_sent,
+        "sms_sent": sms_sent
     }
 
 

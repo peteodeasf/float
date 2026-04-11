@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     RESEND_FROM_NAME: str = "Float"
     BASE_URL: str = "http://localhost:5173"
 
+    # SMS (Twilio)
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_PHONE_NUMBER: str = ""
+
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:8081"]
     

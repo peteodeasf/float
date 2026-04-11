@@ -36,6 +36,7 @@ python-multipart==0.0.12
 PyYAML==6.0.3
 requests==2.33.1
 resend==2.27.0
+twilio==9.10.4
 rsa==4.9.1
 setuptools==78.1.1
 six==1.17.0
