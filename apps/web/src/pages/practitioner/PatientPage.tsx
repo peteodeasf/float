@@ -233,39 +233,79 @@ export default function PatientPage() {
 
           {/* Monitoring card */}
           <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monitoring</span>
-                {monitoringForm ? (
-                  <>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' : 'bg-teal-100 text-teal-700'}`}>{monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}</span>
-                    <span className="text-xs text-slate-400">{monitoringForm.entries_count ?? 0} entries</span>
-                  </>
-                ) : null}
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--float-text)' }}>Monitoring form</span>
+                {monitoringForm && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' : 'bg-teal-100 text-teal-700'}`}>
+                    {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
+                  </span>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {monitoringForm && (monitoringForm.entries_count ?? 0) > 0 && <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">Report</button>}
-                {monitoringForm && <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/monitor/${monitoringForm.access_token}`); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">{copied ? 'Copied!' : 'Copy link'}</button>}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {monitoringForm && (monitoringForm.entries_count ?? 0) > 0 && (
+                  <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">View report</button>
+                )}
+                {monitoringForm && (
+                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/monitor/${monitoringForm.access_token}`); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-text-hint)' }}>{copied ? 'Copied!' : 'Copy link'}</button>
+                )}
               </div>
             </div>
+
+            {/* Not sent */}
             {!monitoringForm && (
-              <div style={{ marginTop: '8px' }}>
-                <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 10px' }}>
-                  Send a monitoring form to the parent before your first appointment. They'll observe their child's anxiety for about a week — you'll use the results to prepare for your first session together.
+              <>
+                <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
+                  Send a monitoring form to the parent before your first appointment. They'll observe their child's anxiety for about a week — you'll use the results in your first session.
                 </p>
                 {!showSendForm ? (
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => setShowSendForm(true)} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Send form</button>
-                    <button onClick={() => sendFormMut.mutate({})} className="text-xs text-slate-500 border border-slate-200 rounded cursor-pointer bg-white" style={{ padding: '6px 12px' }}>Copy link</button>
+                    <button onClick={() => setShowSendForm(true)} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '7px 14px', borderRadius: '6px' }}>Send form</button>
+                    <button onClick={() => sendFormMut.mutate({})} className="text-xs border border-slate-200 rounded cursor-pointer bg-white" style={{ padding: '7px 14px', borderRadius: '6px', color: 'var(--float-text-secondary)' }}>Copy link</button>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="Parent email" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} />
-                    <input value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="Phone" className="text-xs border border-slate-200 rounded" style={{ width: '110px', padding: '6px 8px' }} />
-                    <button onClick={() => sendFormMut.mutate({ parent_email: parentEmail || undefined, parent_phone: parentPhone || undefined })} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Send</button>
+                    <input value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="Parent email" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '7px 10px' }} />
+                    <input value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="Phone" className="text-xs border border-slate-200 rounded" style={{ width: '120px', padding: '7px 10px' }} />
+                    <button onClick={() => sendFormMut.mutate({ parent_email: parentEmail || undefined, parent_phone: parentPhone || undefined })} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '7px 14px' }}>Send</button>
                   </div>
                 )}
-              </div>
+              </>
+            )}
+
+            {/* In progress */}
+            {monitoringForm && monitoringForm.status !== 'submitted' && (
+              <>
+                <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
+                  {monitoringForm.entries_count ?? 0} {(monitoringForm.entries_count ?? 0) === 1 ? 'entry' : 'entries'} recorded
+                  {monitoringForm.sent_at && (() => {
+                    const days = Math.floor((Date.now() - new Date(monitoringForm.sent_at!).getTime()) / 86400000)
+                    return ` \u00B7 Sent ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`}`
+                  })()}
+                </p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {(monitoringForm.entries_count ?? 0) > 0 && (
+                    <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="text-xs border border-slate-200 rounded cursor-pointer bg-white" style={{ padding: '7px 14px', borderRadius: '6px', color: 'var(--float-text-secondary)' }}>View entries</button>
+                  )}
+                  {(monitoringForm.entries_count ?? 0) >= 5 && (
+                    <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '7px 14px', borderRadius: '6px' }}>View report</button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Submitted */}
+            {monitoringForm && monitoringForm.status === 'submitted' && (
+              <>
+                <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
+                  {monitoringForm.entries_count ?? 0} {(monitoringForm.entries_count ?? 0) === 1 ? 'entry' : 'entries'} submitted \u00B7 Ready to review
+                </p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '7px 14px', borderRadius: '6px' }}>View pre-consultation report</button>
+                </div>
+              </>
+            )}
             )}
           </div>
 
