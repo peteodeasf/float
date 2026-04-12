@@ -44,7 +44,8 @@ async def create_trigger(
         name=data.name,
         description=data.description,
         distress_thermometer_rating=data.distress_thermometer_rating,
-        display_order=next_order
+        display_order=next_order,
+        is_active=data.is_active if data.is_active is not None else False
     )
     db.add(trigger)
     await db.commit()
@@ -75,6 +76,8 @@ async def update_trigger(
         trigger.description = data.description
     if data.distress_thermometer_rating is not None:
         trigger.distress_thermometer_rating = data.distress_thermometer_rating
+    if data.is_active is not None:
+        trigger.is_active = data.is_active
 
     await db.commit()
     await db.refresh(trigger)

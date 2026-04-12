@@ -18,7 +18,21 @@ export interface TriggerSituation {
   description: string | null
   distress_thermometer_rating: number | null
   display_order: number
+  is_active: boolean
   created_at: string
+}
+
+export const updateTrigger = async (
+  planId: string,
+  triggerId: string,
+  data: Partial<CreateTriggerData & { is_active: boolean }>
+): Promise<TriggerSituation> => {
+  const response = await apiClient.put(`/plans/${planId}/triggers/${triggerId}`, data)
+  return response.data
+}
+
+export const deleteTrigger = async (planId: string, triggerId: string): Promise<void> => {
+  await apiClient.delete(`/plans/${planId}/triggers/${triggerId}`)
 }
 
 export interface AvoidanceBehavior {

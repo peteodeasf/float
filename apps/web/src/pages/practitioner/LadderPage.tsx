@@ -124,6 +124,13 @@ export default function LadderPage() {
       />
 
       <main className="px-8 py-8 max-w-3xl mx-auto space-y-6">
+        {/* Redirect banner */}
+        <div className="bg-teal-50 border border-teal-200 rounded-lg px-4 py-3 flex items-center justify-between">
+          <p className="text-sm text-teal-800">The ladder view has moved to the patient page.</p>
+          <button onClick={() => navigate(`/patients/${patientId}`)} className="text-xs font-medium text-teal-700 hover:underline bg-transparent border-none cursor-pointer">
+            Go to patient page &rarr;
+          </button>
+        </div>
 
         {/* Flags */}
         {openFlags.length > 0 && (
