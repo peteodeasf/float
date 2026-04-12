@@ -132,6 +132,7 @@ export default function PatientPage() {
   const [copied, setCopied] = useState(false)
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
   const [smsSentTo, setSmsSentTo] = useState<string | null>(null)
+  const [showEntries, setShowEntries] = useState(false)
   const [msgContent, setMsgContent] = useState('')
   const [showMsgForm, setShowMsgForm] = useState(false)
 
@@ -184,16 +185,49 @@ export default function PatientPage() {
     mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined }),
     onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerDT(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
   })
-  const sendFormMut = useMutation({
-    mutationFn: (p: any) => sendMonitoringForm(patientId!, p),
+  const sendFormMutation = useMutation({
+    mutationFn: (params: { parent_email?: string; parent_name?: string; parent_phone?: string } = {}) =>
+      sendMonitoringForm(patientId!, params),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['monitoring-form', patientId] })
-      if (data.full_link) { navigator.clipboard.writeText(data.full_link); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+      if (data.full_link) {
+        try { navigator.clipboard.writeText(data.full_link) } catch { const el = document.createElement('textarea'); el.value = data.full_link; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el) }
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
       if (data.email_sent && parentEmail) setEmailSentTo(parentEmail)
       if (data.sms_sent && parentPhone) setSmsSentTo(parentPhone)
-      setShowSendForm(false); setParentEmail(''); setParentName(''); setParentPhone('')
+      setShowSendForm(false)
+      setParentEmail('')
+      setParentName('')
+      setParentPhone('')
     }
   })
+
+  const handleCopyLink = async () => {
+    if (monitoringForm?.access_token) {
+      const url = `${window.location.origin}/monitor/${monitoringForm.access_token}`
+      try { await navigator.clipboard.writeText(url) } catch { const el = document.createElement('textarea'); el.value = url; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el) }
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const handleSendAll = () => {
+    sendFormMutation.mutate({
+      parent_email: parentEmail || undefined,
+      parent_name: parentName || undefined,
+      parent_phone: parentPhone || undefined
+    })
+  }
+
+  const handleSendLinkOnly = () => {
+    sendFormMutation.mutate({})
+  }
+
+  const daysSinceSent = monitoringForm?.sent_at
+    ? Math.floor((Date.now() - new Date(monitoringForm.sent_at).getTime()) / (1000 * 60 * 60 * 24))
+    : null
   const sendMsgMut = useMutation({
     mutationFn: () => sendMessage(patientId!, patient!.user_id, msgContent, 'general'),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['messages', patientId] }); setMsgContent(''); setShowMsgForm(false) }
@@ -242,108 +276,184 @@ export default function PatientPage() {
 
           {/* Monitoring card */}
           <div style={cardStyle}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--float-text)' }}>Monitoring form</span>
-                {monitoringForm && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' : 'bg-teal-100 text-teal-700'}`}>
-                    {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
-                  </span>
+            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', margin: '0 0 12px' }}>Parent monitoring form</h2>
+
+            {!monitoringForm ? (
+              <div>
+                <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>
+                  Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
+                </p>
+
+                {(emailSentTo || smsSentTo) && (
+                  <div style={{ marginBottom: '12px' }}>
+                    {emailSentTo && (
+                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '4px' }}>
+                        <span>&#10003;</span> Email sent to {emailSentTo}
+                      </div>
+                    )}
+                    {smsSentTo && (
+                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                        <span>&#10003;</span> SMS sent to {smsSentTo}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
-              {monitoringForm && (
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  {(monitoringForm.entries_count ?? 0) > 0 && (
-                    <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">View report</button>
-                  )}
-                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/monitor/${monitoringForm.access_token}`); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-text-hint)' }}>{copied ? 'Copied!' : 'Copy link'}</button>
-                </div>
-              )}
-            </div>
 
-            {/* Status description */}
-            {!monitoringForm && (
-              <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
-                Send a monitoring form to the parent before your first appointment. They'll observe their child's anxiety for about a week — you'll use the results in your first session.
-              </p>
-            )}
-            {monitoringForm && monitoringForm.status !== 'submitted' && (
-              <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
-                {monitoringForm.entries_count ?? 0} {(monitoringForm.entries_count ?? 0) === 1 ? 'entry' : 'entries'} recorded
-                {monitoringForm.sent_at && (() => {
-                  const days = Math.floor((Date.now() - new Date(monitoringForm.sent_at!).getTime()) / 86400000)
-                  return ` \u00B7 Sent ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`}`
-                })()}
-              </p>
-            )}
-            {monitoringForm && monitoringForm.status === 'submitted' && (
-              <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
-                {monitoringForm.entries_count ?? 0} {(monitoringForm.entries_count ?? 0) === 1 ? 'entry' : 'entries'} submitted \u00B7 Ready to review
-              </p>
-            )}
-
-            {/* Confirmations */}
-            {(emailSentTo || smsSentTo) && (
-              <div style={{ marginBottom: '12px' }}>
-                {emailSentTo && (
-                  <p style={{ fontSize: '13px', color: '#16a34a', margin: '0 0 2px' }}>&#10003; Email sent to {emailSentTo}</p>
-                )}
-                {smsSentTo && (
-                  <p style={{ fontSize: '13px', color: '#16a34a', margin: 0 }}>&#10003; SMS sent to {smsSentTo}</p>
-                )}
-              </div>
-            )}
-
-            {/* Submitted CTA */}
-            {monitoringForm && monitoringForm.status === 'submitted' && (
-              <div style={{ marginBottom: '12px' }}>
-                <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '7px 14px', borderRadius: '6px' }}>View pre-consultation report</button>
-              </div>
-            )}
-
-            {/* Send form — always visible (for initial send or resend) */}
-            {!showSendForm ? (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
-                  className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '7px 14px', borderRadius: '6px' }}>
-                  {monitoringForm ? 'Resend' : 'Send form'}
-                </button>
-                {!monitoringForm && (
-                  <button onClick={() => sendFormMut.mutate({})} className="text-xs border border-slate-200 rounded cursor-pointer bg-white" style={{ padding: '7px 14px', borderRadius: '6px', color: 'var(--float-text-secondary)' }}>Just copy link</button>
+                {!showSendForm ? (
+                  <button
+                    onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
+                    className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors border-none cursor-pointer"
+                  >
+                    Send monitoring form
+                  </button>
+                ) : (
+                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
+                      <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
+                      <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </div>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
+                      <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(parentEmail || parentPhone) && (
+                        <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
+                          className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
+                          {sendFormMutation.isPending ? 'Sending...' :
+                            parentEmail && parentPhone ? 'Send both + copy link' :
+                            parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
+                        </button>
+                      )}
+                      <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
+                          (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
+                        }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
+                        {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
+                      </button>
+                      <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : (
-              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginTop: '4px' }}>
-                <div style={{ marginBottom: '8px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Parent email (optional)</label>
-                  <input value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
-                    className="text-sm border border-slate-200 rounded" style={{ width: '100%', padding: '7px 10px', boxSizing: 'border-box' as const }} />
-                </div>
-                <div style={{ marginBottom: '8px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Parent name (optional)</label>
-                  <input value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
-                    className="text-sm border border-slate-200 rounded" style={{ width: '100%', padding: '7px 10px', boxSizing: 'border-box' as const }} />
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '500', color: '#64748b', marginBottom: '4px' }}>Phone for SMS (optional)</label>
-                  <input value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
-                    className="text-sm border border-slate-200 rounded" style={{ width: '100%', padding: '7px 10px', boxSizing: 'border-box' as const }} />
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {(parentEmail || parentPhone) && (
-                    <button onClick={() => sendFormMut.mutate({ parent_email: parentEmail || undefined, parent_name: parentName || undefined, parent_phone: parentPhone || undefined })}
-                      disabled={sendFormMut.isPending}
-                      className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '7px 14px', borderRadius: '6px' }}>
-                      {sendFormMut.isPending ? 'Sending...' : parentEmail && parentPhone ? 'Send both + copy link' : parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
-                    </button>
-                  )}
-                  <button onClick={() => sendFormMut.mutate({})} disabled={sendFormMut.isPending}
-                    className={`text-xs rounded cursor-pointer disabled:opacity-50 ${(parentEmail || parentPhone) ? 'border border-slate-200 bg-white' : 'bg-teal-600 text-white border-none'}`}
-                    style={{ padding: '7px 14px', borderRadius: '6px', color: (parentEmail || parentPhone) ? 'var(--float-text-secondary)' : '#fff' }}>
-                    {sendFormMut.isPending ? 'Creating...' : 'Just copy link'}
+              <div>
+                {/* Status row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
+                      monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
+                    </span>
+                    {monitoringForm.entries_count != null && (
+                      <span className="text-sm text-slate-500">{monitoringForm.entries_count} {monitoringForm.entries_count === 1 ? 'entry' : 'entries'}</span>
+                    )}
+                    {daysSinceSent != null && (
+                      <span className="text-sm text-slate-400">{daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent}d ago`}</span>
+                    )}
+                  </div>
+                  <button onClick={handleCopyLink} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
+                    {copied ? 'Copied!' : 'Copy link'}
                   </button>
-                  <button onClick={() => setShowSendForm(false)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#94a3b8', padding: '7px 8px' }}>Cancel</button>
+                </div>
+
+                {/* Entries list */}
+                {(monitoringForm.entries_count ?? 0) > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <button onClick={() => setShowEntries(!showEntries)} className="text-sm text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
+                      {showEntries ? 'Hide entries' : 'View entries'}
+                    </button>
+                    {showEntries && monitoringForm.entries && (
+                      <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {monitoringForm.entries.map((entry: any) => (
+                          <div key={entry.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                              <span className="text-xs font-medium text-slate-400">
+                                {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </span>
+                              {entry.fear_thermometer != null && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.fear_thermometer >= 7 ? 'bg-red-100 text-red-700' : entry.fear_thermometer >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                                  FT {entry.fear_thermometer}
+                                </span>
+                              )}
+                            </div>
+                            {entry.situation && <p className="text-sm text-slate-700" style={{ margin: 0 }}>{entry.situation}</p>}
+                            {entry.child_behavior_observed && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Observed:</span> {entry.child_behavior_observed}</p>}
+                            {entry.parent_response && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Response:</span> {entry.parent_response}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Report button */}
+                {(monitoringForm.entries_count ?? 0) > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)}
+                      className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+                        (monitoringForm.entries_count ?? 0) >= 5
+                          ? 'bg-teal-600 text-white hover:bg-teal-700 border-none'
+                          : 'text-slate-600 hover:bg-slate-50 bg-white'
+                      }`} style={(monitoringForm.entries_count ?? 0) < 5 ? { border: '1px solid #e2e8f0' } : undefined}>
+                      View pre-consultation report
+                    </button>
+                  </div>
+                )}
+
+                {/* Resend form — always available */}
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                  {!showSendForm ? (
+                    <button onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
+                      className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
+                      Resend to different contact
+                    </button>
+                  ) : (
+                    <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
+                        <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
+                        <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                      </div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
+                        <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {(parentEmail || parentPhone) && (
+                          <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
+                            className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
+                            {sendFormMutation.isPending ? 'Sending...' :
+                              parentEmail && parentPhone ? 'Send both + copy link' :
+                              parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
+                          </button>
+                        )}
+                        <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
+                            (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
+                          }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
+                          {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
+                        </button>
+                        <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
