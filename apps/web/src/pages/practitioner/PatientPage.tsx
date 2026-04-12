@@ -105,6 +105,13 @@ function BehaviorPanel({ trigger, planId, patientId }: {
       ) : (
         <button onClick={() => setShowAdd(true)} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">+ Add behavior</button>
       )}
+
+      {/* Empty state */}
+      {(!behaviors || behaviors.length === 0) && !showAdd && (
+        <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: '1.5', margin: '8px 0 0' }}>
+          Add the avoidance and safety behaviors this patient uses in this situation. Rate each with the distress level they'd feel if they stopped — this becomes the exposure ladder.
+        </p>
+      )}
     </div>
   )
 }
@@ -219,10 +226,10 @@ export default function PatientPage() {
         rightAction: <button onClick={() => navigate(`/patients/${patientId}/progress`)} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)' }}>View progress &rarr;</button>
       }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '12px', padding: '24px', alignItems: 'start' }}>
 
         {/* ── LEFT COLUMN ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* Monitoring card */}
           <div style={cardStyle}>
@@ -234,19 +241,30 @@ export default function PatientPage() {
                     <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' : 'bg-teal-100 text-teal-700'}`}>{monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}</span>
                     <span className="text-xs text-slate-400">{monitoringForm.entries_count ?? 0} entries</span>
                   </>
-                ) : <span className="text-xs text-slate-400">Not sent</span>}
+                ) : null}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {monitoringForm && (monitoringForm.entries_count ?? 0) > 0 && <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">Report</button>}
-                {!monitoringForm && <button onClick={() => setShowSendForm(!showSendForm)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">Send form</button>}
                 {monitoringForm && <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/monitor/${monitoringForm.access_token}`); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">{copied ? 'Copied!' : 'Copy link'}</button>}
               </div>
             </div>
-            {showSendForm && !monitoringForm && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <input value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="Parent email" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} />
-                <input value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="Phone" className="text-xs border border-slate-200 rounded" style={{ width: '110px', padding: '6px 8px' }} />
-                <button onClick={() => sendFormMut.mutate({ parent_email: parentEmail || undefined, parent_phone: parentPhone || undefined })} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Send</button>
+            {!monitoringForm && (
+              <div style={{ marginTop: '8px' }}>
+                <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 10px' }}>
+                  Send a monitoring form to the parent before your first appointment. They'll observe their child's anxiety for about a week — you'll use the results to prepare for your first session together.
+                </p>
+                {!showSendForm ? (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => setShowSendForm(true)} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Send form</button>
+                    <button onClick={() => sendFormMut.mutate({})} className="text-xs text-slate-500 border border-slate-200 rounded cursor-pointer bg-white" style={{ padding: '6px 12px' }}>Copy link</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="Parent email" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} />
+                    <input value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="Phone" className="text-xs border border-slate-200 rounded" style={{ width: '110px', padding: '6px 8px' }} />
+                    <button onClick={() => sendFormMut.mutate({ parent_email: parentEmail || undefined, parent_phone: parentPhone || undefined })} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Send</button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -261,7 +279,7 @@ export default function PatientPage() {
                 </div>
                 {canActivate && <button onClick={() => activatePlanMut.mutate()} disabled={activatePlanMut.isPending} className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer">{activatePlanMut.isPending ? '...' : 'Activate'}</button>}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', borderTop: '0', minHeight: '280px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '160px minmax(0,1fr)', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '260px' }}>
                 {/* Situations list */}
                 <div style={{ borderRight: '1px solid var(--float-border)', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #f1f5f9' }}>
@@ -288,7 +306,10 @@ export default function PatientPage() {
                       </div>
                     )}
                     {(!triggers || triggers.length === 0) && !showTriggerAdd && (
-                      <div style={{ padding: '24px 12px', textAlign: 'center' }}><button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add situation</button></div>
+                      <div style={{ padding: '16px 10px' }}>
+                        <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.4', margin: '0 0 8px' }}>Add trigger situations identified in your sessions.</p>
+                        <button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add first situation</button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -310,7 +331,7 @@ export default function PatientPage() {
         </div>
 
         {/* ── RIGHT COLUMN ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* Messages card */}
           <div style={cardStyle}>
@@ -326,7 +347,11 @@ export default function PatientPage() {
             )}
             {lastMsg ? (
               <p className="text-xs text-slate-600" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(lastMsg.message_type === 'too_hard' ? { borderLeft: '2px solid #f59e0b', paddingLeft: '6px' } : {}) }}>{lastMsg.content.length > 100 ? lastMsg.content.slice(0, 100) + '...' : lastMsg.content}</p>
-            ) : !showMsgForm && <p className="text-xs text-slate-400">No messages yet</p>}
+            ) : !showMsgForm && (
+              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+                Send check-ins, encouragement, or plan adjustments to the patient between sessions.
+              </p>
+            )}
           </div>
 
           {/* Session notes card */}
@@ -373,7 +398,11 @@ export default function PatientPage() {
                   </div>
                 ))}
               </div>
-            ) : !showNoteForm && <p className="text-xs text-slate-400" style={{ margin: 0 }}>No notes yet</p>}
+            ) : !showNoteForm && (
+              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+                Capture notes from each session here — clinical observations, what was discussed, anything to reference next time. Clinician-only.
+              </p>
+            )}
           </div>
 
           {/* Action plans card */}
@@ -417,7 +446,11 @@ export default function PatientPage() {
                   </div>
                 ))}
               </div>
-            ) : !showPlanEditor && <p className="text-xs text-slate-400" style={{ margin: 0 }}>No plans yet</p>}
+            ) : !showPlanEditor && (
+              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+                Action plans are session summaries written directly to the patient. After each session, write what they'll work on and publish it to their app.
+              </p>
+            )}
           </div>
         </div>
       </div>
