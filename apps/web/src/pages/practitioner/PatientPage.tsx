@@ -209,20 +209,25 @@ export default function PatientPage() {
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
   const badgeColors: Record<string, string> = { consultation_1: 'bg-purple-100 text-purple-700', consultation_2: 'bg-purple-100 text-purple-700', consultation_3: 'bg-purple-100 text-purple-700', weekly_session: 'bg-teal-100 text-teal-700', other: 'bg-slate-100 text-slate-600' }
 
+  const cardStyle = { background: '#fff', borderRadius: '10px', border: '1px solid var(--float-border)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div style={{ minHeight: '100vh', background: 'var(--float-bg)' }}>
       <PractitionerNav activePage="patients" subHeader={{
         backTo: '/dashboard', backLabel: 'Back to patients',
         title: patient?.name ?? 'Loading...', subtitle: activitySummary,
         rightAction: <button onClick={() => navigate(`/patients/${patientId}/progress`)} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)' }}>View progress &rarr;</button>
       }} />
 
-      <main className="px-6 py-3 max-w-[1200px] mx-auto space-y-3">
-        {/* Row 1 — Monitoring + Messages */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-lg border border-slate-200 px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '24px', alignItems: 'start' }}>
+
+        {/* ── LEFT COLUMN ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Monitoring card */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monitoring</span>
                 {monitoringForm ? (
                   <>
@@ -231,192 +236,191 @@ export default function PatientPage() {
                   </>
                 ) : <span className="text-xs text-slate-400">Not sent</span>}
               </div>
-              <div className="flex items-center gap-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {monitoringForm && (monitoringForm.entries_count ?? 0) > 0 && <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">Report</button>}
                 {!monitoringForm && <button onClick={() => setShowSendForm(!showSendForm)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">Send form</button>}
-                {monitoringForm && <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/monitor/${monitoringForm.access_token}`); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">{copied ? 'Copied!' : 'Link'}</button>}
+                {monitoringForm && <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/monitor/${monitoringForm.access_token}`); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">{copied ? 'Copied!' : 'Copy link'}</button>}
               </div>
             </div>
             {showSendForm && !monitoringForm && (
-              <div className="mt-2 flex gap-2">
-                <input value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="Email" className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded" />
-                <input value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="Phone" className="w-24 px-2 py-1 text-xs border border-slate-200 rounded" />
-                <button onClick={() => sendFormMut.mutate({ parent_email: parentEmail || undefined, parent_phone: parentPhone || undefined })} className="bg-teal-600 text-white px-2 py-1 rounded text-xs font-medium border-none cursor-pointer">Send</button>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                <input value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="Parent email" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} />
+                <input value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="Phone" className="text-xs border border-slate-200 rounded" style={{ width: '110px', padding: '6px 8px' }} />
+                <button onClick={() => sendFormMut.mutate({ parent_email: parentEmail || undefined, parent_phone: parentPhone || undefined })} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Send</button>
               </div>
             )}
           </div>
-          <div className="bg-white rounded-lg border border-slate-200 px-4 py-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
-              <button onClick={() => setShowMsgForm(!showMsgForm)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New</button>
-            </div>
-            {showMsgForm && (
-              <div className="flex gap-2 mb-1">
-                <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Message..." className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded" onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
-                <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white px-2 py-1 rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40">Send</button>
-              </div>
-            )}
-            {lastMsg ? (
-              <p className="text-xs text-slate-600 truncate" style={lastMsg.message_type === 'too_hard' ? { borderLeft: '2px solid #f59e0b', paddingLeft: '6px' } : undefined}>{lastMsg.content.length > 80 ? lastMsg.content.slice(0, 80) + '...' : lastMsg.content}</p>
-            ) : !showMsgForm && <p className="text-xs text-slate-400">No messages yet</p>}
-          </div>
-        </div>
 
-        {/* Row 2 — Two columns: Treatment plan | Notes + Plans */}
-        <div className="grid grid-cols-2 gap-3" style={{ alignItems: 'start' }}>
-          {/* Left column — Treatment plan */}
+          {/* Treatment plan card */}
           {plan ? (
-            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
-                <div className="flex items-center gap-2">
+            <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="text-sm font-semibold text-slate-700">Treatment plan</span>
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${plan.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{plan.status}</span>
                 </div>
                 {canActivate && <button onClick={() => activatePlanMut.mutate()} disabled={activatePlanMut.isPending} className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer">{activatePlanMut.isPending ? '...' : 'Activate'}</button>}
               </div>
-              <div className="flex" style={{ minHeight: '300px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', borderTop: '0', minHeight: '280px' }}>
                 {/* Situations list */}
-                <div className="w-[180px] border-r border-slate-100 flex flex-col flex-shrink-0">
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-slate-50">
+                <div style={{ borderRight: '1px solid var(--float-border)', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #f1f5f9' }}>
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Situations</span>
                     {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="text-[10px] text-teal-600 font-bold bg-transparent border-none cursor-pointer">+</button>}
                   </div>
-                  <div className="flex-1 overflow-y-auto">
+                  <div style={{ flex: 1, overflowY: 'auto' }}>
                     {triggers?.map(t => (
                       <button key={t.id} onClick={() => setSelectedTriggerId(t.id)}
-                        className="w-full text-left px-3 py-2.5 border-none cursor-pointer flex items-center gap-1.5"
-                        style={{ background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent' }}>
+                        style={{ width: '100%', textAlign: 'left', padding: '10px 12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent' }}>
                         <span style={{ fontSize: '5px', color: t.is_active ? 'var(--float-primary)' : '#cbd5e1' }}>●</span>
-                        <span className="text-xs text-slate-700 truncate flex-1">{t.name}</span>
+                        <span className="text-xs text-slate-700" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
                         <DTBadge value={t.distress_thermometer_rating} />
                       </button>
                     ))}
                     {showTriggerAdd && (
-                      <div className="px-2 py-2 border-t border-slate-50">
-                        <input value={newTriggerName} onChange={e => setNewTriggerName(e.target.value)} placeholder="Situation name" className="w-full px-1.5 py-1 text-xs border border-slate-200 rounded mb-1" autoFocus onKeyDown={e => e.key === 'Enter' && newTriggerName.trim() && addTriggerMut.mutate()} />
-                        <div className="flex gap-1">
-                          <input value={newTriggerDT} onChange={e => setNewTriggerDT(e.target.value)} placeholder="DT" type="number" min="0" max="10" className="w-10 px-1 py-1 text-xs border border-slate-200 rounded" />
-                          <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} className="bg-teal-600 text-white px-2 py-1 rounded text-[10px] font-medium disabled:opacity-40 border-none cursor-pointer">Add</button>
+                      <div style={{ padding: '8px', borderTop: '1px solid #f1f5f9' }}>
+                        <input value={newTriggerName} onChange={e => setNewTriggerName(e.target.value)} placeholder="Situation name" className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '4px 6px', marginBottom: '4px', boxSizing: 'border-box' }} autoFocus onKeyDown={e => e.key === 'Enter' && newTriggerName.trim() && addTriggerMut.mutate()} />
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <input value={newTriggerDT} onChange={e => setNewTriggerDT(e.target.value)} placeholder="DT" type="number" min="0" max="10" className="text-xs border border-slate-200 rounded" style={{ width: '36px', padding: '4px' }} />
+                          <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} className="bg-teal-600 text-white rounded text-[10px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '4px 8px' }}>Add</button>
                           <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerDT('') }} className="text-[10px] text-slate-400 bg-transparent border-none cursor-pointer">X</button>
                         </div>
                       </div>
                     )}
                     {(!triggers || triggers.length === 0) && !showTriggerAdd && (
-                      <div className="px-3 py-6 text-center"><button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add situation</button></div>
+                      <div style={{ padding: '24px 12px', textAlign: 'center' }}><button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add situation</button></div>
                     )}
                   </div>
                 </div>
-                {/* Behaviors panel */}
-                <div className="flex-1 overflow-hidden">
+                {/* Behaviors */}
+                <div style={{ overflow: 'hidden' }}>
                   {selectedTrigger ? <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} /> : (
-                    <div className="flex items-center justify-center h-full text-xs text-slate-400">Select a situation</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '13px', color: '#94a3b8' }}>Select a situation</div>
                   )}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg border border-slate-200 p-6 text-center">
-              <p className="text-sm text-slate-500 mb-1">No treatment plan yet</p>
-              <p className="text-xs text-slate-400 mb-3">Create one to start configuring trigger situations</p>
-              <button onClick={() => createPlanMut.mutate()} disabled={createPlanMut.isPending} className="text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 border-none cursor-pointer" style={{ background: 'var(--float-primary)' }}>{createPlanMut.isPending ? 'Creating...' : 'Create treatment plan'}</button>
+            <div style={{ ...cardStyle, textAlign: 'center' }}>
+              <p className="text-sm text-slate-500" style={{ marginBottom: '4px' }}>No treatment plan yet</p>
+              <p className="text-xs text-slate-400" style={{ marginBottom: '12px' }}>Create one to start configuring trigger situations</p>
+              <button onClick={() => createPlanMut.mutate()} disabled={createPlanMut.isPending} className="text-white text-sm font-medium disabled:opacity-50 border-none cursor-pointer" style={{ background: 'var(--float-primary)', padding: '8px 16px', borderRadius: '8px' }}>{createPlanMut.isPending ? 'Creating...' : 'Create treatment plan'}</button>
             </div>
           )}
+        </div>
 
-          {/* Right column — Notes + Plans */}
-          <div className="space-y-3">
-            {/* Session notes */}
-            <div className="bg-white rounded-lg border border-slate-200 px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-700">Session notes</span>
-                  {sessionNotes && sessionNotes.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{sessionNotes.length}</span>}
-                </div>
-                {!showNoteForm && <button onClick={() => { resetNoteForm(); setShowNoteForm(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
-              </div>
-              {showNoteForm && (
-                <div className="space-y-2 mb-3">
-                  <div className="flex gap-2">
-                    <select value={noteType} onChange={e => setNoteType(e.target.value)} className="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
-                      {Object.entries(sessionTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                    </select>
-                    <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="px-2 py-1 text-xs border border-slate-200 rounded" />
-                  </div>
-                  <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={3} placeholder="Session notes..." className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded resize-y" />
-                  <div className="flex gap-2">
-                    <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim()} className="bg-teal-600 text-white px-2.5 py-1 rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer">{editingNote ? 'Update' : 'Save'}</button>
-                    <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-                  </div>
-                </div>
-              )}
-              {sessionNotes && sessionNotes.length > 0 ? (
-                <div className="space-y-1.5">
-                  {sessionNotes.map(n => (
-                    <div key={n.id} className="py-1.5 px-2.5 bg-slate-50 rounded text-xs">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1">
-                          <span className={`px-1 py-0.5 rounded font-medium ${badgeColors[n.session_type] || 'bg-slate-100 text-slate-600'}`}>{sessionTypeLabels[n.session_type] || n.session_type}</span>
-                          <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <button onClick={() => { setEditingNote(n); setNoteType(n.session_type); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer text-xs">Edit</button>
-                          <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer text-xs">Del</button>
-                        </div>
-                      </div>
-                      <p className="text-slate-600 whitespace-pre-wrap cursor-pointer" onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
-                        {expandedNoteId === n.id ? n.content : n.content.length > 80 ? n.content.slice(0, 80) + '...' : n.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : !showNoteForm && <p className="text-xs text-slate-400">No notes yet</p>}
+        {/* ── RIGHT COLUMN ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Messages card */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
+              <button onClick={() => setShowMsgForm(!showMsgForm)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New</button>
             </div>
-
-            {/* Action plans */}
-            <div className="bg-white rounded-lg border border-slate-200 px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-700">Action plans</span>
-                  {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
-                </div>
-                {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
+            {showMsgForm && (
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Message..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
+                <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '6px 12px' }}>Send</button>
               </div>
-              {showPlanEditor && (
-                <div className="space-y-2 mb-3">
-                  <div className="flex gap-2">
-                    <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="px-2 py-1 text-xs border border-slate-200 rounded" />
-                    <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded" />
-                  </div>
-                  <div className="border border-slate-200 rounded overflow-hidden">
-                    <EditorContent editor={editor} />
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => editingPlan ? updatePlanActionMut.mutate() : createPlanActionMut.mutate()} className="bg-teal-600 text-white px-2.5 py-1 rounded text-xs font-medium border-none cursor-pointer">Save draft</button>
-                    {editingPlan && !editingPlan.visible_to_patient && <button onClick={() => { updatePlanActionMut.mutate(undefined, { onSuccess: () => { publishPlanMut.mutate(editingPlan.id); resetPlanEditor() } }) }} className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-medium border-none cursor-pointer">Publish</button>}
-                    <button onClick={resetPlanEditor} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-                  </div>
+            )}
+            {lastMsg ? (
+              <p className="text-xs text-slate-600" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(lastMsg.message_type === 'too_hard' ? { borderLeft: '2px solid #f59e0b', paddingLeft: '6px' } : {}) }}>{lastMsg.content.length > 100 ? lastMsg.content.slice(0, 100) + '...' : lastMsg.content}</p>
+            ) : !showMsgForm && <p className="text-xs text-slate-400">No messages yet</p>}
+          </div>
+
+          {/* Session notes card */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="text-sm font-semibold text-slate-700">Session notes</span>
+                {sessionNotes && sessionNotes.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{sessionNotes.length}</span>}
+              </div>
+              {!showNoteForm && <button onClick={() => { resetNoteForm(); setShowNoteForm(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
+            </div>
+            {showNoteForm && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select value={noteType} onChange={e => setNoteType(e.target.value)} className="text-xs border border-slate-200 rounded bg-white" style={{ padding: '4px 8px' }}>
+                    {Object.entries(sessionTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                  <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
                 </div>
-              )}
-              {actionPlans && actionPlans.length > 0 ? (
-                <div className="space-y-1.5">
-                  {actionPlans.map(ap => (
-                    <div key={ap.id} className="py-1.5 px-2.5 bg-slate-50 rounded text-xs flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-700">#{ap.session_number}</span>
-                        <span className="text-slate-400">{new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
+                  <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                </div>
+              </div>
+            )}
+            {sessionNotes && sessionNotes.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {sessionNotes.map(n => (
+                  <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span className={`px-1 py-0.5 rounded font-medium ${badgeColors[n.session_type] || 'bg-slate-100 text-slate-600'}`}>{sessionTypeLabels[n.session_type] || n.session_type}</span>
+                        <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-1 py-0.5 rounded font-medium ${ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ap.visible_to_patient ? 'Published' : 'Draft'}</span>
-                        {!ap.visible_to_patient && <button onClick={() => { setEditingPlan(ap); setPlanDate(ap.session_date); setPlanNickname(ap.nickname || ''); editor?.commands.setContent(ap.content || ''); setShowPlanEditor(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer">Edit</button>}
-                        <button onClick={() => { if (confirm('Delete?')) deletePlanMut.mutate(ap.id) }} className="text-red-400 bg-transparent border-none cursor-pointer">Del</button>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => { setEditingNote(n); setNoteType(n.session_type); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
+                        <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : !showPlanEditor && <p className="text-xs text-slate-400">No plans yet</p>}
+                    <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
+                      {expandedNoteId === n.id ? n.content : n.content.length > 100 ? n.content.slice(0, 100) + '...' : n.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : !showNoteForm && <p className="text-xs text-slate-400" style={{ margin: 0 }}>No notes yet</p>}
+          </div>
+
+          {/* Action plans card */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="text-sm font-semibold text-slate-700">Action plans</span>
+                {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
+              </div>
+              {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
             </div>
+            {showPlanEditor && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
+                  <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '4px 8px' }} />
+                </div>
+                <div style={{ border: '1px solid var(--float-border)', borderRadius: '6px', overflow: 'hidden' }}>
+                  <EditorContent editor={editor} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => editingPlan ? updatePlanActionMut.mutate() : createPlanActionMut.mutate()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Save draft</button>
+                  {editingPlan && !editingPlan.visible_to_patient && <button onClick={() => { updatePlanActionMut.mutate(undefined, { onSuccess: () => { publishPlanMut.mutate(editingPlan.id); resetPlanEditor() } }) }} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Publish</button>}
+                  <button onClick={resetPlanEditor} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                </div>
+              </div>
+            )}
+            {actionPlans && actionPlans.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {actionPlans.map(ap => (
+                  <div key={ap.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="font-medium text-slate-700">#{ap.session_number}</span>
+                      <span className="text-slate-400">{new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className={`px-1 py-0.5 rounded font-medium ${ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ap.visible_to_patient ? 'Published' : 'Draft'}</span>
+                      {!ap.visible_to_patient && <button onClick={() => { setEditingPlan(ap); setPlanDate(ap.session_date); setPlanNickname(ap.nickname || ''); editor?.commands.setContent(ap.content || ''); setShowPlanEditor(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>}
+                      <button onClick={() => { if (confirm('Delete?')) deletePlanMut.mutate(ap.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : !showPlanEditor && <p className="text-xs text-slate-400" style={{ margin: 0 }}>No plans yet</p>}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
