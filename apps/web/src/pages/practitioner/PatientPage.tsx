@@ -412,7 +412,13 @@ export default function PatientPage() {
     <div style={{ minHeight: '100vh', background: 'var(--float-bg)' }}>
       <PractitionerNav activePage="patients" subHeader={{
         backTo: '/dashboard', backLabel: 'Back to patients',
-        title: patient?.name ?? 'Loading...', subtitle: activitySummary,
+        title: patient?.name ?? 'Loading...',
+        subtitle: [
+          patient?.age ? `Age ${patient.age}` : null,
+          patient?.gender || null,
+          patient?.phone_number || null,
+          activitySummary
+        ].filter(Boolean).join(' \u00B7 '),
         rightAction: <button onClick={() => navigate(`/patients/${patientId}/progress`)} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)' }}>View progress &rarr;</button>
       }} />
 

@@ -14,7 +14,8 @@ export interface PatientDetail {
   name: string
   email: string
   phone_number?: string | null
-  date_of_birth: string | null
+  age?: number | null
+  gender?: string | null
   primary_practitioner_id: string
   created_at: string
 }
@@ -51,7 +52,8 @@ export const TEST = "hello"
 export interface CreatePatientData {
   name: string
   email: string
-  date_of_birth?: string
+  age?: number
+  gender?: string
   phone_number?: string
 }
 

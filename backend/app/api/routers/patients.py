@@ -106,7 +106,8 @@ async def create_new_patient(
         user_id=patient.user_id,
         name=patient.name,
         email=user.email,
-        date_of_birth=patient.date_of_birth,
+        age=patient.age,
+        gender=patient.gender,
         phone_number=patient.phone_number,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at
@@ -132,7 +133,8 @@ async def get_patient(
         user_id=patient.user_id,
         name=patient.name,
         email=user.email,
-        date_of_birth=patient.date_of_birth,
+        age=patient.age,
+        gender=patient.gender,
         phone_number=patient.phone_number,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at

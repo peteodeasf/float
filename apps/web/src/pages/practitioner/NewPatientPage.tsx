@@ -9,7 +9,8 @@ export default function NewPatientPage() {
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [dob, setDob] = useState('')
+  const [age, setAge] = useState('')
+  const [gender, setGender] = useState('')
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
 
@@ -30,7 +31,8 @@ export default function NewPatientPage() {
     mutation.mutate({
       name,
       email,
-      date_of_birth: dob || undefined,
+      age: age ? Number(age) : undefined,
+      gender: gender || undefined,
       phone_number: phone || undefined
     })
   }
@@ -94,15 +96,36 @@ export default function NewPatientPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Date of birth
+                Age
                 <span className="text-slate-400 font-normal ml-1">(optional)</span>
               </label>
               <input
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
+                type="number"
+                min="1"
+                max="99"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="14"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Gender
+                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+              </label>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+              >
+                <option value="">Select...</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Non-binary">Non-binary</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
             </div>
 
             {error && (
