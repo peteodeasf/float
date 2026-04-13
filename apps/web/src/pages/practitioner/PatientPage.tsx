@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage } from '../../api/patients'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
-  updatePlanStatus, getBehaviors, createBehavior, updateTrigger, deleteTrigger,
+  updatePlanStatus, getBehaviors, getLadder, getLadderFlags, reviewLadder,
+  createBehavior, updateTrigger, deleteTrigger,
   type TriggerSituation, type AvoidanceBehavior
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, getMonitoringSituations } from '../../api/monitoring'
@@ -29,15 +30,31 @@ function BehaviorPanel({ trigger, planId, patientId }: {
   trigger: TriggerSituation; planId: string; patientId: string
 }) {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const [showAdd, setShowAdd] = useState(false)
   const [name, setName] = useState('')
   const [type, setType] = useState('avoidance')
   const [dt, setDt] = useState('')
+  const [reviewMsg, setReviewMsg] = useState<string | null>(null)
 
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
+  })
+
+  const { data: ladder } = useQuery({
+    queryKey: ['ladder', trigger.id],
+    queryFn: () => getLadder(trigger.id),
+    enabled: !!trigger.id
+  })
+
+  const { data: ladderFlags } = useQuery({
+    queryKey: ['ladder-flags', ladder?.id],
+    queryFn: async () => {
+      if (!ladder?.id) return []
+      const flags = await getLadderFlags(ladder.id)
+      return flags.filter((f: any) => f.status === 'open')
+    },
+    enabled: !!ladder?.id
   })
 
   const addMut = useMutation({
@@ -45,10 +62,32 @@ function BehaviorPanel({ trigger, planId, patientId }: {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setName(''); setDt(''); setShowAdd(false) }
   })
 
+  const reviewMut = useMutation({
+    mutationFn: () => reviewLadder(ladder!.id),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['ladder-flags', ladder?.id] })
+      const flagCount = Array.isArray(data) ? data.filter((f: any) => f.status === 'open').length : 0
+      setReviewMsg(`Review complete — ${flagCount} flag${flagCount === 1 ? '' : 's'} found`)
+      setTimeout(() => setReviewMsg(null), 3000)
+    }
+  })
+
   const toggleActive = useMutation({
     mutationFn: () => updateTrigger(planId, trigger.id, { is_active: !trigger.is_active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['triggers'] })
   })
+
+  // Sort behaviors by DT ascending (lowest first), nulls at end
+  const sortedBehaviors = behaviors ? [...behaviors].sort((a, b) => {
+    const aDT = a.distress_thermometer_when_refraining
+    const bDT = b.distress_thermometer_when_refraining
+    if (aDT == null && bDT == null) return 0
+    if (aDT == null) return 1
+    if (bDT == null) return -1
+    return Number(aDT) - Number(bDT)
+  }) : []
+
+  const openFlags = ladderFlags ?? []
 
   return (
     <div className="p-4 h-full overflow-y-auto">
@@ -66,9 +105,45 @@ function BehaviorPanel({ trigger, planId, patientId }: {
         </div>
       </div>
 
-      {/* Behaviors */}
+      {/* Section header with AI review */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avoidance &amp; safety behaviors</span>
+          {!showAdd && (
+            <button onClick={() => setShowAdd(true)} className="text-[10px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add</button>
+          )}
+        </div>
+        {behaviors && behaviors.length > 0 && ladder && (
+          <button onClick={() => reviewMut.mutate()} disabled={reviewMut.isPending}
+            className="text-[10px] font-medium bg-transparent border-none cursor-pointer disabled:opacity-50"
+            style={{ color: 'var(--float-primary)' }}>
+            {reviewMut.isPending ? 'Reviewing...' : 'Run AI review'}
+          </button>
+        )}
+      </div>
+
+      {/* Review confirmation */}
+      {reviewMsg && (
+        <p style={{ fontSize: '11px', color: 'var(--float-primary)', margin: '0 0 8px' }}>{reviewMsg}</p>
+      )}
+
+      {/* Flags */}
+      {openFlags.length > 0 && (
+        <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 12px', marginBottom: '10px' }}>
+          <p style={{ fontSize: '11px', fontWeight: '600', color: '#92400e', margin: '0 0 6px' }}>
+            &#9888; {openFlags.length} item{openFlags.length === 1 ? '' : 's'} need{openFlags.length === 1 ? 's' : ''} attention
+          </p>
+          {openFlags.map((f: any) => (
+            <p key={f.id} style={{ fontSize: '12px', color: '#78350f', lineHeight: '1.4', margin: '0 0 4px' }}>
+              {f.description || f.flag_type.replace(/_/g, ' ')}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* Behaviors — sorted by DT ascending */}
       <div className="space-y-1.5 mb-3">
-        {behaviors?.map(b => (
+        {sortedBehaviors.map(b => (
           <div key={b.id} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
@@ -76,13 +151,7 @@ function BehaviorPanel({ trigger, planId, patientId }: {
               </span>
               <span className="text-sm text-slate-700 truncate">{b.name}</span>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <DTBadge value={b.distress_thermometer_when_refraining} />
-              <button onClick={() => navigate(`/patients/${patientId}/triggers/${trigger.id}/ladder`)}
-                className="text-[10px] text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer whitespace-nowrap">
-                Ladder &rarr;
-              </button>
-            </div>
+            <DTBadge value={b.distress_thermometer_when_refraining} />
           </div>
         ))}
       </div>
@@ -102,7 +171,7 @@ function BehaviorPanel({ trigger, planId, patientId }: {
             <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">X</button>
           </div>
         </div>
-      ) : (
+      ) : behaviors && behaviors.length === 0 && (
         <button onClick={() => setShowAdd(true)} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">+ Add behavior</button>
       )}
 
