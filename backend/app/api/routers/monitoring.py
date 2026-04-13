@@ -188,6 +188,49 @@ async def get_monitoring_form(
     }
 
 
+@practitioner_router.get("/patients/{patient_id}/monitoring-form/situations")
+async def get_monitoring_situations(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, practitioner = context
+
+    form_result = await db.execute(
+        select(MonitoringForm).where(
+            MonitoringForm.patient_id == patient_id
+        ).order_by(MonitoringForm.created_at.desc())
+    )
+    form = form_result.scalar_one_or_none()
+    if not form:
+        return {"situations": [], "total_entries": 0}
+
+    entries_result = await db.execute(
+        select(MonitoringEntry).where(
+            MonitoringEntry.monitoring_form_id == form.id,
+            MonitoringEntry.is_draft == False  # noqa: E712
+        ).order_by(MonitoringEntry.entry_date.asc())
+    )
+    entries = entries_result.scalars().all()
+
+    # Extract and deduplicate situations
+    situation_counts: dict[str, int] = {}
+    for e in entries:
+        if e.situation and e.situation.strip():
+            key = e.situation.strip().lower()
+            if key not in situation_counts:
+                situation_counts[key] = {"text": e.situation.strip(), "count": 0}
+            situation_counts[key]["count"] += 1
+
+    situations = [
+        {"text": v["text"], "mention_count": v["count"]}
+        for v in situation_counts.values()
+    ]
+    situations.sort(key=lambda s: s["mention_count"], reverse=True)
+
+    return {"situations": situations, "total_entries": len(entries)}
+
+
 @practitioner_router.get("/patients/{patient_id}/monitoring-form/report")
 async def get_monitoring_report(
     patient_id: uuid.UUID,

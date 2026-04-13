@@ -79,3 +79,11 @@ export const getMonitoringReport = async (patientId: string): Promise<Monitoring
   const response = await apiClient.get(`/patients/${patientId}/monitoring-form/report`)
   return response.data
 }
+
+export const getMonitoringSituations = async (patientId: string): Promise<{
+  situations: { text: string; mention_count: number }[]
+  total_entries: number
+}> => {
+  const response = await apiClient.get(`/patients/${patientId}/monitoring-form/situations`)
+  return response.data
+}

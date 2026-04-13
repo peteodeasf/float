@@ -7,7 +7,7 @@ import {
   updatePlanStatus, getBehaviors, createBehavior, updateTrigger, deleteTrigger,
   type TriggerSituation, type AvoidanceBehavior
 } from '../../api/treatment'
-import { getMonitoringForm, sendMonitoringForm } from '../../api/monitoring'
+import { getMonitoringForm, sendMonitoringForm, getMonitoringSituations } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -125,6 +125,9 @@ export default function PatientPage() {
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
   const [newTriggerName, setNewTriggerName] = useState('')
   const [newTriggerDT, setNewTriggerDT] = useState('')
+  const [showExtract, setShowExtract] = useState(false)
+  const [extractItems, setExtractItems] = useState<{ text: string; checked: boolean }[]>([])
+  const [extracting, setExtracting] = useState(false)
   const [showSendForm, setShowSendForm] = useState(false)
   const [parentEmail, setParentEmail] = useState('')
   const [parentName, setParentName] = useState('')
@@ -185,6 +188,27 @@ export default function PatientPage() {
     mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined }),
     onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerDT(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
   })
+  const handleOpenExtract = async () => {
+    setShowExtract(true)
+    try {
+      const data = await getMonitoringSituations(patientId!)
+      setExtractItems(data.situations.map((s: any) => ({ text: s.text, checked: true })))
+    } catch { setExtractItems([]) }
+  }
+
+  const handleAddExtracted = async () => {
+    if (!plan) return
+    setExtracting(true)
+    const selected = extractItems.filter(i => i.checked && i.text.trim())
+    for (const item of selected) {
+      await createTrigger(plan.id, { name: item.text.trim() })
+    }
+    queryClient.invalidateQueries({ queryKey: ['triggers', plan.id] })
+    setShowExtract(false)
+    setExtractItems([])
+    setExtracting(false)
+  }
+
   const sendFormMutation = useMutation({
     mutationFn: (params: { parent_email?: string; parent_name?: string; parent_phone?: string } = {}) =>
       sendMonitoringForm(patientId!, params),
@@ -495,10 +519,47 @@ export default function PatientPage() {
                         </div>
                       </div>
                     )}
-                    {(!triggers || triggers.length === 0) && !showTriggerAdd && (
+                    {(!triggers || triggers.length === 0) && !showTriggerAdd && !showExtract && (
                       <div style={{ padding: '16px 10px' }}>
                         <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.4', margin: '0 0 8px' }}>Add trigger situations identified in your sessions.</p>
                         <button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add first situation</button>
+                        {monitoringForm && (monitoringForm.entries_count ?? 0) > 0 && (
+                          <div style={{ marginTop: '8px' }}>
+                            <button onClick={handleOpenExtract} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)' }}>
+                              Extract from monitoring form &rarr;
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {showExtract && (
+                      <div style={{ padding: '10px' }}>
+                        <p style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', margin: '0 0 8px' }}>
+                          From monitoring form ({extractItems.length} situation{extractItems.length === 1 ? '' : 's'})
+                        </p>
+                        {extractItems.length === 0 && (
+                          <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px' }}>No situations found in monitoring entries.</p>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
+                          {extractItems.map((item, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <input type="checkbox" checked={item.checked}
+                                onChange={e => { const next = [...extractItems]; next[i] = { ...next[i], checked: e.target.checked }; setExtractItems(next) }}
+                                style={{ flexShrink: 0 }} />
+                              <input value={item.text}
+                                onChange={e => { const next = [...extractItems]; next[i] = { ...next[i], text: e.target.value }; setExtractItems(next) }}
+                                className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '4px 6px', boxSizing: 'border-box' as const }} />
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={handleAddExtracted} disabled={extracting || extractItems.filter(i => i.checked).length === 0}
+                            className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '5px 10px' }}>
+                            {extracting ? 'Adding...' : `Add selected (${extractItems.filter(i => i.checked).length})`}
+                          </button>
+                          <button onClick={() => { setShowExtract(false); setExtractItems([]) }}
+                            className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                        </div>
                       </div>
                     )}
                   </div>
