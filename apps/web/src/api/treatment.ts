@@ -153,6 +153,15 @@ export const createBehavior = async (
   return response.data
 }
 
+export const updateBehavior = async (behaviorId: string, data: Partial<CreateBehaviorData>): Promise<AvoidanceBehavior> => {
+  const response = await apiClient.put(`/behaviors/${behaviorId}`, data)
+  return response.data
+}
+
+export const deleteBehavior = async (behaviorId: string): Promise<void> => {
+  await apiClient.delete(`/behaviors/${behaviorId}`)
+}
+
 export const createRung = async (
   ladderId: string,
   data: CreateRungData

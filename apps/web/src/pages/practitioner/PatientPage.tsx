@@ -5,7 +5,7 @@ import { getPatient, getMessages, sendMessage } from '../../api/patients'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanStatus, getBehaviors, getLadder, getLadderFlags, reviewLadder,
-  createBehavior, updateTrigger, deleteTrigger,
+  createBehavior, updateBehavior, deleteBehavior, updateTrigger, deleteTrigger,
   type TriggerSituation, type AvoidanceBehavior
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, getMonitoringSituations } from '../../api/monitoring'
@@ -35,6 +35,11 @@ function BehaviorPanel({ trigger, planId, patientId }: {
   const [type, setType] = useState('avoidance')
   const [dt, setDt] = useState('')
   const [reviewMsg, setReviewMsg] = useState<string | null>(null)
+  const [editingBehaviorId, setEditingBehaviorId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editType, setEditType] = useState('avoidance')
+  const [editDT, setEditDT] = useState('')
+  const [deletingBehaviorId, setDeletingBehaviorId] = useState<string | null>(null)
 
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
@@ -61,6 +66,23 @@ function BehaviorPanel({ trigger, planId, patientId }: {
     mutationFn: () => createBehavior(trigger.id, { name, behavior_type: type, distress_thermometer_when_refraining: dt ? Number(dt) : undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setName(''); setDt(''); setShowAdd(false) }
   })
+
+  const editMut = useMutation({
+    mutationFn: () => updateBehavior(editingBehaviorId!, { name: editName, behavior_type: editType, distress_thermometer_when_refraining: editDT ? Number(editDT) : undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setEditingBehaviorId(null) }
+  })
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => deleteBehavior(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setDeletingBehaviorId(null) }
+  })
+
+  const startEdit = (b: AvoidanceBehavior) => {
+    setEditingBehaviorId(b.id)
+    setEditName(b.name)
+    setEditType(b.behavior_type)
+    setEditDT(b.distress_thermometer_when_refraining != null ? String(b.distress_thermometer_when_refraining) : '')
+  }
 
   const reviewMut = useMutation({
     mutationFn: () => reviewLadder(ladder!.id),
@@ -144,14 +166,46 @@ function BehaviorPanel({ trigger, planId, patientId }: {
       {/* Behaviors — sorted by DT ascending */}
       <div className="space-y-1.5 mb-3">
         {sortedBehaviors.map(b => (
-          <div key={b.id} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
-                {b.behavior_type.slice(0, 3)}
-              </span>
-              <span className="text-sm text-slate-700 truncate">{b.name}</span>
-            </div>
-            <DTBadge value={b.distress_thermometer_when_refraining} />
+          <div key={b.id}>
+            {editingBehaviorId === b.id ? (
+              /* Edit mode */
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '8px 10px' }}>
+                <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '6px' }}
+                  onKeyDown={e => e.key === 'Enter' && editName.trim() && editMut.mutate()} />
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <select value={editType} onChange={e => setEditType(e.target.value)} className="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+                    <option value="avoidance">Avoidance</option><option value="safety">Safety</option><option value="ritual">Ritual</option>
+                  </select>
+                  <input value={editDT} onChange={e => setEditDT(e.target.value)} placeholder="DT" type="number" min="0" max="10" className="text-xs border border-slate-200 rounded" style={{ width: '44px', padding: '4px 6px' }} />
+                  <button onClick={() => editMut.mutate()} disabled={!editName.trim() || editMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '4px 10px' }}>Save</button>
+                  <button onClick={() => setEditingBehaviorId(null)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                </div>
+              </div>
+            ) : deletingBehaviorId === b.id ? (
+              /* Delete confirmation */
+              <div style={{ background: '#fef2f2', borderRadius: '8px', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this behavior?</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={() => delMut.mutate(b.id)} disabled={delMut.isPending} className="text-[11px] text-red-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50">Yes, delete</button>
+                  <button onClick={() => setDeletingBehaviorId(null)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              /* Normal row */
+              <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg group">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
+                    {b.behavior_type.slice(0, 3)}
+                  </span>
+                  <span className="text-sm text-slate-700 truncate">{b.name}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <DTBadge value={b.distress_thermometer_when_refraining} />
+                  <button onClick={() => startEdit(b)} className="text-[10px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
+                  <button onClick={() => setDeletingBehaviorId(b.id)} className="text-[10px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
