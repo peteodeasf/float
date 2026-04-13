@@ -3,18 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { getMonitoringReport } from '../../api/monitoring'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 
-function DTBadge({ value }: { value: number | null }) {
-  if (value == null) return <span className="text-slate-300">--</span>
-  const color = value >= 7 ? 'bg-red-100 text-red-700'
-    : value >= 4 ? 'bg-amber-100 text-amber-700'
-    : 'bg-green-100 text-green-700'
-  return (
-    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${color}`}>
-      {value}
-    </span>
-  )
-}
-
 export default function MonitoringReportPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
@@ -42,7 +30,7 @@ export default function MonitoringReportPage() {
             subHeader={{
               backTo: `/patients/${patientId}`,
               backLabel: 'Back to patient',
-              title: 'Pre-consultation report',
+              title: 'Monitoring report',
             }}
           />
         </div>
@@ -70,7 +58,7 @@ export default function MonitoringReportPage() {
             backTo: `/patients/${patientId}`,
             backLabel: 'Back to patient',
             title: report.patient_name,
-            subtitle: 'Pre-consultation report',
+            subtitle: 'Monitoring report',
             rightAction: (
               <button
                 onClick={() => window.print()}
@@ -83,204 +71,56 @@ export default function MonitoringReportPage() {
         />
       </div>
 
-      <main className="max-w-4xl mx-auto px-8 py-8 print:px-0 print:py-4">
+      <main className="max-w-5xl mx-auto px-8 py-8 print:px-0 print:py-4">
         {/* Header */}
-        <div className="mb-8 print:mb-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 mb-1">
-                {report.patient_name}
-              </h1>
-              <h2 className="text-lg text-slate-500 font-medium">
-                Pre-consultation report
-              </h2>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-400">
-                {dateFrom} &mdash; {dateTo}
-              </p>
-              <p className="text-sm text-slate-400">
-                {report.total_entries} observations
-              </p>
-            </div>
+        <div className="mb-6 print:mb-4">
+          <h1 className="text-xl font-bold text-slate-800 mb-1">
+            {report.patient_name}
+          </h1>
+          <h2 className="text-base text-slate-500 font-medium mb-2">
+            Monitoring report
+          </h2>
+          <div className="text-sm text-slate-400">
+            <span>Dates: {dateFrom} &mdash; {dateTo}</span>
+            <span style={{ margin: '0 8px' }}>&middot;</span>
+            <span>Entries: {report.total_entries}</span>
           </div>
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-4 gap-4 mb-8 print:mb-6">
-          <div className="bg-slate-50 rounded-xl p-4 print:border print:border-slate-200">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
-              Observations
-            </p>
-            <p className="text-3xl font-bold text-slate-800">
-              {report.total_entries}
-            </p>
-          </div>
-          <div className="bg-slate-50 rounded-xl p-4 print:border print:border-slate-200">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
-              Average distress
-            </p>
-            <p className="text-3xl font-bold text-slate-800">
-              {report.average_dt ?? '--'}
-            </p>
-          </div>
-          <div className="bg-slate-50 rounded-xl p-4 print:border print:border-slate-200">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
-              Highest DT
-            </p>
-            <p className="text-3xl font-bold text-red-600">
-              {report.dt_range?.max ?? '--'}
-            </p>
-          </div>
-          <div className="bg-slate-50 rounded-xl p-4 print:border print:border-slate-200">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
-              Days monitored
-            </p>
-            <p className="text-3xl font-bold text-slate-800">
-              {report.date_range?.days ?? '--'}
-            </p>
-          </div>
-        </div>
-
-        {/* Highest distress situations */}
-        {report.top_situations_by_distress.length > 0 && (
-          <div className="mb-8 print:mb-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              Highest distress situations
-            </h3>
-            <div className="space-y-3">
-              {report.top_situations_by_distress.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="border border-slate-200 rounded-xl p-5"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-xs text-slate-400 mb-1">
-                        {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                      </p>
-                      <p className="text-base font-medium text-slate-800">
-                        {entry.situation || 'No situation recorded'}
-                      </p>
-                    </div>
-                    <DTBadge value={entry.fear_thermometer} />
-                  </div>
-                  {entry.child_behavior_observed && (
-                    <div className="mb-2">
-                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-0.5">
-                        What was observed
-                      </p>
-                      <p className="text-sm text-slate-600">{entry.child_behavior_observed}</p>
-                    </div>
-                  )}
-                  {entry.parent_response && (
-                    <div>
-                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-0.5">
-                        How parent responded
-                      </p>
-                      <p className="text-sm text-slate-600">{entry.parent_response}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Most frequent situations */}
-        {report.top_situations_by_frequency.length > 0 && (
-          <div className="mb-8 print:mb-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              Most frequent situations
-            </h3>
-            <div className="space-y-2">
-              {report.top_situations_by_frequency.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg print:border print:border-slate-200"
-                >
-                  <span className="text-sm text-slate-700">{item.situation}</span>
-                  <span className="text-sm font-medium text-slate-500">{item.count}x</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Parent response themes */}
-        {report.parent_response_themes.length > 0 && (
-          <div className="mb-8 print:mb-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">
-              Parent responses at highest distress
-            </h3>
-            <p className="text-sm text-slate-400 mb-4">
-              How the parent responded during the 3 most distressing observations
-            </p>
-            <div className="space-y-3">
-              {report.parent_response_themes.map((theme, i) => (
-                <div
-                  key={i}
-                  className="border-l-4 border-amber-400 pl-4 py-2"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-slate-400">
-                      {new Date(theme.entry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                    {theme.fear_thermometer != null && (
-                      <span className="text-xs font-medium text-red-600">DT {theme.fear_thermometer}</span>
-                    )}
-                    {theme.situation && (
-                      <span className="text-xs text-slate-400">| {theme.situation}</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-slate-700 italic">
-                    "{theme.parent_response}"
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* All observations table */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">
-            All observations
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-slate-200">
-                  <th className="text-left py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Date</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Situation</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">What observed</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">How responded</th>
-                  <th className="text-center py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">DT</th>
+        {/* Observation matrix table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Date</th>
+                <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Situation</th>
+                <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">What I observed about my child</th>
+                <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">How I responded</th>
+                <th className="text-center py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Fear thermometer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.entries.map((entry) => (
+                <tr key={entry.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td className="py-3 px-3 text-slate-500" style={{ whiteSpace: 'nowrap' }}>
+                    {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </td>
+                  <td className="py-3 px-3 text-slate-700">
+                    {entry.situation || '--'}
+                  </td>
+                  <td className="py-3 px-3 text-slate-600">
+                    {entry.child_behavior_observed || '--'}
+                  </td>
+                  <td className="py-3 px-3 text-slate-600">
+                    {entry.parent_response || '--'}
+                  </td>
+                  <td className="py-3 px-3 text-center text-slate-700 font-medium">
+                    {entry.fear_thermometer ?? '--'}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {report.entries.map((entry) => (
-                  <tr key={entry.id} className="border-b border-slate-100">
-                    <td className="py-3 px-3 text-slate-500 whitespace-nowrap">
-                      {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </td>
-                    <td className="py-3 px-3 text-slate-700">
-                      {entry.situation || '--'}
-                    </td>
-                    <td className="py-3 px-3 text-slate-600">
-                      {entry.child_behavior_observed || '--'}
-                    </td>
-                    <td className="py-3 px-3 text-slate-600">
-                      {entry.parent_response || '--'}
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <DTBadge value={entry.fear_thermometer} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Print footer */}

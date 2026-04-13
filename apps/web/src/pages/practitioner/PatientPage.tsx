@@ -553,7 +553,7 @@ export default function PatientPage() {
                           ? 'bg-teal-600 text-white hover:bg-teal-700 border-none'
                           : 'text-slate-600 hover:bg-slate-50 bg-white'
                       }`} style={(monitoringForm.entries_count ?? 0) < 5 ? { border: '1px solid #e2e8f0' } : undefined}>
-                      View pre-consultation report
+                      View monitoring report
                     </button>
                   </div>
                 )}

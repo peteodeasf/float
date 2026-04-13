@@ -143,14 +143,12 @@ export default function MonitorLandingPage() {
     return (
       <Shell>
         <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-          <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '32px', lineHeight: '1.6' }}>
-            <strong>{practitionerName}</strong> has asked you to keep a short monitoring diary
+          <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '24px', lineHeight: '1.6' }}>
+            <strong>{practitionerName}</strong> has asked you to complete a monitoring form
             for {childName} before your first appointment.
           </p>
-          <p style={{ fontSize: '15px', color: '#475569', lineHeight: '1.6', marginBottom: '32px' }}>
-            Over the next week or so, jot down moments when {childName} seems anxious,
-            worried, or avoids something. There are no wrong answers — your everyday
-            observations are exactly what we need.
+          <p style={{ fontSize: '15px', color: '#475569', lineHeight: '1.6', marginBottom: '32px', textAlign: 'left' }}>
+            Monitoring involves watching and observing the situations in which your child experiences anxiety and noting how you respond to your child in these situations. The purpose of monitoring is to accumulate data.
           </p>
 
           {/* Tips panel */}
@@ -178,19 +176,16 @@ export default function MonitorLandingPage() {
                 color: '#334155'
               }}
             >
-              What should I observe?
+              What information is gathered?
               <span style={{ fontSize: '18px', color: '#94a3b8' }}>
                 {showTips ? '\u2212' : '+'}
               </span>
             </button>
             {showTips && (
               <div style={{ padding: '0 20px 20px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#475569', lineHeight: '1.8' }}>
-                  <li>Morning routine, meals, school, homework, social situations, bedtime</li>
-                  <li>Focus on times when {childName} seems anxious or avoids things</li>
-                  <li>Take a quick note right after it happens, fill in details later</li>
-                  <li>Aim for <strong>5 or more</strong> observations before your appointment</li>
-                </ul>
+                <p style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+                  The information gathered using the Parent Monitoring Form includes the date, the situation, the behavior observed, your response as a parent, and your child's level of distress (as estimated by you) gauged on a scale from 1 to 10. 1 means little to no distress/anxiety. 10 signifies the highest level of distress/anxiety you have observed your child to experience in this type of situation.
+                </p>
               </div>
             )}
           </div>
@@ -471,7 +466,7 @@ export default function MonitorLandingPage() {
           {/* Child behavior */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
-              What did you observe about {childName}?
+              What I observed about my child
             </label>
             <textarea
               value={childBehavior}
@@ -494,7 +489,7 @@ export default function MonitorLandingPage() {
           {/* Parent response */}
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
-              How did you respond?
+              How I responded
             </label>
             <textarea
               value={parentResponse}
@@ -517,10 +512,10 @@ export default function MonitorLandingPage() {
           {/* Fear thermometer */}
           <div style={{ marginBottom: '32px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-              Fear thermometer
+              Fear thermometer (1–10)
             </label>
             <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px' }}>
-              Your estimate of {childName}'s distress level
+              Your estimate of {childName}'s level of distress. 1 = little to no distress. 10 = highest distress.
             </p>
             <div style={{
               display: 'grid',
