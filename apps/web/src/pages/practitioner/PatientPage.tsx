@@ -68,12 +68,12 @@ function BehaviorPanel({ trigger, planId, patientId }: {
   })
 
   const editMut = useMutation({
-    mutationFn: () => updateBehavior(editingBehaviorId!, { name: editName, behavior_type: editType, distress_thermometer_when_refraining: editDT ? Number(editDT) : undefined }),
+    mutationFn: () => updateBehavior(trigger.id, editingBehaviorId!, { name: editName, behavior_type: editType, distress_thermometer_when_refraining: editDT ? Number(editDT) : undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setEditingBehaviorId(null) }
   })
 
   const delMut = useMutation({
-    mutationFn: (id: string) => deleteBehavior(id),
+    mutationFn: (id: string) => deleteBehavior(trigger.id, id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setDeletingBehaviorId(null) }
   })
 

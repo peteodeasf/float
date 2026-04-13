@@ -153,13 +153,13 @@ export const createBehavior = async (
   return response.data
 }
 
-export const updateBehavior = async (behaviorId: string, data: Partial<CreateBehaviorData>): Promise<AvoidanceBehavior> => {
-  const response = await apiClient.put(`/behaviors/${behaviorId}`, data)
+export const updateBehavior = async (triggerId: string, behaviorId: string, data: Partial<CreateBehaviorData>): Promise<AvoidanceBehavior> => {
+  const response = await apiClient.put(`/triggers/${triggerId}/behaviors/${behaviorId}`, data)
   return response.data
 }
 
-export const deleteBehavior = async (behaviorId: string): Promise<void> => {
-  await apiClient.delete(`/behaviors/${behaviorId}`)
+export const deleteBehavior = async (triggerId: string, behaviorId: string): Promise<void> => {
+  await apiClient.delete(`/triggers/${triggerId}/behaviors/${behaviorId}`)
 }
 
 export const createRung = async (
