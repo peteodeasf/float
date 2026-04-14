@@ -7,6 +7,7 @@ import uuid
 class TreatmentPlanCreate(BaseModel):
     clinical_track: str = "exposure"
     parent_visibility_level: str = "summary"
+    nickname: Optional[str] = None
 
 
 class TreatmentPlanResponse(BaseModel):
@@ -16,6 +17,7 @@ class TreatmentPlanResponse(BaseModel):
     clinical_track: str
     parent_visibility_level: str
     status: str
+    nickname: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -27,3 +29,4 @@ class TreatmentPlanUpdate(BaseModel):
     clinical_track: Optional[str] = None
     parent_visibility_level: Optional[str] = None
     status: Optional[str] = None
+    nickname: Optional[str] = None

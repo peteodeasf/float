@@ -20,7 +20,8 @@ async def create_treatment_plan(
         organization_id=organization_id,
         clinical_track=data.clinical_track,
         parent_visibility_level=data.parent_visibility_level,
-        status="setup"
+        status="setup",
+        nickname=data.nickname
     )
     db.add(plan)
     await db.commit()
@@ -70,6 +71,8 @@ async def update_treatment_plan(
         plan.parent_visibility_level = data.parent_visibility_level
     if data.status is not None:
         plan.status = data.status
+    if data.nickname is not None:
+        plan.nickname = data.nickname
     await db.commit()
     await db.refresh(plan)
     return plan

@@ -7,8 +7,14 @@ export interface TreatmentPlan {
   clinical_track: string
   parent_visibility_level: string
   status: string
+  nickname?: string | null
   created_at: string
   updated_at: string
+}
+
+export const updatePlanNickname = async (patientId: string, planId: string, nickname: string): Promise<TreatmentPlan> => {
+  const response = await apiClient.put(`/patients/${patientId}/plan/${planId}`, { nickname })
+  return response.data
 }
 
 export interface TriggerSituation {

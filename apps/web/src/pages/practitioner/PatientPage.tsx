@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage } from '../../api/patients'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
-  updatePlanStatus, getBehaviors, getLadder, getLadderFlags, reviewLadder,
+  updatePlanStatus, updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
   createBehavior, updateBehavior, deleteBehavior, updateTrigger, deleteTrigger,
   type TriggerSituation, type AvoidanceBehavior
 } from '../../api/treatment'
@@ -251,6 +251,8 @@ export default function PatientPage() {
   const [showExtract, setShowExtract] = useState(false)
   const [extractItems, setExtractItems] = useState<{ text: string; checked: boolean }[]>([])
   const [extracting, setExtracting] = useState(false)
+  const [editingNickname, setEditingNickname] = useState(false)
+  const [nicknameVal, setNicknameVal] = useState('')
   const [showSendForm, setShowSendForm] = useState(false)
   const [parentEmail, setParentEmail] = useState('')
   const [parentName, setParentName] = useState('')
@@ -307,6 +309,10 @@ export default function PatientPage() {
   // Mutations
   const createPlanMut = useMutation({ mutationFn: () => createTreatmentPlan(patientId!, { clinical_track: 'exposure', parent_visibility_level: 'summary' }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plan', patientId] }) })
   const activatePlanMut = useMutation({ mutationFn: () => updatePlanStatus(patientId!, plan!.id, 'active'), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plan', patientId] }) })
+  const nicknameMut = useMutation({
+    mutationFn: () => updatePlanNickname(patientId!, plan!.id, nicknameVal.trim()),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['plan', patientId] }); setEditingNickname(false) }
+  })
   const addTriggerMut = useMutation({
     mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined }),
     onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerDT(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
@@ -616,9 +622,31 @@ export default function PatientPage() {
           {plan ? (
             <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span className="text-sm font-semibold text-slate-700">Treatment plan</span>
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${plan.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{plan.status}</span>
+                  <span style={{ fontSize: '12px', color: '#cbd5e1' }}>&middot;</span>
+                  {editingNickname ? (
+                    <>
+                      <input value={nicknameVal} onChange={e => setNicknameVal(e.target.value)} placeholder="Nickname"
+                        className="text-xs border border-slate-200 rounded" autoFocus
+                        style={{ padding: '3px 8px', width: '140px' }}
+                        onKeyDown={e => { if (e.key === 'Enter' && nicknameVal.trim()) nicknameMut.mutate(); if (e.key === 'Escape') setEditingNickname(false) }} />
+                      <button onClick={() => nicknameMut.mutate()} disabled={!nicknameVal.trim() || nicknameMut.isPending} className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-40">Save</button>
+                      <button onClick={() => setEditingNickname(false)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                    </>
+                  ) : plan.nickname ? (
+                    <>
+                      <span style={{ fontSize: '13px', fontStyle: 'italic', color: 'var(--float-primary)' }}>
+                        &ldquo;{plan.nickname}&rdquo;
+                      </span>
+                      <button onClick={() => { setNicknameVal(plan.nickname || ''); setEditingNickname(true) }}
+                        className="text-[11px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer">edit</button>
+                    </>
+                  ) : (
+                    <button onClick={() => { setNicknameVal(''); setEditingNickname(true) }}
+                      className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add nickname</button>
+                  )}
                 </div>
                 {canActivate && <button onClick={() => activatePlanMut.mutate()} disabled={activatePlanMut.isPending} className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer">{activatePlanMut.isPending ? '...' : 'Activate'}</button>}
               </div>
@@ -792,7 +820,7 @@ export default function PatientPage() {
                 <span className="text-sm font-semibold text-slate-700">Action plans</span>
                 {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
               </div>
-              {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
+              {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setPlanNickname(plan?.nickname || ''); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
             </div>
             {showPlanEditor && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>

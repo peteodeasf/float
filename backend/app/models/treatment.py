@@ -25,6 +25,7 @@ class TreatmentPlan(Base):
     clinical_track: Mapped[str] = mapped_column(String, nullable=False, default="exposure")
     parent_visibility_level: Mapped[str] = mapped_column(String, nullable=False, default="summary")
     status: Mapped[str] = mapped_column(String, nullable=False, default="setup")
+    nickname: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
