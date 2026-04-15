@@ -34,9 +34,9 @@ export default function TeenExperimentPage() {
   const [tooHardSent, setTooHardSent] = useState(false)
 
   // Fetch data
-  const { data: arrow } = useQuery({
-    queryKey: ['teen-arrow', rungId],
-    queryFn: async () => (await teenApiClient.get(`/rungs/${rungId}/downward-arrow`)).data,
+  const { data: fearedOutcomeData } = useQuery({
+    queryKey: ['teen-feared-outcome', rungId],
+    queryFn: async () => (await teenApiClient.get(`/patient/rungs/${rungId}/feared-outcome`)).data,
     enabled: !!rungId
   })
 
@@ -50,7 +50,7 @@ export default function TeenExperimentPage() {
     (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )?.[0]
 
-  const fearedOutcome = arrow?.feared_outcome || null
+  const fearedOutcome = fearedOutcomeData?.feared_outcome || null
   const rungDT = experiment?.distress_thermometer_expected
 
   // Generate next 7 days

@@ -192,7 +192,7 @@ export interface ArrowStep {
 
 export interface DownwardArrow {
   id: string
-  ladder_rung_id: string
+  trigger_situation_id: string
   arrow_steps: ArrowStep[]
   feared_outcome: string | null
   feared_outcome_approved: boolean
@@ -202,30 +202,23 @@ export interface DownwardArrow {
   updated_at: string
 }
 
-export const getDownwardArrow = async (rungId: string): Promise<DownwardArrow | null> => {
-  const response = await apiClient.get(`/rungs/${rungId}/downward-arrow`)
+export const getSituationDownwardArrow = async (situationId: string): Promise<DownwardArrow | null> => {
+  const response = await apiClient.get(`/trigger-situations/${situationId}/downward-arrow`)
   return response.data
 }
 
-export const createDownwardArrow = async (rungId: string): Promise<DownwardArrow> => {
-  const response = await apiClient.post(`/rungs/${rungId}/downward-arrow`, {
-    facilitated_by: 'practitioner'
+export const createSituationDownwardArrow = async (situationId: string, firstAnswer?: string): Promise<DownwardArrow> => {
+  const response = await apiClient.post(`/trigger-situations/${situationId}/downward-arrow`, {
+    facilitated_by: 'practitioner',
+    first_answer: firstAnswer
   })
   return response.data
 }
 
 export const updateDownwardArrow = async (
   arrowId: string,
-  data: { arrow_steps?: ArrowStep[]; feared_outcome?: string; bip_derived?: number }
+  data: { arrow_steps?: ArrowStep[]; feared_outcome?: string; bip_derived?: number; is_approved?: boolean }
 ): Promise<DownwardArrow> => {
   const response = await apiClient.put(`/downward-arrows/${arrowId}`, data)
-  return response.data
-}
-
-export const approveDownwardArrow = async (
-  arrowId: string,
-  data: { feared_outcome: string; bip_derived: number }
-): Promise<DownwardArrow> => {
-  const response = await apiClient.put(`/downward-arrows/${arrowId}/approve`, data)
   return response.data
 }

@@ -8,7 +8,6 @@ import ProtectedRoute from './components/ui/ProtectedRoute'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
-import LadderPage from './pages/practitioner/LadderPage'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
@@ -47,9 +46,6 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/patients/:patientId" element={
                 <ProtectedRoute><PatientPage /></ProtectedRoute>
-              } />
-              <Route path="/patients/:patientId/triggers/:triggerId/ladder" element={
-                <ProtectedRoute><LadderPage /></ProtectedRoute>
               } />
               <Route path="/patients/:patientId/progress" element={
                 <ProtectedRoute><ProgressPage /></ProtectedRoute>

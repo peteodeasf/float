@@ -6,7 +6,8 @@ import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanStatus, updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
   createBehavior, updateBehavior, deleteBehavior, updateTrigger, deleteTrigger,
-  type TriggerSituation, type AvoidanceBehavior
+  getSituationDownwardArrow, createSituationDownwardArrow, updateDownwardArrow,
+  type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
@@ -237,12 +238,181 @@ function BehaviorPanel({ trigger, planId, patientId }: {
   )
 }
 
+// ── DA Status Badge ──
+function DABadge({ status, onClick }: { status: 'none' | 'in_progress' | 'approved'; onClick?: (e: React.MouseEvent) => void }) {
+  const colors = {
+    none: { bg: '#f1f5f9', text: '#94a3b8', border: '#e2e8f0' },
+    in_progress: { bg: '#fffbeb', text: '#b45309', border: '#fde68a' },
+    approved: { bg: '#f0fdfa', text: 'var(--float-primary)', border: '#99f6e4' }
+  }
+  const c = colors[status]
+  return (
+    <button onClick={onClick} style={{
+      fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '4px',
+      background: c.bg, color: c.text, border: `1px solid ${c.border}`, cursor: onClick ? 'pointer' : 'default'
+    }}>DA</button>
+  )
+}
+
+// ── Downward Arrow Panel ──
+function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; onBack: () => void }) {
+  const qc = useQueryClient()
+  const [firstAnswer, setFirstAnswer] = useState('')
+  const [nextAnswer, setNextAnswer] = useState('')
+
+  const { data: arrow } = useQuery({
+    queryKey: ['downward-arrow', trigger.id],
+    queryFn: () => getSituationDownwardArrow(trigger.id),
+    enabled: !!trigger.id
+  })
+
+  const createMut = useMutation({
+    mutationFn: () => createSituationDownwardArrow(trigger.id, firstAnswer),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); qc.invalidateQueries({ queryKey: ['da-statuses'] }); setFirstAnswer('') }
+  })
+
+  const addStepMut = useMutation({
+    mutationFn: (newSteps: ArrowStep[]) => updateDownwardArrow(arrow!.id, { arrow_steps: newSteps }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); setNextAnswer('') }
+  })
+
+  const setFearedOutcomeMut = useMutation({
+    mutationFn: (fo: string) => updateDownwardArrow(arrow!.id, { feared_outcome: fo }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); qc.invalidateQueries({ queryKey: ['da-statuses'] }); setNextAnswer('') }
+  })
+
+  const approveMut = useMutation({
+    mutationFn: () => updateDownwardArrow(arrow!.id, { is_approved: true }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); qc.invalidateQueries({ queryKey: ['da-statuses'] }) }
+  })
+
+  const steps: ArrowStep[] = arrow?.arrow_steps ?? []
+  const lastAnswer = steps.length > 0 ? steps[steps.length - 1].response : ''
+  const nextQuestion = lastAnswer ? `What will happen if... ${lastAnswer}?` : 'What will happen in this situation?'
+  const hasFearedOutcome = !!arrow?.feared_outcome
+  const isApproved = !!arrow?.feared_outcome_approved
+
+  const handleAddStep = () => {
+    if (!nextAnswer.trim()) return
+    const newSteps = [...steps, { question: nextQuestion, response: nextAnswer.trim() }]
+    addStepMut.mutate(newSteps)
+  }
+
+  const handleMarkFearedOutcome = () => {
+    if (!nextAnswer.trim()) return
+    setFearedOutcomeMut.mutate(nextAnswer.trim())
+  }
+
+  return (
+    <div className="p-4 h-full overflow-y-auto">
+      {/* Header */}
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={onBack} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-text-hint)', marginBottom: '8px' }}>
+          &larr; Back to behaviors
+        </button>
+        <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b', margin: '0 0 2px' }}>Downward Arrow</h3>
+        <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Situation: {trigger.name}</p>
+      </div>
+
+      {/* No DA yet */}
+      {!arrow && (
+        <div>
+          <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', marginBottom: '12px' }}>
+            The Downward Arrow helps identify the child's core feared outcome for this situation.
+          </p>
+          <p style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
+            Start with: "What will happen in this situation?"
+          </p>
+          <textarea value={firstAnswer} onChange={e => setFirstAnswer(e.target.value)} rows={2}
+            placeholder="The child's answer..."
+            className="text-sm border border-slate-200 rounded"
+            style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', marginBottom: '8px' }} />
+          <button onClick={() => createMut.mutate()} disabled={!firstAnswer.trim() || createMut.isPending}
+            className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+            style={{ padding: '7px 14px' }}>
+            {createMut.isPending ? 'Starting...' : 'Start \u2192'}
+          </button>
+        </div>
+      )}
+
+      {/* DA exists — show chain */}
+      {arrow && (
+        <div>
+          {/* Show all existing steps */}
+          {steps.map((step, i) => (
+            <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+              <span style={{ fontSize: '18px', color: 'var(--float-primary)', lineHeight: '1.2', flexShrink: 0 }}>↓</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#334155', margin: '0 0 4px' }}>{step.question}</p>
+                <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>&ldquo;{step.response}&rdquo;</p>
+              </div>
+            </div>
+          ))}
+
+          {/* If no feared outcome yet — show next question input */}
+          {!hasFearedOutcome && (
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '18px', color: 'var(--float-primary)', lineHeight: '1.2', flexShrink: 0 }}>↓</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#334155', margin: '0 0 4px' }}>{nextQuestion}</p>
+                <textarea value={nextAnswer} onChange={e => setNextAnswer(e.target.value)} rows={2}
+                  placeholder="The child's answer..."
+                  className="text-sm border border-slate-200 rounded"
+                  style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', marginBottom: '8px' }} />
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <button onClick={handleAddStep} disabled={!nextAnswer.trim() || addStepMut.isPending}
+                    className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+                    style={{ padding: '6px 12px' }}>
+                    Next ↓
+                  </button>
+                  <button onClick={handleMarkFearedOutcome} disabled={!nextAnswer.trim() || setFearedOutcomeMut.isPending}
+                    className="text-xs font-medium border cursor-pointer disabled:opacity-40 bg-white"
+                    style={{ padding: '6px 12px', borderRadius: '6px', borderColor: 'var(--float-primary)', color: 'var(--float-primary)' }}>
+                    This is the feared outcome
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Feared outcome + approval */}
+          {hasFearedOutcome && (
+            <div style={{ marginTop: '8px', padding: '12px 14px', background: '#f0fdfa', borderLeft: '3px solid var(--float-primary)', borderRadius: '6px' }}>
+              <p style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--float-primary)', margin: '0 0 6px' }}>
+                Feared outcome
+              </p>
+              <p style={{ fontSize: '14px', fontStyle: 'italic', color: '#134e4a', margin: '0 0 10px' }}>
+                &ldquo;{arrow.feared_outcome}&rdquo;
+              </p>
+              {isApproved ? (
+                <p style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', margin: '0 0 8px' }}>
+                  &#10003; Approved
+                </p>
+              ) : (
+                <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}
+                  className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+                  style={{ padding: '6px 12px', marginBottom: '8px' }}>
+                  {approveMut.isPending ? 'Approving...' : 'Approve this feared outcome'}
+                </button>
+              )}
+              <p style={{ fontSize: '11px', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
+                This feared outcome will be used as the prediction in all experiments for this situation.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Page ──
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [selectedTriggerId, setSelectedTriggerId] = useState<string | null>(null)
+  const [rightPanelView, setRightPanelView] = useState<'behaviors' | 'da'>('behaviors')
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
   const [newTriggerName, setNewTriggerName] = useState('')
   const [newTriggerDT, setNewTriggerDT] = useState('')
@@ -290,7 +460,29 @@ export default function PatientPage() {
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId })
 
+  // Fetch DA status for every trigger situation (one query per trigger, keyed by trigger id)
+  const triggerIds = (triggers ?? []).map(t => t.id)
+  const { data: daStatuses } = useQuery({
+    queryKey: ['da-statuses', patientId, triggerIds.join(',')],
+    queryFn: async () => {
+      const results = await Promise.all(triggerIds.map(async (id) => {
+        const da = await getSituationDownwardArrow(id)
+        return [id, da] as const
+      }))
+      return Object.fromEntries(results) as Record<string, DownwardArrow | null>
+    },
+    enabled: triggerIds.length > 0
+  })
+
+  const getDAStatus = (triggerId: string): 'none' | 'in_progress' | 'approved' => {
+    const da = daStatuses?.[triggerId]
+    if (!da) return 'none'
+    if (da.feared_outcome_approved) return 'approved'
+    return 'in_progress'
+  }
+
   useEffect(() => { if (triggers?.length && !selectedTriggerId) setSelectedTriggerId(triggers[0].id) }, [triggers])
+  useEffect(() => { setRightPanelView('behaviors') }, [selectedTriggerId])
   const selectedTrigger = triggers?.find(t => t.id === selectedTriggerId)
 
   const activitySummary = (() => {
@@ -634,12 +826,13 @@ export default function PatientPage() {
                   </div>
                   <div style={{ flex: 1, overflowY: 'auto' }}>
                     {triggers?.map(t => (
-                      <button key={t.id} onClick={() => setSelectedTriggerId(t.id)}
-                        style={{ width: '100%', textAlign: 'left', padding: '10px 12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}>
+                      <div key={t.id} style={{ width: '100%', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}
+                        onClick={() => setSelectedTriggerId(t.id)}>
                         <span style={{ fontSize: '5px', color: t.is_active ? 'var(--float-primary)' : '#cbd5e1' }}>●</span>
                         <span className="text-xs text-slate-700" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
                         <DTBadge value={t.distress_thermometer_rating} />
-                      </button>
+                        <DABadge status={getDAStatus(t.id)} onClick={(e) => { e.stopPropagation(); setSelectedTriggerId(t.id); setRightPanelView('da') }} />
+                      </div>
                     ))}
                     {showTriggerAdd && (
                       <div style={{ padding: '12px 0' }}>
@@ -659,9 +852,13 @@ export default function PatientPage() {
                     )}
                   </div>
                 </div>
-                {/* Behaviors */}
+                {/* Right panel — behaviors or DA */}
                 <div style={{ overflow: 'hidden' }}>
-                  {selectedTrigger ? <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} /> : (
+                  {selectedTrigger ? (
+                    rightPanelView === 'da'
+                      ? <DownwardArrowPanel trigger={selectedTrigger} onBack={() => setRightPanelView('behaviors')} />
+                      : <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} />
+                  ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '13px', color: '#94a3b8', padding: '16px' }}>Select a situation</div>
                   )}
                 </div>

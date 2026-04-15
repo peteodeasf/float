@@ -11,6 +11,7 @@ class ArrowStep(BaseModel):
 
 class DownwardArrowCreate(BaseModel):
     facilitated_by: str = "practitioner"
+    first_answer: Optional[str] = None
 
 
 class DownwardArrowUpdate(BaseModel):
@@ -18,16 +19,12 @@ class DownwardArrowUpdate(BaseModel):
     feared_outcome: Optional[str] = None
     bip_derived: Optional[float] = None
     facilitated_by: Optional[str] = None
-
-
-class DownwardArrowApprove(BaseModel):
-    feared_outcome: str
-    bip_derived: float
+    is_approved: Optional[bool] = None
 
 
 class DownwardArrowResponse(BaseModel):
     id: uuid.UUID
-    ladder_rung_id: uuid.UUID
+    trigger_situation_id: uuid.UUID
     arrow_steps: list[ArrowStep]
     feared_outcome: Optional[str] = None
     feared_outcome_approved: bool

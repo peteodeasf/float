@@ -14,8 +14,8 @@ class DownwardArrow(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()")
     )
-    ladder_rung_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("ladder_rungs.id"), nullable=False
+    trigger_situation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("trigger_situations.id"), nullable=False
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False
