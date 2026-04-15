@@ -120,9 +120,25 @@ function BehaviorPanel({ trigger, planId, patientId }: {
           <h3 className="text-sm font-semibold text-slate-800">{trigger.name}</h3>
           <div className="flex items-center gap-2 mt-0.5">
             <DTBadge value={trigger.distress_thermometer_rating} />
-            <button onClick={() => toggleActive.mutate()} className="text-xs bg-transparent border-none cursor-pointer"
-              style={{ color: trigger.is_active ? 'var(--float-primary)' : '#94a3b8' }}>
-              <span style={{ fontSize: '7px' }}>{trigger.is_active ? '●' : '○'}</span> {trigger.is_active ? 'Active' : 'Inactive'}
+            <button
+              onClick={() => toggleActive.mutate()}
+              disabled={toggleActive.isPending}
+              className="cursor-pointer"
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '4px 12px',
+                borderRadius: '999px',
+                border: trigger.is_active ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                background: trigger.is_active ? 'var(--float-primary)' : '#fff',
+                color: trigger.is_active ? '#fff' : '#64748b',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+              }}
+            >
+              <span style={{ fontSize: '8px' }}>{trigger.is_active ? '●' : '○'}</span>
+              {trigger.is_active ? 'Active' : 'Not active'}
             </button>
           </div>
         </div>
@@ -628,7 +644,8 @@ export default function PatientPage() {
   }
   const hasActivationBlocker = triggersWithMissingDT.length > 0
   const teenNotInvited = !!patient && !patient.teen_invited_at
-  const hasActivationWarning = activeTriggersMissingDA.length > 0 || teenNotInvited
+  const noActiveTriggers = !!triggers && triggers.length > 0 && !triggers.some(t => t.is_active)
+  const hasActivationWarning = activeTriggersMissingDA.length > 0 || teenNotInvited || noActiveTriggers
   const canActivate = plan?.status === 'setup' && triggers && triggers.length > 0 && !hasActivationBlocker
   const lastMsg = messages?.[0]
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
@@ -963,6 +980,25 @@ export default function PatientPage() {
                   <p style={{ fontSize: '12px', color: '#7f1d1d', margin: 0, lineHeight: '1.4' }}>
                     Every behavior needs a DT before the plan can be activated. Missing in: {triggersWithMissingDT.map(t => t.name).join(', ')}
                   </p>
+                </div>
+              )}
+
+              {/* Activation warning — no active situations */}
+              {plan.status === 'setup' && !hasActivationBlocker && noActiveTriggers && (
+                <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
+                  <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 6px', lineHeight: '1.4' }}>
+                    &#9888; No situations are marked as active. The teen won't have a suggested starting point. Mark at least one situation as active before activating, or activate anyway.
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => activatePlanMut.mutate()}
+                      disabled={activatePlanMut.isPending}
+                      className="text-[11px] px-2.5 py-1 bg-white text-amber-900 rounded-full cursor-pointer font-medium"
+                      style={{ border: '1px solid #fde68a' }}
+                    >
+                      Activate anyway
+                    </button>
+                  </div>
                 </div>
               )}
 

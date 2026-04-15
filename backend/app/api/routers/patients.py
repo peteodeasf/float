@@ -257,12 +257,10 @@ async def get_my_ladder(
     )
     all_triggers = triggers_result.scalars().all()
 
-    # Only return situations marked active; if none are active, return all of them
-    active_triggers = [t for t in all_triggers if t.is_active]
-    triggers_to_return = active_triggers if active_triggers else all_triggers
-
+    # Return all situations that have at least one rung. is_active is included
+    # per-situation so the frontend can highlight the suggested one(s).
     situations = []
-    for trigger in triggers_to_return:
+    for trigger in all_triggers:
         # DA
         da_result = await db.execute(
             select(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
@@ -316,6 +314,10 @@ async def get_my_ladder(
 
             # Sort rungs by DT ascending (nulls at end)
             rungs_data.sort(key=lambda x: (x["dt"] is None, x["dt"] if x["dt"] is not None else 999))
+
+        # Skip situations without any rungs — teen only sees situations with steps
+        if not rungs_data:
+            continue
 
         situations.append({
             "id": str(trigger.id),

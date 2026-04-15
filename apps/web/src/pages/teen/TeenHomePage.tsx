@@ -169,22 +169,42 @@ export default function TeenHomePage() {
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '20px', paddingBottom: '4px' }}>
             {situations.map(s => {
               const isSelected = s.id === selectedSituationId
+              const isActive = s.is_active
+              let border: string
+              let background: string
+              let color: string
+              if (isSelected) {
+                border = '2px solid #0d9488'
+                background = '#f0fdfa'
+                color = '#0d9488'
+              } else if (isActive) {
+                border = '1px solid #5eead4'
+                background = '#f0fdfa'
+                color = '#0d9488'
+              } else {
+                border = '1px solid #e2e8f0'
+                background = '#f8fafc'
+                color = '#94a3b8'
+              }
               return (
                 <button
                   key={s.id}
                   onClick={() => setSelectedSituationId(s.id)}
                   style={{
                     flex: '0 0 auto', padding: '8px 14px', borderRadius: '999px',
-                    border: isSelected ? '2px solid #0d9488' : '1px solid #e2e8f0',
-                    background: isSelected ? '#f0fdfa' : '#fff',
+                    border, background, color,
                     fontSize: '13px', fontWeight: '600',
-                    color: isSelected ? '#0d9488' : '#64748b',
                     cursor: 'pointer', whiteSpace: 'nowrap',
                     display: 'flex', alignItems: 'center', gap: '6px'
                   }}
                 >
-                  {s.is_active && <span style={{ fontSize: '8px', color: '#0d9488' }}>●</span>}
-                  {s.name}
+                  {isActive && <span style={{ fontSize: '8px', color: '#0d9488' }}>●</span>}
+                  <span>{s.name}</span>
+                  {isActive && (
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#0d9488', opacity: 0.85 }}>
+                      suggested
+                    </span>
+                  )}
                 </button>
               )
             })}
