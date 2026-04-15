@@ -211,7 +211,7 @@ function BehaviorPanel({ trigger, planId, patientId }: {
       </div>
 
       {/* Add behavior inline */}
-      {showAdd ? (
+      {showAdd && (
         <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Behavior name"
             className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" autoFocus
@@ -225,8 +225,6 @@ function BehaviorPanel({ trigger, planId, patientId }: {
             <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">X</button>
           </div>
         </div>
-      ) : behaviors && behaviors.length === 0 && (
-        <button onClick={() => setShowAdd(true)} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">+ Add behavior</button>
       )}
 
       {/* Empty state */}
