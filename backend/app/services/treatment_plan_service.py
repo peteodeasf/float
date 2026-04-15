@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -70,6 +71,8 @@ async def update_treatment_plan(
     if data.parent_visibility_level is not None:
         plan.parent_visibility_level = data.parent_visibility_level
     if data.status is not None:
+        if data.status == "active" and plan.status != "active" and plan.activated_at is None:
+            plan.activated_at = datetime.now(timezone.utc)
         plan.status = data.status
     if data.nickname is not None:
         plan.nickname = data.nickname

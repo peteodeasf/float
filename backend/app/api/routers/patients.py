@@ -143,32 +143,16 @@ async def get_patient(
 
 # ── Patient-facing endpoints ──────────────────────────────────────────────────
 
-@patient_router.get("/plan")
-async def get_my_plan(
+@patient_router.get("/ladder")
+async def get_my_ladder(
     context: tuple = Depends(get_patient_context),
     db: AsyncSession = Depends(get_db)
 ):
     _, patient = context
-    from app.models.treatment import TreatmentPlan
-    result = await db.execute(
-        select(TreatmentPlan).where(
-            TreatmentPlan.patient_id == patient.id,
-            TreatmentPlan.status.in_(["setup", "active"])
-        )
-    )
-    plan = result.scalar_one_or_none()
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active plan found")
-    return plan
+    from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
+    from app.models.ladder import ExposureLadder, LadderRung
+    from app.models.downward_arrow import DownwardArrow
 
-
-@patient_router.get("/plan/triggers")
-async def get_my_triggers(
-    context: tuple = Depends(get_patient_context),
-    db: AsyncSession = Depends(get_db)
-):
-    _, patient = context
-    from app.models.treatment import TreatmentPlan, TriggerSituation
     plan_result = await db.execute(
         select(TreatmentPlan).where(
             TreatmentPlan.patient_id == patient.id,
@@ -177,88 +161,92 @@ async def get_my_triggers(
     )
     plan = plan_result.scalar_one_or_none()
     if not plan:
-        return []
-    result = await db.execute(
+        return {"plan": None, "situations": []}
+
+    triggers_result = await db.execute(
         select(TriggerSituation).where(
             TriggerSituation.treatment_plan_id == plan.id
         ).order_by(TriggerSituation.display_order)
     )
-    return result.scalars().all()
+    all_triggers = triggers_result.scalars().all()
 
+    # Only return situations marked active; if none are active, return all of them
+    active_triggers = [t for t in all_triggers if t.is_active]
+    triggers_to_return = active_triggers if active_triggers else all_triggers
 
-@patient_router.get("/plan/triggers/{trigger_id}/ladder")
-async def get_my_ladder(
-    trigger_id: uuid.UUID,
-    context: tuple = Depends(get_patient_context),
-    db: AsyncSession = Depends(get_db)
-):
-    from app.models.ladder import ExposureLadder, LadderRung
-    from app.models.downward_arrow import DownwardArrow
-    result = await db.execute(
-        select(ExposureLadder).where(
-            ExposureLadder.trigger_situation_id == trigger_id
+    situations = []
+    for trigger in triggers_to_return:
+        # DA
+        da_result = await db.execute(
+            select(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
         )
-    )
-    ladder = result.scalar_one_or_none()
-    if not ladder:
-        raise HTTPException(status_code=404, detail="Ladder not found")
-    rungs_result = await db.execute(
-        select(LadderRung).where(
-            LadderRung.ladder_id == ladder.id
-        ).order_by(LadderRung.rung_order)
-    )
-    rungs = rungs_result.scalars().all()
+        da = da_result.scalar_one_or_none()
+        feared_outcome = da.feared_outcome if (da and da.feared_outcome_approved) else None
 
-    # Fetch the situation's Downward Arrow (if any) to expose feared_outcome
-    da_result = await db.execute(
-        select(DownwardArrow).where(
-            DownwardArrow.trigger_situation_id == trigger_id
+        # Ladder
+        ladder_result = await db.execute(
+            select(ExposureLadder).where(ExposureLadder.trigger_situation_id == trigger.id)
         )
-    )
-    da = da_result.scalar_one_or_none()
-    feared_outcome = da.feared_outcome if (da and da.feared_outcome_approved) else None
+        ladder = ladder_result.scalar_one_or_none()
+
+        rungs_data = []
+        if ladder:
+            rungs_q = await db.execute(
+                select(LadderRung).where(LadderRung.ladder_id == ladder.id)
+            )
+            rungs = rungs_q.scalars().all()
+
+            for r in rungs:
+                # Behavior name
+                behavior_name = None
+                if r.avoidance_behavior_id:
+                    b_result = await db.execute(
+                        select(AvoidanceBehavior).where(AvoidanceBehavior.id == r.avoidance_behavior_id)
+                    )
+                    behavior = b_result.scalar_one_or_none()
+                    if behavior:
+                        behavior_name = behavior.name
+
+                # Experiment count and completion status
+                exp_result = await db.execute(
+                    select(Experiment).where(
+                        Experiment.ladder_rung_id == r.id,
+                        Experiment.patient_id == patient.id
+                    )
+                )
+                experiments = exp_result.scalars().all()
+                experiment_count = len(experiments)
+                any_completed = any(e.status == "completed" for e in experiments)
+
+                rungs_data.append({
+                    "id": str(r.id),
+                    "behavior_name": behavior_name,
+                    "dt": float(r.distress_thermometer_rating) if r.distress_thermometer_rating is not None else None,
+                    "completed": any_completed,
+                    "experiment_count": experiment_count,
+                    "rung_order": r.rung_order,
+                })
+
+            # Sort rungs by DT ascending (nulls at end)
+            rungs_data.sort(key=lambda x: (x["dt"] is None, x["dt"] if x["dt"] is not None else 999))
+
+        situations.append({
+            "id": str(trigger.id),
+            "name": trigger.name,
+            "is_active": trigger.is_active,
+            "feared_outcome": feared_outcome,
+            "da_approved": bool(da and da.feared_outcome_approved),
+            "rungs": rungs_data,
+        })
 
     return {
-        "id": str(ladder.id),
-        "trigger_situation_id": str(ladder.trigger_situation_id),
-        "status": ladder.status,
-        "review_status": ladder.review_status,
-        "feared_outcome": feared_outcome,
-        "rungs": [
-            {
-                "id": str(r.id),
-                "ladder_id": str(r.ladder_id),
-                "avoidance_behavior_id": str(r.avoidance_behavior_id) if r.avoidance_behavior_id else None,
-                "distress_thermometer_rating": float(r.distress_thermometer_rating) if r.distress_thermometer_rating else None,
-                "rung_order": r.rung_order,
-                "status": r.status,
-                "feared_outcome": feared_outcome
-            }
-            for r in rungs
-        ]
+        "plan": {
+            "id": str(plan.id),
+            "status": plan.status,
+            "nickname": plan.nickname,
+        },
+        "situations": situations
     }
-
-
-@patient_router.get("/rungs/{rung_id}/feared-outcome")
-async def get_rung_feared_outcome(
-    rung_id: uuid.UUID,
-    context: tuple = Depends(get_patient_context),
-    db: AsyncSession = Depends(get_db)
-):
-    from app.models.ladder import ExposureLadder, LadderRung
-    from app.models.downward_arrow import DownwardArrow
-    rung_result = await db.execute(select(LadderRung).where(LadderRung.id == rung_id))
-    rung = rung_result.scalar_one_or_none()
-    if not rung:
-        return {"feared_outcome": None}
-    ladder_result = await db.execute(select(ExposureLadder).where(ExposureLadder.id == rung.ladder_id))
-    ladder = ladder_result.scalar_one_or_none()
-    if not ladder:
-        return {"feared_outcome": None}
-    da_result = await db.execute(select(DownwardArrow).where(DownwardArrow.trigger_situation_id == ladder.trigger_situation_id))
-    da = da_result.scalar_one_or_none()
-    fo = da.feared_outcome if (da and da.feared_outcome_approved) else None
-    return {"feared_outcome": fo}
 
 
 @patient_router.post("/experiments/{experiment_id}/commit")

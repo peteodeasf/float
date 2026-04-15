@@ -18,6 +18,7 @@ class TreatmentPlanResponse(BaseModel):
     parent_visibility_level: str
     status: str
     nickname: Optional[str] = None
+    activated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

@@ -34,10 +34,9 @@ export default function TeenExperimentPage() {
   const [tooHardSent, setTooHardSent] = useState(false)
 
   // Fetch data
-  const { data: fearedOutcomeData } = useQuery({
-    queryKey: ['teen-feared-outcome', rungId],
-    queryFn: async () => (await teenApiClient.get(`/patient/rungs/${rungId}/feared-outcome`)).data,
-    enabled: !!rungId
+  const { data: ladderData } = useQuery({
+    queryKey: ['teen-ladder'],
+    queryFn: async () => (await teenApiClient.get('/patient/ladder')).data,
   })
 
   const { data: experiments } = useQuery({
@@ -50,8 +49,13 @@ export default function TeenExperimentPage() {
     (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )?.[0]
 
-  const fearedOutcome = fearedOutcomeData?.feared_outcome || null
-  const rungDT = experiment?.distress_thermometer_expected
+  // Find the situation that contains this rung, and read feared_outcome from it
+  const matchingSituation = ladderData?.situations?.find((s: any) =>
+    s.rungs?.some((r: any) => r.id === rungId)
+  )
+  const matchingRung = matchingSituation?.rungs?.find((r: any) => r.id === rungId)
+  const fearedOutcome = matchingSituation?.feared_outcome || null
+  const rungDT = experiment?.distress_thermometer_expected ?? matchingRung?.dt
 
   // Generate next 7 days
   const next7Days = Array.from({ length: 7 }, (_, i) => {

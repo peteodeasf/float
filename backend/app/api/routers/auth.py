@@ -92,5 +92,6 @@ async def get_me(
         "user_id": str(current_user.id),
         "email": current_user.email,
         "patient_id": str(patient.id) if patient else None,
+        "patient_name": patient.name if patient else None,
         "is_patient": patient is not None
     }

@@ -574,7 +574,40 @@ export default function PatientPage() {
     }
   }, [showPlanEditor, editingPlan, editor])
 
-  const canActivate = plan?.status === 'setup' && triggers && triggers.length > 0
+  // Fetch behaviors for every trigger (for activation validation)
+  const { data: allBehaviors } = useQuery({
+    queryKey: ['all-behaviors', patientId, triggerIds.join(',')],
+    queryFn: async () => {
+      const results = await Promise.all(triggerIds.map(async (id) => {
+        const bs = await getBehaviors(id)
+        return [id, bs] as const
+      }))
+      return Object.fromEntries(results) as Record<string, AvoidanceBehavior[]>
+    },
+    enabled: triggerIds.length > 0
+  })
+
+  // Activation validation
+  const triggersWithMissingDT: TriggerSituation[] = []
+  const activeTriggersMissingDA: TriggerSituation[] = []
+  if (triggers && allBehaviors) {
+    for (const t of triggers) {
+      const bs = allBehaviors[t.id] || []
+      if (bs.some(b => b.distress_thermometer_when_refraining == null)) {
+        triggersWithMissingDT.push(t)
+      }
+    }
+  }
+  if (triggers && daStatuses) {
+    for (const t of triggers) {
+      if (t.is_active && !daStatuses[t.id]?.feared_outcome_approved) {
+        activeTriggersMissingDA.push(t)
+      }
+    }
+  }
+  const hasActivationBlocker = triggersWithMissingDT.length > 0
+  const hasActivationWarning = activeTriggersMissingDA.length > 0
+  const canActivate = plan?.status === 'setup' && triggers && triggers.length > 0 && !hasActivationBlocker
   const lastMsg = messages?.[0]
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
   const badgeColors: Record<string, string> = { consultation_1: 'bg-purple-100 text-purple-700', consultation_2: 'bg-purple-100 text-purple-700', consultation_3: 'bg-purple-100 text-purple-700', weekly_session: 'bg-teal-100 text-teal-700', other: 'bg-slate-100 text-slate-600' }
@@ -815,8 +848,38 @@ export default function PatientPage() {
                       className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add nickname</button>
                   )}
                 </div>
-                {canActivate && <button onClick={() => activatePlanMut.mutate()} disabled={activatePlanMut.isPending} className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer">{activatePlanMut.isPending ? '...' : 'Activate'}</button>}
+                {plan.status === 'setup' && triggers && triggers.length > 0 && (
+                  <button
+                    onClick={() => activatePlanMut.mutate()}
+                    disabled={activatePlanMut.isPending || hasActivationBlocker}
+                    className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer"
+                  >
+                    {activatePlanMut.isPending ? '...' : hasActivationWarning ? 'Activate anyway' : 'Activate plan'}
+                  </button>
+                )}
               </div>
+
+              {/* Activation blocker — hard stop */}
+              {plan.status === 'setup' && hasActivationBlocker && (
+                <div style={{ background: '#fef2f2', borderBottom: '1px solid #fecaca', padding: '12px 20px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#991b1b', margin: '0 0 4px' }}>
+                    &#9888; Cannot activate — behaviors missing distress ratings
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#7f1d1d', margin: 0, lineHeight: '1.4' }}>
+                    Every behavior needs a DT before the plan can be activated. Missing in: {triggersWithMissingDT.map(t => t.name).join(', ')}
+                  </p>
+                </div>
+              )}
+
+              {/* Activation warning — DA recommended */}
+              {plan.status === 'setup' && !hasActivationBlocker && hasActivationWarning && (
+                <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
+                  <p style={{ fontSize: '12px', color: '#78350f', margin: 0, lineHeight: '1.4' }}>
+                    &#9888; The Downward Arrow has not been completed for: {activeTriggersMissingDA.map(t => t.name).join(', ')}. This is recommended before activation.
+                  </p>
+                </div>
+              )}
+
               <div style={{ display: 'grid', gridTemplateColumns: '200px minmax(0,1fr)', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
                 {/* Situations list */}
                 <div style={{ borderRight: '1px solid var(--float-border)', display: 'flex', flexDirection: 'column', padding: '16px' }}>
