@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPatient, getMessages, sendMessage } from '../../api/patients'
+import { getPatient, getMessages, sendMessage, inviteTeen } from '../../api/patients'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanStatus, updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
@@ -429,6 +429,11 @@ export default function PatientPage() {
   const [msgContent, setMsgContent] = useState('')
   const [showMsgForm, setShowMsgForm] = useState(false)
 
+  // Teen invitation
+  const [showTeenInviteForm, setShowTeenInviteForm] = useState(false)
+  const [teenEmailInput, setTeenEmailInput] = useState('')
+  const [teenInviteConfirmation, setTeenInviteConfirmation] = useState<string | null>(null)
+
   // Session notes
   const [showNoteForm, setShowNoteForm] = useState(false)
   const [editingNote, setEditingNote] = useState<SessionNote | null>(null)
@@ -553,6 +558,22 @@ export default function PatientPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['messages', patientId] }); setMsgContent(''); setShowMsgForm(false) }
   })
 
+  const inviteTeenMut = useMutation({
+    mutationFn: (email: string) => inviteTeen(patientId!, email),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
+      setTeenInviteConfirmation(data.email)
+      setShowTeenInviteForm(false)
+      setTeenEmailInput('')
+      setTimeout(() => setTeenInviteConfirmation(null), 4000)
+    }
+  })
+
+  const openTeenInviteForm = () => {
+    setTeenEmailInput(patient?.teen_email || '')
+    setShowTeenInviteForm(true)
+  }
+
   // Session notes
   const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteType('weekly_session'); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
   const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { session_type: noteType, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
@@ -606,7 +627,8 @@ export default function PatientPage() {
     }
   }
   const hasActivationBlocker = triggersWithMissingDT.length > 0
-  const hasActivationWarning = activeTriggersMissingDA.length > 0
+  const teenNotInvited = !!patient && !patient.teen_invited_at
+  const hasActivationWarning = activeTriggersMissingDA.length > 0 || teenNotInvited
   const canActivate = plan?.status === 'setup' && triggers && triggers.length > 0 && !hasActivationBlocker
   const lastMsg = messages?.[0]
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
@@ -627,6 +649,79 @@ export default function PatientPage() {
         ].filter(Boolean).join(' \u00B7 '),
         rightAction: <button onClick={() => navigate(`/patients/${patientId}/progress`)} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)' }}>View progress &rarr;</button>
       }} />
+
+      {/* Teen invitation status strip */}
+      {patient && (
+        <div style={{ padding: '12px 24px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teen access</span>
+            {patient.teen_invited_at ? (
+              <>
+                <span className="text-xs text-slate-600">
+                  invited {new Date(patient.teen_invited_at).toLocaleDateString()}
+                </span>
+                {patient.teen_email && (
+                  <>
+                    <span style={{ fontSize: '11px', color: '#cbd5e1' }}>·</span>
+                    <span className="text-xs text-slate-500">{patient.teen_email}</span>
+                  </>
+                )}
+                <button
+                  onClick={openTeenInviteForm}
+                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  Resend invite
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-xs text-slate-500">not set up</span>
+                <button
+                  onClick={openTeenInviteForm}
+                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  + Invite teen
+                </button>
+              </>
+            )}
+            {teenInviteConfirmation && (
+              <span className="text-xs text-green-600">&#10003; Invitation sent to {teenInviteConfirmation}</span>
+            )}
+          </div>
+          {showTeenInviteForm && (
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <label className="text-xs font-medium text-slate-500">Teen's email:</label>
+              <input
+                type="email"
+                value={teenEmailInput}
+                onChange={e => setTeenEmailInput(e.target.value)}
+                placeholder="teen@email.com"
+                autoFocus
+                className="text-xs border border-slate-200 rounded"
+                style={{ padding: '6px 8px', minWidth: '220px' }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && teenEmailInput.trim()) inviteTeenMut.mutate(teenEmailInput.trim())
+                  if (e.key === 'Escape') setShowTeenInviteForm(false)
+                }}
+              />
+              <button
+                onClick={() => teenEmailInput.trim() && inviteTeenMut.mutate(teenEmailInput.trim())}
+                disabled={!teenEmailInput.trim() || inviteTeenMut.isPending}
+                className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+                style={{ padding: '6px 12px' }}
+              >
+                {inviteTeenMut.isPending ? 'Sending...' : 'Send invite'}
+              </button>
+              <button
+                onClick={() => { setShowTeenInviteForm(false); setTeenEmailInput('') }}
+                className="text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '12px', padding: '24px', alignItems: 'start' }}>
 
@@ -872,11 +967,39 @@ export default function PatientPage() {
               )}
 
               {/* Activation warning — DA recommended */}
-              {plan.status === 'setup' && !hasActivationBlocker && hasActivationWarning && (
+              {plan.status === 'setup' && !hasActivationBlocker && activeTriggersMissingDA.length > 0 && (
                 <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
                   <p style={{ fontSize: '12px', color: '#78350f', margin: 0, lineHeight: '1.4' }}>
                     &#9888; The Downward Arrow has not been completed for: {activeTriggersMissingDA.map(t => t.name).join(', ')}. This is recommended before activation.
                   </p>
+                </div>
+              )}
+
+              {/* Activation warning — teen not invited */}
+              {plan.status === 'setup' && !hasActivationBlocker && teenNotInvited && (
+                <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
+                  <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 6px', lineHeight: '1.4' }}>
+                    &#9888; The teen hasn't been invited to Float yet.
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px', lineHeight: '1.4' }}>
+                    They won't be able to see their plan until you invite them.
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={openTeenInviteForm}
+                      className="text-[11px] px-2.5 py-1 bg-amber-600 text-white rounded-full border-none cursor-pointer font-medium"
+                    >
+                      Invite teen now
+                    </button>
+                    <button
+                      onClick={() => activatePlanMut.mutate()}
+                      disabled={activatePlanMut.isPending}
+                      className="text-[11px] px-2.5 py-1 bg-white text-amber-900 rounded-full cursor-pointer font-medium"
+                      style={{ border: '1px solid #fde68a' }}
+                    >
+                      Activate anyway
+                    </button>
+                  </div>
                 </div>
               )}
 

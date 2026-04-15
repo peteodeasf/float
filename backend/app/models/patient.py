@@ -45,6 +45,10 @@ class PatientProfile(Base):
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gender: Mapped[str | None] = mapped_column(String, nullable=True)
     phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    teen_email: Mapped[str | None] = mapped_column(String, nullable=True)
+    teen_invited_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     primary_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )

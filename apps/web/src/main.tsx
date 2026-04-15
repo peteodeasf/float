@@ -11,6 +11,7 @@ import PatientPage from './pages/practitioner/PatientPage'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
+import TeenSetPasswordPage from './pages/teen/TeenSetPasswordPage'
 import TeenHomePage from './pages/teen/TeenHomePage'
 import TeenExperimentPage from './pages/teen/TeenExperimentPage'
 import TeenRecordPage from './pages/teen/TeenRecordPage'
@@ -62,6 +63,9 @@ createRoot(document.getElementById('root')!).render(
 
               {/* Teen routes */}
               <Route path="/teen/login" element={<TeenLoginPage />} />
+              <Route path="/teen/set-password" element={
+                <TeenProtectedRoute><TeenSetPasswordPage /></TeenProtectedRoute>
+              } />
               <Route path="/teen/home" element={
                 <TeenProtectedRoute><TeenHomePage /></TeenProtectedRoute>
               } />

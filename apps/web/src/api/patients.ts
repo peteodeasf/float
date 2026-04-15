@@ -16,8 +16,24 @@ export interface PatientDetail {
   phone_number?: string | null
   age?: number | null
   gender?: string | null
+  teen_email?: string | null
+  teen_invited_at?: string | null
   primary_practitioner_id: string
   created_at: string
+}
+
+export interface InviteTeenResponse {
+  success: boolean
+  email: string
+  invited_at: string
+}
+
+export const inviteTeen = async (
+  patientId: string,
+  email: string
+): Promise<InviteTeenResponse> => {
+  const response = await apiClient.post(`/patients/${patientId}/invite-teen`, { email })
+  return response.data
 }
 
 export interface PreSessionBrief {

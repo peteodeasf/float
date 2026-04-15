@@ -20,6 +20,8 @@ class PatientResponse(BaseModel):
     age: Optional[int] = None
     gender: Optional[str] = None
     phone_number: Optional[str] = None
+    teen_email: Optional[str] = None
+    teen_invited_at: Optional[datetime] = None
     primary_practitioner_id: Optional[uuid.UUID] = None
     created_at: datetime
 
