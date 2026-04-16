@@ -4,13 +4,19 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { TeenAuthProvider } from './context/TeenAuthContext'
+import { AdminAuthProvider } from './context/AdminAuthContext'
 import ProtectedRoute from './components/ui/ProtectedRoute'
+import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
+import AdminLoginPage from './pages/admin/AdminLoginPage'
+import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import LoginPage from './pages/auth/LoginPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
+import TeenResetPasswordPage from './pages/teen/TeenResetPasswordPage'
 import TeenSetPasswordPage from './pages/teen/TeenSetPasswordPage'
 import TeenHomePage from './pages/teen/TeenHomePage'
 import TeenExperimentPage from './pages/teen/TeenExperimentPage'
@@ -35,10 +41,12 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TeenAuthProvider>
+          <AdminAuthProvider>
           <BrowserRouter>
             <Routes>
               {/* Practitioner routes */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute><DashboardPage /></ProtectedRoute>
               } />
@@ -63,6 +71,7 @@ createRoot(document.getElementById('root')!).render(
 
               {/* Teen routes */}
               <Route path="/teen/login" element={<TeenLoginPage />} />
+              <Route path="/teen/reset-password" element={<TeenResetPasswordPage />} />
               <Route path="/teen/set-password" element={
                 <TeenProtectedRoute><TeenSetPasswordPage /></TeenProtectedRoute>
               } />
@@ -82,9 +91,17 @@ createRoot(document.getElementById('root')!).render(
               {/* Public monitoring form */}
               <Route path="/monitor/:token" element={<MonitorLandingPage />} />
 
+              {/* Admin routes */}
+              <Route path="/admin/login" element={<AdminLoginPage />} />
+              <Route path="/admin/dashboard" element={
+                <AdminProtectedRoute><AdminDashboardPage /></AdminProtectedRoute>
+              } />
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </BrowserRouter>
+          </AdminAuthProvider>
         </TeenAuthProvider>
       </AuthProvider>
     </QueryClientProvider>
