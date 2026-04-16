@@ -18,8 +18,13 @@ export default function AdminLoginPage() {
     try {
       await login(email, password)
       navigate('/admin/dashboard')
-    } catch {
-      setError('Invalid credentials or insufficient permissions.')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      if (message.startsWith('Access denied')) {
+        setError('Access denied. Admin credentials required.')
+      } else {
+        setError('Invalid credentials or insufficient permissions.')
+      }
     } finally {
       setIsLoading(false)
     }

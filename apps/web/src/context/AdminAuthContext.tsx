@@ -26,14 +26,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const loginRes = await axios.post(`${API_URL}/auth/login`, { email, password })
     const token = loginRes.data.access_token as string
 
-    // Verify the user is an admin by calling /admin/stats with the new token.
-    // If they aren't an admin, the backend returns 403 and we reject.
+    // Verify the user is an admin by checking their role via /auth/me.
+    // Do NOT persist the token unless the role is "admin".
+    let role: string | null = null
     try {
-      await axios.get(`${API_URL}/admin/stats`, {
+      const meRes = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
+      role = (meRes.data?.role as string) ?? null
     } catch {
       throw new Error('Access denied')
+    }
+
+    if (role !== 'admin') {
+      throw new Error('Access denied. Admin credentials required.')
     }
 
     localStorage.setItem('admin_token', token)
