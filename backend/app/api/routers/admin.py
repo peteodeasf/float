@@ -156,48 +156,146 @@ async def _delete_user_cascade(user_id: uuid.UUID, db: AsyncSession) -> None:
 
 
 async def _delete_patient_cascade(patient_id: uuid.UUID, db: AsyncSession) -> None:
-    # Delete dependent rows from all tables that reference patient_profiles.
-    # Use raw SQL to avoid pulling in every model class.
+    """Delete all data owned by a patient in correct FK order."""
     from sqlalchemy import text as sql_text
 
-    # Delete experiments first (depends on ladder rungs / patient)
+    pid = str(patient_id)
+
+    # 1. Experiments (references ladder_rungs.id and patient_profiles.id)
     await db.execute(
         sql_text("DELETE FROM experiments WHERE patient_id = :pid"),
-        {"pid": str(patient_id)},
+        {"pid": pid},
     )
-    # Delete ladder rungs that belong to ladders of this patient
+
+    # 2. Ladder rungs (references exposure_ladders.id)
     await db.execute(
         sql_text(
-            "DELETE FROM ladder_rungs WHERE ladder_id IN "
-            "(SELECT id FROM ladders WHERE patient_id = :pid)"
+            "DELETE FROM ladder_rungs WHERE ladder_id IN ("
+            "  SELECT el.id FROM exposure_ladders el"
+            "  JOIN trigger_situations ts ON el.trigger_situation_id = ts.id"
+            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
+            "  WHERE tp.patient_id = :pid"
+            ")"
         ),
-        {"pid": str(patient_id)},
+        {"pid": pid},
     )
-    # Delete other dependent rows — wrap each in try so missing tables don't break.
-    simple_tables = [
-        "ladders",
-        "trigger_situations",
-        "avoidance_behaviors",
-        "downward_arrows",
-        "messages",
-        "monitoring_forms",
-        "monitoring_entries",
-        "session_notes",
-        "action_plans",
-        "parent_patient_links",
-        "accommodation_behaviors",
-        "treatment_plans",
-    ]
-    for tbl in simple_tables:
-        try:
-            await db.execute(
-                sql_text(f"DELETE FROM {tbl} WHERE patient_id = :pid"),
-                {"pid": str(patient_id)},
-            )
-        except Exception:
-            pass
 
-    # Finally, delete the patient profile itself.
+    # 3. Ladder review flags (references exposure_ladders.id)
+    await db.execute(
+        sql_text(
+            "DELETE FROM ladder_review_flags WHERE ladder_id IN ("
+            "  SELECT el.id FROM exposure_ladders el"
+            "  JOIN trigger_situations ts ON el.trigger_situation_id = ts.id"
+            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
+            "  WHERE tp.patient_id = :pid"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 4. Exposure ladders (references trigger_situations.id)
+    await db.execute(
+        sql_text(
+            "DELETE FROM exposure_ladders WHERE trigger_situation_id IN ("
+            "  SELECT ts.id FROM trigger_situations ts"
+            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
+            "  WHERE tp.patient_id = :pid"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 5. Downward arrows (references trigger_situations.id)
+    await db.execute(
+        sql_text(
+            "DELETE FROM downward_arrows WHERE trigger_situation_id IN ("
+            "  SELECT ts.id FROM trigger_situations ts"
+            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
+            "  WHERE tp.patient_id = :pid"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 6. Avoidance behaviors (references trigger_situations.id)
+    await db.execute(
+        sql_text(
+            "DELETE FROM avoidance_behaviors WHERE trigger_situation_id IN ("
+            "  SELECT ts.id FROM trigger_situations ts"
+            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
+            "  WHERE tp.patient_id = :pid"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 7. Trigger situations (references treatment_plans.id)
+    await db.execute(
+        sql_text(
+            "DELETE FROM trigger_situations WHERE treatment_plan_id IN ("
+            "  SELECT id FROM treatment_plans WHERE patient_id = :pid"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 8. Accommodation behaviors (references treatment_plans.id)
+    await db.execute(
+        sql_text(
+            "DELETE FROM accommodation_behaviors WHERE treatment_plan_id IN ("
+            "  SELECT id FROM treatment_plans WHERE patient_id = :pid"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 9. Treatment plans (references patient_profiles.id)
+    await db.execute(
+        sql_text("DELETE FROM treatment_plans WHERE patient_id = :pid"),
+        {"pid": pid},
+    )
+
+    # 10. Action plans (references patient_profiles.id)
+    await db.execute(
+        sql_text("DELETE FROM action_plans WHERE patient_id = :pid"),
+        {"pid": pid},
+    )
+
+    # 11. Session notes (references patient_profiles.id)
+    await db.execute(
+        sql_text("DELETE FROM session_notes WHERE patient_id = :pid"),
+        {"pid": pid},
+    )
+
+    # 12. Messages (references patient_profiles.id)
+    await db.execute(
+        sql_text("DELETE FROM messages WHERE patient_id = :pid"),
+        {"pid": pid},
+    )
+
+    # 13. Monitoring entries (references monitoring_forms.id)
+    await db.execute(
+        sql_text(
+            "DELETE FROM monitoring_entries WHERE monitoring_form_id IN ("
+            "  SELECT id FROM monitoring_forms WHERE patient_id = :pid"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 14. Monitoring forms (references patient_profiles.id)
+    await db.execute(
+        sql_text("DELETE FROM monitoring_forms WHERE patient_id = :pid"),
+        {"pid": pid},
+    )
+
+    # 15. Parent-patient links (references patient_profiles.id)
+    await db.execute(
+        sql_text("DELETE FROM parent_patient_links WHERE patient_id = :pid"),
+        {"pid": pid},
+    )
+
+    # 16. Patient profile
     await db.execute(
         delete(PatientProfile).where(PatientProfile.id == patient_id)
     )
