@@ -32,6 +32,26 @@ async def create_experiment(
     return experiment
 
 
+async def create_experiment_for_behavior(
+    db: AsyncSession,
+    behavior_id: uuid.UUID,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    data: ExperimentCreate
+) -> Experiment:
+    experiment = Experiment(
+        avoidance_behavior_id=behavior_id,
+        patient_id=patient_id,
+        organization_id=organization_id,
+        status="planned",
+        scheduled_date=data.scheduled_date
+    )
+    db.add(experiment)
+    await db.commit()
+    await db.refresh(experiment)
+    return experiment
+
+
 async def get_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,

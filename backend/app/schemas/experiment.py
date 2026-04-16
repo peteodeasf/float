@@ -27,7 +27,8 @@ class ExperimentAfterState(BaseModel):
 
 class ExperimentResponse(BaseModel):
     id: uuid.UUID
-    ladder_rung_id: uuid.UUID
+    ladder_rung_id: Optional[uuid.UUID] = None
+    avoidance_behavior_id: Optional[uuid.UUID] = None
     patient_id: uuid.UUID
     status: str
     scheduled_date: Optional[datetime] = None
@@ -54,7 +55,8 @@ class ExperimentResponse(BaseModel):
 
 class ExperimentListResponse(BaseModel):
     id: uuid.UUID
-    ladder_rung_id: uuid.UUID
+    ladder_rung_id: Optional[uuid.UUID] = None
+    avoidance_behavior_id: Optional[uuid.UUID] = None
     status: str
     scheduled_date: Optional[datetime] = None
     completed_date: Optional[datetime] = None

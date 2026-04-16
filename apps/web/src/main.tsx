@@ -78,7 +78,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/teen/home" element={
                 <TeenProtectedRoute><TeenHomePage /></TeenProtectedRoute>
               } />
-              <Route path="/teen/experiment/:rungId" element={
+              <Route path="/teen/experiment/:behaviorId" element={
                 <TeenProtectedRoute><TeenExperimentPage /></TeenProtectedRoute>
               } />
               <Route path="/teen/record/:experimentId" element={

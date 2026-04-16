@@ -12,7 +12,7 @@ const encouragements = [
 ]
 
 export default function TeenExperimentPage() {
-  const { rungId } = useParams<{ rungId: string }>()
+  const { behaviorId } = useParams<{ behaviorId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [step, setStep] = useState<Step>(1)
@@ -33,29 +33,33 @@ export default function TeenExperimentPage() {
   const [tooHardReason, setTooHardReason] = useState('')
   const [tooHardSent, setTooHardSent] = useState(false)
 
-  // Fetch data
+  // Fetch behavior details
+  const { data: behaviorData } = useQuery({
+    queryKey: ['teen-behavior', behaviorId],
+    queryFn: async () => (await teenApiClient.get(`/patient/behaviors/${behaviorId}`)).data,
+    enabled: !!behaviorId
+  })
+
+  // Fetch existing experiments for this behavior (from ladder data)
   const { data: ladderData } = useQuery({
     queryKey: ['teen-ladder'],
     queryFn: async () => (await teenApiClient.get('/patient/ladder')).data,
   })
 
-  const { data: experiments } = useQuery({
-    queryKey: ['teen-experiments', rungId],
-    queryFn: async () => (await teenApiClient.get(`/rungs/${rungId}/experiments`)).data,
-    enabled: !!rungId
-  })
-
-  const experiment = experiments?.sort(
-    (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )?.[0]
-
-  // Find the situation that contains this rung, and read feared_outcome from it
+  // Find experiments for this behavior from ladder data
   const matchingSituation = ladderData?.situations?.find((s: any) =>
-    s.rungs?.some((r: any) => r.id === rungId)
+    s.behaviors?.some((b: any) => b.id === behaviorId)
   )
-  const matchingRung = matchingSituation?.rungs?.find((r: any) => r.id === rungId)
-  const fearedOutcome = matchingSituation?.feared_outcome || null
-  const rungDT = experiment?.distress_thermometer_expected ?? matchingRung?.dt
+  const matchingBehavior = matchingSituation?.behaviors?.find((b: any) => b.id === behaviorId)
+  const existingExperiments = matchingBehavior?.experiments ?? []
+
+  const fearedOutcome = behaviorData?.situation?.feared_outcome || null
+  const behaviorDT = behaviorData?.dt
+
+  // The latest experiment for this behavior (for step 4 commit flow)
+  const experiment = existingExperiments.length > 0
+    ? existingExperiments[existingExperiments.length - 1]
+    : null
 
   // Generate next 7 days
   const next7Days = Array.from({ length: 7 }, (_, i) => {
@@ -69,12 +73,12 @@ export default function TeenExperimentPage() {
   // Create experiment
   const createMutation = useMutation({
     mutationFn: async () => {
-      const res = await teenApiClient.post(`/patient/rungs/${rungId}/experiments`, {
+      const res = await teenApiClient.post(`/patient/behaviors/${behaviorId}/experiments`, {
         scheduled_date: scheduledDate.toISOString()
       })
       return res.data
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teen-experiments', rungId] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
   })
 
   // Save before state
@@ -84,7 +88,7 @@ export default function TeenExperimentPage() {
         plan_description: fearedOutcome || customFearedOutcome || 'Experiment planned',
         prediction: fearedOutcome || customFearedOutcome,
         bip_before: bip,
-        distress_thermometer_expected: rungDT ?? 5,
+        distress_thermometer_expected: behaviorDT ?? 5,
         confidence_level: confidence || 'medium'
       })
     }
@@ -96,7 +100,7 @@ export default function TeenExperimentPage() {
       await teenApiClient.post(`/patient/experiments/${experimentId}/commit`)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teen-experiments', rungId] })
+      queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
       queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
       setStep(4)
     }
@@ -152,13 +156,19 @@ export default function TeenExperimentPage() {
           Here's what you'll try
         </h2>
 
-        {/* Situation + DT */}
-        {rungDT != null && (
+        {/* Behavior name + DT */}
+        {behaviorData && (
           <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
             <div style={{ flex: 1, background: '#fff', borderRadius: '14px', padding: '16px', border: '1px solid #e2e8f0' }}>
-              <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Fear level</p>
-              <p style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>{rungDT}/10</p>
+              <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Behavior</p>
+              <p style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>{behaviorData.name}</p>
             </div>
+            {behaviorDT != null && (
+              <div style={{ flex: '0 0 80px', background: '#fff', borderRadius: '14px', padding: '16px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Fear level</p>
+                <p style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>{behaviorDT}/10</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -367,7 +377,7 @@ export default function TeenExperimentPage() {
             opacity: (commitMutation.isPending || createMutation.isPending || beforeMutation.isPending) ? 0.6 : 1
           }}
         >
-          {commitMutation.isPending ? 'Committing...' : 'Commit to this experiment &rarr;'}
+          {commitMutation.isPending ? 'Committing...' : 'Commit to this experiment →'}
         </button>
       </Shell>
     )

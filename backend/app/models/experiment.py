@@ -13,8 +13,11 @@ class Experiment(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()")
     )
-    ladder_rung_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("ladder_rungs.id"), nullable=False
+    ladder_rung_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("ladder_rungs.id"), nullable=True
+    )
+    avoidance_behavior_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("avoidance_behaviors.id"), nullable=True
     )
     patient_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("patient_profiles.id"), nullable=False

@@ -26,6 +26,7 @@ from app.services.patient_service import (
 )
 from app.services.experiment_service import (
     create_experiment,
+    create_experiment_for_behavior,
     save_before_state,
     save_after_state,
 )
@@ -237,7 +238,6 @@ async def get_my_ladder(
 ):
     _, patient = context
     from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
-    from app.models.ladder import ExposureLadder, LadderRung
     from app.models.downward_arrow import DownwardArrow
 
     plan_result = await db.execute(
@@ -258,66 +258,77 @@ async def get_my_ladder(
     all_triggers = triggers_result.scalars().all()
     print(f"DEBUG ladder: plan_id={plan.id}, situations count={len(all_triggers)}")
 
-    # Return all situations that have at least one rung. is_active is included
-    # per-situation so the frontend can highlight the suggested one(s).
     situations = []
     for trigger in all_triggers:
-        # DA
+        # Downward arrow
         da_result = await db.execute(
             select(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
         )
         da = da_result.scalar_one_or_none()
         feared_outcome = da.feared_outcome if (da and da.feared_outcome_approved) else None
 
-        # Ladder
-        ladder_result = await db.execute(
-            select(ExposureLadder).where(ExposureLadder.trigger_situation_id == trigger.id)
-        )
-        ladder = ladder_result.scalar_one_or_none()
-
-        rungs_data = []
-        if ladder:
-            rungs_q = await db.execute(
-                select(LadderRung).where(LadderRung.ladder_id == ladder.id)
+        # Avoidance behaviors sorted by DT ascending (nulls last)
+        behaviors_result = await db.execute(
+            select(AvoidanceBehavior).where(
+                AvoidanceBehavior.trigger_situation_id == trigger.id
+            ).order_by(
+                AvoidanceBehavior.distress_thermometer_when_refraining.is_(None),
+                AvoidanceBehavior.distress_thermometer_when_refraining
             )
-            rungs = rungs_q.scalars().all()
+        )
+        behaviors = behaviors_result.scalars().all()
 
-            for r in rungs:
-                # Behavior name
-                behavior_name = None
-                if r.avoidance_behavior_id:
-                    b_result = await db.execute(
-                        select(AvoidanceBehavior).where(AvoidanceBehavior.id == r.avoidance_behavior_id)
-                    )
-                    behavior = b_result.scalar_one_or_none()
-                    if behavior:
-                        behavior_name = behavior.name
+        behaviors_data = []
+        for b in behaviors:
+            # Experiments for this behavior
+            exp_result = await db.execute(
+                select(Experiment).where(
+                    Experiment.avoidance_behavior_id == b.id,
+                    Experiment.patient_id == patient.id
+                ).order_by(Experiment.created_at)
+            )
+            experiments = exp_result.scalars().all()
+            completed_experiments = [e for e in experiments if e.status == "completed"]
+            experiment_count = len(experiments)
 
-                # Experiment count and completion status
-                exp_result = await db.execute(
-                    select(Experiment).where(
-                        Experiment.ladder_rung_id == r.id,
-                        Experiment.patient_id == patient.id
-                    )
-                )
-                experiments = exp_result.scalars().all()
-                experiment_count = len(experiments)
-                any_completed = any(e.status == "completed" for e in experiments)
+            # Status logic
+            latest_dt_actual = None
+            if completed_experiments:
+                latest = completed_experiments[-1]
+                latest_dt_actual = float(latest.distress_thermometer_actual) if latest.distress_thermometer_actual is not None else None
 
-                rungs_data.append({
-                    "id": str(r.id),
-                    "behavior_name": behavior_name,
-                    "dt": float(r.distress_thermometer_rating) if r.distress_thermometer_rating is not None else None,
-                    "completed": any_completed,
-                    "experiment_count": experiment_count,
-                    "rung_order": r.rung_order,
+            if len(completed_experiments) >= 2 and latest_dt_actual is not None and latest_dt_actual <= 2:
+                b_status = "mastered"
+            elif len(completed_experiments) >= 1:
+                b_status = "in_progress"
+            else:
+                b_status = "not_started"
+
+            experiments_data = []
+            for e in experiments:
+                experiments_data.append({
+                    "id": str(e.id),
+                    "status": e.status,
+                    "scheduled_date": e.scheduled_date.isoformat() if e.scheduled_date else None,
+                    "dt_actual": float(e.distress_thermometer_actual) if e.distress_thermometer_actual is not None else None,
+                    "bip_before": float(e.bip_before) if e.bip_before is not None else None,
+                    "bip_after": float(e.bip_after) if e.bip_after is not None else None,
+                    "feared_outcome_occurred": e.feared_outcome_occurred,
                 })
 
-            # Sort rungs by DT ascending (nulls at end)
-            rungs_data.sort(key=lambda x: (x["dt"] is None, x["dt"] if x["dt"] is not None else 999))
+            behaviors_data.append({
+                "id": str(b.id),
+                "name": b.name,
+                "behavior_type": b.behavior_type,
+                "dt": float(b.distress_thermometer_when_refraining) if b.distress_thermometer_when_refraining is not None else None,
+                "experiment_count": experiment_count,
+                "latest_dt_actual": latest_dt_actual,
+                "status": b_status,
+                "experiments": experiments_data,
+            })
 
-        # Skip situations without any rungs — teen only sees situations with steps
-        if not rungs_data:
+        # Skip situations without any behaviors
+        if not behaviors_data:
             continue
 
         situations.append({
@@ -326,7 +337,7 @@ async def get_my_ladder(
             "is_active": trigger.is_active,
             "feared_outcome": feared_outcome,
             "da_approved": bool(da and da.feared_outcome_approved),
-            "rungs": rungs_data,
+            "behaviors": behaviors_data,
         })
 
     return {
@@ -337,6 +348,103 @@ async def get_my_ladder(
         },
         "situations": situations
     }
+
+
+@patient_router.get("/behaviors/{behavior_id}")
+async def get_behavior_detail(
+    behavior_id: uuid.UUID,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
+    from app.models.downward_arrow import DownwardArrow
+
+    # Find the behavior
+    b_result = await db.execute(
+        select(AvoidanceBehavior).where(AvoidanceBehavior.id == behavior_id)
+    )
+    behavior = b_result.scalar_one_or_none()
+    if not behavior:
+        raise HTTPException(status_code=404, detail="Behavior not found")
+
+    # Verify it belongs to the patient's plan
+    ts_result = await db.execute(
+        select(TriggerSituation).where(TriggerSituation.id == behavior.trigger_situation_id)
+    )
+    trigger = ts_result.scalar_one_or_none()
+    if not trigger:
+        raise HTTPException(status_code=404, detail="Situation not found")
+
+    plan_result = await db.execute(
+        select(TreatmentPlan).where(
+            TreatmentPlan.id == trigger.treatment_plan_id,
+            TreatmentPlan.patient_id == patient.id
+        )
+    )
+    plan = plan_result.scalar_one_or_none()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Not authorized")
+
+    # Downward arrow
+    da_result = await db.execute(
+        select(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
+    )
+    da = da_result.scalar_one_or_none()
+    feared_outcome = da.feared_outcome if (da and da.feared_outcome_approved) else None
+
+    return {
+        "id": str(behavior.id),
+        "name": behavior.name,
+        "behavior_type": behavior.behavior_type,
+        "dt": float(behavior.distress_thermometer_when_refraining) if behavior.distress_thermometer_when_refraining is not None else None,
+        "situation": {
+            "id": str(trigger.id),
+            "name": trigger.name,
+            "feared_outcome": feared_outcome,
+            "da_approved": bool(da and da.feared_outcome_approved),
+        }
+    }
+
+
+@patient_router.post("/behaviors/{behavior_id}/experiments", status_code=status.HTTP_201_CREATED)
+async def patient_create_behavior_experiment(
+    behavior_id: uuid.UUID,
+    data: ExperimentCreate,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, patient = context
+    from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
+
+    # Validate behavior belongs to patient's plan
+    b_result = await db.execute(
+        select(AvoidanceBehavior).where(AvoidanceBehavior.id == behavior_id)
+    )
+    behavior = b_result.scalar_one_or_none()
+    if not behavior:
+        raise HTTPException(status_code=404, detail="Behavior not found")
+
+    ts_result = await db.execute(
+        select(TriggerSituation).where(TriggerSituation.id == behavior.trigger_situation_id)
+    )
+    trigger = ts_result.scalar_one_or_none()
+    if not trigger:
+        raise HTTPException(status_code=404, detail="Situation not found")
+
+    plan_result = await db.execute(
+        select(TreatmentPlan).where(
+            TreatmentPlan.id == trigger.treatment_plan_id,
+            TreatmentPlan.patient_id == patient.id
+        )
+    )
+    if not plan_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Not authorized")
+
+    experiment = await create_experiment_for_behavior(
+        db, behavior_id, patient.id, patient.organization_id, data
+    )
+    return experiment
 
 
 @patient_router.post("/experiments/{experiment_id}/commit")

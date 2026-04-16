@@ -5,13 +5,25 @@ import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
 import { calculateStreak } from '../../api/streak'
 
-type TeenRung = {
+type TeenExperiment = {
   id: string
-  behavior_name: string | null
+  status: string
+  scheduled_date: string | null
+  dt_actual: number | null
+  bip_before: number | null
+  bip_after: number | null
+  feared_outcome_occurred: boolean | null
+}
+
+type TeenBehavior = {
+  id: string
+  name: string
+  behavior_type: string
   dt: number | null
-  completed: boolean
   experiment_count: number
-  rung_order: number
+  latest_dt_actual: number | null
+  status: 'mastered' | 'in_progress' | 'not_started'
+  experiments: TeenExperiment[]
 }
 
 type TeenSituation = {
@@ -20,14 +32,14 @@ type TeenSituation = {
   is_active: boolean
   feared_outcome: string | null
   da_approved: boolean
-  rungs: TeenRung[]
+  behaviors: TeenBehavior[]
 }
 
 export default function TeenHomePage() {
   const { patientId, logout } = useTeenAuth()
   const navigate = useNavigate()
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null)
-  const [jumpWarning, setJumpWarning] = useState<{ targetRungId: string; suggestedRungId: string; suggestedName: string } | null>(null)
+  const [jumpWarning, setJumpWarning] = useState<{ targetBehaviorId: string; suggestedBehaviorId: string; suggestedName: string } | null>(null)
 
   const { data: ladderData } = useQuery({
     queryKey: ['teen-ladder', patientId],
@@ -49,22 +61,11 @@ export default function TeenHomePage() {
 
   const situations: TeenSituation[] = ladderData?.situations ?? []
 
-  // Get all experiments for streak calculation
-  const allRungIds = situations.flatMap(s => s.rungs.map(r => r.id))
-  const { data: allExperiments } = useQuery({
-    queryKey: ['teen-all-experiments', patientId, allRungIds.join(',')],
-    queryFn: async () => {
-      const results: any[] = []
-      for (const rungId of allRungIds) {
-        const res = await teenApiClient.get(`/rungs/${rungId}/experiments`)
-        results.push(...res.data)
-      }
-      return results
-    },
-    enabled: allRungIds.length > 0
-  })
-
-  const streak = allExperiments ? calculateStreak(allExperiments) : 0
+  // Gather all experiments from the ladder data for streak calculation
+  const allExperiments = situations.flatMap(s =>
+    s.behaviors.flatMap(b => b.experiments)
+  )
+  const streak = allExperiments.length > 0 ? calculateStreak(allExperiments) : 0
   const firstName = me?.patient_name?.split(' ')[0] ?? ''
 
   // Default-select the active situation (or first if none)
@@ -77,8 +78,8 @@ export default function TeenHomePage() {
 
   const selectedSituation = situations.find(s => s.id === selectedSituationId)
 
-  // Determine suggested rung = lowest DT incomplete rung
-  const suggestedRung = selectedSituation?.rungs.find(r => !r.completed) ?? null
+  // Suggested behavior = lowest DT behavior that is not mastered
+  const suggestedBehavior = selectedSituation?.behaviors.find(b => b.status !== 'mastered') ?? null
 
   // Record banner
   const now = new Date()
@@ -88,24 +89,24 @@ export default function TeenHomePage() {
     return new Date(e.scheduled_date) <= now
   }) ?? []
 
-  const handleRungTap = (rung: TeenRung) => {
-    if (rung.completed) return
+  const handleBehaviorTap = (behavior: TeenBehavior) => {
+    if (behavior.status === 'mastered') return
     // Jump warning: if DT more than 2 above suggested
     if (
-      suggestedRung &&
-      rung.id !== suggestedRung.id &&
-      rung.dt != null &&
-      suggestedRung.dt != null &&
-      rung.dt - suggestedRung.dt > 2
+      suggestedBehavior &&
+      behavior.id !== suggestedBehavior.id &&
+      behavior.dt != null &&
+      suggestedBehavior.dt != null &&
+      behavior.dt - suggestedBehavior.dt > 2
     ) {
       setJumpWarning({
-        targetRungId: rung.id,
-        suggestedRungId: suggestedRung.id,
-        suggestedName: suggestedRung.behavior_name || `Step ${suggestedRung.rung_order + 1}`
+        targetBehaviorId: behavior.id,
+        suggestedBehaviorId: suggestedBehavior.id,
+        suggestedName: suggestedBehavior.name
       })
       return
     }
-    navigate(`/teen/experiment/${rung.id}`)
+    navigate(`/teen/experiment/${behavior.id}`)
   }
 
   return (
@@ -235,13 +236,13 @@ export default function TeenHomePage() {
                 </p>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => { const id = jumpWarning.targetRungId; setJumpWarning(null); navigate(`/teen/experiment/${id}`) }}
+                    onClick={() => { const id = jumpWarning.targetBehaviorId; setJumpWarning(null); navigate(`/teen/experiment/${id}`) }}
                     style={{ fontSize: '13px', padding: '8px 14px', background: '#fff', border: '1px solid #fcd34d', borderRadius: '8px', color: '#92400e', cursor: 'pointer', fontWeight: '600' }}
                   >
                     Start here anyway
                   </button>
                   <button
-                    onClick={() => { const id = jumpWarning.suggestedRungId; setJumpWarning(null); navigate(`/teen/experiment/${id}`) }}
+                    onClick={() => { const id = jumpWarning.suggestedBehaviorId; setJumpWarning(null); navigate(`/teen/experiment/${id}`) }}
                     style={{ fontSize: '13px', padding: '8px 14px', background: '#0d9488', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: '600' }}
                   >
                     Go to suggested step
@@ -251,26 +252,27 @@ export default function TeenHomePage() {
             )}
 
             {/* Ladder */}
-            {selectedSituation.rungs.length > 0 ? (
+            {selectedSituation.behaviors.length > 0 ? (
               <div style={{ background: '#fff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0' }}>
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
                   Your ladder
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {[...selectedSituation.rungs].reverse().map((rung, i) => {
-                    const displayNum = selectedSituation.rungs.length - i
-                    const isCurrent = rung.id === suggestedRung?.id
-                    const isComplete = rung.completed
+                  {[...selectedSituation.behaviors].reverse().map((behavior, i) => {
+                    const displayNum = selectedSituation.behaviors.length - i
+                    const isCurrent = behavior.id === suggestedBehavior?.id
+                    const isMastered = behavior.status === 'mastered'
+                    const isInProgress = behavior.status === 'in_progress'
                     return (
                       <button
-                        key={rung.id}
-                        onClick={() => handleRungTap(rung)}
-                        disabled={isComplete}
+                        key={behavior.id}
+                        onClick={() => handleBehaviorTap(behavior)}
+                        disabled={isMastered}
                         style={{
                           display: 'flex', alignItems: 'center', gap: '12px',
                           padding: '12px 14px', borderRadius: '12px', border: 'none',
-                          background: isComplete ? '#f0fdf4' : isCurrent ? '#f0fdfa' : '#f8fafc',
-                          cursor: isComplete ? 'default' : 'pointer', textAlign: 'left',
+                          background: isMastered ? '#f0fdf4' : isCurrent ? '#f0fdfa' : '#f8fafc',
+                          cursor: isMastered ? 'default' : 'pointer', textAlign: 'left',
                           outline: isCurrent ? '2px solid #99f6e4' : 'none',
                           width: '100%',
                           position: 'relative',
@@ -278,28 +280,31 @@ export default function TeenHomePage() {
                       >
                         <div style={{
                           width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-                          background: isComplete ? '#22c55e' : isCurrent ? '#0d9488' : '#e2e8f0',
+                          background: isMastered ? '#22c55e' : isCurrent ? '#0d9488' : isInProgress ? '#f59e0b' : '#e2e8f0',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '13px', fontWeight: '700',
-                          color: isComplete || isCurrent ? '#fff' : '#94a3b8',
+                          color: isMastered || isCurrent || isInProgress ? '#fff' : '#94a3b8',
                         }}>
-                          {isComplete ? '✓' : displayNum}
+                          {isMastered ? '✓' : displayNum}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {rung.behavior_name || `Step ${displayNum}`}
+                            {behavior.name}
                           </p>
                           {isCurrent && (
                             <p style={{ fontSize: '11px', color: '#0d9488', fontWeight: '600', margin: '2px 0 0' }}>suggested</p>
                           )}
+                          {isInProgress && !isCurrent && (
+                            <p style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', margin: '2px 0 0' }}>in progress</p>
+                          )}
                         </div>
-                        {rung.dt != null && (
+                        {behavior.dt != null && (
                           <span style={{
                             fontSize: '12px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px',
                             background: isCurrent ? '#ccfbf1' : '#f1f5f9',
                             color: isCurrent ? '#0d9488' : '#94a3b8'
                           }}>
-                            {rung.dt}/10
+                            {behavior.dt}/10
                           </span>
                         )}
                       </button>
