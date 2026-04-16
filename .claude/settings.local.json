@@ -27,7 +27,15 @@
       "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from app.api.routers import auth; print\\('ok'\\)\")",
       "Bash(curl -sI https://floatcbt.netlify.app/admin)",
       "Bash(curl -s https://floatcbt.netlify.app/admin)",
-      "Bash(curl -s https://floatcbt.netlify.app/assets/index-O7OxtEHZ.js)"
+      "Bash(curl -s https://floatcbt.netlify.app/assets/index-O7OxtEHZ.js)",
+      "Bash(railway up:*)",
+      "Bash(alembic revision:*)",
+      "Bash(python -m alembic revision --autogenerate -m \"add_avoidance_behavior_id_to_experiments\")",
+      "Bash(ls -la .venv/bin/python*)",
+      "Bash(ls -la venv/bin/python*)",
+      "Bash(ls Pipfile* poetry.lock requirements.txt)",
+      "Bash(.venv/bin/python -m alembic revision --autogenerate -m \"add_avoidance_behavior_id_to_experiments\")",
+      "Bash(.venv/bin/python -m alembic upgrade head)"
     ]
   }
 }
