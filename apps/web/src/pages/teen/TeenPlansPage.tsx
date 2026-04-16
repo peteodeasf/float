@@ -66,7 +66,7 @@ export default function TeenPlansPage() {
 
         {plans && plans.length === 0 && (
           <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
-            No action plans yet. Your practitioner will publish them after each session.
+            No action plans yet. Your clinician will publish them after each session.
           </p>
         )}
 

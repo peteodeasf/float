@@ -143,9 +143,16 @@ export default function AdminDashboardPage() {
   }
 
   const handleDeleteUser = async (id: string) => {
-    await adminApiClient.delete(`/admin/users/${id}`)
-    setConfirmDeleteUserId(null)
-    await loadAll()
+    console.log('delete user clicked', id)
+    try {
+      await adminApiClient.delete(`/admin/users/${id}`)
+      setConfirmDeleteUserId(null)
+      await loadAll()
+    } catch (err) {
+      console.error('delete user failed', err)
+      alert('Failed to delete user. See console for details.')
+      setConfirmDeleteUserId(null)
+    }
   }
 
   const handleResetPassword = async (id: string) => {
@@ -155,9 +162,16 @@ export default function AdminDashboardPage() {
   }
 
   const handleDeletePatient = async (id: string) => {
-    await adminApiClient.delete(`/admin/patients/${id}`)
-    setConfirmDeletePatientId(null)
-    await loadAll()
+    console.log('delete patient clicked', id)
+    try {
+      await adminApiClient.delete(`/admin/patients/${id}`)
+      setConfirmDeletePatientId(null)
+      await loadAll()
+    } catch (err) {
+      console.error('delete patient failed', err)
+      alert('Failed to delete patient. See console for details.')
+      setConfirmDeletePatientId(null)
+    }
   }
 
   const handleCreateOrg = async (e: React.FormEvent) => {
@@ -302,7 +316,7 @@ export default function AdminDashboardPage() {
                     textTransform: 'capitalize',
                   }}
                 >
-                  {f === 'all' ? 'All' : f + 's'}
+                  {f === 'all' ? 'All' : f === 'practitioner' ? 'Clinicians' : f + 's'}
                 </button>
               ))}
             </div>

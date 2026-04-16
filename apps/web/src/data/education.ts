@@ -362,7 +362,7 @@ Common core feared outcomes include:
 - "I will lose control completely"
 - "My parents will be disappointed in me forever"
 
-**The practitioner must approve the feared outcome.** Before recording it in Float, confirm that you have drilled down far enough. A surface outcome like "kids will stare at me" is not drilled far enough. An outcome like "I will be permanently rejected and never have friends" is appropriately drilled.`
+**The clinician must approve the feared outcome.** Before recording it in Float, confirm that you have drilled down far enough. A surface outcome like "kids will stare at me" is not drilled far enough. An outcome like "I will be permanently rejected and never have friends" is appropriately drilled.`
       },
       {
         heading: 'Example facilitation',
@@ -466,7 +466,7 @@ The signal to move up the ladder is not the passage of time — it is the child'
 - **Gaps between rungs too large** — a jump from DT 3 to DT 8 with nothing in between is too steep
 - **Too few rungs** — a ladder with only 1 or 2 rungs lacks gradation
 - **Missing Downward Arrow** — each rung should have an associated feared outcome before exposures begin
-- **Unresolved flags** — the practitioner must review and address all flags before activating the plan
+- **Unresolved flags** — the clinician must review and address all flags before activating the plan
 
 The AI review is a clinical quality check, not a replacement for clinical judgment. You may override a flag if you have a clinical reason — the system will ask you to document your reasoning.`
       },
