@@ -22,7 +22,12 @@
       "Bash(\"/Users/peterodea/Documents/Float Project/float/backend/Procfile\")",
       "Bash(grep -rh \"down_revision\" migrations/versions/*.py)",
       "Bash(grep -h \"^revision\" migrations/versions/*.py)",
-      "Bash(grep -h \"down_revision\" migrations/versions/*.py)"
+      "Bash(grep -h \"down_revision\" migrations/versions/*.py)",
+      "Bash(python3 -c \"from pydantic import EmailStr; print\\('ok'\\)\")",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from app.api.routers import auth; print\\('ok'\\)\")",
+      "Bash(curl -sI https://floatcbt.netlify.app/admin)",
+      "Bash(curl -s https://floatcbt.netlify.app/admin)",
+      "Bash(curl -s https://floatcbt.netlify.app/assets/index-O7OxtEHZ.js)"
     ]
   }
 }

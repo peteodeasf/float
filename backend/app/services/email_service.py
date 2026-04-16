@@ -237,3 +237,89 @@ Sent via Float
     except Exception as e:
         logger.error(f"Failed to send teen invitation email to {to_email}: {e}")
         return False
+
+
+async def send_password_reset_email(to_email: str, reset_link: str) -> bool:
+    """Send a password reset email with a secure one-time link."""
+
+    if not settings.RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY not configured — skipping password reset email")
+        return False
+
+    resend.api_key = settings.RESEND_API_KEY
+
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+
+  <div style="background:#0d9488; padding:24px 32px; text-align:center;">
+    <span style="font-size:22px; font-weight:500; color:#ffffff; letter-spacing:0.03em;">float</span>
+  </div>
+
+  <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
+    <div style="background:#ffffff; border-radius:10px; padding:32px 28px; border:1px solid #e2e8f0;">
+
+      <p style="font-size:18px; font-weight:600; color:#0f172a; margin:0 0 16px;">
+        Reset your Float password
+      </p>
+
+      <p style="font-size:15px; color:#475569; line-height:1.6; margin:0 0 20px;">
+        We received a request to reset your password. Click the link below to choose a new one. This link expires in 1 hour.
+      </p>
+
+      <div style="text-align:center; margin:0 0 24px;">
+        <a href="{reset_link}"
+           style="display:inline-block; padding:14px 40px; background:#0d9488;
+                  color:#ffffff; text-decoration:none; border-radius:6px;
+                  font-size:16px; font-weight:600;">
+          Reset password
+        </a>
+      </div>
+
+      <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0;">
+        If you didn't request this, you can safely ignore this email.
+      </p>
+
+    </div>
+  </div>
+
+  <div style="text-align:center; padding:16px 24px 32px;">
+    <p style="font-size:12px; color:#94a3b8; margin:0;">
+      Sent via Float
+    </p>
+  </div>
+
+</body>
+</html>
+"""
+
+    text_body = f"""Reset your Float password
+
+We received a request to reset your password. Click the link below to choose a new one. This link expires in 1 hour.
+
+{reset_link}
+
+If you didn't request this, you can safely ignore this email.
+
+---
+Sent via Float
+"""
+
+    try:
+        resend.Emails.send({
+            "from": f"{settings.RESEND_FROM_NAME} <{settings.RESEND_FROM_EMAIL}>",
+            "to": [to_email],
+            "subject": "Reset your Float password",
+            "html": html_body,
+            "text": text_body,
+        })
+        logger.info(f"Password reset email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send password reset email to {to_email}: {e}")
+        return False

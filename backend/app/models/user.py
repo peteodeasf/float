@@ -18,6 +18,10 @@ class User(Base):
     must_change_password: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    password_reset_token: Mapped[str | None] = mapped_column(String, nullable=True)
+    password_reset_expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
