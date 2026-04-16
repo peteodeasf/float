@@ -256,6 +256,7 @@ async def get_my_ladder(
         ).order_by(TriggerSituation.display_order)
     )
     all_triggers = triggers_result.scalars().all()
+    print(f"DEBUG ladder: plan_id={plan.id}, situations count={len(all_triggers)}")
 
     # Return all situations that have at least one rung. is_active is included
     # per-situation so the frontend can highlight the suggested one(s).
