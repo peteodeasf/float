@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAdminAuth, adminApiClient } from '../../context/AdminAuthContext'
+import { useAdminAuth, adminApiClient, createClinician } from '../../context/AdminAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
 
 type Stats = {
@@ -117,6 +117,14 @@ export default function AdminDashboardPage() {
   const [newOrgName, setNewOrgName] = useState('')
   const [newOrgAdminEmail, setNewOrgAdminEmail] = useState('')
 
+  const [showNewClinician, setShowNewClinician] = useState(false)
+  const [newClinicianName, setNewClinicianName] = useState('')
+  const [newClinicianEmail, setNewClinicianEmail] = useState('')
+  const [newClinicianOrgId, setNewClinicianOrgId] = useState('')
+  const [newClinicianError, setNewClinicianError] = useState<string | null>(null)
+  const [newClinicianSubmitting, setNewClinicianSubmitting] = useState(false)
+  const [clinicianCreatedMsg, setClinicianCreatedMsg] = useState<string | null>(null)
+
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null)
   const [expandedOrgDetail, setExpandedOrgDetail] = useState<AdminOrgDetail | null>(null)
 
@@ -171,6 +179,35 @@ export default function AdminDashboardPage() {
       console.error('delete patient failed', err)
       alert('Failed to delete patient. See console for details.')
       setConfirmDeletePatientId(null)
+    }
+  }
+
+  const handleCreateClinician = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setNewClinicianError(null)
+    setNewClinicianSubmitting(true)
+    try {
+      const email = newClinicianEmail.trim()
+      await createClinician({
+        name: newClinicianName.trim(),
+        email,
+        organization_id: newClinicianOrgId,
+      })
+      setClinicianCreatedMsg(`✓ Clinician account created and invitation sent to ${email}`)
+      setShowNewClinician(false)
+      setNewClinicianName('')
+      setNewClinicianEmail('')
+      setNewClinicianOrgId('')
+      await loadAll()
+      setTimeout(() => setClinicianCreatedMsg(null), 5000)
+    } catch (err: any) {
+      if (err?.response?.status === 400) {
+        setNewClinicianError('A user with that email already exists.')
+      } else {
+        setNewClinicianError('Failed to create clinician. Please try again.')
+      }
+    } finally {
+      setNewClinicianSubmitting(false)
     }
   }
 
@@ -301,7 +338,24 @@ export default function AdminDashboardPage() {
         {/* Users */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#0f172a' }}>Users</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#0f172a' }}>Users</h2>
+              <button
+                onClick={() => {
+                  setShowNewClinician((v) => !v)
+                  setNewClinicianError(null)
+                }}
+                style={{
+                  ...smallBtn,
+                  background: 'var(--float-primary)',
+                  color: '#fff',
+                  borderColor: 'var(--float-primary)',
+                  marginRight: 0,
+                }}
+              >
+                + New clinician
+              </button>
+            </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {(['all', 'practitioner', 'patient', 'admin'] as const).map((f) => (
                 <button
@@ -321,6 +375,129 @@ export default function AdminDashboardPage() {
               ))}
             </div>
           </div>
+
+          {clinicianCreatedMsg && (
+            <div
+              style={{
+                background: '#ecfdf5',
+                border: '1px solid #a7f3d0',
+                color: '#047857',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                marginBottom: '12px',
+              }}
+            >
+              {clinicianCreatedMsg}
+            </div>
+          )}
+
+          {showNewClinician && (
+            <form
+              onSubmit={handleCreateClinician}
+              style={{
+                background: '#f8fafc',
+                padding: '16px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                display: 'flex',
+                gap: '12px',
+                flexWrap: 'wrap',
+                alignItems: 'flex-end',
+              }}
+            >
+              <div style={{ flex: '1 1 180px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                  Name
+                </label>
+                <input
+                  value={newClinicianName}
+                  onChange={(e) => setNewClinicianName(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    fontSize: '13px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                  }}
+                />
+              </div>
+              <div style={{ flex: '1 1 200px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newClinicianEmail}
+                  onChange={(e) => setNewClinicianEmail(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    fontSize: '13px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                  }}
+                />
+              </div>
+              <div style={{ flex: '1 1 200px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                  Organization
+                </label>
+                <select
+                  value={newClinicianOrgId}
+                  onChange={(e) => setNewClinicianOrgId(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    fontSize: '13px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    background: '#fff',
+                  }}
+                >
+                  <option value="">Select an organization</option>
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id}>{o.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="submit"
+                  disabled={newClinicianSubmitting}
+                  style={{
+                    ...smallBtn,
+                    background: 'var(--float-primary)',
+                    color: '#fff',
+                    borderColor: 'var(--float-primary)',
+                    marginRight: 0,
+                    padding: '8px 14px',
+                    opacity: newClinicianSubmitting ? 0.6 : 1,
+                  }}
+                >
+                  {newClinicianSubmitting ? 'Creating...' : 'Create clinician'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewClinician(false)
+                    setNewClinicianError(null)
+                  }}
+                  style={{ ...smallBtn, marginRight: 0, padding: '8px 14px' }}
+                >
+                  Cancel
+                </button>
+              </div>
+              {newClinicianError && (
+                <div style={{ flexBasis: '100%', fontSize: '13px', color: '#b91c1c' }}>
+                  {newClinicianError}
+                </div>
+              )}
+            </form>
+          )}
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>

@@ -1,4 +1,5 @@
 import secrets
+import string
 import uuid
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,11 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.dependencies import get_current_user
+from app.core.security import hash_password
 from app.models.user import User, UserRole
 from app.models.organization import Organization
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
-from app.services.email_service import send_password_reset_email
+from app.services.email_service import (
+    send_clinician_invitation_email,
+    send_password_reset_email,
+)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -38,6 +43,17 @@ async def get_admin_context(
 class CreateOrganizationRequest(BaseModel):
     name: str
     admin_email: str | None = None
+
+
+class CreateClinicianRequest(BaseModel):
+    name: str
+    email: str
+    organization_id: str
+
+
+def _generate_clinician_temp_password(length: int = 12) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 @router.get("/stats")
@@ -403,6 +419,84 @@ async def create_organization(
     return {
         "id": str(org_id),
         "name": request.name,
+    }
+
+
+@router.post("/clinicians")
+async def create_clinician(
+    request: CreateClinicianRequest,
+    admin: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    email = request.email.lower().strip()
+
+    # Check no existing user with this email
+    existing_result = await db.execute(select(User).where(User.email == email))
+    if existing_result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with that email already exists.",
+        )
+
+    try:
+        org_uuid = uuid.UUID(request.organization_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid organization_id")
+
+    org_result = await db.execute(
+        select(Organization).where(Organization.id == org_uuid)
+    )
+    org = org_result.scalar_one_or_none()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Create the User
+    temp_password = _generate_clinician_temp_password()
+    new_user = User(
+        email=email,
+        password_hash=hash_password(temp_password),
+        must_change_password=True,
+    )
+    db.add(new_user)
+    await db.flush()
+
+    # Create practitioner role
+    role = UserRole(
+        user_id=new_user.id,
+        organization_id=org_uuid,
+        role="practitioner",
+    )
+    db.add(role)
+
+    # Create practitioner profile
+    profile = PractitionerProfile(
+        user_id=new_user.id,
+        organization_id=org_uuid,
+        name=request.name,
+    )
+    db.add(profile)
+    await db.flush()
+
+    profile_id = profile.id
+    user_id = new_user.id
+
+    await db.commit()
+
+    # Send invitation email
+    login_url = f"{settings.BASE_URL}/login"
+    await send_clinician_invitation_email(
+        to_email=email,
+        login_url=login_url,
+        temporary_password=temp_password,
+    )
+
+    return {
+        "id": str(profile_id),
+        "name": request.name,
+        "user_id": str(user_id),
+        "email": email,
+        "organization_id": str(org_uuid),
+        "organization_name": org.name,
     }
 
 

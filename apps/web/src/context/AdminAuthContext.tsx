@@ -85,3 +85,8 @@ adminApiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+export const createClinician = async (data: { name: string, email: string, organization_id: string }) => {
+  const res = await adminApiClient.post('/admin/clinicians', data)
+  return res.data
+}
