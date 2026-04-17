@@ -81,13 +81,34 @@ export default function TeenHomePage() {
   // Suggested behavior = lowest DT behavior that is not mastered
   const suggestedBehavior = selectedSituation?.behaviors.find(b => b.status !== 'mastered') ?? null
 
-  // Record banner
+  // Record banner + upcoming split
   const now = new Date()
+  const endOfToday = new Date()
+  endOfToday.setHours(23, 59, 59, 999)
   const readyToRecord = pendingExperiments?.filter((e: any) => {
-    if (e.status !== 'committed') return false
+    if (e.status !== 'committed' && e.status !== 'planned') return false
     if (!e.scheduled_date) return true
-    return new Date(e.scheduled_date) <= now
+    return new Date(e.scheduled_date) <= endOfToday
   }) ?? []
+  const upcomingExperiments = pendingExperiments?.filter((e: any) => {
+    if (e.status !== 'committed' && e.status !== 'planned') return false
+    if (!e.scheduled_date) return false
+    return new Date(e.scheduled_date) > endOfToday
+  }) ?? []
+
+  // Lookup map: behavior id -> behavior (for rendering upcoming names)
+  const behaviorById: Record<string, TeenBehavior> = {}
+  for (const s of situations) {
+    for (const b of s.behaviors) {
+      behaviorById[b.id] = b
+    }
+  }
+
+  const parseTimes = (tempting_behaviors: string | null | undefined): number => {
+    if (!tempting_behaviors) return 1
+    const match = /times:(\d+)/.exec(tempting_behaviors)
+    return match ? parseInt(match[1], 10) : 1
+  }
 
   const handleBehaviorTap = (behavior: TeenBehavior) => {
     if (behavior.status === 'mastered') return
@@ -258,8 +279,8 @@ export default function TeenHomePage() {
                   Your ladder
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {[...selectedSituation.behaviors].reverse().map((behavior, i) => {
-                    const displayNum = selectedSituation.behaviors.length - i
+                  {selectedSituation.behaviors.map((behavior, i) => {
+                    const displayNum = i + 1
                     const isCurrent = behavior.id === suggestedBehavior?.id
                     const isMastered = behavior.status === 'mastered'
                     const isInProgress = behavior.status === 'in_progress'
@@ -315,6 +336,52 @@ export default function TeenHomePage() {
             ) : (
               <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
                 <p style={{ fontSize: '14px', color: '#64748b' }}>No steps yet for this situation.</p>
+              </div>
+            )}
+
+            {/* Upcoming experiments */}
+            {upcomingExperiments.length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
+                  Upcoming
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {upcomingExperiments.map((exp: any) => {
+                    const b = behaviorById[exp.avoidance_behavior_id]
+                    const name = b?.name ?? 'Experiment'
+                    const scheduled = exp.scheduled_date ? new Date(exp.scheduled_date) : null
+                    const dateLabel = scheduled
+                      ? scheduled.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                      : 'Not scheduled'
+                    const times = parseTimes(exp.tempting_behaviors)
+                    const handleTap = () => {
+                      if (scheduled && scheduled <= now) {
+                        navigate(`/teen/record/${exp.id}`)
+                      } else if (b) {
+                        navigate(`/teen/experiment/${b.id}`)
+                      } else {
+                        navigate(`/teen/record/${exp.id}`)
+                      }
+                    }
+                    return (
+                      <button
+                        key={exp.id}
+                        onClick={handleTap}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '12px 14px', borderRadius: '12px',
+                          background: '#fff', border: '1px solid #e2e8f0',
+                          cursor: 'pointer', textAlign: 'left', width: '100%'
+                        }}
+                      >
+                        <span style={{ fontSize: '18px' }}>📅</span>
+                        <span style={{ flex: 1, fontSize: '14px', color: '#1e293b', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {name} <span style={{ color: '#94a3b8', fontWeight: '400' }}>· {dateLabel} · {times} time{times === 1 ? '' : 's'}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>

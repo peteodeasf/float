@@ -25,7 +25,7 @@ export default function TeenExperimentPage() {
   const [confidence, setConfidence] = useState<'low' | 'medium' | 'high' | null>(null)
 
   // Step 3 state
-  const [selectedDate, setSelectedDate] = useState(0) // index into next 7 days
+  const [selectedDates, setSelectedDates] = useState<number[]>([0]) // indices into next 7 days
   const [times, setTimes] = useState(1)
 
   // Step 4 state
@@ -40,26 +40,8 @@ export default function TeenExperimentPage() {
     enabled: !!behaviorId
   })
 
-  // Fetch existing experiments for this behavior (from ladder data)
-  const { data: ladderData } = useQuery({
-    queryKey: ['teen-ladder'],
-    queryFn: async () => (await teenApiClient.get('/patient/ladder')).data,
-  })
-
-  // Find experiments for this behavior from ladder data
-  const matchingSituation = ladderData?.situations?.find((s: any) =>
-    s.behaviors?.some((b: any) => b.id === behaviorId)
-  )
-  const matchingBehavior = matchingSituation?.behaviors?.find((b: any) => b.id === behaviorId)
-  const existingExperiments = matchingBehavior?.experiments ?? []
-
   const fearedOutcome = behaviorData?.situation?.feared_outcome || null
   const behaviorDT = behaviorData?.dt
-
-  // The latest experiment for this behavior (for step 4 commit flow)
-  const experiment = existingExperiments.length > 0
-    ? existingExperiments[existingExperiments.length - 1]
-    : null
 
   // Generate next 7 days
   const next7Days = Array.from({ length: 7 }, (_, i) => {
@@ -68,45 +50,10 @@ export default function TeenExperimentPage() {
     return d
   })
 
-  const scheduledDate = next7Days[selectedDate]
+  const sortedSelectedDates = [...selectedDates].sort((a, b) => a - b)
 
-  // Create experiment
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const res = await teenApiClient.post(`/patient/behaviors/${behaviorId}/experiments`, {
-        scheduled_date: scheduledDate.toISOString()
-      })
-      return res.data
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
-  })
-
-  // Save before state
-  const beforeMutation = useMutation({
-    mutationFn: async (experimentId: string) => {
-      await teenApiClient.put(`/patient/experiments/${experimentId}/before`, {
-        plan_description: fearedOutcome || customFearedOutcome || 'Experiment planned',
-        prediction: fearedOutcome || customFearedOutcome,
-        bip_before: bip,
-        distress_thermometer_expected: behaviorDT ?? 5,
-        confidence_level: confidence || 'medium'
-      })
-    }
-  })
-
-  // Commit
-  const commitMutation = useMutation({
-    mutationFn: async (experimentId: string) => {
-      await teenApiClient.post(`/patient/experiments/${experimentId}/commit`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
-      queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
-      setStep(4)
-    }
-  })
-
-  // Too hard
+  // Too hard — attaches to the last-committed experiment in the batch
+  const [lastCommittedExperimentId, setLastCommittedExperimentId] = useState<string | null>(null)
   const tooHardMutation = useMutation({
     mutationFn: async (experimentId: string) => {
       await teenApiClient.post(`/patient/experiments/${experimentId}/too-hard`, {
@@ -116,13 +63,41 @@ export default function TeenExperimentPage() {
     onSuccess: () => setTooHardSent(true)
   })
 
+  const [commitPending, setCommitPending] = useState(false)
+
   const handleCommit = async () => {
-    let exp = experiment
-    if (!exp || exp.status === 'completed') {
-      exp = await createMutation.mutateAsync()
+    if (selectedDates.length === 0) return
+    setCommitPending(true)
+    try {
+      const planDescription = fearedOutcome || customFearedOutcome || 'Experiment planned'
+      const predictionText = fearedOutcome || customFearedOutcome || ''
+      let lastId: string | null = null
+
+      for (const dateIdx of sortedSelectedDates) {
+        const date = next7Days[dateIdx]
+        const createRes = await teenApiClient.post(`/patient/behaviors/${behaviorId}/experiments`, {
+          scheduled_date: date.toISOString()
+        })
+        const newExp = createRes.data
+        await teenApiClient.put(`/patient/experiments/${newExp.id}/before`, {
+          plan_description: planDescription,
+          prediction: predictionText,
+          bip_before: bip,
+          distress_thermometer_expected: behaviorDT ?? 5,
+          tempting_behaviors: `times:${times}`,
+          confidence_level: confidence || 'medium'
+        })
+        await teenApiClient.post(`/patient/experiments/${newExp.id}/commit`)
+        lastId = newExp.id
+      }
+
+      setLastCommittedExperimentId(lastId)
+      queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
+      queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
+      setStep(4)
+    } finally {
+      setCommitPending(false)
     }
-    await beforeMutation.mutateAsync(exp.id)
-    commitMutation.mutate(exp.id)
   }
 
   const encouragement = encouragements[Math.floor(Math.random() * encouragements.length)]
@@ -312,31 +287,35 @@ export default function TeenExperimentPage() {
           Experiments work best when they're planned ahead.
         </p>
 
-        {/* Day picker */}
+        {/* Day picker (multi-select) */}
         <div style={{ marginBottom: '24px' }}>
-          <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>When will you do this?</p>
+          <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>Which days will you do this?</p>
           <div style={{ display: 'flex', gap: '6px', overflowX: 'auto' }}>
             {next7Days.map((d, i) => {
-              const isSelected = selectedDate === i
+              const isSelected = selectedDates.includes(i)
               const isToday = i === 0
               return (
                 <button
                   key={i}
-                  onClick={() => setSelectedDate(i)}
+                  onClick={() => {
+                    setSelectedDates(prev =>
+                      prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]
+                    )
+                  }}
                   style={{
                     flex: '0 0 auto', width: '56px', padding: '10px 4px', borderRadius: '12px',
                     border: isSelected ? '2px solid #0d9488' : '1px solid #e2e8f0',
-                    background: isSelected ? '#f0fdfa' : '#fff',
+                    background: isSelected ? '#0d9488' : '#f1f5f9',
                     cursor: 'pointer', textAlign: 'center'
                   }}
                 >
-                  <div style={{ fontSize: '11px', color: isSelected ? '#0d9488' : '#94a3b8', fontWeight: '600' }}>
+                  <div style={{ fontSize: '11px', color: isSelected ? '#fff' : '#94a3b8', fontWeight: '600' }}>
                     {isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })}
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: '700', color: isSelected ? '#0d9488' : '#1e293b', marginTop: '2px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: isSelected ? '#fff' : '#1e293b', marginTop: '2px' }}>
                     {d.getDate()}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8' }}>
+                  <div style={{ fontSize: '10px', color: isSelected ? '#ccfbf1' : '#94a3b8' }}>
                     {d.toLocaleDateString('en-US', { month: 'short' })}
                   </div>
                 </button>
@@ -369,15 +348,15 @@ export default function TeenExperimentPage() {
 
         <button
           onClick={handleCommit}
-          disabled={commitMutation.isPending || createMutation.isPending || beforeMutation.isPending}
+          disabled={commitPending || selectedDates.length === 0}
           style={{
             width: '100%', padding: '18px', background: '#0d9488', color: '#fff',
             border: 'none', borderRadius: '14px', fontSize: '17px', fontWeight: '700',
             cursor: 'pointer',
-            opacity: (commitMutation.isPending || createMutation.isPending || beforeMutation.isPending) ? 0.6 : 1
+            opacity: (commitPending || selectedDates.length === 0) ? 0.6 : 1
           }}
         >
-          {commitMutation.isPending ? 'Committing...' : 'Commit to this experiment →'}
+          {commitPending ? 'Committing...' : 'Commit to this experiment →'}
         </button>
       </Shell>
     )
@@ -396,11 +375,21 @@ export default function TeenExperimentPage() {
       {/* Summary card */}
       <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0', marginTop: '20px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>When</p>
-            <p style={{ fontSize: '15px', color: '#1e293b', fontWeight: '500' }}>
-              {scheduledDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-            </p>
+            {sortedSelectedDates.length === 1 ? (
+              <p style={{ fontSize: '15px', color: '#1e293b', fontWeight: '500' }}>
+                {next7Days[sortedSelectedDates[0]].toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </p>
+            ) : (
+              <div>
+                {sortedSelectedDates.map(idx => (
+                  <p key={idx} style={{ fontSize: '14px', color: '#1e293b', fontWeight: '500', margin: '2px 0' }}>
+                    {next7Days[idx].toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
           <div style={{ textAlign: 'right' }}>
             <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>My prediction</p>
@@ -420,6 +409,18 @@ export default function TeenExperimentPage() {
         "{encouragement}"
       </p>
 
+      {/* Too hard (small, above Back to home) */}
+      {!tooHardSent && (
+        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+          <button
+            onClick={() => setTooHardOpen(true)}
+            style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '12px', cursor: 'pointer', textDecoration: 'none' }}
+          >
+            This feels too hard
+          </button>
+        </div>
+      )}
+
       <button
         onClick={() => navigate('/teen/home')}
         style={{
@@ -429,18 +430,6 @@ export default function TeenExperimentPage() {
       >
         Back to home
       </button>
-
-      {/* Too hard */}
-      {!tooHardSent && (
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <button
-            onClick={() => setTooHardOpen(true)}
-            style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px', cursor: 'pointer', textDecoration: 'underline' }}
-          >
-            This feels too hard
-          </button>
-        </div>
-      )}
 
       {/* Too hard modal */}
       {tooHardOpen && !tooHardSent && (
@@ -459,12 +448,12 @@ export default function TeenExperimentPage() {
             }}
           />
           <button
-            onClick={() => experiment && tooHardMutation.mutate(experiment.id)}
-            disabled={!tooHardReason.trim() || tooHardMutation.isPending}
+            onClick={() => lastCommittedExperimentId && tooHardMutation.mutate(lastCommittedExperimentId)}
+            disabled={!tooHardReason.trim() || tooHardMutation.isPending || !lastCommittedExperimentId}
             style={{
               width: '100%', padding: '12px', background: '#f59e0b', color: '#fff',
               border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '600',
-              cursor: 'pointer', opacity: (!tooHardReason.trim() || tooHardMutation.isPending) ? 0.5 : 1
+              cursor: 'pointer', opacity: (!tooHardReason.trim() || tooHardMutation.isPending || !lastCommittedExperimentId) ? 0.5 : 1
             }}
           >
             {tooHardMutation.isPending ? 'Sending...' : 'Send to my clinician'}
