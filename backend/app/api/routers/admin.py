@@ -148,104 +148,93 @@ async def list_users(
     return output
 
 
-async def _delete_user_cascade(user_id: uuid.UUID, db: AsyncSession) -> None:
-    # Find patient profiles owned by this user and delete them (with cascade).
-    patient_result = await db.execute(
-        select(PatientProfile).where(PatientProfile.user_id == user_id)
-    )
-    patients = patient_result.scalars().all()
-    for p in patients:
-        await _delete_patient_cascade(p.id, db)
-
-    # Delete practitioner profiles linked to this user.
-    await db.execute(
-        delete(PractitionerProfile).where(PractitionerProfile.user_id == user_id)
-    )
-    # Delete parent links for this user.
-    await db.execute(
-        delete(ParentPatientLink).where(ParentPatientLink.parent_user_id == user_id)
-    )
-    # Delete roles.
-    await db.execute(delete(UserRole).where(UserRole.user_id == user_id))
-    # Delete the user.
-    await db.execute(delete(User).where(User.id == user_id))
-
-
 async def _delete_patient_cascade(patient_id: uuid.UUID, db: AsyncSession) -> None:
-    """Delete all data owned by a patient in correct FK order."""
+    """Delete a patient profile, all linked data, and the underlying user account."""
     from sqlalchemy import text as sql_text
 
     pid = str(patient_id)
 
-    # 1. Experiments (references ladder_rungs.id and patient_profiles.id)
+    # 14. Get the user_id from patient_profiles
+    user_id_result = await db.execute(
+        sql_text("SELECT user_id FROM patient_profiles WHERE id = :pid"),
+        {"pid": pid},
+    )
+    row = user_id_result.first()
+    if not row:
+        return
+    user_id = str(row[0])
+
+    # 1. Experiments
     await db.execute(
         sql_text("DELETE FROM experiments WHERE patient_id = :pid"),
         {"pid": pid},
     )
 
-    # 2. Ladder rungs (references exposure_ladders.id)
-    await db.execute(
-        sql_text(
-            "DELETE FROM ladder_rungs WHERE ladder_id IN ("
-            "  SELECT el.id FROM exposure_ladders el"
-            "  JOIN trigger_situations ts ON el.trigger_situation_id = ts.id"
-            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
-            "  WHERE tp.patient_id = :pid"
-            ")"
-        ),
-        {"pid": pid},
-    )
-
-    # 3. Ladder review flags (references exposure_ladders.id)
+    # 2. Ladder review flags
     await db.execute(
         sql_text(
             "DELETE FROM ladder_review_flags WHERE ladder_id IN ("
-            "  SELECT el.id FROM exposure_ladders el"
-            "  JOIN trigger_situations ts ON el.trigger_situation_id = ts.id"
-            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
-            "  WHERE tp.patient_id = :pid"
+            "  SELECT id FROM exposure_ladders WHERE trigger_situation_id IN ("
+            "    SELECT id FROM trigger_situations WHERE treatment_plan_id IN ("
+            "      SELECT id FROM treatment_plans WHERE patient_id = :pid"
+            "    )"
+            "  )"
             ")"
         ),
         {"pid": pid},
     )
 
-    # 4. Exposure ladders (references trigger_situations.id)
+    # 3. Ladder rungs
+    await db.execute(
+        sql_text(
+            "DELETE FROM ladder_rungs WHERE ladder_id IN ("
+            "  SELECT id FROM exposure_ladders WHERE trigger_situation_id IN ("
+            "    SELECT id FROM trigger_situations WHERE treatment_plan_id IN ("
+            "      SELECT id FROM treatment_plans WHERE patient_id = :pid"
+            "    )"
+            "  )"
+            ")"
+        ),
+        {"pid": pid},
+    )
+
+    # 4. Exposure ladders
     await db.execute(
         sql_text(
             "DELETE FROM exposure_ladders WHERE trigger_situation_id IN ("
-            "  SELECT ts.id FROM trigger_situations ts"
-            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
-            "  WHERE tp.patient_id = :pid"
+            "  SELECT id FROM trigger_situations WHERE treatment_plan_id IN ("
+            "    SELECT id FROM treatment_plans WHERE patient_id = :pid"
+            "  )"
             ")"
         ),
         {"pid": pid},
     )
 
-    # 5. Downward arrows (references trigger_situations.id)
+    # 5. Downward arrows
     await db.execute(
         sql_text(
             "DELETE FROM downward_arrows WHERE trigger_situation_id IN ("
-            "  SELECT ts.id FROM trigger_situations ts"
-            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
-            "  WHERE tp.patient_id = :pid"
+            "  SELECT id FROM trigger_situations WHERE treatment_plan_id IN ("
+            "    SELECT id FROM treatment_plans WHERE patient_id = :pid"
+            "  )"
             ")"
         ),
         {"pid": pid},
     )
 
-    # 6. Avoidance behaviors (references trigger_situations.id)
+    # 6. Avoidance behaviors
     await db.execute(
         sql_text(
             "DELETE FROM avoidance_behaviors WHERE trigger_situation_id IN ("
-            "  SELECT ts.id FROM trigger_situations ts"
-            "  JOIN treatment_plans tp ON ts.treatment_plan_id = tp.id"
-            "  WHERE tp.patient_id = :pid"
+            "  SELECT id FROM trigger_situations WHERE treatment_plan_id IN ("
+            "    SELECT id FROM treatment_plans WHERE patient_id = :pid"
+            "  )"
             ")"
         ),
         {"pid": pid},
     )
 
-    # 7. Trigger situations (references treatment_plans.id)
+    # 7. Trigger situations
     await db.execute(
         sql_text(
             "DELETE FROM trigger_situations WHERE treatment_plan_id IN ("
@@ -255,65 +244,62 @@ async def _delete_patient_cascade(patient_id: uuid.UUID, db: AsyncSession) -> No
         {"pid": pid},
     )
 
-    # 8. Accommodation behaviors (references treatment_plans.id)
-    await db.execute(
-        sql_text(
-            "DELETE FROM accommodation_behaviors WHERE treatment_plan_id IN ("
-            "  SELECT id FROM treatment_plans WHERE patient_id = :pid"
-            ")"
-        ),
-        {"pid": pid},
-    )
-
-    # 9. Treatment plans (references patient_profiles.id)
+    # 8. Treatment plans
     await db.execute(
         sql_text("DELETE FROM treatment_plans WHERE patient_id = :pid"),
         {"pid": pid},
     )
 
-    # 10. Action plans (references patient_profiles.id)
+    # 9. Action plans
     await db.execute(
         sql_text("DELETE FROM action_plans WHERE patient_id = :pid"),
         {"pid": pid},
     )
 
-    # 11. Session notes (references patient_profiles.id)
+    # 10. Session notes
     await db.execute(
         sql_text("DELETE FROM session_notes WHERE patient_id = :pid"),
         {"pid": pid},
     )
 
-    # 12. Messages (references patient_profiles.id)
+    # 11. Messages
     await db.execute(
         sql_text("DELETE FROM messages WHERE patient_id = :pid"),
         {"pid": pid},
     )
 
-    # 13. Monitoring entries (references monitoring_forms.id)
+    # 12. Monitoring entries
     await db.execute(
         sql_text(
-            "DELETE FROM monitoring_entries WHERE monitoring_form_id IN ("
+            "DELETE FROM monitoring_entries WHERE form_id IN ("
             "  SELECT id FROM monitoring_forms WHERE patient_id = :pid"
             ")"
         ),
         {"pid": pid},
     )
 
-    # 14. Monitoring forms (references patient_profiles.id)
+    # 13. Monitoring forms
     await db.execute(
         sql_text("DELETE FROM monitoring_forms WHERE patient_id = :pid"),
         {"pid": pid},
     )
 
-    # 15. Parent-patient links (references patient_profiles.id)
+    # 15. Patient profile
     await db.execute(
-        sql_text("DELETE FROM parent_patient_links WHERE patient_id = :pid"),
+        sql_text("DELETE FROM patient_profiles WHERE id = :pid"),
         {"pid": pid},
     )
 
-    # 16. Patient profile
+    # 16. User roles
     await db.execute(
-        delete(PatientProfile).where(PatientProfile.id == patient_id)
+        sql_text("DELETE FROM user_roles WHERE user_id = :uid"),
+        {"uid": user_id},
+    )
+
+    # 17. User
+    await db.execute(
+        sql_text("DELETE FROM users WHERE id = :uid"),
+        {"uid": user_id},
     )
 
 
@@ -323,17 +309,70 @@ async def delete_user(
     admin: User = Depends(get_admin_context),
     db: AsyncSession = Depends(get_db),
 ):
+    from sqlalchemy import text as sql_text
+
     if user_id == admin.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete your own admin account",
         )
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
+
+    uid = str(user_id)
+
+    user_result = await db.execute(
+        sql_text("SELECT id FROM users WHERE id = :uid"),
+        {"uid": uid},
+    )
+    if not user_result.first():
         raise HTTPException(status_code=404, detail="User not found")
 
-    await _delete_user_cascade(user_id, db)
+    role_result = await db.execute(
+        sql_text("SELECT role FROM user_roles WHERE user_id = :uid LIMIT 1"),
+        {"uid": uid},
+    )
+    role_row = role_result.first()
+    role = role_row[0] if role_row else None
+
+    if role == "patient":
+        pp_result = await db.execute(
+            sql_text("SELECT id FROM patient_profiles WHERE user_id = :uid"),
+            {"uid": uid},
+        )
+        pp_row = pp_result.first()
+        if pp_row:
+            await _delete_patient_cascade(pp_row[0], db)
+        else:
+            await db.execute(
+                sql_text("DELETE FROM user_roles WHERE user_id = :uid"),
+                {"uid": uid},
+            )
+            await db.execute(
+                sql_text("DELETE FROM users WHERE id = :uid"),
+                {"uid": uid},
+            )
+    elif role == "practitioner":
+        await db.execute(
+            sql_text("DELETE FROM practitioner_profiles WHERE user_id = :uid"),
+            {"uid": uid},
+        )
+        await db.execute(
+            sql_text("DELETE FROM user_roles WHERE user_id = :uid"),
+            {"uid": uid},
+        )
+        await db.execute(
+            sql_text("DELETE FROM users WHERE id = :uid"),
+            {"uid": uid},
+        )
+    else:
+        await db.execute(
+            sql_text("DELETE FROM user_roles WHERE user_id = :uid"),
+            {"uid": uid},
+        )
+        await db.execute(
+            sql_text("DELETE FROM users WHERE id = :uid"),
+            {"uid": uid},
+        )
+
     await db.commit()
     return {"success": True}
 
@@ -621,19 +660,17 @@ async def delete_patient(
     admin: User = Depends(get_admin_context),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(PatientProfile).where(PatientProfile.id == patient_id)
+    from sqlalchemy import text as sql_text
+
+    pid = str(patient_id)
+
+    exists_result = await db.execute(
+        sql_text("SELECT id FROM patient_profiles WHERE id = :pid"),
+        {"pid": pid},
     )
-    patient = result.scalar_one_or_none()
-    if not patient:
+    if not exists_result.first():
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    user_id = patient.user_id
     await _delete_patient_cascade(patient_id, db)
-
-    # Also delete the underlying user account and their role.
-    await db.execute(delete(UserRole).where(UserRole.user_id == user_id))
-    await db.execute(delete(User).where(User.id == user_id))
-
     await db.commit()
     return {"success": True}
