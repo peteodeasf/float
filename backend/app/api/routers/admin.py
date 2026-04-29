@@ -271,7 +271,7 @@ async def _delete_patient_cascade(patient_id: uuid.UUID, db: AsyncSession) -> No
     # 12. Monitoring entries
     await db.execute(
         sql_text(
-            "DELETE FROM monitoring_entries WHERE form_id IN ("
+            "DELETE FROM monitoring_entries WHERE monitoring_form_id IN ("
             "  SELECT id FROM monitoring_forms WHERE patient_id = :pid"
             ")"
         ),
