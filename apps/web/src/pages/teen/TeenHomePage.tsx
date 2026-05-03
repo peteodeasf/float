@@ -40,6 +40,7 @@ export default function TeenHomePage() {
   const navigate = useNavigate()
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null)
   const [jumpWarning, setJumpWarning] = useState<{ targetBehaviorId: string; suggestedBehaviorId: string; suggestedName: string } | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const { data: ladderData } = useQuery({
     queryKey: ['teen-ladder', patientId],
@@ -78,23 +79,35 @@ export default function TeenHomePage() {
 
   const selectedSituation = situations.find(s => s.id === selectedSituationId)
 
-  // Suggested behavior = lowest DT behavior that is not mastered
-  const suggestedBehavior = selectedSituation?.behaviors.find(b => b.status !== 'mastered') ?? null
+  // Sort behaviors by DT ascending (lowest first, nulls last) — easiest at top
+  const sortedBehaviors: TeenBehavior[] = selectedSituation
+    ? [...selectedSituation.behaviors].sort((a, b) => {
+        if (a.dt == null && b.dt == null) return 0
+        if (a.dt == null) return 1
+        if (b.dt == null) return -1
+        return a.dt - b.dt
+      })
+    : []
 
-  // Record banner + upcoming split
-  const now = new Date()
+  // Suggested behavior = lowest DT behavior that is not mastered
+  const suggestedBehavior = sortedBehaviors.find(b => b.status !== 'mastered') ?? null
+
+  // Record banner + upcoming
   const endOfToday = new Date()
   endOfToday.setHours(23, 59, 59, 999)
   const readyToRecord = pendingExperiments?.filter((e: any) => {
-    if (e.status !== 'committed' && e.status !== 'planned') return false
+    if (e.status !== 'committed') return false
     if (!e.scheduled_date) return true
     return new Date(e.scheduled_date) <= endOfToday
   }) ?? []
-  const upcomingExperiments = pendingExperiments?.filter((e: any) => {
-    if (e.status !== 'committed' && e.status !== 'planned') return false
-    if (!e.scheduled_date) return false
-    return new Date(e.scheduled_date) > endOfToday
-  }) ?? []
+  const upcomingExperiments = (pendingExperiments?.filter((e: any) => {
+    return e.status === 'committed' || e.status === 'planned'
+  }) ?? []).sort((a: any, b: any) => {
+    if (!a.scheduled_date && !b.scheduled_date) return 0
+    if (!a.scheduled_date) return 1
+    if (!b.scheduled_date) return -1
+    return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
+  })
 
   // Lookup map: behavior id -> behavior (for rendering upcoming names)
   const behaviorById: Record<string, TeenBehavior> = {}
@@ -273,13 +286,13 @@ export default function TeenHomePage() {
             )}
 
             {/* Ladder */}
-            {selectedSituation.behaviors.length > 0 ? (
+            {sortedBehaviors.length > 0 ? (
               <div style={{ background: '#fff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0' }}>
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
                   Your ladder
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedSituation.behaviors.map((behavior, i) => {
+                  {sortedBehaviors.map((behavior, i) => {
                     const displayNum = i + 1
                     const isCurrent = behavior.id === suggestedBehavior?.id
                     const isMastered = behavior.status === 'mastered'
@@ -355,12 +368,11 @@ export default function TeenHomePage() {
                       : 'Not scheduled'
                     const times = parseTimes(exp.tempting_behaviors)
                     const handleTap = () => {
-                      if (scheduled && scheduled <= now) {
+                      if (!scheduled || scheduled <= endOfToday) {
                         navigate(`/teen/record/${exp.id}`)
-                      } else if (b) {
-                        navigate(`/teen/experiment/${b.id}`)
                       } else {
-                        navigate(`/teen/record/${exp.id}`)
+                        setToastMessage(`This experiment is scheduled for ${dateLabel}`)
+                        setTimeout(() => setToastMessage(null), 2500)
                       }
                     }
                     return (
@@ -387,6 +399,17 @@ export default function TeenHomePage() {
           </div>
         )}
       </div>
+
+      {toastMessage && (
+        <div style={{
+          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+          background: '#1e293b', color: '#fff', padding: '12px 20px', borderRadius: '999px',
+          fontSize: '13px', fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          maxWidth: '90%', textAlign: 'center', zIndex: 100
+        }}>
+          {toastMessage}
+        </div>
+      )}
     </div>
   )
 }
