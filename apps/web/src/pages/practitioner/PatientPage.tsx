@@ -186,15 +186,34 @@ function BehaviorPanel({ trigger, planId, patientId }: {
           <div key={b.id}>
             {editingBehaviorId === b.id ? (
               /* Edit mode */
-              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '8px 10px' }}>
-                <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '6px' }}
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
+                <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '8px' }}
                   onKeyDown={e => e.key === 'Enter' && editName.trim() && editMut.mutate()} />
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Type</div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {['avoidance', 'safety', 'ritual'].map(opt => (
+                      <button key={opt} onClick={() => setEditType(opt)} type="button"
+                        style={{
+                          fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '999px', cursor: 'pointer',
+                          background: editType === opt ? 'var(--float-primary)' : '#fff',
+                          color: editType === opt ? '#fff' : '#475569',
+                          border: editType === opt ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                          textTransform: 'capitalize'
+                        }}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <button type="button" onClick={() => setEditDT(String(Math.max(1, (Number(editDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
+                    <input value={editDT} onChange={e => setEditDT(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                    <button type="button" onClick={() => setEditDT(String(Math.min(10, (Number(editDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                  </div>
+                </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <select value={editType} onChange={e => setEditType(e.target.value)} className="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
-                    <option value="avoidance">Avoidance</option><option value="safety">Safety</option><option value="ritual">Ritual</option>
-                  </select>
-                  <input value={editDT} onChange={e => setEditDT(e.target.value)} placeholder="DT" type="number" min="0" max="10" className="text-xs border border-slate-200 rounded" style={{ width: '44px', padding: '4px 6px' }} />
-                  <button onClick={() => editMut.mutate()} disabled={!editName.trim() || editMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '4px 10px' }}>Save</button>
+                  <button onClick={() => editMut.mutate()} disabled={!editName.trim() || editMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Save</button>
                   <button onClick={() => setEditingBehaviorId(null)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                 </div>
               </div>
@@ -229,17 +248,37 @@ function BehaviorPanel({ trigger, planId, patientId }: {
 
       {/* Add behavior inline */}
       {showAdd && (
-        <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
+        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Behavior name"
             className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" autoFocus
+            style={{ marginBottom: '8px' }}
             onKeyDown={e => e.key === 'Enter' && name.trim() && addMut.mutate()} />
-          <div className="flex gap-1.5">
-            <select value={type} onChange={e => setType(e.target.value)} className="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
-              <option value="avoidance">Avoidance</option><option value="safety">Safety</option><option value="ritual">Ritual</option>
-            </select>
-            <input value={dt} onChange={e => setDt(e.target.value)} placeholder="DT" type="number" min="0" max="10" className="w-12 px-1.5 py-1 text-xs border border-slate-200 rounded" />
-            <button onClick={() => addMut.mutate()} disabled={!name.trim()} className="bg-teal-600 text-white px-2 py-1 rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer">Add</button>
-            <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">X</button>
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Type</div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {['avoidance', 'safety', 'ritual'].map(opt => (
+                <button key={opt} onClick={() => setType(opt)} type="button"
+                  style={{
+                    fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '999px', cursor: 'pointer',
+                    background: type === opt ? 'var(--float-primary)' : '#fff',
+                    color: type === opt ? '#fff' : '#475569',
+                    border: type === opt ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                    textTransform: 'capitalize'
+                  }}>{opt}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <button type="button" onClick={() => setDt(String(Math.max(1, (Number(dt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
+              <input value={dt} onChange={e => setDt(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+              <button type="button" onClick={() => setDt(String(Math.min(10, (Number(dt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button onClick={() => addMut.mutate()} disabled={!name.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add</button>
+            <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
           </div>
         </div>
       )}
@@ -257,16 +296,17 @@ function BehaviorPanel({ trigger, planId, patientId }: {
 // ── DA Status Badge ──
 function DABadge({ status, onClick }: { status: 'none' | 'in_progress' | 'approved'; onClick?: (e: React.MouseEvent) => void }) {
   const colors = {
-    none: { bg: '#f1f5f9', text: '#94a3b8', border: '#e2e8f0' },
-    in_progress: { bg: '#fffbeb', text: '#b45309', border: '#fde68a' },
-    approved: { bg: '#f0fdfa', text: 'var(--float-primary)', border: '#99f6e4' }
+    none: { bg: '#fff', text: '#94a3b8', border: '#cbd5e1' },
+    in_progress: { bg: '#f59e0b', text: '#fff', border: '#f59e0b' },
+    approved: { bg: 'var(--float-primary)', text: '#fff', border: 'var(--float-primary)' }
   }
   const c = colors[status]
+  const label = status === 'approved' ? 'DA ✓' : 'DA'
   return (
     <button onClick={onClick} style={{
       fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '4px',
       background: c.bg, color: c.text, border: `1px solid ${c.border}`, cursor: onClick ? 'pointer' : 'default'
-    }}>DA</button>
+    }}>{label}</button>
   )
 }
 
@@ -315,8 +355,9 @@ function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; on
   }
 
   const handleMarkFearedOutcome = () => {
-    if (!nextAnswer.trim()) return
-    setFearedOutcomeMut.mutate(nextAnswer.trim())
+    const fo = nextAnswer.trim() || lastAnswer
+    if (!fo) return
+    setFearedOutcomeMut.mutate(fo)
   }
 
   return (
@@ -381,7 +422,7 @@ function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; on
                     style={{ padding: '6px 12px' }}>
                     Next ↓
                   </button>
-                  <button onClick={handleMarkFearedOutcome} disabled={!nextAnswer.trim() || setFearedOutcomeMut.isPending}
+                  <button onClick={handleMarkFearedOutcome} disabled={(steps.length === 0 && !nextAnswer.trim()) || setFearedOutcomeMut.isPending}
                     className="text-xs font-medium border cursor-pointer disabled:opacity-40 bg-white"
                     style={{ padding: '6px 12px', borderRadius: '6px', borderColor: 'var(--float-primary)', color: 'var(--float-primary)' }}>
                     This is the feared outcome
@@ -432,6 +473,9 @@ export default function PatientPage() {
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
   const [newTriggerName, setNewTriggerName] = useState('')
   const [newTriggerDT, setNewTriggerDT] = useState('')
+  const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
+  const [editTriggerName, setEditTriggerName] = useState('')
+  const [deletingTriggerId, setDeletingTriggerId] = useState<string | null>(null)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameVal, setNicknameVal] = useState('')
   const [showSendForm, setShowSendForm] = useState(false)
@@ -458,12 +502,17 @@ export default function PatientPage() {
   const [noteContent, setNoteContent] = useState('')
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
 
+  // Activation warning
+  const [showActivationWarning, setShowActivationWarning] = useState(false)
+  const [planActivatedConfirm, setPlanActivatedConfirm] = useState(false)
+
   // Action plans
   const [showPlanEditor, setShowPlanEditor] = useState(false)
   const [editingPlan, setEditingPlan] = useState<ActionPlan | null>(null)
   const [planDate, setPlanDate] = useState(new Date().toISOString().split('T')[0])
   const [planNickname, setPlanNickname] = useState('')
   const [planNextAppt, setPlanNextAppt] = useState('')
+  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null)
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const editor = useEditor({
@@ -516,7 +565,15 @@ export default function PatientPage() {
 
   // Mutations
   const createPlanMut = useMutation({ mutationFn: () => createTreatmentPlan(patientId!, { clinical_track: 'exposure', parent_visibility_level: 'summary' }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plan', patientId] }) })
-  const activatePlanMut = useMutation({ mutationFn: () => updatePlanStatus(patientId!, plan!.id, 'active'), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plan', patientId] }) })
+  const activatePlanMut = useMutation({
+    mutationFn: () => updatePlanStatus(patientId!, plan!.id, 'active'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
+      setShowActivationWarning(false)
+      setPlanActivatedConfirm(true)
+      setTimeout(() => setPlanActivatedConfirm(false), 3000)
+    }
+  })
   const nicknameMut = useMutation({
     mutationFn: () => updatePlanNickname(patientId!, plan!.id, nicknameVal.trim()),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['plan', patientId] }); setEditingNickname(false) }
@@ -524,6 +581,18 @@ export default function PatientPage() {
   const addTriggerMut = useMutation({
     mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined }),
     onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerDT(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
+  })
+  const updateTriggerNameMut = useMutation({
+    mutationFn: () => updateTrigger(plan!.id, editingTriggerId!, { name: editTriggerName.trim() }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setEditingTriggerId(null) }
+  })
+  const deleteTriggerMut = useMutation({
+    mutationFn: (id: string) => deleteTrigger(plan!.id, id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] })
+      setDeletingTriggerId(null)
+      if (selectedTriggerId === id) setSelectedTriggerId(null)
+    }
   })
 
   const sendFormMutation = useMutation({
@@ -599,10 +668,37 @@ export default function PatientPage() {
   // Action plans
   const getEditorContent = useCallback(() => editor?.getHTML() || '', [editor])
   const resetPlanEditor = useCallback(() => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); setShowPlanEditor(false); setEditingPlan(null); editor?.commands.setContent('') }, [editor])
-  const createPlanActionMut = useMutation({ mutationFn: () => createActionPlan(patientId!, { session_date: planDate, nickname: planNickname || undefined, content: getEditorContent(), next_appointment: planNextAppt || undefined }), onSuccess: (d) => { queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }); setEditingPlan(d) } })
+  const createPlanActionMut = useMutation({ mutationFn: () => createActionPlan(patientId!, { session_date: planDate, nickname: planNickname || undefined, content: getEditorContent(), next_appointment: planNextAppt || undefined }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }) })
   const updatePlanActionMut = useMutation({ mutationFn: () => updateActionPlan(editingPlan!.id, { session_date: planDate, nickname: planNickname || undefined, content: getEditorContent(), next_appointment: planNextAppt || undefined }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }) })
   const publishPlanMut = useMutation({ mutationFn: (id: string) => publishActionPlan(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }) })
-  const deletePlanMut = useMutation({ mutationFn: (id: string) => deleteActionPlan(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }) })
+  const deletePlanMut = useMutation({ mutationFn: (id: string) => deleteActionPlan(id), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }); setDeletingPlanId(null) } })
+
+  const handleSavePlan = () => {
+    console.log('[ActionPlan] Save draft clicked', { editingPlanId: editingPlan?.id, hasContent: !!getEditorContent() })
+    if (editingPlan) {
+      updatePlanActionMut.mutate(undefined, { onSuccess: () => resetPlanEditor() })
+    } else {
+      createPlanActionMut.mutate(undefined, { onSuccess: () => resetPlanEditor() })
+    }
+  }
+
+  const handlePublishPlan = () => {
+    console.log('[ActionPlan] Publish clicked', { editingPlanId: editingPlan?.id })
+    if (editingPlan) {
+      updatePlanActionMut.mutate(undefined, { onSuccess: () => { publishPlanMut.mutate(editingPlan.id, { onSuccess: () => resetPlanEditor() }) } })
+    } else {
+      createPlanActionMut.mutate(undefined, { onSuccess: (d: ActionPlan) => { publishPlanMut.mutate(d.id, { onSuccess: () => resetPlanEditor() }) } })
+    }
+  }
+
+  const openEditPlan = (ap: ActionPlan) => {
+    setEditingPlan(ap)
+    setPlanDate(ap.session_date)
+    setPlanNickname(ap.nickname || '')
+    setPlanNextAppt(ap.next_appointment || '')
+    editor?.commands.setContent(ap.content || '')
+    setShowPlanEditor(true)
+  }
 
   useEffect(() => {
     if (showPlanEditor && editingPlan && editor) {
@@ -624,29 +720,22 @@ export default function PatientPage() {
     enabled: triggerIds.length > 0
   })
 
-  // Activation validation
-  const triggersWithMissingDT: TriggerSituation[] = []
-  const activeTriggersMissingDA: TriggerSituation[] = []
+  // Activation validation — only check active situations for missing DT
+  const activeTriggersMissingDT: TriggerSituation[] = []
   if (triggers && allBehaviors) {
     for (const t of triggers) {
+      if (!t.is_active) continue
       const bs = allBehaviors[t.id] || []
       if (bs.some(b => b.distress_thermometer_when_refraining == null)) {
-        triggersWithMissingDT.push(t)
+        activeTriggersMissingDT.push(t)
       }
     }
   }
-  if (triggers && daStatuses) {
-    for (const t of triggers) {
-      if (t.is_active && !daStatuses[t.id]?.feared_outcome_approved) {
-        activeTriggersMissingDA.push(t)
-      }
-    }
-  }
-  const hasActivationBlocker = triggersWithMissingDT.length > 0
-  const teenNotInvited = !!patient && !patient.teen_invited_at
   const noActiveTriggers = !!triggers && triggers.length > 0 && !triggers.some(t => t.is_active)
-  const hasActivationWarning = activeTriggersMissingDA.length > 0 || teenNotInvited || noActiveTriggers
-  const canActivate = plan?.status === 'setup' && triggers && triggers.length > 0 && !hasActivationBlocker
+  const activationWarnings: string[] = [
+    ...(noActiveTriggers ? ['No situations are marked as active'] : []),
+    ...activeTriggersMissingDT.map(t => `"${t.name}" has behaviors missing DT scores`)
+  ]
   const lastMsg = messages?.[0]
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
   const badgeColors: Record<string, string> = { consultation_1: 'bg-purple-100 text-purple-700', consultation_2: 'bg-purple-100 text-purple-700', consultation_3: 'bg-purple-100 text-purple-700', weekly_session: 'bg-teal-100 text-teal-700', other: 'bg-slate-100 text-slate-600' }
@@ -962,80 +1051,55 @@ export default function PatientPage() {
                 </div>
                 {plan.status === 'setup' && triggers && triggers.length > 0 && (
                   <button
-                    onClick={() => activatePlanMut.mutate()}
-                    disabled={activatePlanMut.isPending || hasActivationBlocker}
+                    onClick={() => {
+                      if (activationWarnings.length > 0) {
+                        setShowActivationWarning(true)
+                      } else {
+                        activatePlanMut.mutate()
+                      }
+                    }}
+                    disabled={activatePlanMut.isPending}
                     className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer"
                   >
-                    {activatePlanMut.isPending ? '...' : hasActivationWarning ? 'Activate anyway' : 'Activate plan'}
+                    {activatePlanMut.isPending ? '...' : 'Activate plan'}
                   </button>
                 )}
               </div>
 
-              {/* Activation blocker — hard stop */}
-              {plan.status === 'setup' && hasActivationBlocker && (
-                <div style={{ background: '#fef2f2', borderBottom: '1px solid #fecaca', padding: '12px 20px' }}>
-                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#991b1b', margin: '0 0 4px' }}>
-                    &#9888; Cannot activate — behaviors missing distress ratings
-                  </p>
-                  <p style={{ fontSize: '12px', color: '#7f1d1d', margin: 0, lineHeight: '1.4' }}>
-                    Every behavior needs a DT before the plan can be activated. Missing in: {triggersWithMissingDT.map(t => t.name).join(', ')}
-                  </p>
-                </div>
-              )}
-
-              {/* Activation warning — no active situations */}
-              {plan.status === 'setup' && !hasActivationBlocker && noActiveTriggers && (
+              {/* Activation warning — only shown when Activate is clicked */}
+              {plan.status === 'setup' && showActivationWarning && (
                 <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
-                  <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 6px', lineHeight: '1.4' }}>
-                    &#9888; No situations are marked as active. The teen won't have a suggested starting point. Mark at least one situation as active before activating, or activate anyway.
+                  <p style={{ fontSize: '12px', fontWeight: 600, color: '#78350f', margin: '0 0 6px' }}>
+                    &#9888; Before activating:
                   </p>
+                  <ul style={{ margin: '0 0 10px', padding: '0 0 0 18px', fontSize: '12px', color: '#78350f', lineHeight: '1.5' }}>
+                    {activationWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                       onClick={() => activatePlanMut.mutate()}
                       disabled={activatePlanMut.isPending}
+                      className="text-[11px] px-2.5 py-1 bg-amber-600 text-white rounded-full border-none cursor-pointer font-medium disabled:opacity-50"
+                    >
+                      {activatePlanMut.isPending ? 'Activating...' : 'Activate anyway'}
+                    </button>
+                    <button
+                      onClick={() => setShowActivationWarning(false)}
                       className="text-[11px] px-2.5 py-1 bg-white text-amber-900 rounded-full cursor-pointer font-medium"
                       style={{ border: '1px solid #fde68a' }}
                     >
-                      Activate anyway
+                      Cancel
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Activation warning — DA recommended */}
-              {plan.status === 'setup' && !hasActivationBlocker && activeTriggersMissingDA.length > 0 && (
-                <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
-                  <p style={{ fontSize: '12px', color: '#78350f', margin: 0, lineHeight: '1.4' }}>
-                    &#9888; The Downward Arrow has not been completed for: {activeTriggersMissingDA.map(t => t.name).join(', ')}. This is recommended before activation.
+              {/* Plan activated confirmation */}
+              {planActivatedConfirm && (
+                <div style={{ background: '#f0fdfa', borderBottom: '1px solid #99f6e4', padding: '8px 20px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', margin: 0 }}>
+                    &#10003; Plan activated.
                   </p>
-                </div>
-              )}
-
-              {/* Activation warning — teen not invited */}
-              {plan.status === 'setup' && !hasActivationBlocker && teenNotInvited && (
-                <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
-                  <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 6px', lineHeight: '1.4' }}>
-                    &#9888; The teen hasn't been invited to Float yet.
-                  </p>
-                  <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px', lineHeight: '1.4' }}>
-                    They won't be able to see their plan until you invite them.
-                  </p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={openTeenInviteForm}
-                      className="text-[11px] px-2.5 py-1 bg-amber-600 text-white rounded-full border-none cursor-pointer font-medium"
-                    >
-                      Invite teen now
-                    </button>
-                    <button
-                      onClick={() => activatePlanMut.mutate()}
-                      disabled={activatePlanMut.isPending}
-                      className="text-[11px] px-2.5 py-1 bg-white text-amber-900 rounded-full cursor-pointer font-medium"
-                      style={{ border: '1px solid #fde68a' }}
-                    >
-                      Activate anyway
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -1048,12 +1112,54 @@ export default function PatientPage() {
                   </div>
                   <div style={{ flex: 1, overflowY: 'auto' }}>
                     {triggers?.map(t => (
-                      <div key={t.id} style={{ width: '100%', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}
-                        onClick={() => setSelectedTriggerId(t.id)}>
-                        <span style={{ fontSize: '5px', color: t.is_active ? 'var(--float-primary)' : '#cbd5e1' }}>●</span>
-                        <span className="text-xs text-slate-700" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
-                        <DTBadge value={t.distress_thermometer_rating} />
-                        <DABadge status={getDAStatus(t.id)} onClick={(e) => { e.stopPropagation(); setSelectedTriggerId(t.id); setRightPanelView('da') }} />
+                      <div key={t.id} className="group" style={{ width: '100%', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}
+                        onClick={() => { if (editingTriggerId !== t.id && deletingTriggerId !== t.id) setSelectedTriggerId(t.id) }}>
+                        {deletingTriggerId === t.id ? (
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                            <span style={{ fontSize: '11px', color: '#991b1b', lineHeight: '1.4' }}>Delete this situation and all its behaviors?</span>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button onClick={() => deleteTriggerMut.mutate(t.id)} disabled={deleteTriggerMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '3px 8px', borderRadius: '4px' }}>Yes</button>
+                              <button onClick={() => setDeletingTriggerId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
+                            </div>
+                          </div>
+                        ) : editingTriggerId === t.id ? (
+                          <input
+                            value={editTriggerName}
+                            onChange={e => setEditTriggerName(e.target.value)}
+                            autoFocus
+                            onClick={e => e.stopPropagation()}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                if (editTriggerName.trim() && editTriggerName !== t.name) updateTriggerNameMut.mutate()
+                                else setEditingTriggerId(null)
+                              }
+                              if (e.key === 'Escape') setEditingTriggerId(null)
+                            }}
+                            onBlur={() => {
+                              if (editTriggerName.trim() && editTriggerName !== t.name) updateTriggerNameMut.mutate()
+                              else setEditingTriggerId(null)
+                            }}
+                            className="text-xs border border-slate-200 rounded"
+                            style={{ flex: 1, padding: '4px 6px', minWidth: 0 }}
+                          />
+                        ) : (
+                          <>
+                            <span style={{ fontSize: '5px', color: t.is_active ? 'var(--float-primary)' : '#cbd5e1' }}>●</span>
+                            <span
+                              className="text-xs text-slate-700"
+                              style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              onClick={e => { e.stopPropagation(); setSelectedTriggerId(t.id); setEditTriggerName(t.name); setEditingTriggerId(t.id) }}
+                            >{t.name}</span>
+                            <DTBadge value={t.distress_thermometer_rating} />
+                            <DABadge status={getDAStatus(t.id)} onClick={(e) => { e.stopPropagation(); setSelectedTriggerId(t.id); setRightPanelView('da') }} />
+                            <button
+                              onClick={e => { e.stopPropagation(); setDeletingTriggerId(t.id) }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"
+                              style={{ fontSize: '12px', padding: '0 2px' }}
+                              title="Delete situation"
+                            >×</button>
+                          </>
+                        )}
                       </div>
                     ))}
                     {showTriggerAdd && (
@@ -1177,37 +1283,58 @@ export default function PatientPage() {
                 <span className="text-sm font-semibold text-slate-700">Action plans</span>
                 {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
               </div>
-              {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setPlanNickname(plan?.nickname || ''); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
+              {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setPlanDate(new Date().toISOString().split('T')[0]); setPlanNickname(plan?.nickname || ''); setPlanNextAppt(''); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
             </div>
             {showPlanEditor && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
                   <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '4px 8px' }} />
                 </div>
-                <div style={{ border: '1px solid var(--float-border)', borderRadius: '6px', overflow: 'hidden' }}>
+                <div style={{ border: '1px solid var(--float-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
                   <EditorContent editor={editor} />
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => editingPlan ? updatePlanActionMut.mutate() : createPlanActionMut.mutate()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Save draft</button>
-                  {editingPlan && !editingPlan.visible_to_patient && <button onClick={() => { updatePlanActionMut.mutate(undefined, { onSuccess: () => { publishPlanMut.mutate(editingPlan.id); resetPlanEditor() } }) }} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '6px 12px' }}>Publish</button>}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
+                    {(createPlanActionMut.isPending || updatePlanActionMut.isPending) && !publishPlanMut.isPending ? 'Saving...' : 'Save draft'}
+                  </button>
+                  <button onClick={handlePublishPlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending || publishPlanMut.isPending} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
+                    {publishPlanMut.isPending ? 'Publishing...' : (editingPlan?.visible_to_patient ? 'Republish' : 'Publish')}
+                  </button>
                   <button onClick={resetPlanEditor} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                 </div>
               </div>
             )}
             {actionPlans && actionPlans.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {actionPlans.map(ap => (
-                  <div key={ap.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="font-medium text-slate-700">#{ap.session_number}</span>
-                      <span className="text-slate-400">{new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {actionPlans.filter(ap => !showPlanEditor || ap.id !== editingPlan?.id).map(ap => (
+                  <div key={ap.id} style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
+                        <span className="font-medium text-slate-700">#{ap.session_number}</span>
+                        <span className="text-slate-400">{new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        {ap.nickname && <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>"{ap.nickname}"</span>}
+                        <span className={`px-1.5 py-0.5 rounded font-medium ${ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ap.visible_to_patient ? 'Published' : 'Draft'}</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className={`px-1 py-0.5 rounded font-medium ${ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ap.visible_to_patient ? 'Published' : 'Draft'}</span>
-                      {!ap.visible_to_patient && <button onClick={() => { setEditingPlan(ap); setPlanDate(ap.session_date); setPlanNickname(ap.nickname || ''); editor?.commands.setContent(ap.content || ''); setShowPlanEditor(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>}
-                      <button onClick={() => { if (confirm('Delete?')) deletePlanMut.mutate(ap.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
-                    </div>
+                    {ap.content && (
+                      <div className="prose prose-sm max-w-none" style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: ap.content }} />
+                    )}
+                    {deletingPlanId === ap.id ? (
+                      <div style={{ background: '#fef2f2', borderRadius: '6px', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this plan?</span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={() => deletePlanMut.mutate(ap.id)} disabled={deletePlanMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '4px 10px', borderRadius: '4px' }}>Yes, delete</button>
+                          <button onClick={() => setDeletingPlanId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button onClick={() => openEditPlan(ap)} className="text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
+                        <button onClick={() => publishPlanMut.mutate(ap.id)} disabled={publishPlanMut.isPending} className="text-green-700 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ fontSize: '11px' }}>{ap.visible_to_patient ? 'Republish' : 'Publish'}</button>
+                        <button onClick={() => setDeletingPlanId(ap.id)} className="text-red-500 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Delete</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
