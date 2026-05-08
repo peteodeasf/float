@@ -1287,9 +1287,24 @@ export default function PatientPage() {
             </div>
             {showPlanEditor && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                   <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
-                  <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '4px 8px' }} />
+                  {plan?.nickname ? (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', fontSize: '12px' }}>
+                      <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>&ldquo;{plan.nickname}&rdquo;</span>
+                      <button
+                        onClick={() => { setNicknameVal(plan.nickname || ''); setEditingNickname(true) }}
+                        className="text-[11px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer"
+                      >
+                        edit in treatment plan →
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Add a nickname in the treatment plan to pre-populate this field.</span>
+                    </div>
+                  )}
                 </div>
                 <div style={{ border: '1px solid var(--float-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
                   <EditorContent editor={editor} />
