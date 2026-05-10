@@ -222,3 +222,42 @@ export const updateDownwardArrow = async (
   const response = await apiClient.put(`/downward-arrows/${arrowId}`, data)
   return response.data
 }
+
+export interface PlannedExperiment {
+  id: string
+  ladder_rung_id: string | null
+  avoidance_behavior_id: string | null
+  status: string
+  scheduled_date: string | null
+  completed_date: string | null
+  plan_description: string | null
+  confidence_level: string | null
+  bip_before: number | null
+  bip_after: number | null
+  distress_thermometer_expected: number | null
+  distress_thermometer_actual: number | null
+  feared_outcome_occurred: boolean | null
+  behavior_name: string | null
+  situation_name: string | null
+  trigger_situation_id: string | null
+  created_at: string
+}
+
+export const getPatientExperiments = async (patientId: string): Promise<PlannedExperiment[]> => {
+  const response = await apiClient.get(`/patients/${patientId}/experiments`)
+  return response.data
+}
+
+export interface PlanExperimentData {
+  confidence_level: string
+  plan_description: string
+  scheduled_date?: string
+}
+
+export const planExperimentForBehavior = async (
+  behaviorId: string,
+  data: PlanExperimentData
+): Promise<PlannedExperiment> => {
+  const response = await apiClient.post(`/behaviors/${behaviorId}/experiments`, data)
+  return response.data
+}

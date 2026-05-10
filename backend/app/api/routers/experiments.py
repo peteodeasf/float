@@ -1,22 +1,25 @@
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.patient import PatientProfile, PractitionerProfile
+from app.models.treatment import AvoidanceBehavior, TriggerSituation, TreatmentPlan
 from app.services.experiment_service import (
     create_experiment,
     get_experiment,
     get_experiments_for_rung,
     get_experiments_for_patient,
+    plan_experiment_for_behavior,
     save_before_state,
     save_after_state,
     skip_experiment
 )
 from app.schemas.experiment import (
     ExperimentCreate,
+    ExperimentPlanCreate,
     ExperimentBeforeState,
     ExperimentAfterState,
     ExperimentResponse,
@@ -66,6 +69,48 @@ async def list_rung_experiments(
     _, practitioner = context
     return await get_experiments_for_rung(
         db, rung_id, practitioner.organization_id
+    )
+
+
+# Practitioner endpoint — plan experiment for a behavior
+@router.post("/behaviors/{behavior_id}/experiments",
+             response_model=ExperimentResponse,
+             status_code=status.HTTP_201_CREATED)
+async def practitioner_plan_behavior_experiment(
+    behavior_id: uuid.UUID,
+    data: ExperimentPlanCreate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, practitioner = context
+
+    # Resolve behavior → situation → plan → patient, with org check
+    b_result = await db.execute(
+        select(AvoidanceBehavior).where(
+            AvoidanceBehavior.id == behavior_id,
+            AvoidanceBehavior.organization_id == practitioner.organization_id
+        )
+    )
+    behavior = b_result.scalar_one_or_none()
+    if not behavior:
+        raise HTTPException(status_code=404, detail="Behavior not found")
+
+    ts_result = await db.execute(
+        select(TriggerSituation).where(TriggerSituation.id == behavior.trigger_situation_id)
+    )
+    trigger = ts_result.scalar_one_or_none()
+    if not trigger:
+        raise HTTPException(status_code=404, detail="Situation not found")
+
+    plan_result = await db.execute(
+        select(TreatmentPlan).where(TreatmentPlan.id == trigger.treatment_plan_id)
+    )
+    plan = plan_result.scalar_one_or_none()
+    if not plan or plan.organization_id != practitioner.organization_id:
+        raise HTTPException(status_code=404, detail="Treatment plan not found")
+
+    return await plan_experiment_for_behavior(
+        db, behavior_id, plan.patient_id, practitioner.organization_id, data
     )
 
 

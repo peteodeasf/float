@@ -7,6 +7,7 @@ import {
   updatePlanStatus, updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
   createBehavior, updateBehavior, deleteBehavior, updateTrigger, deleteTrigger,
   getSituationDownwardArrow, createSituationDownwardArrow, updateDownwardArrow,
+  getPatientExperiments, planExperimentForBehavior,
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm } from '../../api/monitoring'
@@ -26,9 +27,38 @@ function DTBadge({ value }: { value: number | null | undefined }) {
   return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{v}</span>
 }
 
+// Next school day (Mon-Fri) after today
+function getNextSchoolDayISO(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1)
+  return d.toISOString().split('T')[0]
+}
+
+const CONFIDENCE_OPTIONS: { key: string; label: string; emoji: string }[] = [
+  { key: 'low', label: 'Low', emoji: '\u{1F630}' },
+  { key: 'medium', label: 'Medium', emoji: '\u{1F610}' },
+  { key: 'high', label: 'High', emoji: '\u{1F4AA}' },
+]
+
+const EXPERIMENT_STATUS_LABEL: Record<string, string> = {
+  planned: 'planned',
+  committed: 'committed',
+  in_progress: 'in progress',
+  completed: 'completed',
+  too_hard: 'too hard',
+  skipped: 'skipped',
+}
+
+function confidenceMeta(level: string | null | undefined) {
+  if (!level) return { emoji: '', label: '' }
+  const m = CONFIDENCE_OPTIONS.find(c => c.key === level)
+  return m ? { emoji: m.emoji, label: m.label } : { emoji: '', label: level }
+}
+
 // ── Behavior Panel (right side of treatment plan) ──
-function BehaviorPanel({ trigger, planId, patientId }: {
-  trigger: TriggerSituation; planId: string; patientId: string
+function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
+  trigger: TriggerSituation; planId: string; patientId: string; planStatus: string
 }) {
   const qc = useQueryClient()
   const [showAdd, setShowAdd] = useState(false)
@@ -42,10 +72,62 @@ function BehaviorPanel({ trigger, planId, patientId }: {
   const [editDT, setEditDT] = useState('')
   const [deletingBehaviorId, setDeletingBehaviorId] = useState<string | null>(null)
 
+  // Experiment planning
+  const [planningBehaviorId, setPlanningBehaviorId] = useState<string | null>(null)
+  const [expConfidence, setExpConfidence] = useState<string>('high')
+  const [expPlan, setExpPlan] = useState('')
+  const [expDate, setExpDate] = useState(getNextSchoolDayISO())
+  const [expWarning, setExpWarning] = useState(false)
+  const [expSavedFor, setExpSavedFor] = useState<{ behaviorId: string; date: string } | null>(null)
+
+  const planActive = planStatus === 'active'
+
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
   })
+
+  const { data: experiments } = useQuery({
+    queryKey: ['experiments', patientId],
+    queryFn: () => getPatientExperiments(patientId),
+    enabled: !!patientId,
+  })
+
+  const planExpMut = useMutation({
+    mutationFn: (vars: { behaviorId: string; force: boolean }) =>
+      planExperimentForBehavior(vars.behaviorId, {
+        confidence_level: expConfidence,
+        plan_description: expPlan.trim(),
+        scheduled_date: expDate ? new Date(expDate + 'T12:00:00').toISOString() : undefined,
+      }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['experiments', patientId] })
+      setExpSavedFor({ behaviorId: vars.behaviorId, date: expDate })
+      setPlanningBehaviorId(null)
+      setExpPlan('')
+      setExpConfidence('high')
+      setExpDate(getNextSchoolDayISO())
+      setExpWarning(false)
+      setTimeout(() => setExpSavedFor(null), 4000)
+    },
+  })
+
+  const startPlanning = (b: AvoidanceBehavior) => {
+    setPlanningBehaviorId(b.id)
+    setExpPlan('')
+    setExpConfidence('high')
+    setExpDate(getNextSchoolDayISO())
+    setExpWarning(false)
+  }
+
+  const handleSaveExperiment = (behaviorId: string) => {
+    if (!expPlan.trim()) return
+    if ((expConfidence === 'low' || expConfidence === 'medium') && !expWarning) {
+      setExpWarning(true)
+      return
+    }
+    planExpMut.mutate({ behaviorId, force: expWarning })
+  }
 
   const { data: ladder } = useQuery({
     queryKey: ['ladder', trigger.id],
@@ -228,19 +310,124 @@ function BehaviorPanel({ trigger, planId, patientId }: {
               </div>
             ) : (
               /* Normal row */
-              <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg group">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
-                    {b.behavior_type.slice(0, 3)}
-                  </span>
-                  <span className="text-sm text-slate-700 truncate">{b.name}</span>
+              <>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg group">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
+                      {b.behavior_type.slice(0, 3)}
+                    </span>
+                    <span className="text-sm text-slate-700 truncate">{b.name}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <DTBadge value={b.distress_thermometer_when_refraining} />
+                    <button onClick={() => startEdit(b)} className="text-[10px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
+                    <button onClick={() => setDeletingBehaviorId(b.id)} className="text-[10px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                  <DTBadge value={b.distress_thermometer_when_refraining} />
-                  <button onClick={() => startEdit(b)} className="text-[10px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
-                  <button onClick={() => setDeletingBehaviorId(b.id)} className="text-[10px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
-                </div>
-              </div>
+                {planActive && planningBehaviorId !== b.id && (
+                  <div style={{ marginTop: '4px', marginLeft: '4px' }}>
+                    <button
+                      onClick={() => startPlanning(b)}
+                      className="text-[11px] font-medium bg-transparent border-none cursor-pointer"
+                      style={{ color: 'var(--float-primary)', padding: '2px 0' }}
+                    >+ Plan experiment</button>
+                    {expSavedFor?.behaviorId === b.id && (
+                      <span style={{ fontSize: '11px', color: '#16a34a', marginLeft: '8px' }}>
+                        &#10003; Experiment planned for {new Date(expSavedFor.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {planningBehaviorId === b.id && (
+                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginTop: '6px', border: '1px solid #e2e8f0' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '0 0 8px' }}>
+                      Plan experiment for: <span style={{ color: '#1e293b' }}>{b.name}</span>
+                    </p>
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>
+                        Confidence level (ask the child):
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {CONFIDENCE_OPTIONS.map(opt => (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => { setExpConfidence(opt.key); setExpWarning(false) }}
+                            style={{
+                              fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '999px', cursor: 'pointer',
+                              background: expConfidence === opt.key ? 'var(--float-primary)' : '#fff',
+                              color: expConfidence === opt.key ? '#fff' : '#475569',
+                              border: expConfidence === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            }}
+                          >
+                            <span>{opt.emoji}</span>{opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
+                        Specific plan:
+                      </div>
+                      <textarea
+                        value={expPlan}
+                        onChange={e => setExpPlan(e.target.value)}
+                        rows={2}
+                        placeholder="e.g. Sit at the cafeteria table without headphones on Tuesday at lunch"
+                        className="text-sm border border-slate-200 rounded"
+                        style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
+                        Scheduled date:
+                      </div>
+                      <input
+                        type="date"
+                        value={expDate}
+                        onChange={e => setExpDate(e.target.value)}
+                        className="text-sm border border-slate-200 rounded"
+                        style={{ padding: '6px 8px' }}
+                      />
+                    </div>
+                    {expWarning && (
+                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 12px', marginBottom: '10px' }}>
+                        <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px', lineHeight: '1.4' }}>
+                          &#9888; Confidence is {expConfidence === 'low' ? 'Low' : 'Medium'} &mdash; consider simplifying this experiment before the teen attempts it.
+                        </p>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => planExpMut.mutate({ behaviorId: b.id, force: true })}
+                            disabled={planExpMut.isPending}
+                            className="text-[11px] font-medium border-none cursor-pointer disabled:opacity-50"
+                            style={{ background: '#d97706', color: '#fff', padding: '5px 10px', borderRadius: '6px' }}
+                          >Save anyway</button>
+                          <button
+                            onClick={() => { setPlanningBehaviorId(null); setExpWarning(false) }}
+                            className="text-[11px] bg-white cursor-pointer"
+                            style={{ border: '1px solid #fde68a', color: '#78350f', padding: '5px 10px', borderRadius: '6px' }}
+                          >Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                    {!expWarning && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => handleSaveExperiment(b.id)}
+                          disabled={!expPlan.trim() || planExpMut.isPending}
+                          className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer"
+                          style={{ padding: '6px 12px' }}
+                        >{planExpMut.isPending ? 'Saving...' : 'Save experiment plan'}</button>
+                        <button
+                          onClick={() => setPlanningBehaviorId(null)}
+                          className="text-xs text-slate-400 bg-transparent border-none cursor-pointer"
+                        >Cancel</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}
@@ -289,6 +476,54 @@ function BehaviorPanel({ trigger, planId, patientId }: {
           Add avoidance and safety behaviors for this situation. Rate each with the DT for refraining.
         </p>
       )}
+
+      {/* Recent experiments for this situation */}
+      {(() => {
+        const situationExperiments = (experiments ?? []).filter(e => e.trigger_situation_id === trigger.id)
+        if (situationExperiments.length === 0) return null
+        return (
+          <div style={{ marginTop: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+              Recent experiments
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {situationExperiments.slice(0, 6).map(exp => {
+                const conf = confidenceMeta(exp.confidence_level)
+                const isCompleted = exp.status === 'completed'
+                const dateStr = exp.scheduled_date
+                  ? new Date(exp.scheduled_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                  : new Date(exp.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                const icon = isCompleted ? '✓' : exp.status === 'too_hard' ? '⚠' : exp.status === 'skipped' ? '—' : '\u{1F4C5}'
+                const bipBefore = exp.bip_before != null ? Math.round(Number(exp.bip_before)) : null
+                const bipAfter = exp.bip_after != null ? Math.round(Number(exp.bip_after)) : null
+                const statusLabel = EXPERIMENT_STATUS_LABEL[exp.status] || exp.status
+                return (
+                  <div key={exp.id} style={{ fontSize: '12px', color: '#475569', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontWeight: 500, color: '#1e293b' }}>{exp.behavior_name || exp.plan_description || 'Experiment'}</span>
+                    <span style={{ color: '#94a3b8' }}>&middot;</span>
+                    <span>{dateStr}</span>
+                    {conf.label && (
+                      <>
+                        <span style={{ color: '#94a3b8' }}>&middot;</span>
+                        <span>{conf.emoji} {conf.label} confidence</span>
+                      </>
+                    )}
+                    <span style={{ color: '#94a3b8' }}>&middot;</span>
+                    <span style={{ color: isCompleted ? '#16a34a' : '#64748b' }}>{statusLabel}</span>
+                    {isCompleted && bipBefore != null && bipAfter != null && (
+                      <>
+                        <span style={{ color: '#94a3b8' }}>&middot;</span>
+                        <span style={{ fontWeight: 600 }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -529,6 +764,7 @@ export default function PatientPage() {
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId })
+  const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
 
   // Fetch DA status for every trigger situation (one query per trigger, keyed by trigger id)
   const triggerIds = (triggers ?? []).map(t => t.id)
@@ -661,6 +897,14 @@ export default function PatientPage() {
 
   // Session notes
   const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteType('weekly_session'); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
+  const openNewNoteForm = () => {
+    resetNoteForm()
+    const defaultType = plan?.status === 'active'
+      ? 'weekly_session'
+      : (sessionNotes && sessionNotes.length > 0 ? 'weekly_session' : 'consultation_1')
+    setNoteType(defaultType)
+    setShowNoteForm(true)
+  }
   const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { session_type: noteType, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
   const updateNoteMut = useMutation({ mutationFn: () => updateSessionNote(editingNote!.id, { session_type: noteType, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
   const deleteNoteMut = useMutation({ mutationFn: (id: string) => deleteSessionNote(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }) })
@@ -1185,7 +1429,7 @@ export default function PatientPage() {
                   {selectedTrigger ? (
                     rightPanelView === 'da'
                       ? <DownwardArrowPanel trigger={selectedTrigger} onBack={() => setRightPanelView('behaviors')} />
-                      : <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} />
+                      : <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} planStatus={plan.status} />
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '13px', color: '#94a3b8', padding: '16px' }}>Select a situation</div>
                   )}
@@ -1203,6 +1447,111 @@ export default function PatientPage() {
 
         {/* ── RIGHT COLUMN ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+          {/* Pre-session brief */}
+          {(() => {
+            const sortedExps = [...(patientExperiments ?? [])]
+            const lastPlanned = sortedExps
+              .filter(e => e.confidence_level)
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+            const lastCompleted = sortedExps
+              .filter(e => e.status === 'completed')
+              .sort((a, b) => {
+                const ad = a.completed_date ? new Date(a.completed_date).getTime() : 0
+                const bd = b.completed_date ? new Date(b.completed_date).getTime() : 0
+                return bd - ad
+              })[0]
+            const publishedPlans = (actionPlans ?? []).filter(ap => ap.visible_to_patient)
+            const lastPublishedPlan = publishedPlans.length > 0
+              ? [...publishedPlans].sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())[0]
+              : null
+            const lastConf = confidenceMeta(lastPlanned?.confidence_level)
+            const bipBefore = lastCompleted?.bip_before != null ? Math.round(Number(lastCompleted.bip_before)) : null
+            const bipAfter = lastCompleted?.bip_after != null ? Math.round(Number(lastCompleted.bip_after)) : null
+            const dtActual = lastCompleted?.distress_thermometer_actual != null
+              ? Number(lastCompleted.distress_thermometer_actual)
+              : null
+            const fearedOccurred = lastCompleted?.feared_outcome_occurred
+
+            return (
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
+                </div>
+                {plan?.nickname && (
+                  <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#0f766e' }}>
+                      Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
+                    </span>
+                  </div>
+                )}
+
+                {/* Last action plan */}
+                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last action plan:</span>
+                  {lastPublishedPlan ? (
+                    <>
+                      <span style={{ fontSize: '12px', color: '#1e293b' }}>
+                        #{lastPublishedPlan.session_number}
+                        {lastPublishedPlan.nickname ? ` · “${lastPublishedPlan.nickname}”` : ''}
+                        {' · '}
+                        {new Date(lastPublishedPlan.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      <button
+                        onClick={() => openEditPlan(lastPublishedPlan)}
+                        className="text-xs font-medium bg-transparent border-none cursor-pointer"
+                        style={{ color: 'var(--float-primary)' }}
+                      >View</button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No action plan from last session.</span>
+                  )}
+                </div>
+
+                {/* Last experiment confidence */}
+                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last experiment confidence:</span>
+                  {lastPlanned ? (
+                    <span style={{ fontSize: '12px', color: '#1e293b' }}>
+                      {lastConf.emoji} {lastConf.label}
+                      <span style={{ color: '#94a3b8' }}>
+                        {' · set '}
+                        {new Date(lastPlanned.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No planned experiments yet.</span>
+                  )}
+                </div>
+
+                {/* Last experiment results */}
+                {lastCompleted && (
+                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
+                      Last experiment: <span style={{ color: '#1e293b' }}>{lastCompleted.behavior_name || lastCompleted.plan_description || 'Experiment'}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {bipBefore != null && bipAfter != null && (
+                        <span><strong>BIP before:</strong> {bipBefore}% &rarr; <strong>after:</strong> {bipAfter}%</span>
+                      )}
+                      {dtActual != null && (
+                        <>
+                          <span style={{ color: '#94a3b8' }}>&middot;</span>
+                          <span><strong>DT:</strong> {dtActual}/10</span>
+                        </>
+                      )}
+                      {fearedOccurred != null && (
+                        <>
+                          <span style={{ color: '#94a3b8' }}>&middot;</span>
+                          <span><strong>Feared outcome:</strong> {fearedOccurred ? 'Yes' : 'No'}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Messages card */}
           <div style={cardStyle}>
@@ -1232,14 +1581,41 @@ export default function PatientPage() {
                 <span className="text-sm font-semibold text-slate-700">Session notes</span>
                 {sessionNotes && sessionNotes.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{sessionNotes.length}</span>}
               </div>
-              {!showNoteForm && <button onClick={() => { resetNoteForm(); setShowNoteForm(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
+              {!showNoteForm && <button onClick={openNewNoteForm} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
             </div>
             {showNoteForm && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <select value={noteType} onChange={e => setNoteType(e.target.value)} className="text-xs border border-slate-200 rounded bg-white" style={{ padding: '4px 8px' }}>
-                    {Object.entries(sessionTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                    Session type
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'consultation_1', label: 'Session 1' },
+                      { key: 'consultation_2', label: 'Session 2' },
+                      { key: 'weekly_session', label: 'Weekly' },
+                      { key: 'other', label: 'Other' },
+                    ].map(opt => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setNoteType(opt.key)}
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          padding: '10px 18px',
+                          borderRadius: '999px',
+                          cursor: 'pointer',
+                          background: noteType === opt.key ? 'var(--float-primary)' : '#fff',
+                          color: noteType === opt.key ? '#fff' : '#475569',
+                          border: noteType === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                        }}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Date:</label>
                   <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
                 </div>
                 <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />

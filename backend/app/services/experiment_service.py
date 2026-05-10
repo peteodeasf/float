@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from app.models.experiment import Experiment
 from app.schemas.experiment import (
     ExperimentCreate,
+    ExperimentPlanCreate,
     ExperimentBeforeState,
     ExperimentAfterState
 )
@@ -45,6 +46,28 @@ async def create_experiment_for_behavior(
         organization_id=organization_id,
         status="planned",
         scheduled_date=data.scheduled_date
+    )
+    db.add(experiment)
+    await db.commit()
+    await db.refresh(experiment)
+    return experiment
+
+
+async def plan_experiment_for_behavior(
+    db: AsyncSession,
+    behavior_id: uuid.UUID,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    data: ExperimentPlanCreate
+) -> Experiment:
+    experiment = Experiment(
+        avoidance_behavior_id=behavior_id,
+        patient_id=patient_id,
+        organization_id=organization_id,
+        status="planned",
+        scheduled_date=data.scheduled_date,
+        plan_description=data.plan_description,
+        confidence_level=data.confidence_level,
     )
     db.add(experiment)
     await db.commit()
@@ -94,9 +117,19 @@ async def get_experiments_for_patient(
     patient_id: uuid.UUID,
     organization_id: uuid.UUID,
     limit: int = 50
-) -> list[Experiment]:
+) -> list[dict]:
+    from app.models.treatment import AvoidanceBehavior, TriggerSituation
+
     result = await db.execute(
-        select(Experiment)
+        select(Experiment, AvoidanceBehavior, TriggerSituation)
+        .outerjoin(
+            AvoidanceBehavior,
+            AvoidanceBehavior.id == Experiment.avoidance_behavior_id
+        )
+        .outerjoin(
+            TriggerSituation,
+            TriggerSituation.id == AvoidanceBehavior.trigger_situation_id
+        )
         .where(
             Experiment.patient_id == patient_id,
             Experiment.organization_id == organization_id
@@ -104,7 +137,29 @@ async def get_experiments_for_patient(
         .order_by(Experiment.created_at.desc())
         .limit(limit)
     )
-    return result.scalars().all()
+
+    rows = []
+    for exp, behavior, situation in result.all():
+        rows.append({
+            "id": exp.id,
+            "ladder_rung_id": exp.ladder_rung_id,
+            "avoidance_behavior_id": exp.avoidance_behavior_id,
+            "status": exp.status,
+            "scheduled_date": exp.scheduled_date,
+            "completed_date": exp.completed_date,
+            "plan_description": exp.plan_description,
+            "confidence_level": exp.confidence_level,
+            "bip_before": exp.bip_before,
+            "bip_after": exp.bip_after,
+            "distress_thermometer_expected": exp.distress_thermometer_expected,
+            "distress_thermometer_actual": exp.distress_thermometer_actual,
+            "feared_outcome_occurred": exp.feared_outcome_occurred,
+            "behavior_name": behavior.name if behavior else None,
+            "situation_name": situation.name if situation else None,
+            "trigger_situation_id": situation.id if situation else None,
+            "created_at": exp.created_at,
+        })
+    return rows
 
 
 async def save_before_state(
