@@ -27,6 +27,42 @@ function DTBadge({ value }: { value: number | null | undefined }) {
   return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{v}</span>
 }
 
+type PatientTabId = 'treatment' | 'notes' | 'plans' | 'messages'
+
+function TabButton({ id, label, active, onClick, badge }: {
+  id: PatientTabId
+  label: string
+  active: boolean
+  onClick: (id: PatientTabId) => void
+  badge?: number
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(id)}
+      style={{
+        padding: '12px 20px',
+        background: 'transparent',
+        border: 'none',
+        borderBottom: active ? '3px solid var(--float-primary)' : '3px solid transparent',
+        color: active ? 'var(--float-primary)' : 'var(--float-text-secondary)',
+        fontWeight: active ? 600 : 500,
+        fontSize: '14px',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '-1px',
+      }}
+    >
+      {label}
+      {badge !== undefined && badge > 0 && (
+        <span style={{ background: 'var(--float-primary)', color: '#fff', fontSize: '11px', fontWeight: 700, minWidth: '18px', height: '18px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', lineHeight: 1 }}>{badge}</span>
+      )}
+    </button>
+  )
+}
+
 // Next school day (Mon-Fri) after today
 function getNextSchoolDayISO(): string {
   const d = new Date()
@@ -741,6 +777,9 @@ export default function PatientPage() {
   const [showActivationWarning, setShowActivationWarning] = useState(false)
   const [planActivatedConfirm, setPlanActivatedConfirm] = useState(false)
 
+  // Active tab
+  const [activeTab, setActiveTab] = useState<PatientTabId>('treatment')
+
   // Action plans
   const [showPlanEditor, setShowPlanEditor] = useState(false)
   const [editingPlan, setEditingPlan] = useState<ActionPlan | null>(null)
@@ -986,6 +1025,10 @@ export default function PatientPage() {
 
   const cardStyle = { background: '#fff', borderRadius: '10px', border: '1px solid var(--float-border)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
+  // Tab badge counts
+  const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
+  const draftPlanCount = (actionPlans ?? []).filter(ap => !ap.visible_to_patient).length
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--float-bg)' }}>
       <PractitionerNav activePage="patients" subHeader={{
@@ -1000,83 +1043,10 @@ export default function PatientPage() {
         rightAction: <button onClick={() => navigate(`/patients/${patientId}/progress`)} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)' }}>View progress &rarr;</button>
       }} />
 
-      {/* Teen invitation status strip */}
-      {patient && (
-        <div style={{ padding: '12px 24px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teen access</span>
-            {patient.teen_invited_at ? (
-              <>
-                <span className="text-xs text-slate-600">
-                  invited {new Date(patient.teen_invited_at).toLocaleDateString()}
-                </span>
-                {patient.teen_email && (
-                  <>
-                    <span style={{ fontSize: '11px', color: '#cbd5e1' }}>·</span>
-                    <span className="text-xs text-slate-500">{patient.teen_email}</span>
-                  </>
-                )}
-                <button
-                  onClick={openTeenInviteForm}
-                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
-                >
-                  Resend invite
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="text-xs text-slate-500">not set up</span>
-                <button
-                  onClick={openTeenInviteForm}
-                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
-                >
-                  + Invite teen
-                </button>
-              </>
-            )}
-            {teenInviteConfirmation && (
-              <span className="text-xs text-green-600">&#10003; Invitation sent to {teenInviteConfirmation}</span>
-            )}
-          </div>
-          {showTeenInviteForm && (
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <label className="text-xs font-medium text-slate-500">Teen's email:</label>
-              <input
-                type="email"
-                value={teenEmailInput}
-                onChange={e => setTeenEmailInput(e.target.value)}
-                placeholder="teen@email.com"
-                autoFocus
-                className="text-xs border border-slate-200 rounded"
-                style={{ padding: '6px 8px', minWidth: '220px' }}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && teenEmailInput.trim()) inviteTeenMut.mutate(teenEmailInput.trim())
-                  if (e.key === 'Escape') setShowTeenInviteForm(false)
-                }}
-              />
-              <button
-                onClick={() => teenEmailInput.trim() && inviteTeenMut.mutate(teenEmailInput.trim())}
-                disabled={!teenEmailInput.trim() || inviteTeenMut.isPending}
-                className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
-                style={{ padding: '6px 12px' }}
-              >
-                {inviteTeenMut.isPending ? 'Sending...' : 'Send invite'}
-              </button>
-              <button
-                onClick={() => { setShowTeenInviteForm(false); setTeenEmailInput('') }}
-                className="text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <div style={{ padding: '24px' }}>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '12px', padding: '24px', alignItems: 'start' }}>
-
-        {/* ── LEFT COLUMN ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Zone 2 — Top cards row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: '12px', marginBottom: '16px', alignItems: 'stretch' }}>
 
           {/* Monitoring card */}
           <div style={cardStyle}>
@@ -1263,8 +1233,198 @@ export default function PatientPage() {
             )}
           </div>
 
-          {/* Treatment plan card */}
-          {plan ? (
+          {/* Teen access card */}
+          <div style={cardStyle}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Teen access</div>
+            {patient && (patient.teen_invited_at ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                <span className="text-xs text-slate-600">invited {new Date(patient.teen_invited_at).toLocaleDateString()}</span>
+                {patient.teen_email && <span className="text-xs text-slate-500">{patient.teen_email}</span>}
+                <button
+                  onClick={openTeenInviteForm}
+                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  Resend invite
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                <span className="text-xs text-slate-500">not set up</span>
+                <button
+                  onClick={openTeenInviteForm}
+                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  + Invite teen
+                </button>
+              </div>
+            ))}
+            {teenInviteConfirmation && (
+              <div className="text-xs text-green-600" style={{ marginTop: '8px' }}>&#10003; Invitation sent to {teenInviteConfirmation}</div>
+            )}
+            {showTeenInviteForm && (
+              <div style={{ marginTop: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label className="text-xs font-medium text-slate-500">Teen's email:</label>
+                <input
+                  type="email"
+                  value={teenEmailInput}
+                  onChange={e => setTeenEmailInput(e.target.value)}
+                  placeholder="teen@email.com"
+                  autoFocus
+                  className="text-xs border border-slate-200 rounded"
+                  style={{ padding: '6px 8px' }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && teenEmailInput.trim()) inviteTeenMut.mutate(teenEmailInput.trim())
+                    if (e.key === 'Escape') setShowTeenInviteForm(false)
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    onClick={() => teenEmailInput.trim() && inviteTeenMut.mutate(teenEmailInput.trim())}
+                    disabled={!teenEmailInput.trim() || inviteTeenMut.isPending}
+                    className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+                    style={{ padding: '6px 10px' }}
+                  >
+                    {inviteTeenMut.isPending ? 'Sending...' : 'Send invite'}
+                  </button>
+                  <button
+                    onClick={() => { setShowTeenInviteForm(false); setTeenEmailInput('') }}
+                    className="text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Pre-session brief */}
+          {(() => {
+            const sortedExps = [...(patientExperiments ?? [])]
+            const lastPlanned = sortedExps
+              .filter(e => e.confidence_level)
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+            const lastCompleted = sortedExps
+              .filter(e => e.status === 'completed')
+              .sort((a, b) => {
+                const ad = a.completed_date ? new Date(a.completed_date).getTime() : 0
+                const bd = b.completed_date ? new Date(b.completed_date).getTime() : 0
+                return bd - ad
+              })[0]
+            const publishedPlans = (actionPlans ?? []).filter(ap => ap.visible_to_patient)
+            const lastPublishedPlan = publishedPlans.length > 0
+              ? [...publishedPlans].sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())[0]
+              : null
+            const lastConf = confidenceMeta(lastPlanned?.confidence_level)
+            const unreadExperimentCount = (messages ?? []).filter(m => m.message_type === 'experiment_completed' && !m.read_at).length
+            const bipBefore = lastCompleted?.bip_before != null ? Math.round(Number(lastCompleted.bip_before)) : null
+            const bipAfter = lastCompleted?.bip_after != null ? Math.round(Number(lastCompleted.bip_after)) : null
+            const dtActual = lastCompleted?.distress_thermometer_actual != null
+              ? Number(lastCompleted.distress_thermometer_actual)
+              : null
+            const fearedOccurred = lastCompleted?.feared_outcome_occurred
+
+            return (
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
+                </div>
+                {plan?.nickname && (
+                  <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#0f766e' }}>
+                      Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
+                    </span>
+                  </div>
+                )}
+                {unreadExperimentCount > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <a
+                      href="#messages-section"
+                      onClick={(e) => { e.preventDefault(); setActiveTab('messages'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+                      style={{ fontSize: '13px', color: '#0f766e', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+                    >
+                      ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
+                    </a>
+                  </div>
+                )}
+
+                {/* Last action plan */}
+                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last action plan:</span>
+                  {lastPublishedPlan ? (
+                    <>
+                      <span style={{ fontSize: '12px', color: '#1e293b' }}>
+                        #{lastPublishedPlan.session_number}
+                        {lastPublishedPlan.nickname ? ` · “${lastPublishedPlan.nickname}”` : ''}
+                        {' · '}
+                        {new Date(lastPublishedPlan.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      <button
+                        onClick={() => openEditPlan(lastPublishedPlan)}
+                        className="text-xs font-medium bg-transparent border-none cursor-pointer"
+                        style={{ color: 'var(--float-primary)' }}
+                      >View</button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No action plan from last session.</span>
+                  )}
+                </div>
+
+                {/* Last experiment confidence */}
+                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last experiment confidence:</span>
+                  {lastPlanned ? (
+                    <span style={{ fontSize: '12px', color: '#1e293b' }}>
+                      {lastConf.emoji} {lastConf.label}
+                      <span style={{ color: '#94a3b8' }}>
+                        {' · set '}
+                        {new Date(lastPlanned.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No planned experiments yet.</span>
+                  )}
+                </div>
+
+                {/* Last experiment results */}
+                {lastCompleted && (
+                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
+                      Last experiment: <span style={{ color: '#1e293b' }}>{lastCompleted.behavior_name || lastCompleted.plan_description || 'Experiment'}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {bipBefore != null && bipAfter != null && (
+                        <span><strong>BIP before:</strong> {bipBefore}% &rarr; <strong>after:</strong> {bipAfter}%</span>
+                      )}
+                      {dtActual != null && (
+                        <>
+                          <span style={{ color: '#94a3b8' }}>&middot;</span>
+                          <span><strong>DT:</strong> {dtActual}/10</span>
+                        </>
+                      )}
+                      {fearedOccurred != null && (
+                        <>
+                          <span style={{ color: '#94a3b8' }}>&middot;</span>
+                          <span><strong>Feared outcome:</strong> {fearedOccurred ? 'Yes' : 'No'}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </div>
+
+        {/* Zone 3 — Tab bar */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--float-border)', marginBottom: '16px' }}>
+          <TabButton id="treatment" label="Treatment Plan" active={activeTab === 'treatment'} onClick={setActiveTab} />
+          <TabButton id="notes" label="Session Notes" active={activeTab === 'notes'} onClick={setActiveTab} />
+          <TabButton id="plans" label="Action Plans" active={activeTab === 'plans'} onClick={setActiveTab} badge={draftPlanCount} />
+          <TabButton id="messages" label="Messages" active={activeTab === 'messages'} onClick={setActiveTab} badge={unreadMessageCount} />
+        </div>
+
+        {/* Zone 4 — Tab content */}
+        {activeTab === 'treatment' && (plan ? (
             <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -1347,7 +1507,7 @@ export default function PatientPage() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '220px minmax(0,1fr)', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0,1fr)', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
                 {/* Situations list */}
                 <div style={{ borderRight: '1px solid var(--float-border)', display: 'flex', flexDirection: 'column', padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -1464,130 +1624,9 @@ export default function PatientPage() {
               <p className="text-xs text-slate-400" style={{ marginBottom: '12px' }}>Create one to start configuring trigger situations</p>
               <button onClick={() => createPlanMut.mutate()} disabled={createPlanMut.isPending} className="text-white text-sm font-medium disabled:opacity-50 border-none cursor-pointer" style={{ background: 'var(--float-primary)', padding: '8px 16px', borderRadius: '8px' }}>{createPlanMut.isPending ? 'Creating...' : 'Create treatment plan'}</button>
             </div>
-          )}
-        </div>
+          ))}
 
-        {/* ── RIGHT COLUMN ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-          {/* Pre-session brief */}
-          {(() => {
-            const sortedExps = [...(patientExperiments ?? [])]
-            const lastPlanned = sortedExps
-              .filter(e => e.confidence_level)
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
-            const lastCompleted = sortedExps
-              .filter(e => e.status === 'completed')
-              .sort((a, b) => {
-                const ad = a.completed_date ? new Date(a.completed_date).getTime() : 0
-                const bd = b.completed_date ? new Date(b.completed_date).getTime() : 0
-                return bd - ad
-              })[0]
-            const publishedPlans = (actionPlans ?? []).filter(ap => ap.visible_to_patient)
-            const lastPublishedPlan = publishedPlans.length > 0
-              ? [...publishedPlans].sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())[0]
-              : null
-            const lastConf = confidenceMeta(lastPlanned?.confidence_level)
-            const unreadExperimentCount = (messages ?? []).filter(m => m.message_type === 'experiment_completed' && !m.read_at).length
-            const bipBefore = lastCompleted?.bip_before != null ? Math.round(Number(lastCompleted.bip_before)) : null
-            const bipAfter = lastCompleted?.bip_after != null ? Math.round(Number(lastCompleted.bip_after)) : null
-            const dtActual = lastCompleted?.distress_thermometer_actual != null
-              ? Number(lastCompleted.distress_thermometer_actual)
-              : null
-            const fearedOccurred = lastCompleted?.feared_outcome_occurred
-
-            return (
-              <div style={cardStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
-                </div>
-                {plan?.nickname && (
-                  <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '13px', color: '#0f766e' }}>
-                      Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
-                    </span>
-                  </div>
-                )}
-                {unreadExperimentCount > 0 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <a
-                      href="#messages-section"
-                      onClick={(e) => { e.preventDefault(); document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
-                      style={{ fontSize: '13px', color: '#0f766e', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
-                    >
-                      ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
-                    </a>
-                  </div>
-                )}
-
-                {/* Last action plan */}
-                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last action plan:</span>
-                  {lastPublishedPlan ? (
-                    <>
-                      <span style={{ fontSize: '12px', color: '#1e293b' }}>
-                        #{lastPublishedPlan.session_number}
-                        {lastPublishedPlan.nickname ? ` · “${lastPublishedPlan.nickname}”` : ''}
-                        {' · '}
-                        {new Date(lastPublishedPlan.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                      <button
-                        onClick={() => openEditPlan(lastPublishedPlan)}
-                        className="text-xs font-medium bg-transparent border-none cursor-pointer"
-                        style={{ color: 'var(--float-primary)' }}
-                      >View</button>
-                    </>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No action plan from last session.</span>
-                  )}
-                </div>
-
-                {/* Last experiment confidence */}
-                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last experiment confidence:</span>
-                  {lastPlanned ? (
-                    <span style={{ fontSize: '12px', color: '#1e293b' }}>
-                      {lastConf.emoji} {lastConf.label}
-                      <span style={{ color: '#94a3b8' }}>
-                        {' · set '}
-                        {new Date(lastPlanned.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No planned experiments yet.</span>
-                  )}
-                </div>
-
-                {/* Last experiment results */}
-                {lastCompleted && (
-                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
-                      Last experiment: <span style={{ color: '#1e293b' }}>{lastCompleted.behavior_name || lastCompleted.plan_description || 'Experiment'}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {bipBefore != null && bipAfter != null && (
-                        <span><strong>BIP before:</strong> {bipBefore}% &rarr; <strong>after:</strong> {bipAfter}%</span>
-                      )}
-                      {dtActual != null && (
-                        <>
-                          <span style={{ color: '#94a3b8' }}>&middot;</span>
-                          <span><strong>DT:</strong> {dtActual}/10</span>
-                        </>
-                      )}
-                      {fearedOccurred != null && (
-                        <>
-                          <span style={{ color: '#94a3b8' }}>&middot;</span>
-                          <span><strong>Feared outcome:</strong> {fearedOccurred ? 'Yes' : 'No'}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-
-          {/* Messages card */}
+        {activeTab === 'messages' && (
           <div id="messages-section" style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
@@ -1614,8 +1653,9 @@ export default function PatientPage() {
               </p>
             )}
           </div>
+        )}
 
-          {/* Session notes card */}
+        {activeTab === 'notes' && (
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1692,8 +1732,9 @@ export default function PatientPage() {
               </p>
             )}
           </div>
+        )}
 
-          {/* Action plans card */}
+        {activeTab === 'plans' && (
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1776,7 +1817,7 @@ export default function PatientPage() {
               </p>
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
