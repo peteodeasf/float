@@ -1507,7 +1507,7 @@ export default function PatientPage() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0,1fr)', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '320px minmax(0,1fr)', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
                 {/* Situations list */}
                 <div style={{ borderRight: '1px solid var(--float-border)', display: 'flex', flexDirection: 'column', padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
