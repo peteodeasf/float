@@ -237,6 +237,7 @@ export interface PlannedExperiment {
   distress_thermometer_expected: number | null
   distress_thermometer_actual: number | null
   feared_outcome_occurred: boolean | null
+  what_learned: string | null
   behavior_name: string | null
   situation_name: string | null
   trigger_situation_id: string | null

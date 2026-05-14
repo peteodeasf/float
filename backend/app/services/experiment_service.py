@@ -154,6 +154,7 @@ async def get_experiments_for_patient(
             "distress_thermometer_expected": exp.distress_thermometer_expected,
             "distress_thermometer_actual": exp.distress_thermometer_actual,
             "feared_outcome_occurred": exp.feared_outcome_occurred,
+            "what_learned": exp.what_learned,
             "behavior_name": behavior.name if behavior else None,
             "situation_name": situation.name if situation else None,
             "trigger_situation_id": situation.id if situation else None,

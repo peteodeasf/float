@@ -73,6 +73,7 @@ class ExperimentListResponse(BaseModel):
     distress_thermometer_expected: Optional[float] = None
     distress_thermometer_actual: Optional[float] = None
     feared_outcome_occurred: Optional[bool] = None
+    what_learned: Optional[str] = None
     behavior_name: Optional[str] = None
     situation_name: Optional[str] = None
     trigger_situation_id: Optional[uuid.UUID] = None

@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPatient, getMessages, sendMessage, inviteTeen } from '../../api/patients'
+import { getPatient, getMessages, sendMessage, inviteTeen, getPatientProgress } from '../../api/patients'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, ReferenceLine
+} from 'recharts'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanStatus, updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
@@ -27,7 +31,7 @@ function DTBadge({ value }: { value: number | null | undefined }) {
   return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{v}</span>
 }
 
-type PatientTabId = 'treatment' | 'notes' | 'plans' | 'messages'
+type PatientTabId = 'treatment' | 'experiments' | 'notes' | 'plans' | 'messages'
 
 function TabButton({ id, label, active, onClick, badge }: {
   id: PatientTabId
@@ -1029,6 +1033,53 @@ export default function PatientPage() {
   const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
   const draftPlanCount = (actionPlans ?? []).filter(ap => !ap.visible_to_patient).length
 
+  // Experiments tab — derive upcoming / overdue / completed buckets
+  const todayISO = new Date().toISOString().split('T')[0]
+  const isOverdue = (e: { scheduled_date: string | null; status: string }) =>
+    !!e.scheduled_date && e.scheduled_date.split('T')[0] < todayISO && e.status !== 'completed' && e.status !== 'skipped' && e.status !== 'too_hard'
+  const upcomingExperiments = (patientExperiments ?? [])
+    .filter(e => e.status === 'planned' || e.status === 'committed')
+    .sort((a, b) => {
+      const ad = a.scheduled_date ?? ''
+      const bd = b.scheduled_date ?? ''
+      return ad.localeCompare(bd)
+    })
+  const completedExperiments = (patientExperiments ?? [])
+    .filter(e => e.status === 'completed')
+    .sort((a, b) => {
+      const ad = a.completed_date ? new Date(a.completed_date).getTime() : 0
+      const bd = b.completed_date ? new Date(b.completed_date).getTime() : 0
+      return bd - ad
+    })
+  const overdueExperimentCount = (patientExperiments ?? []).filter(isOverdue).length
+
+  // Progress charts query (Experiments tab — Section 3)
+  const { data: progress } = useQuery({
+    queryKey: ['progress', patientId],
+    queryFn: () => getPatientProgress(patientId!),
+    enabled: !!patientId && activeTab === 'experiments'
+  })
+  const progressChartData = progress?.recent_experiments
+    .filter(e => e.completed_date)
+    .map((e, i) => ({
+      name: `Exp ${i + 1}`,
+      date: e.completed_date ? new Date(e.completed_date).toLocaleDateString() : '',
+      bip_before: e.bip_before,
+      bip_after: e.bip_after,
+      dt_expected: e.distress_thermometer_expected,
+      dt_actual: e.distress_thermometer_actual,
+    })) ?? []
+
+  // Expanded "what learned" entries
+  const [expandedLearningIds, setExpandedLearningIds] = useState<Set<string>>(new Set())
+  const toggleLearning = (id: string) => {
+    setExpandedLearningIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--float-bg)' }}>
       <PractitionerNav activePage="patients" subHeader={{
@@ -1039,8 +1090,7 @@ export default function PatientPage() {
           patient?.gender || null,
           patient?.phone_number || null,
           activitySummary
-        ].filter(Boolean).join(' \u00B7 '),
-        rightAction: <button onClick={() => navigate(`/patients/${patientId}/progress`)} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)' }}>View progress &rarr;</button>
+        ].filter(Boolean).join(' \u00B7 ')
       }} />
 
       <div style={{ padding: '24px' }}>
@@ -1418,6 +1468,7 @@ export default function PatientPage() {
         {/* Zone 3 — Tab bar */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--float-border)', marginBottom: '16px' }}>
           <TabButton id="treatment" label="Treatment Plan" active={activeTab === 'treatment'} onClick={setActiveTab} />
+          <TabButton id="experiments" label="Experiments" active={activeTab === 'experiments'} onClick={setActiveTab} badge={overdueExperimentCount} />
           <TabButton id="notes" label="Session Notes" active={activeTab === 'notes'} onClick={setActiveTab} />
           <TabButton id="plans" label="Action Plans" active={activeTab === 'plans'} onClick={setActiveTab} badge={draftPlanCount} />
           <TabButton id="messages" label="Messages" active={activeTab === 'messages'} onClick={setActiveTab} badge={unreadMessageCount} />
@@ -1625,6 +1676,150 @@ export default function PatientPage() {
               <button onClick={() => createPlanMut.mutate()} disabled={createPlanMut.isPending} className="text-white text-sm font-medium disabled:opacity-50 border-none cursor-pointer" style={{ background: 'var(--float-primary)', padding: '8px 16px', borderRadius: '8px' }}>{createPlanMut.isPending ? 'Creating...' : 'Create treatment plan'}</button>
             </div>
           ))}
+
+        {activeTab === 'experiments' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* Section 1 — Upcoming & overdue */}
+            <div style={cardStyle}>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Upcoming experiments</div>
+              {upcomingExperiments.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {upcomingExperiments.map(e => {
+                    const overdue = isOverdue(e)
+                    const dateStr = e.scheduled_date
+                      ? new Date(e.scheduled_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                      : 'No date'
+                    const conf = confidenceMeta(e.confidence_level)
+                    return (
+                      <div key={e.id} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', padding: '10px 12px', background: overdue ? '#fffbeb' : '#f8fafc', border: overdue ? '1px solid #fde68a' : '1px solid transparent', borderRadius: '8px', fontSize: '13px' }}>
+                        <span>{overdue ? '⚠' : '📅'}</span>
+                        <span style={{ fontWeight: 600, color: '#1e293b' }}>{e.behavior_name || e.plan_description || 'Experiment'}</span>
+                        <span style={{ color: '#cbd5e1' }}>·</span>
+                        <span style={{ color: overdue ? '#92400e' : '#475569' }}>{dateStr}</span>
+                        {!overdue && conf.label && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>·</span>
+                            <span style={{ color: '#475569' }}>{conf.emoji} {conf.label} confidence</span>
+                          </>
+                        )}
+                        <span style={{ color: '#cbd5e1' }}>·</span>
+                        <span style={{ color: overdue ? '#92400e' : '#475569', fontWeight: overdue ? 600 : 400 }}>{overdue ? 'not yet recorded' : (EXPERIMENT_STATUS_LABEL[e.status] || e.status)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>No experiments scheduled yet. Plan one from the Treatment Plan tab.</p>
+              )}
+            </div>
+
+            {/* Section 2 — Experiment history */}
+            <div style={cardStyle}>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Experiment history</div>
+              {completedExperiments.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {completedExperiments.map((e, idx) => {
+                    const prevSit = idx > 0 ? completedExperiments[idx - 1].situation_name : null
+                    const showSitHeader = idx === 0 || e.situation_name !== prevSit
+                    const completedStr = e.completed_date
+                      ? new Date(e.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : '—'
+                    const bipBefore = e.bip_before != null ? Math.round(Number(e.bip_before)) : null
+                    const bipAfter = e.bip_after != null ? Math.round(Number(e.bip_after)) : null
+                    const dtActual = e.distress_thermometer_actual != null ? Number(e.distress_thermometer_actual) : null
+                    const expanded = expandedLearningIds.has(e.id)
+                    const learningTruncated = !!(e.what_learned && e.what_learned.length > 140)
+                    return (
+                      <div key={e.id}>
+                        {showSitHeader && e.situation_name && (
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: idx === 0 ? '0 0 6px' : '10px 0 6px' }}>
+                            {e.situation_name}
+                          </div>
+                        )}
+                        <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{e.behavior_name || e.plan_description || 'Experiment'}</span>
+                            {e.situation_name && <span style={{ fontSize: '11px', color: '#94a3b8' }}>· {e.situation_name}</span>}
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>· {completedStr}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '12px', color: '#475569' }}>
+                            {bipBefore != null && bipAfter != null && (
+                              <span><strong>BIP:</strong> {bipBefore}% &rarr; {bipAfter}%</span>
+                            )}
+                            {dtActual != null && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><strong>DT:</strong> <DTBadge value={dtActual} /></span>
+                            )}
+                            {e.feared_outcome_occurred != null && (
+                              <span style={{ color: e.feared_outcome_occurred ? '#b91c1c' : '#16a34a', fontWeight: 600 }}>
+                                {e.feared_outcome_occurred ? '✗ Yes' : '✓ No'}
+                              </span>
+                            )}
+                          </div>
+                          {e.what_learned && (
+                            <div style={{ marginTop: '8px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                              <span style={{ color: '#94a3b8', fontWeight: 600 }}>Learned: </span>
+                              <span style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: expanded ? 'unset' as any : 2,
+                                WebkitBoxOrient: 'vertical' as const,
+                                overflow: expanded ? 'visible' : 'hidden',
+                              }}>{e.what_learned}</span>
+                              {learningTruncated && (
+                                <button onClick={() => toggleLearning(e.id)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ marginLeft: '4px', padding: 0 }}>
+                                  {expanded ? 'Show less' : 'Show more'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>No completed experiments yet.</p>
+              )}
+            </div>
+
+            {/* Section 3 — Progress charts */}
+            {progressChartData.length > 0 && (
+              <>
+                <div style={cardStyle}>
+                  <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Belief in Prediction</h2>
+                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 16px' }}>How strongly the patient believed their feared outcome would occur — before and after each experiment</p>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+                      <Tooltip formatter={(value, name) => [`${value}%`, name === 'bip_before' ? 'BIP before' : 'BIP after']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
+                      <Legend formatter={(value) => value === 'bip_before' ? 'Before' : 'After'} wrapperStyle={{ fontSize: '12px' }} />
+                      <ReferenceLine y={50} stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <Line type="monotone" dataKey="bip_before" stroke="#94a3b8" strokeWidth={2} dot={{ r: 4, fill: '#94a3b8' }} strokeDasharray="4 4" />
+                      <Line type="monotone" dataKey="bip_after" stroke="#0d9488" strokeWidth={2} dot={{ r: 4, fill: '#0d9488' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={cardStyle}>
+                  <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Distress Thermometer</h2>
+                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 16px' }}>Expected distress vs actual distress during each experiment</p>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(value, name) => [value, name === 'dt_expected' ? 'Expected' : 'Actual']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
+                      <Legend formatter={(value) => value === 'dt_expected' ? 'Expected' : 'Actual'} wrapperStyle={{ fontSize: '12px' }} />
+                      <Line type="monotone" dataKey="dt_expected" stroke="#94a3b8" strokeWidth={2} dot={{ r: 4, fill: '#94a3b8' }} strokeDasharray="4 4" />
+                      <Line type="monotone" dataKey="dt_actual" stroke="#16a34a" strokeWidth={2} dot={{ r: 4, fill: '#16a34a' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {activeTab === 'messages' && (
           <div id="messages-section" style={cardStyle}>
