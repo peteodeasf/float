@@ -1481,6 +1481,7 @@ export default function PatientPage() {
               ? [...publishedPlans].sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())[0]
               : null
             const lastConf = confidenceMeta(lastPlanned?.confidence_level)
+            const unreadExperimentCount = (messages ?? []).filter(m => m.message_type === 'experiment_completed' && !m.read_at).length
             const bipBefore = lastCompleted?.bip_before != null ? Math.round(Number(lastCompleted.bip_before)) : null
             const bipAfter = lastCompleted?.bip_after != null ? Math.round(Number(lastCompleted.bip_after)) : null
             const dtActual = lastCompleted?.distress_thermometer_actual != null
@@ -1498,6 +1499,17 @@ export default function PatientPage() {
                     <span style={{ fontSize: '13px', color: '#0f766e' }}>
                       Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
                     </span>
+                  </div>
+                )}
+                {unreadExperimentCount > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <a
+                      href="#messages-section"
+                      onClick={(e) => { e.preventDefault(); document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+                      style={{ fontSize: '13px', color: '#0f766e', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+                    >
+                      ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
+                    </a>
                   </div>
                 )}
 
@@ -1569,7 +1581,7 @@ export default function PatientPage() {
           })()}
 
           {/* Messages card */}
-          <div style={cardStyle}>
+          <div id="messages-section" style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
               <button onClick={() => setShowMsgForm(!showMsgForm)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New</button>
@@ -1581,7 +1593,14 @@ export default function PatientPage() {
               </div>
             )}
             {lastMsg ? (
-              <p className="text-xs text-slate-600" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(lastMsg.message_type === 'too_hard' ? { borderLeft: '2px solid #f59e0b', paddingLeft: '6px' } : {}) }}>{lastMsg.content.length > 100 ? lastMsg.content.slice(0, 100) + '...' : lastMsg.content}</p>
+              lastMsg.message_type === 'experiment_completed' ? (
+                <div style={{ borderLeft: '4px solid #059669', paddingLeft: '8px' }}>
+                  <div style={{ display: 'inline-block', background: '#d1fae5', color: '#065f46', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>✓ Experiment</div>
+                  <p className="text-xs text-slate-600" style={{ margin: 0, whiteSpace: 'normal' }}>{lastMsg.content}</p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-600" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(lastMsg.message_type === 'too_hard' ? { borderLeft: '2px solid #f59e0b', paddingLeft: '6px' } : {}) }}>{lastMsg.content.length > 100 ? lastMsg.content.slice(0, 100) + '...' : lastMsg.content}</p>
+              )
             ) : !showMsgForm && (
               <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
                 Send check-ins, encouragement, or plan adjustments to the patient between sessions.

@@ -563,10 +563,77 @@ async def patient_save_after_state(
     context: tuple = Depends(get_patient_context),
     db: AsyncSession = Depends(get_db)
 ):
-    _, patient = context
+    user, patient = context
     experiment = await save_after_state(
         db, experiment_id, patient.organization_id, data
     )
+
+    if experiment.status == "completed":
+        from app.models.treatment import AvoidanceBehavior
+
+        practitioner = None
+        if patient.primary_practitioner_id:
+            pr_result = await db.execute(
+                select(PractitionerProfile).where(
+                    PractitionerProfile.id == patient.primary_practitioner_id,
+                    PractitionerProfile.organization_id == patient.organization_id,
+                )
+            )
+            practitioner = pr_result.scalar_one_or_none()
+        if practitioner is None:
+            pr_result = await db.execute(
+                select(PractitionerProfile).where(
+                    PractitionerProfile.organization_id == patient.organization_id
+                )
+            )
+            practitioner = pr_result.scalars().first()
+
+        if practitioner is not None:
+            behavior_name = None
+            if experiment.avoidance_behavior_id:
+                b_result = await db.execute(
+                    select(AvoidanceBehavior).where(
+                        AvoidanceBehavior.id == experiment.avoidance_behavior_id
+                    )
+                )
+                behavior = b_result.scalar_one_or_none()
+                if behavior:
+                    behavior_name = behavior.name
+
+            date_str = (
+                experiment.completed_date.strftime("%Y-%m-%d")
+                if experiment.completed_date else "unknown date"
+            )
+            bip_before = f"{int(experiment.bip_before)}" if experiment.bip_before is not None else "?"
+            bip_after = f"{int(experiment.bip_after)}" if experiment.bip_after is not None else "?"
+            dt_actual = (
+                f"{experiment.distress_thermometer_actual:g}"
+                if experiment.distress_thermometer_actual is not None else "?"
+            )
+            fo_str = (
+                "Yes" if experiment.feared_outcome_occurred is True
+                else "No" if experiment.feared_outcome_occurred is False
+                else "Unknown"
+            )
+            content = (
+                f"Experiment completed: {behavior_name or 'experiment'} on {date_str}. "
+                f"BIP: {bip_before}% → {bip_after}%. "
+                f"Fear level: {dt_actual}/10. "
+                f"Feared outcome occurred: {fo_str}."
+            )
+
+            message = Message(
+                organization_id=patient.organization_id,
+                sender_user_id=user.id,
+                recipient_user_id=practitioner.user_id,
+                patient_id=patient.id,
+                content=content,
+                message_type="experiment_completed",
+                sender_type="system",
+            )
+            db.add(message)
+            await db.commit()
+
     return experiment
 
 

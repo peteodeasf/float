@@ -17,6 +17,7 @@ class MessageResponse(BaseModel):
     patient_id: uuid.UUID
     content: str
     message_type: str
+    sender_type: Optional[str] = None
     read_at: Optional[datetime] = None
     created_at: datetime
 

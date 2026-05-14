@@ -27,6 +27,7 @@ class Message(Base):
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     message_type: Mapped[str] = mapped_column(String, nullable=False, default="general")
+    sender_type: Mapped[str | None] = mapped_column(String, nullable=True)
     read_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
