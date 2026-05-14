@@ -127,9 +127,13 @@ export default function TeenExperimentPage() {
   if (step === 1) {
     return (
       <Shell>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1e293b', marginBottom: '20px' }}>
-          Here's what you'll try
+        <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
+          Your experiment
         </h2>
+        <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.5, marginBottom: '20px' }}>
+          You're going to try this behavior and see what actually happens.
+          Before you do, let's capture what you're expecting.
+        </p>
 
         {/* Behavior name + DT */}
         {behaviorData && (
@@ -157,11 +161,17 @@ export default function TeenExperimentPage() {
               <p style={{ fontSize: '16px', color: '#1e293b', fontWeight: '500', fontStyle: 'italic', lineHeight: '1.5' }}>
                 "{fearedOutcome}"
               </p>
+              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.5, marginTop: '12px', marginBottom: 0 }}>
+                This is the worry we identified together with your clinician.
+              </p>
             </>
           ) : (
             <>
-              <p style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600', marginBottom: '8px' }}>
-                What are you worried might happen?
+              <p style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600', marginBottom: '4px' }}>
+                What's your biggest worry about doing this?
+              </p>
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5, marginBottom: '10px' }}>
+                This is your prediction — we'll check it after.
               </p>
               <textarea
                 value={customFearedOutcome}
@@ -186,7 +196,7 @@ export default function TeenExperimentPage() {
             cursor: 'pointer', opacity: (!fearedOutcome && !customFearedOutcome.trim()) ? 0.5 : 1
           }}
         >
-          Looks good &rarr;
+          Set my prediction &rarr;
         </button>
       </Shell>
     )
@@ -402,6 +412,23 @@ export default function TeenExperimentPage() {
             {confidence === 'low' ? '😰 Not sure' : confidence === 'medium' ? '😐 Getting there' : "💪 I've got this"}
           </p>
         </div>
+      </div>
+
+      {/* What happens next */}
+      <div style={{ background: '#f0fdfa', borderRadius: '14px', padding: '16px 18px', border: '1px solid #ccfbf1', marginBottom: '20px' }}>
+        <p style={{ fontSize: '13px', fontWeight: '700', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>
+          What happens next
+        </p>
+        <p style={{ fontSize: '14px', color: '#134e4a', lineHeight: 1.5, margin: 0 }}>
+          On{' '}
+          <strong>
+            {sortedSelectedDates.length === 1
+              ? next7Days[sortedSelectedDates[0]].toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+              : 'each scheduled day'}
+          </strong>
+          , do the experiment and notice what actually happens.
+          Then come back here to record how it went.
+        </p>
       </div>
 
       {/* Encouragement */}

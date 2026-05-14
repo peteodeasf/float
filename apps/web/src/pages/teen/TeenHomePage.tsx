@@ -41,6 +41,29 @@ export default function TeenHomePage() {
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null)
   const [jumpWarning, setJumpWarning] = useState<{ targetBehaviorId: string; suggestedBehaviorId: string; suggestedName: string } | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [showLadderHint, setShowLadderHint] = useState(false)
+
+  useEffect(() => {
+    if (!patientId) return
+    const onboardedKey = `float_onboarded_${patientId}`
+    const hintDismissedKey = `float_ladder_hint_dismissed_${patientId}`
+    if (!localStorage.getItem(onboardedKey)) {
+      setShowWelcome(true)
+    } else if (!localStorage.getItem(hintDismissedKey)) {
+      setShowLadderHint(true)
+    }
+  }, [patientId])
+
+  const handleDismissWelcome = () => {
+    if (patientId) {
+      localStorage.setItem(`float_onboarded_${patientId}`, '1')
+    }
+    setShowWelcome(false)
+    if (patientId && !localStorage.getItem(`float_ladder_hint_dismissed_${patientId}`)) {
+      setShowLadderHint(true)
+    }
+  }
 
   const { data: ladderData } = useQuery({
     queryKey: ['teen-ladder', patientId],
@@ -123,8 +146,16 @@ export default function TeenHomePage() {
     return match ? parseInt(match[1], 10) : 1
   }
 
+  const dismissLadderHint = () => {
+    if (patientId) {
+      localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
+    }
+    setShowLadderHint(false)
+  }
+
   const handleBehaviorTap = (behavior: TeenBehavior) => {
     if (behavior.status === 'mastered') return
+    dismissLadderHint()
     // Jump warning: if DT more than 2 above suggested
     if (
       suggestedBehavior &&
@@ -141,6 +172,62 @@ export default function TeenHomePage() {
       return
     }
     navigate(`/teen/experiment/${behavior.id}`)
+  }
+
+  if (showWelcome) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#0d9488', maxWidth: '480px', margin: '0 auto',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '32px 28px', color: '#fff'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ fontSize: '56px', lineHeight: 1, marginBottom: '12px' }}>~</div>
+          <p style={{ fontSize: '15px', color: '#ccfbf1', fontWeight: '500', letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0 }}>
+            Float
+          </p>
+        </div>
+
+        <h1 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 12px', lineHeight: 1.25 }}>
+          Welcome to Float, {firstName} 👋
+        </h1>
+        <p style={{ fontSize: '16px', color: '#ccfbf1', margin: '0 0 28px', lineHeight: 1.5 }}>
+          Your clinician has set up your anxiety toolkit.
+        </p>
+
+        <p style={{ fontSize: '15px', color: '#fff', fontWeight: '600', margin: '0 0 14px' }}>
+          Here's how it works:
+        </p>
+        <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <li style={{ fontSize: '15px', color: '#fff', lineHeight: 1.5 }}>
+            <span style={{ marginRight: '8px' }}>🎯</span>
+            Pick a behavior to work on from your ladder
+          </li>
+          <li style={{ fontSize: '15px', color: '#fff', lineHeight: 1.5 }}>
+            <span style={{ marginRight: '8px' }}>🔮</span>
+            Make a prediction about what might happen
+          </li>
+          <li style={{ fontSize: '15px', color: '#fff', lineHeight: 1.5 }}>
+            <span style={{ marginRight: '8px' }}>✅</span>
+            Try it and record how it went
+          </li>
+        </ol>
+
+        <p style={{ fontSize: '14px', color: '#ccfbf1', margin: '0 0 32px', lineHeight: 1.5, fontStyle: 'italic' }}>
+          Each time you complete an experiment, your anxiety gets a little smaller.
+        </p>
+
+        <button
+          onClick={handleDismissWelcome}
+          style={{
+            width: '100%', padding: '18px', background: '#fff', color: '#0d9488',
+            border: 'none', borderRadius: '14px', fontSize: '17px', fontWeight: '700',
+            cursor: 'pointer'
+          }}
+        >
+          Let's go →
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -283,6 +370,14 @@ export default function TeenHomePage() {
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* First-time ladder hint */}
+            {showLadderHint && sortedBehaviors.length > 0 && (
+              <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', lineHeight: 1.5, margin: '0 0 12px' }}>
+                Your ladder shows the behaviors to work through, starting with the easiest.
+                Tap the suggested one to start your first experiment.
+              </p>
             )}
 
             {/* Ladder */}
