@@ -1072,15 +1072,20 @@ export default function PatientPage() {
 
   // Current focus — most recent experiment activity (by completed_date | scheduled_date | created_at)
   const recentExperiment = [...(patientExperiments ?? [])]
-    .filter(e => e.avoidance_behavior_id)
+    .filter(e => e.avoidance_behavior_id || e.behavior_name)
     .sort((a, b) => {
       const ad = a.completed_date || a.scheduled_date || a.created_at
       const bd = b.completed_date || b.scheduled_date || b.created_at
       return new Date(bd).getTime() - new Date(ad).getTime()
     })[0]
   const focusBehaviorId = recentExperiment?.avoidance_behavior_id ?? null
-  const focusExperiments = focusBehaviorId
-    ? (patientExperiments ?? []).filter(e => e.avoidance_behavior_id === focusBehaviorId)
+  const focusBehaviorName = recentExperiment?.behavior_name ?? null
+  const focusExperiments = recentExperiment
+    ? (patientExperiments ?? []).filter(e =>
+        focusBehaviorId
+          ? e.avoidance_behavior_id === focusBehaviorId
+          : !!focusBehaviorName && e.behavior_name === focusBehaviorName
+      )
     : []
   const focusCompletedAsc = focusExperiments
     .filter(e => e.status === 'completed' && e.completed_date)
@@ -1100,11 +1105,11 @@ export default function PatientPage() {
 
   // Needs attention items
   const overdueItems = (patientExperiments ?? []).filter(isOverdue)
-  const lowConfidenceItems = (patientExperiments ?? []).filter(e =>
+  const lowConfidenceCount = (patientExperiments ?? []).filter(e =>
     e.status === 'committed' &&
     (e.confidence_level === 'low' || e.confidence_level === 'medium') &&
     e.scheduled_date != null && e.scheduled_date.split('T')[0] >= todayISO
-  )
+  ).length
   const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const hasRecentActivity = (patientExperiments ?? []).some(e => {
     if (e.status !== 'completed' && e.status !== 'committed') return false
@@ -1113,7 +1118,7 @@ export default function PatientPage() {
     return d.split('T')[0] >= sevenDaysAgoISO
   })
   const noActivityThisWeek = !hasRecentActivity && plan?.status === 'active'
-  const needsAttention = overdueItems.length > 0 || lowConfidenceItems.length > 0 || noActivityThisWeek
+  const needsAttention = overdueItems.length > 0 || lowConfidenceCount > 0 || noActivityThisWeek
 
   // Timeline — group completed + committed by Mon-Sun week, newest first
   const timelineItems = (patientExperiments ?? [])
@@ -1138,6 +1143,14 @@ export default function PatientPage() {
     .sort((a, b) => b.monday.getTime() - a.monday.getTime())
   const currentWeekMonday = getMondayOfWeek(new Date())
   const lastWeekMonday = new Date(currentWeekMonday); lastWeekMonday.setDate(currentWeekMonday.getDate() - 7)
+  const recentWeeks = sortedWeeks.filter(w =>
+    w.monday.getTime() === currentWeekMonday.getTime() ||
+    w.monday.getTime() === lastWeekMonday.getTime()
+  )
+  const earlierWeeks = sortedWeeks.filter(w =>
+    w.monday.getTime() !== currentWeekMonday.getTime() &&
+    w.monday.getTime() !== lastWeekMonday.getTime()
+  )
 
   // Progress charts query (Experiments tab — Progress section)
   const { data: progress } = useQuery({
@@ -1156,6 +1169,7 @@ export default function PatientPage() {
 
   // Expanded "what learned" entries
   const [expandedLearningIds, setExpandedLearningIds] = useState<Set<string>>(new Set())
+  const [showEarlier, setShowEarlier] = useState(false)
   const toggleLearning = (id: string) => {
     setExpandedLearningIds(prev => {
       const next = new Set(prev)
@@ -1850,18 +1864,12 @@ export default function PatientPage() {
                       </li>
                     )
                   })}
-                  {lowConfidenceItems.map(e => {
-                    const conf = confidenceMeta(e.confidence_level)
-                    const dateStr = e.scheduled_date
-                      ? new Date(e.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                      : ''
-                    return (
-                      <li key={`lowconf-${e.id}`} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
-                        <span style={{ fontWeight: 700 }}>·</span>
-                        <span><strong>Low confidence:</strong> Upcoming experiment {dateStr} rated {conf.label} confidence</span>
-                      </li>
-                    )
-                  })}
+                  {lowConfidenceCount > 0 && (
+                    <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
+                      <span style={{ fontWeight: 700 }}>·</span>
+                      <span><strong>Low confidence:</strong> {lowConfidenceCount} upcoming experiment{lowConfidenceCount === 1 ? '' : 's'} rated Medium or Low confidence</span>
+                    </li>
+                  )}
                   {noActivityThisWeek && (
                     <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
                       <span style={{ fontWeight: 700 }}>·</span>
@@ -1872,11 +1880,11 @@ export default function PatientPage() {
               </div>
             )}
 
-            {/* Progress charts — side by side */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div style={cardStyle}>
-                <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Belief in Prediction</h2>
-                {progressChartData.length >= 2 ? (
+            {/* Progress charts — side by side (hidden when not enough data) */}
+            {progressChartData.length >= 2 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={cardStyle}>
+                  <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Belief in Prediction</h2>
                   <ResponsiveContainer width="100%" height={220}>
                     <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                       <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
@@ -1887,13 +1895,9 @@ export default function PatientPage() {
                       <Line type="monotone" dataKey="bip_after" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
                     </LineChart>
                   </ResponsiveContainer>
-                ) : (
-                  <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Complete more experiments to see trends.</p>
-                )}
-              </div>
-              <div style={cardStyle}>
-                <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Fear Level</h2>
-                {progressChartData.length >= 2 ? (
+                </div>
+                <div style={cardStyle}>
+                  <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Fear Level</h2>
                   <ResponsiveContainer width="100%" height={220}>
                     <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                       <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
@@ -1902,110 +1906,149 @@ export default function PatientPage() {
                       <Line type="monotone" dataKey="dt_actual" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
                     </LineChart>
                   </ResponsiveContainer>
-                ) : (
-                  <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Complete more experiments to see trends.</p>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Experiment timeline */}
             <div style={cardStyle}>
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Experiment timeline</div>
-              {sortedWeeks.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {sortedWeeks.map(week => {
-                    const isCurrent = week.monday.getTime() === currentWeekMonday.getTime()
-                    const isLast = week.monday.getTime() === lastWeekMonday.getTime()
-                    const range = weekRangeLabel(week.monday)
-                    const label = isCurrent
-                      ? `THIS WEEK (${range})`
-                      : isLast
-                        ? `LAST WEEK (${range})`
-                        : range.toUpperCase()
-                    return (
-                      <div key={week.monday.toISOString()}>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>{label}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {week.items.map(({ e, displayDate }) => {
-                            const completed = e.status === 'completed'
-                            const overdue = e.status === 'committed' && isOverdue(e)
-                            const upcoming = e.status === 'committed' && !overdue
-                            const expanded = expandedLearningIds.has(e.id)
-                            const dateStr = new Date(displayDate.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                            const bipBefore = e.bip_before != null ? Math.round(Number(e.bip_before)) : null
-                            const bipAfter = e.bip_after != null ? Math.round(Number(e.bip_after)) : null
-                            const dtActual = e.distress_thermometer_actual != null ? Number(e.distress_thermometer_actual) : null
-                            const conf = confidenceMeta(e.confidence_level)
-                            const canExpand = completed && !!e.what_learned
-                            return (
-                              <div key={e.id}>
-                                <div
-                                  onClick={() => { if (canExpand) toggleLearning(e.id) }}
-                                  style={{
-                                    display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px',
-                                    padding: '8px 12px', borderRadius: '8px', fontSize: '13px',
-                                    background: overdue ? '#fffbeb' : '#f8fafc',
-                                    border: overdue ? '1px solid #fde68a' : '1px solid transparent',
-                                    cursor: canExpand ? 'pointer' : 'default',
-                                  }}
-                                >
-                                  {completed && (
-                                    <span style={{ width: '18px', height: '18px', borderRadius: '999px', background: '#dcfce7', color: '#16a34a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
-                                  )}
-                                  {overdue && <span style={{ color: '#d97706', fontSize: '14px', flexShrink: 0 }}>⚠</span>}
-                                  {upcoming && <span style={{ color: '#94a3b8', fontSize: '14px', flexShrink: 0 }}>📅</span>}
-                                  <span style={{ fontWeight: 600, color: overdue ? '#92400e' : '#1e293b' }}>{dateStr}</span>
-                                  <span style={{ color: '#cbd5e1' }}>·</span>
-                                  <span style={{ color: overdue ? '#92400e' : '#475569' }}>{e.behavior_name || e.plan_description || 'Experiment'}</span>
-                                  {completed && bipBefore != null && bipAfter != null && (
-                                    <>
-                                      <span style={{ color: '#cbd5e1' }}>·</span>
-                                      <span style={{ color: '#475569' }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
-                                    </>
-                                  )}
-                                  {completed && dtActual != null && (
-                                    <>
-                                      <span style={{ color: '#cbd5e1' }}>·</span>
-                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}>DT <DTBadge value={dtActual} /></span>
-                                    </>
-                                  )}
-                                  {completed && e.feared_outcome_occurred != null && (
-                                    <>
-                                      <span style={{ color: '#cbd5e1' }}>·</span>
-                                      <span style={{ color: e.feared_outcome_occurred ? '#b91c1c' : '#16a34a', fontWeight: 600 }}>
-                                        {e.feared_outcome_occurred ? '✗ Yes' : '✓ No'}
-                                      </span>
-                                    </>
-                                  )}
-                                  {overdue && (
-                                    <>
-                                      <span style={{ color: '#cbd5e1' }}>·</span>
-                                      <span style={{ color: '#92400e', fontWeight: 600 }}>not recorded</span>
-                                    </>
-                                  )}
-                                  {upcoming && conf.label && (
-                                    <>
-                                      <span style={{ color: '#cbd5e1' }}>·</span>
-                                      <span style={{ color: '#475569' }}>{conf.emoji} {conf.label} confidence</span>
-                                    </>
-                                  )}
-                                </div>
-                                {canExpand && expanded && (
-                                  <div style={{ margin: '4px 0 0 30px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '6px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
-                                    <span style={{ color: '#94a3b8', fontWeight: 600 }}>What they learned: </span>{e.what_learned}
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
+              {sortedWeeks.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No experiments recorded yet.</p>
-              )}
+              ) : (() => {
+                type WeekBucket = typeof sortedWeeks[number]
+                type TimelineItem = WeekBucket['items'][number]
+                const weekHeaderStyle = { fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--float-text-secondary)', marginTop: '16px', marginBottom: '4px', textTransform: 'uppercase' as const }
+                const firstWeekHeaderStyle = { ...weekHeaderStyle, marginTop: 0 }
+                const renderRow = ({ e, displayDate }: TimelineItem) => {
+                  const completed = e.status === 'completed'
+                  const overdue = e.status === 'committed' && isOverdue(e)
+                  const upcoming = e.status === 'committed' && !overdue
+                  const expanded = expandedLearningIds.has(e.id)
+                  const dateStr = new Date(displayDate.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                  const bipBefore = e.bip_before != null ? Math.round(Number(e.bip_before)) : null
+                  const bipAfter = e.bip_after != null ? Math.round(Number(e.bip_after)) : null
+                  const dtActual = e.distress_thermometer_actual != null ? Number(e.distress_thermometer_actual) : null
+                  const conf = confidenceMeta(e.confidence_level)
+                  const canExpand = completed && !!e.what_learned
+                  const behaviorLabel = e.behavior_name || e.plan_description || 'Experiment'
+                  return (
+                    <div key={e.id}>
+                      <div
+                        onClick={() => { if (canExpand) toggleLearning(e.id) }}
+                        style={{
+                          display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px',
+                          padding: '6px 0', fontSize: '13px',
+                          background: overdue ? 'var(--float-bg)' : 'transparent',
+                          cursor: canExpand ? 'pointer' : 'default',
+                        }}
+                      >
+                        {completed && (
+                          <span style={{ width: '18px', height: '18px', borderRadius: '999px', background: '#dcfce7', color: '#16a34a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
+                        )}
+                        {overdue && <span style={{ color: '#d97706', fontSize: '14px', flexShrink: 0 }}>⚠</span>}
+                        {upcoming && <span style={{ color: '#94a3b8', fontSize: '14px', flexShrink: 0 }}>📅</span>}
+                        <span style={{ fontWeight: 600, color: overdue ? '#92400e' : '#1e293b', flexShrink: 0 }}>{dateStr}</span>
+                        <span style={{ color: '#cbd5e1' }}>·</span>
+                        <span
+                          title={behaviorLabel}
+                          style={{
+                            fontSize: '13px',
+                            color: overdue ? '#92400e' : '#475569',
+                            minWidth: '200px',
+                            maxWidth: '300px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >{behaviorLabel}</span>
+                        {completed && bipBefore != null && bipAfter != null && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>·</span>
+                            <span style={{ color: '#475569' }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
+                          </>
+                        )}
+                        {completed && dtActual != null && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>·</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}>DT <DTBadge value={dtActual} /></span>
+                          </>
+                        )}
+                        {completed && e.feared_outcome_occurred != null && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>·</span>
+                            <span style={{ color: e.feared_outcome_occurred ? '#b91c1c' : '#16a34a', fontWeight: 600 }}>
+                              {e.feared_outcome_occurred ? '✗ Yes' : '✓ No'}
+                            </span>
+                          </>
+                        )}
+                        {overdue && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>·</span>
+                            <span style={{ color: '#92400e', fontWeight: 600 }}>not recorded</span>
+                          </>
+                        )}
+                        {upcoming && conf.label && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>·</span>
+                            <span style={{ color: '#475569' }}>{conf.emoji} {conf.label} confidence</span>
+                          </>
+                        )}
+                      </div>
+                      {canExpand && expanded && (
+                        <div style={{ margin: '4px 0 4px 30px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '6px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                          <span style={{ color: '#94a3b8', fontWeight: 600 }}>What they learned: </span>{e.what_learned}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+                const renderWeek = (week: WeekBucket, isFirst: boolean) => {
+                  const isCurrent = week.monday.getTime() === currentWeekMonday.getTime()
+                  const isLast = week.monday.getTime() === lastWeekMonday.getTime()
+                  const range = weekRangeLabel(week.monday)
+                  const label = isCurrent
+                    ? `THIS WEEK (${range})`
+                    : isLast
+                      ? `LAST WEEK (${range})`
+                      : range.toUpperCase()
+                  return (
+                    <div key={week.monday.toISOString()}>
+                      <div style={isFirst ? firstWeekHeaderStyle : weekHeaderStyle}>{label}</div>
+                      <div>{week.items.map(renderRow)}</div>
+                    </div>
+                  )
+                }
+                return (
+                  <>
+                    {recentWeeks.length === 2 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
+                        {recentWeeks.map(w => renderWeek(w, true))}
+                      </div>
+                    ) : recentWeeks.length === 1 ? (
+                      <div style={{ marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
+                        {renderWeek(recentWeeks[0], true)}
+                      </div>
+                    ) : null}
+                    {earlierWeeks.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => setShowEarlier(!showEarlier)}
+                          className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer"
+                          style={{ padding: 0 }}
+                        >
+                          {showEarlier ? 'Hide earlier experiments ↓' : 'Show earlier experiments →'}
+                        </button>
+                        {showEarlier && (
+                          <div style={{ marginTop: '4px' }}>
+                            {earlierWeeks.map((w, i) => renderWeek(w, i === 0 && recentWeeks.length === 0))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           </div>
         )}
