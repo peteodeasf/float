@@ -965,7 +965,7 @@ export default function PatientPage() {
   })
 
   const openTeenInviteForm = () => {
-    setTeenEmailInput(patient?.teen_email || '')
+    setTeenEmailInput(patient?.teen_email || patient?.email || '')
     setShowTeenInviteForm(true)
   }
 
