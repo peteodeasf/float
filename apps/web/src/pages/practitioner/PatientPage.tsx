@@ -300,7 +300,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
       {/* Section header with AI review */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avoidance &amp; safety behaviors</span>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Avoidance &amp; safety behaviors</span>
           {!showAdd && (
             <button onClick={() => setShowAdd(true)} className="text-[10px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add</button>
           )}
@@ -382,7 +382,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             ) : (
               /* Normal row */
               <>
-                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg group">
+                <div className="flex items-center justify-between group" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', marginBottom: '6px' }}>
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
                       {b.behavior_type.slice(0, 3)}
@@ -1058,7 +1058,7 @@ export default function PatientPage() {
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
   const badgeColors: Record<string, string> = { consultation_1: 'bg-purple-100 text-purple-700', consultation_2: 'bg-purple-100 text-purple-700', consultation_3: 'bg-purple-100 text-purple-700', weekly_session: 'bg-teal-100 text-teal-700', other: 'bg-slate-100 text-slate-600' }
 
-  const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
+  const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
   // Tab badge counts
   const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
@@ -1564,7 +1564,7 @@ export default function PatientPage() {
         </div>
 
         {/* Zone 3 — Tab bar */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--float-border)', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', background: '#ffffff', borderBottom: '2px solid #e2e8f0', marginBottom: '16px', padding: '0 24px' }}>
           <TabButton id="treatment" label="Treatment Plan" active={activeTab === 'treatment'} onClick={setActiveTab} />
           <TabButton id="experiments" label="Experiments" active={activeTab === 'experiments'} onClick={setActiveTab} badge={overdueExperimentCount} />
           <TabButton id="notes" label="Session Notes" active={activeTab === 'notes'} onClick={setActiveTab} />
@@ -1660,7 +1660,7 @@ export default function PatientPage() {
                 {/* Situations list */}
                 <div style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Situations</span>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Situations</span>
                     {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="text-[10px] text-teal-600 font-bold bg-transparent border-none cursor-pointer">+</button>}
                   </div>
                   <div style={{ flex: 1, overflowY: 'auto' }}>
