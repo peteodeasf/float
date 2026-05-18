@@ -16,7 +16,7 @@ from app.models.user import User, UserRole
 from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink
 from app.models.experiment import Experiment
 from app.models.message import Message
-from app.schemas.patient import PatientCreate, PatientResponse, PatientListResponse
+from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse
 from app.services.email_service import send_teen_invitation_email
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
 from app.services.patient_service import (
@@ -141,6 +141,41 @@ async def get_patient(
     patient = await get_patient_by_id(
         db, patient_id, practitioner.organization_id
     )
+    user_result = await db.execute(
+        select(User).where(User.id == patient.user_id)
+    )
+    user = user_result.scalar_one()
+    return PatientResponse(
+        id=patient.id,
+        user_id=patient.user_id,
+        name=patient.name,
+        email=user.email,
+        age=patient.age,
+        gender=patient.gender,
+        phone_number=patient.phone_number,
+        teen_email=patient.teen_email,
+        teen_invited_at=patient.teen_invited_at,
+        primary_practitioner_id=patient.primary_practitioner_id,
+        created_at=patient.created_at
+    )
+
+
+@router.put("/{patient_id}", response_model=PatientResponse)
+async def update_patient(
+    patient_id: uuid.UUID,
+    data: PatientUpdate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, practitioner = context
+    patient = await get_patient_by_id(
+        db, patient_id, practitioner.organization_id
+    )
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(patient, field, value)
+    await db.commit()
+    await db.refresh(patient)
     user_result = await db.execute(
         select(User).where(User.id == patient.user_id)
     )

@@ -78,6 +78,18 @@ export const createPatient = async (data: CreatePatientData): Promise<PatientDet
   return response.data
 }
 
+export interface UpdatePatientData {
+  name?: string
+  age?: number | null
+  gender?: string | null
+  phone_number?: string | null
+}
+
+export const updatePatient = async (id: string, data: UpdatePatientData): Promise<PatientDetail> => {
+  const response = await apiClient.put(`/patients/${id}`, data)
+  return response.data
+}
+
 export interface ExperimentDataPoint {
   experiment_id: string
   completed_date: string | null

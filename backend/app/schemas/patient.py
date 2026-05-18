@@ -12,6 +12,13 @@ class PatientCreate(BaseModel):
     phone_number: Optional[str] = None
 
 
+class PatientUpdate(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    phone_number: Optional[str] = None
+
+
 class PatientResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID

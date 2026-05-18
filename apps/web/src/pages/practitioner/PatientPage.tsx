@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPatient, getMessages, sendMessage, inviteTeen, getPatientProgress } from '../../api/patients'
+import { getPatient, getMessages, sendMessage, inviteTeen, getPatientProgress, updatePatient } from '../../api/patients'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine
@@ -800,6 +800,13 @@ export default function PatientPage() {
   const [teenEmailInput, setTeenEmailInput] = useState('')
   const [teenInviteConfirmation, setTeenInviteConfirmation] = useState<string | null>(null)
 
+  // Patient profile edit
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [profileName, setProfileName] = useState('')
+  const [profileAge, setProfileAge] = useState('')
+  const [profileGender, setProfileGender] = useState('')
+  const [profilePhone, setProfilePhone] = useState('')
+
   // Session notes
   const [showNoteForm, setShowNoteForm] = useState(false)
   const [editingNote, setEditingNote] = useState<SessionNote | null>(null)
@@ -967,6 +974,27 @@ export default function PatientPage() {
   const openTeenInviteForm = () => {
     setTeenEmailInput(patient?.teen_email || patient?.email || '')
     setShowTeenInviteForm(true)
+  }
+
+  const updatePatientMut = useMutation({
+    mutationFn: () => updatePatient(patientId!, {
+      name: profileName.trim(),
+      age: profileAge.trim() === '' ? null : Number(profileAge),
+      gender: profileGender.trim() === '' ? null : profileGender.trim(),
+      phone_number: profilePhone.trim() === '' ? null : profilePhone.trim(),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
+      setEditingProfile(false)
+    }
+  })
+
+  const openProfileEdit = () => {
+    setProfileName(patient?.name || '')
+    setProfileAge(patient?.age != null ? String(patient.age) : '')
+    setProfileGender(patient?.gender || '')
+    setProfilePhone(patient?.phone_number || '')
+    setEditingProfile(true)
   }
 
   // Session notes
@@ -1188,10 +1216,95 @@ export default function PatientPage() {
           patient?.gender || null,
           patient?.phone_number || null,
           activitySummary
-        ].filter(Boolean).join(' \u00B7 ')
+        ].filter(Boolean).join(' \u00B7 '),
+        rightAction: patient && !editingProfile ? (
+          <button
+            onClick={openProfileEdit}
+            className="text-xs font-medium bg-transparent border-none cursor-pointer hover:underline"
+            style={{ color: 'var(--float-primary)' }}
+          >
+            Edit profile
+          </button>
+        ) : undefined
       }} />
 
       <div style={{ padding: '24px' }}>
+
+        {/* Profile edit form (inline) */}
+        {editingProfile && patient && (
+          <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Edit patient profile</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Name</label>
+                <input
+                  value={profileName}
+                  onChange={e => setProfileName(e.target.value)}
+                  className="text-sm border border-slate-200 rounded"
+                  style={{ width: '100%', padding: '6px 10px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Age</label>
+                <input
+                  value={profileAge}
+                  onChange={e => setProfileAge(e.target.value)}
+                  type="number"
+                  min="0"
+                  max="120"
+                  className="text-sm border border-slate-200 rounded"
+                  style={{ width: '100%', padding: '6px 10px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Gender</label>
+                <input
+                  value={profileGender}
+                  onChange={e => setProfileGender(e.target.value)}
+                  className="text-sm border border-slate-200 rounded"
+                  style={{ width: '100%', padding: '6px 10px', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Phone number</label>
+                <input
+                  value={profilePhone}
+                  onChange={e => setProfilePhone(e.target.value)}
+                  type="tel"
+                  className="text-sm border border-slate-200 rounded"
+                  style={{ width: '100%', padding: '6px 10px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Email (read-only)</label>
+                <div style={{ fontSize: '13px', color: '#475569', padding: '6px 10px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px' }}>{patient.email}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => updatePatientMut.mutate()}
+                disabled={!profileName.trim() || updatePatientMut.isPending}
+                className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+                style={{ padding: '7px 14px' }}
+              >
+                {updatePatientMut.isPending ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={() => setEditingProfile(false)}
+                className="text-xs text-slate-500 hover:text-slate-700 bg-transparent border-none cursor-pointer"
+              >
+                Cancel
+              </button>
+              {updatePatientMut.isError && (
+                <span style={{ fontSize: '12px', color: '#b91c1c' }}>Save failed. Try again.</span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Zone 2 — Top cards row */}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: '12px', marginBottom: '16px', alignItems: 'stretch' }}>
