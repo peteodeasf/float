@@ -49,7 +49,7 @@ function TabButton({ id, label, active, onClick, badge }: {
         background: 'transparent',
         border: 'none',
         borderBottom: active ? '3px solid var(--float-primary)' : '3px solid transparent',
-        color: active ? 'var(--float-primary)' : 'var(--float-text-secondary)',
+        color: active ? 'var(--float-primary)' : '#475569',
         fontWeight: active ? 600 : 500,
         fontSize: '14px',
         cursor: 'pointer',
@@ -1058,7 +1058,7 @@ export default function PatientPage() {
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
   const badgeColors: Record<string, string> = { consultation_1: 'bg-purple-100 text-purple-700', consultation_2: 'bg-purple-100 text-purple-700', consultation_3: 'bg-purple-100 text-purple-700', weekly_session: 'bg-teal-100 text-teal-700', other: 'bg-slate-100 text-slate-600' }
 
-  const cardStyle = { background: '#fff', borderRadius: '10px', border: '1px solid var(--float-border)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
+  const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
   // Tab badge counts
   const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
@@ -1179,7 +1179,7 @@ export default function PatientPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--float-bg)' }}>
+    <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
       <PractitionerNav activePage="patients" subHeader={{
         backTo: '/dashboard', backLabel: 'Back to patients',
         title: patient?.name ?? 'Loading...',
@@ -1658,7 +1658,7 @@ export default function PatientPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
                 {/* Situations list */}
-                <div style={{ borderRight: '1px solid var(--float-border)', display: 'flex', flexDirection: 'column', padding: '16px' }}>
+                <div style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Situations</span>
                     {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="text-[10px] text-teal-600 font-bold bg-transparent border-none cursor-pointer">+</button>}
@@ -1700,7 +1700,7 @@ export default function PatientPage() {
                             <span style={{ fontSize: '5px', color: t.is_active ? 'var(--float-primary)' : '#cbd5e1' }}>●</span>
                             <span
                               className="text-slate-700"
-                              style={{ flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              style={{ flex: 1, fontSize: '13px', fontWeight: 500, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                             >{t.name}</span>
                             <DTBadge value={t.distress_thermometer_rating} />
                             <DABadge status={getDAStatus(t.id)} onClick={(e) => { e.stopPropagation(); setSelectedTriggerId(t.id); setRightPanelView('da') }} />
