@@ -96,6 +96,152 @@ function confidenceMeta(level: string | null | undefined) {
   return m ? { emoji: m.emoji, label: m.label } : { emoji: '', label: level }
 }
 
+type SessionPrepType = 'session_1' | 'session_2' | 'weekly'
+
+const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: string[] }> = {
+  session_1: {
+    header: 'PREPARING FOR SESSION 1 — Parent consultation',
+    steps: [
+      'Review the monitoring form data before the session',
+      'Build the trigger situation list with DT ratings from the parent',
+      'Identify avoidance and safety behaviors for each situation',
+      'Explore parental accommodation behaviors',
+      'Introduce the CBT model — what anxiety is and why avoidance maintains it',
+      'Introduce the Worry Hill and Distress Thermometer',
+      'Agree on the anxiety nickname with the parent',
+    ],
+  },
+  session_2: {
+    header: 'PREPARING FOR SESSION 2 — First meeting with the child',
+    steps: [
+      'Introduce yourself and Float to the child warmly',
+      'Confirm the anxiety nickname the parent suggested',
+      'Explain the Distress Thermometer — practice rating together',
+      'Introduce the Worry Hill using the diagram',
+      'Complete the first Downward Arrow for the primary situation',
+      'Agree on the first 3 experiments — confirm child confidence is High before finalizing',
+      'Brief the parent at the end of the session on the plan',
+    ],
+  },
+  weekly: {
+    header: 'PREPARING FOR YOUR WEEKLY SESSION',
+    steps: [
+      'Review experiment results since last session — check BIP and DT trends',
+      'Note any overdue or incomplete experiments before the session',
+      'Review the last action plan — what did you agree last time?',
+      "Check the teen's confidence level on upcoming experiments",
+      'Plan: new experiments for this week, updated action plan',
+      'Bring parent in for last 5-10 minutes to review the plan',
+    ],
+  },
+}
+
+function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepType; patientId: string }) {
+  const storageKey = `float_prep_dismissed_${patientId}_${sessionType}`
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem(storageKey) === '1' } catch { return false }
+  })
+
+  const handleDismiss = () => {
+    try { localStorage.setItem(storageKey, '1') } catch {}
+    setDismissed(true)
+  }
+  const handleShow = () => {
+    try { localStorage.removeItem(storageKey) } catch {}
+    setDismissed(false)
+  }
+
+  if (dismissed) {
+    return (
+      <div style={{ marginBottom: '12px' }}>
+        <button
+          onClick={handleShow}
+          style={{
+            fontSize: '12px',
+            color: '#0d9488',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            fontWeight: 500,
+          }}
+        >
+          Show session guide →
+        </button>
+      </div>
+    )
+  }
+
+  const { header, steps } = SESSION_PREP_CONTENT[sessionType]
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        background: '#f0fdfa',
+        borderLeft: '3px solid #0d9488',
+        borderRadius: '8px',
+        padding: '14px 36px 14px 16px',
+        marginBottom: '12px',
+      }}
+    >
+      <button
+        onClick={handleDismiss}
+        aria-label="Dismiss session guide"
+        style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          width: '24px',
+          height: '24px',
+          background: 'transparent',
+          border: 'none',
+          color: '#94a3b8',
+          fontSize: '18px',
+          lineHeight: 1,
+          cursor: 'pointer',
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '4px',
+        }}
+      >
+        ×
+      </button>
+      <div
+        style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          color: '#0d9488',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          marginBottom: '10px',
+        }}
+      >
+        {header}
+      </div>
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {steps.map((s) => (
+          <li
+            key={s}
+            style={{
+              fontSize: '13px',
+              color: '#475569',
+              display: 'flex',
+              gap: '8px',
+              lineHeight: 1.5,
+            }}
+          >
+            <span style={{ color: '#0d9488', flexShrink: 0 }}>·</span>
+            <span>{s}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function formatMsgTime(iso: string | null | undefined): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -1602,11 +1748,25 @@ export default function PatientPage() {
               : null
             const fearedOccurred = lastCompleted?.feared_outcome_occurred
 
+            const sessionPrepType: SessionPrepType = (() => {
+              if (!sessionNotes || sessionNotes.length === 0) return 'session_1'
+              if (sessionNotes.length === 1 && sessionNotes[0].session_type === 'consultation_1') return 'session_2'
+              if (plan?.status === 'active') return 'weekly'
+              return 'weekly'
+            })()
+
             return (
               <div style={cardStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
                 </div>
+                {patientId && (
+                  <SessionPrepCard
+                    key={`${patientId}-${sessionPrepType}`}
+                    sessionType={sessionPrepType}
+                    patientId={patientId}
+                  />
+                )}
                 {plan?.nickname && (
                   <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
                     <span style={{ fontSize: '13px', color: '#0f766e' }}>
