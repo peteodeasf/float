@@ -686,3 +686,48 @@ async def get_my_action_plans(
         ).order_by(ActionPlan.session_number.desc())
     )
     return result.scalars().all()
+
+
+@patient_router.get("/messages")
+async def get_my_messages(
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    current_user, _ = context
+    result = await db.execute(
+        select(Message)
+        .where(Message.recipient_user_id == current_user.id)
+        .order_by(Message.created_at.desc())
+    )
+    messages = result.scalars().all()
+    return [
+        {
+            "id": str(m.id),
+            "content": m.content,
+            "message_type": m.message_type,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "read_at": m.read_at.isoformat() if m.read_at else None,
+        }
+        for m in messages
+    ]
+
+
+@patient_router.put("/messages/{message_id}/read")
+async def mark_my_message_read(
+    message_id: uuid.UUID,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    current_user, _ = context
+    result = await db.execute(
+        select(Message).where(Message.id == message_id)
+    )
+    message = result.scalar_one_or_none()
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    if message.recipient_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if message.read_at is None:
+        message.read_at = datetime.now(timezone.utc)
+        await db.commit()
+    return {"success": True}

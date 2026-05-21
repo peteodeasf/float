@@ -83,6 +83,13 @@ export default function TeenHomePage() {
     enabled: !!patientId
   })
 
+  const { data: messages } = useQuery<Array<{ id: string; read_at: string | null }>>({
+    queryKey: ['teen-messages', patientId],
+    queryFn: async () => (await teenApiClient.get('/patient/messages')).data,
+    enabled: !!patientId
+  })
+  const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
+
   const situations: TeenSituation[] = ladderData?.situations ?? []
 
   // Gather all experiments from the ladder data for streak calculation
@@ -239,6 +246,45 @@ export default function TeenHomePage() {
           <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Float</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => navigate('/teen/messages')}
+            style={{
+              position: 'relative',
+              fontSize: '13px',
+              color: '#0d9488',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '500',
+              padding: '4px 6px',
+            }}
+            aria-label="Messages"
+          >
+            Messages
+            {unreadMessageCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-6px',
+                  minWidth: '16px',
+                  height: '16px',
+                  padding: '0 4px',
+                  background: '#0d9488',
+                  color: '#fff',
+                  borderRadius: '999px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1,
+                }}
+              >
+                {unreadMessageCount}
+              </span>
+            )}
+          </button>
           <button onClick={() => navigate('/teen/plans')} style={{ fontSize: '13px', color: '#0d9488', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
             My plans
           </button>

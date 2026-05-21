@@ -22,6 +22,7 @@ import TeenHomePage from './pages/teen/TeenHomePage'
 import TeenExperimentPage from './pages/teen/TeenExperimentPage'
 import TeenRecordPage from './pages/teen/TeenRecordPage'
 import TeenPlansPage from './pages/teen/TeenPlansPage'
+import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
 import EducationIndexPage from './pages/practitioner/EducationIndexPage'
@@ -86,6 +87,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/teen/plans" element={
                 <TeenProtectedRoute><TeenPlansPage /></TeenProtectedRoute>
+              } />
+              <Route path="/teen/messages" element={
+                <TeenProtectedRoute><TeenMessagesPage /></TeenProtectedRoute>
               } />
 
               {/* Public monitoring form */}
