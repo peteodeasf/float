@@ -1,10 +1,13 @@
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.models.message import Message
+from app.models.patient import PatientProfile
 from app.api.routers.patients import get_practitioner_context
 from app.services.message_service import (
     get_messages_for_patient,
@@ -24,9 +27,27 @@ async def list_messages(
     db: AsyncSession = Depends(get_db)
 ):
     _, practitioner = context
-    return await get_messages_for_patient(
-        db, patient_id, practitioner.organization_id
+    patient_result = await db.execute(
+        select(PatientProfile).where(
+            PatientProfile.id == patient_id,
+            PatientProfile.organization_id == practitioner.organization_id,
+        )
     )
+    patient = patient_result.scalar_one_or_none()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    result = await db.execute(
+        select(Message)
+        .where(
+            Message.organization_id == practitioner.organization_id,
+            or_(
+                Message.sender_user_id == patient.user_id,
+                Message.recipient_user_id == patient.user_id,
+            ),
+        )
+        .order_by(Message.created_at.asc())
+    )
+    return result.scalars().all()
 
 
 @router.post("/patients/{patient_id}/messages",

@@ -703,7 +703,7 @@ async def get_my_messages(
                 Message.sender_user_id == current_user.id,
             )
         )
-        .order_by(Message.created_at.desc())
+        .order_by(Message.created_at.asc())
     )
     messages = result.scalars().all()
     return [

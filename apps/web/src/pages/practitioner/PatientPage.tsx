@@ -2168,35 +2168,58 @@ export default function PatientPage() {
 
         {activeTab === 'messages' && (
           <div id="messages-section" style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
-              <button onClick={() => setShowMsgForm(!showMsgForm)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New</button>
             </div>
-            {showMsgForm && (
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Message..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
-                <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '6px 12px' }}>Send</button>
-              </div>
-            )}
-            {lastMsg ? (
-              lastMsg.message_type === 'experiment_completed' ? (
-                <div style={{ borderLeft: '4px solid #059669', paddingLeft: '8px' }}>
-                  <div style={{ display: 'inline-block', background: '#d1fae5', color: '#065f46', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>✓ Experiment</div>
-                  <p className="text-xs text-slate-600" style={{ margin: 0, whiteSpace: 'normal' }}>{lastMsg.content}</p>
-                </div>
-              ) : lastMsg.message_type !== 'too_hard' && patient && lastMsg.sender_user_id === patient.user_id ? (
-                <div style={{ borderLeft: '4px solid #60a5fa', paddingLeft: '8px' }}>
-                  <div style={{ display: 'inline-block', background: '#dbeafe', color: '#1e40af', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>From teen</div>
-                  <p className="text-xs text-slate-600" style={{ margin: 0, whiteSpace: 'normal' }}>{lastMsg.content}</p>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-600" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(lastMsg.message_type === 'too_hard' ? { borderLeft: '2px solid #f59e0b', paddingLeft: '6px' } : {}) }}>{lastMsg.content.length > 100 ? lastMsg.content.slice(0, 100) + '...' : lastMsg.content}</p>
-              )
-            ) : !showMsgForm && (
-              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-                Send check-ins, encouragement, or plan adjustments to the patient between sessions.
-              </p>
-            )}
+            <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+              {(!messages || messages.length === 0) && (
+                <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+                  Send check-ins, encouragement, or plan adjustments to the patient between sessions.
+                </p>
+              )}
+              {messages && messages.map(m => {
+                if (m.message_type === 'experiment_completed') {
+                  return (
+                    <div key={m.id} style={{ borderLeft: '4px solid #059669', paddingLeft: '8px' }}>
+                      <div style={{ display: 'inline-block', background: '#d1fae5', color: '#065f46', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>✓ Experiment</div>
+                      <p className="text-xs text-slate-600" style={{ margin: 0, whiteSpace: 'normal' }}>{m.content}</p>
+                    </div>
+                  )
+                }
+                if (m.message_type === 'too_hard') {
+                  return (
+                    <p key={m.id} className="text-xs text-slate-600" style={{ borderLeft: '2px solid #f59e0b', paddingLeft: '6px', margin: 0, whiteSpace: 'normal' }}>{m.content}</p>
+                  )
+                }
+                if (patient && m.sender_user_id === patient.user_id) {
+                  const firstName = patient.name?.split(' ')[0] ?? 'teen'
+                  return (
+                    <div key={m.id} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <div style={{ maxWidth: '85%', background: '#f0fdfa', borderRadius: '10px', padding: '8px 12px', border: '1px solid #ccfbf1' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#0d9488', marginBottom: '4px' }}>From {firstName}</div>
+                        <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                      </div>
+                    </div>
+                  )
+                }
+                return (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    <div style={{ maxWidth: '85%', background: '#fff', borderRadius: '10px', padding: '8px 12px', border: '1px solid #e2e8f0' }}>
+                      {m.message_type && m.message_type !== 'general' && (
+                        <div style={{ display: 'inline-block', background: '#f1f5f9', color: '#475569', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px', textTransform: 'capitalize' }}>
+                          {m.message_type.replace(/_/g, ' ')}
+                        </div>
+                      )}
+                      <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+              <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Reply..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
+              <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '6px 12px' }}>Send</button>
+            </div>
           </div>
         )}
 

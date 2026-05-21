@@ -44,8 +44,7 @@ export default function TeenMessagesPage() {
   const { patientId, logout } = useTeenAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [showCompose, setShowCompose] = useState(false)
-  const [composeContent, setComposeContent] = useState('')
+  const [replyContent, setReplyContent] = useState('')
 
   const { data: me } = useQuery<{ user_id: string }>({
     queryKey: ['teen-me', patientId],
@@ -73,8 +72,7 @@ export default function TeenMessagesPage() {
       await teenApiClient.post('/patient/messages', { content, message_type: 'general' })
     },
     onSuccess: () => {
-      setComposeContent('')
-      setShowCompose(false)
+      setReplyContent('')
       queryClient.invalidateQueries({ queryKey: ['teen-messages', patientId] })
     },
   })
@@ -95,7 +93,7 @@ export default function TeenMessagesPage() {
   }
 
   const handleSend = () => {
-    const content = composeContent.trim()
+    const content = replyContent.trim()
     if (!content) return
     sendMessage.mutate(content)
   }
@@ -106,6 +104,8 @@ export default function TeenMessagesPage() {
       background: '#f8fafc',
       maxWidth: '480px',
       margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
       {/* Header */}
       <div style={{
@@ -133,88 +133,13 @@ export default function TeenMessagesPage() {
         </button>
       </div>
 
-      <div style={{ padding: '24px' }}>
-        {/* New message button / compose form */}
-        {!showCompose ? (
-          <button
-            onClick={() => setShowCompose(true)}
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '12px 16px',
-              marginBottom: '20px',
-              background: '#0d9488',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '15px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            + New message
-          </button>
-        ) : (
-          <div style={{
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '14px',
-            padding: '16px',
-            marginBottom: '20px',
-          }}>
-            <textarea
-              value={composeContent}
-              onChange={(e) => setComposeContent(e.target.value)}
-              placeholder="Write a message to your clinician..."
-              rows={4}
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                fontSize: '15px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '10px',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-                lineHeight: 1.5,
-              }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
-              <button
-                onClick={handleSend}
-                disabled={!composeContent.trim() || sendMessage.isPending}
-                style={{
-                  flex: 1,
-                  padding: '10px 14px',
-                  background: '#0d9488',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: composeContent.trim() && !sendMessage.isPending ? 'pointer' : 'not-allowed',
-                  opacity: composeContent.trim() && !sendMessage.isPending ? 1 : 0.5,
-                }}
-              >
-                {sendMessage.isPending ? 'Sending...' : 'Send'}
-              </button>
-              <button
-                onClick={() => { setShowCompose(false); setComposeContent('') }}
-                style={{
-                  fontSize: '14px',
-                  color: '#94a3b8',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
+      {/* Thread (scrollable) */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '24px',
+        paddingBottom: '12px',
+      }}>
         {isLoading && (
           <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
             Loading...
@@ -247,7 +172,7 @@ export default function TeenMessagesPage() {
                     background: '#f0fdfa',
                     borderRadius: '14px',
                     padding: '12px 14px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid #ccfbf1',
                   }}
                 >
                   <p style={{
@@ -274,59 +199,116 @@ export default function TeenMessagesPage() {
           }
 
           return (
-            <button
+            <div
               key={m.id}
-              onClick={() => {
-                if (!m.read_at) markRead.mutate(m.id)
-              }}
               style={{
-                display: 'block',
-                width: '85%',
-                textAlign: 'left',
-                background: unread ? '#ccfbf1' : '#fff',
-                borderRadius: '14px',
-                padding: '16px 18px',
+                display: 'flex',
+                justifyContent: 'flex-start',
                 marginBottom: '12px',
-                border: '1px solid #e2e8f0',
-                cursor: 'pointer',
               }}
             >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '8px',
-                gap: '10px',
-              }}>
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  color: '#0d9488',
-                  background: unread ? '#fff' : '#f0fdfa',
-                  padding: '3px 8px',
-                  borderRadius: '999px',
+              <button
+                onClick={() => {
+                  if (!m.read_at) markRead.mutate(m.id)
+                }}
+                style={{
+                  maxWidth: '85%',
+                  textAlign: 'left',
+                  background: unread ? '#ccfbf1' : '#fff',
+                  borderRadius: '14px',
+                  padding: '12px 14px',
+                  border: '1px solid #e2e8f0',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '6px',
+                  gap: '10px',
                 }}>
-                  {typeLabel(m.message_type)}
-                </span>
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                  {timeAgo(m.created_at)}
-                </span>
-              </div>
-              <p style={{
-                fontSize: '15px',
-                color: '#1e293b',
-                margin: 0,
-                lineHeight: 1.5,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}>
-                {m.content}
-              </p>
-            </button>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: '#0d9488',
+                    background: unread ? '#fff' : '#f0fdfa',
+                    padding: '3px 8px',
+                    borderRadius: '999px',
+                  }}>
+                    {typeLabel(m.message_type)}
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                    {timeAgo(m.created_at)}
+                  </span>
+                </div>
+                <p style={{
+                  fontSize: '15px',
+                  color: '#1e293b',
+                  margin: 0,
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}>
+                  {m.content}
+                </p>
+              </button>
+            </div>
           )
         })}
+      </div>
+
+      {/* Reply input — always visible at bottom */}
+      <div style={{
+        background: '#fff',
+        borderTop: '1px solid #e2e8f0',
+        padding: '12px 16px',
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'flex-end',
+      }}>
+        <textarea
+          value={replyContent}
+          onChange={(e) => setReplyContent(e.target.value)}
+          placeholder="Write a message to your clinician..."
+          rows={1}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              handleSend()
+            }
+          }}
+          style={{
+            flex: 1,
+            padding: '10px 12px',
+            fontSize: '15px',
+            border: '1px solid #cbd5e1',
+            borderRadius: '10px',
+            resize: 'none',
+            fontFamily: 'inherit',
+            lineHeight: 1.4,
+            maxHeight: '120px',
+          }}
+        />
+        <button
+          onClick={handleSend}
+          disabled={!replyContent.trim() || sendMessage.isPending}
+          style={{
+            padding: '10px 16px',
+            background: '#0d9488',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: replyContent.trim() && !sendMessage.isPending ? 'pointer' : 'not-allowed',
+            opacity: replyContent.trim() && !sendMessage.isPending ? 1 : 0.5,
+          }}
+        >
+          {sendMessage.isPending ? '…' : 'Send'}
+        </button>
       </div>
     </div>
   )
