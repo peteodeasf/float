@@ -49,6 +49,15 @@ type AdminPatient = {
   last_activity: string | null
 }
 
+type WaitlistEntry = {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  role: string
+  created_at: string | null
+}
+
 const cardStyle: React.CSSProperties = {
   background: 'var(--float-surface)',
   borderRadius: 'var(--float-radius-lg)',
@@ -107,6 +116,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [orgs, setOrgs] = useState<AdminOrg[]>([])
   const [patients, setPatients] = useState<AdminPatient[]>([])
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([])
   const [userFilter, setUserFilter] = useState<'all' | 'practitioner' | 'patient' | 'admin'>('all')
 
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null)
@@ -129,16 +139,18 @@ export default function AdminDashboardPage() {
   const [expandedOrgDetail, setExpandedOrgDetail] = useState<AdminOrgDetail | null>(null)
 
   const loadAll = async () => {
-    const [s, u, o, p] = await Promise.all([
+    const [s, u, o, p, w] = await Promise.all([
       adminApiClient.get('/admin/stats'),
       adminApiClient.get('/admin/users'),
       adminApiClient.get('/admin/organizations'),
       adminApiClient.get('/admin/patients'),
+      adminApiClient.get('/waitlist'),
     ])
     setStats(s.data)
     setUsers(u.data)
     setOrgs(o.data)
     setPatients(p.data)
+    setWaitlist(w.data)
   }
 
   useEffect(() => {
@@ -766,6 +778,37 @@ export default function AdminDashboardPage() {
               ))}
             </tbody>
           </table>
+        </section>
+
+        {/* Waitlist */}
+        <section style={{ ...cardStyle, marginBottom: '32px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px', color: '#0f172a' }}>
+            Waitlist
+          </h2>
+          {waitlist.length === 0 ? (
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No waitlist entries yet.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Name</th>
+                  <th style={thStyle}>Email</th>
+                  <th style={thStyle}>Role</th>
+                  <th style={thStyle}>Date submitted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {waitlist.map((w) => (
+                  <tr key={w.id}>
+                    <td style={tdStyle}>{w.first_name} {w.last_name}</td>
+                    <td style={tdStyle}>{w.email}</td>
+                    <td style={tdStyle}>{w.role}</td>
+                    <td style={tdStyle}>{formatDate(w.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       </main>
     </div>

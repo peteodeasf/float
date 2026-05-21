@@ -8,7 +8,7 @@ from app.api.routers import (
     trigger_situations, avoidance_behaviors,
     ladders, experiments, progress,
     downward_arrows, messages, monitoring,
-    session_notes, action_plans, admin
+    session_notes, action_plans, admin, waitlist
 )
 
 app = FastAPI(
@@ -42,6 +42,7 @@ app.include_router(monitoring.public_router)
 app.include_router(session_notes.router)
 app.include_router(action_plans.router)
 app.include_router(admin.router)
+app.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
 
 @app.get("/health")
 async def health_check():
