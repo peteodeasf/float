@@ -83,12 +83,12 @@ export default function TeenHomePage() {
     enabled: !!patientId
   })
 
-  const { data: messages } = useQuery<Array<{ id: string; read_at: string | null }>>({
+  const { data: messages } = useQuery<Array<{ id: string; sender_user_id: string; read_at: string | null }>>({
     queryKey: ['teen-messages', patientId],
     queryFn: async () => (await teenApiClient.get('/patient/messages')).data,
     enabled: !!patientId
   })
-  const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
+  const unreadMessageCount = (messages ?? []).filter(m => m.sender_user_id !== me?.user_id && !m.read_at).length
 
   const situations: TeenSituation[] = ladderData?.situations ?? []
 

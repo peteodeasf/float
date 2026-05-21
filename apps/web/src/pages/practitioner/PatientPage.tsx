@@ -2184,6 +2184,11 @@ export default function PatientPage() {
                   <div style={{ display: 'inline-block', background: '#d1fae5', color: '#065f46', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>✓ Experiment</div>
                   <p className="text-xs text-slate-600" style={{ margin: 0, whiteSpace: 'normal' }}>{lastMsg.content}</p>
                 </div>
+              ) : lastMsg.message_type !== 'too_hard' && patient && lastMsg.sender_user_id === patient.user_id ? (
+                <div style={{ borderLeft: '4px solid #60a5fa', paddingLeft: '8px' }}>
+                  <div style={{ display: 'inline-block', background: '#dbeafe', color: '#1e40af', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>From teen</div>
+                  <p className="text-xs text-slate-600" style={{ margin: 0, whiteSpace: 'normal' }}>{lastMsg.content}</p>
+                </div>
               ) : (
                 <p className="text-xs text-slate-600" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(lastMsg.message_type === 'too_hard' ? { borderLeft: '2px solid #f59e0b', paddingLeft: '6px' } : {}) }}>{lastMsg.content.length > 100 ? lastMsg.content.slice(0, 100) + '...' : lastMsg.content}</p>
               )

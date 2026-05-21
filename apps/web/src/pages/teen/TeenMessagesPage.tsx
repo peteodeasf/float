@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
@@ -8,6 +8,7 @@ type TeenMessage = {
   id: string
   content: string
   message_type: string
+  sender_user_id: string
   created_at: string | null
   read_at: string | null
 }
@@ -43,6 +44,14 @@ export default function TeenMessagesPage() {
   const { patientId, logout } = useTeenAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [showCompose, setShowCompose] = useState(false)
+  const [composeContent, setComposeContent] = useState('')
+
+  const { data: me } = useQuery<{ user_id: string }>({
+    queryKey: ['teen-me', patientId],
+    queryFn: async () => (await teenApiClient.get('/auth/me')).data,
+    enabled: !!patientId,
+  })
 
   const { data: messages, isLoading } = useQuery<TeenMessage[]>({
     queryKey: ['teen-messages', patientId],
@@ -59,19 +68,36 @@ export default function TeenMessagesPage() {
     },
   })
 
+  const sendMessage = useMutation({
+    mutationFn: async (content: string) => {
+      await teenApiClient.post('/patient/messages', { content, message_type: 'general' })
+    },
+    onSuccess: () => {
+      setComposeContent('')
+      setShowCompose(false)
+      queryClient.invalidateQueries({ queryKey: ['teen-messages', patientId] })
+    },
+  })
+
   useEffect(() => {
-    if (!messages) return
+    if (!messages || !me) return
     for (const m of messages) {
-      if (!m.read_at) {
+      if (!m.read_at && m.sender_user_id !== me.user_id) {
         markRead.mutate(m.id)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages?.length])
+  }, [messages?.length, me?.user_id])
 
   const handleLogout = () => {
     logout()
     navigate('/teen/login')
+  }
+
+  const handleSend = () => {
+    const content = composeContent.trim()
+    if (!content) return
+    sendMessage.mutate(content)
   }
 
   return (
@@ -108,6 +134,87 @@ export default function TeenMessagesPage() {
       </div>
 
       <div style={{ padding: '24px' }}>
+        {/* New message button / compose form */}
+        {!showCompose ? (
+          <button
+            onClick={() => setShowCompose(true)}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '12px 16px',
+              marginBottom: '20px',
+              background: '#0d9488',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '15px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            + New message
+          </button>
+        ) : (
+          <div style={{
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '14px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}>
+            <textarea
+              value={composeContent}
+              onChange={(e) => setComposeContent(e.target.value)}
+              placeholder="Write a message to your clinician..."
+              rows={4}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: '15px',
+                border: '1px solid #cbd5e1',
+                borderRadius: '10px',
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                boxSizing: 'border-box',
+                lineHeight: 1.5,
+              }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+              <button
+                onClick={handleSend}
+                disabled={!composeContent.trim() || sendMessage.isPending}
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  background: '#0d9488',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: composeContent.trim() && !sendMessage.isPending ? 'pointer' : 'not-allowed',
+                  opacity: composeContent.trim() && !sendMessage.isPending ? 1 : 0.5,
+                }}
+              >
+                {sendMessage.isPending ? 'Sending...' : 'Send'}
+              </button>
+              <button
+                onClick={() => { setShowCompose(false); setComposeContent('') }}
+                style={{
+                  fontSize: '14px',
+                  color: '#94a3b8',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {isLoading && (
           <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
             Loading...
@@ -121,7 +228,51 @@ export default function TeenMessagesPage() {
         )}
 
         {messages && messages.map((m) => {
-          const unread = !m.read_at
+          const isFromMe = me ? m.sender_user_id === me.user_id : false
+          const unread = !isFromMe && !m.read_at
+
+          if (isFromMe) {
+            return (
+              <div
+                key={m.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  marginBottom: '12px',
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: '85%',
+                    background: '#f0fdfa',
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <p style={{
+                    fontSize: '15px',
+                    color: '#1e293b',
+                    margin: 0,
+                    lineHeight: 1.5,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}>
+                    {m.content}
+                  </p>
+                  <p style={{
+                    fontSize: '11px',
+                    color: '#94a3b8',
+                    margin: '6px 0 0',
+                    textAlign: 'right',
+                  }}>
+                    {timeAgo(m.created_at)}
+                  </p>
+                </div>
+              </div>
+            )
+          }
+
           return (
             <button
               key={m.id}
@@ -130,7 +281,7 @@ export default function TeenMessagesPage() {
               }}
               style={{
                 display: 'block',
-                width: '100%',
+                width: '85%',
                 textAlign: 'left',
                 background: unread ? '#ccfbf1' : '#fff',
                 borderRadius: '14px',

@@ -694,9 +694,15 @@ async def get_my_messages(
     db: AsyncSession = Depends(get_db)
 ):
     current_user, _ = context
+    from sqlalchemy import or_
     result = await db.execute(
         select(Message)
-        .where(Message.recipient_user_id == current_user.id)
+        .where(
+            or_(
+                Message.recipient_user_id == current_user.id,
+                Message.sender_user_id == current_user.id,
+            )
+        )
         .order_by(Message.created_at.desc())
     )
     messages = result.scalars().all()
@@ -705,11 +711,60 @@ async def get_my_messages(
             "id": str(m.id),
             "content": m.content,
             "message_type": m.message_type,
+            "sender_user_id": str(m.sender_user_id),
             "created_at": m.created_at.isoformat() if m.created_at else None,
             "read_at": m.read_at.isoformat() if m.read_at else None,
         }
         for m in messages
     ]
+
+
+class PatientMessageCreate(BaseModel):
+    content: str
+    message_type: str = "general"
+
+
+@patient_router.post("/messages", status_code=status.HTTP_201_CREATED)
+async def send_my_message(
+    data: PatientMessageCreate,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db)
+):
+    current_user, patient = context
+    if not patient.primary_practitioner_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No primary practitioner assigned",
+        )
+    practitioner_result = await db.execute(
+        select(PractitionerProfile).where(
+            PractitionerProfile.id == patient.primary_practitioner_id
+        )
+    )
+    practitioner = practitioner_result.scalar_one_or_none()
+    if not practitioner:
+        raise HTTPException(status_code=404, detail="Primary practitioner not found")
+
+    message = Message(
+        organization_id=patient.organization_id,
+        sender_user_id=current_user.id,
+        recipient_user_id=practitioner.user_id,
+        patient_id=patient.id,
+        content=data.content,
+        message_type=data.message_type,
+        sender_type="patient",
+    )
+    db.add(message)
+    await db.commit()
+    await db.refresh(message)
+    return {
+        "id": str(message.id),
+        "content": message.content,
+        "message_type": message.message_type,
+        "sender_user_id": str(message.sender_user_id),
+        "created_at": message.created_at.isoformat() if message.created_at else None,
+        "read_at": message.read_at.isoformat() if message.read_at else None,
+    }
 
 
 @patient_router.put("/messages/{message_id}/read")
