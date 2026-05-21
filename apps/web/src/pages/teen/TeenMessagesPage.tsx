@@ -13,31 +13,22 @@ type TeenMessage = {
   read_at: string | null
 }
 
-function timeAgo(iso: string | null): string {
+function formatMsgTime(iso: string | null | undefined): string {
   if (!iso) return ''
-  const then = new Date(iso).getTime()
-  const now = Date.now()
-  const seconds = Math.max(0, Math.floor((now - then) / 1000))
-  if (seconds < 60) return 'just now'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d ago`
-  const weeks = Math.floor(days / 7)
-  if (weeks < 5) return `${weeks}w ago`
-  return new Date(iso).toLocaleDateString()
-}
-
-function typeLabel(type: string): string {
-  switch (type) {
-    case 'encouragement': return 'Encouragement'
-    case 'reminder': return 'Reminder'
-    case 'feedback': return 'Feedback'
-    case 'general': return 'Message'
-    default: return type.charAt(0).toUpperCase() + type.slice(1)
-  }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const now = new Date()
+  const isToday =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  const time = d
+    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    .toLowerCase()
+    .replace(/\s+/g, '')
+  if (isToday) return `Today ${time}`
+  const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return `${datePart}, ${time}`
 }
 
 export default function TeenMessagesPage() {
@@ -137,8 +128,9 @@ export default function TeenMessagesPage() {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '24px',
-        paddingBottom: '12px',
+        padding: '20px 16px',
+        display: 'flex',
+        flexDirection: 'column',
       }}>
         {isLoading && (
           <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
@@ -152,109 +144,59 @@ export default function TeenMessagesPage() {
           </p>
         )}
 
-        {messages && messages.map((m) => {
+        {messages && messages.map((m, i) => {
+          const prev = i > 0 ? messages[i - 1] : null
+          const sameSender = prev && prev.sender_user_id === m.sender_user_id
+          const marginTop = i === 0 ? 0 : (sameSender ? 4 : 8)
+          const ts = formatMsgTime(m.created_at)
           const isFromMe = me ? m.sender_user_id === me.user_id : false
-          const unread = !isFromMe && !m.read_at
 
-          if (isFromMe) {
+          if (m.message_type === 'experiment_completed') {
             return (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  marginBottom: '12px',
-                }}
-              >
-                <div
-                  style={{
-                    maxWidth: '85%',
-                    background: '#f0fdfa',
-                    borderRadius: '14px',
-                    padding: '12px 14px',
-                    border: '1px solid #ccfbf1',
-                  }}
-                >
-                  <p style={{
-                    fontSize: '15px',
-                    color: '#1e293b',
-                    margin: 0,
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}>
-                    {m.content}
-                  </p>
-                  <p style={{
-                    fontSize: '11px',
-                    color: '#94a3b8',
-                    margin: '6px 0 0',
-                    textAlign: 'right',
-                  }}>
-                    {timeAgo(m.created_at)}
-                  </p>
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
+                <div style={{ maxWidth: '70%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', marginBottom: '4px' }}>✓ Experiment completed</div>
+                  <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                 </div>
+                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
               </div>
             )
           }
 
+          if (m.message_type === 'too_hard') {
+            return (
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
+                <div style={{ maxWidth: '70%', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', marginBottom: '4px' }}>⚠ Too hard</div>
+                  <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                </div>
+                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+              </div>
+            )
+          }
+
+          if (isFromMe) {
+            return (
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
+                <div style={{ maxWidth: '70%', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
+                  <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                </div>
+                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+              </div>
+            )
+          }
+
+          // Clinician message — left aligned, grey bubble, no label
           return (
             <div
               key={m.id}
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-start',
-                marginBottom: '12px',
-              }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}
+              onClick={() => { if (!m.read_at) markRead.mutate(m.id) }}
             >
-              <button
-                onClick={() => {
-                  if (!m.read_at) markRead.mutate(m.id)
-                }}
-                style={{
-                  maxWidth: '85%',
-                  textAlign: 'left',
-                  background: unread ? '#ccfbf1' : '#fff',
-                  borderRadius: '14px',
-                  padding: '12px 14px',
-                  border: '1px solid #e2e8f0',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '6px',
-                  gap: '10px',
-                }}>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: '#0d9488',
-                    background: unread ? '#fff' : '#f0fdfa',
-                    padding: '3px 8px',
-                    borderRadius: '999px',
-                  }}>
-                    {typeLabel(m.message_type)}
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    {timeAgo(m.created_at)}
-                  </span>
-                </div>
-                <p style={{
-                  fontSize: '15px',
-                  color: '#1e293b',
-                  margin: 0,
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}>
-                  {m.content}
-                </p>
-              </button>
+              <div style={{ maxWidth: '70%', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px 12px 12px 4px', padding: '10px 14px', cursor: m.read_at ? 'default' : 'pointer' }}>
+                <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+              </div>
+              {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
             </div>
           )
         })}
@@ -262,7 +204,7 @@ export default function TeenMessagesPage() {
 
       {/* Reply input — always visible at bottom */}
       <div style={{
-        background: '#fff',
+        background: '#f8fafc',
         borderTop: '1px solid #e2e8f0',
         padding: '12px 16px',
         display: 'flex',
@@ -290,6 +232,7 @@ export default function TeenMessagesPage() {
             fontFamily: 'inherit',
             lineHeight: 1.4,
             maxHeight: '120px',
+            background: '#fff',
           }}
         />
         <button

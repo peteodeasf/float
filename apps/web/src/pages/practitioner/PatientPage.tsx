@@ -96,6 +96,24 @@ function confidenceMeta(level: string | null | undefined) {
   return m ? { emoji: m.emoji, label: m.label } : { emoji: '', label: level }
 }
 
+function formatMsgTime(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const now = new Date()
+  const isToday =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  const time = d
+    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    .toLowerCase()
+    .replace(/\s+/g, '')
+  if (isToday) return `Today ${time}`
+  const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return `${datePart}, ${time}`
+}
+
 // Monday of the week containing `date` (Mon-Sun weeks), at local midnight
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date)
@@ -2171,53 +2189,68 @@ export default function PatientPage() {
             <div style={{ marginBottom: '12px' }}>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
             </div>
-            <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', marginBottom: '0' }}>
               {(!messages || messages.length === 0) && (
                 <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
                   Send check-ins, encouragement, or plan adjustments to the patient between sessions.
                 </p>
               )}
-              {messages && messages.map(m => {
+              {messages && messages.map((m, i) => {
+                const prev = i > 0 ? messages[i - 1] : null
+                const sameSender = prev && prev.sender_user_id === m.sender_user_id
+                const marginTop = i === 0 ? 0 : (sameSender ? 4 : 8)
+                const ts = formatMsgTime(m.created_at)
+
                 if (m.message_type === 'experiment_completed') {
                   return (
-                    <div key={m.id} style={{ borderLeft: '4px solid #059669', paddingLeft: '8px' }}>
-                      <div style={{ display: 'inline-block', background: '#d1fae5', color: '#065f46', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>✓ Experiment</div>
-                      <p className="text-xs text-slate-600" style={{ margin: 0, whiteSpace: 'normal' }}>{m.content}</p>
+                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
+                      <div style={{ maxWidth: '70%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', marginBottom: '4px' }}>✓ Experiment completed</div>
+                        <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                      </div>
+                      {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
                     </div>
                   )
                 }
                 if (m.message_type === 'too_hard') {
                   return (
-                    <p key={m.id} className="text-xs text-slate-600" style={{ borderLeft: '2px solid #f59e0b', paddingLeft: '6px', margin: 0, whiteSpace: 'normal' }}>{m.content}</p>
+                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
+                      <div style={{ maxWidth: '70%', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', marginBottom: '4px' }}>⚠ Too hard</div>
+                        <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                      </div>
+                      {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+                    </div>
                   )
                 }
                 if (patient && m.sender_user_id === patient.user_id) {
-                  const firstName = patient.name?.split(' ')[0] ?? 'teen'
                   return (
-                    <div key={m.id} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <div style={{ maxWidth: '85%', background: '#f0fdfa', borderRadius: '10px', padding: '8px 12px', border: '1px solid #ccfbf1' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#0d9488', marginBottom: '4px' }}>From {firstName}</div>
+                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
+                      <div style={{ maxWidth: '70%', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
                         <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                       </div>
+                      {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
                     </div>
                   )
                 }
+                const showTypePill = m.message_type && m.message_type !== 'general'
                 return (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    <div style={{ maxWidth: '85%', background: '#fff', borderRadius: '10px', padding: '8px 12px', border: '1px solid #e2e8f0' }}>
-                      {m.message_type && m.message_type !== 'general' && (
-                        <div style={{ display: 'inline-block', background: '#f1f5f9', color: '#475569', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', marginBottom: '4px', textTransform: 'capitalize' }}>
-                          {m.message_type.replace(/_/g, ' ')}
-                        </div>
-                      )}
+                  <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}>
+                    {showTypePill && (
+                      <span style={{ display: 'inline-block', fontSize: '11px', color: '#0d9488', border: '1px solid #5eead4', background: 'transparent', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
+                        {m.message_type.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                    <div style={{ maxWidth: '70%', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
                       <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                     </div>
+                    {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
                   </div>
                 )
               })}
             </div>
-            <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
-              <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Reply..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
+            <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', padding: '12px 16px', margin: '12px -20px -20px' }}>
+              <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Reply..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px', background: '#fff' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
               <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '6px 12px' }}>Send</button>
             </div>
           </div>
