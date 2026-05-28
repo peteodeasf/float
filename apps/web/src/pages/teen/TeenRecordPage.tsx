@@ -6,6 +6,22 @@ import { calculateStreak } from '../../api/streak'
 
 type Phase = 'record' | 'results'
 
+function Shell({ phase, onBack, children }: { phase: Phase; onBack: () => void; children: React.ReactNode }) {
+  return (
+    <div style={{ minHeight: '100vh', background: '#f0fdfa', maxWidth: '480px', margin: '0 auto' }}>
+      <div style={{ background: '#fff', padding: '14px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '4px', color: '#64748b' }}>
+          &larr;
+        </button>
+        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+          {phase === 'record' ? 'How did it go?' : 'Experiment complete'}
+        </span>
+      </div>
+      <div style={{ padding: '20px 24px 80px' }}>{children}</div>
+    </div>
+  )
+}
+
 export default function TeenRecordPage() {
   const { experimentId } = useParams<{ experimentId: string }>()
   const navigate = useNavigate()
@@ -75,24 +91,10 @@ export default function TeenRecordPage() {
   const streak = allExperiments ? calculateStreak(allExperiments) : 0
   const bipDrop = bipBefore != null ? bipBefore - bipAfter : null
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div style={{ minHeight: '100vh', background: '#f0fdfa', maxWidth: '480px', margin: '0 auto' }}>
-      <div style={{ background: '#fff', padding: '14px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button onClick={() => navigate('/teen/home')} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '4px', color: '#64748b' }}>
-          &larr;
-        </button>
-        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
-          {phase === 'record' ? 'How did it go?' : 'Experiment complete'}
-        </span>
-      </div>
-      <div style={{ padding: '20px 24px 80px' }}>{children}</div>
-    </div>
-  )
-
   // ── Results Phase ──
   if (phase === 'results') {
     return (
-      <Shell>
+      <Shell phase={phase} onBack={() => navigate('/teen/home')}>
         <div style={{ textAlign: 'center', paddingTop: '20px', marginBottom: '24px' }}>
           <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎉</div>
           <h2 style={{ fontSize: '22px', fontWeight: '600', color: '#1e293b' }}>
@@ -170,7 +172,7 @@ export default function TeenRecordPage() {
 
   // ── Record Phase ──
   return (
-    <Shell>
+    <Shell phase={phase} onBack={() => navigate('/teen/home')}>
       {/* Did you do it? */}
       <div style={{ marginBottom: '24px' }}>
         <p style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b', marginBottom: '10px' }}>
@@ -331,7 +333,7 @@ export default function TeenRecordPage() {
               opacity: (recordMutation.isPending || actualDT === null || fearedOccurred === null) ? 0.5 : 1
             }}
           >
-            {recordMutation.isPending ? 'Saving...' : 'Submit &rarr;'}
+            {recordMutation.isPending ? 'Saving...' : 'Submit →'}
           </button>
         </>
       )}

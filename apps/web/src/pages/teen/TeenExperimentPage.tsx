@@ -336,7 +336,7 @@ export default function TeenExperimentPage() {
 
         {/* Times */}
         <div style={{ marginBottom: '32px' }}>
-          <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>How many times?</p>
+          <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>How many times each day?</p>
           <div style={{ display: 'flex', gap: '8px' }}>
             {[1, 2, 3].map(n => (
               <button

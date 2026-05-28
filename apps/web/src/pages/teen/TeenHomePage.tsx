@@ -505,7 +505,7 @@ export default function TeenHomePage() {
                     const name = b?.name ?? 'Experiment'
                     const scheduled = exp.scheduled_date ? new Date(exp.scheduled_date) : null
                     const dateLabel = scheduled
-                      ? scheduled.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                      ? scheduled.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
                       : 'Not scheduled'
                     const times = parseTimes(exp.tempting_behaviors)
                     const handleTap = () => {
@@ -521,15 +521,20 @@ export default function TeenHomePage() {
                         key={exp.id}
                         onClick={handleTap}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: '10px',
+                          display: 'flex', alignItems: 'flex-start', gap: '10px',
                           padding: '12px 14px', borderRadius: '12px',
                           background: '#fff', border: '1px solid #e2e8f0',
                           cursor: 'pointer', textAlign: 'left', width: '100%'
                         }}
                       >
                         <span style={{ fontSize: '18px' }}>📅</span>
-                        <span style={{ flex: 1, fontSize: '14px', color: '#1e293b', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {name} <span style={{ color: '#94a3b8', fontWeight: '400' }}>· {dateLabel} · {times} time{times === 1 ? '' : 's'}</span>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: '14px', color: '#1e293b', fontWeight: '600' }}>
+                            {dateLabel} · {times}× per day
+                          </span>
+                          <span style={{ display: 'block', fontSize: '13px', color: '#94a3b8', fontWeight: '400', marginTop: '2px' }}>
+                            {name}
+                          </span>
                         </span>
                       </button>
                     )
