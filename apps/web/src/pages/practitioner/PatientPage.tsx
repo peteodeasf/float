@@ -96,42 +96,58 @@ function confidenceMeta(level: string | null | undefined) {
   return m ? { emoji: m.emoji, label: m.label } : { emoji: '', label: level }
 }
 
-type SessionPrepType = 'session_1' | 'session_2' | 'weekly'
+type SessionPrepType = 'session_1' | 'session_2' | 'session_3' | 'weekly'
 
 const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: string[] }> = {
   session_1: {
     header: 'PREPARING FOR SESSION 1 — Parent consultation',
     steps: [
-      'Review the monitoring form data before the session',
-      'Build the trigger situation list with DT ratings from the parent',
-      'Identify avoidance and safety behaviors for each situation',
-      'Explore parental accommodation behaviors',
-      'Introduce the CBT model — what anxiety is and why avoidance maintains it',
-      'Introduce the Worry Hill and Distress Thermometer',
-      'Agree on the anxiety nickname with the parent',
+      'Review the monitoring form data before the session — identify the most frequent trigger situations',
+      "Build the trigger situation list with DT ratings from the parent's observations",
+      'Identify avoidance and safety behaviors (SABs) and rituals for each situation',
+      "Explore parental accommodation behaviors — what does the parent do to reduce the child's distress?",
+      'Introduce the CBT model — what anxiety is and why avoidance and accommodation maintain it',
+      'Introduce the concept of exposures — what they are and why they work',
+      'Agree on the anxiety nickname with the parent before Session 2',
     ],
   },
   session_2: {
-    header: 'PREPARING FOR SESSION 2 — First meeting with the child',
+    header: 'PREPARING FOR SESSION 2 — First meeting with the child  (45-60 min)',
     steps: [
-      'Introduce yourself and Float to the child warmly',
-      'Confirm the anxiety nickname the parent suggested',
-      'Explain the Distress Thermometer — practice rating together',
-      'Introduce the Worry Hill using the diagram',
-      'Complete the first Downward Arrow for the primary situation',
-      'Agree on the first 3 experiments — confirm child confidence is High before finalizing',
-      'Brief the parent at the end of the session on the plan',
+      'Allow up to 5 minutes for rapport — school, friends, favourite things. Keep it brief.',
+      'Ask the child what they want help with — use discovery questions from the session guide',
+      'Review trigger situations with the child — confirm the list, ask if anything has changed',
+      'Introduce the Distress Thermometer — practice rating 2-3 situations together',
+      'Introduce the Worry Thermometer nickname — suggest examples, let the child choose',
+      'Identify SABs and rituals with the child for each trigger situation',
+      'Brief the parent at the end — summarise what was covered and agree on next steps',
+    ],
+  },
+  session_3: {
+    header: 'PREPARING FOR SESSION 3 — Worry Hill, Candy Jar & Exposure Ladder  (45-60 min)',
+    steps: [
+      'Check in on nickname and Distress Thermometer use since last session',
+      'Watch the Worry Hill video with the child together',
+      'Draw the Worry Hill — explain the stop sign at the top (SABs) and anxiety jail',
+      'Teach the Candy Jar analogy — red candies (fear memories) vs green candies (safe experiences)',
+      'Build the exposure ladder — start with the trigger situation with the lowest DT',
+      'For each SAB in that situation, ask the child: "What would your DT be without doing this?"',
+      'Aim for a ladder with a nice range from low DT (2-4) to high (8-10)',
+      'Practice the first exposure in session 3-6 times — record DT each time',
+      'Assess confidence before sending child home with the first experiment: High / Medium / Low',
+      'Only proceed if confidence is High — if not, break the exposure into smaller steps',
     ],
   },
   weekly: {
     header: 'PREPARING FOR YOUR WEEKLY SESSION',
     steps: [
-      'Review experiment results since last session — check BIP and DT trends',
+      'Check in on nickname use — "Out of 10 times you felt [nickname], how many times did you use it?"',
+      'Review experiment results — check BIP and DT trends since last session',
       'Note any overdue or incomplete experiments before the session',
-      'Review the last action plan — what did you agree last time?',
-      "Check the teen's confidence level on upcoming experiments",
-      'Plan: new experiments for this week, updated action plan',
-      'Bring parent in for last 5-10 minutes to review the plan',
+      'Review the last action plan — what was agreed last time? How did it go?',
+      'New experiments for this week — confirm child confidence is High before finalising',
+      'Write and publish the new action plan before the child leaves',
+      'Bring parent in for the last 5-10 minutes to review the plan together',
     ],
   },
 }
@@ -1749,8 +1765,12 @@ export default function PatientPage() {
             const fearedOccurred = lastCompleted?.feared_outcome_occurred
 
             const sessionPrepType: SessionPrepType = (() => {
-              if (!sessionNotes || sessionNotes.length === 0) return 'session_1'
-              if (sessionNotes.length === 1 && sessionNotes[0].session_type === 'consultation_1') return 'session_2'
+              const notes = sessionNotes ?? []
+              const hasConsult1 = notes.some(n => n.session_type === 'consultation_1')
+              const hasConsult2 = notes.some(n => n.session_type === 'consultation_2')
+              if (notes.length === 0) return 'session_1'
+              if (notes.length === 1 && hasConsult1) return 'session_2'
+              if (notes.length === 2 && hasConsult1 && hasConsult2 && plan?.status !== 'active') return 'session_3'
               if (plan?.status === 'active') return 'weekly'
               return 'weekly'
             })()
