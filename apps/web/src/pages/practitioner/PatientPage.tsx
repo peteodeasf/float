@@ -14,7 +14,7 @@ import {
   getPatientExperiments, planExperimentForBehavior,
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
-import { getMonitoringForm, sendMonitoringForm } from '../../api/monitoring'
+import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, type MonitoringExtraction } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -975,6 +975,16 @@ export default function PatientPage() {
   const [msgContent, setMsgContent] = useState('')
   const [showMsgForm, setShowMsgForm] = useState(false)
 
+  // AI monitoring extraction
+  const [extractOpen, setExtractOpen] = useState(false)
+  const [extractLoading, setExtractLoading] = useState(false)
+  const [extractError, setExtractError] = useState<string | null>(null)
+  const [extraction, setExtraction] = useState<MonitoringExtraction | null>(null)
+  const [extractApplying, setExtractApplying] = useState(false)
+  const [extractProgress, setExtractProgress] = useState<string | null>(null)
+  const [extractFailed, setExtractFailed] = useState<string[]>([])
+  const [extractSuccess, setExtractSuccess] = useState(false)
+
   // Teen invitation
   const [showTeenInviteForm, setShowTeenInviteForm] = useState(false)
   const [teenEmailInput, setTeenEmailInput] = useState('')
@@ -1132,9 +1142,98 @@ export default function PatientPage() {
     sendFormMutation.mutate({})
   }
 
+  const handleExtract = async () => {
+    setExtractOpen(true)
+    setExtractLoading(true)
+    setExtractError(null)
+    setExtraction(null)
+    setExtractFailed([])
+    setExtractSuccess(false)
+    try {
+      const data = await extractMonitoringData(patientId!)
+      setExtraction(data)
+    } catch (err: any) {
+      setExtractError(err?.response?.data?.detail || 'Extraction failed. Please try again.')
+    } finally {
+      setExtractLoading(false)
+    }
+  }
+
+  const closeExtract = () => {
+    setExtractOpen(false)
+    setExtraction(null)
+    setExtractError(null)
+    setExtractProgress(null)
+    setExtractFailed([])
+    setExtractApplying(false)
+  }
+
+  const handleAddToPlan = async () => {
+    if (!extraction) return
+    setExtractApplying(true)
+    setExtractError(null)
+    setExtractFailed([])
+    const failed: string[] = []
+
+    let planId = plan?.id
+    if (!planId) {
+      setExtractProgress('Creating treatment plan...')
+      try {
+        const newPlan = await createTreatmentPlan(patientId!, { clinical_track: 'exposure', parent_visibility_level: 'summary' })
+        planId = newPlan.id
+      } catch {
+        setExtractProgress(null)
+        setExtractApplying(false)
+        setExtractError('Could not create a treatment plan. Please try again.')
+        return
+      }
+    }
+
+    for (const sit of extraction.situations) {
+      setExtractProgress(`Creating situations... ${sit.name}`)
+      try {
+        const trigger = await createTrigger(planId!, {
+          name: sit.name,
+          distress_thermometer_rating: sit.estimated_dt ?? undefined,
+        })
+        for (const beh of sit.behaviors) {
+          setExtractProgress(`Creating behaviors... ${beh.name}`)
+          try {
+            await createBehavior(trigger.id, {
+              name: beh.name,
+              behavior_type: beh.type || 'avoidance',
+              distress_thermometer_when_refraining: sit.estimated_dt ?? undefined,
+            })
+          } catch {
+            failed.push(`Behavior: ${beh.name}`)
+          }
+        }
+      } catch {
+        failed.push(`Situation: ${sit.name}`)
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
+    await queryClient.invalidateQueries({ queryKey: ['triggers', planId] })
+
+    setExtractProgress(null)
+    setExtractApplying(false)
+
+    if (failed.length > 0) {
+      setExtractFailed(failed)
+    } else {
+      closeExtract()
+      setExtractSuccess(true)
+      setTimeout(() => setExtractSuccess(false), 4000)
+    }
+  }
+
   const daysSinceSent = monitoringForm?.sent_at
     ? Math.floor((Date.now() - new Date(monitoringForm.sent_at).getTime()) / (1000 * 60 * 60 * 24))
     : null
+
+  // AI extraction is offered once there's enough monitoring data and the plan has no situations yet
+  const canExtract = (monitoringForm?.entries_count ?? 0) >= 3 && (triggers?.length ?? 0) === 0
   const sendMsgMut = useMutation({
     mutationFn: () => sendMessage(patientId!, patient!.user_id, msgContent, 'general'),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['messages', patientId] }); setMsgContent(''); setShowMsgForm(false) }
@@ -1491,7 +1590,24 @@ export default function PatientPage() {
 
           {/* Monitoring card */}
           <div style={cardStyle}>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', margin: '0 0 12px' }}>Parent monitoring form</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', margin: '0 0 12px' }}>
+              <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
+              {canExtract && (
+                <button
+                  onClick={handleExtract}
+                  disabled={extractLoading}
+                  className="bg-transparent border-none cursor-pointer disabled:opacity-50"
+                  style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
+                >
+                  {extractLoading ? 'Analyzing…' : 'Extract with AI →'}
+                </button>
+              )}
+            </div>
+            {extractSuccess && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px', marginBottom: '12px' }}>
+                <span>&#10003;</span> Treatment plan populated from monitoring data
+              </div>
+            )}
 
             {!monitoringForm ? (
               <div>
@@ -2600,6 +2716,111 @@ export default function PatientPage() {
           </div>
         )}
       </div>
+
+      {/* AI extraction modal */}
+      {extractOpen && (
+        <div
+          onClick={extractApplying ? undefined : closeExtract}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '560px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}
+          >
+            {extractLoading && (
+              <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+                <div className="animate-spin" style={{ width: '28px', height: '28px', border: '3px solid #e2e8f0', borderTopColor: 'var(--float-primary)', borderRadius: '50%' }} />
+                <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>Analyzing monitoring data...</p>
+              </div>
+            )}
+
+            {!extractLoading && extractError && !extraction && (
+              <div style={{ padding: '24px' }}>
+                <p style={{ fontSize: '14px', color: '#dc2626', margin: '0 0 16px' }}>{extractError}</p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={handleExtract} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Retry</button>
+                  <button onClick={closeExtract} className="text-sm text-slate-500 bg-transparent border-none cursor-pointer" style={{ padding: '8px 12px' }}>Close</button>
+                </div>
+              </div>
+            )}
+
+            {!extractLoading && extraction && (
+              <div style={{ padding: '24px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Extraction Results</div>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 18px' }}>Based on {monitoringForm?.entries_count ?? 0} monitoring entries</p>
+
+                {extraction.summary && (
+                  <div style={{ marginBottom: '18px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Summary</div>
+                    <p style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, margin: 0 }}>{extraction.summary}</p>
+                  </div>
+                )}
+
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Suggested trigger situations</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {extraction.situations.map((sit, i) => (
+                      <div key={i}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{i + 1}. {sit.name}</span>
+                          {sit.estimated_dt != null && <DTBadge value={sit.estimated_dt} />}
+                        </div>
+                        <ul style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          {sit.behaviors.map((b, j) => (
+                            <li key={j} style={{ fontSize: '12px', color: '#475569', display: 'flex', gap: '6px' }}>
+                              <span style={{ color: '#0d9488' }}>·</span>
+                              <span><span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{b.type}:</span> {b.name}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {extraction.accommodation_patterns?.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Accommodation patterns observed</div>
+                    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {extraction.accommodation_patterns.map((p, i) => (
+                        <li key={i} style={{ fontSize: '12px', color: '#475569', display: 'flex', gap: '6px' }}>
+                          <span style={{ color: '#0d9488' }}>·</span><span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {extractApplying && extractProgress && (
+                  <p style={{ fontSize: '12px', color: 'var(--float-primary)', margin: '0 0 12px' }}>{extractProgress}</p>
+                )}
+
+                {extractError && (
+                  <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 12px' }}>{extractError}</p>
+                )}
+
+                {extractFailed.length > 0 && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px' }}>
+                    <p style={{ fontSize: '12px', fontWeight: 600, color: '#991b1b', margin: '0 0 6px' }}>Some items could not be created:</p>
+                    <ul style={{ margin: 0, padding: '0 0 0 16px' }}>
+                      {extractFailed.map((f, i) => <li key={i} style={{ fontSize: '12px', color: '#b91c1c' }}>{f}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={handleAddToPlan} disabled={extractApplying}
+                    className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px' }}>
+                    {extractApplying ? 'Adding…' : extractFailed.length > 0 ? 'Retry' : 'Add to treatment plan'}
+                  </button>
+                  <button onClick={closeExtract} disabled={extractApplying}
+                    className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 12px' }}>Dismiss</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

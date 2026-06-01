@@ -80,6 +80,28 @@ export const getMonitoringReport = async (patientId: string): Promise<Monitoring
   return response.data
 }
 
+export interface ExtractedBehavior {
+  name: string
+  type: string
+}
+
+export interface ExtractedSituation {
+  name: string
+  estimated_dt: number | null
+  behaviors: ExtractedBehavior[]
+}
+
+export interface MonitoringExtraction {
+  situations: ExtractedSituation[]
+  accommodation_patterns: string[]
+  summary: string
+}
+
+export const extractMonitoringData = async (patientId: string): Promise<MonitoringExtraction> => {
+  const response = await apiClient.post(`/patients/${patientId}/monitoring/extract`)
+  return response.data
+}
+
 export const getMonitoringSituations = async (patientId: string): Promise<{
   situations: { text: string; mention_count: number }[]
   total_entries: number

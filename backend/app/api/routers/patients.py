@@ -264,6 +264,103 @@ async def invite_teen(
     }
 
 
+EXTRACTION_SYSTEM_PROMPT = """You are a clinical assistant helping a CBT therapist analyze parent monitoring data for a child with anxiety.
+
+Analyze the monitoring entries and extract:
+1. Trigger situations — specific situations where the child experienced anxiety
+2. For each situation, the avoidance and safety behaviors observed
+3. An estimated Distress Thermometer (DT) rating (1-10) for each situation based on described distress
+4. Parental accommodation behaviors observed
+
+Return ONLY valid JSON in this exact format, no other text:
+{
+  "situations": [
+    {
+      "name": "situation name (concise, 3-6 words)",
+      "estimated_dt": 7,
+      "behaviors": [
+        {
+          "name": "behavior description (concise, under 10 words)",
+          "type": "avoidance"
+        }
+      ]
+    }
+  ],
+  "accommodation_patterns": [
+    "brief description of accommodation pattern"
+  ],
+  "summary": "2-3 sentence clinical summary of what the monitoring data shows"
+}"""
+
+
+@router.post("/{patient_id}/monitoring/extract")
+async def extract_monitoring_data(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    import json
+    import anthropic
+    from app.models.monitoring import MonitoringForm, MonitoringEntry
+
+    _, practitioner = context
+
+    # Fetch all monitoring entries for this patient, joined with the monitoring form
+    result = await db.execute(
+        select(MonitoringEntry)
+        .join(MonitoringForm, MonitoringEntry.monitoring_form_id == MonitoringForm.id)
+        .where(
+            MonitoringForm.patient_id == patient_id,
+            MonitoringForm.organization_id == practitioner.organization_id,
+            MonitoringEntry.is_draft == False,  # noqa: E712
+        )
+        .order_by(MonitoringEntry.entry_date.asc())
+    )
+    entries = result.scalars().all()
+
+    if not entries:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No monitoring entries found for this patient"
+        )
+
+    # Format the entries as a readable text block
+    blocks = []
+    for e in entries:
+        distress = e.fear_thermometer if e.fear_thermometer is not None else "unknown"
+        blocks.append(
+            f"Date: {e.entry_date.isoformat()}\n"
+            f"Situation: {e.situation or 'N/A'}\n"
+            f"Child behavior observed: {e.child_behavior_observed or 'N/A'}\n"
+            f"Parent response: {e.parent_response or 'N/A'}\n"
+            f"Distress level: {distress}/10"
+        )
+    entries_text = "\n\n".join(blocks)
+
+    try:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=2048,
+            system=EXTRACTION_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": entries_text}],
+        )
+        raw_text = message.content[0].text
+        extraction = json.loads(raw_text)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="AI returned an invalid response. Please try again."
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI extraction failed: {exc}"
+        )
+
+    return extraction
+
+
 # ── Patient-facing endpoints ──────────────────────────────────────────────────
 
 @patient_router.get("/ladder")
