@@ -1,5 +1,7 @@
+import logging
 import secrets
 import string
+import traceback
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -38,6 +40,9 @@ class TooHardRequest(BaseModel):
 
 class InviteTeenRequest(BaseModel):
     email: EmailStr
+
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_temp_password(length: int = 12) -> str:
@@ -346,16 +351,19 @@ async def extract_monitoring_data(
             messages=[{"role": "user", "content": entries_text}],
         )
         raw_text = message.content[0].text
+        logger.info(f"Raw Anthropic response: {raw_text}")
         extraction = json.loads(raw_text)
     except json.JSONDecodeError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="AI returned an invalid response. Please try again."
         )
-    except Exception as exc:
+    except Exception as e:
+        logger.error(f"Extraction error: {type(e).__name__}: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI extraction failed: {exc}"
+            detail=f"AI extraction failed: {type(e).__name__}: {str(e)}"
         )
 
     return extraction
