@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import date, datetime
 import uuid
 
@@ -16,6 +16,7 @@ class PatientUpdate(BaseModel):
     name: Optional[str] = None
     age: Optional[int] = None
     gender: Optional[str] = None
+    anxiety_presentations: Optional[List[str]] = None
     phone_number: Optional[str] = None
 
 
@@ -26,6 +27,7 @@ class PatientResponse(BaseModel):
     email: str
     age: Optional[int] = None
     gender: Optional[str] = None
+    anxiety_presentations: Optional[List[str]] = None
     phone_number: Optional[str] = None
     teen_email: Optional[str] = None
     teen_invited_at: Optional[datetime] = None

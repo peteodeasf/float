@@ -11,3 +11,4 @@ from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.models.session_note import SessionNote
 from app.models.action_plan import ActionPlan
 from app.models.waitlist import WaitlistEntry
+from app.models.formulation import ClinicalFormulation

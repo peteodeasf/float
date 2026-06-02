@@ -9,6 +9,7 @@ interface SubHeaderProps {
   backLabel: string
   title: string
   subtitle?: string
+  subtitleExtra?: React.ReactNode
   rightAction?: React.ReactNode
 }
 
@@ -117,6 +118,7 @@ export default function PractitionerNav({ activePage, subHeader }: PractitionerN
                 {subHeader.subtitle}
               </span>
             )}
+            {subHeader.subtitleExtra}
           </div>
           {subHeader.rightAction && (
             <div>{subHeader.rightAction}</div>

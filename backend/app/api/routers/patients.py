@@ -128,6 +128,7 @@ async def create_new_patient(
         email=user.email,
         age=patient.age,
         gender=patient.gender,
+        anxiety_presentations=patient.anxiety_presentations,
         phone_number=patient.phone_number,
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
@@ -157,6 +158,7 @@ async def get_patient(
         email=user.email,
         age=patient.age,
         gender=patient.gender,
+        anxiety_presentations=patient.anxiety_presentations,
         phone_number=patient.phone_number,
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
@@ -192,6 +194,7 @@ async def update_patient(
         email=user.email,
         age=patient.age,
         gender=patient.gender,
+        anxiety_presentations=patient.anxiety_presentations,
         phone_number=patient.phone_number,
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
@@ -269,16 +272,13 @@ async def invite_teen(
     }
 
 
-EXTRACTION_SYSTEM_PROMPT = """You are a clinical assistant helping a CBT therapist analyze parent monitoring data for a child with anxiety.
+EXTRACTION_SYSTEM_PROMPT = """
+You are a clinical assistant helping a CBT therapist analyze parent monitoring data for a child with anxiety.
 
-Analyze the monitoring entries and extract:
-1. Trigger situations — specific situations where the child experienced anxiety
-2. For each situation, the avoidance and safety behaviors observed
-3. An estimated Distress Thermometer (DT) rating (1-10) for each situation based on described distress
-4. Parental accommodation behaviors observed
+Analyze the monitoring entries and extract the following. Return ONLY valid JSON, no markdown fences, no other text:
 
-Return ONLY valid JSON in this exact format, no other text:
 {
+  "suggested_presentations": ["social_anxiety"],
   "situations": [
     {
       "name": "situation name (concise, 3-6 words)",
@@ -294,8 +294,19 @@ Return ONLY valid JSON in this exact format, no other text:
   "accommodation_patterns": [
     "brief description of accommodation pattern"
   ],
-  "summary": "2-3 sentence clinical summary of what the monitoring data shows"
-}"""
+  "maintaining_mechanisms": "2-3 sentence clinical hypothesis about what drives and maintains this child's anxiety — written for a clinician, not the family",
+  "treatment_targets": [
+    "Situation name — brief rationale for prioritizing"
+  ],
+  "summary": "2-3 sentence plain-language summary of what the monitoring data shows"
+}
+
+Valid values for suggested_presentations: social_anxiety, separation_anxiety, specific_phobia, generalized_anxiety, ocd, other. Can suggest multiple.
+
+For maintaining_mechanisms, write a clinical hypothesis like: "Sarah's anxiety is maintained by a pattern of avoidance and safety behaviors that prevent disconfirmation of her feared outcomes. Parental accommodation reinforces the belief that anxiety situations are genuinely dangerous. The core feared outcome across situations appears to be social rejection and humiliation."
+
+For treatment_targets, order by clinical priority (not just DT) and include a brief rationale.
+"""
 
 
 @router.post("/{patient_id}/monitoring/extract")
@@ -355,17 +366,12 @@ async def extract_monitoring_data(
         raw_text = message.content[0].text
         print(f"Raw Anthropic response: {raw_text}", flush=True)
         print(f"RAW TEXT: {raw_text}", flush=True)
-        # Strip markdown code fences if present
-        clean_text = raw_text.strip()
-        if clean_text.startswith("```"):
-            # Remove opening fence (```json or ```)
-            clean_text = clean_text.split("\n", 1)[1] if "\n" in clean_text else clean_text
-            # Remove closing fence
-            if clean_text.endswith("```"):
-                clean_text = clean_text.rsplit("```", 1)[0]
-            clean_text = clean_text.strip()
-
-        extraction = json.loads(clean_text)
+        # Strip any markdown fences before parsing
+        clean = raw_text.strip()
+        if clean.startswith("```"):
+            lines = clean.split("\n")
+            clean = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
+        extraction = json.loads(clean)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI extraction failed: {type(e).__name__}: {str(e)}")
     except Exception as e:

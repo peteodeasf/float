@@ -92,8 +92,11 @@ export interface ExtractedSituation {
 }
 
 export interface MonitoringExtraction {
+  suggested_presentations?: string[]
   situations: ExtractedSituation[]
   accommodation_patterns: string[]
+  maintaining_mechanisms?: string
+  treatment_targets?: string[]
   summary: string
 }
 

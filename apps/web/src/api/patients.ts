@@ -16,6 +16,7 @@ export interface PatientDetail {
   phone_number?: string | null
   age?: number | null
   gender?: string | null
+  anxiety_presentations?: string[] | null
   teen_email?: string | null
   teen_invited_at?: string | null
   primary_practitioner_id: string
@@ -82,6 +83,7 @@ export interface UpdatePatientData {
   name?: string
   age?: number | null
   gender?: string | null
+  anxiety_presentations?: string[] | null
   phone_number?: string | null
 }
 
