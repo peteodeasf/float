@@ -304,6 +304,7 @@ async def extract_monitoring_data(
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db)
 ):
+    print("EXTRACTION ENDPOINT CALLED", flush=True)
     import json
     import anthropic
     from app.models.monitoring import MonitoringForm, MonitoringEntry
@@ -350,14 +351,13 @@ async def extract_monitoring_data(
             system=EXTRACTION_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": entries_text}],
         )
+        print(f"ANTHROPIC RESPONSE: {message}", flush=True)
         raw_text = message.content[0].text
         print(f"Raw Anthropic response: {raw_text}", flush=True)
+        print(f"RAW TEXT: {raw_text}", flush=True)
         extraction = json.loads(raw_text)
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="AI returned an invalid response. Please try again."
-        )
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI extraction failed: {type(e).__name__}: {str(e)}")
     except Exception as e:
         print(f"Extraction error: {type(e).__name__}: {str(e)}", flush=True)
         print(traceback.format_exc(), flush=True)
