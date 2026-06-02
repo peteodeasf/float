@@ -351,7 +351,7 @@ async def extract_monitoring_data(
             messages=[{"role": "user", "content": entries_text}],
         )
         raw_text = message.content[0].text
-        logger.info(f"Raw Anthropic response: {raw_text}")
+        print(f"Raw Anthropic response: {raw_text}", flush=True)
         extraction = json.loads(raw_text)
     except json.JSONDecodeError:
         raise HTTPException(
@@ -359,8 +359,8 @@ async def extract_monitoring_data(
             detail="AI returned an invalid response. Please try again."
         )
     except Exception as e:
-        logger.error(f"Extraction error: {type(e).__name__}: {str(e)}")
-        logger.error(traceback.format_exc())
+        print(f"Extraction error: {type(e).__name__}: {str(e)}", flush=True)
+        print(traceback.format_exc(), flush=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI extraction failed: {type(e).__name__}: {str(e)}"
