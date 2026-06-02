@@ -31,13 +31,44 @@ function DTBadge({ value }: { value: number | null | undefined }) {
   return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{v}</span>
 }
 
-type PatientTabId = 'treatment' | 'experiments' | 'notes' | 'plans' | 'messages'
+type PersistentTabId = 'experiments' | 'messages' | 'plans'
 
-function TabButton({ id, label, active, onClick, badge }: {
-  id: PatientTabId
+type StepStatus = 'complete' | 'active' | 'incomplete'
+
+const STEP_LABELS: string[] = [
+  'Parent Monitoring Form',
+  'Extract from Monitoring Data',
+  'Session 1 — Parent Consultation',
+  'Session 2 — Build Treatment Plan',
+  'Activate Treatment Plan',
+  'Begin Exposures',
+  'Weekly Sessions',
+  'Parent Accommodation Check-ins',
+]
+
+function StepStatusIcon({ status }: { status: StepStatus }) {
+  if (status === 'complete') {
+    return (
+      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#0d9488', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
+    )
+  }
+  if (status === 'active') {
+    return (
+      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#0d9488', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ width: '7px', height: '7px', borderRadius: '999px', background: '#fff' }} />
+      </span>
+    )
+  }
+  return (
+    <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#fff', border: '1px solid #cbd5e1', flexShrink: 0, boxSizing: 'border-box' }} />
+  )
+}
+
+function MiniTabButton({ id, label, active, onClick, badge }: {
+  id: PersistentTabId
   label: string
   active: boolean
-  onClick: (id: PatientTabId) => void
+  onClick: (id: PersistentTabId) => void
   badge?: number
 }) {
   return (
@@ -45,13 +76,13 @@ function TabButton({ id, label, active, onClick, badge }: {
       type="button"
       onClick={() => onClick(id)}
       style={{
-        padding: '12px 20px',
+        padding: '8px 16px',
         background: 'transparent',
         border: 'none',
         borderBottom: active ? '3px solid var(--float-primary)' : '3px solid transparent',
         color: active ? 'var(--float-primary)' : '#475569',
         fontWeight: active ? 600 : 500,
-        fontSize: '14px',
+        fontSize: '13px',
         cursor: 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
@@ -1009,8 +1040,11 @@ export default function PatientPage() {
   const [showActivationWarning, setShowActivationWarning] = useState(false)
   const [planActivatedConfirm, setPlanActivatedConfirm] = useState(false)
 
-  // Active tab
-  const [activeTab, setActiveTab] = useState<PatientTabId>('treatment')
+  // Treatment Journey navigation
+  const [activeStep, setActiveStep] = useState<number>(0)
+  const [activePersistentTab, setActivePersistentTab] = useState<PersistentTabId | null>(null)
+  const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
+  const stepInitializedRef = useRef(false)
 
   // Action plans
   const [showPlanEditor, setShowPlanEditor] = useState(false)
@@ -1278,14 +1312,6 @@ export default function PatientPage() {
 
   // Session notes
   const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteType('weekly_session'); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
-  const openNewNoteForm = () => {
-    resetNoteForm()
-    const defaultType = plan?.status === 'active'
-      ? 'weekly_session'
-      : (sessionNotes && sessionNotes.length > 0 ? 'weekly_session' : 'consultation_1')
-    setNoteType(defaultType)
-    setShowNoteForm(true)
-  }
   const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { session_type: noteType, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
   const updateNoteMut = useMutation({ mutationFn: () => updateSessionNote(editingNote!.id, { session_type: noteType, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
   const deleteNoteMut = useMutation({ mutationFn: (id: string) => deleteSessionNote(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }) })
@@ -1375,7 +1401,6 @@ export default function PatientPage() {
   const todayISO = new Date().toISOString().split('T')[0]
   const isOverdue = (e: { scheduled_date: string | null; status: string }) =>
     !!e.scheduled_date && e.scheduled_date.split('T')[0] < todayISO && e.status !== 'completed' && e.status !== 'skipped' && e.status !== 'too_hard'
-  const overdueExperimentCount = (patientExperiments ?? []).filter(isOverdue).length
 
   // Current focus — most recent experiment activity (by completed_date | scheduled_date | created_at)
   const recentExperiment = [...(patientExperiments ?? [])]
@@ -1463,7 +1488,7 @@ export default function PatientPage() {
   const { data: progress } = useQuery({
     queryKey: ['progress', patientId],
     queryFn: () => getPatientProgress(patientId!),
-    enabled: !!patientId && activeTab === 'experiments'
+    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 5)
   })
   const progressChartData = progress?.recent_experiments
     .filter(e => e.completed_date)
@@ -1484,6 +1509,1262 @@ export default function PatientPage() {
       return next
     })
   }
+
+  // ----- Treatment Journey: step status -----
+  const accomStorageKey = patientId ? `float_accom_${patientId}` : null
+  useEffect(() => {
+    if (!accomStorageKey) return
+    setAccommodationCheckinComplete(localStorage.getItem(accomStorageKey) === 'true')
+  }, [accomStorageKey])
+  const markAccommodationComplete = () => {
+    if (accomStorageKey) localStorage.setItem(accomStorageKey, 'true')
+    setAccommodationCheckinComplete(true)
+  }
+
+  const notesList = sessionNotes ?? []
+  const hasApprovedDA = !!daStatuses && Object.values(daStatuses).some(da => da?.feared_outcome_approved === true)
+  const hasBehavior = !!allBehaviors && Object.values(allBehaviors).some(bs => bs.length > 0)
+  const completedExperimentCount = (patientExperiments ?? []).filter(e => e.status === 'completed').length
+
+  const stepComplete: boolean[] = [
+    !!monitoringForm,
+    (triggers?.length ?? 0) >= 1,
+    notesList.some(n => n.session_type === 'consultation_1'),
+    (triggers?.length ?? 0) >= 1 && hasApprovedDA && hasBehavior,
+    plan?.status === 'active' && !!patient?.teen_invited_at,
+    completedExperimentCount >= 1,
+    notesList.some(n => n.session_type === 'weekly_session'),
+    accommodationCheckinComplete,
+  ]
+  const firstIncompleteStep = stepComplete.findIndex(c => !c)
+  const currentActiveStep = firstIncompleteStep === -1 ? 7 : firstIncompleteStep
+  const stepStatus: StepStatus[] = stepComplete.map((c, i) =>
+    c ? 'complete' : (i === currentActiveStep ? 'active' : 'incomplete')
+  )
+
+  // Default selected step to current active step once core data has loaded
+  const coreLoaded = !!patient
+    && monitoringForm !== undefined
+    && sessionNotes !== undefined
+    && patientExperiments !== undefined
+    && actionPlans !== undefined
+    && plan !== undefined
+    && (!plan?.id || triggers !== undefined)
+  useEffect(() => {
+    if (stepInitializedRef.current) return
+    if (!coreLoaded) return
+    setActiveStep(currentActiveStep)
+    stepInitializedRef.current = true
+  }, [coreLoaded, currentActiveStep])
+
+  const renderPrep = (t: SessionPrepType) =>
+    patientId ? <SessionPrepCard key={`${patientId}-${t}`} sessionType={t} patientId={patientId} /> : null
+
+  const renderNotesSection = (filterType: string, addLabel: string) => {
+    const filtered = notesList.filter(n => n.session_type === filterType)
+    return (
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="text-sm font-semibold text-slate-700">Session notes</span>
+            {filtered.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{filtered.length}</span>}
+          </div>
+          {!showNoteForm && <button onClick={() => { setEditingNote(null); setNoteType(filterType); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent(''); setShowNoteForm(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">{addLabel}</button>}
+        </div>
+        {showNoteForm && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                Session type
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { key: 'consultation_1', label: 'Session 1' },
+                  { key: 'consultation_2', label: 'Session 2' },
+                  { key: 'weekly_session', label: 'Weekly' },
+                  { key: 'other', label: 'Other' },
+                ].map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setNoteType(opt.key)}
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      padding: '10px 18px',
+                      borderRadius: '999px',
+                      cursor: 'pointer',
+                      background: noteType === opt.key ? 'var(--float-primary)' : '#fff',
+                      color: noteType === opt.key ? '#fff' : '#475569',
+                      border: noteType === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                    }}
+                  >{opt.label}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Date:</label>
+              <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
+            </div>
+            <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
+              <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+            </div>
+          </div>
+        )}
+        {filtered.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {filtered.map(n => (
+              <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className={`px-1 py-0.5 rounded font-medium ${badgeColors[n.session_type] || 'bg-slate-100 text-slate-600'}`}>{sessionTypeLabels[n.session_type] || n.session_type}</span>
+                    <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button onClick={() => { setEditingNote(n); setNoteType(n.session_type); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
+                    <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
+                  </div>
+                </div>
+                <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
+                  {expandedNoteId === n.id ? n.content : n.content.length > 100 ? n.content.slice(0, 100) + '...' : n.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : !showNoteForm && (
+          <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+            No notes yet for this session type. Add one to capture clinical observations.
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  const monitoringExtractContent = (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+        <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Extract from monitoring data</h2>
+        {canExtract && (
+          <button
+            onClick={handleExtract}
+            disabled={extractLoading}
+            className="bg-transparent border-none cursor-pointer disabled:opacity-50"
+            style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
+          >
+            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-extract →' : 'Extract with AI →')}
+          </button>
+        )}
+      </div>
+      {!monitoringForm ? (
+        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Send a parent monitoring form first (Step 1).</p>
+      ) : (monitoringForm.entries_count ?? 0) === 0 ? (
+        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No monitoring entries yet. Once the parent logs observations they'll appear here for extraction.</p>
+      ) : (
+        <div>
+          <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>
+            {monitoringForm.entries_count} monitoring {monitoringForm.entries_count === 1 ? 'entry' : 'entries'} collected. Use AI to extract trigger situations, avoidance behaviors, and accommodation patterns into the treatment plan.
+          </p>
+          {(triggers?.length ?? 0) > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px' }}>
+              <span>&#10003;</span> {triggers?.length} situation{(triggers?.length ?? 0) === 1 ? '' : 's'} added to the treatment plan from monitoring data.
+            </div>
+          ) : (
+            !canExtract && <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>Add more entries before extracting.</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  const accommodationContent = (
+    <div style={cardStyle}>
+      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '8px' }}>Parent Accommodation Check-ins</div>
+      <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
+        Track accommodation reduction progress with the parent at the end of each weekly session.
+      </p>
+      {extraction?.accommodation_patterns && extraction.accommodation_patterns.length > 0 && (
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Accommodation patterns</div>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {extraction.accommodation_patterns.map((p, i) => (
+              <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                <span style={{ color: '#0d9488' }}>&#9633;</span><span>{p}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {accommodationCheckinComplete ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '10px 14px' }}>
+          <span>&#10003;</span> Check-in marked complete.
+        </div>
+      ) : (
+        <button onClick={markAccommodationComplete} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Mark check-in complete</button>
+      )}
+    </div>
+  )
+
+  const monitoringCard = (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', margin: '0 0 12px' }}>
+        <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
+        {canExtract && (
+          <button
+            onClick={handleExtract}
+            disabled={extractLoading}
+            className="bg-transparent border-none cursor-pointer disabled:opacity-50"
+            style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
+          >
+            {extractLoading ? 'Analyzing…' : 'Extract with AI →'}
+          </button>
+        )}
+      </div>
+      {extractSuccess && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px', marginBottom: '12px' }}>
+          <span>&#10003;</span> Treatment plan populated from monitoring data
+        </div>
+      )}
+
+      {!monitoringForm ? (
+        <div>
+          <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>
+            Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
+          </p>
+
+          {(emailSentTo || smsSentTo) && (
+            <div style={{ marginBottom: '12px' }}>
+              {emailSentTo && (
+                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '4px' }}>
+                  <span>&#10003;</span> Email sent to {emailSentTo}
+                </div>
+              )}
+              {smsSentTo && (
+                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                  <span>&#10003;</span> SMS sent to {smsSentTo}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!showSendForm ? (
+            <button
+              onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
+              className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors border-none cursor-pointer"
+            >
+              Send monitoring form
+            </button>
+          ) : (
+            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
+              <div style={{ marginBottom: '10px' }}>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
+                <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div style={{ marginBottom: '10px' }}>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
+                <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
+                <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(parentEmail || parentPhone) && (
+                  <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
+                    className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
+                    {sendFormMutation.isPending ? 'Sending...' :
+                      parentEmail && parentPhone ? 'Send both + copy link' :
+                      parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
+                  </button>
+                )}
+                <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
+                    (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
+                  }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
+                  {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
+                </button>
+                <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          {/* Status row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
+                monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
+                'bg-amber-100 text-amber-700'
+              }`}>
+                {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
+              </span>
+              {monitoringForm.entries_count != null && (
+                <span className="text-sm text-slate-500">{monitoringForm.entries_count} {monitoringForm.entries_count === 1 ? 'entry' : 'entries'}</span>
+              )}
+              {daysSinceSent != null && (
+                <span className="text-sm text-slate-400">{daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent}d ago`}</span>
+              )}
+            </div>
+            <button onClick={handleCopyLink} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
+              {copied ? 'Copied!' : 'Copy link'}
+            </button>
+          </div>
+
+          {/* Entries list */}
+          {(monitoringForm.entries_count ?? 0) > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              <button onClick={() => setShowEntries(!showEntries)} className="text-sm text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
+                {showEntries ? 'Hide entries' : 'View entries'}
+              </button>
+              {showEntries && monitoringForm.entries && (
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {monitoringForm.entries.map((entry: any) => (
+                    <div key={entry.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <span className="text-xs font-medium text-slate-400">
+                          {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </span>
+                        {entry.fear_thermometer != null && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.fear_thermometer >= 7 ? 'bg-red-100 text-red-700' : entry.fear_thermometer >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                            FT {entry.fear_thermometer}
+                          </span>
+                        )}
+                      </div>
+                      {entry.situation && <p className="text-sm text-slate-700" style={{ margin: 0 }}>{entry.situation}</p>}
+                      {entry.child_behavior_observed && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Observed:</span> {entry.child_behavior_observed}</p>}
+                      {entry.parent_response && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Response:</span> {entry.parent_response}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Report button */}
+          {(monitoringForm.entries_count ?? 0) > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)}
+                className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+                  (monitoringForm.entries_count ?? 0) >= 5
+                    ? 'bg-teal-600 text-white hover:bg-teal-700 border-none'
+                    : 'text-slate-600 hover:bg-slate-50 bg-white'
+                }`} style={(monitoringForm.entries_count ?? 0) < 5 ? { border: '1px solid #e2e8f0' } : undefined}>
+                View monitoring report
+              </button>
+            </div>
+          )}
+
+          {/* Resend form — always available */}
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+            {!showSendForm ? (
+              <button onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
+                className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
+                Resend to different contact
+              </button>
+            ) : (
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
+                  <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
+                  <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
+                  <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(parentEmail || parentPhone) && (
+                    <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
+                      className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
+                      {sendFormMutation.isPending ? 'Sending...' :
+                        parentEmail && parentPhone ? 'Send both + copy link' :
+                        parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
+                    </button>
+                  )}
+                  <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
+                      (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
+                    }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
+                    {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
+                  </button>
+                  <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const teenAccessCard = (
+    <div style={cardStyle}>
+      <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Teen access</div>
+      {patient && (patient.teen_invited_at ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+          <span className="text-xs text-slate-600">invited {new Date(patient.teen_invited_at).toLocaleDateString()}</span>
+          {patient.teen_email && <span className="text-xs text-slate-500">{patient.teen_email}</span>}
+          <button
+            onClick={openTeenInviteForm}
+            className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
+          >
+            Resend invite
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+          <span className="text-xs text-slate-500">not set up</span>
+          <button
+            onClick={openTeenInviteForm}
+            className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
+          >
+            + Invite teen
+          </button>
+        </div>
+      ))}
+      {teenInviteConfirmation && (
+        <div className="text-xs text-green-600" style={{ marginTop: '8px' }}>&#10003; Invitation sent to {teenInviteConfirmation}</div>
+      )}
+      {showTeenInviteForm && (
+        <div style={{ marginTop: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label className="text-xs font-medium text-slate-500">Teen's email:</label>
+          <input
+            type="email"
+            value={teenEmailInput}
+            onChange={e => setTeenEmailInput(e.target.value)}
+            placeholder="teen@email.com"
+            autoFocus
+            className="text-xs border border-slate-200 rounded"
+            style={{ padding: '6px 8px' }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && teenEmailInput.trim()) inviteTeenMut.mutate(teenEmailInput.trim())
+              if (e.key === 'Escape') setShowTeenInviteForm(false)
+            }}
+          />
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              onClick={() => teenEmailInput.trim() && inviteTeenMut.mutate(teenEmailInput.trim())}
+              disabled={!teenEmailInput.trim() || inviteTeenMut.isPending}
+              className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+              style={{ padding: '6px 10px' }}
+            >
+              {inviteTeenMut.isPending ? 'Sending...' : 'Send invite'}
+            </button>
+            <button
+              onClick={() => { setShowTeenInviteForm(false); setTeenEmailInput('') }}
+              className="text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const activateStepContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '720px' }}>
+      {teenAccessCard}
+      <div style={cardStyle}>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Activate treatment plan</div>
+        {!plan ? (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Create and build the treatment plan first (Step 4).</p>
+        ) : plan.status === 'active' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '10px 14px' }}>
+            <span>&#10003;</span> Treatment plan is active.
+          </div>
+        ) : (
+          <>
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>Activate the plan to make exposures available to the teen.</p>
+            {showActivationWarning && activationWarnings.length > 0 && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+                <p style={{ fontSize: '12px', fontWeight: 600, color: '#78350f', margin: '0 0 6px' }}>&#9888; Before activating:</p>
+                <ul style={{ margin: '0 0 0 18px', padding: 0, fontSize: '12px', color: '#78350f', lineHeight: '1.5' }}>
+                  {activationWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                </ul>
+              </div>
+            )}
+            <button
+              onClick={() => { if (activationWarnings.length > 0 && !showActivationWarning) { setShowActivationWarning(true) } else { activatePlanMut.mutate() } }}
+              disabled={activatePlanMut.isPending}
+              className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50"
+              style={{ padding: '8px 16px' }}
+            >
+              {activatePlanMut.isPending ? 'Activating...' : (showActivationWarning && activationWarnings.length > 0 ? 'Activate anyway' : 'Activate plan')}
+            </button>
+          </>
+        )}
+        {planActivatedConfirm && (
+          <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)' }}>&#10003; Plan activated.</div>
+        )}
+      </div>
+    </div>
+  )
+
+  const treatmentPlanBuilder = (plan ? (
+    <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span className="text-sm font-semibold text-slate-700">Treatment plan</span>
+          <span className={`text-xs px-1.5 py-0.5 rounded-full ${plan.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{plan.status}</span>
+          <span style={{ fontSize: '12px', color: '#cbd5e1' }}>&middot;</span>
+          {editingNickname ? (
+            <>
+              <input value={nicknameVal} onChange={e => setNicknameVal(e.target.value)} placeholder="Nickname"
+                className="text-xs border border-slate-200 rounded" autoFocus
+                style={{ padding: '3px 8px', width: '140px' }}
+                onKeyDown={e => { if (e.key === 'Enter' && nicknameVal.trim()) nicknameMut.mutate(); if (e.key === 'Escape') setEditingNickname(false) }} />
+              <button onClick={() => nicknameMut.mutate()} disabled={!nicknameVal.trim() || nicknameMut.isPending} className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-40">Save</button>
+              <button onClick={() => setEditingNickname(false)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+            </>
+          ) : plan.nickname ? (
+            <>
+              <span style={{ fontSize: '13px', fontStyle: 'italic', color: 'var(--float-primary)' }}>
+                &ldquo;{plan.nickname}&rdquo;
+              </span>
+              <button onClick={() => { setNicknameVal(plan.nickname || ''); setEditingNickname(true) }}
+                className="text-[11px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer">edit</button>
+            </>
+          ) : (
+            <button onClick={() => { setNicknameVal(''); setEditingNickname(true) }}
+              className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add nickname</button>
+          )}
+        </div>
+        {plan.status === 'setup' && triggers && triggers.length > 0 && (
+          <button
+            onClick={() => {
+              if (activationWarnings.length > 0) {
+                setShowActivationWarning(true)
+              } else {
+                activatePlanMut.mutate()
+              }
+            }}
+            disabled={activatePlanMut.isPending}
+            className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer"
+          >
+            {activatePlanMut.isPending ? '...' : 'Activate plan'}
+          </button>
+        )}
+      </div>
+
+      {/* Activation warning — only shown when Activate is clicked */}
+      {plan.status === 'setup' && showActivationWarning && (
+        <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
+          <p style={{ fontSize: '12px', fontWeight: 600, color: '#78350f', margin: '0 0 6px' }}>
+            &#9888; Before activating:
+          </p>
+          <ul style={{ margin: '0 0 10px', padding: '0 0 0 18px', fontSize: '12px', color: '#78350f', lineHeight: '1.5' }}>
+            {activationWarnings.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => activatePlanMut.mutate()}
+              disabled={activatePlanMut.isPending}
+              className="text-[11px] px-2.5 py-1 bg-amber-600 text-white rounded-full border-none cursor-pointer font-medium disabled:opacity-50"
+            >
+              {activatePlanMut.isPending ? 'Activating...' : 'Activate anyway'}
+            </button>
+            <button
+              onClick={() => setShowActivationWarning(false)}
+              className="text-[11px] px-2.5 py-1 bg-white text-amber-900 rounded-full cursor-pointer font-medium"
+              style={{ border: '1px solid #fde68a' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Plan activated confirmation */}
+      {planActivatedConfirm && (
+        <div style={{ background: '#f0fdfa', borderBottom: '1px solid #99f6e4', padding: '8px 20px' }}>
+          <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', margin: 0 }}>
+            &#10003; Plan activated.
+          </p>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
+        {/* Situations list */}
+        <div style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Situations</span>
+            {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="text-[10px] text-teal-600 font-bold bg-transparent border-none cursor-pointer">+</button>}
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {triggers?.map(t => (
+              <div key={t.id} className="group" style={{ width: '100%', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}
+                onClick={() => { if (editingTriggerId !== t.id && deletingTriggerId !== t.id) setSelectedTriggerId(t.id) }}>
+                {deletingTriggerId === t.id ? (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                    <span style={{ fontSize: '11px', color: '#991b1b', lineHeight: '1.4' }}>Delete this situation and all its behaviors?</span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => deleteTriggerMut.mutate(t.id)} disabled={deleteTriggerMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '3px 8px', borderRadius: '4px' }}>Yes</button>
+                      <button onClick={() => setDeletingTriggerId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
+                    </div>
+                  </div>
+                ) : editingTriggerId === t.id ? (
+                  <input
+                    value={editTriggerName}
+                    onChange={e => setEditTriggerName(e.target.value)}
+                    autoFocus
+                    onClick={e => e.stopPropagation()}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        if (editTriggerName.trim() && editTriggerName !== t.name) updateTriggerNameMut.mutate()
+                        else setEditingTriggerId(null)
+                      }
+                      if (e.key === 'Escape') setEditingTriggerId(null)
+                    }}
+                    onBlur={() => {
+                      if (editTriggerName.trim() && editTriggerName !== t.name) updateTriggerNameMut.mutate()
+                      else setEditingTriggerId(null)
+                    }}
+                    className="text-xs border border-slate-200 rounded"
+                    style={{ flex: 1, padding: '4px 6px', minWidth: 0 }}
+                  />
+                ) : (
+                  <>
+                    <span style={{ fontSize: '5px', color: t.is_active ? 'var(--float-primary)' : '#cbd5e1' }}>●</span>
+                    <span
+                      className="text-slate-700"
+                      style={{ flex: 1, fontSize: '13px', fontWeight: 500, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >{t.name}</span>
+                    <DTBadge value={t.distress_thermometer_rating} />
+                    <DABadge status={getDAStatus(t.id)} onClick={(e) => { e.stopPropagation(); setSelectedTriggerId(t.id); setRightPanelView('da') }} />
+                    <button
+                      onClick={e => { e.stopPropagation(); setSelectedTriggerId(t.id); setEditTriggerName(t.name); setEditingTriggerId(t.id) }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
+                      style={{ padding: '0 2px', display: 'inline-flex', alignItems: 'center' }}
+                      title="Edit situation name"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeletingTriggerId(t.id) }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"
+                      style={{ fontSize: '12px', padding: '0 2px' }}
+                      title="Delete situation"
+                    >×</button>
+                  </>
+                )}
+              </div>
+            ))}
+            {showTriggerAdd && (
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
+                <input
+                  value={newTriggerName}
+                  onChange={e => setNewTriggerName(e.target.value)}
+                  placeholder="Situation name"
+                  className="text-sm border border-slate-200 rounded"
+                  style={{ width: '100%', height: '36px', padding: '6px 10px', marginBottom: '10px', boxSizing: 'border-box' }}
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && newTriggerName.trim() && addTriggerMut.mutate()}
+                />
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (DT):</label>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
+                    <input value={newTriggerDT} onChange={e => setNewTriggerDT(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                    <button type="button" onClick={() => setNewTriggerDT(String(Math.min(10, (Number(newTriggerDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                  <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '7px 14px' }}>Add situation</button>
+                  <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerDT('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                </div>
+              </div>
+            )}
+            {(!triggers || triggers.length === 0) && !showTriggerAdd && (
+              <div>
+                <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.4', margin: '0 0 8px' }}>Add trigger situations identified in your sessions.</p>
+                <button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add first situation</button>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Right panel — behaviors or DA */}
+        <div style={{ overflow: 'hidden' }}>
+          {selectedTrigger ? (
+            rightPanelView === 'da'
+              ? <DownwardArrowPanel trigger={selectedTrigger} onBack={() => setRightPanelView('behaviors')} />
+              : <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} planStatus={plan.status} />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '13px', color: '#94a3b8', padding: '16px' }}>Select a situation</div>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div style={{ ...cardStyle, textAlign: 'center' }}>
+      <p className="text-sm text-slate-500" style={{ marginBottom: '4px' }}>No treatment plan yet</p>
+      <p className="text-xs text-slate-400" style={{ marginBottom: '12px' }}>Create one to start configuring trigger situations</p>
+      <button onClick={() => createPlanMut.mutate()} disabled={createPlanMut.isPending} className="text-white text-sm font-medium disabled:opacity-50 border-none cursor-pointer" style={{ background: 'var(--float-primary)', padding: '8px 16px', borderRadius: '8px' }}>{createPlanMut.isPending ? 'Creating...' : 'Create treatment plan'}</button>
+    </div>
+  ))
+
+  const experimentsContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* Current Focus */}
+      <div style={cardStyle}>
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Current focus</div>
+        {recentExperiment ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+              {recentExperiment.situation_name && (
+                <>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{recentExperiment.situation_name}</span>
+                  <span style={{ fontSize: '13px', color: '#cbd5e1' }}>·</span>
+                </>
+              )}
+              <span style={{ fontSize: '14px', color: '#475569' }}>{recentExperiment.behavior_name || 'Experiment'}</span>
+            </div>
+            {focusBipSequence.length > 0 || focusDtSequence.length > 0 ? (
+              <>
+                {focusBipSequence.length > 0 && (() => {
+                  const t = trendArrow(focusBipSequence)
+                  return (
+                    <div style={{ fontSize: '13px', color: '#475569', marginBottom: '6px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontWeight: 700, color: '#64748b', minWidth: '34px' }}>BIP:</span>
+                      <span>{focusBipSequence.map(v => `${v}%`).join('  →  ')}</span>
+                      {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
+                    </div>
+                  )
+                })()}
+                {focusDtSequence.length > 0 && (() => {
+                  const t = trendArrow(focusDtSequence)
+                  return (
+                    <div style={{ fontSize: '13px', color: '#475569', marginBottom: '14px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontWeight: 700, color: '#64748b', minWidth: '34px' }}>DT:</span>
+                      <span>{focusDtSequence.map(v => `${v}`).join('  →  ')}</span>
+                      {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
+                    </div>
+                  )
+                })()}
+              </>
+            ) : (
+              <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 14px' }}>No experiments recorded yet for this behavior</p>
+            )}
+            {focusNextUpcoming && (() => {
+              const conf = confidenceMeta(focusNextUpcoming.confidence_level)
+              const dateStr = focusNextUpcoming.scheduled_date
+                ? new Date(focusNextUpcoming.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                : ''
+              return (
+                <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                  <span style={{ fontWeight: 700, color: '#64748b' }}>Next experiment:</span>
+                  <span>{dateStr}</span>
+                  {conf.label && (
+                    <>
+                      <span style={{ color: '#cbd5e1' }}>·</span>
+                      <span>{conf.emoji} {conf.label} confidence</span>
+                    </>
+                  )}
+                  <span style={{ color: '#cbd5e1' }}>·</span>
+                  <span>{EXPERIMENT_STATUS_LABEL[focusNextUpcoming.status] || focusNextUpcoming.status}</span>
+                </div>
+              )
+            })()}
+          </>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No experiments recorded yet for this behavior</p>
+        )}
+      </div>
+
+      {/* Needs Attention */}
+      {needsAttention && (
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+            <span style={{ fontSize: '14px' }}>⚠</span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#78350f', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Needs attention</span>
+          </div>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {overdueItems.map(e => {
+              const dateStr = e.scheduled_date
+                ? new Date(e.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                : ''
+              return (
+                <li key={`overdue-${e.id}`} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
+                  <span style={{ fontWeight: 700 }}>·</span>
+                  <span><strong>Overdue:</strong> &ldquo;{e.behavior_name || e.plan_description || 'Experiment'}&rdquo; was scheduled {dateStr} — not yet recorded</span>
+                  <button onClick={() => { setActivePersistentTab('messages'); setShowMsgForm(true) }} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
+                </li>
+              )
+            })}
+            {lowConfidenceCount > 0 && (
+              <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
+                <span style={{ fontWeight: 700 }}>·</span>
+                <span><strong>Low confidence:</strong> {lowConfidenceCount} upcoming experiment{lowConfidenceCount === 1 ? '' : 's'} rated Medium or Low confidence</span>
+              </li>
+            )}
+            {noActivityThisWeek && (
+              <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
+                <span style={{ fontWeight: 700 }}>·</span>
+                <span><strong>No experiments this week</strong></span>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {/* Progress charts — side by side (hidden when not enough data) */}
+      {progressChartData.length >= 2 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Belief in Prediction</h2>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+                <Tooltip formatter={(value, name) => [`${value}%`, name === 'bip_before' ? 'Before' : 'After']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
+                <Legend formatter={(value) => value === 'bip_before' ? 'Before' : 'After'} wrapperStyle={{ fontSize: '12px' }} />
+                <Line type="monotone" dataKey="bip_before" stroke="#5eead4" strokeWidth={2} dot={{ r: 3, fill: '#5eead4' }} strokeDasharray="4 4" />
+                <Line type="monotone" dataKey="bip_after" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Fear Level</h2>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(value) => [value, 'DT']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
+                <Line type="monotone" dataKey="dt_actual" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Experiment timeline */}
+      <div style={cardStyle}>
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Experiment timeline</div>
+        {sortedWeeks.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No experiments recorded yet.</p>
+        ) : (() => {
+          type WeekBucket = typeof sortedWeeks[number]
+          type TimelineItem = WeekBucket['items'][number]
+          const weekHeaderStyle = { fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--float-text-secondary)', marginTop: '16px', marginBottom: '4px', textTransform: 'uppercase' as const }
+          const firstWeekHeaderStyle = { ...weekHeaderStyle, marginTop: 0 }
+          const renderRow = ({ e, displayDate }: TimelineItem) => {
+            const completed = e.status === 'completed'
+            const overdue = e.status === 'committed' && isOverdue(e)
+            const upcoming = e.status === 'committed' && !overdue
+            const expanded = expandedLearningIds.has(e.id)
+            const dateStr = new Date(displayDate.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+            const bipBefore = e.bip_before != null ? Math.round(Number(e.bip_before)) : null
+            const bipAfter = e.bip_after != null ? Math.round(Number(e.bip_after)) : null
+            const dtActual = e.distress_thermometer_actual != null ? Number(e.distress_thermometer_actual) : null
+            const conf = confidenceMeta(e.confidence_level)
+            const canExpand = completed && !!e.what_learned
+            const behaviorLabel = e.behavior_name || e.plan_description || 'Experiment'
+            return (
+              <div key={e.id}>
+                <div
+                  onClick={() => { if (canExpand) toggleLearning(e.id) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px',
+                    padding: '6px 0', fontSize: '13px',
+                    background: overdue ? 'var(--float-bg)' : 'transparent',
+                    cursor: canExpand ? 'pointer' : 'default',
+                  }}
+                >
+                  {completed && (
+                    <span style={{ width: '18px', height: '18px', borderRadius: '999px', background: '#dcfce7', color: '#16a34a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
+                  )}
+                  {overdue && <span style={{ color: '#d97706', fontSize: '14px', flexShrink: 0 }}>⚠</span>}
+                  {upcoming && <span style={{ color: '#94a3b8', fontSize: '14px', flexShrink: 0 }}>📅</span>}
+                  <span style={{ fontWeight: 600, color: overdue ? '#92400e' : '#1e293b', flexShrink: 0 }}>{dateStr}</span>
+                  <span style={{ color: '#cbd5e1' }}>·</span>
+                  <span
+                    title={behaviorLabel}
+                    style={{
+                      fontSize: '13px',
+                      color: overdue ? '#92400e' : '#475569',
+                      minWidth: '200px',
+                      maxWidth: '300px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >{behaviorLabel}</span>
+                  {completed && bipBefore != null && bipAfter != null && (
+                    <>
+                      <span style={{ color: '#cbd5e1' }}>·</span>
+                      <span style={{ color: '#475569' }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
+                    </>
+                  )}
+                  {completed && dtActual != null && (
+                    <>
+                      <span style={{ color: '#cbd5e1' }}>·</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}>DT <DTBadge value={dtActual} /></span>
+                    </>
+                  )}
+                  {completed && e.feared_outcome_occurred != null && (
+                    <>
+                      <span style={{ color: '#cbd5e1' }}>·</span>
+                      <span style={{ color: e.feared_outcome_occurred ? '#b91c1c' : '#16a34a', fontWeight: 600 }}>
+                        {e.feared_outcome_occurred ? '✗ Yes' : '✓ No'}
+                      </span>
+                    </>
+                  )}
+                  {overdue && (
+                    <>
+                      <span style={{ color: '#cbd5e1' }}>·</span>
+                      <span style={{ color: '#92400e', fontWeight: 600 }}>not recorded</span>
+                    </>
+                  )}
+                  {upcoming && conf.label && (
+                    <>
+                      <span style={{ color: '#cbd5e1' }}>·</span>
+                      <span style={{ color: '#475569' }}>{conf.emoji} {conf.label} confidence</span>
+                    </>
+                  )}
+                </div>
+                {canExpand && expanded && (
+                  <div style={{ margin: '4px 0 4px 30px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '6px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                    <span style={{ color: '#94a3b8', fontWeight: 600 }}>What they learned: </span>{e.what_learned}
+                  </div>
+                )}
+              </div>
+            )
+          }
+          const renderWeek = (week: WeekBucket, isFirst: boolean) => {
+            const isCurrent = week.monday.getTime() === currentWeekMonday.getTime()
+            const isLast = week.monday.getTime() === lastWeekMonday.getTime()
+            const range = weekRangeLabel(week.monday)
+            const label = isCurrent
+              ? `THIS WEEK (${range})`
+              : isLast
+                ? `LAST WEEK (${range})`
+                : range.toUpperCase()
+            return (
+              <div key={week.monday.toISOString()}>
+                <div style={isFirst ? firstWeekHeaderStyle : weekHeaderStyle}>{label}</div>
+                <div>{week.items.map(renderRow)}</div>
+              </div>
+            )
+          }
+          return (
+            <>
+              {recentWeeks.length === 2 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
+                  {recentWeeks.map(w => renderWeek(w, true))}
+                </div>
+              ) : recentWeeks.length === 1 ? (
+                <div style={{ marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
+                  {renderWeek(recentWeeks[0], true)}
+                </div>
+              ) : null}
+              {earlierWeeks.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setShowEarlier(!showEarlier)}
+                    className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer"
+                    style={{ padding: 0 }}
+                  >
+                    {showEarlier ? 'Hide earlier experiments ↓' : 'Show earlier experiments →'}
+                  </button>
+                  {showEarlier && (
+                    <div style={{ marginTop: '4px' }}>
+                      {earlierWeeks.map((w, i) => renderWeek(w, i === 0 && recentWeeks.length === 0))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )
+        })()}
+      </div>
+    </div>
+  )
+
+  const messagesContent = (
+    <div id="messages-section" style={cardStyle}>
+      <div style={{ marginBottom: '12px' }}>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
+      </div>
+      <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', marginBottom: '0' }}>
+        {(!messages || messages.length === 0) && (
+          <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+            Send check-ins, encouragement, or plan adjustments to the patient between sessions.
+          </p>
+        )}
+        {messages && messages.map((m, i) => {
+          const prev = i > 0 ? messages[i - 1] : null
+          const sameSender = prev && prev.sender_user_id === m.sender_user_id
+          const marginTop = i === 0 ? 0 : (sameSender ? 4 : 8)
+          const ts = formatMsgTime(m.created_at)
+
+          if (m.message_type === 'experiment_completed') {
+            return (
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
+                <div style={{ maxWidth: '70%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', marginBottom: '4px' }}>✓ Experiment completed</div>
+                  <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                </div>
+                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+              </div>
+            )
+          }
+          if (m.message_type === 'too_hard') {
+            return (
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
+                <div style={{ maxWidth: '70%', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', marginBottom: '4px' }}>⚠ Too hard</div>
+                  <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                </div>
+                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+              </div>
+            )
+          }
+          if (patient && m.sender_user_id === patient.user_id) {
+            return (
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
+                <div style={{ maxWidth: '70%', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
+                  <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                </div>
+                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+              </div>
+            )
+          }
+          const showTypePill = m.message_type && m.message_type !== 'general'
+          return (
+            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}>
+              {showTypePill && (
+                <span style={{ display: 'inline-block', fontSize: '11px', color: '#0d9488', border: '1px solid #5eead4', background: 'transparent', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
+                  {m.message_type.replace(/_/g, ' ')}
+                </span>
+              )}
+              <div style={{ maxWidth: '70%', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
+                <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+              </div>
+              {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', padding: '12px 16px', margin: '12px -20px -20px' }}>
+        <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Reply..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px', background: '#fff' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
+        <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '6px 12px' }}>Send</button>
+      </div>
+    </div>
+  )
+
+  const actionPlansContent = (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="text-sm font-semibold text-slate-700">Action plans</span>
+          {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
+        </div>
+        {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setPlanDate(new Date().toISOString().split('T')[0]); setPlanNickname(plan?.nickname || ''); setPlanNextAppt(''); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
+      </div>
+      {showPlanEditor && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
+            {plan?.nickname ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', fontSize: '12px' }}>
+                <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>&ldquo;{plan.nickname}&rdquo;</span>
+                <button
+                  onClick={() => { setNicknameVal(plan.nickname || ''); setEditingNickname(true) }}
+                  className="text-[11px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer"
+                >
+                  edit in treatment plan →
+                </button>
+              </div>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>Add a nickname in the treatment plan to pre-populate this field.</span>
+              </div>
+            )}
+          </div>
+          <div style={{ border: '1px solid var(--float-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+            <EditorContent editor={editor} />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
+              {(createPlanActionMut.isPending || updatePlanActionMut.isPending) && !publishPlanMut.isPending ? 'Saving...' : 'Save draft'}
+            </button>
+            <button onClick={handlePublishPlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending || publishPlanMut.isPending} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
+              {publishPlanMut.isPending ? 'Publishing...' : (editingPlan?.visible_to_patient ? 'Republish' : 'Publish')}
+            </button>
+            <button onClick={resetPlanEditor} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+          </div>
+        </div>
+      )}
+      {actionPlans && actionPlans.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {actionPlans.filter(ap => !showPlanEditor || ap.id !== editingPlan?.id).map(ap => (
+            <div key={ap.id} style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
+                  <span className="font-medium text-slate-700">#{ap.session_number}</span>
+                  <span className="text-slate-400">{new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  {ap.nickname && <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>"{ap.nickname}"</span>}
+                  <span className={`px-1.5 py-0.5 rounded font-medium ${ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ap.visible_to_patient ? 'Published' : 'Draft'}</span>
+                </div>
+              </div>
+              {ap.content && (
+                <div className="prose prose-sm max-w-none" style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: ap.content }} />
+              )}
+              {deletingPlanId === ap.id ? (
+                <div style={{ background: '#fef2f2', borderRadius: '6px', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this plan?</span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => deletePlanMut.mutate(ap.id)} disabled={deletePlanMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '4px 10px', borderRadius: '4px' }}>Yes, delete</button>
+                    <button onClick={() => setDeletingPlanId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button onClick={() => openEditPlan(ap)} className="text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
+                  <button onClick={() => publishPlanMut.mutate(ap.id)} disabled={publishPlanMut.isPending} className="text-green-700 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ fontSize: '11px' }}>{ap.visible_to_patient ? 'Republish' : 'Publish'}</button>
+                  <button onClick={() => setDeletingPlanId(ap.id)} className="text-red-500 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Delete</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : !showPlanEditor && (
+        <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+          Action plans are session summaries written directly to the patient. After each session, write what they'll work on and publish it to their app.
+        </p>
+      )}
+    </div>
+  )
+
+  const preSessionBriefContent = (() => {
+    const sortedExps = [...(patientExperiments ?? [])]
+    const lastPlanned = sortedExps
+      .filter(e => e.confidence_level)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+    const lastCompleted = sortedExps
+      .filter(e => e.status === 'completed')
+      .sort((a, b) => {
+        const ad = a.completed_date ? new Date(a.completed_date).getTime() : 0
+        const bd = b.completed_date ? new Date(b.completed_date).getTime() : 0
+        return bd - ad
+      })[0]
+    const publishedPlans = (actionPlans ?? []).filter(ap => ap.visible_to_patient)
+    const lastPublishedPlan = publishedPlans.length > 0
+      ? [...publishedPlans].sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())[0]
+      : null
+    const lastConf = confidenceMeta(lastPlanned?.confidence_level)
+    const unreadExperimentCount = (messages ?? []).filter(m => m.message_type === 'experiment_completed' && !m.read_at).length
+    const bipBefore = lastCompleted?.bip_before != null ? Math.round(Number(lastCompleted.bip_before)) : null
+    const bipAfter = lastCompleted?.bip_after != null ? Math.round(Number(lastCompleted.bip_after)) : null
+    const dtActual = lastCompleted?.distress_thermometer_actual != null
+      ? Number(lastCompleted.distress_thermometer_actual)
+      : null
+    const fearedOccurred = lastCompleted?.feared_outcome_occurred
+
+    return (
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
+        </div>
+        {plan?.nickname && (
+          <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '13px', color: '#0f766e' }}>
+              Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
+            </span>
+          </div>
+        )}
+        {unreadExperimentCount > 0 && (
+          <div style={{ marginBottom: '12px' }}>
+            <a
+              href="#messages-section"
+              onClick={(e) => { e.preventDefault(); setActivePersistentTab('messages'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+              style={{ fontSize: '13px', color: '#0f766e', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+            >
+              ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
+            </a>
+          </div>
+        )}
+
+        {/* Last action plan */}
+        <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last action plan:</span>
+          {lastPublishedPlan ? (
+            <>
+              <span style={{ fontSize: '12px', color: '#1e293b' }}>
+                #{lastPublishedPlan.session_number}
+                {lastPublishedPlan.nickname ? ` · “${lastPublishedPlan.nickname}”` : ''}
+                {' · '}
+                {new Date(lastPublishedPlan.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+              <button
+                onClick={() => openEditPlan(lastPublishedPlan)}
+                className="text-xs font-medium bg-transparent border-none cursor-pointer"
+                style={{ color: 'var(--float-primary)' }}
+              >View</button>
+            </>
+          ) : (
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>No action plan from last session.</span>
+          )}
+        </div>
+
+        {/* Last experiment confidence */}
+        <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last experiment confidence:</span>
+          {lastPlanned ? (
+            <span style={{ fontSize: '12px', color: '#1e293b' }}>
+              {lastConf.emoji} {lastConf.label}
+              <span style={{ color: '#94a3b8' }}>
+                {' · set '}
+                {new Date(lastPlanned.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+            </span>
+          ) : (
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>No planned experiments yet.</span>
+          )}
+        </div>
+
+        {/* Last experiment results */}
+        {lastCompleted && (
+          <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
+              Last experiment: <span style={{ color: '#1e293b' }}>{lastCompleted.behavior_name || lastCompleted.plan_description || 'Experiment'}</span>
+            </div>
+            <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {bipBefore != null && bipAfter != null && (
+                <span><strong>BIP before:</strong> {bipBefore}% &rarr; <strong>after:</strong> {bipAfter}%</span>
+              )}
+              {dtActual != null && (
+                <>
+                  <span style={{ color: '#94a3b8' }}>&middot;</span>
+                  <span><strong>DT:</strong> {dtActual}/10</span>
+                </>
+              )}
+              {fearedOccurred != null && (
+                <>
+                  <span style={{ color: '#94a3b8' }}>&middot;</span>
+                  <span><strong>Feared outcome:</strong> {fearedOccurred ? 'Yes' : 'No'}</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  })()
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
@@ -1585,1136 +2866,88 @@ export default function PatientPage() {
           </div>
         )}
 
-        {/* Zone 2 — Top cards row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: '12px', marginBottom: '16px', alignItems: 'stretch' }}>
-
-          {/* Monitoring card */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', margin: '0 0 12px' }}>
-              <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
-              {canExtract && (
-                <button
-                  onClick={handleExtract}
-                  disabled={extractLoading}
-                  className="bg-transparent border-none cursor-pointer disabled:opacity-50"
-                  style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
-                >
-                  {extractLoading ? 'Analyzing…' : 'Extract with AI →'}
-                </button>
-              )}
-            </div>
-            {extractSuccess && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px', marginBottom: '12px' }}>
-                <span>&#10003;</span> Treatment plan populated from monitoring data
-              </div>
-            )}
-
-            {!monitoringForm ? (
-              <div>
-                <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>
-                  Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
-                </p>
-
-                {(emailSentTo || smsSentTo) && (
-                  <div style={{ marginBottom: '12px' }}>
-                    {emailSentTo && (
-                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '4px' }}>
-                        <span>&#10003;</span> Email sent to {emailSentTo}
-                      </div>
-                    )}
-                    {smsSentTo && (
-                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                        <span>&#10003;</span> SMS sent to {smsSentTo}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {!showSendForm ? (
-                  <button
-                    onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
-                    className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors border-none cursor-pointer"
-                  >
-                    Send monitoring form
-                  </button>
-                ) : (
-                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
-                      <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
-                      <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                    </div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
-                      <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(parentEmail || parentPhone) && (
-                        <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
-                          className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
-                          {sendFormMutation.isPending ? 'Sending...' :
-                            parentEmail && parentPhone ? 'Send both + copy link' :
-                            parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
-                        </button>
-                      )}
-                      <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
-                          (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
-                        }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
-                        {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
-                      </button>
-                      <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                {/* Status row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
-                      monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
-                    </span>
-                    {monitoringForm.entries_count != null && (
-                      <span className="text-sm text-slate-500">{monitoringForm.entries_count} {monitoringForm.entries_count === 1 ? 'entry' : 'entries'}</span>
-                    )}
-                    {daysSinceSent != null && (
-                      <span className="text-sm text-slate-400">{daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent}d ago`}</span>
-                    )}
-                  </div>
-                  <button onClick={handleCopyLink} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
-                    {copied ? 'Copied!' : 'Copy link'}
-                  </button>
-                </div>
-
-                {/* Entries list */}
-                {(monitoringForm.entries_count ?? 0) > 0 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <button onClick={() => setShowEntries(!showEntries)} className="text-sm text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
-                      {showEntries ? 'Hide entries' : 'View entries'}
-                    </button>
-                    {showEntries && monitoringForm.entries && (
-                      <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {monitoringForm.entries.map((entry: any) => (
-                          <div key={entry.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                              <span className="text-xs font-medium text-slate-400">
-                                {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                              </span>
-                              {entry.fear_thermometer != null && (
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.fear_thermometer >= 7 ? 'bg-red-100 text-red-700' : entry.fear_thermometer >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                                  FT {entry.fear_thermometer}
-                                </span>
-                              )}
-                            </div>
-                            {entry.situation && <p className="text-sm text-slate-700" style={{ margin: 0 }}>{entry.situation}</p>}
-                            {entry.child_behavior_observed && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Observed:</span> {entry.child_behavior_observed}</p>}
-                            {entry.parent_response && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Response:</span> {entry.parent_response}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Report button */}
-                {(monitoringForm.entries_count ?? 0) > 0 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)}
-                      className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-                        (monitoringForm.entries_count ?? 0) >= 5
-                          ? 'bg-teal-600 text-white hover:bg-teal-700 border-none'
-                          : 'text-slate-600 hover:bg-slate-50 bg-white'
-                      }`} style={(monitoringForm.entries_count ?? 0) < 5 ? { border: '1px solid #e2e8f0' } : undefined}>
-                      View monitoring report
-                    </button>
-                  </div>
-                )}
-
-                {/* Resend form — always available */}
-                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                  {!showSendForm ? (
-                    <button onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
-                      className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
-                      Resend to different contact
-                    </button>
-                  ) : (
-                    <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
-                      <div style={{ marginBottom: '10px' }}>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
-                        <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
-                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                      </div>
-                      <div style={{ marginBottom: '10px' }}>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
-                        <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
-                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                      </div>
-                      <div style={{ marginBottom: '12px' }}>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
-                        <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
-                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {(parentEmail || parentPhone) && (
-                          <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
-                            className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
-                            {sendFormMutation.isPending ? 'Sending...' :
-                              parentEmail && parentPhone ? 'Send both + copy link' :
-                              parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
-                          </button>
-                        )}
-                        <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
-                            (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
-                          }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
-                          {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
-                        </button>
-                        <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Teen access card */}
-          <div style={cardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Teen access</div>
-            {patient && (patient.teen_invited_at ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-                <span className="text-xs text-slate-600">invited {new Date(patient.teen_invited_at).toLocaleDateString()}</span>
-                {patient.teen_email && <span className="text-xs text-slate-500">{patient.teen_email}</span>}
-                <button
-                  onClick={openTeenInviteForm}
-                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
-                >
-                  Resend invite
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-                <span className="text-xs text-slate-500">not set up</span>
-                <button
-                  onClick={openTeenInviteForm}
-                  className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
-                >
-                  + Invite teen
-                </button>
-              </div>
-            ))}
-            {teenInviteConfirmation && (
-              <div className="text-xs text-green-600" style={{ marginTop: '8px' }}>&#10003; Invitation sent to {teenInviteConfirmation}</div>
-            )}
-            {showTeenInviteForm && (
-              <div style={{ marginTop: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label className="text-xs font-medium text-slate-500">Teen's email:</label>
-                <input
-                  type="email"
-                  value={teenEmailInput}
-                  onChange={e => setTeenEmailInput(e.target.value)}
-                  placeholder="teen@email.com"
-                  autoFocus
-                  className="text-xs border border-slate-200 rounded"
-                  style={{ padding: '6px 8px' }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && teenEmailInput.trim()) inviteTeenMut.mutate(teenEmailInput.trim())
-                    if (e.key === 'Escape') setShowTeenInviteForm(false)
+        {/* Treatment Journey layout */}
+        <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)' }}>
+          {/* Sidebar */}
+          <div style={{ width: '220px', flexShrink: 0, background: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '16px 0' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 16px', marginBottom: '8px' }}>Treatment Journey</div>
+            {STEP_LABELS.map((label, i) => {
+              const selected = activePersistentTab === null && activeStep === i
+              const status = stepStatus[i]
+              return (
+                <div
+                  key={i}
+                  onClick={() => { setActiveStep(i); setActivePersistentTab(null) }}
+                  style={{
+                    padding: '8px 16px',
+                    borderLeft: selected ? '3px solid #0d9488' : '3px solid transparent',
+                    background: selected ? '#f0fdfa' : 'transparent',
+                    cursor: 'pointer',
                   }}
-                />
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    onClick={() => teenEmailInput.trim() && inviteTeenMut.mutate(teenEmailInput.trim())}
-                    disabled={!teenEmailInput.trim() || inviteTeenMut.isPending}
-                    className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
-                    style={{ padding: '6px 10px' }}
-                  >
-                    {inviteTeenMut.isPending ? 'Sending...' : 'Send invite'}
-                  </button>
-                  <button
-                    onClick={() => { setShowTeenInviteForm(false); setTeenEmailInput('') }}
-                    className="text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
-                  >
-                    Cancel
-                  </button>
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                    <StepStatusIcon status={status} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '10px', color: '#94a3b8' }}>Step {i + 1}</div>
+                      <div style={{ fontSize: '13px', fontWeight: status === 'incomplete' ? 400 : 500, color: status === 'incomplete' ? '#94a3b8' : '#1e293b' }}>{label}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })}
           </div>
 
-          {/* Pre-session brief */}
-          {(() => {
-            const sortedExps = [...(patientExperiments ?? [])]
-            const lastPlanned = sortedExps
-              .filter(e => e.confidence_level)
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
-            const lastCompleted = sortedExps
-              .filter(e => e.status === 'completed')
-              .sort((a, b) => {
-                const ad = a.completed_date ? new Date(a.completed_date).getTime() : 0
-                const bd = b.completed_date ? new Date(b.completed_date).getTime() : 0
-                return bd - ad
-              })[0]
-            const publishedPlans = (actionPlans ?? []).filter(ap => ap.visible_to_patient)
-            const lastPublishedPlan = publishedPlans.length > 0
-              ? [...publishedPlans].sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())[0]
-              : null
-            const lastConf = confidenceMeta(lastPlanned?.confidence_level)
-            const unreadExperimentCount = (messages ?? []).filter(m => m.message_type === 'experiment_completed' && !m.read_at).length
-            const bipBefore = lastCompleted?.bip_before != null ? Math.round(Number(lastCompleted.bip_before)) : null
-            const bipAfter = lastCompleted?.bip_after != null ? Math.round(Number(lastCompleted.bip_after)) : null
-            const dtActual = lastCompleted?.distress_thermometer_actual != null
-              ? Number(lastCompleted.distress_thermometer_actual)
-              : null
-            const fearedOccurred = lastCompleted?.feared_outcome_occurred
-
-            const sessionPrepType: SessionPrepType = (() => {
-              const notes = sessionNotes ?? []
-              const hasConsult1 = notes.some(n => n.session_type === 'consultation_1')
-              const hasConsult2 = notes.some(n => n.session_type === 'consultation_2')
-              if (notes.length === 0) return 'session_1'
-              if (notes.length === 1 && hasConsult1) return 'session_2'
-              if (notes.length === 2 && hasConsult1 && hasConsult2 && plan?.status !== 'active') return 'session_3'
-              if (plan?.status === 'active') return 'weekly'
-              return 'weekly'
-            })()
-
-            return (
-              <div style={cardStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
-                </div>
-                {patientId && (
-                  <SessionPrepCard
-                    key={`${patientId}-${sessionPrepType}`}
-                    sessionType={sessionPrepType}
-                    patientId={patientId}
-                  />
-                )}
-                {plan?.nickname && (
-                  <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '13px', color: '#0f766e' }}>
-                      Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
-                    </span>
-                  </div>
-                )}
-                {unreadExperimentCount > 0 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <a
-                      href="#messages-section"
-                      onClick={(e) => { e.preventDefault(); setActiveTab('messages'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
-                      style={{ fontSize: '13px', color: '#0f766e', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
-                    >
-                      ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
-                    </a>
-                  </div>
-                )}
-
-                {/* Last action plan */}
-                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last action plan:</span>
-                  {lastPublishedPlan ? (
-                    <>
-                      <span style={{ fontSize: '12px', color: '#1e293b' }}>
-                        #{lastPublishedPlan.session_number}
-                        {lastPublishedPlan.nickname ? ` · “${lastPublishedPlan.nickname}”` : ''}
-                        {' · '}
-                        {new Date(lastPublishedPlan.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                      <button
-                        onClick={() => openEditPlan(lastPublishedPlan)}
-                        className="text-xs font-medium bg-transparent border-none cursor-pointer"
-                        style={{ color: 'var(--float-primary)' }}
-                      >View</button>
-                    </>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No action plan from last session.</span>
-                  )}
-                </div>
-
-                {/* Last experiment confidence */}
-                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last experiment confidence:</span>
-                  {lastPlanned ? (
-                    <span style={{ fontSize: '12px', color: '#1e293b' }}>
-                      {lastConf.emoji} {lastConf.label}
-                      <span style={{ color: '#94a3b8' }}>
-                        {' · set '}
-                        {new Date(lastPlanned.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>No planned experiments yet.</span>
-                  )}
-                </div>
-
-                {/* Last experiment results */}
-                {lastCompleted && (
-                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
-                      Last experiment: <span style={{ color: '#1e293b' }}>{lastCompleted.behavior_name || lastCompleted.plan_description || 'Experiment'}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {bipBefore != null && bipAfter != null && (
-                        <span><strong>BIP before:</strong> {bipBefore}% &rarr; <strong>after:</strong> {bipAfter}%</span>
-                      )}
-                      {dtActual != null && (
-                        <>
-                          <span style={{ color: '#94a3b8' }}>&middot;</span>
-                          <span><strong>DT:</strong> {dtActual}/10</span>
-                        </>
-                      )}
-                      {fearedOccurred != null && (
-                        <>
-                          <span style={{ color: '#94a3b8' }}>&middot;</span>
-                          <span><strong>Feared outcome:</strong> {fearedOccurred ? 'Yes' : 'No'}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-        </div>
-
-        {/* Zone 3 — Tab bar */}
-        <div style={{ display: 'flex', background: '#ffffff', borderBottom: '2px solid #e2e8f0', marginBottom: '16px', padding: '0 24px' }}>
-          <TabButton id="treatment" label="Treatment Plan" active={activeTab === 'treatment'} onClick={setActiveTab} />
-          <TabButton id="experiments" label="Experiments" active={activeTab === 'experiments'} onClick={setActiveTab} badge={overdueExperimentCount} />
-          <TabButton id="notes" label="Session Notes" active={activeTab === 'notes'} onClick={setActiveTab} />
-          <TabButton id="plans" label="Action Plans" active={activeTab === 'plans'} onClick={setActiveTab} badge={draftPlanCount} />
-          <TabButton id="messages" label="Messages" active={activeTab === 'messages'} onClick={setActiveTab} badge={unreadMessageCount} />
-        </div>
-
-        {/* Zone 4 — Tab content */}
-        {activeTab === 'treatment' && (plan ? (
-            <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span className="text-sm font-semibold text-slate-700">Treatment plan</span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${plan.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{plan.status}</span>
-                  <span style={{ fontSize: '12px', color: '#cbd5e1' }}>&middot;</span>
-                  {editingNickname ? (
-                    <>
-                      <input value={nicknameVal} onChange={e => setNicknameVal(e.target.value)} placeholder="Nickname"
-                        className="text-xs border border-slate-200 rounded" autoFocus
-                        style={{ padding: '3px 8px', width: '140px' }}
-                        onKeyDown={e => { if (e.key === 'Enter' && nicknameVal.trim()) nicknameMut.mutate(); if (e.key === 'Escape') setEditingNickname(false) }} />
-                      <button onClick={() => nicknameMut.mutate()} disabled={!nicknameVal.trim() || nicknameMut.isPending} className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-40">Save</button>
-                      <button onClick={() => setEditingNickname(false)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-                    </>
-                  ) : plan.nickname ? (
-                    <>
-                      <span style={{ fontSize: '13px', fontStyle: 'italic', color: 'var(--float-primary)' }}>
-                        &ldquo;{plan.nickname}&rdquo;
-                      </span>
-                      <button onClick={() => { setNicknameVal(plan.nickname || ''); setEditingNickname(true) }}
-                        className="text-[11px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer">edit</button>
-                    </>
-                  ) : (
-                    <button onClick={() => { setNicknameVal(''); setEditingNickname(true) }}
-                      className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add nickname</button>
-                  )}
-                </div>
-                {plan.status === 'setup' && triggers && triggers.length > 0 && (
-                  <button
-                    onClick={() => {
-                      if (activationWarnings.length > 0) {
-                        setShowActivationWarning(true)
-                      } else {
-                        activatePlanMut.mutate()
-                      }
-                    }}
-                    disabled={activatePlanMut.isPending}
-                    className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer"
-                  >
-                    {activatePlanMut.isPending ? '...' : 'Activate plan'}
-                  </button>
-                )}
-              </div>
-
-              {/* Activation warning — only shown when Activate is clicked */}
-              {plan.status === 'setup' && showActivationWarning && (
-                <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
-                  <p style={{ fontSize: '12px', fontWeight: 600, color: '#78350f', margin: '0 0 6px' }}>
-                    &#9888; Before activating:
-                  </p>
-                  <ul style={{ margin: '0 0 10px', padding: '0 0 0 18px', fontSize: '12px', color: '#78350f', lineHeight: '1.5' }}>
-                    {activationWarnings.map((w, i) => <li key={i}>{w}</li>)}
-                  </ul>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={() => activatePlanMut.mutate()}
-                      disabled={activatePlanMut.isPending}
-                      className="text-[11px] px-2.5 py-1 bg-amber-600 text-white rounded-full border-none cursor-pointer font-medium disabled:opacity-50"
-                    >
-                      {activatePlanMut.isPending ? 'Activating...' : 'Activate anyway'}
-                    </button>
-                    <button
-                      onClick={() => setShowActivationWarning(false)}
-                      className="text-[11px] px-2.5 py-1 bg-white text-amber-900 rounded-full cursor-pointer font-medium"
-                      style={{ border: '1px solid #fde68a' }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Plan activated confirmation */}
-              {planActivatedConfirm && (
-                <div style={{ background: '#f0fdfa', borderBottom: '1px solid #99f6e4', padding: '8px 20px' }}>
-                  <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', margin: 0 }}>
-                    &#10003; Plan activated.
-                  </p>
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
-                {/* Situations list */}
-                <div style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Situations</span>
-                    {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="text-[10px] text-teal-600 font-bold bg-transparent border-none cursor-pointer">+</button>}
-                  </div>
-                  <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {triggers?.map(t => (
-                      <div key={t.id} className="group" style={{ width: '100%', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}
-                        onClick={() => { if (editingTriggerId !== t.id && deletingTriggerId !== t.id) setSelectedTriggerId(t.id) }}>
-                        {deletingTriggerId === t.id ? (
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                            <span style={{ fontSize: '11px', color: '#991b1b', lineHeight: '1.4' }}>Delete this situation and all its behaviors?</span>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button onClick={() => deleteTriggerMut.mutate(t.id)} disabled={deleteTriggerMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '3px 8px', borderRadius: '4px' }}>Yes</button>
-                              <button onClick={() => setDeletingTriggerId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
-                            </div>
-                          </div>
-                        ) : editingTriggerId === t.id ? (
-                          <input
-                            value={editTriggerName}
-                            onChange={e => setEditTriggerName(e.target.value)}
-                            autoFocus
-                            onClick={e => e.stopPropagation()}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                if (editTriggerName.trim() && editTriggerName !== t.name) updateTriggerNameMut.mutate()
-                                else setEditingTriggerId(null)
-                              }
-                              if (e.key === 'Escape') setEditingTriggerId(null)
-                            }}
-                            onBlur={() => {
-                              if (editTriggerName.trim() && editTriggerName !== t.name) updateTriggerNameMut.mutate()
-                              else setEditingTriggerId(null)
-                            }}
-                            className="text-xs border border-slate-200 rounded"
-                            style={{ flex: 1, padding: '4px 6px', minWidth: 0 }}
-                          />
-                        ) : (
-                          <>
-                            <span style={{ fontSize: '5px', color: t.is_active ? 'var(--float-primary)' : '#cbd5e1' }}>●</span>
-                            <span
-                              className="text-slate-700"
-                              style={{ flex: 1, fontSize: '13px', fontWeight: 500, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                            >{t.name}</span>
-                            <DTBadge value={t.distress_thermometer_rating} />
-                            <DABadge status={getDAStatus(t.id)} onClick={(e) => { e.stopPropagation(); setSelectedTriggerId(t.id); setRightPanelView('da') }} />
-                            <button
-                              onClick={e => { e.stopPropagation(); setSelectedTriggerId(t.id); setEditTriggerName(t.name); setEditingTriggerId(t.id) }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
-                              style={{ padding: '0 2px', display: 'inline-flex', alignItems: 'center' }}
-                              title="Edit situation name"
-                            >
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                            </button>
-                            <button
-                              onClick={e => { e.stopPropagation(); setDeletingTriggerId(t.id) }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"
-                              style={{ fontSize: '12px', padding: '0 2px' }}
-                              title="Delete situation"
-                            >×</button>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                    {showTriggerAdd && (
-                      <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
-                        <input
-                          value={newTriggerName}
-                          onChange={e => setNewTriggerName(e.target.value)}
-                          placeholder="Situation name"
-                          className="text-sm border border-slate-200 rounded"
-                          style={{ width: '100%', height: '36px', padding: '6px 10px', marginBottom: '10px', boxSizing: 'border-box' }}
-                          autoFocus
-                          onKeyDown={e => e.key === 'Enter' && newTriggerName.trim() && addTriggerMut.mutate()}
-                        />
-                        <div style={{ marginBottom: '10px' }}>
-                          <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (DT):</label>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
-                            <input value={newTriggerDT} onChange={e => setNewTriggerDT(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
-                            <button type="button" onClick={() => setNewTriggerDT(String(Math.min(10, (Number(newTriggerDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-                          <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '7px 14px' }}>Add situation</button>
-                          <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerDT('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-                        </div>
-                      </div>
-                    )}
-                    {(!triggers || triggers.length === 0) && !showTriggerAdd && (
-                      <div>
-                        <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.4', margin: '0 0 8px' }}>Add trigger situations identified in your sessions.</p>
-                        <button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add first situation</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Right panel — behaviors or DA */}
-                <div style={{ overflow: 'hidden' }}>
-                  {selectedTrigger ? (
-                    rightPanelView === 'da'
-                      ? <DownwardArrowPanel trigger={selectedTrigger} onBack={() => setRightPanelView('behaviors')} />
-                      : <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} planStatus={plan.status} />
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '13px', color: '#94a3b8', padding: '16px' }}>Select a situation</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ ...cardStyle, textAlign: 'center' }}>
-              <p className="text-sm text-slate-500" style={{ marginBottom: '4px' }}>No treatment plan yet</p>
-              <p className="text-xs text-slate-400" style={{ marginBottom: '12px' }}>Create one to start configuring trigger situations</p>
-              <button onClick={() => createPlanMut.mutate()} disabled={createPlanMut.isPending} className="text-white text-sm font-medium disabled:opacity-50 border-none cursor-pointer" style={{ background: 'var(--float-primary)', padding: '8px 16px', borderRadius: '8px' }}>{createPlanMut.isPending ? 'Creating...' : 'Create treatment plan'}</button>
-            </div>
-          ))}
-
-        {activeTab === 'experiments' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-            {/* Current Focus */}
-            <div style={cardStyle}>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Current focus</div>
-              {recentExperiment ? (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                    {recentExperiment.situation_name && (
-                      <>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{recentExperiment.situation_name}</span>
-                        <span style={{ fontSize: '13px', color: '#cbd5e1' }}>·</span>
-                      </>
-                    )}
-                    <span style={{ fontSize: '14px', color: '#475569' }}>{recentExperiment.behavior_name || 'Experiment'}</span>
-                  </div>
-                  {focusBipSequence.length > 0 || focusDtSequence.length > 0 ? (
-                    <>
-                      {focusBipSequence.length > 0 && (() => {
-                        const t = trendArrow(focusBipSequence)
-                        return (
-                          <div style={{ fontSize: '13px', color: '#475569', marginBottom: '6px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                            <span style={{ fontWeight: 700, color: '#64748b', minWidth: '34px' }}>BIP:</span>
-                            <span>{focusBipSequence.map(v => `${v}%`).join('  →  ')}</span>
-                            {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
-                          </div>
-                        )
-                      })()}
-                      {focusDtSequence.length > 0 && (() => {
-                        const t = trendArrow(focusDtSequence)
-                        return (
-                          <div style={{ fontSize: '13px', color: '#475569', marginBottom: '14px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                            <span style={{ fontWeight: 700, color: '#64748b', minWidth: '34px' }}>DT:</span>
-                            <span>{focusDtSequence.map(v => `${v}`).join('  →  ')}</span>
-                            {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
-                          </div>
-                        )
-                      })()}
-                    </>
-                  ) : (
-                    <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 14px' }}>No experiments recorded yet for this behavior</p>
-                  )}
-                  {focusNextUpcoming && (() => {
-                    const conf = confidenceMeta(focusNextUpcoming.confidence_level)
-                    const dateStr = focusNextUpcoming.scheduled_date
-                      ? new Date(focusNextUpcoming.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-                      : ''
-                    return (
-                      <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                        <span style={{ fontWeight: 700, color: '#64748b' }}>Next experiment:</span>
-                        <span>{dateStr}</span>
-                        {conf.label && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>·</span>
-                            <span>{conf.emoji} {conf.label} confidence</span>
-                          </>
-                        )}
-                        <span style={{ color: '#cbd5e1' }}>·</span>
-                        <span>{EXPERIMENT_STATUS_LABEL[focusNextUpcoming.status] || focusNextUpcoming.status}</span>
-                      </div>
-                    )
-                  })()}
-                </>
-              ) : (
-                <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No experiments recorded yet for this behavior</p>
-              )}
+          {/* Right content */}
+          <div style={{ flex: 1, minWidth: 0, paddingLeft: '24px' }}>
+            {/* Persistent mini-tab bar */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '16px' }}>
+              <MiniTabButton id="experiments" label="Experiments" active={activePersistentTab === 'experiments'} onClick={setActivePersistentTab} />
+              <MiniTabButton id="messages" label="Messages" active={activePersistentTab === 'messages'} onClick={setActivePersistentTab} badge={unreadMessageCount} />
+              <MiniTabButton id="plans" label="Action Plans" active={activePersistentTab === 'plans'} onClick={setActivePersistentTab} badge={draftPlanCount} />
             </div>
 
-            {/* Needs Attention */}
-            {needsAttention && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '14px' }}>⚠</span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#78350f', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Needs attention</span>
-                </div>
-                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {overdueItems.map(e => {
-                    const dateStr = e.scheduled_date
-                      ? new Date(e.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                      : ''
-                    return (
-                      <li key={`overdue-${e.id}`} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
-                        <span style={{ fontWeight: 700 }}>·</span>
-                        <span><strong>Overdue:</strong> &ldquo;{e.behavior_name || e.plan_description || 'Experiment'}&rdquo; was scheduled {dateStr} — not yet recorded</span>
-                        <button onClick={() => { setActiveTab('messages'); setShowMsgForm(true) }} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
-                      </li>
-                    )
-                  })}
-                  {lowConfidenceCount > 0 && (
-                    <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
-                      <span style={{ fontWeight: 700 }}>·</span>
-                      <span><strong>Low confidence:</strong> {lowConfidenceCount} upcoming experiment{lowConfidenceCount === 1 ? '' : 's'} rated Medium or Low confidence</span>
-                    </li>
-                  )}
-                  {noActivityThisWeek && (
-                    <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
-                      <span style={{ fontWeight: 700 }}>·</span>
-                      <span><strong>No experiments this week</strong></span>
-                    </li>
-                  )}
-                </ul>
-              </div>
-            )}
+            {/* Persistent tab content overrides step content */}
+            {activePersistentTab === 'experiments' && experimentsContent}
+            {activePersistentTab === 'messages' && messagesContent}
+            {activePersistentTab === 'plans' && actionPlansContent}
 
-            {/* Progress charts — side by side (hidden when not enough data) */}
-            {progressChartData.length >= 2 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={cardStyle}>
-                  <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Belief in Prediction</h2>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-                      <Tooltip formatter={(value, name) => [`${value}%`, name === 'bip_before' ? 'Before' : 'After']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
-                      <Legend formatter={(value) => value === 'bip_before' ? 'Before' : 'After'} wrapperStyle={{ fontSize: '12px' }} />
-                      <Line type="monotone" dataKey="bip_before" stroke="#5eead4" strokeWidth={2} dot={{ r: 3, fill: '#5eead4' }} strokeDasharray="4 4" />
-                      <Line type="monotone" dataKey="bip_after" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                <div style={cardStyle}>
-                  <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Fear Level</h2>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                      <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(value) => [value, 'DT']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
-                      <Line type="monotone" dataKey="dt_actual" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {/* Experiment timeline */}
-            <div style={cardStyle}>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Experiment timeline</div>
-              {sortedWeeks.length === 0 ? (
-                <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No experiments recorded yet.</p>
-              ) : (() => {
-                type WeekBucket = typeof sortedWeeks[number]
-                type TimelineItem = WeekBucket['items'][number]
-                const weekHeaderStyle = { fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--float-text-secondary)', marginTop: '16px', marginBottom: '4px', textTransform: 'uppercase' as const }
-                const firstWeekHeaderStyle = { ...weekHeaderStyle, marginTop: 0 }
-                const renderRow = ({ e, displayDate }: TimelineItem) => {
-                  const completed = e.status === 'completed'
-                  const overdue = e.status === 'committed' && isOverdue(e)
-                  const upcoming = e.status === 'committed' && !overdue
-                  const expanded = expandedLearningIds.has(e.id)
-                  const dateStr = new Date(displayDate.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                  const bipBefore = e.bip_before != null ? Math.round(Number(e.bip_before)) : null
-                  const bipAfter = e.bip_after != null ? Math.round(Number(e.bip_after)) : null
-                  const dtActual = e.distress_thermometer_actual != null ? Number(e.distress_thermometer_actual) : null
-                  const conf = confidenceMeta(e.confidence_level)
-                  const canExpand = completed && !!e.what_learned
-                  const behaviorLabel = e.behavior_name || e.plan_description || 'Experiment'
-                  return (
-                    <div key={e.id}>
-                      <div
-                        onClick={() => { if (canExpand) toggleLearning(e.id) }}
-                        style={{
-                          display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px',
-                          padding: '6px 0', fontSize: '13px',
-                          background: overdue ? 'var(--float-bg)' : 'transparent',
-                          cursor: canExpand ? 'pointer' : 'default',
-                        }}
-                      >
-                        {completed && (
-                          <span style={{ width: '18px', height: '18px', borderRadius: '999px', background: '#dcfce7', color: '#16a34a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
-                        )}
-                        {overdue && <span style={{ color: '#d97706', fontSize: '14px', flexShrink: 0 }}>⚠</span>}
-                        {upcoming && <span style={{ color: '#94a3b8', fontSize: '14px', flexShrink: 0 }}>📅</span>}
-                        <span style={{ fontWeight: 600, color: overdue ? '#92400e' : '#1e293b', flexShrink: 0 }}>{dateStr}</span>
-                        <span style={{ color: '#cbd5e1' }}>·</span>
-                        <span
-                          title={behaviorLabel}
-                          style={{
-                            fontSize: '13px',
-                            color: overdue ? '#92400e' : '#475569',
-                            minWidth: '200px',
-                            maxWidth: '300px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >{behaviorLabel}</span>
-                        {completed && bipBefore != null && bipAfter != null && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>·</span>
-                            <span style={{ color: '#475569' }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
-                          </>
-                        )}
-                        {completed && dtActual != null && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>·</span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}>DT <DTBadge value={dtActual} /></span>
-                          </>
-                        )}
-                        {completed && e.feared_outcome_occurred != null && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>·</span>
-                            <span style={{ color: e.feared_outcome_occurred ? '#b91c1c' : '#16a34a', fontWeight: 600 }}>
-                              {e.feared_outcome_occurred ? '✗ Yes' : '✓ No'}
-                            </span>
-                          </>
-                        )}
-                        {overdue && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>·</span>
-                            <span style={{ color: '#92400e', fontWeight: 600 }}>not recorded</span>
-                          </>
-                        )}
-                        {upcoming && conf.label && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>·</span>
-                            <span style={{ color: '#475569' }}>{conf.emoji} {conf.label} confidence</span>
-                          </>
-                        )}
-                      </div>
-                      {canExpand && expanded && (
-                        <div style={{ margin: '4px 0 4px 30px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '6px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
-                          <span style={{ color: '#94a3b8', fontWeight: 600 }}>What they learned: </span>{e.what_learned}
-                        </div>
-                      )}
-                    </div>
-                  )
-                }
-                const renderWeek = (week: WeekBucket, isFirst: boolean) => {
-                  const isCurrent = week.monday.getTime() === currentWeekMonday.getTime()
-                  const isLast = week.monday.getTime() === lastWeekMonday.getTime()
-                  const range = weekRangeLabel(week.monday)
-                  const label = isCurrent
-                    ? `THIS WEEK (${range})`
-                    : isLast
-                      ? `LAST WEEK (${range})`
-                      : range.toUpperCase()
-                  return (
-                    <div key={week.monday.toISOString()}>
-                      <div style={isFirst ? firstWeekHeaderStyle : weekHeaderStyle}>{label}</div>
-                      <div>{week.items.map(renderRow)}</div>
-                    </div>
-                  )
-                }
-                return (
+            {/* Step content */}
+            {activePersistentTab === null && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {activeStep === 0 && monitoringCard}
+                {activeStep === 1 && monitoringExtractContent}
+                {activeStep === 2 && (
                   <>
-                    {recentWeeks.length === 2 ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
-                        {recentWeeks.map(w => renderWeek(w, true))}
-                      </div>
-                    ) : recentWeeks.length === 1 ? (
-                      <div style={{ marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
-                        {renderWeek(recentWeeks[0], true)}
-                      </div>
-                    ) : null}
-                    {earlierWeeks.length > 0 && (
-                      <div>
-                        <button
-                          onClick={() => setShowEarlier(!showEarlier)}
-                          className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer"
-                          style={{ padding: 0 }}
-                        >
-                          {showEarlier ? 'Hide earlier experiments ↓' : 'Show earlier experiments →'}
-                        </button>
-                        {showEarlier && (
-                          <div style={{ marginTop: '4px' }}>
-                            {earlierWeeks.map((w, i) => renderWeek(w, i === 0 && recentWeeks.length === 0))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {renderPrep('session_1')}
+                    {renderNotesSection('consultation_1', '+ Add Session 1 note')}
                   </>
-                )
-              })()}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'messages' && (
-          <div id="messages-section" style={cardStyle}>
-            <div style={{ marginBottom: '12px' }}>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
-            </div>
-            <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', marginBottom: '0' }}>
-              {(!messages || messages.length === 0) && (
-                <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-                  Send check-ins, encouragement, or plan adjustments to the patient between sessions.
-                </p>
-              )}
-              {messages && messages.map((m, i) => {
-                const prev = i > 0 ? messages[i - 1] : null
-                const sameSender = prev && prev.sender_user_id === m.sender_user_id
-                const marginTop = i === 0 ? 0 : (sameSender ? 4 : 8)
-                const ts = formatMsgTime(m.created_at)
-
-                if (m.message_type === 'experiment_completed') {
-                  return (
-                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
-                      <div style={{ maxWidth: '70%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', marginBottom: '4px' }}>✓ Experiment completed</div>
-                        <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
-                      </div>
-                      {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
-                    </div>
-                  )
-                }
-                if (m.message_type === 'too_hard') {
-                  return (
-                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
-                      <div style={{ maxWidth: '70%', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', marginBottom: '4px' }}>⚠ Too hard</div>
-                        <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
-                      </div>
-                      {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
-                    </div>
-                  )
-                }
-                if (patient && m.sender_user_id === patient.user_id) {
-                  return (
-                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
-                      <div style={{ maxWidth: '70%', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
-                        <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
-                      </div>
-                      {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
-                    </div>
-                  )
-                }
-                const showTypePill = m.message_type && m.message_type !== 'general'
-                return (
-                  <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}>
-                    {showTypePill && (
-                      <span style={{ display: 'inline-block', fontSize: '11px', color: '#0d9488', border: '1px solid #5eead4', background: 'transparent', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
-                        {m.message_type.replace(/_/g, ' ')}
-                      </span>
-                    )}
-                    <div style={{ maxWidth: '70%', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
-                      <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
-                    </div>
-                    {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
-                  </div>
-                )
-              })}
-            </div>
-            <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', padding: '12px 16px', margin: '12px -20px -20px' }}>
-              <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Reply..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px', background: '#fff' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
-              <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '6px 12px' }}>Send</button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'notes' && (
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="text-sm font-semibold text-slate-700">Session notes</span>
-                {sessionNotes && sessionNotes.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{sessionNotes.length}</span>}
-              </div>
-              {!showNoteForm && <button onClick={openNewNoteForm} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
-            </div>
-            {showNoteForm && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                    Session type
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[
-                      { key: 'consultation_1', label: 'Session 1' },
-                      { key: 'consultation_2', label: 'Session 2' },
-                      { key: 'weekly_session', label: 'Weekly' },
-                      { key: 'other', label: 'Other' },
-                    ].map(opt => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setNoteType(opt.key)}
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          padding: '10px 18px',
-                          borderRadius: '999px',
-                          cursor: 'pointer',
-                          background: noteType === opt.key ? 'var(--float-primary)' : '#fff',
-                          color: noteType === opt.key ? '#fff' : '#475569',
-                          border: noteType === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                        }}
-                      >{opt.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Date:</label>
-                  <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
-                </div>
-                <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
-                  <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-                </div>
+                )}
+                {activeStep === 3 && (
+                  <>
+                    {renderPrep('session_2')}
+                    {treatmentPlanBuilder}
+                  </>
+                )}
+                {activeStep === 4 && activateStepContent}
+                {activeStep === 5 && (
+                  <>
+                    {renderPrep('session_3')}
+                    {experimentsContent}
+                  </>
+                )}
+                {activeStep === 6 && (
+                  <>
+                    {preSessionBriefContent}
+                    {renderPrep('weekly')}
+                    {renderNotesSection('weekly_session', '+ Add weekly note')}
+                    {actionPlansContent}
+                  </>
+                )}
+                {activeStep === 7 && accommodationContent}
               </div>
             )}
-            {sessionNotes && sessionNotes.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {sessionNotes.map(n => (
-                  <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span className={`px-1 py-0.5 rounded font-medium ${badgeColors[n.session_type] || 'bg-slate-100 text-slate-600'}`}>{sessionTypeLabels[n.session_type] || n.session_type}</span>
-                        <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={() => { setEditingNote(n); setNoteType(n.session_type); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
-                        <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
-                      </div>
-                    </div>
-                    <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
-                      {expandedNoteId === n.id ? n.content : n.content.length > 100 ? n.content.slice(0, 100) + '...' : n.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : !showNoteForm && (
-              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-                Capture notes from each session here — clinical observations, what was discussed, anything to reference next time. Clinician-only.
-              </p>
-            )}
           </div>
-        )}
-
-        {activeTab === 'plans' && (
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="text-sm font-semibold text-slate-700">Action plans</span>
-                {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
-              </div>
-              {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setPlanDate(new Date().toISOString().split('T')[0]); setPlanNickname(plan?.nickname || ''); setPlanNextAppt(''); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
-            </div>
-            {showPlanEditor && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
-                  {plan?.nickname ? (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', fontSize: '12px' }}>
-                      <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>&ldquo;{plan.nickname}&rdquo;</span>
-                      <button
-                        onClick={() => { setNicknameVal(plan.nickname || ''); setEditingNickname(true) }}
-                        className="text-[11px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer"
-                      >
-                        edit in treatment plan →
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Add a nickname in the treatment plan to pre-populate this field.</span>
-                    </div>
-                  )}
-                </div>
-                <div style={{ border: '1px solid var(--float-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
-                  <EditorContent editor={editor} />
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
-                    {(createPlanActionMut.isPending || updatePlanActionMut.isPending) && !publishPlanMut.isPending ? 'Saving...' : 'Save draft'}
-                  </button>
-                  <button onClick={handlePublishPlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending || publishPlanMut.isPending} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
-                    {publishPlanMut.isPending ? 'Publishing...' : (editingPlan?.visible_to_patient ? 'Republish' : 'Publish')}
-                  </button>
-                  <button onClick={resetPlanEditor} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-                </div>
-              </div>
-            )}
-            {actionPlans && actionPlans.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {actionPlans.filter(ap => !showPlanEditor || ap.id !== editingPlan?.id).map(ap => (
-                  <div key={ap.id} style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
-                        <span className="font-medium text-slate-700">#{ap.session_number}</span>
-                        <span className="text-slate-400">{new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                        {ap.nickname && <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>"{ap.nickname}"</span>}
-                        <span className={`px-1.5 py-0.5 rounded font-medium ${ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ap.visible_to_patient ? 'Published' : 'Draft'}</span>
-                      </div>
-                    </div>
-                    {ap.content && (
-                      <div className="prose prose-sm max-w-none" style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: ap.content }} />
-                    )}
-                    {deletingPlanId === ap.id ? (
-                      <div style={{ background: '#fef2f2', borderRadius: '6px', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this plan?</span>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => deletePlanMut.mutate(ap.id)} disabled={deletePlanMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '4px 10px', borderRadius: '4px' }}>Yes, delete</button>
-                          <button onClick={() => setDeletingPlanId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <button onClick={() => openEditPlan(ap)} className="text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
-                        <button onClick={() => publishPlanMut.mutate(ap.id)} disabled={publishPlanMut.isPending} className="text-green-700 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ fontSize: '11px' }}>{ap.visible_to_patient ? 'Republish' : 'Publish'}</button>
-                        <button onClick={() => setDeletingPlanId(ap.id)} className="text-red-500 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Delete</button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : !showPlanEditor && (
-              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-                Action plans are session summaries written directly to the patient. After each session, write what they'll work on and publish it to their app.
-              </p>
-            )}
-          </div>
-        )}
+        </div>
       </div>
 
       {/* AI extraction modal */}
