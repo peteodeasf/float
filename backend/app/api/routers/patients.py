@@ -355,7 +355,17 @@ async def extract_monitoring_data(
         raw_text = message.content[0].text
         print(f"Raw Anthropic response: {raw_text}", flush=True)
         print(f"RAW TEXT: {raw_text}", flush=True)
-        extraction = json.loads(raw_text)
+        # Strip markdown code fences if present
+        clean_text = raw_text.strip()
+        if clean_text.startswith("```"):
+            # Remove opening fence (```json or ```)
+            clean_text = clean_text.split("\n", 1)[1] if "\n" in clean_text else clean_text
+            # Remove closing fence
+            if clean_text.endswith("```"):
+                clean_text = clean_text.rsplit("```", 1)[0]
+            clean_text = clean_text.strip()
+
+        extraction = json.loads(clean_text)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI extraction failed: {type(e).__name__}: {str(e)}")
     except Exception as e:
