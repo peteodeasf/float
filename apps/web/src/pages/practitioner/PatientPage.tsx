@@ -40,7 +40,8 @@ const STEP_LABELS: string[] = [
   'Parent Monitoring Form',
   'Extract from Monitoring Data',
   'Session 1 — Parent Consultation',
-  'Session 2 — Build Treatment Plan',
+  'Session 2 — Patient Consultation',
+  'Build Treatment Plan',
   'Activate Treatment Plan',
   'Begin Exposures',
   'Weekly Sessions',
@@ -1521,7 +1522,7 @@ export default function PatientPage() {
   const { data: progress } = useQuery({
     queryKey: ['progress', patientId],
     queryFn: () => getPatientProgress(patientId!),
-    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 5)
+    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 6)
   })
   const progressChartData = progress?.recent_experiments
     .filter(e => e.completed_date)
@@ -1563,6 +1564,7 @@ export default function PatientPage() {
     !!monitoringForm,
     (triggers?.length ?? 0) >= 1,
     notesList.some(n => n.session_type === 'consultation_1'),
+    notesList.some(n => n.session_type === 'consultation_2'),
     (triggers?.length ?? 0) >= 1 && hasApprovedDA && hasBehavior,
     plan?.status === 'active' && !!patient?.teen_invited_at,
     completedExperimentCount >= 1,
@@ -1570,7 +1572,7 @@ export default function PatientPage() {
     accommodationCheckinComplete,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
-  const currentActiveStep = firstIncompleteStep === -1 ? 7 : firstIncompleteStep
+  const currentActiveStep = firstIncompleteStep === -1 ? 8 : firstIncompleteStep
   const stepStatus: StepStatus[] = stepComplete.map((c, i) =>
     c ? 'complete' : (i === currentActiveStep ? 'active' : 'incomplete')
   )
@@ -3189,17 +3191,18 @@ export default function PatientPage() {
                 {activeStep === 3 && (
                   <>
                     {renderPrep('session_2')}
-                    {treatmentPlanBuilder}
+                    {renderNotesSection('consultation_2', '+ Add Session 2 note')}
                   </>
                 )}
-                {activeStep === 4 && activateStepContent}
-                {activeStep === 5 && (
+                {activeStep === 4 && treatmentPlanBuilder}
+                {activeStep === 5 && activateStepContent}
+                {activeStep === 6 && (
                   <>
                     {renderPrep('session_3')}
                     {experimentsContent}
                   </>
                 )}
-                {activeStep === 6 && (
+                {activeStep === 7 && (
                   <>
                     {preSessionBriefContent}
                     {renderPrep('weekly')}
@@ -3207,7 +3210,7 @@ export default function PatientPage() {
                     {actionPlansContent}
                   </>
                 )}
-                {activeStep === 7 && accommodationContent}
+                {activeStep === 8 && accommodationContent}
               </div>
             )}
           </div>
