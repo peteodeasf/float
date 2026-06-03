@@ -29,6 +29,7 @@ export default function TeenLoginPage() {
       }
     } catch {
       setError('Invalid email or password')
+      setPassword('')
     } finally {
       setIsLoading(false)
     }
