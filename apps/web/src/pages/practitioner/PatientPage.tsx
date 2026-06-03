@@ -17,7 +17,6 @@ import {
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, type MonitoringExtraction } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
-import { getFormulation, createFormulation, updateFormulation, type FormulationInput } from '../../api/formulation'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -1070,16 +1069,6 @@ export default function PatientPage() {
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null)
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Clinical formulation (Step 3)
-  const [formMechanisms, setFormMechanisms] = useState('')
-  const [formPatterns, setFormPatterns] = useState<string[]>([])
-  const [formTargets, setFormTargets] = useState<string[]>([])
-  const [addingPattern, setAddingPattern] = useState(false)
-  const [newPattern, setNewPattern] = useState('')
-  const [dragTargetIndex, setDragTargetIndex] = useState<number | null>(null)
-  const [formulationApplying, setFormulationApplying] = useState(false)
-  const formHydratedRef = useRef(false)
-
   const editor = useEditor({
     extensions: [StarterKit, Placeholder.configure({ placeholder: 'Start writing...' })],
     content: '',
@@ -1095,7 +1084,6 @@ export default function PatientPage() {
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId })
   const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
-  const { data: formulation } = useQuery({ queryKey: ['formulation', patientId], queryFn: () => getFormulation(patientId!), enabled: !!patientId })
 
   // Fetch DA status for every trigger situation (one query per trigger, keyed by trigger id)
   const triggerIds = (triggers ?? []).map(t => t.id)
@@ -1592,50 +1580,6 @@ export default function PatientPage() {
     stepInitializedRef.current = true
   }, [coreLoaded, currentActiveStep])
 
-  // ----- Clinical formulation (Step 3) -----
-  const saveFormulationMut = useMutation({
-    mutationFn: (patch: FormulationInput) =>
-      formulation ? updateFormulation(patientId!, patch) : createFormulation(patientId!, patch),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['formulation', patientId] }),
-  })
-
-  useEffect(() => {
-    if (formulation && !formHydratedRef.current) {
-      setFormMechanisms(formulation.maintaining_mechanisms ?? '')
-      setFormPatterns(formulation.accommodation_patterns ?? [])
-      setFormTargets(formulation.treatment_targets ?? [])
-      formHydratedRef.current = true
-    }
-  }, [formulation])
-
-  const saveMechanisms = () => {
-    if (!patientId) return
-    if ((formulation?.maintaining_mechanisms ?? '') === formMechanisms) return
-    saveFormulationMut.mutate({ maintaining_mechanisms: formMechanisms })
-  }
-  const savePatterns = (next: string[]) => {
-    setFormPatterns(next)
-    saveFormulationMut.mutate({ accommodation_patterns: next })
-  }
-  const saveTargets = (next: string[]) => {
-    setFormTargets(next)
-    saveFormulationMut.mutate({ treatment_targets: next })
-  }
-  const commitTargets = () => {
-    const cleaned = formTargets.map(t => t.trim()).filter(Boolean)
-    setFormTargets(cleaned)
-    saveFormulationMut.mutate({ treatment_targets: cleaned })
-  }
-  const handleTargetDrop = (toIndex: number) => {
-    if (dragTargetIndex === null || dragTargetIndex === toIndex) { setDragTargetIndex(null); return }
-    const next = [...formTargets]
-    const [moved] = next.splice(dragTargetIndex, 1)
-    next.splice(toIndex, 0, moved)
-    setDragTargetIndex(null)
-    saveTargets(next)
-  }
-  const markFormulationReviewed = () => saveFormulationMut.mutate({ ai_suggested: false })
-
   // Accept/reject an AI-suggested anxiety presentation by toggling it on the patient profile
   const acceptPresentationMut = useMutation({
     mutationFn: (presentations: string[]) => updatePatient(patientId!, { anxiety_presentations: presentations.length > 0 ? presentations : null }),
@@ -1647,146 +1591,6 @@ export default function PatientPage() {
     acceptPresentationMut.mutate(next)
   }
 
-  // "Add formulation to Step 3" — persist AI-suggested formulation values and jump to Step 3
-  const handleAddFormulation = async () => {
-    if (!extraction || !patientId) return
-    setFormulationApplying(true)
-    setExtractError(null)
-    const patch: FormulationInput = {
-      maintaining_mechanisms: extraction.maintaining_mechanisms ?? null,
-      accommodation_patterns: extraction.accommodation_patterns ?? null,
-      treatment_targets: extraction.treatment_targets ?? null,
-      ai_suggested: true,
-    }
-    try {
-      if (formulation) await updateFormulation(patientId, patch)
-      else await createFormulation(patientId, patch)
-      await queryClient.invalidateQueries({ queryKey: ['formulation', patientId] })
-      formHydratedRef.current = false
-      setFormulationApplying(false)
-      closeExtract()
-      setActivePersistentTab(null)
-      setActiveStep(2)
-    } catch {
-      setFormulationApplying(false)
-      setExtractError('Could not save formulation. Please try again.')
-    }
-  }
-
-  const formulationCard = (
-    <div style={cardStyle}>
-      {formulation?.ai_suggested === true && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px 14px', marginBottom: '18px' }}>
-          <span style={{ flexShrink: 0 }}>&#9889;</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: '12px', color: '#92400e', lineHeight: 1.5, margin: 0 }}>
-              This formulation was suggested by AI based on the monitoring data. Review and edit before treating it as your clinical judgment.
-            </p>
-            <button
-              onClick={markFormulationReviewed}
-              disabled={saveFormulationMut.isPending}
-              className="bg-transparent border-none cursor-pointer disabled:opacity-50"
-              style={{ fontSize: '12px', fontWeight: 600, color: '#b45309', padding: '6px 0 0', textDecoration: 'underline' }}
-            >Mark as reviewed</button>
-          </div>
-        </div>
-      )}
-
-      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '16px' }}>Clinical Formulation</div>
-
-      {/* Section A — Maintaining mechanisms */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', display: 'block' }}>Maintaining mechanisms</label>
-        <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 8px' }}>Your clinical hypothesis about what drives and maintains this child's anxiety.</p>
-        <textarea
-          value={formMechanisms}
-          onChange={e => setFormMechanisms(e.target.value)}
-          onBlur={saveMechanisms}
-          rows={4}
-          placeholder={extraction?.maintaining_mechanisms || 'Describe the maintaining mechanisms...'}
-          className="text-sm border border-slate-200 rounded"
-          style={{ width: '100%', padding: '10px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', color: '#334155' }}
-        />
-      </div>
-
-      {/* Section B — Accommodation patterns */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '8px' }}>Accommodation patterns</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-          {formPatterns.map((p, i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '5px 10px', borderRadius: '999px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}>
-              {p}
-              <button
-                onClick={() => savePatterns(formPatterns.filter((_, idx) => idx !== i))}
-                className="bg-transparent border-none cursor-pointer"
-                style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1, padding: 0 }}
-                aria-label="Remove pattern"
-              >&times;</button>
-            </span>
-          ))}
-          {addingPattern ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <input
-                autoFocus
-                value={newPattern}
-                onChange={e => setNewPattern(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && newPattern.trim()) { savePatterns([...formPatterns, newPattern.trim()]); setNewPattern(''); setAddingPattern(false) }
-                  if (e.key === 'Escape') { setNewPattern(''); setAddingPattern(false) }
-                }}
-                placeholder="New pattern"
-                className="text-sm border border-slate-200 rounded"
-                style={{ padding: '5px 10px' }}
-              />
-              <button
-                onClick={() => { if (newPattern.trim()) { savePatterns([...formPatterns, newPattern.trim()]); } setNewPattern(''); setAddingPattern(false) }}
-                className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer"
-                style={{ padding: '5px 10px' }}
-              >Add</button>
-              <button onClick={() => { setNewPattern(''); setAddingPattern(false) }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-            </span>
-          ) : (
-            <button onClick={() => setAddingPattern(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ padding: '5px 4px' }}>+ Add pattern</button>
-          )}
-        </div>
-      </div>
-
-      {/* Section C — Treatment targets */}
-      <div>
-        <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '8px' }}>Treatment targets</label>
-        <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {formTargets.map((t, i) => (
-            <li
-              key={i}
-              draggable
-              onDragStart={() => setDragTargetIndex(i)}
-              onDragOver={e => e.preventDefault()}
-              onDrop={() => handleTargetDrop(i)}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', background: dragTargetIndex === i ? '#f0fdfa' : '#f8fafc', borderRadius: '6px', padding: '6px 8px', border: '1px solid #e2e8f0' }}
-            >
-              <span style={{ cursor: 'grab', color: '#94a3b8', fontSize: '14px', flexShrink: 0 }} aria-label="Drag to reorder">&#x2630;</span>
-              <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>{i + 1}.</span>
-              <input
-                value={t}
-                onChange={e => setFormTargets(prev => prev.map((x, idx) => idx === i ? e.target.value : x))}
-                onBlur={commitTargets}
-                placeholder="Treatment target — rationale"
-                className="text-sm border-none bg-transparent"
-                style={{ flex: 1, minWidth: 0, padding: '2px 0', color: '#334155', outline: 'none' }}
-              />
-              <button
-                onClick={() => saveTargets(formTargets.filter((_, idx) => idx !== i))}
-                className="bg-transparent border-none cursor-pointer"
-                style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1, padding: 0, flexShrink: 0 }}
-                aria-label="Remove target"
-              >&times;</button>
-            </li>
-          ))}
-        </ol>
-        <button onClick={() => setFormTargets(prev => [...prev, ''])} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ padding: '8px 4px 0' }}>+ Add target</button>
-      </div>
-    </div>
-  )
 
   const renderPrep = (t: SessionPrepType) =>
     patientId ? <SessionPrepCard key={`${patientId}-${t}`} sessionType={t} patientId={patientId} /> : null
@@ -3165,7 +2969,7 @@ export default function PatientPage() {
           {/* Right content */}
           <div style={{ flex: 1, minWidth: 0, paddingLeft: '24px' }}>
             {/* Persistent mini-tab bar */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '16px' }}>
+            <div style={{ display: 'inline-flex', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '4px 8px', marginBottom: '16px' }}>
               <MiniTabButton id="experiments" label="Experiments" active={activePersistentTab === 'experiments'} onClick={setActivePersistentTab} />
               <MiniTabButton id="messages" label="Messages" active={activePersistentTab === 'messages'} onClick={setActivePersistentTab} badge={unreadMessageCount} />
               <MiniTabButton id="plans" label="Action Plans" active={activePersistentTab === 'plans'} onClick={setActivePersistentTab} badge={draftPlanCount} />
@@ -3184,7 +2988,6 @@ export default function PatientPage() {
                 {activeStep === 2 && (
                   <>
                     {renderPrep('session_1')}
-                    {formulationCard}
                     {renderNotesSection('consultation_1', '+ Add Session 1 note')}
                   </>
                 )}
@@ -3282,24 +3085,6 @@ export default function PatientPage() {
                   </div>
                 )}
 
-                {extraction.maintaining_mechanisms && (
-                  <div style={{ marginBottom: '18px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Clinical formulation hypothesis</div>
-                    <p style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, margin: 0 }}>{extraction.maintaining_mechanisms}</p>
-                  </div>
-                )}
-
-                {extraction.treatment_targets && extraction.treatment_targets.length > 0 && (
-                  <div style={{ marginBottom: '18px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Treatment targets</div>
-                    <ol style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {extraction.treatment_targets.map((t, i) => (
-                        <li key={i} style={{ fontSize: '12px', color: '#475569' }}>{t}</li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-
                 <div style={{ marginBottom: '18px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Suggested trigger situations</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -3353,15 +3138,11 @@ export default function PatientPage() {
                 )}
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  <button onClick={handleAddToPlan} disabled={extractApplying || formulationApplying}
+                  <button onClick={handleAddToPlan} disabled={extractApplying}
                     className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px' }}>
                     {extractApplying ? 'Adding…' : extractFailed.length > 0 ? 'Retry' : 'Add situations to treatment plan'}
                   </button>
-                  <button onClick={handleAddFormulation} disabled={extractApplying || formulationApplying}
-                    className="rounded text-sm font-medium cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px', background: '#fff', color: 'var(--float-primary)', border: '1px solid var(--float-primary)' }}>
-                    {formulationApplying ? 'Saving…' : 'Add formulation to Step 3'}
-                  </button>
-                  <button onClick={closeExtract} disabled={extractApplying || formulationApplying}
+                  <button onClick={closeExtract} disabled={extractApplying}
                     className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 12px' }}>Dismiss</button>
                 </div>
               </div>
