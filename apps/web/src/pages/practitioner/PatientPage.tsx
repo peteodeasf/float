@@ -144,7 +144,7 @@ type SessionPrepType = 'session_1' | 'session_2' | 'session_3' | 'weekly'
 
 const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: string[] }> = {
   session_1: {
-    header: 'PREPARING FOR SESSION 1 — Parent consultation',
+    header: 'STEP GUIDE — SESSION 1: Parent Consultation',
     steps: [
       'Review the monitoring form data before the session — identify the most frequent trigger situations',
       "Build the trigger situation list with DT ratings from the parent's observations",
@@ -156,10 +156,10 @@ const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: str
     ],
   },
   session_2: {
-    header: 'PREPARING FOR SESSION 2 — First meeting with the child  (45-60 min)',
+    header: 'STEP GUIDE — SESSION 2: Patient Consultation',
     steps: [
       'Allow up to 5 minutes for rapport — school, friends, favourite things. Keep it brief.',
-      'Ask the child what they want help with — use discovery questions from the session guide',
+      'Ask the child what they want help with — use discovery questions from the step guide',
       'Review trigger situations with the child — confirm the list, ask if anything has changed',
       'Introduce the Distress Thermometer — practice rating 2-3 situations together',
       'Introduce the Worry Thermometer nickname — suggest examples, let the child choose',
@@ -168,7 +168,7 @@ const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: str
     ],
   },
   session_3: {
-    header: 'PREPARING FOR SESSION 3 — Worry Hill, Candy Jar & Exposure Ladder  (45-60 min)',
+    header: 'STEP GUIDE — SESSION 3: Worry Hill & Exposure Ladder',
     steps: [
       'Check in on nickname and Distress Thermometer use since last session',
       'Watch the Worry Hill video with the child together',
@@ -183,7 +183,7 @@ const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: str
     ],
   },
   weekly: {
-    header: 'PREPARING FOR YOUR WEEKLY SESSION',
+    header: 'STEP GUIDE — WEEKLY SESSION',
     steps: [
       'Check in on nickname use — "Out of 10 times you felt [nickname], how many times did you use it?"',
       'Review experiment results — check BIP and DT trends since last session',
@@ -226,7 +226,7 @@ function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepT
             fontWeight: 500,
           }}
         >
-          Show session guide →
+          Show step guide →
         </button>
       </div>
     )
@@ -247,7 +247,7 @@ function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepT
     >
       <button
         onClick={handleDismiss}
-        aria-label="Dismiss session guide"
+        aria-label="Dismiss step guide"
         style={{
           position: 'absolute',
           top: '8px',
