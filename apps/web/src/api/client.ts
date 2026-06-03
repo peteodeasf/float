@@ -17,9 +17,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const hadToken = !!localStorage.getItem('access_token')
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
-      window.location.href = '/login'
+      if (hadToken) window.location.href = '/login'
     }
     return Promise.reject(error)
   }
@@ -40,9 +41,10 @@ teenApiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const hadToken = !!localStorage.getItem('teen_access_token')
       localStorage.removeItem('teen_access_token')
       localStorage.removeItem('teen_patient_id')
-      window.location.href = '/teen/login'
+      if (hadToken) window.location.href = '/teen/login'
     }
     return Promise.reject(error)
   }
