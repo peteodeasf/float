@@ -1,14 +1,42 @@
 import uuid
+from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
 from app.models.downward_arrow import DownwardArrow
+from app.models.treatment import TriggerSituation, TreatmentPlan
 from app.schemas.downward_arrow import (
     DownwardArrowCreate,
     DownwardArrowUpdate,
 )
+
+
+async def _patient_id_for_situation(
+    db: AsyncSession,
+    situation_id: uuid.UUID,
+    organization_id: uuid.UUID
+) -> uuid.UUID | None:
+    """Resolve the owning patient for a trigger situation (situation -> plan -> patient)."""
+    result = await db.execute(
+        select(TreatmentPlan.patient_id)
+        .join(TriggerSituation, TriggerSituation.treatment_plan_id == TreatmentPlan.id)
+        .where(
+            TriggerSituation.id == situation_id,
+            TriggerSituation.organization_id == organization_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+def _initial_steps(data: DownwardArrowCreate) -> list:
+    if data.first_answer:
+        return [{
+            "question": "What will happen in this situation?",
+            "response": data.first_answer
+        }]
+    return []
 
 
 async def get_or_create_downward_arrow(
@@ -17,28 +45,61 @@ async def get_or_create_downward_arrow(
     organization_id: uuid.UUID,
     data: DownwardArrowCreate
 ) -> DownwardArrow:
+    """Get-or-create a situation-linked downward arrow, scoped by facilitated_by."""
     result = await db.execute(
         select(DownwardArrow)
         .where(
             DownwardArrow.trigger_situation_id == situation_id,
-            DownwardArrow.organization_id == organization_id
+            DownwardArrow.organization_id == organization_id,
+            DownwardArrow.facilitated_by == data.facilitated_by,
         )
     )
     existing = result.scalar_one_or_none()
     if existing:
         return existing
 
-    initial_steps = []
-    if data.first_answer:
-        initial_steps = [{
-            "question": "What will happen in this situation?",
-            "response": data.first_answer
-        }]
+    patient_id = await _patient_id_for_situation(db, situation_id, organization_id)
 
     arrow = DownwardArrow(
         trigger_situation_id=situation_id,
+        patient_id=patient_id,
         organization_id=organization_id,
-        arrow_steps=initial_steps,
+        arrow_steps=_initial_steps(data),
+        facilitated_by=data.facilitated_by,
+        feared_outcome_approved=False
+    )
+    db.add(arrow)
+    await db.commit()
+    await db.refresh(arrow)
+    return arrow
+
+
+async def get_or_create_patient_downward_arrow(
+    db: AsyncSession,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    data: DownwardArrowCreate
+) -> DownwardArrow:
+    """Get-or-create a situation-agnostic downward arrow for a patient
+    (trigger_situation_id is null, e.g. the parent DA), scoped by facilitated_by."""
+    result = await db.execute(
+        select(DownwardArrow)
+        .where(
+            DownwardArrow.patient_id == patient_id,
+            DownwardArrow.organization_id == organization_id,
+            DownwardArrow.facilitated_by == data.facilitated_by,
+            DownwardArrow.trigger_situation_id.is_(None),
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        return existing
+
+    arrow = DownwardArrow(
+        trigger_situation_id=None,
+        patient_id=patient_id,
+        organization_id=organization_id,
+        arrow_steps=_initial_steps(data),
         facilitated_by=data.facilitated_by,
         feared_outcome_approved=False
     )
@@ -51,16 +112,36 @@ async def get_or_create_downward_arrow(
 async def get_downward_arrow(
     db: AsyncSession,
     situation_id: uuid.UUID,
-    organization_id: uuid.UUID
+    organization_id: uuid.UUID,
+    facilitated_by: Optional[str] = None
 ) -> DownwardArrow | None:
-    result = await db.execute(
-        select(DownwardArrow)
-        .where(
-            DownwardArrow.trigger_situation_id == situation_id,
-            DownwardArrow.organization_id == organization_id
-        )
+    """Fetch a situation-linked downward arrow, optionally filtered by facilitated_by."""
+    query = select(DownwardArrow).where(
+        DownwardArrow.trigger_situation_id == situation_id,
+        DownwardArrow.organization_id == organization_id,
     )
-    return result.scalar_one_or_none()
+    if facilitated_by is not None:
+        query = query.where(DownwardArrow.facilitated_by == facilitated_by)
+    result = await db.execute(query.order_by(DownwardArrow.created_at.asc()))
+    return result.scalars().first()
+
+
+async def list_patient_downward_arrows(
+    db: AsyncSession,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    facilitated_by: Optional[str] = None
+) -> list[DownwardArrow]:
+    """List all downward arrows for a patient (situation-linked or not),
+    optionally filtered by facilitated_by."""
+    query = select(DownwardArrow).where(
+        DownwardArrow.patient_id == patient_id,
+        DownwardArrow.organization_id == organization_id,
+    )
+    if facilitated_by is not None:
+        query = query.where(DownwardArrow.facilitated_by == facilitated_by)
+    result = await db.execute(query.order_by(DownwardArrow.created_at.asc()))
+    return list(result.scalars().all())
 
 
 async def update_downward_arrow(

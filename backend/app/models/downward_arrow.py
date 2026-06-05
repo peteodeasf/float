@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, text, Boolean, Text
+from sqlalchemy import String, DateTime, ForeignKey, text, Boolean, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
@@ -8,14 +8,28 @@ from app.core.database import Base
 
 class DownwardArrow(Base):
     __tablename__ = "downward_arrows"
+    __table_args__ = (
+        UniqueConstraint(
+            "trigger_situation_id", "facilitated_by",
+            name="uq_downward_arrows_situation_facilitated_by"
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()")
     )
-    trigger_situation_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("trigger_situations.id"), nullable=False
+    # Nullable so situation-agnostic arrows (e.g. the parent DA) can be stored
+    # without a linked trigger situation.
+    trigger_situation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("trigger_situations.id"), nullable=True
+    )
+    # Directly links the arrow to a patient. Required for situation-agnostic
+    # arrows (where trigger_situation_id is null); for situation-linked arrows
+    # it is backfilled from the situation's treatment plan.
+    patient_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("patient_profiles.id"), nullable=True
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False

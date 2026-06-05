@@ -24,7 +24,8 @@ class DownwardArrowUpdate(BaseModel):
 
 class DownwardArrowResponse(BaseModel):
     id: uuid.UUID
-    trigger_situation_id: uuid.UUID
+    trigger_situation_id: Optional[uuid.UUID] = None
+    patient_id: Optional[uuid.UUID] = None
     arrow_steps: list[ArrowStep]
     feared_outcome: Optional[str] = None
     feared_outcome_approved: bool
