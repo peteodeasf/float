@@ -278,7 +278,6 @@ You are a clinical assistant helping a CBT therapist analyze parent monitoring d
 Analyze the monitoring entries and extract the following. Return ONLY valid JSON, no markdown fences, no other text:
 
 {
-  "suggested_presentations": ["social_anxiety"],
   "situations": [
     {
       "name": "situation name (concise, 3-6 words)",
@@ -300,8 +299,6 @@ Analyze the monitoring entries and extract the following. Return ONLY valid JSON
   ],
   "summary": "2-3 sentence plain-language summary of what the monitoring data shows"
 }
-
-Valid values for suggested_presentations: social_anxiety, separation_anxiety, specific_phobia, generalized_anxiety, ocd, other. Can suggest multiple.
 
 For maintaining_mechanisms, write a clinical hypothesis like: "Sarah's anxiety is maintained by a pattern of avoidance and safety behaviors that prevent disconfirmation of her feared outcomes. Parental accommodation reinforces the belief that anxiety situations are genuinely dangerous. The core feared outcome across situations appears to be social rejection and humiliation."
 
@@ -382,6 +379,7 @@ async def extract_monitoring_data(
             detail=f"AI extraction failed: {type(e).__name__}: {str(e)}"
         )
 
+    extraction.pop("suggested_presentations", None)
     return extraction
 
 

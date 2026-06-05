@@ -3303,32 +3303,6 @@ export default function PatientPage() {
                   </div>
                 )}
 
-                {extraction.suggested_presentations && extraction.suggested_presentations.length > 0 && (
-                  <div style={{ marginBottom: '18px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Suggested anxiety presentation</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {extraction.suggested_presentations.map(p => {
-                        const accepted = (patient?.anxiety_presentations ?? []).includes(p)
-                        return (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => toggleSuggestedPresentation(p)}
-                            disabled={acceptPresentationMut.isPending}
-                            title={accepted ? 'Accepted — click to reject' : 'Click to accept'}
-                            style={{
-                              fontSize: '13px', fontWeight: 600, padding: '5px 12px', borderRadius: '999px', cursor: 'pointer',
-                              background: accepted ? 'var(--float-primary)' : '#fff',
-                              color: accepted ? '#fff' : '#475569',
-                              border: accepted ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                            }}
-                          >{accepted ? '✓ ' : ''}{presentationLabel(p)}</button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 <div style={{ marginBottom: '18px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Suggested trigger situations</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
