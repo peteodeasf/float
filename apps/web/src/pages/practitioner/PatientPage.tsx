@@ -1803,17 +1803,22 @@ export default function PatientPage() {
     <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Extract from Monitoring Data</h2>
-        {canExtract && (
+        {(monitoringForm?.entries_count ?? 0) >= 3 && (
           <button
             onClick={handleExtract}
             disabled={extractLoading}
             className="bg-transparent border-none cursor-pointer disabled:opacity-50"
             style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
           >
-            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-extract →' : 'Extract with AI →')}
+            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-extract from monitoring data →' : 'Extract with AI →')}
           </button>
         )}
       </div>
+      {(triggers?.length ?? 0) > 0 && (
+        <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: '1.5', margin: '0 0 12px' }}>
+          New observations have been added. Re-extracting will suggest additional situations and behaviors — existing ones will not be removed.
+        </p>
+      )}
       {!monitoringForm ? (
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Send a parent monitoring form first (Step 1).</p>
       ) : (monitoringForm.entries_count ?? 0) === 0 ? (
