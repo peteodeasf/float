@@ -892,11 +892,12 @@ function CaseConceptualization({ draft, defaultExpanded = false }: { draft: Conc
 }
 
 // ── Session Downward Arrow (used in Session 1 / Session 2 steps) ──
-function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituation }: {
+function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituation, childName }: {
   trigger: TriggerSituation
   facilitatedBy: 'parent' | 'practitioner'
   onApproved: (fearedOutcome: string) => void
   showSituation: boolean
+  childName?: string
 }) {
   const qc = useQueryClient()
   const [firstAnswer, setFirstAnswer] = useState('')
@@ -932,9 +933,13 @@ function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituatio
     }
   })
 
+  const isParent = facilitatedBy === 'parent'
+  const openingQuestion = isParent
+    ? `What does ${childName?.trim() || 'your child'} worry will happen when they feel anxious?`
+    : 'What will happen in this situation?'
   const steps: ArrowStep[] = arrow?.arrow_steps ?? []
   const lastAnswer = steps.length > 0 ? steps[steps.length - 1].response : ''
-  const nextQuestion = lastAnswer ? `What will happen if... ${lastAnswer}?` : 'What will happen in this situation?'
+  const nextQuestion = lastAnswer ? `What will happen if... ${lastAnswer}?` : openingQuestion
   const hasFearedOutcome = !!arrow?.feared_outcome
   const isApproved = !!arrow?.feared_outcome_approved
 
@@ -962,14 +967,16 @@ function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituatio
       {/* No DA yet */}
       {!arrow && (
         <div>
-          <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', marginBottom: '12px' }}>
-            The Downward Arrow helps identify the child's core feared outcome for this situation.
-          </p>
+          {!isParent && (
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', marginBottom: '12px' }}>
+              The Downward Arrow helps identify the child's core feared outcome for this situation.
+            </p>
+          )}
           <p style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
-            Start with: "What will happen in this situation?"
+            Start with: "{openingQuestion}"
           </p>
           <textarea value={firstAnswer} onChange={e => setFirstAnswer(e.target.value)} rows={2}
-            placeholder="The child's answer..."
+            placeholder={isParent ? "The parent's response..." : "The child's answer..."}
             className="text-sm border border-slate-200 rounded"
             style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', marginBottom: '8px' }} />
           <button onClick={() => createMut.mutate()} disabled={!firstAnswer.trim() || createMut.isPending}
@@ -1001,7 +1008,7 @@ function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituatio
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#334155', margin: '0 0 4px' }}>{nextQuestion}</p>
                 <textarea value={nextAnswer} onChange={e => setNextAnswer(e.target.value)} rows={2}
-                  placeholder="The child's answer..."
+                  placeholder={isParent ? "The parent's response..." : "The child's answer..."}
                   className="text-sm border border-slate-200 rounded"
                   style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', marginBottom: '8px' }} />
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -1860,7 +1867,7 @@ export default function PatientPage() {
     <div style={cardStyle}>
       <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Parent Downward Arrow</div>
       <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
-        Identify the child's feared outcomes from the parent's perspective. This is situation-agnostic — you're exploring what the parent believes the child fears most, before situations are formally linked.
+        Start by asking the parent what they believe their child fears most. The first question is open — not tied to a specific situation.
       </p>
       {triggers && triggers.length > 0 ? (
         <SessionDownwardArrow
@@ -1868,6 +1875,7 @@ export default function PatientPage() {
           facilitatedBy="parent"
           onApproved={addParentFearedOutcome}
           showSituation={false}
+          childName={patient?.name ?? ''}
         />
       ) : (
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Add trigger situations first (Step 2).</p>
