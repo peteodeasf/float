@@ -40,12 +40,33 @@ const STEP_LABELS: string[] = [
   'Extract from Monitoring Data',
   'Session 1 — Parent Consultation',
   'Session 2 — Patient Consultation',
+  'Identify Treatment Targets',
   'Build Treatment Plan',
   'Activate Treatment Plan',
   'Begin Exposures',
   'Weekly Sessions',
   'Parent Accommodation Check-ins',
 ]
+
+interface ConceptualizationDraft {
+  situations: string[]            // from extraction
+  behaviors: string[]             // from extraction
+  accommodationPatterns: string[] // from extraction + parent session
+  parentFearedOutcomes: string[]  // from parent DA
+  patientFearedOutcomes: string[] // from patient DA
+  treatmentTargets: string[]      // from step 5
+  lastUpdatedStep: number
+}
+
+const EMPTY_CONCEPTUALIZATION: ConceptualizationDraft = {
+  situations: [],
+  behaviors: [],
+  accommodationPatterns: [],
+  parentFearedOutcomes: [],
+  patientFearedOutcomes: [],
+  treatmentTargets: [],
+  lastUpdatedStep: 0,
+}
 
 const ANXIETY_PRESENTATIONS: { value: string; label: string }[] = [
   { value: 'social_anxiety', label: 'Social Anxiety' },
@@ -823,25 +844,60 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   )
 }
 
-// ── DA Status Badge ──
-function DABadge({ status, onClick }: { status: 'none' | 'in_progress' | 'approved'; onClick?: (e: React.MouseEvent) => void }) {
-  const colors = {
-    none: { bg: '#fff', text: '#94a3b8', border: '#cbd5e1' },
-    in_progress: { bg: '#f59e0b', text: '#fff', border: '#f59e0b' },
-    approved: { bg: 'var(--float-primary)', text: '#fff', border: 'var(--float-primary)' }
-  }
-  const c = colors[status]
-  const label = status === 'approved' ? 'DA ✓' : 'DA'
+// ── Case Conceptualization (living draft) ──
+function CaseConceptualization({ draft, defaultExpanded = false }: { draft: ConceptualizationDraft; defaultExpanded?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
+  const sections: { label: string; from: string; items: string[] }[] = [
+    { label: 'TRIGGER SITUATIONS', from: 'from Step 2', items: draft.situations },
+    { label: 'AVOIDANCE & SAFETY BEHAVIORS', from: 'from Step 2', items: draft.behaviors },
+    { label: 'ACCOMMODATION PATTERNS', from: 'from Step 2, updated Step 3', items: draft.accommodationPatterns },
+    { label: 'PARENT — FEARED OUTCOMES', from: 'from Step 3', items: draft.parentFearedOutcomes },
+    { label: 'PATIENT — FEARED OUTCOMES', from: 'from Step 4', items: draft.patientFearedOutcomes },
+    { label: 'TREATMENT TARGETS', from: 'from Step 5', items: draft.treatmentTargets },
+  ].filter(s => s.items.length > 0)
+
   return (
-    <button onClick={onClick} style={{
-      fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '4px',
-      background: c.bg, color: c.text, border: `1px solid ${c.border}`, cursor: onClick ? 'pointer' : 'default'
-    }}>{label}</button>
+    <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', borderLeft: '4px solid #F59E0B', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '16px 20px', width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>Case Conceptualization — Draft</span>
+        <button onClick={() => setExpanded(e => !e)} className="bg-transparent border-none cursor-pointer" style={{ fontSize: '12px', fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap', padding: 0 }}>
+          {expanded ? 'Hide draft ↑' : 'View draft conceptualization →'}
+        </button>
+      </div>
+      {expanded && (
+        <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {sections.length === 0 ? (
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: '1.5' }}>
+              Nothing captured yet. Run extraction in Step 2 to begin the draft.
+            </p>
+          ) : sections.map(s => (
+            <div key={s.label}>
+              <div style={{ marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: '#475569' }}>{s.label}</span>
+                <span style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8', marginLeft: '8px' }}>({s.from})</span>
+              </div>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {s.items.map((it, i) => (
+                  <li key={i} style={{ fontSize: '13px', color: '#334155', display: 'flex', gap: '8px', lineHeight: '1.45' }}>
+                    <span style={{ color: '#F59E0B' }}>·</span><span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
-// ── Downward Arrow Panel ──
-function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; onBack: () => void }) {
+// ── Session Downward Arrow (used in Session 1 / Session 2 steps) ──
+function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituation }: {
+  trigger: TriggerSituation
+  facilitatedBy: 'parent' | 'practitioner'
+  onApproved: (fearedOutcome: string) => void
+  showSituation: boolean
+}) {
   const qc = useQueryClient()
   const [firstAnswer, setFirstAnswer] = useState('')
   const [nextAnswer, setNextAnswer] = useState('')
@@ -853,7 +909,7 @@ function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; on
   })
 
   const createMut = useMutation({
-    mutationFn: () => createSituationDownwardArrow(trigger.id, firstAnswer),
+    mutationFn: () => createSituationDownwardArrow(trigger.id, firstAnswer, facilitatedBy),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); qc.invalidateQueries({ queryKey: ['da-statuses'] }); setFirstAnswer('') }
   })
 
@@ -869,7 +925,11 @@ function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; on
 
   const approveMut = useMutation({
     mutationFn: () => updateDownwardArrow(arrow!.id, { is_approved: true }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); qc.invalidateQueries({ queryKey: ['da-statuses'] }) }
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] })
+      qc.invalidateQueries({ queryKey: ['da-statuses'] })
+      if (arrow?.feared_outcome) onApproved(arrow.feared_outcome)
+    }
   })
 
   const steps: ArrowStep[] = arrow?.arrow_steps ?? []
@@ -891,15 +951,13 @@ function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; on
   }
 
   return (
-    <div className="p-4 h-full overflow-y-auto">
+    <div>
       {/* Header */}
-      <div style={{ marginBottom: '16px' }}>
-        <button onClick={onBack} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-text-hint)', marginBottom: '8px' }}>
-          &larr; Back to behaviors
-        </button>
-        <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b', margin: '0 0 2px' }}>Downward Arrow</h3>
-        <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Situation: {trigger.name}</p>
-      </div>
+      {showSituation && (
+        <div style={{ marginBottom: '12px' }}>
+          <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Situation: {trigger.name}</p>
+        </div>
+      )}
 
       {/* No DA yet */}
       {!arrow && (
@@ -973,7 +1031,7 @@ function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; on
               </p>
               {isApproved ? (
                 <p style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', margin: '0 0 8px' }}>
-                  &#10003; Approved
+                  &#10003; Added to case conceptualization.
                 </p>
               ) : (
                 <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}
@@ -983,7 +1041,7 @@ function DownwardArrowPanel({ trigger, onBack }: { trigger: TriggerSituation; on
                 </button>
               )}
               <p style={{ fontSize: '11px', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
-                This feared outcome will be used as the prediction in all experiments for this situation.
+                This feared outcome will be used as the prediction in experiments for this situation.
               </p>
             </div>
           )}
@@ -999,7 +1057,6 @@ export default function PatientPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [selectedTriggerId, setSelectedTriggerId] = useState<string | null>(null)
-  const [rightPanelView, setRightPanelView] = useState<'behaviors' | 'da'>('behaviors')
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
   const [newTriggerName, setNewTriggerName] = useState('')
   const [newTriggerDT, setNewTriggerDT] = useState('')
@@ -1060,6 +1117,15 @@ export default function PatientPage() {
   const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
   const stepInitializedRef = useRef(false)
 
+  // Case conceptualization — living draft (React state only for now)
+  const [conceptualizationDraft, setConceptualizationDraft] = useState<ConceptualizationDraft>(EMPTY_CONCEPTUALIZATION)
+  // Patient downward arrow (Step 4) — situation picker
+  const [patientDASituationId, setPatientDASituationId] = useState<string | null>(null)
+  // Treatment targets (Step 5)
+  const [treatmentTargets, setTreatmentTargets] = useState<string[]>([])
+  const [targetsConfirmed, setTargetsConfirmed] = useState(false)
+  const targetsInitRef = useRef(false)
+
   // Action plans
   const [showPlanEditor, setShowPlanEditor] = useState(false)
   const [editingPlan, setEditingPlan] = useState<ActionPlan | null>(null)
@@ -1099,15 +1165,7 @@ export default function PatientPage() {
     enabled: triggerIds.length > 0
   })
 
-  const getDAStatus = (triggerId: string): 'none' | 'in_progress' | 'approved' => {
-    const da = daStatuses?.[triggerId]
-    if (!da) return 'none'
-    if (da.feared_outcome_approved) return 'approved'
-    return 'in_progress'
-  }
-
   useEffect(() => { if (triggers?.length && !selectedTriggerId) setSelectedTriggerId(triggers[0].id) }, [triggers])
-  useEffect(() => { setRightPanelView('behaviors') }, [selectedTriggerId])
   const selectedTrigger = triggers?.find(t => t.id === selectedTriggerId)
 
   const activitySummary = (() => {
@@ -1263,6 +1321,15 @@ export default function PatientPage() {
 
     await queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
     await queryClient.invalidateQueries({ queryKey: ['triggers', planId] })
+
+    // Seed the living case conceptualization draft from the extraction results
+    setConceptualizationDraft(prev => ({
+      ...prev,
+      situations: extraction.situations.map(s => s.name),
+      behaviors: extraction.situations.flatMap(s => s.behaviors.map(b => `${b.name} — ${b.type}`)),
+      accommodationPatterns: extraction.accommodation_patterns ?? [],
+      lastUpdatedStep: 2,
+    }))
 
     setExtractProgress(null)
     setExtractApplying(false)
@@ -1510,7 +1577,7 @@ export default function PatientPage() {
   const { data: progress } = useQuery({
     queryKey: ['progress', patientId],
     queryFn: () => getPatientProgress(patientId!),
-    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 6)
+    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 7)
   })
   const progressChartData = progress?.recent_experiments
     .filter(e => e.completed_date)
@@ -1543,24 +1610,53 @@ export default function PatientPage() {
     setAccommodationCheckinComplete(true)
   }
 
+  // Treatment targets confirmation (Step 5)
+  const targetsStorageKey = patientId ? `float_targets_confirmed_${patientId}` : null
+  useEffect(() => {
+    if (!targetsStorageKey) return
+    setTargetsConfirmed(localStorage.getItem(targetsStorageKey) === 'true')
+  }, [targetsStorageKey])
+  const confirmTreatmentTargets = () => {
+    if (targetsStorageKey) localStorage.setItem(targetsStorageKey, 'true')
+    setTargetsConfirmed(true)
+  }
+
+  // Conceptualization draft — feared outcome contributions from the DA sub-steps
+  const addParentFearedOutcome = (fo: string) => setConceptualizationDraft(prev =>
+    prev.parentFearedOutcomes.includes(fo) ? prev
+      : { ...prev, parentFearedOutcomes: [...prev.parentFearedOutcomes, fo], lastUpdatedStep: Math.max(prev.lastUpdatedStep, 3) })
+  const addPatientFearedOutcome = (fo: string) => setConceptualizationDraft(prev =>
+    prev.patientFearedOutcomes.includes(fo) ? prev
+      : { ...prev, patientFearedOutcomes: [...prev.patientFearedOutcomes, fo], lastUpdatedStep: Math.max(prev.lastUpdatedStep, 4) })
+
+  // Treatment targets — keep local state and conceptualization draft in sync
+  const applyTargets = (next: string[]) => {
+    setTreatmentTargets(next)
+    setConceptualizationDraft(prev => ({ ...prev, treatmentTargets: next, lastUpdatedStep: Math.max(prev.lastUpdatedStep, 5) }))
+  }
+
   const notesList = sessionNotes ?? []
   const hasApprovedDA = !!daStatuses && Object.values(daStatuses).some(da => da?.feared_outcome_approved === true)
+  const hasParentDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'parent')
+  const hasPatientDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'practitioner')
   const hasBehavior = !!allBehaviors && Object.values(allBehaviors).some(bs => bs.length > 0)
+  const hasActiveSituationWithBehaviors = !!triggers && !!allBehaviors && triggers.some(t => t.is_active && (allBehaviors[t.id]?.length ?? 0) > 0)
   const completedExperimentCount = (patientExperiments ?? []).filter(e => e.status === 'completed').length
 
   const stepComplete: boolean[] = [
-    !!monitoringForm,
+    !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
-    notesList.some(n => n.session_type === 'consultation_1'),
-    notesList.some(n => n.session_type === 'consultation_2'),
-    (triggers?.length ?? 0) >= 1 && hasApprovedDA && hasBehavior,
+    notesList.some(n => n.session_type === 'consultation_1') && hasParentDA,
+    notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
+    (triggers?.length ?? 0) >= 1 && hasBehavior && hasApprovedDA && targetsConfirmed,
+    hasActiveSituationWithBehaviors,
     plan?.status === 'active' && !!patient?.teen_invited_at,
     completedExperimentCount >= 1,
     notesList.some(n => n.session_type === 'weekly_session'),
     accommodationCheckinComplete,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
-  const currentActiveStep = firstIncompleteStep === -1 ? 8 : firstIncompleteStep
+  const currentActiveStep = firstIncompleteStep === -1 ? STEP_LABELS.length - 1 : firstIncompleteStep
   const stepStatus: StepStatus[] = stepComplete.map((c, i) =>
     c ? 'complete' : (i === currentActiveStep ? 'active' : 'incomplete')
   )
@@ -1579,6 +1675,25 @@ export default function PatientPage() {
     setActiveStep(currentActiveStep)
     stepInitializedRef.current = true
   }, [coreLoaded, currentActiveStep])
+
+  // Default the patient Downward Arrow situation picker (Step 4) to the first situation
+  useEffect(() => { if (triggers?.length && !patientDASituationId) setPatientDASituationId(triggers[0].id) }, [triggers])
+
+  // Auto-populate treatment targets from situations (lowest DT first) once the clinician reaches Step 5
+  useEffect(() => {
+    if (targetsInitRef.current) return
+    if (activeStep !== 4) return
+    if (!triggers || triggers.length === 0 || !allBehaviors) return
+    if (treatmentTargets.length > 0) { targetsInitRef.current = true; return }
+    const ordered = [...triggers].sort((a, b) => (a.distress_thermometer_rating ?? 99) - (b.distress_thermometer_rating ?? 99))
+    const initial = ordered.map(t => {
+      const primary = allBehaviors[t.id]?.[0]
+      return primary ? `${t.name} — ${primary.name}` : t.name
+    })
+    setTreatmentTargets(initial)
+    setConceptualizationDraft(prev => ({ ...prev, treatmentTargets: initial, lastUpdatedStep: Math.max(prev.lastUpdatedStep, 5) }))
+    targetsInitRef.current = true
+  }, [activeStep, triggers, allBehaviors, treatmentTargets.length])
 
   // Accept/reject an AI-suggested anxiety presentation by toggling it on the patient profile
   const acceptPresentationMut = useMutation({
@@ -1680,7 +1795,7 @@ export default function PatientPage() {
   const monitoringExtractContent = (
     <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Extract from monitoring data</h2>
+        <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Extract from Monitoring Data</h2>
         {canExtract && (
           <button
             onClick={handleExtract}
@@ -1699,7 +1814,7 @@ export default function PatientPage() {
       ) : (
         <div>
           <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>
-            {monitoringForm.entries_count} monitoring {monitoringForm.entries_count === 1 ? 'entry' : 'entries'} collected. Use AI to extract trigger situations, avoidance behaviors, and accommodation patterns into the treatment plan.
+            AI extracts trigger situations, avoidance and safety behaviors, and accommodation patterns from the monitoring data. This creates a draft case conceptualization that develops through subsequent steps.
           </p>
           {(triggers?.length ?? 0) > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px' }}>
@@ -1738,6 +1853,128 @@ export default function PatientPage() {
       ) : (
         <button onClick={markAccommodationComplete} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Mark check-in complete</button>
       )}
+    </div>
+  )
+
+  const parentDAContent = (
+    <div style={cardStyle}>
+      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Parent Downward Arrow</div>
+      <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
+        Identify the child's feared outcomes from the parent's perspective. This is situation-agnostic — you're exploring what the parent believes the child fears most, before situations are formally linked.
+      </p>
+      {triggers && triggers.length > 0 ? (
+        <SessionDownwardArrow
+          trigger={triggers[0]}
+          facilitatedBy="parent"
+          onApproved={addParentFearedOutcome}
+          showSituation={false}
+        />
+      ) : (
+        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Add trigger situations first (Step 2).</p>
+      )}
+    </div>
+  )
+
+  const patientDAContent = (() => {
+    const selected = triggers?.find(t => t.id === patientDASituationId)
+    return (
+      <div style={cardStyle}>
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Patient Downward Arrow</div>
+        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
+          Complete the Downward Arrow with the child. Select a situation to link it to.
+        </p>
+        {triggers && triggers.length > 0 ? (
+          <>
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>Situation</label>
+              <select
+                value={patientDASituationId ?? ''}
+                onChange={e => setPatientDASituationId(e.target.value)}
+                className="text-sm border border-slate-200 rounded"
+                style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#fff' }}
+              >
+                {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+            {selected && (
+              <SessionDownwardArrow
+                key={selected.id}
+                trigger={selected}
+                facilitatedBy="practitioner"
+                onApproved={addPatientFearedOutcome}
+                showSituation
+              />
+            )}
+          </>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Add trigger situations first (Step 2).</p>
+        )}
+      </div>
+    )
+  })()
+
+  const treatmentTargetsContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={cardStyle}>
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Identify Treatment Targets</div>
+        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: 0 }}>
+          Review the case conceptualization and confirm the treatment targets — the specific situations and behaviors to work on, in priority order.
+        </p>
+      </div>
+
+      <CaseConceptualization draft={conceptualizationDraft} defaultExpanded />
+
+      <div style={cardStyle}>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Treatment Targets</div>
+        {treatmentTargets.length === 0 && (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 12px' }}>No targets yet. Add the situations and behaviors to work on, in priority order.</p>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+          {treatmentTargets.map((target, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', width: '18px', textAlign: 'right', flexShrink: 0 }}>{i + 1}.</span>
+              <input
+                value={target}
+                onChange={e => applyTargets(treatmentTargets.map((t, j) => j === i ? e.target.value : t))}
+                placeholder="Situation — primary behavior"
+                className="text-sm border border-slate-200 rounded"
+                style={{ flex: 1, padding: '7px 10px', minWidth: 0, boxSizing: 'border-box' }}
+              />
+              <button
+                onClick={() => { if (i > 0) applyTargets(treatmentTargets.map((t, j) => j === i - 1 ? treatmentTargets[i] : j === i ? treatmentTargets[i - 1] : t)) }}
+                disabled={i === 0}
+                title="Move up"
+                className="bg-transparent border-none cursor-pointer disabled:opacity-30"
+                style={{ fontSize: '13px', color: '#64748b', padding: '0 2px' }}
+              >↑</button>
+              <button
+                onClick={() => { if (i < treatmentTargets.length - 1) applyTargets(treatmentTargets.map((t, j) => j === i + 1 ? treatmentTargets[i] : j === i ? treatmentTargets[i + 1] : t)) }}
+                disabled={i === treatmentTargets.length - 1}
+                title="Move down"
+                className="bg-transparent border-none cursor-pointer disabled:opacity-30"
+                style={{ fontSize: '13px', color: '#64748b', padding: '0 2px' }}
+              >↓</button>
+              <button
+                onClick={() => applyTargets(treatmentTargets.filter((_, j) => j !== i))}
+                title="Remove target"
+                className="bg-transparent border-none cursor-pointer text-slate-400 hover:text-red-500"
+                style={{ fontSize: '14px', padding: '0 2px' }}
+              >×</button>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => applyTargets([...treatmentTargets, ''])} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ padding: '6px 0' }}>+ Add target</button>
+          <span style={{ flex: 1 }} />
+          {targetsConfirmed ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 14px' }}>
+              <span>&#10003;</span> Treatment targets confirmed.
+            </div>
+          ) : (
+            <button onClick={confirmTreatmentTargets} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Confirm treatment targets →</button>
+          )}
+        </div>
+      </div>
     </div>
   )
 
@@ -2178,7 +2415,6 @@ export default function PatientPage() {
                       style={{ flex: 1, fontSize: '13px', fontWeight: 500, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >{t.name}</span>
                     <DTBadge value={t.distress_thermometer_rating} />
-                    <DABadge status={getDAStatus(t.id)} onClick={(e) => { e.stopPropagation(); setSelectedTriggerId(t.id); setRightPanelView('da') }} />
                     <button
                       onClick={e => { e.stopPropagation(); setSelectedTriggerId(t.id); setEditTriggerName(t.name); setEditingTriggerId(t.id) }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
@@ -2230,12 +2466,10 @@ export default function PatientPage() {
             )}
           </div>
         </div>
-        {/* Right panel — behaviors or DA */}
+        {/* Right panel — behaviors */}
         <div style={{ overflow: 'hidden' }}>
           {selectedTrigger ? (
-            rightPanelView === 'da'
-              ? <DownwardArrowPanel trigger={selectedTrigger} onBack={() => setRightPanelView('behaviors')} />
-              : <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} planStatus={plan.status} />
+            <BehaviorPanel trigger={selectedTrigger} planId={plan.id} patientId={patientId!} planStatus={plan.status} />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '13px', color: '#94a3b8', padding: '16px' }}>Select a situation</div>
           )}
@@ -2984,28 +3218,38 @@ export default function PatientPage() {
             {activePersistentTab === null && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {activeStep === 0 && monitoringCard}
-                {activeStep === 1 && monitoringExtractContent}
+                {activeStep === 1 && (
+                  <>
+                    {monitoringExtractContent}
+                    <CaseConceptualization draft={conceptualizationDraft} />
+                  </>
+                )}
                 {activeStep === 2 && (
                   <>
                     {renderPrep('session_1')}
                     {renderNotesSection('consultation_1', '+ Add Session 1 note')}
+                    {parentDAContent}
+                    <CaseConceptualization draft={conceptualizationDraft} />
                   </>
                 )}
                 {activeStep === 3 && (
                   <>
                     {renderPrep('session_2')}
                     {renderNotesSection('consultation_2', '+ Add Session 2 note')}
+                    {patientDAContent}
+                    <CaseConceptualization draft={conceptualizationDraft} />
                   </>
                 )}
-                {activeStep === 4 && treatmentPlanBuilder}
-                {activeStep === 5 && activateStepContent}
-                {activeStep === 6 && (
+                {activeStep === 4 && treatmentTargetsContent}
+                {activeStep === 5 && treatmentPlanBuilder}
+                {activeStep === 6 && activateStepContent}
+                {activeStep === 7 && (
                   <>
                     {renderPrep('session_3')}
                     {experimentsContent}
                   </>
                 )}
-                {activeStep === 7 && (
+                {activeStep === 8 && (
                   <>
                     {preSessionBriefContent}
                     {renderPrep('weekly')}
@@ -3013,7 +3257,7 @@ export default function PatientPage() {
                     {actionPlansContent}
                   </>
                 )}
-                {activeStep === 8 && accommodationContent}
+                {activeStep === 9 && accommodationContent}
               </div>
             )}
           </div>

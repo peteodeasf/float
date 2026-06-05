@@ -207,9 +207,9 @@ export const getSituationDownwardArrow = async (situationId: string): Promise<Do
   return response.data
 }
 
-export const createSituationDownwardArrow = async (situationId: string, firstAnswer?: string): Promise<DownwardArrow> => {
+export const createSituationDownwardArrow = async (situationId: string, firstAnswer?: string, facilitatedBy: string = 'practitioner'): Promise<DownwardArrow> => {
   const response = await apiClient.post(`/trigger-situations/${situationId}/downward-arrow`, {
-    facilitated_by: 'practitioner',
+    facilitated_by: facilitatedBy,
     first_answer: firstAnswer
   })
   return response.data
