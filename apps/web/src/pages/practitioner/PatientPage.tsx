@@ -3296,13 +3296,6 @@ export default function PatientPage() {
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Extraction Results</div>
                 <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 18px' }}>Based on {monitoringForm?.entries_count ?? 0} monitoring entries</p>
 
-                {extraction.summary && (
-                  <div style={{ marginBottom: '18px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Summary</div>
-                    <p style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, margin: 0 }}>{extraction.summary}</p>
-                  </div>
-                )}
-
                 <div style={{ marginBottom: '18px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Suggested trigger situations</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

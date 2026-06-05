@@ -296,8 +296,7 @@ Analyze the monitoring entries and extract the following. Return ONLY valid JSON
   "maintaining_mechanisms": "2-3 sentence clinical hypothesis about what drives and maintains this child's anxiety — written for a clinician, not the family",
   "treatment_targets": [
     "Situation name — brief rationale for prioritizing"
-  ],
-  "summary": "2-3 sentence plain-language summary of what the monitoring data shows"
+  ]
 }
 
 For maintaining_mechanisms, write a clinical hypothesis like: "Sarah's anxiety is maintained by a pattern of avoidance and safety behaviors that prevent disconfirmation of her feared outcomes. Parental accommodation reinforces the belief that anxiety situations are genuinely dangerous. The core feared outcome across situations appears to be social rejection and humiliation."
@@ -380,6 +379,7 @@ async def extract_monitoring_data(
         )
 
     extraction.pop("suggested_presentations", None)
+    extraction.pop("summary", None)
     return extraction
 
 
