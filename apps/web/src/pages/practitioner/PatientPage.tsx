@@ -17,6 +17,7 @@ import {
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, type MonitoringExtraction } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
+import { fetchFormulation, createFormulation, updateFormulation } from '../../api/formulation'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -1215,7 +1216,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 }
 
 // ── Case Conceptualization (living draft) ──
-function CaseConceptualization({ draft, defaultExpanded = false }: { draft: ConceptualizationDraft; defaultExpanded?: boolean }) {
+function CaseConceptualization({ draft, defaultExpanded = false, saveStatus = 'idle' }: { draft: ConceptualizationDraft; defaultExpanded?: boolean; saveStatus?: 'idle' | 'saving' | 'saved' }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const sections: { label: string; from: string; items: string[] }[] = [
     { label: 'TRIGGER SITUATIONS', from: 'from Step 2', items: draft.situations },
@@ -1229,7 +1230,11 @@ function CaseConceptualization({ draft, defaultExpanded = false }: { draft: Conc
   return (
     <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', borderLeft: '4px solid #F59E0B', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '16px 20px', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>Case Conceptualization — Draft</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>Case Conceptualization — Draft</span>
+          {saveStatus === 'saving' && <span style={{ fontSize: '11px', color: '#b45309' }}>Saving...</span>}
+          {saveStatus === 'saved' && <span style={{ fontSize: '11px', color: '#b45309' }}>Saved</span>}
+        </div>
         <button onClick={() => setExpanded(e => !e)} className="bg-transparent border-none cursor-pointer" style={{ fontSize: '12px', fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap', padding: 0 }}>
           {expanded ? 'Hide draft ↑' : 'View draft conceptualization →'}
         </button>
@@ -1497,8 +1502,81 @@ export default function PatientPage() {
   const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
   const stepInitializedRef = useRef(false)
 
-  // Case conceptualization — living draft (React state only for now)
+  // Case conceptualization — living draft, persisted to the backend formulation record
   const [conceptualizationDraft, setConceptualizationDraft] = useState<ConceptualizationDraft>(EMPTY_CONCEPTUALIZATION)
+  const [formulationSaveStatus, setFormulationSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const formulationIdRef = useRef<string | null>(null)
+  const formulationHydratedRef = useRef(false)
+  const skipNextFormulationSaveRef = useRef(false)
+  const formulationSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const formulationSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { data: formulation } = useQuery({
+    queryKey: ['formulation', patientId],
+    queryFn: () => fetchFormulation(patientId!),
+    enabled: !!patientId,
+  })
+
+  // Populate the draft once from the persisted formulation, if one exists
+  useEffect(() => {
+    if (formulationHydratedRef.current) return
+    if (formulation === undefined) return
+    if (formulation) {
+      formulationIdRef.current = formulation.id
+      skipNextFormulationSaveRef.current = true
+      setConceptualizationDraft({
+        situations: formulation.situations ?? [],
+        behaviors: formulation.behaviors ?? [],
+        accommodationPatterns: formulation.accommodation_patterns ?? [],
+        parentFearedOutcomes: formulation.parent_feared_outcomes ?? [],
+        patientFearedOutcomes: formulation.patient_feared_outcomes ?? [],
+        treatmentTargets: formulation.treatment_targets ?? [],
+        lastUpdatedStep: formulation.last_updated_step ?? 0,
+      })
+    }
+    formulationHydratedRef.current = true
+  }, [formulation])
+
+  // Persist the draft to the backend on change (1.5s debounce)
+  useEffect(() => {
+    if (!patientId) return
+    if (!formulationHydratedRef.current) return
+    if (skipNextFormulationSaveRef.current) { skipNextFormulationSaveRef.current = false; return }
+    const draft = conceptualizationDraft
+    if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current)
+    formulationSaveTimerRef.current = setTimeout(async () => {
+      const payload = {
+        situations: draft.situations,
+        behaviors: draft.behaviors,
+        accommodation_patterns: draft.accommodationPatterns,
+        parent_feared_outcomes: draft.parentFearedOutcomes,
+        patient_feared_outcomes: draft.patientFearedOutcomes,
+        treatment_targets: draft.treatmentTargets,
+        last_updated_step: draft.lastUpdatedStep,
+      }
+      setFormulationSaveStatus('saving')
+      try {
+        if (formulationIdRef.current) {
+          await updateFormulation(patientId, payload)
+        } else {
+          const created = await createFormulation(patientId, payload)
+          formulationIdRef.current = created.id
+        }
+        setFormulationSaveStatus('saved')
+        if (formulationSavedTimerRef.current) clearTimeout(formulationSavedTimerRef.current)
+        formulationSavedTimerRef.current = setTimeout(() => setFormulationSaveStatus('idle'), 2000)
+      } catch {
+        setFormulationSaveStatus('idle')
+      }
+    }, 1500)
+    return () => { if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current) }
+  }, [conceptualizationDraft, patientId])
+
+  // Clean up formulation save timers on unmount
+  useEffect(() => () => {
+    if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current)
+    if (formulationSavedTimerRef.current) clearTimeout(formulationSavedTimerRef.current)
+  }, [])
   // Patient downward arrow (Step 4) — situation picker
   const [patientDASituationId, setPatientDASituationId] = useState<string | null>(null)
   // Treatment targets (Step 5)
@@ -2311,7 +2389,7 @@ export default function PatientPage() {
         </p>
       </div>
 
-      <CaseConceptualization draft={conceptualizationDraft} defaultExpanded />
+      <CaseConceptualization draft={conceptualizationDraft} defaultExpanded saveStatus={formulationSaveStatus} />
 
       <div style={cardStyle}>
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Treatment Targets</div>
@@ -3620,7 +3698,7 @@ export default function PatientPage() {
                   <>
                     {renderGuide(2)}
                     {monitoringExtractContent}
-                    <CaseConceptualization draft={conceptualizationDraft} />
+                    <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
                   </>
                 )}
                 {activeStep === 2 && (
@@ -3628,7 +3706,7 @@ export default function PatientPage() {
                     {renderPrep('session_1')}
                     {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />}
                     {parentDAContent}
-                    <CaseConceptualization draft={conceptualizationDraft} />
+                    <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
                   </>
                 )}
                 {activeStep === 3 && (
@@ -3636,7 +3714,7 @@ export default function PatientPage() {
                     {renderPrep('session_2')}
                     {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />}
                     {patientDAContent}
-                    <CaseConceptualization draft={conceptualizationDraft} />
+                    <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
                   </>
                 )}
                 {activeStep === 4 && (

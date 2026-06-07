@@ -14,16 +14,26 @@ from app.api.routers.patients import get_practitioner_context
 # --- Schemas ---
 
 class FormulationCreate(BaseModel):
+    situations: Optional[List[str]] = None
+    behaviors: Optional[List[str]] = None
     maintaining_mechanisms: Optional[str] = None
     accommodation_patterns: Optional[List[str]] = None
+    parent_feared_outcomes: Optional[List[str]] = None
+    patient_feared_outcomes: Optional[List[str]] = None
     treatment_targets: Optional[List[str]] = None
+    last_updated_step: Optional[int] = None
     ai_suggested: bool = False
 
 
 class FormulationUpdate(BaseModel):
+    situations: Optional[List[str]] = None
+    behaviors: Optional[List[str]] = None
     maintaining_mechanisms: Optional[str] = None
     accommodation_patterns: Optional[List[str]] = None
+    parent_feared_outcomes: Optional[List[str]] = None
+    patient_feared_outcomes: Optional[List[str]] = None
     treatment_targets: Optional[List[str]] = None
+    last_updated_step: Optional[int] = None
     ai_suggested: Optional[bool] = None
 
 
@@ -32,9 +42,14 @@ class FormulationResponse(BaseModel):
     patient_id: uuid.UUID
     organization_id: uuid.UUID
     practitioner_id: uuid.UUID
+    situations: Optional[List[str]] = None
+    behaviors: Optional[List[str]] = None
     maintaining_mechanisms: Optional[str] = None
     accommodation_patterns: Optional[List[str]] = None
+    parent_feared_outcomes: Optional[List[str]] = None
+    patient_feared_outcomes: Optional[List[str]] = None
     treatment_targets: Optional[List[str]] = None
+    last_updated_step: Optional[int] = None
     ai_suggested: bool
     created_at: datetime
     updated_at: datetime
@@ -89,9 +104,14 @@ async def create_formulation(
         patient_id=patient_id,
         organization_id=practitioner.organization_id,
         practitioner_id=practitioner.id,
+        situations=data.situations,
+        behaviors=data.behaviors,
         maintaining_mechanisms=data.maintaining_mechanisms,
         accommodation_patterns=data.accommodation_patterns,
+        parent_feared_outcomes=data.parent_feared_outcomes,
+        patient_feared_outcomes=data.patient_feared_outcomes,
         treatment_targets=data.treatment_targets,
+        last_updated_step=data.last_updated_step,
         ai_suggested=data.ai_suggested,
     )
     db.add(formulation)
