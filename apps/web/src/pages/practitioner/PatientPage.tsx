@@ -37,7 +37,7 @@ type StepStatus = 'complete' | 'active' | 'incomplete'
 
 const STEP_LABELS: string[] = [
   'Parent Monitoring Form',
-  'Extract from Monitoring Data',
+  'Analyze Monitoring Data',
   'Session 1 — Parent Consultation',
   'Session 2 — Patient Consultation',
   'Identify Treatment Targets',
