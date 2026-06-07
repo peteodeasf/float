@@ -81,6 +81,19 @@ const ANXIETY_PRESENTATIONS: { value: string; label: string }[] = [
 const presentationLabel = (value: string): string =>
   ANXIETY_PRESENTATIONS.find(p => p.value === value)?.label ?? value
 
+function isSimilar(a: string, b: string): boolean {
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const na = normalize(a)
+  const nb = normalize(b)
+  // Exact match after normalization
+  if (na === nb) return true
+  // One contains the other
+  if (na.includes(nb) || nb.includes(na)) return true
+  // First 15 characters match (same stem)
+  if (na.slice(0, 15) === nb.slice(0, 15)) return true
+  return false
+}
+
 function StepStatusIcon({ status }: { status: StepStatus }) {
   if (status === 'complete') {
     return (
@@ -1471,6 +1484,7 @@ export default function PatientPage() {
   const [extractFailed, setExtractFailed] = useState<string[]>([])
   const [extractSuccess, setExtractSuccess] = useState(false)
   const [extractSuccessMessage, setExtractSuccessMessage] = useState('Treatment plan populated from monitoring data')
+  const [extractPreview, setExtractPreview] = useState<{ name: string; isNew: boolean }[] | null>(null)
 
   // Teen invitation
   const [showTeenInviteForm, setShowTeenInviteForm] = useState(false)
@@ -1714,6 +1728,7 @@ export default function PatientPage() {
     setExtraction(null)
     setExtractFailed([])
     setExtractSuccess(false)
+    setExtractPreview(null)
     try {
       const data = await extractMonitoringData(patientId!)
       setExtraction(data)
@@ -1731,6 +1746,24 @@ export default function PatientPage() {
     setExtractProgress(null)
     setExtractFailed([])
     setExtractApplying(false)
+    setExtractPreview(null)
+  }
+
+  const handleShowPreview = async () => {
+    if (!extraction) return
+    setExtractError(null)
+    setExtractFailed([])
+    let existingTriggers: TriggerSituation[] = []
+    try {
+      existingTriggers = plan?.id ? await getTriggers(plan.id) : []
+    } catch {
+      existingTriggers = []
+    }
+    const preview = extraction.situations.map(sit => ({
+      name: sit.name,
+      isNew: !existingTriggers.some(t => isSimilar(t.name, sit.name)),
+    }))
+    setExtractPreview(preview)
   }
 
   const handleAddToPlan = async () => {
@@ -1754,24 +1787,24 @@ export default function PatientPage() {
       }
     }
 
-    // Fetch existing situations so we can skip duplicates (case-insensitive match)
+    // Fetch existing situations so we can skip duplicates (fuzzy match)
     let existingTriggers: TriggerSituation[] = []
     try {
       existingTriggers = await getTriggers(planId!)
     } catch {
       existingTriggers = []
     }
-    // Cache of existing behavior names (lowercased) per trigger id
-    const behaviorNamesByTrigger: Record<string, Set<string>> = {}
+    // Cache of existing behavior names per trigger id (for fuzzy duplicate checks)
+    const behaviorNamesByTrigger: Record<string, string[]> = {}
 
     let anyCreated = false
     let anySkipped = false
 
     for (const sit of extraction.situations) {
       try {
-        // Match an existing situation by name, case-insensitive
+        // Match an existing situation by fuzzy similarity
         let trigger: TriggerSituation | null =
-          existingTriggers.find(t => t.name.trim().toLowerCase() === sit.name.trim().toLowerCase()) ?? null
+          existingTriggers.find(t => isSimilar(t.name, sit.name)) ?? null
 
         if (trigger) {
           anySkipped = true
@@ -1793,13 +1826,13 @@ export default function PatientPage() {
           } catch {
             existingBehaviors = []
           }
-          behaviorNamesByTrigger[trigger.id] = new Set(existingBehaviors.map(b => b.name.trim().toLowerCase()))
+          behaviorNamesByTrigger[trigger.id] = existingBehaviors.map(b => b.name)
         }
         const behaviorNames = behaviorNamesByTrigger[trigger.id]
 
         for (const beh of sit.behaviors) {
-          const behKey = beh.name.trim().toLowerCase()
-          if (behaviorNames.has(behKey)) {
+          // Match an existing behavior by fuzzy similarity
+          if (behaviorNames.some(n => isSimilar(n, beh.name))) {
             anySkipped = true
             continue
           }
@@ -1810,7 +1843,7 @@ export default function PatientPage() {
               behavior_type: beh.type || 'avoidance',
               distress_thermometer_when_refraining: sit.estimated_dt ?? undefined,
             })
-            behaviorNames.add(behKey)
+            behaviorNames.push(beh.name)
             anyCreated = true
           } catch {
             failed.push(`Behavior: ${beh.name}`)
@@ -3897,14 +3930,36 @@ export default function PatientPage() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  <button onClick={handleAddToPlan} disabled={extractApplying}
-                    className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px' }}>
-                    {extractApplying ? 'Adding…' : extractFailed.length > 0 ? 'Retry' : 'Add situations to treatment plan'}
-                  </button>
-                  <button onClick={closeExtract} disabled={extractApplying}
-                    className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 12px' }}>Dismiss</button>
-                </div>
+                {extractPreview ? (
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Ready to add:</div>
+                    <ul style={{ listStyle: 'none', margin: '0 0 14px', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {extractPreview.map((p, i) => (
+                        <li key={i} style={{ fontSize: '13px', color: p.isNew ? '#16a34a' : '#94a3b8', display: 'flex', gap: '6px' }}>
+                          <span>{p.isNew ? '✓' : '✗'}</span>
+                          <span>{p.name} {p.isNew ? '(new)' : '(already exists — skipping)'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      <button onClick={handleAddToPlan} disabled={extractApplying}
+                        className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px' }}>
+                        {extractApplying ? 'Adding…' : 'Confirm'}
+                      </button>
+                      <button onClick={() => setExtractPreview(null)} disabled={extractApplying}
+                        className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 12px' }}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <button onClick={handleShowPreview} disabled={extractApplying}
+                      className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px' }}>
+                      {extractApplying ? 'Adding…' : extractFailed.length > 0 ? 'Retry' : 'Add situations to treatment plan'}
+                    </button>
+                    <button onClick={closeExtract} disabled={extractApplying}
+                      className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 12px' }}>Dismiss</button>
+                  </div>
+                )}
               </div>
             )}
           </div>
