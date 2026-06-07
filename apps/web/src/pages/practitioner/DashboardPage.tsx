@@ -3,18 +3,96 @@ import { useNavigate } from 'react-router-dom'
 import { getPatients, Patient } from '../../api/patients'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 
+const STEP_LABELS: string[] = [
+  'Parent Monitoring Form',
+  'Analyze Monitoring Data',
+  'Session 1 — Parent Consultation',
+  'Session 2 — Patient Consultation',
+  'Identify Treatment Targets',
+  'Build Treatment Plan',
+  'Activate Treatment Plan',
+  'Begin Exposures',
+  'Weekly Sessions',
+  'Parent Accommodation Check-ins',
+]
+
+// Relative "last activity" label
+function relativeActivityLabel(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate())
+  const days = Math.round((startOfDay(new Date()).getTime() - startOfDay(d).getTime()) / 86400000)
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days} days ago`
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+// Current step in the Treatment Journey (mirrors the patient page sidebar completion logic)
+function computeProgress(p: Patient): { stepNumber: number; label: string } {
+  let accomDone = false
+  try { accomDone = localStorage.getItem(`float_accom_${p.id}`) === 'true' } catch { accomDone = false }
+  const stepComplete: boolean[] = [
+    p.has_monitoring_form,
+    p.situation_count >= 1,
+    p.has_consultation_1_note && p.has_parent_da,
+    p.has_consultation_2_note && p.has_patient_da,
+    p.has_treatment_targets,
+    p.has_active_situation_with_behaviors,
+    p.plan_status === 'active' && p.teen_invited,
+    p.completed_experiment_count >= 1,
+    p.has_weekly_note,
+    accomDone,
+  ]
+  const firstIncomplete = stepComplete.findIndex(c => !c)
+  const idx = firstIncomplete === -1 ? STEP_LABELS.length - 1 : firstIncomplete
+  return { stepNumber: idx + 1, label: STEP_LABELS[idx] }
+}
+
+// Reasons the patient needs attention (empty array = no badge)
+function needsAttentionReasons(p: Patient): string[] {
+  const reasons: string[] = []
+  if (p.overdue_experiment_count > 0) {
+    reasons.push(`Overdue experiment${p.overdue_experiment_count > 1 ? 's' : ''} (${p.overdue_experiment_count})`)
+  }
+  if (p.active_plan_with_no_recent_activity) {
+    reasons.push('No activity this week')
+  }
+  if (p.monitoring_form_sent && p.monitoring_entries_count < 3) {
+    reasons.push(`Awaiting monitoring entries (${p.monitoring_entries_count}/3)`)
+  }
+  return reasons
+}
+
 function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
+  const reasons = needsAttentionReasons(patient)
+  const progress = computeProgress(patient)
   return (
     <tr
       onClick={onClick}
       className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
     >
       <td className="px-6 py-4">
-        <p className="font-medium" style={{ color: 'var(--float-text)' }}>{patient.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium" style={{ color: 'var(--float-text)' }}>{patient.name}</p>
+          {reasons.length > 0 && (
+            <span
+              title={reasons.join('\n')}
+              aria-label="Needs attention"
+              style={{ color: '#f59e0b', fontSize: '10px', lineHeight: 1 }}
+            >
+              ●
+            </span>
+          )}
+        </div>
         <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>{patient.email}</p>
       </td>
+      <td className="px-6 py-4 text-xs" style={{ color: 'var(--float-text-hint)' }}>
+        Step {progress.stepNumber} of 10 · {progress.label}
+      </td>
       <td className="px-6 py-4 text-sm" style={{ color: 'var(--float-text-secondary)' }}>
-        {new Date(patient.created_at).toLocaleDateString()}
+        {relativeActivityLabel(patient.last_activity_at)}
       </td>
       <td className="px-6 py-4 text-right">
         <span className="text-slate-300 group-hover:text-teal-500 transition-colors text-sm">
@@ -119,7 +197,10 @@ export default function DashboardPage() {
                     Patient
                   </th>
                   <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--float-text-hint)' }}>
-                    Added
+                    Progress
+                  </th>
+                  <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--float-text-hint)' }}>
+                    Last activity
                   </th>
                   <th className="px-6 py-3 w-10"></th>
                 </tr>

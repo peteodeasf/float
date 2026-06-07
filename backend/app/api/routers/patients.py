@@ -3,12 +3,12 @@ import secrets
 import string
 import traceback
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, or_
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -18,6 +18,11 @@ from app.models.user import User, UserRole
 from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink
 from app.models.experiment import Experiment
 from app.models.message import Message
+from app.models.session_note import SessionNote
+from app.models.downward_arrow import DownwardArrow
+from app.models.monitoring import MonitoringForm, MonitoringEntry
+from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
+from app.models.formulation import ClinicalFormulation
 from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse
 from app.services.email_service import send_teen_invitation_email
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
@@ -86,6 +91,140 @@ async def get_patient_context(
     return current_user, patient
 
 
+async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfile) -> dict:
+    """Compute treatment-journey progress and needs-attention metrics for the patient list."""
+    pid = patient.id
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    seven_days_ago = now - timedelta(days=7)
+
+    # --- Monitoring form / entries ---
+    forms = (await db.execute(
+        select(MonitoringForm.id, MonitoringForm.sent_at).where(MonitoringForm.patient_id == pid)
+    )).all()
+    form_ids = [f.id for f in forms]
+    monitoring_form_sent = any(f.sent_at is not None for f in forms)
+
+    monitoring_entries_count = 0
+    last_entry_at = None
+    if form_ids:
+        monitoring_entries_count = (await db.execute(
+            select(func.count()).select_from(MonitoringEntry).where(
+                MonitoringEntry.monitoring_form_id.in_(form_ids),
+                MonitoringEntry.is_draft.is_(False),
+            )
+        )).scalar_one()
+        last_entry_at = (await db.execute(
+            select(func.max(MonitoringEntry.created_at)).where(
+                MonitoringEntry.monitoring_form_id.in_(form_ids)
+            )
+        )).scalar_one()
+
+    # --- Treatment plan / trigger situations / behaviors ---
+    plan = (await db.execute(
+        select(TreatmentPlan).where(TreatmentPlan.patient_id == pid)
+        .order_by(TreatmentPlan.created_at.desc())
+    )).scalars().first()
+    plan_status = plan.status if plan else None
+
+    situation_count = 0
+    has_active_situation_with_behaviors = False
+    if plan:
+        situation_count = (await db.execute(
+            select(func.count()).select_from(TriggerSituation).where(
+                TriggerSituation.treatment_plan_id == plan.id
+            )
+        )).scalar_one()
+        has_active_situation_with_behaviors = (await db.execute(
+            select(TriggerSituation.id)
+            .join(AvoidanceBehavior, AvoidanceBehavior.trigger_situation_id == TriggerSituation.id)
+            .where(
+                TriggerSituation.treatment_plan_id == plan.id,
+                TriggerSituation.is_active.is_(True),
+            )
+            .limit(1)
+        )).first() is not None
+
+    # --- Session notes ---
+    note_types = {row[0] for row in (await db.execute(
+        select(SessionNote.session_type).where(SessionNote.patient_id == pid).distinct()
+    )).all()}
+    has_consultation_1_note = 'consultation_1' in note_types
+    has_consultation_2_note = 'consultation_2' in note_types
+    has_weekly_note = 'weekly_session' in note_types
+
+    # --- Downward arrows ---
+    da_facilitators = {row[0] for row in (await db.execute(
+        select(DownwardArrow.facilitated_by).where(DownwardArrow.patient_id == pid).distinct()
+    )).all()}
+    has_parent_da = 'parent' in da_facilitators
+    has_patient_da = 'practitioner' in da_facilitators
+
+    # --- Treatment targets (formulation) ---
+    target_rows = [row[0] for row in (await db.execute(
+        select(ClinicalFormulation.treatment_targets).where(ClinicalFormulation.patient_id == pid)
+    )).all()]
+    has_treatment_targets = any(t is not None and len(t) > 0 for t in target_rows)
+
+    # --- Experiments ---
+    completed_experiment_count = (await db.execute(
+        select(func.count()).select_from(Experiment).where(
+            Experiment.patient_id == pid, Experiment.status == 'completed'
+        )
+    )).scalar_one()
+    overdue_experiment_count = (await db.execute(
+        select(func.count()).select_from(Experiment).where(
+            Experiment.patient_id == pid,
+            Experiment.status == 'committed',
+            Experiment.scheduled_date.is_not(None),
+            Experiment.scheduled_date < today_start,
+        )
+    )).scalar_one()
+    recent_activity_exists = (await db.execute(
+        select(Experiment.id).where(
+            Experiment.patient_id == pid,
+            or_(
+                Experiment.created_at >= seven_days_ago,
+                Experiment.committed_at >= seven_days_ago,
+            ),
+        ).limit(1)
+    )).first() is not None
+    active_plan_with_no_recent_activity = (plan_status == 'active') and not recent_activity_exists
+
+    # --- Last activity (most recent of several sources, falling back to created_at) ---
+    last_exp_at = (await db.execute(
+        select(func.max(Experiment.created_at)).where(Experiment.patient_id == pid)
+    )).scalar_one()
+    last_note_at = (await db.execute(
+        select(func.max(SessionNote.created_at)).where(SessionNote.patient_id == pid)
+    )).scalar_one()
+    last_msg_at = (await db.execute(
+        select(func.max(Message.created_at)).where(Message.patient_id == pid)
+    )).scalar_one()
+    candidates = [c for c in [last_exp_at, last_note_at, last_msg_at, last_entry_at, patient.created_at] if c is not None]
+    last_activity_at = max(candidates) if candidates else patient.created_at
+
+    return {
+        'last_activity_at': last_activity_at,
+        'has_monitoring_form': monitoring_form_sent,
+        'situation_count': situation_count,
+        'has_consultation_1_note': has_consultation_1_note,
+        'has_parent_da': has_parent_da,
+        'has_consultation_2_note': has_consultation_2_note,
+        'has_patient_da': has_patient_da,
+        'has_treatment_targets': has_treatment_targets,
+        'has_active_situation_with_behaviors': has_active_situation_with_behaviors,
+        'plan_status': plan_status,
+        'teen_invited': patient.teen_invited_at is not None,
+        'completed_experiment_count': completed_experiment_count,
+        'has_weekly_note': has_weekly_note,
+        'overdue_experiment_count': overdue_experiment_count,
+        'active_plan_with_no_recent_activity': active_plan_with_no_recent_activity,
+        'monitoring_entries_count': monitoring_entries_count,
+        'monitoring_form_sent': monitoring_form_sent,
+    }
+
+
 @router.get("", response_model=list[PatientListResponse])
 async def list_patients(
     context: tuple = Depends(get_practitioner_context),
@@ -101,12 +240,14 @@ async def list_patients(
             select(User).where(User.id == patient.user_id)
         )
         user = user_result.scalar_one()
+        metrics = await _compute_patient_list_metrics(db, patient)
         result.append(PatientListResponse(
             id=patient.id,
             name=patient.name,
             email=user.email,
             phone_number=patient.phone_number,
-            created_at=patient.created_at
+            created_at=patient.created_at,
+            **metrics,
         ))
     return result
 

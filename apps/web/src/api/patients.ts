@@ -6,6 +6,25 @@ export type Patient = {
   email: string
   phone_number?: string | null
   created_at: string
+  last_activity_at?: string | null
+  // Treatment journey progress
+  has_monitoring_form: boolean
+  situation_count: number
+  has_consultation_1_note: boolean
+  has_parent_da: boolean
+  has_consultation_2_note: boolean
+  has_patient_da: boolean
+  has_treatment_targets: boolean
+  has_active_situation_with_behaviors: boolean
+  plan_status?: string | null
+  teen_invited: boolean
+  completed_experiment_count: number
+  has_weekly_note: boolean
+  // Needs attention
+  overdue_experiment_count: number
+  active_plan_with_no_recent_activity: boolean
+  monitoring_entries_count: number
+  monitoring_form_sent: boolean
 }
 
 export interface PatientDetail {
