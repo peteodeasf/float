@@ -2099,7 +2099,7 @@ export default function PatientPage() {
             className="bg-transparent border-none cursor-pointer disabled:opacity-50"
             style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
           >
-            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-extract from monitoring data →' : 'Extract with AI →')}
+            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-analyze Monitoring Data →' : 'Extract with AI →')}
           </button>
         )}
       </div>
