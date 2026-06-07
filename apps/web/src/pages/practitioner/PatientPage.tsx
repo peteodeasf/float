@@ -606,6 +606,93 @@ function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onC
   )
 }
 
+function AutoSaveSessionNote({ patientId, sessionType, placeholder }: { patientId: string; sessionType: string; placeholder: string }) {
+  const queryClient = useQueryClient()
+  const { data: sessionNotes } = useQuery({
+    queryKey: ['session-notes', patientId],
+    queryFn: () => getSessionNotes(patientId),
+    enabled: !!patientId,
+  })
+
+  const [content, setContent] = useState('')
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+
+  const noteIdRef = useRef<string | null>(null)
+  const initializedRef = useRef(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const taRef = useRef<HTMLTextAreaElement | null>(null)
+
+  // Hydrate once from the existing note for this session type
+  useEffect(() => {
+    if (initializedRef.current) return
+    if (sessionNotes === undefined) return
+    const existing = sessionNotes.find(n => n.session_type === sessionType) ?? null
+    if (existing) {
+      noteIdRef.current = existing.id
+      setContent(existing.content)
+    }
+    initializedRef.current = true
+  }, [sessionNotes, sessionType])
+
+  // Auto-expand the textarea as content grows
+  useEffect(() => {
+    const el = taRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.max(160, el.scrollHeight) + 'px'
+  }, [content])
+
+  // Clean up timers on unmount
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+  }, [])
+
+  const save = async (value: string) => {
+    if (!noteIdRef.current && !value.trim()) { setStatus('idle'); return }
+    setStatus('saving')
+    try {
+      if (noteIdRef.current) {
+        await updateSessionNote(noteIdRef.current, { content: value })
+      } else {
+        const created = await createSessionNote(patientId, { session_type: sessionType, content: value })
+        noteIdRef.current = created.id
+      }
+      queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] })
+      setStatus('saved')
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setStatus('idle'), 2000)
+    } catch {
+      setStatus('idle')
+    }
+  }
+
+  const handleChange = (value: string) => {
+    setContent(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => save(value), 1500)
+  }
+
+  return (
+    <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <span className="text-sm font-semibold text-slate-700">Session notes</span>
+        {status === 'saving' && <span className="text-xs text-slate-400">Saving...</span>}
+        {status === 'saved' && <span className="text-xs text-slate-400">Saved</span>}
+      </div>
+      <textarea
+        ref={taRef}
+        value={content}
+        onChange={e => handleChange(e.target.value)}
+        placeholder={placeholder}
+        className="text-sm border border-slate-200 rounded"
+        style={{ width: '100%', minHeight: '160px', padding: '10px', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit', overflow: 'hidden' }}
+      />
+    </div>
+  )
+}
+
 function formatMsgTime(iso: string | null | undefined): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -3539,7 +3626,7 @@ export default function PatientPage() {
                 {activeStep === 2 && (
                   <>
                     {renderPrep('session_1')}
-                    {renderNotesSection('consultation_1', '+ Add Session 1 note')}
+                    {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />}
                     {parentDAContent}
                     <CaseConceptualization draft={conceptualizationDraft} />
                   </>
@@ -3547,7 +3634,7 @@ export default function PatientPage() {
                 {activeStep === 3 && (
                   <>
                     {renderPrep('session_2')}
-                    {renderNotesSection('consultation_2', '+ Add Session 2 note')}
+                    {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />}
                     {patientDAContent}
                     <CaseConceptualization draft={conceptualizationDraft} />
                   </>
