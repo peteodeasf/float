@@ -1470,6 +1470,7 @@ export default function PatientPage() {
   const [extractProgress, setExtractProgress] = useState<string | null>(null)
   const [extractFailed, setExtractFailed] = useState<string[]>([])
   const [extractSuccess, setExtractSuccess] = useState(false)
+  const [extractSuccessMessage, setExtractSuccessMessage] = useState('Treatment plan populated from monitoring data')
 
   // Teen invitation
   const [showTeenInviteForm, setShowTeenInviteForm] = useState(false)
@@ -1753,14 +1754,55 @@ export default function PatientPage() {
       }
     }
 
+    // Fetch existing situations so we can skip duplicates (case-insensitive match)
+    let existingTriggers: TriggerSituation[] = []
+    try {
+      existingTriggers = await getTriggers(planId!)
+    } catch {
+      existingTriggers = []
+    }
+    // Cache of existing behavior names (lowercased) per trigger id
+    const behaviorNamesByTrigger: Record<string, Set<string>> = {}
+
+    let anyCreated = false
+    let anySkipped = false
+
     for (const sit of extraction.situations) {
-      setExtractProgress(`Creating situations... ${sit.name}`)
       try {
-        const trigger = await createTrigger(planId!, {
-          name: sit.name,
-          distress_thermometer_rating: sit.estimated_dt ?? undefined,
-        })
+        // Match an existing situation by name, case-insensitive
+        let trigger: TriggerSituation | null =
+          existingTriggers.find(t => t.name.trim().toLowerCase() === sit.name.trim().toLowerCase()) ?? null
+
+        if (trigger) {
+          anySkipped = true
+        } else {
+          setExtractProgress(`Creating situations... ${sit.name}`)
+          trigger = await createTrigger(planId!, {
+            name: sit.name,
+            distress_thermometer_rating: sit.estimated_dt ?? undefined,
+          })
+          existingTriggers.push(trigger)
+          anyCreated = true
+        }
+
+        // Load existing behavior names for this situation
+        if (!behaviorNamesByTrigger[trigger.id]) {
+          let existingBehaviors: AvoidanceBehavior[] = []
+          try {
+            existingBehaviors = await getBehaviors(trigger.id)
+          } catch {
+            existingBehaviors = []
+          }
+          behaviorNamesByTrigger[trigger.id] = new Set(existingBehaviors.map(b => b.name.trim().toLowerCase()))
+        }
+        const behaviorNames = behaviorNamesByTrigger[trigger.id]
+
         for (const beh of sit.behaviors) {
+          const behKey = beh.name.trim().toLowerCase()
+          if (behaviorNames.has(behKey)) {
+            anySkipped = true
+            continue
+          }
           setExtractProgress(`Creating behaviors... ${beh.name}`)
           try {
             await createBehavior(trigger.id, {
@@ -1768,6 +1810,8 @@ export default function PatientPage() {
               behavior_type: beh.type || 'avoidance',
               distress_thermometer_when_refraining: sit.estimated_dt ?? undefined,
             })
+            behaviorNames.add(behKey)
+            anyCreated = true
           } catch {
             failed.push(`Behavior: ${beh.name}`)
           }
@@ -1795,6 +1839,12 @@ export default function PatientPage() {
     if (failed.length > 0) {
       setExtractFailed(failed)
     } else {
+      const message = !anyCreated
+        ? 'No new items to add — all situations and behaviors already exist.'
+        : anySkipped
+          ? 'Added new situations and behaviors. Duplicates were skipped.'
+          : 'Treatment plan populated from monitoring data'
+      setExtractSuccessMessage(message)
       closeExtract()
       setExtractSuccess(true)
       setTimeout(() => setExtractSuccess(false), 4000)
@@ -2462,7 +2512,7 @@ export default function PatientPage() {
       </div>
       {extractSuccess && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px', marginBottom: '12px' }}>
-          <span>&#10003;</span> Treatment plan populated from monitoring data
+          <span>&#10003;</span> {extractSuccessMessage}
         </div>
       )}
 
