@@ -2256,7 +2256,7 @@ export default function PatientPage() {
   const monitoringExtractContent = (
     <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Extract from Monitoring Data</h2>
+        <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Analyze Monitoring Data</h2>
         {(monitoringForm?.entries_count ?? 0) >= 3 && (
           <button
             onClick={handleExtract}
@@ -2264,7 +2264,7 @@ export default function PatientPage() {
             className="bg-transparent border-none cursor-pointer disabled:opacity-50"
             style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
           >
-            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-analyze Monitoring Data →' : 'Extract with AI →')}
+            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-analyze Monitoring Data →' : 'Analyze with AI →')}
           </button>
         )}
       </div>
@@ -2604,7 +2604,7 @@ export default function PatientPage() {
             {!showSendForm ? (
               <button onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
                 className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
-                Resend to different contact
+                Resend Monitoring form
               </button>
             ) : (
               <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '14px' }}>
