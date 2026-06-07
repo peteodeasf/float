@@ -336,13 +336,13 @@ const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = 
     ],
   },
   2: {
-    header: 'STEP GUIDE — EXTRACT FROM MONITORING DATA',
+    header: 'STEP GUIDE — ANALYZE MONITORING DATA',
     steps: [
-      'Run the AI extraction once you have at least 3 monitoring entries',
+      'Run the AI analysis once you have at least 3 monitoring entries',
       'Review the suggested trigger situations and behaviors carefully — they are suggestions, not clinical judgments',
       "Edit, add, or remove anything that doesn't fit what you know about this patient",
-      'The extracted data creates a draft case conceptualization that will develop through subsequent steps',
-      'You can re-extract if new monitoring entries are added',
+      'The analyzed data creates a draft case conceptualization that will develop through subsequent steps',
+      'You can re-analyze if new monitoring entries are added',
     ],
   },
   5: {
