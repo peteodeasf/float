@@ -323,6 +323,196 @@ function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepT
   )
 }
 
+const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = {
+  1: {
+    header: 'STEP GUIDE — PARENT MONITORING FORM',
+    steps: [
+      'Send the monitoring form to the parent before the first session',
+      "Ask the parent to observe and record their child's anxiety over 1-2 weeks",
+      "They should note: the situation, what the child did, how they responded, and their estimate of the child's distress (1-10)",
+      'Aim for at least 3-5 observations before the first session',
+      'The more specific the observations, the more useful the data',
+    ],
+  },
+  2: {
+    header: 'STEP GUIDE — EXTRACT FROM MONITORING DATA',
+    steps: [
+      'Run the AI extraction once you have at least 3 monitoring entries',
+      'Review the suggested trigger situations and behaviors carefully — they are suggestions, not clinical judgments',
+      "Edit, add, or remove anything that doesn't fit what you know about this patient",
+      'The extracted data creates a draft case conceptualization that will develop through subsequent steps',
+      'You can re-extract if new monitoring entries are added',
+    ],
+  },
+  5: {
+    header: 'STEP GUIDE — IDENTIFY TREATMENT TARGETS',
+    steps: [
+      'Review the case conceptualization built across the previous steps',
+      'Confirm the trigger situations and feared outcomes identified through the Downward Arrows',
+      'Order the treatment targets from lowest to highest distress — the exposure ladder starts with the easiest',
+      'Treatment targets are the specific avoidance and safety behaviors to work on, not the situations themselves',
+      'Each target should be linked to a feared outcome established through the Downward Arrow',
+    ],
+  },
+  6: {
+    header: 'STEP GUIDE — BUILD TREATMENT PLAN',
+    steps: [
+      'Build the exposure ladder from the confirmed treatment targets',
+      'For each situation, add the avoidance and safety behaviors with DT ratings',
+      'Order behaviors from lowest DT to highest — the teen starts with the easiest',
+      'Make sure each behavior is specific enough that the teen knows exactly what to do',
+      'The treatment plan is built with the child — their DT ratings and input matter',
+      'Add the anxiety nickname before activating',
+    ],
+  },
+  7: {
+    header: 'STEP GUIDE — ACTIVATE TREATMENT PLAN',
+    steps: [
+      'Review the plan is complete — situations, behaviors, DT ratings, and nickname all set',
+      'Invite the teen to Float before or at activation so they can see their plan',
+      'Once activated, the teen can see their exposure ladder and start planning experiments',
+      'You can still edit the plan after activation — add situations, adjust DT ratings, update behaviors',
+    ],
+  },
+  8: {
+    header: 'STEP GUIDE — BEGIN EXPOSURES',
+    steps: [
+      'The teen plans and commits to experiments from their Float app',
+      'Each experiment tests a specific feared outcome — the prediction is set before, the result recorded after',
+      "Check the experiments tab regularly between sessions — don't wait until the session to review progress",
+      'If experiments are overdue or confidence is low, reach out via messages before the next session',
+      "BIP and DT should trend downward over time — if they don't, revisit the treatment targets",
+    ],
+  },
+  9: {
+    header: 'STEP GUIDE — WEEKLY SESSION',
+    steps: [
+      'Check in on nickname use — how often has the child noticed their anxiety?',
+      'Review all experiments since last session — BIP and DT trends, what they learned',
+      "Note any overdue or incomplete experiments and explore what got in the way",
+      'Set new experiments for the coming week — confirm High confidence before finalizing',
+      'Write and publish the action plan before the child leaves the session',
+      'Bring the parent in for the last 5-10 minutes to review the plan together',
+    ],
+  },
+  10: {
+    header: 'STEP GUIDE — PARENT ACCOMMODATION CHECK-INS',
+    steps: [
+      'Review accommodation reduction progress at the end of each weekly session',
+      'Ask the parent to describe situations where they were tempted to accommodate — what did they do?',
+      'Reinforce non-accommodating responses — specific praise for specific actions',
+      "If accommodation is increasing, explore what's driving it — anxiety in the parent, not just the child",
+      'Accommodation reduction and exposure work must progress together for treatment to be effective',
+    ],
+  },
+}
+
+function StepGuideCard({ stepNumber, patientId }: { stepNumber: number; patientId: string }) {
+  const storageKey = `float_guide_dismissed_${patientId}_step${stepNumber}`
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem(storageKey) === '1' } catch { return false }
+  })
+
+  const handleDismiss = () => {
+    try { localStorage.setItem(storageKey, '1') } catch {}
+    setDismissed(true)
+  }
+  const handleShow = () => {
+    try { localStorage.removeItem(storageKey) } catch {}
+    setDismissed(false)
+  }
+
+  if (dismissed) {
+    return (
+      <div style={{ marginBottom: '12px' }}>
+        <button
+          onClick={handleShow}
+          style={{
+            fontSize: '12px',
+            color: '#0d9488',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            fontWeight: 500,
+          }}
+        >
+          Show step guide →
+        </button>
+      </div>
+    )
+  }
+
+  const { header, steps } = STEP_GUIDE_CONTENT[stepNumber]
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        background: '#f0fdfa',
+        borderLeft: '3px solid #0d9488',
+        borderRadius: '8px',
+        padding: '14px 36px 14px 16px',
+        marginBottom: '12px',
+      }}
+    >
+      <button
+        onClick={handleDismiss}
+        aria-label="Dismiss step guide"
+        style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          width: '24px',
+          height: '24px',
+          background: 'transparent',
+          border: 'none',
+          color: '#94a3b8',
+          fontSize: '18px',
+          lineHeight: 1,
+          cursor: 'pointer',
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '4px',
+        }}
+      >
+        ×
+      </button>
+      <div
+        style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          color: '#0d9488',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          marginBottom: '10px',
+        }}
+      >
+        {header}
+      </div>
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {steps.map((s) => (
+          <li
+            key={s}
+            style={{
+              fontSize: '13px',
+              color: '#475569',
+              display: 'flex',
+              gap: '8px',
+              lineHeight: 1.5,
+            }}
+          >
+            <span style={{ color: '#0d9488', flexShrink: 0 }}>·</span>
+            <span>{s}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function formatMsgTime(iso: string | null | undefined): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -1716,6 +1906,9 @@ export default function PatientPage() {
 
   const renderPrep = (t: SessionPrepType) =>
     patientId ? <SessionPrepCard key={`${patientId}-${t}`} sessionType={t} patientId={patientId} /> : null
+
+  const renderGuide = (stepNumber: number) =>
+    patientId ? <StepGuideCard key={`${patientId}-guide-${stepNumber}`} stepNumber={stepNumber} patientId={patientId} /> : null
 
   const renderNotesSection = (filterType: string, addLabel: string) => {
     const filtered = notesList.filter(n => n.session_type === filterType)
@@ -3230,9 +3423,15 @@ export default function PatientPage() {
             {/* Step content */}
             {activePersistentTab === null && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {activeStep === 0 && monitoringCard}
+                {activeStep === 0 && (
+                  <>
+                    {renderGuide(1)}
+                    {monitoringCard}
+                  </>
+                )}
                 {activeStep === 1 && (
                   <>
+                    {renderGuide(2)}
                     {monitoringExtractContent}
                     <CaseConceptualization draft={conceptualizationDraft} />
                   </>
@@ -3253,24 +3452,46 @@ export default function PatientPage() {
                     <CaseConceptualization draft={conceptualizationDraft} />
                   </>
                 )}
-                {activeStep === 4 && treatmentTargetsContent}
-                {activeStep === 5 && treatmentPlanBuilder}
-                {activeStep === 6 && activateStepContent}
+                {activeStep === 4 && (
+                  <>
+                    {renderGuide(5)}
+                    {treatmentTargetsContent}
+                  </>
+                )}
+                {activeStep === 5 && (
+                  <>
+                    {renderGuide(6)}
+                    {treatmentPlanBuilder}
+                  </>
+                )}
+                {activeStep === 6 && (
+                  <>
+                    {renderGuide(7)}
+                    {activateStepContent}
+                  </>
+                )}
                 {activeStep === 7 && (
                   <>
+                    {renderGuide(8)}
                     {renderPrep('session_3')}
                     {experimentsContent}
                   </>
                 )}
                 {activeStep === 8 && (
                   <>
+                    {renderGuide(9)}
                     {preSessionBriefContent}
                     {renderPrep('weekly')}
                     {renderNotesSection('weekly_session', '+ Add weekly note')}
                     {actionPlansContent}
                   </>
                 )}
-                {activeStep === 9 && accommodationContent}
+                {activeStep === 9 && (
+                  <>
+                    {renderGuide(10)}
+                    {accommodationContent}
+                  </>
+                )}
               </div>
             )}
           </div>
