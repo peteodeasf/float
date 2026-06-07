@@ -12,6 +12,9 @@ export default function NewPatientPage() {
   const [age, setAge] = useState('')
   const [gender, setGender] = useState('')
   const [phone, setPhone] = useState('')
+  const [parentName, setParentName] = useState('')
+  const [parentEmail, setParentEmail] = useState('')
+  const [parentPhone, setParentPhone] = useState('')
   const [error, setError] = useState('')
 
   const mutation = useMutation({
@@ -33,7 +36,10 @@ export default function NewPatientPage() {
       email,
       age: age ? Number(age) : undefined,
       gender: gender || undefined,
-      phone_number: phone || undefined
+      phone_number: phone || undefined,
+      parent_name: parentName || undefined,
+      parent_email: parentEmail || undefined,
+      parent_phone: parentPhone || undefined
     })
   }
 
@@ -126,6 +132,52 @@ export default function NewPatientPage() {
                 <option value="Non-binary">Non-binary</option>
                 <option value="Prefer not to say">Prefer not to say</option>
               </select>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200">
+              <p className="text-sm font-semibold text-slate-700">Parent / Guardian</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Parent / guardian name
+                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={parentName}
+                onChange={(e) => setParentName(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="Sarah Smith"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Parent / guardian email
+                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+              </label>
+              <input
+                type="email"
+                value={parentEmail}
+                onChange={(e) => setParentEmail(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="parent@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Parent / guardian phone
+                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={parentPhone}
+                onChange={(e) => setParentPhone(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                placeholder="(555) 123-4567"
+              />
             </div>
 
             {error && (

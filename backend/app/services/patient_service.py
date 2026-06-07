@@ -41,6 +41,9 @@ async def create_patient(
         age=data.age,
         gender=data.gender,
         phone_number=data.phone_number,
+        parent_name=data.parent_name,
+        parent_email=data.parent_email,
+        parent_phone=data.parent_phone,
         primary_practitioner_id=practitioner_id
     )
     db.add(patient)

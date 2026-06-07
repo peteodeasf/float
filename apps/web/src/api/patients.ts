@@ -36,6 +36,9 @@ export interface PatientDetail {
   age?: number | null
   gender?: string | null
   anxiety_presentations?: string[] | null
+  parent_name?: string | null
+  parent_email?: string | null
+  parent_phone?: string | null
   teen_email?: string | null
   teen_invited_at?: string | null
   primary_practitioner_id: string
@@ -91,6 +94,9 @@ export interface CreatePatientData {
   age?: number
   gender?: string
   phone_number?: string
+  parent_name?: string
+  parent_email?: string
+  parent_phone?: string
 }
 
 export const createPatient = async (data: CreatePatientData): Promise<PatientDetail> => {

@@ -2582,7 +2582,7 @@ export default function PatientPage() {
 
           {!showSendForm ? (
             <button
-              onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
+              onClick={() => { setShowSendForm(true); if (patient?.parent_email) setParentEmail(patient.parent_email); if (patient?.parent_name) setParentName(patient.parent_name); if (patient?.parent_phone) setParentPhone(patient.parent_phone) }}
               className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors border-none cursor-pointer"
             >
               Send monitoring form
@@ -2695,7 +2695,7 @@ export default function PatientPage() {
           {/* Resend form — always available */}
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
             {!showSendForm ? (
-              <button onClick={() => { setShowSendForm(true); if (patient?.phone_number) setParentPhone(patient.phone_number) }}
+              <button onClick={() => { setShowSendForm(true); if (patient?.parent_email) setParentEmail(patient.parent_email); if (patient?.parent_name) setParentName(patient.parent_name); if (patient?.parent_phone) setParentPhone(patient.parent_phone) }}
                 className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
                 Resend Monitoring form
               </button>

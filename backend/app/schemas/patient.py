@@ -10,6 +10,9 @@ class PatientCreate(BaseModel):
     age: Optional[int] = None
     gender: Optional[str] = None
     phone_number: Optional[str] = None
+    parent_name: Optional[str] = None
+    parent_email: Optional[str] = None
+    parent_phone: Optional[str] = None
 
 
 class PatientUpdate(BaseModel):
@@ -18,6 +21,9 @@ class PatientUpdate(BaseModel):
     gender: Optional[str] = None
     anxiety_presentations: Optional[List[str]] = None
     phone_number: Optional[str] = None
+    parent_name: Optional[str] = None
+    parent_email: Optional[str] = None
+    parent_phone: Optional[str] = None
 
 
 class PatientResponse(BaseModel):
@@ -29,6 +35,9 @@ class PatientResponse(BaseModel):
     gender: Optional[str] = None
     anxiety_presentations: Optional[List[str]] = None
     phone_number: Optional[str] = None
+    parent_name: Optional[str] = None
+    parent_email: Optional[str] = None
+    parent_phone: Optional[str] = None
     teen_email: Optional[str] = None
     teen_invited_at: Optional[datetime] = None
     primary_practitioner_id: Optional[uuid.UUID] = None

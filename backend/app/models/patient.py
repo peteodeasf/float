@@ -47,6 +47,9 @@ class PatientProfile(Base):
     gender: Mapped[str | None] = mapped_column(String, nullable=True)
     anxiety_presentations: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    parent_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    parent_email: Mapped[str | None] = mapped_column(String, nullable=True)
+    parent_phone: Mapped[str | None] = mapped_column(String, nullable=True)
     teen_email: Mapped[str | None] = mapped_column(String, nullable=True)
     teen_invited_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
