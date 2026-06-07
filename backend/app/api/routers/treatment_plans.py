@@ -1,9 +1,11 @@
 import uuid
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.api.routers.patients import get_practitioner_context
+from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.services.patient_service import get_patient_by_id
 from app.services.treatment_plan_service import (
     create_treatment_plan,
@@ -27,7 +29,25 @@ async def get_plan(
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
-    return await get_active_plan(db, patient_id, practitioner.organization_id)
+    plan = await get_active_plan(db, patient_id, practitioner.organization_id)
+    if plan is not None:
+        if plan.last_extracted_at is None:
+            has_new = True
+        else:
+            new_count = (await db.execute(
+                select(func.count())
+                .select_from(MonitoringEntry)
+                .join(MonitoringForm, MonitoringEntry.monitoring_form_id == MonitoringForm.id)
+                .where(
+                    MonitoringForm.patient_id == patient_id,
+                    MonitoringForm.organization_id == practitioner.organization_id,
+                    MonitoringEntry.is_draft == False,  # noqa: E712
+                    MonitoringEntry.created_at > plan.last_extracted_at,
+                )
+            )).scalar_one()
+            has_new = new_count > 0
+        plan.has_new_monitoring_entries = has_new
+    return plan
 
 
 @router.post("", response_model=TreatmentPlanResponse, status_code=status.HTTP_201_CREATED)

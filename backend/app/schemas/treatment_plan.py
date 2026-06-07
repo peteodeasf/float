@@ -19,6 +19,8 @@ class TreatmentPlanResponse(BaseModel):
     status: str
     nickname: Optional[str] = None
     activated_at: Optional[datetime] = None
+    last_extracted_at: Optional[datetime] = None
+    has_new_monitoring_entries: bool = False
     created_at: datetime
     updated_at: datetime
 

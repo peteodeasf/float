@@ -27,6 +27,7 @@ class TreatmentPlan(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="setup")
     nickname: Mapped[str | None] = mapped_column(String, nullable=True)
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

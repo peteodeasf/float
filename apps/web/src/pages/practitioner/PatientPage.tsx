@@ -2336,6 +2336,10 @@ export default function PatientPage() {
     )
   }
 
+  const situationsExist = (triggers?.length ?? 0) > 0
+  const hasNewMonitoring = plan?.has_new_monitoring_entries ?? true
+  const noNewToAnalyze = situationsExist && !hasNewMonitoring
+
   const monitoringExtractContent = (
     <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
@@ -2343,18 +2347,24 @@ export default function PatientPage() {
         {(monitoringForm?.entries_count ?? 0) >= 3 && (
           <button
             onClick={handleExtract}
-            disabled={extractLoading}
-            className="bg-transparent border-none cursor-pointer disabled:opacity-50"
-            style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
+            disabled={extractLoading || noNewToAnalyze}
+            className="bg-transparent border-none disabled:opacity-50"
+            style={{ fontSize: '12px', fontWeight: 600, color: noNewToAnalyze ? '#94a3b8' : 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0, cursor: noNewToAnalyze ? 'not-allowed' : 'pointer' }}
           >
-            {extractLoading ? 'Analyzing…' : ((triggers?.length ?? 0) > 0 ? 'Re-analyze Monitoring Data →' : 'Analyze with AI →')}
+            {extractLoading ? 'Analyzing…' : noNewToAnalyze ? 'No new monitoring data to analyze' : (situationsExist ? 'Re-analyze Monitoring Data →' : 'Analyze with AI →')}
           </button>
         )}
       </div>
-      {(triggers?.length ?? 0) > 0 && (
-        <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: '1.5', margin: '0 0 12px' }}>
-          New observations have been added. Re-extracting will suggest additional situations and behaviors — existing ones will not be removed.
-        </p>
+      {situationsExist && (
+        hasNewMonitoring ? (
+          <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: '1.5', margin: '0 0 12px' }}>
+            New observations have been added since last analysis.
+          </p>
+        ) : (
+          <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: '1.5', margin: '0 0 12px' }}>
+            Last analyzed {plan?.last_extracted_at ? new Date(plan.last_extracted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}. Add new monitoring observations to re-analyze.
+          </p>
+        )
       )}
       {!monitoringForm ? (
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Send a parent monitoring form first (Step 1).</p>

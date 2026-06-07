@@ -8,6 +8,8 @@ export interface TreatmentPlan {
   parent_visibility_level: string
   status: string
   nickname?: string | null
+  last_extracted_at?: string | null
+  has_new_monitoring_entries?: boolean
   created_at: string
   updated_at: string
 }

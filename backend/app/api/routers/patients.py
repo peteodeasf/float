@@ -521,6 +521,22 @@ async def extract_monitoring_data(
 
     extraction.pop("suggested_presentations", None)
     extraction.pop("summary", None)
+
+    # Record that monitoring data was extracted for this patient's active plan (if any)
+    plan_result = await db.execute(
+        select(TreatmentPlan)
+        .where(
+            TreatmentPlan.patient_id == patient_id,
+            TreatmentPlan.organization_id == practitioner.organization_id,
+            TreatmentPlan.status != "complete",
+        )
+        .order_by(TreatmentPlan.created_at.desc())
+    )
+    plan = plan_result.scalar_one_or_none()
+    if plan is not None:
+        plan.last_extracted_at = datetime.now(timezone.utc)
+        await db.commit()
+
     return extraction
 
 
