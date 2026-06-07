@@ -14,7 +14,7 @@ import {
   getPatientExperiments, planExperimentForBehavior,
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
-import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, type MonitoringExtraction } from '../../api/monitoring'
+import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, type MonitoringExtraction } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -509,6 +509,99 @@ function StepGuideCard({ stepNumber, patientId }: { stepNumber: number; patientI
           </li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onClose: () => void }) {
+  const { data: report, isLoading } = useQuery({
+    queryKey: ['monitoring-report', patientId],
+    queryFn: () => getMonitoringReport(patientId),
+    enabled: !!patientId,
+  })
+
+  const backLink = (
+    <button
+      onClick={onClose}
+      className="text-sm text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
+      style={{ padding: 0, marginBottom: '12px' }}
+    >
+      ← Back
+    </button>
+  )
+
+  if (isLoading) {
+    return (
+      <div>
+        {backLink}
+        <p className="text-slate-400">Loading report...</p>
+      </div>
+    )
+  }
+
+  if (!report || report.total_entries === 0) {
+    return (
+      <div>
+        {backLink}
+        <p className="text-slate-400">No observations recorded yet.</p>
+      </div>
+    )
+  }
+
+  const dateFrom = report.date_range
+    ? new Date(report.date_range.from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+  const dateTo = report.date_range
+    ? new Date(report.date_range.to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+
+  return (
+    <div>
+      {backLink}
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-slate-800 mb-1">{report.patient_name}</h1>
+        <h2 className="text-base text-slate-500 font-medium mb-2">Monitoring report</h2>
+        <div className="text-sm text-slate-400">
+          <span>Dates: {dateFrom} &mdash; {dateTo}</span>
+          <span style={{ margin: '0 8px' }}>&middot;</span>
+          <span>Entries: {report.total_entries}</span>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Date</th>
+              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Situation</th>
+              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">What I observed about my child</th>
+              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">How I responded</th>
+              <th className="text-center py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Fear thermometer</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.entries.map((entry) => (
+              <tr key={entry.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td className="py-3 px-3 text-slate-500" style={{ whiteSpace: 'nowrap' }}>
+                  {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </td>
+                <td className="py-3 px-3 text-slate-700">
+                  {entry.situation || '--'}
+                </td>
+                <td className="py-3 px-3 text-slate-600">
+                  {entry.child_behavior_observed || '--'}
+                </td>
+                <td className="py-3 px-3 text-slate-600">
+                  {entry.parent_response || '--'}
+                </td>
+                <td className="py-3 px-3 text-center text-slate-700 font-medium">
+                  {entry.fear_thermometer ?? '--'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -1272,6 +1365,9 @@ export default function PatientPage() {
   const [showEntries, setShowEntries] = useState(false)
   const [msgContent, setMsgContent] = useState('')
   const [showMsgForm, setShowMsgForm] = useState(false)
+
+  // Inline monitoring report (Step 1)
+  const [showInlineReport, setShowInlineReport] = useState(false)
 
   // AI monitoring extraction
   const [extractOpen, setExtractOpen] = useState(false)
@@ -2327,7 +2423,7 @@ export default function PatientPage() {
           {/* Report button */}
           {(monitoringForm.entries_count ?? 0) > 0 && (
             <div style={{ marginBottom: '12px' }}>
-              <button onClick={() => navigate(`/patients/${patientId}/monitoring-report`)}
+              <button onClick={() => setShowInlineReport(true)}
                 className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer ${
                   (monitoringForm.entries_count ?? 0) >= 5
                     ? 'bg-teal-600 text-white hover:bg-teal-700 border-none'
@@ -3424,10 +3520,14 @@ export default function PatientPage() {
             {activePersistentTab === null && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {activeStep === 0 && (
-                  <>
-                    {renderGuide(1)}
-                    {monitoringCard}
-                  </>
+                  showInlineReport ? (
+                    <InlineMonitoringReport patientId={patientId!} onClose={() => setShowInlineReport(false)} />
+                  ) : (
+                    <>
+                      {renderGuide(1)}
+                      {monitoringCard}
+                    </>
+                  )
                 )}
                 {activeStep === 1 && (
                   <>
