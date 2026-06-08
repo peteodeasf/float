@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage, inviteTeen, getPatientProgress, updatePatient } from '../../api/patients'
@@ -1617,15 +1617,18 @@ export default function PatientPage() {
   // Queries
   const { data: patient } = useQuery({ queryKey: ['patient', patientId], queryFn: () => getPatient(patientId!), enabled: !!patientId })
   const { data: plan } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId!), enabled: !!patientId })
-  const { data: triggers } = useQuery({ queryKey: ['triggers', plan?.id], queryFn: () => getTriggers(plan!.id), enabled: !!plan?.id })
+  const { data: rawTriggers } = useQuery({ queryKey: ['triggers', plan?.id], queryFn: () => getTriggers(plan!.id), enabled: !!plan?.id })
+  // Placeholder situations (e.g. the parent-DA anchor) are filtered out of every situation list/count
+  const triggers = useMemo(() => rawTriggers?.filter(t => !t.is_placeholder), [rawTriggers])
+  const parentDAPlaceholder = useMemo(() => rawTriggers?.find(t => t.is_placeholder) ?? null, [rawTriggers])
   const { data: monitoringForm } = useQuery({ queryKey: ['monitoring-form', patientId], queryFn: () => getMonitoringForm(patientId!), enabled: !!patientId })
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId })
   const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
 
-  // Fetch DA status for every trigger situation (one query per trigger, keyed by trigger id)
-  const triggerIds = (triggers ?? []).map(t => t.id)
+  // Fetch DA status for every trigger situation (incl. the placeholder, so the parent DA is captured)
+  const triggerIds = (rawTriggers ?? []).map(t => t.id)
   const { data: daStatuses } = useQuery({
     queryKey: ['da-statuses', patientId, triggerIds.join(',')],
     queryFn: async () => {
@@ -2220,6 +2223,39 @@ export default function PatientPage() {
   // Default the patient Downward Arrow situation picker (Step 4) to the first situation
   useEffect(() => { if (triggers?.length && !patientDASituationId) setPatientDASituationId(triggers[0].id) }, [triggers])
 
+  // Parent DA (Step 3) is situation-agnostic: if no real situations exist, auto-create a hidden
+  // placeholder situation to anchor the parent downward arrow.
+  const parentDAPlaceholderCreatingRef = useRef(false)
+  useEffect(() => {
+    if (activeStep !== 2 || !patientId) return
+    if (plan === undefined) return            // plan still loading
+    if (plan && rawTriggers === undefined) return  // triggers still loading
+    const all = rawTriggers ?? []
+    if (all.some(t => !t.is_placeholder)) return   // real situations exist — use those
+    if (all.some(t => t.is_placeholder)) return    // placeholder already exists
+    if (parentDAPlaceholderCreatingRef.current) return
+    parentDAPlaceholderCreatingRef.current = true
+    ;(async () => {
+      try {
+        let planId = plan?.id
+        if (!planId) {
+          const newPlan = await createTreatmentPlan(patientId, { clinical_track: 'exposure', parent_visibility_level: 'summary' })
+          planId = newPlan.id
+        }
+        await createTrigger(planId, {
+          name: 'General — Parent Consultation',
+          is_active: false,
+          distress_thermometer_rating: 0,
+          is_placeholder: true,
+        })
+        await queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
+        await queryClient.invalidateQueries({ queryKey: ['triggers', planId] })
+      } finally {
+        parentDAPlaceholderCreatingRef.current = false
+      }
+    })()
+  }, [activeStep, plan, rawTriggers, patientId])
+
   // Auto-populate treatment targets from situations (lowest DT first) once the clinician reaches Step 5
   useEffect(() => {
     if (targetsInitRef.current) return
@@ -2415,22 +2451,25 @@ export default function PatientPage() {
     </div>
   )
 
+  // The parent DA is situation-agnostic — anchor it to the placeholder situation, or the first
+  // real situation if some exist. It is always available regardless of whether situations exist.
+  const parentDAAnchor = parentDAPlaceholder ?? (triggers && triggers.length > 0 ? triggers[0] : null)
   const parentDAContent = (
     <div style={cardStyle}>
       <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Parent Downward Arrow</div>
       <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
         Start by asking the parent what they believe their child fears most. The first question is open — not tied to a specific situation.
       </p>
-      {triggers && triggers.length > 0 ? (
+      {parentDAAnchor ? (
         <SessionDownwardArrow
-          trigger={triggers[0]}
+          trigger={parentDAAnchor}
           facilitatedBy="parent"
           onApproved={addParentFearedOutcome}
           showSituation={false}
           childName={patient?.name ?? ''}
         />
       ) : (
-        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Add trigger situations first (Step 2).</p>
+        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Preparing parent downward arrow…</p>
       )}
     </div>
   )
@@ -2467,7 +2506,7 @@ export default function PatientPage() {
             )}
           </>
         ) : (
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Add trigger situations first (Step 2).</p>
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Complete Step 2 (Extract from Monitoring Data) first to add trigger situations, then return here to complete the Patient Downward Arrow.</p>
         )}
       </div>
     )

@@ -45,7 +45,8 @@ async def create_trigger(
         description=data.description,
         distress_thermometer_rating=data.distress_thermometer_rating,
         display_order=next_order,
-        is_active=data.is_active if data.is_active is not None else False
+        is_active=data.is_active if data.is_active is not None else False,
+        is_placeholder=data.is_placeholder if data.is_placeholder is not None else False
     )
     db.add(trigger)
     await db.commit()

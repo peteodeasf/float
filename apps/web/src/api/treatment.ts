@@ -27,6 +27,7 @@ export interface TriggerSituation {
   distress_thermometer_rating: number | null
   display_order: number
   is_active: boolean
+  is_placeholder?: boolean
   created_at: string
 }
 
@@ -130,6 +131,8 @@ export interface CreateTriggerData {
   name: string
   description?: string
   distress_thermometer_rating?: number
+  is_active?: boolean
+  is_placeholder?: boolean
 }
 
 export interface CreateBehaviorData {

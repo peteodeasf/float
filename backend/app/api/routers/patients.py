@@ -132,7 +132,8 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
     if plan:
         situation_count = (await db.execute(
             select(func.count()).select_from(TriggerSituation).where(
-                TriggerSituation.treatment_plan_id == plan.id
+                TriggerSituation.treatment_plan_id == plan.id,
+                TriggerSituation.is_placeholder.is_(False),
             )
         )).scalar_one()
         has_active_situation_with_behaviors = (await db.execute(
@@ -141,6 +142,7 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
             .where(
                 TriggerSituation.treatment_plan_id == plan.id,
                 TriggerSituation.is_active.is_(True),
+                TriggerSituation.is_placeholder.is_(False),
             )
             .limit(1)
         )).first() is not None
