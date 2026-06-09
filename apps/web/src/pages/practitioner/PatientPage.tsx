@@ -188,6 +188,7 @@ const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: str
       'Introduce the CBT model — what anxiety is and why avoidance and accommodation maintain it',
       'Introduce the concept of exposures — what they are and why they work',
       'Agree on the anxiety nickname with the parent before Session 2',
+      'Ask the parent: "Do you have a sense of what [child\'s name] fears would happen in that situation?" — capture their response in your session notes',
     ],
   },
   session_2: {
@@ -1620,7 +1621,6 @@ export default function PatientPage() {
   const { data: rawTriggers } = useQuery({ queryKey: ['triggers', plan?.id], queryFn: () => getTriggers(plan!.id), enabled: !!plan?.id })
   // Placeholder situations (e.g. the parent-DA anchor) are filtered out of every situation list/count
   const triggers = useMemo(() => rawTriggers?.filter(t => !t.is_placeholder), [rawTriggers])
-  const parentDAPlaceholder = useMemo(() => rawTriggers?.find(t => t.is_placeholder) ?? null, [rawTriggers])
   const { data: monitoringForm } = useQuery({ queryKey: ['monitoring-form', patientId], queryFn: () => getMonitoringForm(patientId!), enabled: !!patientId })
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
@@ -2166,9 +2166,6 @@ export default function PatientPage() {
   }
 
   // Conceptualization draft — feared outcome contributions from the DA sub-steps
-  const addParentFearedOutcome = (fo: string) => setConceptualizationDraft(prev =>
-    prev.parentFearedOutcomes.includes(fo) ? prev
-      : { ...prev, parentFearedOutcomes: [...prev.parentFearedOutcomes, fo], lastUpdatedStep: Math.max(prev.lastUpdatedStep, 3) })
   const addPatientFearedOutcome = (fo: string) => setConceptualizationDraft(prev =>
     prev.patientFearedOutcomes.includes(fo) ? prev
       : { ...prev, patientFearedOutcomes: [...prev.patientFearedOutcomes, fo], lastUpdatedStep: Math.max(prev.lastUpdatedStep, 4) })
@@ -2181,7 +2178,6 @@ export default function PatientPage() {
 
   const notesList = sessionNotes ?? []
   const hasApprovedDA = !!daStatuses && Object.values(daStatuses).some(da => da?.feared_outcome_approved === true)
-  const hasParentDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'parent')
   const hasPatientDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'practitioner')
   const hasBehavior = !!allBehaviors && Object.values(allBehaviors).some(bs => bs.length > 0)
   const hasActiveSituationWithBehaviors = !!triggers && !!allBehaviors && triggers.some(t => t.is_active && (allBehaviors[t.id]?.length ?? 0) > 0)
@@ -2190,7 +2186,7 @@ export default function PatientPage() {
   const stepComplete: boolean[] = [
     !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
-    notesList.some(n => n.session_type === 'consultation_1') && hasParentDA,
+    notesList.some(n => n.session_type === 'consultation_1'),
     notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
     (triggers?.length ?? 0) >= 1 && hasBehavior && hasApprovedDA && targetsConfirmed,
     hasActiveSituationWithBehaviors,
@@ -2222,39 +2218,6 @@ export default function PatientPage() {
 
   // Default the patient Downward Arrow situation picker (Step 4) to the first situation
   useEffect(() => { if (triggers?.length && !patientDASituationId) setPatientDASituationId(triggers[0].id) }, [triggers])
-
-  // Parent DA (Step 3) is situation-agnostic: if no real situations exist, auto-create a hidden
-  // placeholder situation to anchor the parent downward arrow.
-  const parentDAPlaceholderCreatingRef = useRef(false)
-  useEffect(() => {
-    if (activeStep !== 2 || !patientId) return
-    if (plan === undefined) return            // plan still loading
-    if (plan && rawTriggers === undefined) return  // triggers still loading
-    const all = rawTriggers ?? []
-    if (all.some(t => !t.is_placeholder)) return   // real situations exist — use those
-    if (all.some(t => t.is_placeholder)) return    // placeholder already exists
-    if (parentDAPlaceholderCreatingRef.current) return
-    parentDAPlaceholderCreatingRef.current = true
-    ;(async () => {
-      try {
-        let planId = plan?.id
-        if (!planId) {
-          const newPlan = await createTreatmentPlan(patientId, { clinical_track: 'exposure', parent_visibility_level: 'summary' })
-          planId = newPlan.id
-        }
-        await createTrigger(planId, {
-          name: 'General — Parent Consultation',
-          is_active: false,
-          distress_thermometer_rating: 0,
-          is_placeholder: true,
-        })
-        await queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
-        await queryClient.invalidateQueries({ queryKey: ['triggers', planId] })
-      } finally {
-        parentDAPlaceholderCreatingRef.current = false
-      }
-    })()
-  }, [activeStep, plan, rawTriggers, patientId])
 
   // Auto-populate treatment targets from situations (lowest DT first) once the clinician reaches Step 5
   useEffect(() => {
@@ -2447,29 +2410,6 @@ export default function PatientPage() {
         </div>
       ) : (
         <button onClick={markAccommodationComplete} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Mark check-in complete</button>
-      )}
-    </div>
-  )
-
-  // The parent DA is situation-agnostic — anchor it to the placeholder situation, or the first
-  // real situation if some exist. It is always available regardless of whether situations exist.
-  const parentDAAnchor = parentDAPlaceholder ?? (triggers && triggers.length > 0 ? triggers[0] : null)
-  const parentDAContent = (
-    <div style={cardStyle}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Parent Downward Arrow</div>
-      <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
-        Start by asking the parent what they believe their child fears most. The first question is open — not tied to a specific situation.
-      </p>
-      {parentDAAnchor ? (
-        <SessionDownwardArrow
-          trigger={parentDAAnchor}
-          facilitatedBy="parent"
-          onApproved={addParentFearedOutcome}
-          showSituation={false}
-          childName={patient?.name ?? ''}
-        />
-      ) : (
-        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Preparing parent downward arrow…</p>
       )}
     </div>
   )
@@ -3837,7 +3777,6 @@ export default function PatientPage() {
                   <>
                     {renderPrep('session_1')}
                     {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />}
-                    {parentDAContent}
                     <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
                   </>
                 )}
