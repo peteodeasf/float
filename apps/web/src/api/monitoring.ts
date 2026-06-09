@@ -83,11 +83,11 @@ export const getMonitoringReport = async (patientId: string): Promise<Monitoring
 export interface ExtractedBehavior {
   name: string
   type: string
+  dt: number | null
 }
 
 export interface ExtractedSituation {
   name: string
-  estimated_dt: number | null
   behaviors: ExtractedBehavior[]
 }
 

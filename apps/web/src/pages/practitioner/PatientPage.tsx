@@ -1812,10 +1812,13 @@ export default function PatientPage() {
         if (trigger) {
           anySkipped = true
         } else {
+          // Situation DT = highest behavior DT in this situation
+          const behaviorDTs = sit.behaviors.map(b => b.dt).filter((d): d is number => d != null)
+          const situationDT = behaviorDTs.length > 0 ? Math.max(...behaviorDTs) : undefined
           setExtractProgress(`Creating situations... ${sit.name}`)
           trigger = await createTrigger(planId!, {
             name: sit.name,
-            distress_thermometer_rating: sit.estimated_dt ?? undefined,
+            distress_thermometer_rating: situationDT,
           })
           existingTriggers.push(trigger)
           anyCreated = true
@@ -1844,7 +1847,7 @@ export default function PatientPage() {
             await createBehavior(trigger.id, {
               name: beh.name,
               behavior_type: beh.type || 'avoidance',
-              distress_thermometer_when_refraining: sit.estimated_dt ?? undefined,
+              distress_thermometer_when_refraining: beh.dt ?? undefined,
             })
             behaviorNames.push(beh.name)
             anyCreated = true
@@ -3868,24 +3871,50 @@ export default function PatientPage() {
 
                 <div style={{ marginBottom: '18px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Suggested trigger situations</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {extraction.situations.map((sit, i) => (
-                      <div key={i}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{i + 1}. {sit.name}</span>
-                          {sit.estimated_dt != null && <DTBadge value={sit.estimated_dt} />}
-                        </div>
-                        <ul style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          {sit.behaviors.map((b, j) => (
-                            <li key={j} style={{ fontSize: '12px', color: '#475569', display: 'flex', gap: '6px' }}>
-                              <span style={{ color: '#0d9488' }}>·</span>
-                              <span><span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{b.type}:</span> {b.name}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9' }}>
+                        <th style={{ width: '38%', textAlign: 'left', padding: '8px 10px', fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Situation</th>
+                        <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avoidance and safety behaviors</th>
+                        <th style={{ width: '44px', textAlign: 'right', padding: '8px 10px', fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>DT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {extraction.situations.map((sit, i) => (
+                        sit.behaviors.length > 0 ? sit.behaviors.map((b, j) => {
+                          const pill = b.type === 'avoidance'
+                            ? { bg: '#fee2e2', color: '#b91c1c' }
+                            : b.type === 'safety'
+                              ? { bg: '#fef3c7', color: '#b45309' }
+                              : { bg: '#f1f5f9', color: '#475569' }
+                          return (
+                            <tr key={`${i}-${j}`} style={{ borderTop: j === 0 ? '1px solid #e2e8f0' : 'none' }}>
+                              {j === 0 && (
+                                <td rowSpan={sit.behaviors.length} style={{ verticalAlign: 'top', padding: '8px 10px', fontSize: '12px', fontWeight: 500, color: '#1e293b', borderRight: '1px solid #e2e8f0', wordBreak: 'break-word' }}>
+                                  {sit.name}
+                                </td>
+                              )}
+                              <td style={{ padding: '6px 10px', fontSize: '12px', color: '#475569', wordBreak: 'break-word' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <span>{b.name}</span>
+                                  <span style={{ display: 'inline-block', fontSize: '10px', fontWeight: 600, padding: '1px 7px', borderRadius: '9999px', background: pill.bg, color: pill.color }}>{b.type}</span>
+                                </span>
+                              </td>
+                              <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: 600, color: '#334155', textAlign: 'right' }}>
+                                {b.dt != null ? b.dt : '—'}
+                              </td>
+                            </tr>
+                          )
+                        }) : (
+                          <tr key={i} style={{ borderTop: '1px solid #e2e8f0' }}>
+                            <td style={{ verticalAlign: 'top', padding: '8px 10px', fontSize: '12px', fontWeight: 500, color: '#1e293b', borderRight: '1px solid #e2e8f0', wordBreak: 'break-word' }}>{sit.name}</td>
+                            <td style={{ padding: '6px 10px', fontSize: '12px', color: '#94a3b8' }}>No behaviors</td>
+                            <td style={{ padding: '6px 10px', textAlign: 'right' }} />
+                          </tr>
+                        )
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 {extraction.accommodation_patterns?.length > 0 && (
