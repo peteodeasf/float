@@ -16,6 +16,7 @@ import {
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, type MonitoringExtraction } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
+import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
 import { fetchFormulation, createFormulation, updateFormulation } from '../../api/formulation'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -1675,6 +1676,139 @@ function PatientDownwardArrows({ patientId, planId, triggers, onFearedOutcome }:
   )
 }
 
+// ── Consultation checklists (Steps 3 & 4) ──
+type ChecklistItemDef = { key: string; text: string; link?: { icon: string; label: string } }
+type ChecklistGroup = { header: string; items: ChecklistItemDef[] }
+
+const PARENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
+  {
+    header: 'Stage 1 — Understanding the child',
+    items: [
+      { key: 'parent_review_monitoring', text: 'Review monitoring data with parent — validate their observations' },
+      { key: 'parent_trigger_list', text: 'Compile trigger situation list with initial DT ratings' },
+      { key: 'parent_behaviors', text: "Identify the child's safety behaviors, avoidance behaviors, and rituals per situation" },
+      { key: 'parent_responses', text: 'Identify parental responses and accommodation behaviors' },
+      { key: 'parent_feared_outcome', text: 'Ask: "Do you have a sense of what the child fears would happen in that situation?"' },
+    ],
+  },
+  {
+    header: 'Stage 2 — Education & treatment preview',
+    items: [
+      { key: 'parent_explain_cbt', text: 'Explain what CBT is and why it works', link: { icon: '📖', label: 'View guide' } },
+      { key: 'parent_explain_exposures', text: 'Explain what exposures are and how they work', link: { icon: '📖', label: 'View guide' } },
+      { key: 'parent_worry_hill', text: "Explain the Worry Hill using the child's examples", link: { icon: '📖', label: 'View Worry Hill' } },
+      { key: 'parent_nickname', text: 'Introduce the anxiety nickname concept' },
+      { key: 'parent_dt', text: 'Introduce the Distress Thermometer' },
+      { key: 'parent_accommodation', text: 'Introduce parental accommodation and its impact' },
+      { key: 'parent_next_steps', text: 'Agree next steps — does the family want to proceed?' },
+    ],
+  },
+]
+
+const PATIENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
+  {
+    header: 'First meeting',
+    items: [
+      { key: 'patient_rapport', text: 'Build rapport — school, friends, favorite things (5 min max)' },
+      { key: 'patient_what_help', text: 'Ask what the child wants help with — use discovery questions', link: { icon: '📖', label: 'Discovery questions' } },
+      { key: 'patient_triggers', text: 'Identify triggers and generate trigger situation list with the child' },
+      { key: 'patient_behaviors', text: 'Identify safety/avoidance behaviors and rituals per situation' },
+      { key: 'patient_nickname', text: 'Confirm anxiety nickname with the child' },
+      { key: 'patient_dt_practice', text: 'Practice the Distress Thermometer together' },
+    ],
+  },
+  {
+    header: 'Second meeting',
+    items: [
+      { key: 'patient_checkin', text: 'Check in — nickname use, DT use since last session' },
+      { key: 'patient_worry_hill_video', text: 'Teach the Worry Hill — watch video together', link: { icon: '🎬', label: 'Worry Hill video' } },
+      { key: 'patient_worry_hill_draw', text: "Draw the Worry Hill with the child's own situation", link: { icon: '📖', label: 'Worry Hill guide' } },
+      { key: 'patient_candy_jar', text: 'Teach the Candy Jar analogy', link: { icon: '📖', label: 'Candy Jar guide' } },
+      { key: 'patient_ladder', text: 'Build the exposure ladder from the trigger list' },
+      { key: 'patient_da', text: 'Complete Downward Arrows for primary situations' },
+      { key: 'patient_first_exposure', text: 'Practice first exposure in session (3-6 times, record DT each time)' },
+      { key: 'patient_confidence', text: 'Confirm child confidence is High before first home experiment' },
+    ],
+  },
+]
+
+const STAGE1_PARENT_KEYS = PARENT_CHECKLIST_GROUPS[0].items.map(i => i.key)
+
+function ConsultationChecklist({ patientId, title, groups }: {
+  patientId: string
+  title: string
+  groups: ChecklistGroup[]
+}) {
+  const qc = useQueryClient()
+  const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
+  const [popoverKey, setPopoverKey] = useState<string | null>(null)
+
+  const { data: checked } = useQuery({
+    queryKey: ['checklist', patientId],
+    queryFn: () => getChecklist(patientId),
+    enabled: !!patientId,
+  })
+
+  const toggleMut = useMutation({
+    mutationFn: ({ key, value }: { key: string; value: boolean }) => updateChecklist(patientId, { [key]: value }),
+    onMutate: async ({ key, value }) => {
+      await qc.cancelQueries({ queryKey: ['checklist', patientId] })
+      const prev = qc.getQueryData<ChecklistItems>(['checklist', patientId])
+      qc.setQueryData<ChecklistItems>(['checklist', patientId], { ...(prev ?? {}), [key]: value })
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['checklist', patientId], ctx.prev) },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['checklist', patientId] }),
+  })
+
+  const checkedItems = checked ?? {}
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
+      {groups.map((group, gi) => (
+        <div key={group.header}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: gi === 0 ? '16px 0 10px' : '22px 0 10px' }}>
+            {group.header}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+            {group.items.map(item => {
+              const isChecked = !!checkedItems[item.key]
+              return (
+                <div key={item.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleMut.mutate({ key: item.key, value: !isChecked })}
+                    style={{ accentColor: '#0d9488', width: '16px', height: '16px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
+                  />
+                  <span style={{ flex: 1, fontSize: '13px', lineHeight: 1.5, color: isChecked ? '#94a3b8' : '#334155' }}>{item.text}</span>
+                  {item.link && (
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <button
+                        onClick={() => setPopoverKey(popoverKey === item.key ? null : item.key)}
+                        className="bg-transparent border-none cursor-pointer"
+                        style={{ fontSize: '12px', color: '#94a3b8', padding: '2px 0 0', whiteSpace: 'nowrap' }}
+                      >
+                        {item.link.icon} {item.link.label}
+                      </button>
+                      {popoverKey === item.key && (
+                        <div style={{ position: 'absolute', right: 0, top: '24px', background: '#1e293b', color: '#fff', fontSize: '11px', padding: '6px 10px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                          Education content coming soon
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Main Page ──
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -1849,6 +1983,7 @@ export default function PatientPage() {
   const triggers = useMemo(() => rawTriggers?.filter(t => !t.is_placeholder), [rawTriggers])
   const { data: monitoringForm } = useQuery({ queryKey: ['monitoring-form', patientId], queryFn: () => getMonitoringForm(patientId!), enabled: !!patientId })
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
+  const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId })
   const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
@@ -2415,7 +2550,7 @@ export default function PatientPage() {
   const stepComplete: boolean[] = [
     !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
-    notesList.some(n => n.session_type === 'consultation_1'),
+    notesList.some(n => n.session_type === 'consultation_1') || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
     notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
     (triggers?.length ?? 0) >= 1 && hasBehavior && hasApprovedDA && targetsConfirmed,
     hasActiveSituationWithBehaviors,
@@ -3972,12 +4107,14 @@ export default function PatientPage() {
                 {activeStep === 2 && (
                   <>
                     {renderPrep('session_1')}
+                    {patientId && <ConsultationChecklist patientId={patientId} title="PARENT CONSULTATION CHECKLIST" groups={PARENT_CHECKLIST_GROUPS} />}
                     {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />}
                   </>
                 )}
                 {activeStep === 3 && (
                   <>
                     {renderPrep('session_2')}
+                    {patientId && <ConsultationChecklist patientId={patientId} title="PATIENT CONSULTATION CHECKLIST" groups={PATIENT_CHECKLIST_GROUPS} />}
                     {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />}
                     {patientDAContent}
                     <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />

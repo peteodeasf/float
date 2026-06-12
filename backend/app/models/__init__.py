@@ -12,3 +12,4 @@ from app.models.session_note import SessionNote
 from app.models.action_plan import ActionPlan
 from app.models.waitlist import WaitlistEntry
 from app.models.formulation import ClinicalFormulation
+from app.models.checklist import ConsultationChecklist

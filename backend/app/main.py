@@ -9,7 +9,7 @@ from app.api.routers import (
     ladders, experiments, progress,
     downward_arrows, messages, monitoring,
     session_notes, action_plans, admin, waitlist,
-    formulation
+    formulation, checklist
 )
 
 app = FastAPI(
@@ -42,6 +42,7 @@ app.include_router(monitoring.practitioner_router)
 app.include_router(monitoring.public_router)
 app.include_router(session_notes.router)
 app.include_router(formulation.router)
+app.include_router(checklist.router)
 app.include_router(action_plans.router)
 app.include_router(admin.router)
 app.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
