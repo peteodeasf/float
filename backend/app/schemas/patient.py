@@ -72,6 +72,8 @@ class PatientListResponse(BaseModel):
     active_plan_with_no_recent_activity: bool = False
     monitoring_entries_count: int = 0
     monitoring_form_sent: bool = False
+    # Consultation checklist state (for surfacing the next action on the list)
+    checklist_checked_items: dict = {}
 
     class Config:
         from_attributes = True

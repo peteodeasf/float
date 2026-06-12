@@ -25,6 +25,7 @@ export type Patient = {
   active_plan_with_no_recent_activity: boolean
   monitoring_entries_count: number
   monitoring_form_sent: boolean
+  checklist_checked_items: Record<string, boolean>
 }
 
 export interface PatientDetail {

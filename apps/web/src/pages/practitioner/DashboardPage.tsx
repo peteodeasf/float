@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getPatients, Patient } from '../../api/patients'
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import { PARENT_CHECKLIST, PATIENT_CHECKLIST } from '../../lib/checklists'
 
 const STEP_LABELS: string[] = [
   'Parent Monitoring Form',
@@ -50,6 +51,14 @@ function computeProgress(p: Patient): { stepNumber: number; label: string } {
   return { stepNumber: idx + 1, label: STEP_LABELS[idx] }
 }
 
+// Next unchecked checklist item for the patient's current step (steps 3 & 4 only)
+function nextChecklistAction(stepNumber: number, checked: Record<string, boolean>): string | null {
+  const groups = stepNumber === 3 ? PARENT_CHECKLIST : stepNumber === 4 ? PATIENT_CHECKLIST : null
+  if (!groups) return null
+  const next = groups.flatMap(g => g.items).find(i => !checked[i.key])
+  return next ? next.text : null
+}
+
 // Reasons the patient needs attention (empty array = no badge)
 function needsAttentionReasons(p: Patient): string[] {
   const reasons: string[] = []
@@ -68,6 +77,7 @@ function needsAttentionReasons(p: Patient): string[] {
 function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   const reasons = needsAttentionReasons(patient)
   const progress = computeProgress(patient)
+  const nextAction = nextChecklistAction(progress.stepNumber, patient.checklist_checked_items ?? {})
   return (
     <tr
       onClick={onClick}
@@ -89,7 +99,12 @@ function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => voi
         <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>{patient.email}</p>
       </td>
       <td className="px-6 py-4 text-xs" style={{ color: 'var(--float-text-hint)' }}>
-        Step {progress.stepNumber} of 10 · {progress.label}
+        <div>Step {progress.stepNumber} of 10 · {progress.label}</div>
+        {nextAction && (
+          <div style={{ fontSize: '11.5px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '260px' }}>
+            Next: {nextAction}
+          </div>
+        )}
       </td>
       <td className="px-6 py-4 text-sm" style={{ color: 'var(--float-text-secondary)' }}>
         {relativeActivityLabel(patient.last_activity_at)}

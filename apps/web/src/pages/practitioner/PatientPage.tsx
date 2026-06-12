@@ -17,6 +17,7 @@ import {
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, type MonitoringExtraction } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
+import { PARENT_CHECKLIST, PATIENT_CHECKLIST, type ChecklistGroup, type ChecklistNav } from '../../lib/checklists'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
 import { fetchFormulation, createFormulation, updateFormulation } from '../../api/formulation'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -1677,64 +1678,7 @@ function PatientDownwardArrows({ patientId, planId, triggers, onFearedOutcome }:
 }
 
 // ── Consultation checklists (Steps 3 & 4) ──
-type ChecklistNav = { label: string; action: 'treatmentPlan' | 'scrollDA' }
-type ChecklistItemDef = { key: string; text: string; link?: { icon: string; label: string }; nav?: ChecklistNav }
-type ChecklistGroup = { header: string; items: ChecklistItemDef[] }
-
-const PARENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
-  {
-    header: '',
-    items: [
-      { key: 'parent_review_monitoring', text: 'Review monitoring data with parent — validate their observations' },
-      { key: 'parent_trigger_list', text: 'Compile trigger situation list with initial DT ratings' },
-      { key: 'parent_behaviors', text: "Identify the child's safety behaviors, avoidance behaviors, and rituals per situation" },
-      { key: 'parent_responses', text: 'Identify parental responses and accommodation behaviors' },
-      { key: 'parent_feared_outcome', text: 'Ask: "Do you have a sense of what the child fears would happen in that situation?"' },
-      { key: 'parent_explain_cbt', text: 'Explain what CBT is and why it works', link: { icon: '📖', label: 'View guide' } },
-      { key: 'parent_explain_exposures', text: 'Explain what exposures are and how they work', link: { icon: '📖', label: 'View guide' } },
-      { key: 'parent_worry_hill', text: "Explain the Worry Hill using the child's examples", link: { icon: '📖', label: 'View Worry Hill' } },
-      { key: 'parent_nickname', text: 'Introduce the anxiety nickname concept' },
-      { key: 'parent_dt', text: 'Introduce the Distress Thermometer' },
-      { key: 'parent_accommodation', text: 'Introduce parental accommodation and its impact' },
-      { key: 'parent_next_steps', text: 'Agree next steps — does the family want to proceed?' },
-    ],
-  },
-]
-
-const PATIENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
-  {
-    header: 'Meeting 1 — Discovery & Education',
-    items: [
-      { key: 'patient_rapport', text: 'Build rapport — school, friends, favorite things (5 min max)' },
-      { key: 'patient_what_help', text: 'Ask what the child wants help with — use discovery questions', link: { icon: '📖', label: 'Discovery questions' } },
-      { key: 'patient_triggers', text: 'Identify triggers and generate trigger situation list with the child' },
-      { key: 'patient_behaviors', text: 'Identify safety/avoidance behaviors and rituals per situation' },
-      { key: 'patient_nickname', text: 'Confirm anxiety nickname with the child' },
-      { key: 'patient_dt_practice', text: 'Practice the Distress Thermometer together' },
-    ],
-  },
-  {
-    header: 'Meeting 2 — Discovery & Education',
-    items: [
-      { key: 'patient_checkin', text: 'Check in — nickname use, DT use since last session' },
-      { key: 'patient_worry_hill_video', text: 'Teach the Worry Hill — watch video together', link: { icon: '🎬', label: 'Worry Hill video' } },
-      { key: 'patient_worry_hill_draw', text: "Draw the Worry Hill with the child's own situation", link: { icon: '📖', label: 'Worry Hill guide' } },
-      { key: 'patient_candy_jar', text: 'Teach the Candy Jar analogy', link: { icon: '📖', label: 'Candy Jar guide' } },
-      { key: 'patient_da', text: 'Complete Downward Arrows for primary situations', nav: { label: '→ Patient Downward Arrows below', action: 'scrollDA' } },
-    ],
-  },
-  {
-    header: 'Meeting 3 — First exposure',
-    items: [
-      { key: 'patient_checkin_3', text: 'Check in — nickname and DT use' },
-      { key: 'patient_ladder', text: 'Build the exposure ladder from the trigger list', nav: { label: '→ Go to Build Treatment Plan', action: 'treatmentPlan' } },
-      { key: 'patient_first_rung', text: 'Choose the first exposure with the child — lowest DT rung' },
-      { key: 'patient_first_exposure', text: 'Practice the first exposure in session 3-6 times, record DT each time' },
-      { key: 'patient_confidence', text: 'Confirm child confidence is High before first home experiment' },
-      { key: 'patient_home_experiments', text: 'Set the first home experiments with the child' },
-    ],
-  },
-]
+// Definitions live in ../../lib/checklists so the patient list page can share them.
 
 // Stage 1 parent keys — preserved explicitly so the Step 3 completion logic is unchanged
 // by the parent checklist being flattened into a single group.
@@ -1902,26 +1846,56 @@ function StepWithChecklist({ patientId, stepNumber, title, groups, children, onN
 
   const sideBySide = !isNarrow
 
+  // First unchecked item across the step's checklist — surfaced in the "Next" banner.
+  const { data: checked } = useQuery({
+    queryKey: ['checklist', patientId],
+    queryFn: () => getChecklist(patientId),
+    enabled: !!patientId,
+  })
+  const checkedItems = checked ?? {}
+  const firstUnchecked = groups.flatMap(g => g.items).find(i => !checkedItems[i.key])
+
+  const handleBannerClick = () => {
+    if (collapsed) {
+      setCollapsed(false)
+      try { localStorage.setItem(storageKey, 'false') } catch { /* ignore */ }
+    }
+  }
+
   return (
-    <div ref={containerRef} style={{ display: 'flex', flexDirection: sideBySide ? 'row' : 'column', gap: '20px', alignItems: 'stretch' }}>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {children}
-      </div>
-      <div style={{
-        width: sideBySide ? (collapsed ? '44px' : '300px') : '100%',
-        flexShrink: 0,
-        position: sideBySide ? 'sticky' : 'static',
-        top: sideBySide ? '16px' : undefined,
-        alignSelf: 'flex-start',
-      }}>
-        <ConsultationChecklist
-          patientId={patientId}
-          title={title}
-          groups={groups}
-          collapsed={sideBySide && collapsed}
-          onToggleCollapse={toggleCollapse}
-          onNavigate={onNavigate}
-        />
+    <div>
+      {firstUnchecked ? (
+        <div onClick={handleBannerClick}
+          style={{ background: '#f0fdfa', borderLeft: '3px solid #0d9488', borderRadius: '8px', padding: '8px 14px', marginBottom: '16px', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Next →</span>
+          <span style={{ fontSize: '13px', color: '#1e293b' }}>{firstUnchecked.text}</span>
+        </div>
+      ) : (
+        <div onClick={handleBannerClick}
+          style={{ background: '#f0fdf4', borderLeft: '3px solid #16a34a', borderRadius: '8px', padding: '8px 14px', marginBottom: '16px', cursor: 'pointer' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#16a34a' }}>✓ All checklist items complete</span>
+        </div>
+      )}
+      <div ref={containerRef} style={{ display: 'flex', flexDirection: sideBySide ? 'row' : 'column', gap: '20px', alignItems: 'stretch' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {children}
+        </div>
+        <div style={{
+          width: sideBySide ? (collapsed ? '44px' : '300px') : '100%',
+          flexShrink: 0,
+          position: sideBySide ? 'sticky' : 'static',
+          top: sideBySide ? '16px' : undefined,
+          alignSelf: 'flex-start',
+        }}>
+          <ConsultationChecklist
+            patientId={patientId}
+            title={title}
+            groups={groups}
+            collapsed={sideBySide && collapsed}
+            onToggleCollapse={toggleCollapse}
+            onNavigate={onNavigate}
+          />
+        </div>
       </div>
     </div>
   )
@@ -4233,13 +4207,13 @@ export default function PatientPage() {
                   </>
                 )}
                 {activeStep === 2 && patientId && (
-                  <StepWithChecklist patientId={patientId} stepNumber={3} title="PARENT CONSULTATION CHECKLIST" groups={PARENT_CHECKLIST_GROUPS} onNavigate={handleChecklistNav}>
+                  <StepWithChecklist patientId={patientId} stepNumber={3} title="PARENT CONSULTATION CHECKLIST" groups={PARENT_CHECKLIST} onNavigate={handleChecklistNav}>
                     {renderPrep('session_1')}
                     <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />
                   </StepWithChecklist>
                 )}
                 {activeStep === 3 && patientId && (
-                  <StepWithChecklist patientId={patientId} stepNumber={4} title="PATIENT CONSULTATION CHECKLIST" groups={PATIENT_CHECKLIST_GROUPS} onNavigate={handleChecklistNav}>
+                  <StepWithChecklist patientId={patientId} stepNumber={4} title="PATIENT CONSULTATION CHECKLIST" groups={PATIENT_CHECKLIST} onNavigate={handleChecklistNav}>
                     {renderPrep('session_2')}
                     <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />
                     <div id="patient-da-section">{patientDAContent}</div>

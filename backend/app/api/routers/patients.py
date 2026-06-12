@@ -23,6 +23,7 @@ from app.models.downward_arrow import DownwardArrow
 from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
 from app.models.formulation import ClinicalFormulation
+from app.models.checklist import ConsultationChecklist
 from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse
 from app.services.email_service import send_teen_invitation_email
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
@@ -206,6 +207,11 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
     candidates = [c for c in [last_exp_at, last_note_at, last_msg_at, last_entry_at, patient.created_at] if c is not None]
     last_activity_at = max(candidates) if candidates else patient.created_at
 
+    # --- Consultation checklist state ---
+    checklist_checked_items = (await db.execute(
+        select(ConsultationChecklist.checked_items).where(ConsultationChecklist.patient_id == pid)
+    )).scalars().first() or {}
+
     return {
         'last_activity_at': last_activity_at,
         'has_monitoring_form': monitoring_form_sent,
@@ -224,6 +230,7 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
         'active_plan_with_no_recent_activity': active_plan_with_no_recent_activity,
         'monitoring_entries_count': monitoring_entries_count,
         'monitoring_form_sent': monitoring_form_sent,
+        'checklist_checked_items': checklist_checked_items,
     }
 
 
