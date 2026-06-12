@@ -10,7 +10,7 @@ import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanStatus, updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
   createBehavior, updateBehavior, deleteBehavior, updateTrigger, deleteTrigger,
-  getSituationDownwardArrow, createSituationDownwardArrow, updateDownwardArrow,
+  getSituationDownwardArrow, createSituationDownwardArrow, updateDownwardArrow, listPatientDownwardArrows,
   getPatientExperiments, planExperimentForBehavior,
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
@@ -1447,6 +1447,234 @@ function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituatio
   )
 }
 
+// ── Patient Downward Arrows (Step 4) — post-session entry: list + entry form ──
+function PatientDownwardArrows({ patientId, planId, triggers, onFearedOutcome }: {
+  patientId: string
+  planId: string | undefined
+  triggers: TriggerSituation[]
+  onFearedOutcome: (fearedOutcome: string) => void
+}) {
+  const qc = useQueryClient()
+  const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
+
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [situationId, setSituationId] = useState<string>('')   // '' | '__new__' | <trigger id>
+  const [newSituationName, setNewSituationName] = useState('')
+  const [newSituationDT, setNewSituationDT] = useState('')
+  const [steps, setSteps] = useState<string[]>([''])
+  const [fearedOutcome, setFearedOutcome] = useState('')
+  const [bip, setBip] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: das } = useQuery({
+    queryKey: ['patient-das', patientId],
+    queryFn: () => listPatientDownwardArrows(patientId, 'practitioner'),
+    enabled: !!patientId,
+  })
+
+  const resetForm = () => {
+    setEditingId(null); setSituationId(''); setNewSituationName(''); setNewSituationDT('')
+    setSteps(['']); setFearedOutcome(''); setBip(''); setError(null)
+  }
+  const openAdd = () => { resetForm(); setFormOpen(true) }
+  const openEdit = (da: DownwardArrow) => {
+    setEditingId(da.id)
+    setSituationId(da.trigger_situation_id ?? '')
+    setNewSituationName(''); setNewSituationDT('')
+    setSteps(da.arrow_steps.length > 0 ? da.arrow_steps.map(s => s.response) : [''])
+    setFearedOutcome(da.feared_outcome ?? '')
+    setBip(da.bip_derived != null ? String(da.bip_derived) : '')
+    setError(null)
+    setFormOpen(true)
+  }
+  const closeForm = () => { setFormOpen(false); resetForm() }
+
+  const updateStep = (i: number, val: string) => setSteps(prev => prev.map((s, j) => j === i ? val : s))
+  const addStep = () => setSteps(prev => [...prev, ''])
+  const removeStep = (i: number) => setSteps(prev => prev.length > 1 ? prev.filter((_, j) => j !== i) : prev)
+
+  const situationChosen = situationId === '__new__' ? newSituationName.trim().length > 0 : !!situationId
+  const canSave = situationChosen && fearedOutcome.trim().length > 0 && !saving
+
+  const handleSave = async () => {
+    setError(null)
+    setSaving(true)
+    try {
+      let sitId = situationId
+      if (!editingId && situationId === '__new__') {
+        let pid = planId
+        if (!pid) {
+          const newPlan = await createTreatmentPlan(patientId, { clinical_track: 'exposure', parent_visibility_level: 'summary' })
+          pid = newPlan.id
+        }
+        const dt = newSituationDT.trim() ? Number(newSituationDT) : undefined
+        const trig = await createTrigger(pid, { name: newSituationName.trim(), distress_thermometer_rating: dt })
+        sitId = trig.id
+      }
+
+      const arrowSteps: ArrowStep[] = steps
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map((text, i) => ({ question: `Step ${i + 1}`, response: text }))
+      const bipVal = bip.trim() ? Number(bip) : undefined
+
+      let arrowId = editingId
+      if (!arrowId) {
+        const arrow = await createSituationDownwardArrow(sitId, undefined, 'practitioner')
+        arrowId = arrow.id
+      }
+      await updateDownwardArrow(arrowId, {
+        arrow_steps: arrowSteps,
+        feared_outcome: fearedOutcome.trim(),
+        bip_derived: bipVal,
+        is_approved: true,
+      })
+
+      await qc.invalidateQueries({ queryKey: ['patient-das', patientId] })
+      await qc.invalidateQueries({ queryKey: ['da-statuses'] })
+      await qc.invalidateQueries({ queryKey: ['triggers'] })
+      await qc.invalidateQueries({ queryKey: ['plan', patientId] })
+      onFearedOutcome(fearedOutcome.trim())
+      setFormOpen(false)
+      resetForm()
+    } catch {
+      setError('Could not save the Downward Arrow. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const labelStyle = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }
+  const inputStyle = { width: '100%', padding: '8px 10px', boxSizing: 'border-box' as const, background: '#fff' }
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Patient Downward Arrows</div>
+      <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
+        Complete a Downward Arrow for each situation you worked through with the child. Enter the chain from your session notes.
+      </p>
+
+      {/* List view */}
+      {das && das.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+          {das.map(da => {
+            const sitName = triggers.find(t => t.id === da.trigger_situation_id)?.name ?? 'Situation'
+            return (
+              <div key={da.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>{sitName}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                    {da.feared_outcome_approved && (
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#16a34a' }}>&#10003; Complete</span>
+                    )}
+                    <button onClick={() => openEdit(da)} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)', padding: 0 }}>Edit</button>
+                  </div>
+                </div>
+                {da.feared_outcome && (
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {da.feared_outcome}
+                  </p>
+                )}
+                {da.bip_derived != null && (
+                  <p style={{ fontSize: '11px', color: '#94a3b8', margin: '4px 0 0' }}>BIP {da.bip_derived}%</p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add button (hidden while form open) */}
+      {!formOpen && (
+        <button onClick={openAdd}
+          className="text-sm font-medium border cursor-pointer bg-white"
+          style={{ padding: '8px 14px', borderRadius: '6px', borderColor: 'var(--float-primary)', color: 'var(--float-primary)' }}>
+          + Add Downward Arrow
+        </button>
+      )}
+
+      {/* Entry form */}
+      {formOpen && (
+        <div style={{ borderTop: das && das.length > 0 ? '1px solid #e2e8f0' : 'none', paddingTop: das && das.length > 0 ? '14px' : 0 }}>
+          {/* Situation */}
+          <div style={{ marginBottom: '14px' }}>
+            <label style={labelStyle}>Situation</label>
+            {editingId ? (
+              <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>{triggers.find(t => t.id === situationId)?.name ?? 'Situation'}</p>
+            ) : (
+              <>
+                <select value={situationId} onChange={e => setSituationId(e.target.value)}
+                  className="text-sm border border-slate-200 rounded" style={inputStyle}>
+                  <option value="">Select a situation…</option>
+                  {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  <option value="__new__">+ Create new situation</option>
+                </select>
+                {situationId === '__new__' && (
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <input value={newSituationName} onChange={e => setNewSituationName(e.target.value)} placeholder="Situation name"
+                      className="text-sm border border-slate-200 rounded" style={{ flex: 1, padding: '8px 10px', boxSizing: 'border-box' }} />
+                    <input value={newSituationDT} onChange={e => setNewSituationDT(e.target.value)} type="number" min={1} max={10} placeholder="DT"
+                      className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '8px 10px', boxSizing: 'border-box' }} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Chain steps */}
+          <div style={{ marginBottom: '14px' }}>
+            <label style={labelStyle}>The chain — enter the steps from your session</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {steps.map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', width: '18px', textAlign: 'right', flexShrink: 0 }}>{i + 1}.</span>
+                  <input value={s} onChange={e => updateStep(i, e.target.value)} placeholder="What they fear will happen…"
+                    className="text-sm border border-slate-200 rounded" style={{ flex: 1, padding: '8px 10px', boxSizing: 'border-box' }} />
+                  {steps.length > 1 && (
+                    <button onClick={() => removeStep(i)} aria-label="Remove step"
+                      className="bg-transparent border-none cursor-pointer" style={{ color: '#94a3b8', fontSize: '16px', lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>×</button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button onClick={addStep} className="text-xs font-medium bg-transparent border-none cursor-pointer" style={{ color: 'var(--float-primary)', padding: '8px 0 0' }}>+ Add step</button>
+          </div>
+
+          {/* Core feared outcome */}
+          <div style={{ marginBottom: '14px' }}>
+            <label style={labelStyle}>Core feared outcome</label>
+            <textarea value={fearedOutcome} onChange={e => setFearedOutcome(e.target.value)} rows={2} placeholder="The child's core feared outcome…"
+              className="text-sm border border-slate-200 rounded" style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+          </div>
+
+          {/* BIP */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>BIP — child's belief this will happen</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input value={bip} onChange={e => setBip(e.target.value)} type="number" min={0} max={100}
+                className="text-sm border border-slate-200 rounded" style={{ width: '90px', padding: '8px 10px', boxSizing: 'border-box' }} />
+              <span style={{ fontSize: '13px', color: '#64748b' }}>%</span>
+            </div>
+          </div>
+
+          {error && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 10px' }}>{error}</p>}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button onClick={handleSave} disabled={!canSave}
+              className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '9px 18px' }}>
+              {saving ? 'Saving…' : 'Save Downward Arrow'}
+            </button>
+            <button onClick={closeForm} disabled={saving}
+              className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-40" style={{ padding: '9px 12px' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Page ──
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -1593,8 +1821,6 @@ export default function PatientPage() {
     if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current)
     if (formulationSavedTimerRef.current) clearTimeout(formulationSavedTimerRef.current)
   }, [])
-  // Patient downward arrow (Step 4) — situation picker
-  const [patientDASituationId, setPatientDASituationId] = useState<string | null>(null)
   // Treatment targets (Step 5)
   const [treatmentTargets, setTreatmentTargets] = useState<string[]>([])
   const [targetsConfirmed, setTargetsConfirmed] = useState(false)
@@ -2219,9 +2445,6 @@ export default function PatientPage() {
     stepInitializedRef.current = true
   }, [coreLoaded, currentActiveStep])
 
-  // Default the patient Downward Arrow situation picker (Step 4) to the first situation
-  useEffect(() => { if (triggers?.length && !patientDASituationId) setPatientDASituationId(triggers[0].id) }, [triggers])
-
   // Auto-populate treatment targets from situations (lowest DT first) once the clinician reaches Step 5
   useEffect(() => {
     if (targetsInitRef.current) return
@@ -2417,43 +2640,14 @@ export default function PatientPage() {
     </div>
   )
 
-  const patientDAContent = (() => {
-    const selected = triggers?.find(t => t.id === patientDASituationId)
-    return (
-      <div style={cardStyle}>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Patient Downward Arrow</div>
-        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
-          Complete the Downward Arrow with the child. Select a situation to link it to.
-        </p>
-        {triggers && triggers.length > 0 ? (
-          <>
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>Situation</label>
-              <select
-                value={patientDASituationId ?? ''}
-                onChange={e => setPatientDASituationId(e.target.value)}
-                className="text-sm border border-slate-200 rounded"
-                style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#fff' }}
-              >
-                {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
-            {selected && (
-              <SessionDownwardArrow
-                key={selected.id}
-                trigger={selected}
-                facilitatedBy="practitioner"
-                onApproved={addPatientFearedOutcome}
-                showSituation
-              />
-            )}
-          </>
-        ) : (
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Complete Step 2 (Extract from Monitoring Data) first to add trigger situations, then return here to complete the Patient Downward Arrow.</p>
-        )}
-      </div>
-    )
-  })()
+  const patientDAContent = patientId ? (
+    <PatientDownwardArrows
+      patientId={patientId}
+      planId={plan?.id}
+      triggers={triggers ?? []}
+      onFearedOutcome={addPatientFearedOutcome}
+    />
+  ) : null
 
   const treatmentTargetsContent = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

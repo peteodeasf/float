@@ -212,6 +212,13 @@ export const getSituationDownwardArrow = async (situationId: string): Promise<Do
   return response.data
 }
 
+export const listPatientDownwardArrows = async (patientId: string, facilitatedBy?: string): Promise<DownwardArrow[]> => {
+  const response = await apiClient.get(`/patients/${patientId}/downward-arrows`, {
+    params: facilitatedBy ? { facilitated_by: facilitatedBy } : undefined,
+  })
+  return response.data
+}
+
 export const createSituationDownwardArrow = async (situationId: string, firstAnswer?: string, facilitatedBy: string = 'practitioner'): Promise<DownwardArrow> => {
   const response = await apiClient.post(`/trigger-situations/${situationId}/downward-arrow`, {
     facilitated_by: facilitatedBy,
