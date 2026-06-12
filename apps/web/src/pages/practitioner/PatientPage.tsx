@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage, inviteTeen, getPatientProgress, updatePatient } from '../../api/patients'
@@ -1734,13 +1734,14 @@ const PATIENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
 
 const STAGE1_PARENT_KEYS = PARENT_CHECKLIST_GROUPS[0].items.map(i => i.key)
 
-function ConsultationChecklist({ patientId, title, groups }: {
+function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCollapse }: {
   patientId: string
   title: string
   groups: ChecklistGroup[]
+  collapsed: boolean
+  onToggleCollapse: () => void
 }) {
   const qc = useQueryClient()
-  const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
   const [popoverKey, setPopoverKey] = useState<string | null>(null)
 
   const { data: checked } = useQuery({
@@ -1762,49 +1763,140 @@ function ConsultationChecklist({ patientId, title, groups }: {
   })
 
   const checkedItems = checked ?? {}
+  const allKeys = groups.flatMap(g => g.items.map(i => i.key))
+  const total = allKeys.length
+  const checkedCount = allKeys.filter(k => !!checkedItems[k]).length
+  const progress = `${checkedCount}/${total}`
+
+  const panelStyle = { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', width: '100%', boxSizing: 'border-box' as const }
+
+  // Collapsed: slim vertical bar
+  if (collapsed) {
+    return (
+      <div
+        onClick={onToggleCollapse}
+        title={title}
+        style={{ ...panelStyle, padding: '12px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+      >
+        <span style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1 }}>›</span>
+        <span style={{ writingMode: 'vertical-rl', fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>CHECKLIST</span>
+        <span style={{ fontSize: '12px', color: '#64748b' }}>{progress}</span>
+      </div>
+    )
+  }
 
   return (
-    <div style={cardStyle}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
+    <div style={panelStyle}>
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }} title={title}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Checklist</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          <span style={{ fontSize: '12px', color: '#94a3b8' }}>{progress}</span>
+          <button onClick={onToggleCollapse} aria-label="Collapse checklist"
+            className="bg-transparent border-none cursor-pointer"
+            style={{ fontSize: '14px', color: '#94a3b8', padding: 0, lineHeight: 1 }}>›</button>
+        </div>
+      </div>
+
       {groups.map((group, gi) => (
         <div key={group.header}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: gi === 0 ? '16px 0 10px' : '22px 0 10px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: gi === 0 ? '4px 0 8px' : '16px 0 8px' }}>
             {group.header}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
             {group.items.map(item => {
               const isChecked = !!checkedItems[item.key]
               return (
-                <div key={item.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div key={item.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleMut.mutate({ key: item.key, value: !isChecked })}
-                    style={{ accentColor: '#0d9488', width: '16px', height: '16px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
+                    style={{ accentColor: '#0d9488', width: '15px', height: '15px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
                   />
-                  <span style={{ flex: 1, fontSize: '13px', lineHeight: 1.5, color: isChecked ? '#94a3b8' : '#334155' }}>{item.text}</span>
-                  {item.link && (
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <button
-                        onClick={() => setPopoverKey(popoverKey === item.key ? null : item.key)}
-                        className="bg-transparent border-none cursor-pointer"
-                        style={{ fontSize: '12px', color: '#94a3b8', padding: '2px 0 0', whiteSpace: 'nowrap' }}
-                      >
-                        {item.link.icon} {item.link.label}
-                      </button>
-                      {popoverKey === item.key && (
-                        <div style={{ position: 'absolute', right: 0, top: '24px', background: '#1e293b', color: '#fff', fontSize: '11px', padding: '6px 10px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                          Education content coming soon
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: '12.5px', lineHeight: 1.4, color: isChecked ? '#94a3b8' : '#334155' }}>{item.text}</span>
+                    {item.link && (
+                      <div style={{ position: 'relative', marginTop: '3px' }}>
+                        <button
+                          onClick={() => setPopoverKey(popoverKey === item.key ? null : item.key)}
+                          className="bg-transparent border-none cursor-pointer"
+                          style={{ fontSize: '11.5px', color: '#94a3b8', padding: 0, whiteSpace: 'nowrap' }}
+                        >
+                          {item.link.icon} {item.link.label}
+                        </button>
+                        {popoverKey === item.key && (
+                          <div style={{ position: 'absolute', left: 0, top: '22px', background: '#1e293b', color: '#fff', fontSize: '11px', padding: '6px 10px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                            Education content coming soon
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             })}
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+// Two-column wrapper for Steps 3 & 4: main content + collapsible sticky checklist panel.
+function StepWithChecklist({ patientId, stepNumber, title, groups, children }: {
+  patientId: string
+  stepNumber: number
+  title: string
+  groups: ChecklistGroup[]
+  children: ReactNode
+}) {
+  const storageKey = `float_checklist_collapsed_${patientId}_step${stepNumber}`
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem(storageKey) === 'true' } catch { return false }
+  })
+  const toggleCollapse = () => {
+    setCollapsed(prev => {
+      const next = !prev
+      try { localStorage.setItem(storageKey, String(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isNarrow, setIsNarrow] = useState(false)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setIsNarrow(entry.contentRect.width < 900)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const sideBySide = !isNarrow
+
+  return (
+    <div ref={containerRef} style={{ display: 'flex', flexDirection: sideBySide ? 'row' : 'column', gap: '20px', alignItems: 'stretch' }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {children}
+      </div>
+      <div style={{
+        width: sideBySide ? (collapsed ? '44px' : '300px') : '100%',
+        flexShrink: 0,
+        position: sideBySide ? 'sticky' : 'static',
+        top: sideBySide ? '16px' : undefined,
+        alignSelf: 'flex-start',
+      }}>
+        <ConsultationChecklist
+          patientId={patientId}
+          title={title}
+          groups={groups}
+          collapsed={sideBySide && collapsed}
+          onToggleCollapse={toggleCollapse}
+        />
+      </div>
     </div>
   )
 }
@@ -4104,21 +4196,19 @@ export default function PatientPage() {
                     {monitoringExtractContent}
                   </>
                 )}
-                {activeStep === 2 && (
-                  <>
+                {activeStep === 2 && patientId && (
+                  <StepWithChecklist patientId={patientId} stepNumber={3} title="PARENT CONSULTATION CHECKLIST" groups={PARENT_CHECKLIST_GROUPS}>
                     {renderPrep('session_1')}
-                    {patientId && <ConsultationChecklist patientId={patientId} title="PARENT CONSULTATION CHECKLIST" groups={PARENT_CHECKLIST_GROUPS} />}
-                    {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />}
-                  </>
+                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />
+                  </StepWithChecklist>
                 )}
-                {activeStep === 3 && (
-                  <>
+                {activeStep === 3 && patientId && (
+                  <StepWithChecklist patientId={patientId} stepNumber={4} title="PATIENT CONSULTATION CHECKLIST" groups={PATIENT_CHECKLIST_GROUPS}>
                     {renderPrep('session_2')}
-                    {patientId && <ConsultationChecklist patientId={patientId} title="PATIENT CONSULTATION CHECKLIST" groups={PATIENT_CHECKLIST_GROUPS} />}
-                    {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />}
+                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />
                     {patientDAContent}
                     <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
-                  </>
+                  </StepWithChecklist>
                 )}
                 {activeStep === 4 && (
                   <>
