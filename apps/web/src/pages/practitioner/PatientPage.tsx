@@ -3773,14 +3773,12 @@ export default function PatientPage() {
                   <>
                     {renderGuide(2)}
                     {monitoringExtractContent}
-                    <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
                   </>
                 )}
                 {activeStep === 2 && (
                   <>
                     {renderPrep('session_1')}
                     {patientId && <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />}
-                    <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
                   </>
                 )}
                 {activeStep === 3 && (
