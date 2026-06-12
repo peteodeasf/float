@@ -1703,7 +1703,7 @@ const PARENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
 
 const PATIENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
   {
-    header: 'Meeting 1 — Discovery & data gathering',
+    header: 'Meeting 1 — Discovery & Education',
     items: [
       { key: 'patient_rapport', text: 'Build rapport — school, friends, favorite things (5 min max)' },
       { key: 'patient_what_help', text: 'Ask what the child wants help with — use discovery questions', link: { icon: '📖', label: 'Discovery questions' } },
@@ -1714,7 +1714,7 @@ const PATIENT_CHECKLIST_GROUPS: ChecklistGroup[] = [
     ],
   },
   {
-    header: 'Meeting 2 — Education',
+    header: 'Meeting 2 — Discovery & Education',
     items: [
       { key: 'patient_checkin', text: 'Check in — nickname use, DT use since last session' },
       { key: 'patient_worry_hill_video', text: 'Teach the Worry Hill — watch video together', link: { icon: '🎬', label: 'Worry Hill video' } },
