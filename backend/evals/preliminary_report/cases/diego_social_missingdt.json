@@ -1,0 +1,20 @@
+{
+  "name": "Diego",
+  "presentation": "Social anxiety (eating in public / speaking to others)",
+  "data_condition": "sparse (4 entries) + MISSING DT on some entries",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional. Tests handling of missing fear-thermometer values.",
+  "entries": [
+    {"fear_thermometer": null, "situation": "School cafeteria", "child_behavior_observed": "Diego says he doesn't eat lunch at school because people might watch him eat. He comes home starving.", "parent_response": "I started packing foods he can hide in his bag and eat in the bathroom."},
+    {"fear_thermometer": 7, "situation": "Calling to order pizza", "child_behavior_observed": "Diego asked me to make the call, said he'd say something wrong.", "parent_response": "I made the call."},
+    {"fear_thermometer": null, "situation": "Speaking to his coach", "child_behavior_observed": "Diego wouldn't tell the coach he'd been given the wrong size jersey, he just took it.", "parent_response": "I emailed the coach for him."},
+    {"fear_thermometer": 6, "situation": "Substitute teacher took attendance", "child_behavior_observed": "Diego didn't answer 'here' loud enough and got marked absent, and was too embarrassed to correct it.", "parent_response": "I emailed the school to fix the attendance."}
+  ],
+  "expected_elements": {
+    "situations": ["Being observed doing routine acts (eating in public)", "Speaking to adults/authority figures and on the phone", "Answering/being noticed in class"],
+    "parental_responses": ["Speaking/calling on his behalf", "Emailing adults to handle things for him", "Accommodating avoidance (packing hideable food)"],
+    "safety_behaviors": ["Avoidance of eating at school (eating in the bathroom)", "Getting a parent to speak/call for him", "Not correcting errors / staying under the radar"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct. Two of four entries have no DT — check the report still produces sensible situation scores (and doesn't invent ratings)."
+  }
+}

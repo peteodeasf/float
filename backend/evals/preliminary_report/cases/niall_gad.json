@@ -1,0 +1,23 @@
+{
+  "name": "Niall",
+  "presentation": "Generalized anxiety (GAD)",
+  "data_condition": "standard (7 entries), reassurance-seeking heavy",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional.",
+  "entries": [
+    {"fear_thermometer": 6, "situation": "Watching the news", "child_behavior_observed": "Niall saw a story about a house fire and asked over and over whether our smoke detectors work and if we'd all get out.", "parent_response": "I checked the detectors with him three times to show him."},
+    {"fear_thermometer": 5, "situation": "Before a test", "child_behavior_observed": "Niall asked repeatedly if he'd studied enough and what happens if he fails and gets held back.", "parent_response": "I reassured him he'd be fine, over and over."},
+    {"fear_thermometer": 7, "situation": "Weather forecast showed a storm", "child_behavior_observed": "Niall wanted to know if the storm could be a tornado and kept checking the radar on my phone.", "parent_response": "I let him check the app as much as he wanted."},
+    {"fear_thermometer": 6, "situation": "I was 20 minutes late from work", "child_behavior_observed": "Niall called me four times asking if I'd been in a car accident.", "parent_response": "I answered every call and explained it was traffic."},
+    {"fear_thermometer": 4, "situation": "Homework", "child_behavior_observed": "Niall erased and redid his answers many times worried they were wrong; 20 minutes of work took 2 hours.", "parent_response": "I sat with him and confirmed each answer was right."},
+    {"fear_thermometer": 7, "situation": "Going to bed", "child_behavior_observed": "Niall lists all his worries - school, money, whether grandpa is sick, climate change. Says he can't shut his brain off.", "parent_response": "We talk through each worry until he's calm, sometimes until 11pm."},
+    {"fear_thermometer": 5, "situation": "Field day at school", "child_behavior_observed": "Niall worried he'd get hurt and asked if there'd be a nurse and whether I'd have my phone on.", "parent_response": "I promised to keep my phone on and to pick him up if anything happened."}
+  ],
+  "expected_elements": {
+    "situations": ["Broad, shifting worry across domains (catastrophe/safety, performance/tests, weather, parent's safety, relatives' health, world events)", "Bedtime worry spiral"],
+    "parental_responses": ["Repeated reassurance", "Participating in checking (detectors, radar, answering every call)", "Confirming schoolwork is correct", "Talking through worries at length at bedtime", "Keeping phone available as reassurance"],
+    "safety_behaviors": ["Reassurance seeking (repeated questions)", "Checking (radar, smoke detectors, calling parent)", "Redoing/perfecting work", "Listing worries"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct. GAD presentation is reassurance/checking-heavy rather than situational avoidance."
+  }
+}

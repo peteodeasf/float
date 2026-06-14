@@ -1,0 +1,20 @@
+{
+  "name": "Ruby",
+  "presentation": "Separation / school refusal",
+  "data_condition": "sparse (4 entries), mostly-avoidance, escalating impairment",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional. Heavy on avoidance + accommodation; functional impairment (missed days).",
+  "entries": [
+    {"fear_thermometer": 9, "situation": "Sunday night before school", "child_behavior_observed": "Ruby cried for hours saying she can't go and her stomach was in knots. This has happened every Sunday for a month.", "parent_response": "I told her she could have a 'mental health day' on Monday."},
+    {"fear_thermometer": 8, "situation": "Monday morning", "child_behavior_observed": "Ruby refused to get dressed and said she'd throw up if she went. She stayed in bed.", "parent_response": "I let her stay home and work from the couch with me."},
+    {"fear_thermometer": 7, "situation": "Driving to school", "child_behavior_observed": "Ruby begged me to turn around the whole way and said she felt sick.", "parent_response": "I turned around twice this month and took her home."},
+    {"fear_thermometer": 6, "situation": "School called about absences", "child_behavior_observed": "Ruby has missed nine days this term and seems relieved each time she gets to stay home.", "parent_response": "I've been writing her sick notes."}
+  ],
+  "expected_elements": {
+    "situations": ["Attending school (anticipatory Sunday night, the morning-of, the commute)", "Prolonged/escalating school refusal"],
+    "parental_responses": ["Allowing avoidance (staying home, 'mental health days', turning around)", "Writing sick notes", "Accommodating her at home"],
+    "safety_behaviors": ["Refusal / non-attendance", "Somatic complaints (nausea, stomach)", "Pleading to turn back / escape", "Accumulating absences (negative reinforcement of relief)"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct. Sparse + avoidance-dominant; a good report should flag the functional impairment (missed days) and the relief cycle."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Lena",
+  "presentation": "Performance / evaluation anxiety",
+  "data_condition": "standard (6 entries)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional. Distinct from Maya exemplar (broad evaluative performance rather than math-specific).",
+  "entries": [
+    {"fear_thermometer": 7, "situation": "Math test the next day", "child_behavior_observed": "Lena said she felt sick and might fail and everyone would think she's stupid. She studied until midnight and then cried.", "parent_response": "I told her she's smart and let her stay up to study more."},
+    {"fear_thermometer": 6, "situation": "Piano recital coming up", "child_behavior_observed": "Lena begged to drop out the week before, said her hands would shake and she'd mess up in front of everyone.", "parent_response": "I told her teacher she might not perform."},
+    {"fear_thermometer": 8, "situation": "Soccer tryouts for the travel team", "child_behavior_observed": "Lena pretended to have a hurt ankle so she wouldn't have to try out.", "parent_response": "I told the coach she was injured."},
+    {"fear_thermometer": 5, "situation": "Graded reading group", "child_behavior_observed": "Lena asked to be moved to an easier group so she wouldn't be the worst one.", "parent_response": "I emailed the teacher to ask."},
+    {"fear_thermometer": 7, "situation": "School spelling bee", "child_behavior_observed": "Lena said she had a stomach ache and stayed home the day of the bee.", "parent_response": "I let her stay home."},
+    {"fear_thermometer": 6, "situation": "Got a B on a quiz", "child_behavior_observed": "Lena was inconsolable, said she's a failure, and ripped up the quiz.", "parent_response": "I told her one B doesn't matter and offered to email the teacher for extra credit."}
+  ],
+  "expected_elements": {
+    "situations": ["Evaluative performance (tests, recitals, tryouts, graded reading group, spelling bee)", "Receiving less-than-perfect results"],
+    "parental_responses": ["Excessive reassurance", "Allowing withdrawal/avoidance (dropping out, staying home)", "Making excuses to coaches/teachers", "Accommodating (emailing for easier placement / extra credit)", "Enabling over-studying"],
+    "safety_behaviors": ["Avoidance/withdrawal (faking injury or illness, staying home, dropping out)", "Over-preparation", "Requesting easier placement", "Escape from evaluation"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct."
+  }
+}

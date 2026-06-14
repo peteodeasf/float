@@ -1,0 +1,22 @@
+{
+  "name": "Sofia",
+  "presentation": "OCD-style (contamination / washing)",
+  "data_condition": "standard (6 entries)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional. Distinct from Kemp exemplar (contamination/washing rather than ordering/arranging). Should be labelled 'Rituals'.",
+  "entries": [
+    {"fear_thermometer": 7, "situation": "Touched a public door handle", "child_behavior_observed": "Sofia held her hand away from her body until she could wash and wouldn't touch anything.", "parent_response": "I found a bathroom right away so she could wash."},
+    {"fear_thermometer": 8, "situation": "Someone sneezed near her", "child_behavior_observed": "Sofia changed all her clothes when she got home and asked me to wash them separately.", "parent_response": "I washed them separately."},
+    {"fear_thermometer": 9, "situation": "Used a public restroom", "child_behavior_observed": "Sofia washed her hands for several minutes and asked me repeatedly whether she got all the germs off.", "parent_response": "I reassured her she was clean each time."},
+    {"fear_thermometer": 6, "situation": "Pet the family dog", "child_behavior_observed": "Sofia wouldn't eat until she'd washed her hands twice and used sanitizer.", "parent_response": "I let her wash and gave her the sanitizer."},
+    {"fear_thermometer": 8, "situation": "Brother ate off her plate", "child_behavior_observed": "Sofia threw out the rest of her food and wouldn't use that plate again.", "parent_response": "I threw it out and gave her a new plate."},
+    {"fear_thermometer": 7, "situation": "Bedtime routine", "child_behavior_observed": "Sofia has a long routine - wash hands, don't touch anything, get into bed a certain way - or she feels contaminated and starts over.", "parent_response": "I wait for her to finish, sometimes it takes 30 minutes."}
+  ],
+  "expected_elements": {
+    "situations": ["Contact with perceived contaminants (door handles, public restrooms, sneezes, pets, shared food/utensils)", "Bedtime contamination routine"],
+    "parental_responses": ["Facilitating washing", "Washing clothes separately", "Reassurance about cleanliness", "Providing sanitizer", "Replacing/discarding 'contaminated' food and plates", "Waiting through routines"],
+    "safety_behaviors": ["Excessive/repeated hand-washing and showering/changing clothes", "Sanitizer use", "Avoidance of touching", "Discarding 'contaminated' items", "Reassurance seeking about cleanliness", "Bedtime washing routine with restart"],
+    "safety_section_label": "Rituals",
+    "notes": "DRAFT answer key — advisor to confirm/correct. Tests whether the model selects the 'Rituals' label for OCD-style presentations."
+  }
+}

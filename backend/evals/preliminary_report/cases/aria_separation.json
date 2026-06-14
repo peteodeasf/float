@@ -1,0 +1,26 @@
+{
+  "name": "Aria",
+  "presentation": "Separation anxiety",
+  "data_condition": "rich (10 entries)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional.",
+  "entries": [
+    {"fear_thermometer": 6, "situation": "School drop-off", "child_behavior_observed": "Aria clung to my arm and cried at the classroom door. The teacher had to peel her off me.", "parent_response": "I stayed an extra 15 minutes until she calmed down."},
+    {"fear_thermometer": 7, "situation": "Me getting ready to leave for work", "child_behavior_observed": "Aria followed me from room to room asking when I'd be back and whether I had my phone.", "parent_response": "I promised to text her at every break."},
+    {"fear_thermometer": 5, "situation": "Babysitter came over", "child_behavior_observed": "Aria locked herself in the bathroom and wouldn't come out until we cancelled our dinner.", "parent_response": "We cancelled and stayed home."},
+    {"fear_thermometer": 8, "situation": "Planned sleepover at grandma's", "child_behavior_observed": "Aria called crying at 9pm saying she couldn't sleep without me and begged to come home.", "parent_response": "My husband drove over to get her."},
+    {"fear_thermometer": 6, "situation": "Bedtime", "child_behavior_observed": "Aria asks me to lie with her until she falls asleep, and then I have to leave my bedroom door open.", "parent_response": "I lie with her every night, sometimes for an hour."},
+    {"fear_thermometer": 7, "situation": "I went to the bathroom at the store", "child_behavior_observed": "Aria panicked when she couldn't see me and started calling my name loudly.", "parent_response": "I keep her right next to me at all times now."},
+    {"fear_thermometer": 4, "situation": "Playdate at a friend's house", "child_behavior_observed": "Aria would only go if I stayed the whole time.", "parent_response": "I stayed and sat in the kitchen."},
+    {"fear_thermometer": 9, "situation": "School field trip with no parents", "child_behavior_observed": "Aria refused to get on the bus, said her chest hurt and she felt like she'd throw up.", "parent_response": "I drove her to the museum myself and walked around with the class."},
+    {"fear_thermometer": 5, "situation": "Soccer practice", "child_behavior_observed": "Aria kept looking over to make sure I was still in the bleachers and came off the field twice to check.", "parent_response": "I waved and stayed visible the whole practice."},
+    {"fear_thermometer": 8, "situation": "Drop-off birthday party", "child_behavior_observed": "Aria asked if she could just skip it, and when we got there she wouldn't go in without me.", "parent_response": "I stayed at the party even though it was meant to be drop-off."}
+  ],
+  "expected_elements": {
+    "situations": ["Separation at school / drop-off", "Parent leaving or being out of sight", "Sleeping alone or away from home", "Being left with others (babysitter, playdates, parties)", "Independent activities (field trips)"],
+    "parental_responses": ["Staying with her / remaining visible", "Cancelling or leaving plans early; retrieving her", "Lying with her at bedtime", "Keeping her in sight at all times", "Staying at drop-off events"],
+    "safety_behaviors": ["Clinging and following the parent", "Refusing to attend / separate", "Somatic complaints (chest pain, nausea)", "Checking for the parent", "Requiring the parent present to sleep"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct."
+  }
+}

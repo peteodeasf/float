@@ -1,0 +1,21 @@
+{
+  "name": "Hana",
+  "presentation": "Panic / interoceptive (fear of physical sensations)",
+  "data_condition": "standard (5 entries)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional.",
+  "entries": [
+    {"fear_thermometer": 9, "situation": "In a crowded movie theater", "child_behavior_observed": "Hana said the room felt small, she couldn't breathe, and she needed to leave right now. We left mid-movie.", "parent_response": "We left immediately and got fresh air."},
+    {"fear_thermometer": 7, "situation": "Riding in the back seat on the highway", "child_behavior_observed": "Hana got dizzy and hot and asked me to pull over, said she felt like she might pass out.", "parent_response": "I pulled over and let her sit up front."},
+    {"fear_thermometer": 8, "situation": "Running laps in gym class", "child_behavior_observed": "Hana felt her heart pounding and stopped, scared something was wrong with her heart.", "parent_response": "I wrote her a note to sit out cardio."},
+    {"fear_thermometer": 6, "situation": "Waiting in a long line", "child_behavior_observed": "Hana started fanning herself and asked to step outside, said she felt trapped.", "parent_response": "We left the line and came back when it was shorter."},
+    {"fear_thermometer": 8, "situation": "Taking the elevator", "child_behavior_observed": "Hana takes the stairs now and says the elevator makes her feel closed in and panicky.", "parent_response": "We take the stairs together."}
+  ],
+  "expected_elements": {
+    "situations": ["Settings that trigger feared physical sensations or feeling trapped/unable to escape (crowds, theaters, car/highway, physical exertion, lines, elevators)"],
+    "parental_responses": ["Facilitating escape (leaving, pulling over)", "Writing notes to excuse activity", "Leaving with her", "Accommodating avoidance (taking the stairs)"],
+    "safety_behaviors": ["Escape/leaving at onset of sensations", "Avoidance of triggering settings", "Sitting out exertion", "Choosing stairs over elevator", "Seeking fresh air / cooling down"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct. Interoceptive driver — the feared object is the bodily sensation, not the place itself."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Priya",
+  "presentation": "Specific phobia (dogs)",
+  "data_condition": "sparse (4 entries)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional.",
+  "entries": [
+    {"fear_thermometer": 8, "situation": "Neighbor walking their dog", "child_behavior_observed": "Priya saw the dog from half a block away, froze, then ran back inside the house screaming.", "parent_response": "I brought her inside and we watched from the window until it passed."},
+    {"fear_thermometer": 9, "situation": "Friend's house that has a dog", "child_behavior_observed": "Priya refused to go in. Cried and said the dog would bite her, even though it's a small old dog kept in a crate.", "parent_response": "We left and rescheduled the playdate at our house instead."},
+    {"fear_thermometer": 7, "situation": "Walk in the park", "child_behavior_observed": "Priya made me carry her the whole way and kept scanning for dogs.", "parent_response": "I carried her, and we left when we saw two dogs off leash."},
+    {"fear_thermometer": 6, "situation": "Dog barked next door", "child_behavior_observed": "Priya covered her ears, asked if it could get into our yard, and wouldn't go outside to play.", "parent_response": "I told her the fence keeps it out and let her stay inside."}
+  ],
+  "expected_elements": {
+    "situations": ["Presence or proximity of dogs (seeing, hearing, visiting dog-owning homes, being outdoors where dogs may be)"],
+    "parental_responses": ["Removing her from the situation", "Rescheduling/relocating to avoid dogs", "Carrying her", "Allowing avoidance of outdoors"],
+    "safety_behaviors": ["Fleeing / escape", "Refusing to enter", "Demanding to be carried", "Scanning / hypervigilance for dogs", "Covering ears", "Staying indoors"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct. Sparse data: tests whether the model over-reaches with few entries."
+  }
+}

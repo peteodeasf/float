@@ -1,0 +1,22 @@
+{
+  "name": "Theo",
+  "presentation": "Social anxiety",
+  "data_condition": "standard (6 entries)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional.",
+  "entries": [
+    {"fear_thermometer": 5, "situation": "Class presentation on the rainforest", "child_behavior_observed": "Theo said he had a stomach ache that morning and begged to stay home. At school he went to the nurse during the presentation slot.", "parent_response": "I let him stay in the nurse's office and emailed the teacher to ask if he could present to her alone later."},
+    {"fear_thermometer": 6, "situation": "Ordering at the ice cream shop", "child_behavior_observed": "Theo whispered his order to me and asked me to say it to the worker. Wouldn't make eye contact.", "parent_response": "I ordered for him."},
+    {"fear_thermometer": 7, "situation": "Birthday party for a kid in his class", "child_behavior_observed": "Theo said his stomach hurt and he didn't want to go. Cried in the car. We turned around.", "parent_response": "We went home. I told him it was ok and we'd try the next one."},
+    {"fear_thermometer": 4, "situation": "Raising hand in class", "child_behavior_observed": "Teacher said Theo knows the answers but never raises his hand. Looks down when called on and says 'I don't know' even when he does.", "parent_response": "This came from the teacher, I wasn't there."},
+    {"fear_thermometer": 6, "situation": "Group project at school", "child_behavior_observed": "Theo asked the teacher if he could do the project by himself instead of in a group.", "parent_response": "I emailed asking if he could work solo. Teacher said no."},
+    {"fear_thermometer": 8, "situation": "Reading aloud in reading group", "child_behavior_observed": "Theo said he was going to throw up right before reading group and went to the nurse. Seemed fine once I picked him up.", "parent_response": "Picked him up early."}
+  ],
+  "expected_elements": {
+    "situations": ["Speaking/performing in front of the class (presentations, reading aloud, raising hand)", "Interacting with unfamiliar people (ordering for himself)", "Social gatherings and group work (parties, group projects)"],
+    "parental_responses": ["Allowing escape/avoidance (staying home, going to nurse, leaving the party)", "Speaking/ordering on his behalf", "Emailing teachers to arrange accommodations (present alone, work solo)"],
+    "safety_behaviors": ["Feigning illness / somatic complaints to escape (stomach ache, nausea)", "Getting a parent to speak for him", "Saying 'I don't know' / avoiding eye contact", "Requesting solo work to avoid groups"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct."
+  }
+}

@@ -36,3 +36,18 @@ the presentation types and data conditions listed in `rubric.md`; freeze ~50 as 
 set once the prompt is stable.
 
 > De-identify any real patient data before adding it to `cases/`.
+
+## Synthetic dataset (pending clinical-advisor review)
+`cases/` ships with **11 held-out synthetic cases** (fictional, deliberately messy parent logs)
+stratified across presentation types (social, separation, GAD, specific phobia, health,
+performance, OCD, panic) and data conditions (rich, sparse, missing-DT, conflicting,
+avoidance-dominant). Each carries a **draft** `expected_elements` answer key.
+
+These are **drafts until a clinical advisor signs off**. Generate the review document:
+```bash
+npm install docx          # once (installs to the nearest node_modules)
+node build_review_doc.cjs # -> outputs/Float_Preliminary_Report_Case_Review.docx
+```
+The advisor confirms realism and corrects the expected key elements per case; then transcribe
+their corrections back into the `cases/*.json` `expected_elements` and run the eval.
+

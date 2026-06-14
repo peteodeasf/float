@@ -1,0 +1,22 @@
+{
+  "name": "Marcus",
+  "presentation": "Health anxiety (somatic / illness focus)",
+  "data_condition": "standard (6 entries)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional. Distinct from Patrick exemplar (illness/contagion focus rather than injury/performance).",
+  "entries": [
+    {"fear_thermometer": 7, "situation": "Felt a lump in his throat", "child_behavior_observed": "Marcus was sure he had throat cancer and asked me to feel it and look down his throat with a flashlight.", "parent_response": "I looked and told him it was normal, then we googled it together."},
+    {"fear_thermometer": 6, "situation": "Headache", "child_behavior_observed": "Marcus asked if it could be a brain tumor and wanted to go to the ER.", "parent_response": "I gave him Tylenol and promised to take him to the doctor if it didn't go away."},
+    {"fear_thermometer": 8, "situation": "Heard a classmate had mono", "child_behavior_observed": "Marcus refused to use the water fountain and washed his hands until they were raw, scared he'd catch it.", "parent_response": "I let him bring his own water bottle and didn't push the hand washing."},
+    {"fear_thermometer": 5, "situation": "Stomach ache before school", "child_behavior_observed": "Marcus said he might have appendicitis and shouldn't go to school.", "parent_response": "I let him stay home and rest, and took his temperature a few times."},
+    {"fear_thermometer": 7, "situation": "Noticed a mole", "child_behavior_observed": "Marcus checked it in the mirror repeatedly and asked me daily whether it was getting bigger.", "parent_response": "I checked it each day and reassured him it looked the same."},
+    {"fear_thermometer": 9, "situation": "Heart beating fast after PE", "child_behavior_observed": "Marcus said his heart felt weird and he thought he was having a heart attack, and wanted to lie down and not move.", "parent_response": "I sat with him and we tracked his pulse until it slowed."}
+  ],
+  "expected_elements": {
+    "situations": ["Noticing bodily sensations/symptoms (throat lump, headache, fast heartbeat, stomach ache)", "Perceived exposure to illness/contagion", "Body-checking (moles/skin)"],
+    "parental_responses": ["Examining him / reassurance", "Googling symptoms together", "Giving medication; promising doctor/ER visits", "Allowing school avoidance", "Pulse-tracking and accommodating avoidance of contagion"],
+    "safety_behaviors": ["Reassurance seeking", "Body-checking and symptom-monitoring", "Googling symptoms", "Requesting medical attention/ER", "Avoidance of perceived contagion (water fountain)", "Excessive hand-washing", "Resting/immobility when symptomatic"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct."
+  }
+}

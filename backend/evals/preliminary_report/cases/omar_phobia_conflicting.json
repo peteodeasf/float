@@ -1,0 +1,21 @@
+{
+  "name": "Omar",
+  "presentation": "Specific phobia (storms / the dark)",
+  "data_condition": "conflicting / contradictory entries (5)",
+  "held_out": true,
+  "note": "SYNTHETIC — draft for clinical advisor review. De-identified/fictional. Deliberately inconsistent: the report should capture the night/anticipatory pattern WITHOUT over-stating daytime fear or inventing a clean story.",
+  "entries": [
+    {"fear_thermometer": 8, "situation": "Thunderstorm at night", "child_behavior_observed": "Omar was terrified and got into our bed shaking.", "parent_response": "We let him sleep with us."},
+    {"fear_thermometer": 3, "situation": "Thunderstorm during the day", "child_behavior_observed": "Omar watched the lightning from the window and seemed fine, even said it was cool.", "parent_response": "Nothing needed."},
+    {"fear_thermometer": 9, "situation": "Power went out in the evening", "child_behavior_observed": "Omar screamed in the dark, said monsters were there, and wouldn't move until we got a flashlight.", "parent_response": "We got flashlights and stayed with him."},
+    {"fear_thermometer": null, "situation": "Sleeping with the light off", "child_behavior_observed": "Some nights he's fine; other nights he says he can't and needs the hall light on and the door open. It's inconsistent.", "parent_response": "We leave the hall light on most nights now."},
+    {"fear_thermometer": 7, "situation": "Weather report predicted storms", "child_behavior_observed": "Omar kept asking if it would storm and wanted to sleep in our room 'just in case,' even though it was sunny out.", "parent_response": "We said he could if he was scared."}
+  ],
+  "expected_elements": {
+    "situations": ["Storms, especially at night", "Darkness / power outages / sleeping with lights off", "Anticipation of storms"],
+    "parental_responses": ["Co-sleeping / letting him into the parents' bed", "Providing lights / flashlights / leaving doors open", "Staying with him", "Allowing 'just in case' accommodation"],
+    "safety_behaviors": ["Seeking parents' bed", "Requiring lights/flashlight/door open", "Anticipatory reassurance-seeking about the weather"],
+    "safety_section_label": "Safety & avoidance behaviors",
+    "notes": "DRAFT answer key — advisor to confirm/correct. KEY GRADING POINT: daytime storms and some nights are low-distress; a good report should reflect the night/anticipatory pattern and the inconsistency, and must NOT fabricate a uniformly severe storm phobia."
+  }
+}
