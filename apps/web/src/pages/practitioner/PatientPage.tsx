@@ -34,12 +34,15 @@ function DTBadge({ value }: { value: number | null | undefined }) {
   return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{v}</span>
 }
 
-// A labelled bulleted section in the Step-2 Preliminary Report
+// Shared teal section header for the Step-2 Preliminary Report
+const reportSectionHeaderStyle = { fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '10px' }
+
+// A labelled bulleted section in the Step-2 Preliminary Report (with a divider above)
 function ReportSection({ label, items }: { label: string; items: string[] }) {
   if (!items || items.length === 0) return null
   return (
-    <div>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>{label}</div>
+    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+      <div style={reportSectionHeaderStyle}>{label}</div>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {items.map((it, i) => (
           <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>
@@ -2905,13 +2908,14 @@ export default function PatientPage() {
       )}
       {reportError && <p style={{ fontSize: '13px', color: '#dc2626', margin: '0 0 4px' }}>{reportError}</p>}
       {!reportLoading && preliminaryReport && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Situations</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+            <div style={reportSectionHeaderStyle}>Situations</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[...preliminaryReport.situations].sort((a, b) => a.fear_thermometer - b.fear_thermometer).map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-                  <span style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>{s.name}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', width: '18px', textAlign: 'right', flexShrink: 0, lineHeight: 1.6 }}>{i + 1}.</span>
+                  <span style={{ flex: 1, fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>{s.name}</span>
                   <span style={{ flexShrink: 0, marginTop: '1px' }}><DTBadge value={s.fear_thermometer} /></span>
                 </div>
               ))}
