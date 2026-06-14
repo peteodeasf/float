@@ -14,7 +14,7 @@ import {
   getPatientExperiments, planExperimentForBehavior,
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
-import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, type MonitoringExtraction } from '../../api/monitoring'
+import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PARENT_CHECKLIST, PATIENT_CHECKLIST, type ChecklistGroup, type ChecklistNav } from '../../lib/checklists'
@@ -32,6 +32,24 @@ function DTBadge({ value }: { value: number | null | undefined }) {
   const v = Number(value)
   const color = v >= 7 ? 'bg-red-100 text-red-700' : v >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
   return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{v}</span>
+}
+
+// A labelled bulleted section in the Step-2 Preliminary Report
+function ReportSection({ label, items }: { label: string; items: string[] }) {
+  if (!items || items.length === 0) return null
+  return (
+    <div>
+      <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>{label}</div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>
+            <span style={{ color: 'var(--float-primary)', flexShrink: 0 }}>·</span>
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 type PersistentTabId = 'experiments' | 'messages' | 'plans'
@@ -2195,6 +2213,32 @@ export default function PatientPage() {
     }
   }
 
+  // Preliminary Report (Step 2) — AI clinical summary, persisted on the formulation
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportError, setReportError] = useState<string | null>(null)
+  const [generatedReport, setGeneratedReport] = useState<PreliminaryReport | null>(null)
+  const preliminaryReport = generatedReport ?? formulation?.preliminary_report ?? null
+
+  const handleGenerateReport = async () => {
+    setReportLoading(true)
+    setReportError(null)
+    try {
+      const data = await generatePreliminaryReport(patientId!)
+      setGeneratedReport(data)
+      // The endpoint creates the formulation row if none existed. Sync the id ref + cache
+      // so the draft auto-save updates that row rather than creating a duplicate.
+      const f = await fetchFormulation(patientId!)
+      if (f) {
+        formulationIdRef.current = f.id
+        queryClient.setQueryData(['formulation', patientId], f)
+      }
+    } catch (err: any) {
+      setReportError(err?.response?.data?.detail || 'Report generation failed. Please try again.')
+    } finally {
+      setReportLoading(false)
+    }
+  }
+
   const closeExtract = () => {
     setExtractOpen(false)
     setExtraction(null)
@@ -2797,14 +2841,24 @@ export default function PatientPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Analyze Monitoring Data</h2>
         {(monitoringForm?.entries_count ?? 0) >= 3 && (
-          <button
-            onClick={handleExtract}
-            disabled={extractLoading || noNewToAnalyze}
-            className="bg-transparent border-none disabled:opacity-50"
-            style={{ fontSize: '12px', fontWeight: 600, color: noNewToAnalyze ? '#94a3b8' : 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0, cursor: noNewToAnalyze ? 'not-allowed' : 'pointer' }}
-          >
-            {extractLoading ? 'Analyzing…' : noNewToAnalyze ? 'No new monitoring data to analyze' : (situationsExist ? 'Re-analyze Monitoring Data →' : 'Analyze with AI →')}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
+            <button
+              onClick={handleExtract}
+              disabled={extractLoading}
+              className="bg-transparent border-none disabled:opacity-50"
+              style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', whiteSpace: 'nowrap', padding: 0, cursor: 'pointer' }}
+            >
+              {extractLoading ? 'Building…' : 'Build trigger list from data →'}
+            </button>
+            <button
+              onClick={handleGenerateReport}
+              disabled={reportLoading}
+              className="bg-transparent border-none disabled:opacity-50"
+              style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', whiteSpace: 'nowrap', padding: 0, cursor: 'pointer' }}
+            >
+              {reportLoading ? 'Analyzing…' : (preliminaryReport ? 'Re-analyze with AI →' : 'Analyze with AI →')}
+            </button>
+          </div>
         )}
       </div>
       {situationsExist && (
@@ -2838,6 +2892,43 @@ export default function PatientPage() {
       )}
     </div>
   )
+
+  const preliminaryReportContent = (reportLoading || reportError || preliminaryReport) ? (
+    <div style={cardStyle}>
+      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Preliminary Report &amp; Treatment Targets</div>
+      <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 16px' }}>AI clinical summary synthesized from the parent monitoring data.</p>
+      {reportLoading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
+          <div className="animate-spin" style={{ width: '20px', height: '20px', border: '3px solid #e2e8f0', borderTopColor: 'var(--float-primary)', borderRadius: '50%' }} />
+          <span style={{ fontSize: '13px', color: '#475569' }}>Analyzing monitoring data…</span>
+        </div>
+      )}
+      {reportError && <p style={{ fontSize: '13px', color: '#dc2626', margin: '0 0 4px' }}>{reportError}</p>}
+      {!reportLoading && preliminaryReport && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Situations</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+              {[...preliminaryReport.situations].sort((a, b) => a.fear_thermometer - b.fear_thermometer).map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+                  <span style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>{s.name}</span>
+                  <span style={{ flexShrink: 0, marginTop: '1px' }}><DTBadge value={s.fear_thermometer} /></span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <ReportSection label="Parental responses" items={preliminaryReport.parental_responses} />
+          <ReportSection label={preliminaryReport.safety_section_label || 'Safety & avoidance behaviors'} items={preliminaryReport.safety_behaviors} />
+          <ReportSection label="Treatment targets" items={preliminaryReport.treatment_targets} />
+          {preliminaryReport.generated_at && (
+            <p style={{ fontSize: '11px', color: '#cbd5e1', margin: 0 }}>
+              Generated {new Date(preliminaryReport.generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  ) : null
 
   const accommodationContent = (
     <div style={cardStyle}>
@@ -4204,6 +4295,7 @@ export default function PatientPage() {
                   <>
                     {renderGuide(2)}
                     {monitoringExtractContent}
+                    {preliminaryReportContent}
                   </>
                 )}
                 {activeStep === 2 && patientId && (

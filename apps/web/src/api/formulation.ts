@@ -1,4 +1,5 @@
 import { apiClient } from './client'
+import type { PreliminaryReport } from './monitoring'
 
 export interface ClinicalFormulation {
   id: string
@@ -12,6 +13,7 @@ export interface ClinicalFormulation {
   parent_feared_outcomes?: string[] | null
   patient_feared_outcomes?: string[] | null
   treatment_targets?: string[] | null
+  preliminary_report?: PreliminaryReport | null
   last_updated_step?: number | null
   ai_suggested: boolean
   created_at: string

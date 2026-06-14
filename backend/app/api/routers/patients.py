@@ -564,6 +564,204 @@ async def extract_monitoring_data(
     return extraction
 
 
+PRELIMINARY_REPORT_SYSTEM_PROMPT = """
+You are a senior CBT clinician analyzing a parent's monitoring log for a child with anxiety, ahead of the first consultation. Produce a concise PRELIMINARY REPORT that mirrors how clinicians organize a case.
+
+The monitoring entries are raw, one-observation-per-row parent narratives. Your job is to synthesize them into a clinical picture:
+
+1. SITUATIONS — cluster the raw observations into a small set of themed trigger situations (typically 2–5). Name each in clinical-but-readable language. Assign each situation a "fear_thermometer" score = the HIGHEST fear-thermometer rating observed across the entries belonging to that theme (0–10). Build a fuller clinical picture: where the pattern clearly implies related triggers the parent didn't log explicitly, you may add them (this is a clinician's synthesis, not a literal transcription).
+
+2. PARENTAL_RESPONSES — how the parents respond across situations (reassurance, physical proximity, seeking medical attention, allowing avoidance, accommodation, getting angry, etc.). One clause per distinct response pattern.
+
+3. SAFETY_BEHAVIORS — the child's safety behaviors, avoidance behaviors, and rituals. Group by situation where it reads naturally (e.g. "Mistakes in sports: crying, sulking..."). If the presentation is OCD-style (checking, ordering/arranging, contamination/washing, sniffing), set "safety_section_label" to "Rituals"; otherwise set it to "Safety & avoidance behaviors".
+
+4. TREATMENT_TARGETS — the trigger situations to work on, listed from LOWEST to HIGHEST fear thermometer (start with the easiest, for exposure laddering).
+
+Return ONLY valid JSON, no markdown fences, no other text, in exactly this shape:
+
+{
+  "situations": [{ "name": "string", "fear_thermometer": 8 }],
+  "parental_responses": ["string"],
+  "safety_behaviors": ["string"],
+  "safety_section_label": "Safety & avoidance behaviors",
+  "treatment_targets": ["string"]
+}
+
+Below are three calibration examples showing the depth, structure, and clinical voice expected. Match this level of synthesis.
+
+EXAMPLE — Patrick (health-anxiety / perfectionism presentation):
+{
+  "situations": [
+    { "name": "Imperfect performance by other team members", "fear_thermometer": 6 },
+    { "name": "Health problems (minor injury, concussion)", "fear_thermometer": 7 },
+    { "name": "Imperfect performance in sports (pitching a ball rather than a strike, getting tagged out, being struck out)", "fear_thermometer": 8 },
+    { "name": "Experiencing physiological sensations (racing heart, shortness of breath, chest pressure, dizziness)", "fear_thermometer": 10 }
+  ],
+  "parental_responses": [
+    "Provide excessive reassurance and physical proximity (hand-holding); seek medical attention immediately.",
+    "Excessive reassurance, physical proximity, arrangements for immediate medical assessment.",
+    "Reassurance that everyone makes mistakes; allow Patrick to avoid participation.",
+    "Reassure and ignore Patrick's behaviors toward others; apologize to the coach and ask the coach to go easy on him; intervene with teacher or coach to change their behavior toward him."
+  ],
+  "safety_behaviors": [
+    "Physical sensations and health concerns: avoidance and escape behaviors; reassurance seeking from parents, especially mother; excessive requests for medical treatment/assessment; requests for a parent to be physically by his side.",
+    "Mistakes in sports: crying, angry physical gestures toward self, sulking.",
+    "Observing teammates make errors: yelling at teammates, bossing teammates around (acting like the coach) to prevent more errors."
+  ],
+  "safety_section_label": "Safety & avoidance behaviors",
+  "treatment_targets": [
+    "Imperfect performance by other team members",
+    "Health problems (minor injury, concussion)",
+    "Imperfect performance in sports",
+    "Experiencing physiological sensations (racing heart, shortness of breath, chest pressure, dizziness)"
+  ]
+}
+
+EXAMPLE — Maya (math/performance anxiety):
+{
+  "situations": [
+    { "name": "Bedtime / sleeping alone", "fear_thermometer": 6 },
+    { "name": "Math problems (homework, class, tutoring)", "fear_thermometer": 9 }
+  ],
+  "parental_responses": [
+    "Allow avoidance: let Maya attempt only the easiest math problems; allow her to sleep in the parents' room; reassure her that she can do the math.",
+    "School: arranged removal from math class; allow avoidance of any math when Maya is distressed; reassurance that she can do the work."
+  ],
+  "safety_behaviors": [
+    "Avoidance / refusal of math tasks.",
+    "Asks parents to sit with her when she attempts math."
+  ],
+  "safety_section_label": "Safety & avoidance behaviors",
+  "treatment_targets": [
+    "Bedtime / sleeping alone",
+    "Math problems (homework, class, tutoring)"
+  ]
+}
+
+EXAMPLE — Kemp (OCD-style presentation):
+{
+  "situations": [
+    { "name": "Leave house for the day", "fear_thermometer": 6 },
+    { "name": "Pack gym bag before games", "fear_thermometer": 8 },
+    { "name": "Cleaning lady dusts his shelves and cleans his room", "fear_thermometer": 9 },
+    { "name": "Family activities, especially on school days/nights", "fear_thermometer": 9 }
+  ],
+  "parental_responses": [
+    "Provide reassurance.",
+    "Change family plans to allow more time for homework.",
+    "Get angry.",
+    "Do extra laundry or re-launder items for him.",
+    "Allow him to skip planned activities when he has a big exam the next day."
+  ],
+  "safety_behaviors": [
+    "Checking.",
+    "Sniffing for contaminants.",
+    "Ordering and arranging.",
+    "Avoidance."
+  ],
+  "safety_section_label": "Rituals",
+  "treatment_targets": [
+    "Leave house for the day",
+    "Pack gym bag before games",
+    "Cleaning lady dusts his shelves and cleans his room",
+    "Family activities, especially on school days/nights"
+  ]
+}
+"""
+
+
+@router.post("/{patient_id}/monitoring/preliminary-report")
+async def generate_preliminary_report(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    import json
+    import anthropic
+    from app.models.monitoring import MonitoringForm, MonitoringEntry
+
+    _, practitioner = context
+
+    # Fetch all (non-draft) monitoring entries for this patient
+    result = await db.execute(
+        select(MonitoringEntry)
+        .join(MonitoringForm, MonitoringEntry.monitoring_form_id == MonitoringForm.id)
+        .where(
+            MonitoringForm.patient_id == patient_id,
+            MonitoringForm.organization_id == practitioner.organization_id,
+            MonitoringEntry.is_draft == False,  # noqa: E712
+        )
+        .order_by(MonitoringEntry.entry_date.asc())
+    )
+    entries = result.scalars().all()
+
+    if not entries:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No monitoring entries found for this patient"
+        )
+
+    blocks = []
+    for e in entries:
+        distress = e.fear_thermometer if e.fear_thermometer is not None else "unknown"
+        blocks.append(
+            f"Date: {e.entry_date.isoformat()}\n"
+            f"Situation: {e.situation or 'N/A'}\n"
+            f"Child behavior observed: {e.child_behavior_observed or 'N/A'}\n"
+            f"Parent response: {e.parent_response or 'N/A'}\n"
+            f"Distress level: {distress}/10"
+        )
+    entries_text = "\n\n".join(blocks)
+
+    try:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=3000,
+            system=PRELIMINARY_REPORT_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": entries_text}],
+        )
+        raw_text = message.content[0].text
+        clean = raw_text.strip()
+        if clean.startswith("```"):
+            lines = clean.split("\n")
+            clean = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
+        report = json.loads(clean)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI report generation failed: {type(e).__name__}: {str(e)}")
+    except Exception as e:
+        print(f"Preliminary report error: {type(e).__name__}: {str(e)}", flush=True)
+        print(traceback.format_exc(), flush=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI report generation failed: {type(e).__name__}: {str(e)}"
+        )
+
+    report["generated_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Persist onto the clinical formulation (create the row if none exists)
+    formulation_result = await db.execute(
+        select(ClinicalFormulation).where(
+            ClinicalFormulation.patient_id == patient_id,
+            ClinicalFormulation.organization_id == practitioner.organization_id,
+        )
+    )
+    formulation = formulation_result.scalar_one_or_none()
+    if formulation is None:
+        formulation = ClinicalFormulation(
+            patient_id=patient_id,
+            organization_id=practitioner.organization_id,
+            practitioner_id=practitioner.id,
+            preliminary_report=report,
+        )
+        db.add(formulation)
+    else:
+        formulation.preliminary_report = report
+    await db.commit()
+
+    return report
+
+
 # ── Patient-facing endpoints ──────────────────────────────────────────────────
 
 @patient_router.get("/ladder")

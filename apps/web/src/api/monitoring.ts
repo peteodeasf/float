@@ -105,6 +105,25 @@ export const extractMonitoringData = async (patientId: string): Promise<Monitori
   return response.data
 }
 
+export interface ReportSituation {
+  name: string
+  fear_thermometer: number
+}
+
+export interface PreliminaryReport {
+  situations: ReportSituation[]
+  parental_responses: string[]
+  safety_behaviors: string[]
+  safety_section_label: string
+  treatment_targets: string[]
+  generated_at?: string
+}
+
+export const generatePreliminaryReport = async (patientId: string): Promise<PreliminaryReport> => {
+  const response = await apiClient.post(`/patients/${patientId}/monitoring/preliminary-report`)
+  return response.data
+}
+
 export const getMonitoringSituations = async (patientId: string): Promise<{
   situations: { text: string; mention_count: number }[]
   total_entries: number

@@ -49,6 +49,7 @@ class FormulationResponse(BaseModel):
     parent_feared_outcomes: Optional[List[str]] = None
     patient_feared_outcomes: Optional[List[str]] = None
     treatment_targets: Optional[List[str]] = None
+    preliminary_report: Optional[dict] = None
     last_updated_step: Optional[int] = None
     ai_suggested: bool
     created_at: datetime
