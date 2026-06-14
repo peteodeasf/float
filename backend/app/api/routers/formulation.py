@@ -101,6 +101,22 @@ async def create_formulation(
     db: AsyncSession = Depends(get_db)
 ):
     _, practitioner = context
+    # Idempotent: one formulation per (patient, org). If one already exists
+    # (e.g. created by the draft auto-save race), update it instead of inserting
+    # a duplicate — which the uq_clinical_formulations_patient_org constraint forbids.
+    existing = (await db.execute(
+        select(ClinicalFormulation).where(
+            ClinicalFormulation.patient_id == patient_id,
+            ClinicalFormulation.organization_id == practitioner.organization_id,
+        ).order_by(ClinicalFormulation.created_at.desc())
+    )).scalars().first()
+    if existing is not None:
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(existing, field, value)
+        await db.commit()
+        await db.refresh(existing)
+        return existing
+
     formulation = ClinicalFormulation(
         patient_id=patient_id,
         organization_id=practitioner.organization_id,
