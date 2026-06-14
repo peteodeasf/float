@@ -78,9 +78,9 @@ async def get_formulation(
         select(ClinicalFormulation).where(
             ClinicalFormulation.patient_id == patient_id,
             ClinicalFormulation.organization_id == practitioner.organization_id
-        )
+        ).order_by(ClinicalFormulation.created_at.desc())
     )
-    formulation = result.scalar_one_or_none()
+    formulation = result.scalars().first()
     if not formulation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -136,9 +136,9 @@ async def update_formulation(
         select(ClinicalFormulation).where(
             ClinicalFormulation.patient_id == patient_id,
             ClinicalFormulation.organization_id == practitioner.organization_id
-        )
+        ).order_by(ClinicalFormulation.created_at.desc())
     )
-    formulation = result.scalar_one_or_none()
+    formulation = result.scalars().first()
     if not formulation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

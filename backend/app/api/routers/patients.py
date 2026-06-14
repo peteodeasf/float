@@ -739,14 +739,15 @@ async def generate_preliminary_report(
 
     report["generated_at"] = datetime.now(timezone.utc).isoformat()
 
-    # Persist onto the clinical formulation (create the row if none exists)
+    # Persist onto the clinical formulation (create the row if none exists).
+    # Tolerate legacy duplicate rows by taking the most recent.
     formulation_result = await db.execute(
         select(ClinicalFormulation).where(
             ClinicalFormulation.patient_id == patient_id,
             ClinicalFormulation.organization_id == practitioner.organization_id,
-        )
+        ).order_by(ClinicalFormulation.created_at.desc())
     )
-    formulation = formulation_result.scalar_one_or_none()
+    formulation = formulation_result.scalars().first()
     if formulation is None:
         formulation = ClinicalFormulation(
             patient_id=patient_id,
