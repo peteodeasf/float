@@ -1,0 +1,17 @@
+{
+  "name": "Patrick",
+  "presentation": "Health anxiety / perfectionism",
+  "held_out": false,
+  "note": "Embedded in PRELIMINARY_REPORT_SYSTEM_PROMPT as a few-shot exemplar — NOT a generalization test. Use only as a sanity/regression check.",
+  "entries": [
+    {"fear_thermometer": 2, "situation": "Paramedics checked him out, told him he was fine.", "child_behavior_observed": "P immediately calmed down completely and told me we could depart.", "parent_response": "I told him; \"see, you are fine.\""},
+    {"fear_thermometer": 7, "situation": "plane back at gate", "child_behavior_observed": "Patrick stopped crying. He also stopped hyperventilating.", "parent_response": "I told him paramedics were on the way."},
+    {"fear_thermometer": 7, "situation": "Woke up and came into my room.", "child_behavior_observed": "P said he was still seeing circles and said he was scared something serious was wrong with him.", "parent_response": "I took him to an Opthamologist who told us to wait and that things should be fine with time"},
+    {"fear_thermometer": 7, "situation": "P had hit his head and had a minor concussion-Dr. said. P woke in the morning complaining that he was seeing circles.", "child_behavior_observed": "He said something was really wrong and that he needed to go to the doctor", "parent_response": "I took him to the neurologist, held his hand and reassured him that everything would be ok."},
+    {"fear_thermometer": 7, "situation": "P went outside to play with the dog", "child_behavior_observed": "P came back into the house immediately. He told me he did not want to be alone and that I needed to stay with him-right next to him.", "parent_response": "I sat with him in the family room for the rest of the day"},
+    {"fear_thermometer": 7, "situation": "dressing for a formal event", "child_behavior_observed": "P put on his shirt and complained that it was too baggy and didn't fit properly. Requested another shirt (that was actually too small)", "parent_response": "Got him a smaller shirt and started to have his clothing tailored."},
+    {"fear_thermometer": 8, "situation": "Golfing with father", "child_behavior_observed": "P made a bad shot that hit a tree. He became angry and started to cry. He wouldn't talk to me or anyone else for rest of game", "parent_response": "I reassured him. Told him everyone misses shots sometimes and promised to get him a few golf lessons."},
+    {"fear_thermometer": 9, "situation": "P had suffered from heat exhaustion earlier in the day and dry heaved.", "child_behavior_observed": "P became panicked and told me he thought he was very sick and needed to go to the doctor right away", "parent_response": "took P to the doctor who told P he was OK and to hydrate and rest."},
+    {"fear_thermometer": 10, "situation": "on private plane. doors closed. taxiing for @ 40 seconds.", "child_behavior_observed": "Patrick cried, said he could not breathe and did not feel O.K. He demanded that plane had to turn back.", "parent_response": "Asked that plane be brought back to gate and asked for paramedics to check out Patrick"}
+  ]
+}

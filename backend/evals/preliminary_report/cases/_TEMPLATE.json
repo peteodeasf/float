@@ -1,0 +1,10 @@
+{
+  "name": "CaseName",
+  "presentation": "e.g. Social anxiety / Separation anxiety / GAD / Specific phobia / Health anxiety / OCD",
+  "held_out": true,
+  "note": "De-identify before committing. held_out:true = NOT in the prompt; this is what actually measures generalization.",
+  "entries": [
+    {"fear_thermometer": 5, "situation": "...", "child_behavior_observed": "...", "parent_response": "..."},
+    {"fear_thermometer": 8, "situation": "...", "child_behavior_observed": "...", "parent_response": "..."}
+  ]
+}

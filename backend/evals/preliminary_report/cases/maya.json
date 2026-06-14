@@ -1,0 +1,16 @@
+{
+  "name": "Maya",
+  "presentation": "Performance / math anxiety + separation at bedtime",
+  "held_out": false,
+  "note": "Embedded in PRELIMINARY_REPORT_SYSTEM_PROMPT as a few-shot exemplar — NOT a generalization test. Use only as a sanity/regression check.",
+  "entries": [
+    {"fear_thermometer": 6, "situation": "Bedtime", "child_behavior_observed": "For past 3 months Maya refuses to turn out any lights in her room. She comes into our room within 10 minutes, crying that she cannot sleep and asks if she can sleep with us.", "parent_response": "We allow her to sleep with us."},
+    {"fear_thermometer": 7, "situation": "Report from school that Maya refuses to do any math during class or in special ed.", "child_behavior_observed": "School reports that Maya cries, pulls her hair and won't talk to anyone.", "parent_response": "We arranged for Maya to have an assessment. We allowed her to avoid trying math."},
+    {"fear_thermometer": 8, "situation": "Homework: math", "child_behavior_observed": "Maya asks that I sit with her to do her homework, especially math", "parent_response": "I sat with her"},
+    {"fear_thermometer": 9, "situation": "math class at school", "child_behavior_observed": "Teacher observed Maya staring at her paper not trying, crying and shaking. When Maya got home, she cried and screamed saying \"I am so dumb, I can't even do problems that dumb kids can do\"", "parent_response": "Teacher called us an told us. We told Maya to try her best and that it was O.K if she didn't do the work."},
+    {"fear_thermometer": 9, "situation": "Math homework", "child_behavior_observed": "Maya cried and said \"I can't do this.\" She shut down and refused to continue", "parent_response": "I told her I knew she could do it (which she can). After 20 minutes I told her to take a break"},
+    {"fear_thermometer": 9, "situation": "math class at school", "child_behavior_observed": "Teacher called to say that Maya cried, pulled her hair and told teacher she didn't understand how to do assigned math problems", "parent_response": "Teacher told us she wanted Maya to leave class during math instruction to go to special education teacher. We told Maya it might help"},
+    {"fear_thermometer": 9, "situation": "math work", "child_behavior_observed": "crying, refusing to try", "parent_response": "Started her at Kumon 2 days per week after school"},
+    {"fear_thermometer": 9, "situation": "Kumon math tutoring", "child_behavior_observed": "Maya refuses to participate", "parent_response": "I asked her why she wouldn't even try."}
+  ]
+}

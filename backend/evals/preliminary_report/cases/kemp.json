@@ -1,0 +1,14 @@
+{
+  "name": "Kemp",
+  "presentation": "OCD-style (checking, ordering/arranging, contamination)",
+  "held_out": false,
+  "note": "Embedded in PRELIMINARY_REPORT_SYSTEM_PROMPT as a few-shot exemplar — NOT a generalization test. Use only as a sanity/regression check.",
+  "entries": [
+    {"fear_thermometer": 4, "situation": "kitchen duty after dinner", "child_behavior_observed": "Kemp did his sister's job and finished very quickly", "parent_response": "I asked him why. He said so he would have more time for his homework."},
+    {"fear_thermometer": 6, "situation": "leaving for school", "child_behavior_observed": "Kemp checked house twice to make sure he had all items in his basketball bag-shoes, sweatshirt, shorts, socks. I said out loud each item as he checked", "parent_response": "I reassured him that he had everything and reminded him that he had already checked"},
+    {"fear_thermometer": 8, "situation": "Going to bed", "child_behavior_observed": "Kemp asked me if his basketball uniform was clean 3 times, he sniffed it and said he didn't think it was. He asked me to wash it again.", "parent_response": "I reassured him that it was clean that I just washed it this morning. I smelled it myself and told him It smelled clean to me. He was running late and yelled that if he had time, he would wash it. He told me I sucked at doing laundry."},
+    {"fear_thermometer": 9, "situation": "Cleaning lady moved Kemps trophies around while dusting", "child_behavior_observed": "Kemp entered his room, yelled at the top of his lungs: \"What the hell did Isabell do?\" He frantically moved his trophies and other items into the order he prefers.", "parent_response": "I told him he was over reacting and that I'd help him move his things back to the way he likes it."},
+    {"fear_thermometer": 9, "situation": "Morning: reminded K that we had family dinner plans at his favorite restaurant.", "child_behavior_observed": "Kemp became very distressed. told me, he couldn't go, that he had too much homework and was worried he wouldn't have time to finish it. He became angry with me when we determined he had plenty of time", "parent_response": "I told him that if he had not finished his homework by the time we were planning to leave he could stay home and do his work."},
+    {"fear_thermometer": 10, "situation": "I put away K's clean laundry and did my best to place his items in proper drawers, etc. Kemp opened his closet door", "child_behavior_observed": "Kemp swore loudly. As I entered his room to discipline his use of foul language, he was checking all of his drawers and everything on hangers, moving things around muttering and crying", "parent_response": "I told Kemp: \"This is ridiculous!!\" What's wrong with you?"}
+  ]
+}
