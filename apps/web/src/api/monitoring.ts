@@ -80,24 +80,31 @@ export const getMonitoringReport = async (patientId: string): Promise<Monitoring
   return response.data
 }
 
+// Preliminary, editable extraction output (tuned Stage-1 extractor). The clinician
+// reviews/edits/overwrites this before committing it into the treatment plan.
+export type ExtractedBehaviorType = 'avoidance' | 'safety' | 'escape' | 'unclear'
+
 export interface ExtractedBehavior {
-  name: string
-  type: string
-  dt: number | null
+  order?: number
+  type: ExtractedBehaviorType
+  description: string
+}
+
+export interface ExtractedAccommodation {
+  description: string
 }
 
 export interface ExtractedSituation {
   name: string
+  fear_rating: number | null
+  fear_rating_max?: number | null
   behaviors: ExtractedBehavior[]
+  accommodations: ExtractedAccommodation[]
 }
 
 export interface MonitoringExtraction {
-  suggested_presentations?: string[]
   situations: ExtractedSituation[]
-  accommodation_patterns: string[]
-  maintaining_mechanisms?: string
-  treatment_targets?: string[]
-  summary: string
+  review_flag?: boolean
 }
 
 export const extractMonitoringData = async (patientId: string): Promise<MonitoringExtraction> => {
