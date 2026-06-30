@@ -61,7 +61,6 @@ class PatientListResponse(BaseModel):
     has_parent_da: bool = False
     has_consultation_2_note: bool = False
     has_patient_da: bool = False
-    has_treatment_targets: bool = False
     has_active_situation_with_behaviors: bool = False
     plan_status: Optional[str] = None
     teen_invited: bool = False

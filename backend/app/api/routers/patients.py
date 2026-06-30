@@ -163,12 +163,6 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
     has_parent_da = 'parent' in da_facilitators
     has_patient_da = 'practitioner' in da_facilitators
 
-    # --- Treatment targets (formulation) ---
-    target_rows = [row[0] for row in (await db.execute(
-        select(ClinicalFormulation.treatment_targets).where(ClinicalFormulation.patient_id == pid)
-    )).all()]
-    has_treatment_targets = any(t is not None and len(t) > 0 for t in target_rows)
-
     # --- Experiments ---
     completed_experiment_count = (await db.execute(
         select(func.count()).select_from(Experiment).where(
@@ -220,7 +214,6 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
         'has_parent_da': has_parent_da,
         'has_consultation_2_note': has_consultation_2_note,
         'has_patient_da': has_patient_da,
-        'has_treatment_targets': has_treatment_targets,
         'has_active_situation_with_behaviors': has_active_situation_with_behaviors,
         'plan_status': plan_status,
         'teen_invited': patient.teen_invited_at is not None,

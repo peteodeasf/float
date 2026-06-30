@@ -64,7 +64,6 @@ const STEP_LABELS: string[] = [
   'Analyze Monitoring Data',
   'Session 1 — Parent Consultation',
   'Session 2 — Patient Consultation',
-  'Identify Treatment Targets',
   'Build Treatment Plan',
   'Activate Treatment Plan',
   'Begin Exposures',
@@ -78,7 +77,6 @@ interface ConceptualizationDraft {
   accommodationPatterns: string[] // from extraction + parent session
   parentFearedOutcomes: string[]  // from parent DA
   patientFearedOutcomes: string[] // from patient DA
-  treatmentTargets: string[]      // from step 5
   lastUpdatedStep: number
 }
 
@@ -88,7 +86,6 @@ const EMPTY_CONCEPTUALIZATION: ConceptualizationDraft = {
   accommodationPatterns: [],
   parentFearedOutcomes: [],
   patientFearedOutcomes: [],
-  treatmentTargets: [],
   lastUpdatedStep: 0,
 }
 
@@ -383,19 +380,9 @@ const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = 
     ],
   },
   5: {
-    header: 'STEP GUIDE — IDENTIFY TREATMENT TARGETS',
-    steps: [
-      'Review the case conceptualization built across the previous steps',
-      'Confirm the trigger situations and feared outcomes identified through the Downward Arrows',
-      'Order the treatment targets from lowest to highest distress — the exposure ladder starts with the easiest',
-      'Treatment targets are the specific avoidance and safety behaviors to work on, not the situations themselves',
-      'Each target should be linked to a feared outcome established through the Downward Arrow',
-    ],
-  },
-  6: {
     header: 'STEP GUIDE — BUILD TREATMENT PLAN',
     steps: [
-      'Build the exposure ladder from the confirmed treatment targets',
+      'Build the exposure ladder from the trigger list',
       'For each situation, add the avoidance and safety behaviors with DT ratings',
       'Order behaviors from lowest DT to highest — the teen starts with the easiest',
       'Make sure each behavior is specific enough that the teen knows exactly what to do',
@@ -403,7 +390,7 @@ const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = 
       'Add the anxiety nickname before activating',
     ],
   },
-  7: {
+  6: {
     header: 'STEP GUIDE — ACTIVATE TREATMENT PLAN',
     steps: [
       'Review the plan is complete — situations, behaviors, DT ratings, and nickname all set',
@@ -412,17 +399,17 @@ const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = 
       'You can still edit the plan after activation — add situations, adjust DT ratings, update behaviors',
     ],
   },
-  8: {
+  7: {
     header: 'STEP GUIDE — BEGIN EXPOSURES',
     steps: [
       'The teen plans and commits to experiments from their Float app',
       'Each experiment tests a specific feared outcome — the prediction is set before, the result recorded after',
       "Check the experiments tab regularly between sessions — don't wait until the session to review progress",
       'If experiments are overdue or confidence is low, reach out via messages before the next session',
-      "BIP and DT should trend downward over time — if they don't, revisit the treatment targets",
+      "BIP and DT should trend downward over time — if they don't, revisit the treatment plan",
     ],
   },
-  9: {
+  8: {
     header: 'STEP GUIDE — WEEKLY SESSION',
     steps: [
       'Check in on nickname use — how often has the child noticed their anxiety?',
@@ -433,7 +420,7 @@ const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = 
       'Bring the parent in for the last 5-10 minutes to review the plan together',
     ],
   },
-  10: {
+  9: {
     header: 'STEP GUIDE — PARENT ACCOMMODATION CHECK-INS',
     steps: [
       'Review accommodation reduction progress at the end of each weekly session',
@@ -1261,7 +1248,6 @@ function CaseConceptualization({ draft, defaultExpanded = false, saveStatus = 'i
     { label: 'ACCOMMODATION PATTERNS', from: 'from Step 2, updated Step 3', items: draft.accommodationPatterns },
     { label: 'PARENT — FEARED OUTCOMES', from: 'from Step 3', items: draft.parentFearedOutcomes },
     { label: 'PATIENT — FEARED OUTCOMES', from: 'from Step 4', items: draft.patientFearedOutcomes },
-    { label: 'TREATMENT TARGETS', from: 'from Step 5', items: draft.treatmentTargets },
   ].filter(s => s.items.length > 0)
 
   return (
@@ -2021,7 +2007,6 @@ export default function PatientPage() {
         accommodationPatterns: formulation.accommodation_patterns ?? [],
         parentFearedOutcomes: formulation.parent_feared_outcomes ?? [],
         patientFearedOutcomes: formulation.patient_feared_outcomes ?? [],
-        treatmentTargets: formulation.treatment_targets ?? [],
         lastUpdatedStep: formulation.last_updated_step ?? 0,
       })
     }
@@ -2042,7 +2027,6 @@ export default function PatientPage() {
         accommodation_patterns: draft.accommodationPatterns,
         parent_feared_outcomes: draft.parentFearedOutcomes,
         patient_feared_outcomes: draft.patientFearedOutcomes,
-        treatment_targets: draft.treatmentTargets,
         last_updated_step: draft.lastUpdatedStep,
       }
       setFormulationSaveStatus('saving')
@@ -2068,10 +2052,6 @@ export default function PatientPage() {
     if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current)
     if (formulationSavedTimerRef.current) clearTimeout(formulationSavedTimerRef.current)
   }, [])
-  // Treatment targets (Step 5)
-  const [treatmentTargets, setTreatmentTargets] = useState<string[]>([])
-  const [targetsConfirmed, setTargetsConfirmed] = useState(false)
-  const targetsInitRef = useRef(false)
 
   // Action plans
   const [showPlanEditor, setShowPlanEditor] = useState(false)
@@ -2624,7 +2604,7 @@ export default function PatientPage() {
   const { data: progress } = useQuery({
     queryKey: ['progress', patientId],
     queryFn: () => getPatientProgress(patientId!),
-    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 7)
+    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 6)
   })
   const progressChartData = progress?.recent_experiments
     .filter(e => e.completed_date)
@@ -2657,32 +2637,13 @@ export default function PatientPage() {
     setAccommodationCheckinComplete(true)
   }
 
-  // Treatment targets confirmation (Step 5)
-  const targetsStorageKey = patientId ? `float_targets_confirmed_${patientId}` : null
-  useEffect(() => {
-    if (!targetsStorageKey) return
-    setTargetsConfirmed(localStorage.getItem(targetsStorageKey) === 'true')
-  }, [targetsStorageKey])
-  const confirmTreatmentTargets = () => {
-    if (targetsStorageKey) localStorage.setItem(targetsStorageKey, 'true')
-    setTargetsConfirmed(true)
-  }
-
   // Conceptualization draft — feared outcome contributions from the DA sub-steps
   const addPatientFearedOutcome = (fo: string) => setConceptualizationDraft(prev =>
     prev.patientFearedOutcomes.includes(fo) ? prev
       : { ...prev, patientFearedOutcomes: [...prev.patientFearedOutcomes, fo], lastUpdatedStep: Math.max(prev.lastUpdatedStep, 4) })
 
-  // Treatment targets — keep local state and conceptualization draft in sync
-  const applyTargets = (next: string[]) => {
-    setTreatmentTargets(next)
-    setConceptualizationDraft(prev => ({ ...prev, treatmentTargets: next, lastUpdatedStep: Math.max(prev.lastUpdatedStep, 5) }))
-  }
-
   const notesList = sessionNotes ?? []
-  const hasApprovedDA = !!daStatuses && Object.values(daStatuses).some(da => da?.feared_outcome_approved === true)
   const hasPatientDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'practitioner')
-  const hasBehavior = !!allBehaviors && Object.values(allBehaviors).some(bs => bs.length > 0)
   const hasActiveSituationWithBehaviors = !!triggers && !!allBehaviors && triggers.some(t => t.is_active && (allBehaviors[t.id]?.length ?? 0) > 0)
   const completedExperimentCount = (patientExperiments ?? []).filter(e => e.status === 'completed').length
 
@@ -2691,7 +2652,6 @@ export default function PatientPage() {
     (triggers?.length ?? 0) >= 1,
     notesList.some(n => n.session_type === 'consultation_1') || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
     notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
-    (triggers?.length ?? 0) >= 1 && hasBehavior && hasApprovedDA && targetsConfirmed,
     hasActiveSituationWithBehaviors,
     plan?.status === 'active' && !!patient?.teen_invited_at,
     completedExperimentCount >= 1,
@@ -2718,22 +2678,6 @@ export default function PatientPage() {
     setActiveStep(currentActiveStep)
     stepInitializedRef.current = true
   }, [coreLoaded, currentActiveStep])
-
-  // Auto-populate treatment targets from situations (lowest DT first) once the clinician reaches Step 5
-  useEffect(() => {
-    if (targetsInitRef.current) return
-    if (activeStep !== 4) return
-    if (!triggers || triggers.length === 0 || !allBehaviors) return
-    if (treatmentTargets.length > 0) { targetsInitRef.current = true; return }
-    const ordered = [...triggers].sort((a, b) => (a.distress_thermometer_rating ?? 99) - (b.distress_thermometer_rating ?? 99))
-    const initial = ordered.map(t => {
-      const primary = allBehaviors[t.id]?.[0]
-      return primary ? `${t.name} — ${primary.name}` : t.name
-    })
-    setTreatmentTargets(initial)
-    setConceptualizationDraft(prev => ({ ...prev, treatmentTargets: initial, lastUpdatedStep: Math.max(prev.lastUpdatedStep, 5) }))
-    targetsInitRef.current = true
-  }, [activeStep, triggers, allBehaviors, treatmentTargets.length])
 
   // Accept/reject an AI-suggested anxiety presentation by toggling it on the patient profile
   const acceptPresentationMut = useMutation({
@@ -2975,76 +2919,11 @@ export default function PatientPage() {
   const handleChecklistNav = (action: 'treatmentPlan' | 'scrollDA') => {
     if (action === 'treatmentPlan') {
       setActivePersistentTab(null)
-      setActiveStep(5)
+      setActiveStep(4)
     } else if (action === 'scrollDA') {
       document.getElementById('patient-da-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
-
-  const treatmentTargetsContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={cardStyle}>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Identify Treatment Targets</div>
-        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: 0 }}>
-          Review the case conceptualization and confirm the treatment targets — the specific situations and behaviors to work on, in priority order.
-        </p>
-      </div>
-
-      <CaseConceptualization draft={conceptualizationDraft} defaultExpanded saveStatus={formulationSaveStatus} />
-
-      <div style={cardStyle}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Treatment Targets</div>
-        {treatmentTargets.length === 0 && (
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 12px' }}>No targets yet. Add the situations and behaviors to work on, in priority order.</p>
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-          {treatmentTargets.map((target, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', width: '18px', textAlign: 'right', flexShrink: 0 }}>{i + 1}.</span>
-              <input
-                value={target}
-                onChange={e => applyTargets(treatmentTargets.map((t, j) => j === i ? e.target.value : t))}
-                placeholder="Situation — primary behavior"
-                className="text-sm border border-slate-200 rounded"
-                style={{ flex: 1, padding: '7px 10px', minWidth: 0, boxSizing: 'border-box' }}
-              />
-              <button
-                onClick={() => { if (i > 0) applyTargets(treatmentTargets.map((t, j) => j === i - 1 ? treatmentTargets[i] : j === i ? treatmentTargets[i - 1] : t)) }}
-                disabled={i === 0}
-                title="Move up"
-                className="bg-transparent border-none cursor-pointer disabled:opacity-30"
-                style={{ fontSize: '13px', color: '#64748b', padding: '0 2px' }}
-              >↑</button>
-              <button
-                onClick={() => { if (i < treatmentTargets.length - 1) applyTargets(treatmentTargets.map((t, j) => j === i + 1 ? treatmentTargets[i] : j === i ? treatmentTargets[i + 1] : t)) }}
-                disabled={i === treatmentTargets.length - 1}
-                title="Move down"
-                className="bg-transparent border-none cursor-pointer disabled:opacity-30"
-                style={{ fontSize: '13px', color: '#64748b', padding: '0 2px' }}
-              >↓</button>
-              <button
-                onClick={() => applyTargets(treatmentTargets.filter((_, j) => j !== i))}
-                title="Remove target"
-                className="bg-transparent border-none cursor-pointer text-slate-400 hover:text-red-500"
-                style={{ fontSize: '14px', padding: '0 2px' }}
-              >×</button>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => applyTargets([...treatmentTargets, ''])} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ padding: '6px 0' }}>+ Add target</button>
-          <span style={{ flex: 1 }} />
-          {targetsConfirmed ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 14px' }}>
-              <span>&#10003;</span> Treatment targets confirmed.
-            </div>
-          ) : (
-            <button onClick={confirmTreatmentTargets} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Confirm treatment targets →</button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
 
   const monitoringCard = (
     <div style={cardStyle}>
@@ -4319,40 +4198,34 @@ export default function PatientPage() {
                 {activeStep === 4 && (
                   <>
                     {renderGuide(5)}
-                    {treatmentTargetsContent}
+                    {treatmentPlanBuilder}
                   </>
                 )}
                 {activeStep === 5 && (
                   <>
                     {renderGuide(6)}
-                    {treatmentPlanBuilder}
+                    {activateStepContent}
                   </>
                 )}
                 {activeStep === 6 && (
                   <>
                     {renderGuide(7)}
-                    {activateStepContent}
+                    {renderPrep('session_3')}
+                    {experimentsContent}
                   </>
                 )}
                 {activeStep === 7 && (
                   <>
                     {renderGuide(8)}
-                    {renderPrep('session_3')}
-                    {experimentsContent}
-                  </>
-                )}
-                {activeStep === 8 && (
-                  <>
-                    {renderGuide(9)}
                     {preSessionBriefContent}
                     {renderPrep('weekly')}
                     {renderNotesSection('weekly_session', '+ Add weekly note')}
                     {actionPlansContent}
                   </>
                 )}
-                {activeStep === 9 && (
+                {activeStep === 8 && (
                   <>
-                    {renderGuide(10)}
+                    {renderGuide(9)}
                     {accommodationContent}
                   </>
                 )}

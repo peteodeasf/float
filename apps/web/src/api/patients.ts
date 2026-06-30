@@ -14,7 +14,6 @@ export type Patient = {
   has_parent_da: boolean
   has_consultation_2_note: boolean
   has_patient_da: boolean
-  has_treatment_targets: boolean
   has_active_situation_with_behaviors: boolean
   plan_status?: string | null
   teen_invited: boolean
