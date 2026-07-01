@@ -2,18 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getPatients, Patient } from '../../api/patients'
 import PractitionerNav from '../../components/ui/PractitionerNav'
-
-const STEP_LABELS: string[] = [
-  'Parent Monitoring Form',
-  'Analyze Monitoring Data',
-  'Session 1 — Parent Consultation',
-  'Session 2 — Patient Consultation',
-  'Build Treatment Plan',
-  'Activate Treatment Plan',
-  'Begin Exposures',
-  'Weekly Sessions',
-  'Parent Accommodation Check-ins',
-]
+import { SETUP_STEPS } from '../../lib/treatmentJourney'
 
 // Relative "last activity" label
 function relativeActivityLabel(iso: string | null | undefined): string {
@@ -28,24 +17,22 @@ function relativeActivityLabel(iso: string | null | undefined): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-// Current step in the Treatment Journey (mirrors the patient page sidebar completion logic)
-function computeProgress(p: Patient): { stepNumber: number; label: string } {
-  let accomDone = false
-  try { accomDone = localStorage.getItem(`float_accom_${p.id}`) === 'true' } catch { accomDone = false }
-  const stepComplete: boolean[] = [
+// Two-mode journey progress: Setup (numbered, worked once) → Treatment (ongoing).
+// Setup completes — and treatment begins — when the plan is built.
+function computeProgress(p: Patient): { label: string } {
+  const setupComplete: boolean[] = [
     p.has_monitoring_form,
     p.situation_count >= 1,
     p.has_consultation_1_note && p.has_parent_da,
     p.has_consultation_2_note && p.has_patient_da,
     p.has_active_situation_with_behaviors,
-    p.plan_status === 'active' && p.teen_invited,
-    p.completed_experiment_count >= 1,
-    p.has_weekly_note,
-    accomDone,
   ]
-  const firstIncomplete = stepComplete.findIndex(c => !c)
-  const idx = firstIncomplete === -1 ? STEP_LABELS.length - 1 : firstIncomplete
-  return { stepNumber: idx + 1, label: STEP_LABELS[idx] }
+  if (setupComplete.every(Boolean)) {
+    return { label: p.plan_status === 'active' ? 'In treatment' : 'In treatment · activate plan' }
+  }
+  const firstIncomplete = setupComplete.findIndex(c => !c)
+  const idx = firstIncomplete === -1 ? SETUP_STEPS.length - 1 : firstIncomplete
+  return { label: `Setup · Step ${idx + 1} of ${SETUP_STEPS.length} · ${SETUP_STEPS[idx]}` }
 }
 
 // Reasons the patient needs attention (empty array = no badge)
@@ -87,7 +74,7 @@ function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => voi
         <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>{patient.email}</p>
       </td>
       <td className="px-6 py-4 text-xs" style={{ color: 'var(--float-text-hint)' }}>
-        Step {progress.stepNumber} of 10 · {progress.label}
+        {progress.label}
       </td>
       <td className="px-6 py-4 text-sm" style={{ color: 'var(--float-text-secondary)' }}>
         {relativeActivityLabel(patient.last_activity_at)}

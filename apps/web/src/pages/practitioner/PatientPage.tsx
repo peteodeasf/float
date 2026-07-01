@@ -15,6 +15,7 @@ import {
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport, type ExtractedBehaviorType, type ExtractedSituation, type ExtractedBehavior } from '../../api/monitoring'
+import { SETUP_STEPS } from '../../lib/treatmentJourney'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PARENT_CHECKLIST, PATIENT_CHECKLIST, type ChecklistGroup, type ChecklistNav } from '../../lib/checklists'
@@ -55,21 +56,13 @@ function ReportSection({ label, items }: { label: string; items: string[] }) {
   )
 }
 
-type PersistentTabId = 'experiments' | 'messages' | 'plans'
+// Treatment-mode surfaces (the ongoing weekly workspace). Ordered roughly by weekly use.
+type PersistentTabId = 'experiments' | 'weekly' | 'plans' | 'messages' | 'close'
 
 type StepStatus = 'complete' | 'active' | 'incomplete'
 
-const STEP_LABELS: string[] = [
-  'Parent Monitoring Form',
-  'Analyze Monitoring Data',
-  'Session 1 — Parent Consultation',
-  'Session 2 — Patient Consultation',
-  'Build Treatment Plan',
-  'Activate Treatment Plan',
-  'Begin Exposures',
-  'Weekly Sessions',
-  'Parent Accommodation Check-ins',
-]
+// Setup-mode steps (numbered, worked once). Single source of truth in lib/treatmentJourney.
+const STEP_LABELS: readonly string[] = SETUP_STEPS
 
 interface ConceptualizationDraft {
   situations: string[]            // from extraction
@@ -129,40 +122,6 @@ function StepStatusIcon({ status }: { status: StepStatus }) {
   }
   return (
     <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#fff', border: '1px solid #cbd5e1', flexShrink: 0, boxSizing: 'border-box' }} />
-  )
-}
-
-function MiniTabButton({ id, label, active, onClick, badge }: {
-  id: PersistentTabId
-  label: string
-  active: boolean
-  onClick: (id: PersistentTabId) => void
-  badge?: number
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onClick(id)}
-      style={{
-        padding: '8px 16px',
-        background: 'transparent',
-        border: 'none',
-        borderBottom: active ? '3px solid var(--float-primary)' : '3px solid transparent',
-        color: active ? 'var(--float-primary)' : '#475569',
-        fontWeight: active ? 600 : 500,
-        fontSize: '13px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '-1px',
-      }}
-    >
-      {label}
-      {badge !== undefined && badge > 0 && (
-        <span style={{ background: 'var(--float-primary)', color: '#fff', fontSize: '11px', fontWeight: 700, minWidth: '18px', height: '18px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', lineHeight: 1 }}>{badge}</span>
-      )}
-    </button>
   )
 }
 
@@ -2015,6 +1974,7 @@ export default function PatientPage() {
   // Treatment Journey navigation
   const [activeStep, setActiveStep] = useState<number>(0)
   const [activePersistentTab, setActivePersistentTab] = useState<PersistentTabId | null>(null)
+  const [setupExpanded, setSetupExpanded] = useState(true)
   const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
   const stepInitializedRef = useRef(false)
 
@@ -2660,7 +2620,7 @@ export default function PatientPage() {
   const { data: progress } = useQuery({
     queryKey: ['progress', patientId],
     queryFn: () => getPatientProgress(patientId!),
-    enabled: !!patientId && (activePersistentTab === 'experiments' || activeStep === 6)
+    enabled: !!patientId && activePersistentTab === 'experiments'
   })
   const progressChartData = progress?.recent_experiments
     .filter(e => e.completed_date)
@@ -2701,24 +2661,24 @@ export default function PatientPage() {
   const notesList = sessionNotes ?? []
   const hasPatientDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'practitioner')
   const hasActiveSituationWithBehaviors = !!triggers && !!allBehaviors && triggers.some(t => t.is_active && (allBehaviors[t.id]?.length ?? 0) > 0)
-  const completedExperimentCount = (patientExperiments ?? []).filter(e => e.status === 'completed').length
 
+  // Setup-mode completion (5 steps). Treatment mode is gated on this, not a stored counter.
   const stepComplete: boolean[] = [
     !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
     notesList.some(n => n.session_type === 'consultation_1') || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
     notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
     hasActiveSituationWithBehaviors,
-    plan?.status === 'active' && !!patient?.teen_invited_at,
-    completedExperimentCount >= 1,
-    notesList.some(n => n.session_type === 'weekly_session'),
-    accommodationCheckinComplete,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
   const currentActiveStep = firstIncompleteStep === -1 ? STEP_LABELS.length - 1 : firstIncompleteStep
   const stepStatus: StepStatus[] = stepComplete.map((c, i) =>
     c ? 'complete' : (i === currentActiveStep ? 'active' : 'incomplete')
   )
+
+  // Treatment mode unlocks once the plan is built (an active situation has behaviors).
+  const treatmentUnlocked = hasActiveSituationWithBehaviors
+  const setupComplete = treatmentUnlocked
 
   // Default selected step to current active step once core data has loaded
   const coreLoaded = !!patient
@@ -2731,9 +2691,15 @@ export default function PatientPage() {
   useEffect(() => {
     if (stepInitializedRef.current) return
     if (!coreLoaded) return
-    setActiveStep(currentActiveStep)
+    if (treatmentUnlocked) {
+      // Plan already built — land in the treatment workspace, setup collapsed.
+      setActivePersistentTab('experiments')
+      setSetupExpanded(false)
+    } else {
+      setActiveStep(currentActiveStep)
+    }
     stepInitializedRef.current = true
-  }, [coreLoaded, currentActiveStep])
+  }, [coreLoaded, currentActiveStep, treatmentUnlocked])
 
   // Accept/reject an AI-suggested anxiety presentation by toggling it on the patient profile
   const acceptPresentationMut = useMutation({
@@ -4176,8 +4142,15 @@ export default function PatientPage() {
         <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)' }}>
           {/* Sidebar */}
           <div style={{ width: '220px', flexShrink: 0, background: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '16px 0' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 16px', marginBottom: '8px' }}>Treatment Journey</div>
-            {STEP_LABELS.map((label, i) => {
+            {/* SETUP — numbered, worked once; collapses to a minimized presence once complete */}
+            <div
+              onClick={() => { if (setupComplete) setSetupExpanded(v => !v) }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', marginBottom: '8px', cursor: setupComplete ? 'pointer' : 'default' }}
+            >
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Setup{setupComplete ? ' ✓' : ''}</div>
+              {setupComplete && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{setupExpanded ? '▾' : '▸'}</span>}
+            </div>
+            {(!setupComplete || setupExpanded) && STEP_LABELS.map((label, i) => {
               const selected = activePersistentTab === null && activeStep === i
               const status = stepStatus[i]
               return (
@@ -4201,23 +4174,80 @@ export default function PatientPage() {
                 </div>
               )
             })}
+
+            {/* TREATMENT — the ongoing weekly workspace; visible always, inert until the plan is built */}
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '18px 16px 8px' }}>Treatment{treatmentUnlocked ? '' : ' (locked)'}</div>
+            {([
+              { id: 'experiments', label: 'Experiments' },
+              { id: 'weekly', label: 'Weekly Session' },
+              { id: 'plans', label: 'Action Plans', badge: draftPlanCount },
+              { id: 'messages', label: 'Messages', badge: unreadMessageCount },
+              { id: 'close', label: 'Close · Consolidation' },
+            ] as { id: PersistentTabId; label: string; badge?: number }[]).map(s => {
+              const selected = activePersistentTab === s.id
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => setActivePersistentTab(s.id)}
+                  style={{
+                    padding: '8px 16px',
+                    borderLeft: selected ? '3px solid #0d9488' : '3px solid transparent',
+                    background: selected ? '#f0fdfa' : 'transparent',
+                    cursor: 'pointer',
+                    opacity: treatmentUnlocked ? 1 : 0.5,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: selected ? 600 : 500, color: selected ? '#1e293b' : '#475569' }}>{s.label}</div>
+                    {s.badge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#0d9488', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{s.badge}</span> : null}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           {/* Right content */}
           <div style={{ flex: 1, minWidth: 0, paddingLeft: '24px' }}>
-            {/* Persistent mini-tab bar */}
-            <div style={{ display: 'inline-flex', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '4px 8px', marginBottom: '16px' }}>
-              <MiniTabButton id="experiments" label="Experiments" active={activePersistentTab === 'experiments'} onClick={setActivePersistentTab} />
-              <MiniTabButton id="messages" label="Messages" active={activePersistentTab === 'messages'} onClick={setActivePersistentTab} badge={unreadMessageCount} />
-              <MiniTabButton id="plans" label="Action Plans" active={activePersistentTab === 'plans'} onClick={setActivePersistentTab} badge={draftPlanCount} />
-            </div>
+            {/* Treatment-mode surfaces (gated until the plan is built) */}
+            {activePersistentTab !== null && (
+              !treatmentUnlocked ? (
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Treatment workspace</div>
+                  <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                    This becomes active once the treatment plan is built. Finish Setup → <strong>Build Treatment Plan</strong>, then Experiments, Weekly Sessions, Action Plans, and accommodation work all happen here, week to week.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* One-time activation + teen invite, until the plan is active */}
+                  {plan?.status !== 'active' && activateStepContent}
+                  {activePersistentTab === 'experiments' && (
+                    <>
+                      {renderPrep('session_3')}
+                      {experimentsContent}
+                    </>
+                  )}
+                  {activePersistentTab === 'weekly' && (
+                    <>
+                      {preSessionBriefContent}
+                      {renderPrep('weekly')}
+                      {renderNotesSection('weekly_session', '+ Add weekly note')}
+                      {accommodationContent}
+                    </>
+                  )}
+                  {activePersistentTab === 'plans' && actionPlansContent}
+                  {activePersistentTab === 'messages' && messagesContent}
+                  {activePersistentTab === 'close' && (
+                    <div style={cardStyle}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Consolidation / Relapse Prevention</div>
+                      <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>Placeholder — the eventual off-ramp from treatment (consolidation, relapse-prevention planning, discharge summary).</p>
+                    </div>
+                  )}
+                </div>
+              )
+            )}
 
-            {/* Persistent tab content overrides step content */}
-            {activePersistentTab === 'experiments' && experimentsContent}
-            {activePersistentTab === 'messages' && messagesContent}
-            {activePersistentTab === 'plans' && actionPlansContent}
-
-            {/* Step content */}
+            {/* Setup-mode step content */}
             {activePersistentTab === null && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {activeStep === 0 && (
@@ -4255,34 +4285,6 @@ export default function PatientPage() {
                   <>
                     {renderGuide(5)}
                     {treatmentPlanBuilder}
-                  </>
-                )}
-                {activeStep === 5 && (
-                  <>
-                    {renderGuide(6)}
-                    {activateStepContent}
-                  </>
-                )}
-                {activeStep === 6 && (
-                  <>
-                    {renderGuide(7)}
-                    {renderPrep('session_3')}
-                    {experimentsContent}
-                  </>
-                )}
-                {activeStep === 7 && (
-                  <>
-                    {renderGuide(8)}
-                    {preSessionBriefContent}
-                    {renderPrep('weekly')}
-                    {renderNotesSection('weekly_session', '+ Add weekly note')}
-                    {actionPlansContent}
-                  </>
-                )}
-                {activeStep === 8 && (
-                  <>
-                    {renderGuide(9)}
-                    {accommodationContent}
                   </>
                 )}
               </div>
