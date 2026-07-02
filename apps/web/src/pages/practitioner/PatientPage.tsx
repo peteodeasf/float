@@ -334,7 +334,6 @@ const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = 
       'Run the AI analysis once you have at least 3 monitoring entries',
       'Review the suggested trigger situations and behaviors carefully — they are suggestions, not clinical judgments',
       "Edit, add, or remove anything that doesn't fit what you know about this patient",
-      'The analyzed data creates a draft case conceptualization that will develop through subsequent steps',
       'You can re-analyze if new monitoring entries are added',
     ],
   },
@@ -1199,55 +1198,6 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 }
 
 // ── Case Conceptualization (living draft) ──
-function CaseConceptualization({ draft, defaultExpanded = false, saveStatus = 'idle' }: { draft: ConceptualizationDraft; defaultExpanded?: boolean; saveStatus?: 'idle' | 'saving' | 'saved' }) {
-  const [expanded, setExpanded] = useState(defaultExpanded)
-  const sections: { label: string; from: string; items: string[] }[] = [
-    { label: 'TRIGGER SITUATIONS', from: 'from Step 2', items: draft.situations },
-    { label: 'AVOIDANCE & SAFETY BEHAVIORS', from: 'from Step 2', items: draft.behaviors },
-    { label: 'ACCOMMODATION PATTERNS', from: 'from Step 2, updated Step 3', items: draft.accommodationPatterns },
-    { label: 'PARENT — FEARED OUTCOMES', from: 'from Step 3', items: draft.parentFearedOutcomes },
-    { label: 'PATIENT — FEARED OUTCOMES', from: 'from Step 4', items: draft.patientFearedOutcomes },
-  ].filter(s => s.items.length > 0)
-
-  return (
-    <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', borderLeft: '4px solid #F59E0B', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '16px 20px', width: '100%', boxSizing: 'border-box' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>Case Conceptualization — Draft</span>
-          {saveStatus === 'saving' && <span style={{ fontSize: '11px', color: '#b45309' }}>Saving...</span>}
-          {saveStatus === 'saved' && <span style={{ fontSize: '11px', color: '#b45309' }}>Saved</span>}
-        </div>
-        <button onClick={() => setExpanded(e => !e)} className="bg-transparent border-none cursor-pointer" style={{ fontSize: '12px', fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap', padding: 0 }}>
-          {expanded ? 'Hide draft ↑' : 'View draft conceptualization →'}
-        </button>
-      </div>
-      {expanded && (
-        <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {sections.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: '1.5' }}>
-              Nothing captured yet. Run extraction in Step 2 to begin the draft.
-            </p>
-          ) : sections.map(s => (
-            <div key={s.label}>
-              <div style={{ marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: '#475569' }}>{s.label}</span>
-                <span style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8', marginLeft: '8px' }}>({s.from})</span>
-              </div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {s.items.map((it, i) => (
-                  <li key={i} style={{ fontSize: '13px', color: '#334155', display: 'flex', gap: '8px', lineHeight: '1.45' }}>
-                    <span style={{ color: '#F59E0B' }}>·</span><span>{it}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Session Downward Arrow (used in Session 1 / Session 2 steps) ──
 function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituation, childName }: {
   trigger: TriggerSituation
@@ -1980,12 +1930,10 @@ export default function PatientPage() {
 
   // Case conceptualization — living draft, persisted to the backend formulation record
   const [conceptualizationDraft, setConceptualizationDraft] = useState<ConceptualizationDraft>(EMPTY_CONCEPTUALIZATION)
-  const [formulationSaveStatus, setFormulationSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const formulationIdRef = useRef<string | null>(null)
   const formulationHydratedRef = useRef(false)
   const skipNextFormulationSaveRef = useRef(false)
   const formulationSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const formulationSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { data: formulation } = useQuery({
     queryKey: ['formulation', patientId],
@@ -2028,7 +1976,6 @@ export default function PatientPage() {
         patient_feared_outcomes: draft.patientFearedOutcomes,
         last_updated_step: draft.lastUpdatedStep,
       }
-      setFormulationSaveStatus('saving')
       try {
         if (formulationIdRef.current) {
           await updateFormulation(patientId, payload)
@@ -2036,20 +1983,16 @@ export default function PatientPage() {
           const created = await createFormulation(patientId, payload)
           formulationIdRef.current = created.id
         }
-        setFormulationSaveStatus('saved')
-        if (formulationSavedTimerRef.current) clearTimeout(formulationSavedTimerRef.current)
-        formulationSavedTimerRef.current = setTimeout(() => setFormulationSaveStatus('idle'), 2000)
       } catch {
-        setFormulationSaveStatus('idle')
+        // Draft persists on the next change; a failed autosave is non-blocking.
       }
     }, 1500)
     return () => { if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current) }
   }, [conceptualizationDraft, patientId])
 
-  // Clean up formulation save timers on unmount
+  // Clean up formulation save timer on unmount
   useEffect(() => () => {
     if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current)
-    if (formulationSavedTimerRef.current) clearTimeout(formulationSavedTimerRef.current)
   }, [])
 
   // Action plans
@@ -4269,16 +4212,13 @@ export default function PatientPage() {
                 )}
                 {activeStep === 2 && patientId && (
                   <StepWithChecklist patientId={patientId} stepNumber={3} title="PARENT CONSULTATION CHECKLIST" groups={PARENT_CHECKLIST} onNavigate={handleChecklistNav}>
-                    {renderPrep('session_1')}
                     <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />
                   </StepWithChecklist>
                 )}
                 {activeStep === 3 && patientId && (
                   <StepWithChecklist patientId={patientId} stepNumber={4} title="PATIENT CONSULTATION CHECKLIST" groups={PATIENT_CHECKLIST} onNavigate={handleChecklistNav}>
-                    {renderPrep('session_2')}
                     <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />
                     <div id="patient-da-section">{patientDAContent}</div>
-                    <CaseConceptualization draft={conceptualizationDraft} saveStatus={formulationSaveStatus} />
                   </StepWithChecklist>
                 )}
                 {activeStep === 4 && (

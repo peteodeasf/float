@@ -29,7 +29,6 @@ export const PATIENT_CHECKLIST: ChecklistGroup[] = [
   {
     header: 'Meeting 1 — Discovery & Education',
     items: [
-      { key: 'patient_rapport', text: 'Build rapport — school, friends, favorite things (5 min max)' },
       { key: 'patient_what_help', text: 'Ask what the child wants help with — use discovery questions', link: { icon: '📖', label: 'Discovery questions' } },
       { key: 'patient_triggers', text: 'Identify triggers and generate trigger situation list with the child' },
       { key: 'patient_behaviors', text: 'Identify safety/avoidance behaviors and rituals per situation' },
