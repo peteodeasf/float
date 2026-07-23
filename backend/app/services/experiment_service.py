@@ -183,6 +183,8 @@ async def save_before_state(
     experiment.distress_thermometer_expected = data.distress_thermometer_expected
     experiment.tempting_behaviors = data.tempting_behaviors
     experiment.confidence_level = data.confidence_level
+    if data.times_per_day is not None:
+        experiment.times_per_day = data.times_per_day
     experiment.status = "in_progress"
     experiment.updated_at = datetime.now(timezone.utc)
 

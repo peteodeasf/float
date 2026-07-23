@@ -21,6 +21,7 @@ class ExperimentBeforeState(BaseModel):
     distress_thermometer_expected: float
     tempting_behaviors: Optional[str] = None
     confidence_level: str
+    times_per_day: Optional[int] = None
 
 
 class ExperimentAfterState(BaseModel):
@@ -46,6 +47,7 @@ class ExperimentResponse(BaseModel):
     distress_thermometer_expected: Optional[float] = None
     tempting_behaviors: Optional[str] = None
     confidence_level: Optional[str] = None
+    times_per_day: Optional[int] = None
     # After state
     feared_outcome_occurred: Optional[bool] = None
     what_happened: Optional[str] = None

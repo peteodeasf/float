@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
-import { calculateStreak } from '../../api/streak'
+import { readTimesPerDay } from '../../lib/temptingBehaviors'
+import TeenScreen from '../../components/teen/TeenScreen'
+import teen from '../../styles/teenTokens'
 
 type TeenExperiment = {
   id: string
@@ -35,11 +37,75 @@ type TeenSituation = {
   behaviors: TeenBehavior[]
 }
 
+function ChatButton({ unread, onClick }: { unread: number; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={unread > 0 ? `Messages, ${unread} unread` : 'Messages'}
+      style={{
+        position: 'relative',
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        background: teen.color.cardPure,
+        border: `1px solid ${teen.color.lineSoft}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 3,
+        cursor: 'pointer',
+        flex: 'none',
+      }}
+    >
+      {[0, 1, 2].map(i => (
+        <span
+          key={i}
+          aria-hidden="true"
+          style={{
+            width: 4,
+            height: 4,
+            borderRadius: '50%',
+            background: teen.color.tealMid,
+          }}
+        />
+      ))}
+      {unread > 0 && (
+        <span
+          style={{
+            position: 'absolute',
+            top: -2,
+            right: -4,
+            minWidth: 16,
+            height: 16,
+            padding: '0 4px',
+            background: teen.color.ink,
+            color: '#fff',
+            borderRadius: 999,
+            fontFamily: teen.font.mono,
+            fontSize: 10,
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1,
+          }}
+        >
+          {unread}
+        </span>
+      )}
+    </button>
+  )
+}
+
 export default function TeenHomePage() {
   const { patientId, logout } = useTeenAuth()
   const navigate = useNavigate()
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null)
-  const [jumpWarning, setJumpWarning] = useState<{ targetBehaviorId: string; suggestedBehaviorId: string; suggestedName: string } | null>(null)
+  const [jumpWarning, setJumpWarning] = useState<{
+    targetBehaviorId: string
+    suggestedBehaviorId: string
+    suggestedName: string
+  } | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [showWelcome, setShowWelcome] = useState(false)
   const [showLadderHint, setShowLadderHint] = useState(false)
@@ -56,9 +122,7 @@ export default function TeenHomePage() {
   }, [patientId])
 
   const handleDismissWelcome = () => {
-    if (patientId) {
-      localStorage.setItem(`float_onboarded_${patientId}`, '1')
-    }
+    if (patientId) localStorage.setItem(`float_onboarded_${patientId}`, '1')
     setShowWelcome(false)
     if (patientId && !localStorage.getItem(`float_ladder_hint_dismissed_${patientId}`)) {
       setShowLadderHint(true)
@@ -68,38 +132,35 @@ export default function TeenHomePage() {
   const { data: ladderData } = useQuery({
     queryKey: ['teen-ladder', patientId],
     queryFn: async () => (await teenApiClient.get('/patient/ladder')).data,
-    enabled: !!patientId
+    enabled: !!patientId,
   })
 
   const { data: me } = useQuery({
     queryKey: ['teen-me', patientId],
     queryFn: async () => (await teenApiClient.get('/auth/me')).data,
-    enabled: !!patientId
+    enabled: !!patientId,
   })
 
   const { data: pendingExperiments } = useQuery({
     queryKey: ['teen-pending', patientId],
     queryFn: async () => (await teenApiClient.get('/patient/experiments/pending')).data,
-    enabled: !!patientId
+    enabled: !!patientId,
   })
 
-  const { data: messages } = useQuery<Array<{ id: string; sender_user_id: string; read_at: string | null }>>({
+  const { data: messages } = useQuery<
+    Array<{ id: string; sender_user_id: string; read_at: string | null }>
+  >({
     queryKey: ['teen-messages', patientId],
     queryFn: async () => (await teenApiClient.get('/patient/messages')).data,
-    enabled: !!patientId
+    enabled: !!patientId,
   })
-  const unreadMessageCount = (messages ?? []).filter(m => m.sender_user_id !== me?.user_id && !m.read_at).length
+  const unreadMessageCount = (messages ?? []).filter(
+    m => m.sender_user_id !== me?.user_id && !m.read_at
+  ).length
 
   const situations: TeenSituation[] = ladderData?.situations ?? []
-
-  // Gather all experiments from the ladder data for streak calculation
-  const allExperiments = situations.flatMap(s =>
-    s.behaviors.flatMap(b => b.experiments)
-  )
-  const streak = allExperiments.length > 0 ? calculateStreak(allExperiments) : 0
   const firstName = me?.patient_name?.split(' ')[0] ?? ''
 
-  // Default-select the active situation (or first if none)
   useEffect(() => {
     if (!selectedSituationId && situations.length > 0) {
       const active = situations.find(s => s.is_active)
@@ -109,7 +170,7 @@ export default function TeenHomePage() {
 
   const selectedSituation = situations.find(s => s.id === selectedSituationId)
 
-  // Sort behaviors by DT ascending (lowest first, nulls last) — easiest at top
+  // Easiest first — lowest distress rating at the top, nulls last.
   const sortedBehaviors: TeenBehavior[] = selectedSituation
     ? [...selectedSituation.behaviors].sort((a, b) => {
         if (a.dt == null && b.dt == null) return 0
@@ -119,51 +180,42 @@ export default function TeenHomePage() {
       })
     : []
 
-  // Suggested behavior = lowest DT behavior that is not mastered
   const suggestedBehavior = sortedBehaviors.find(b => b.status !== 'mastered') ?? null
+  const suggestedIndex = suggestedBehavior
+    ? sortedBehaviors.findIndex(b => b.id === suggestedBehavior.id)
+    : -1
 
-  // Record banner + upcoming
   const endOfToday = new Date()
   endOfToday.setHours(23, 59, 59, 999)
-  const readyToRecord = pendingExperiments?.filter((e: any) => {
+
+  const readyToRecord = (pendingExperiments ?? []).filter((e: any) => {
     if (e.status !== 'committed') return false
     if (!e.scheduled_date) return true
     return new Date(e.scheduled_date) <= endOfToday
-  }) ?? []
-  const upcomingExperiments = (pendingExperiments?.filter((e: any) => {
-    return e.status === 'committed' || e.status === 'planned'
-  }) ?? []).sort((a: any, b: any) => {
+  })
+
+  const upcomingExperiments = ((pendingExperiments ?? []).filter(
+    (e: any) => e.status === 'committed' || e.status === 'planned'
+  ) as any[]).sort((a, b) => {
     if (!a.scheduled_date && !b.scheduled_date) return 0
     if (!a.scheduled_date) return 1
     if (!b.scheduled_date) return -1
     return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
   })
 
-  // Lookup map: behavior id -> behavior (for rendering upcoming names)
   const behaviorById: Record<string, TeenBehavior> = {}
   for (const s of situations) {
-    for (const b of s.behaviors) {
-      behaviorById[b.id] = b
-    }
-  }
-
-  const parseTimes = (tempting_behaviors: string | null | undefined): number => {
-    if (!tempting_behaviors) return 1
-    const match = /times:(\d+)/.exec(tempting_behaviors)
-    return match ? parseInt(match[1], 10) : 1
+    for (const b of s.behaviors) behaviorById[b.id] = b
   }
 
   const dismissLadderHint = () => {
-    if (patientId) {
-      localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
-    }
+    if (patientId) localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
     setShowLadderHint(false)
   }
 
   const handleBehaviorTap = (behavior: TeenBehavior) => {
     if (behavior.status === 'mastered') return
     dismissLadderHint()
-    // Jump warning: if DT more than 2 above suggested
     if (
       suggestedBehavior &&
       behavior.id !== suggestedBehavior.id &&
@@ -174,388 +226,543 @@ export default function TeenHomePage() {
       setJumpWarning({
         targetBehaviorId: behavior.id,
         suggestedBehaviorId: suggestedBehavior.id,
-        suggestedName: suggestedBehavior.name
+        suggestedName: suggestedBehavior.name,
       })
       return
     }
     navigate(`/teen/experiment/${behavior.id}`)
   }
 
+  // ───────────────────────────── WELCOME ──────────────────────────────
   if (showWelcome) {
     return (
-      <div style={{
-        minHeight: '100vh', background: '#0d9488', maxWidth: '480px', margin: '0 auto',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '32px 28px', color: '#fff'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '56px', lineHeight: 1, marginBottom: '12px' }}>~</div>
-          <p style={{ fontSize: '15px', color: '#ccfbf1', fontWeight: '500', letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0 }}>
-            Float
-          </p>
-        </div>
-
-        <h1 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 12px', lineHeight: 1.25 }}>
-          Welcome to Float, {firstName} 👋
-        </h1>
-        <p style={{ fontSize: '16px', color: '#ccfbf1', margin: '0 0 28px', lineHeight: 1.5 }}>
-          Your clinician has set up your anxiety toolkit.
-        </p>
-
-        <p style={{ fontSize: '15px', color: '#fff', fontWeight: '600', margin: '0 0 14px' }}>
-          Here's how it works:
-        </p>
-        <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <li style={{ fontSize: '15px', color: '#fff', lineHeight: 1.5 }}>
-            <span style={{ marginRight: '8px' }}>🎯</span>
-            Pick a behavior to work on from your ladder
-          </li>
-          <li style={{ fontSize: '15px', color: '#fff', lineHeight: 1.5 }}>
-            <span style={{ marginRight: '8px' }}>🔮</span>
-            Make a prediction about what might happen
-          </li>
-          <li style={{ fontSize: '15px', color: '#fff', lineHeight: 1.5 }}>
-            <span style={{ marginRight: '8px' }}>✅</span>
-            Try it and record how it went
-          </li>
-        </ol>
-
-        <p style={{ fontSize: '14px', color: '#ccfbf1', margin: '0 0 32px', lineHeight: 1.5, fontStyle: 'italic' }}>
-          Each time you complete an experiment, your anxiety gets a little smaller.
-        </p>
-
-        <button
-          onClick={handleDismissWelcome}
+      <TeenScreen variant="dark">
+        <div
           style={{
-            width: '100%', padding: '18px', background: '#fff', color: '#0d9488',
-            border: 'none', borderRadius: '14px', fontSize: '17px', fontWeight: '700',
-            cursor: 'pointer'
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: `0 ${teen.space.padLg}`,
           }}
         >
-          Let's go →
-        </button>
-      </div>
+          <span style={{ ...teen.type.eyebrow, color: teen.color.mint }}>Welcome to float</span>
+          <h1
+            style={{
+              ...teen.type.headline,
+              fontSize: teen.headSize.xl,
+              color: '#fff',
+              margin: '16px 0 0',
+            }}
+          >
+            Hi {firstName}. Let's find out what's actually true.
+          </h1>
+          <p
+            style={{
+              ...teen.type.body,
+              color: teen.color.onDark,
+              marginTop: 16,
+            }}
+          >
+            Your clinician set up some experiments for you.
+          </p>
+
+          <div style={{ marginTop: 30, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {[
+              'Pick a step and say you’ll do it',
+              'Guess what’ll happen before you go',
+              'Come back and tell me what really happened',
+            ].map((line, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                <span
+                  style={{
+                    fontFamily: teen.font.mono,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: teen.color.mint,
+                    flex: 'none',
+                  }}
+                >
+                  0{i + 1}
+                </span>
+                <span
+                  style={{ fontFamily: teen.font.sans, fontSize: 16, color: '#fff', lineHeight: 1.5 }}
+                >
+                  {line}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding: `0 ${teen.space.padLg} 34px` }}>
+          <button className="teen-btn teen-btn--mint" onClick={handleDismissWelcome}>
+            Let's go →
+          </button>
+        </div>
+      </TeenScreen>
     )
   }
 
+  // Hero: reporting a due experiment takes priority over starting a new one.
+  const dueExperiment = readyToRecord[0] ?? null
+  const heroTitle: string | null = dueExperiment
+    ? (dueExperiment.plan_description ?? 'Your experiment')
+    : (suggestedBehavior?.name ?? null)
+  const heroMeta = dueExperiment
+    ? dueExperiment.scheduled_date
+      ? new Date(dueExperiment.scheduled_date).toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+        })
+      : 'Whenever you’re ready'
+    : suggestedIndex >= 0
+      ? `Step ${suggestedIndex + 1} of ${sortedBehaviors.length}`
+      : null
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f0fdfa', maxWidth: '480px', margin: '0 auto', paddingBottom: '100px' }}>
-      {/* Header */}
-      <div style={{ background: '#fff', padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '20px' }}>~</span>
-          <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Float</span>
+    <TeenScreen bubbles>
+      {/* header */}
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: `24px ${teen.space.pad} 0`,
+          flex: 'none',
+        }}
+      >
+        <span style={teen.type.wordmark}>float</span>
+        <ChatButton unread={unreadMessageCount} onClick={() => navigate('/teen/messages')} />
+      </div>
+
+      <div
+        style={{
+          position: 'relative',
+          flex: 1,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* ── hero ── */}
+        <div style={{ padding: `0 ${teen.space.pad}` }}>
+          {situations.length === 0 ? (
+            <div className="teen-card" style={{ marginTop: 30, padding: '24px 22px' }}>
+              <p style={{ ...teen.type.body, margin: 0 }}>
+                Your clinician hasn't set up your plan yet. Check back soon.
+              </p>
+            </div>
+          ) : heroTitle ? (
+            <>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
+                {dueExperiment ? 'Ready to report' : 'Approved experiment'}
+              </div>
+
+              <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
+                {selectedSituation && (
+                  <div
+                    style={{
+                      fontFamily: teen.font.mono,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: teen.color.muted,
+                    }}
+                  >
+                    For · {selectedSituation.name}
+                  </div>
+                )}
+                <h2
+                  style={{
+                    ...teen.type.headline,
+                    fontSize: teen.headSize.md,
+                    margin: '14px 0 0',
+                  }}
+                >
+                  {heroTitle}
+                </h2>
+                {heroMeta && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginTop: 20,
+                      paddingTop: 18,
+                      borderTop: `1px solid ${teen.color.line}`,
+                      fontFamily: teen.font.sans,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: teen.color.tealMid,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: '50%',
+                        background: teen.color.mint,
+                      }}
+                    />
+                    {heroMeta}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginTop: 20 }}>
+                <button
+                  className="teen-btn teen-btn--primary"
+                  onClick={() =>
+                    dueExperiment
+                      ? navigate(`/teen/record/${dueExperiment.id}`)
+                      : suggestedBehavior && handleBehaviorTap(suggestedBehavior)
+                  }
+                >
+                  {dueExperiment ? 'Tell me how it went →' : "I'm going to do it"}
+                </button>
+                <div style={{ textAlign: 'center', padding: '16px 0 0' }}>
+                  <button
+                    onClick={() => navigate('/teen/messages')}
+                    style={{
+                      background: 'none',
+                      border: 0,
+                      cursor: 'pointer',
+                      fontFamily: teen.font.sans,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: teen.color.teal,
+                    }}
+                  >
+                    Talk to float first
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="teen-card" style={{ marginTop: 30, padding: '24px 22px' }}>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Nice work</div>
+              <p style={{ ...teen.type.body, marginTop: 12, marginBottom: 0 }}>
+                You've worked through every step here. Your clinician will add more.
+              </p>
+            </div>
+          )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => navigate('/teen/messages')}
-            style={{
-              position: 'relative',
-              fontSize: '13px',
-              color: '#0d9488',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: '500',
-              padding: '4px 6px',
-            }}
-            aria-label="Messages"
-          >
-            Messages
-            {unreadMessageCount > 0 && (
-              <span
+
+        {/* ── jump warning ── */}
+        {jumpWarning && (
+          <div style={{ padding: `20px ${teen.space.pad} 0` }}>
+            <div
+              className="teen-card"
+              style={{ padding: 18, boxShadow: teen.shadow.cardSoft }}
+            >
+              <p style={{ ...teen.type.body, fontSize: 14, margin: '0 0 12px' }}>
+                That's a big jump from where you are. Your clinician suggested starting with{' '}
+                <b style={{ color: teen.color.ink }}>{jumpWarning.suggestedName}</b>.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  className="teen-chip"
+                  onClick={() => {
+                    const id = jumpWarning.suggestedBehaviorId
+                    setJumpWarning(null)
+                    navigate(`/teen/experiment/${id}`)
+                  }}
+                >
+                  Go to that one
+                </button>
+                <button
+                  className="teen-chip"
+                  onClick={() => {
+                    const id = jumpWarning.targetBehaviorId
+                    setJumpWarning(null)
+                    navigate(`/teen/experiment/${id}`)
+                  }}
+                >
+                  Start here anyway
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── the ladder ── */}
+        {situations.length > 0 && (
+          <div style={{ padding: `28px ${teen.space.pad} 0` }}>
+            <div style={teen.type.eyebrow}>Your ladder</div>
+            {showLadderHint && sortedBehaviors.length > 0 && (
+              <p
                 style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  right: '-6px',
-                  minWidth: '16px',
-                  height: '16px',
-                  padding: '0 4px',
-                  background: '#0d9488',
-                  color: '#fff',
-                  borderRadius: '999px',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: 1,
+                  ...teen.type.body,
+                  fontSize: 12,
+                  color: teen.color.muted,
+                  margin: '6px 0 0',
                 }}
               >
-                {unreadMessageCount}
-              </span>
+                Easiest at the top. Tap any step to start it.
+              </p>
             )}
+
+            {situations.length > 1 && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 7,
+                  overflowX: 'auto',
+                  margin: '12px 0 0',
+                  paddingBottom: 4,
+                }}
+              >
+                {situations.map(s => (
+                  <button
+                    key={s.id}
+                    className="teen-chip"
+                    aria-pressed={s.id === selectedSituationId}
+                    style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}
+                    onClick={() => setSelectedSituationId(s.id)}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div
+              style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}
+            >
+              {sortedBehaviors.map((behavior, i) => {
+                const isCurrent = behavior.id === suggestedBehavior?.id
+                const isMastered = behavior.status === 'mastered'
+                return (
+                  <button
+                    key={behavior.id}
+                    onClick={() => handleBehaviorTap(behavior)}
+                    disabled={isMastered}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '14px 15px',
+                      borderRadius: teen.radius.btn,
+                      background: teen.color.card,
+                      border: `1px solid ${isCurrent ? teen.color.mint : teen.color.lineCard}`,
+                      cursor: isMastered ? 'default' : 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                      opacity: isMastered ? 0.55 : 1,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: teen.font.mono,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: isCurrent ? teen.color.teal : teen.chart.label,
+                        flex: 'none',
+                        width: 18,
+                      }}
+                    >
+                      {isMastered ? '✓' : `0${i + 1}`.slice(-2)}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontFamily: teen.font.sans,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: teen.color.ink,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {behavior.name}
+                      </span>
+                      {isCurrent && (
+                        <span
+                          className="teen-pill teen-pill--progressing"
+                          style={{ marginTop: 6 }}
+                        >
+                          suggested
+                        </span>
+                      )}
+                    </span>
+                    {behavior.dt != null && (
+                      <span
+                        style={{
+                          fontFamily: teen.font.mono,
+                          fontSize: 12,
+                          color: teen.color.muted,
+                          flex: 'none',
+                        }}
+                      >
+                        {Math.round(behavior.dt)}/10
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── upcoming ── */}
+        {upcomingExperiments.length > 0 && (
+          <div style={{ padding: `28px ${teen.space.pad} 0` }}>
+            <div style={teen.type.eyebrow}>Coming up</div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {upcomingExperiments.map((exp: any) => {
+                const name = behaviorById[exp.avoidance_behavior_id]?.name ?? 'Experiment'
+                const scheduled = exp.scheduled_date ? new Date(exp.scheduled_date) : null
+                const dateLabel = scheduled
+                  ? scheduled.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : 'Not scheduled'
+                const times = readTimesPerDay(exp)
+                return (
+                  <button
+                    key={exp.id}
+                    onClick={() => {
+                      if (!scheduled || scheduled <= endOfToday) {
+                        navigate(`/teen/record/${exp.id}`)
+                      } else {
+                        setToastMessage(`That one's for ${dateLabel}`)
+                        setTimeout(() => setToastMessage(null), 2500)
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '14px 15px',
+                      borderRadius: teen.radius.btn,
+                      background: teen.color.card,
+                      border: `1px solid ${teen.color.lineCard}`,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                    }}
+                  >
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontFamily: teen.font.sans,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: teen.color.ink,
+                        }}
+                      >
+                        {name}
+                      </span>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontFamily: teen.font.mono,
+                          fontSize: 11,
+                          color: teen.color.muted,
+                          marginTop: 4,
+                        }}
+                      >
+                        {dateLabel}
+                        {times > 1 ? ` · ×${times}` : ''}
+                      </span>
+                    </span>
+                    <span style={{ color: teen.color.chevron, flex: 'none' }}>›</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── quiet footer ── */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 20,
+            padding: `32px ${teen.space.pad} 34px`,
+          }}
+        >
+          <button
+            onClick={() => navigate('/teen/progress')}
+            style={{
+              background: 'none',
+              border: 0,
+              cursor: 'pointer',
+              fontFamily: teen.font.sans,
+              fontSize: 13,
+              fontWeight: 600,
+              color: teen.color.teal,
+            }}
+          >
+            My progress
           </button>
-          <button onClick={() => navigate('/teen/plans')} style={{ fontSize: '13px', color: '#0d9488', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
+          <button
+            onClick={() => navigate('/teen/plans')}
+            style={{
+              background: 'none',
+              border: 0,
+              cursor: 'pointer',
+              fontFamily: teen.font.sans,
+              fontSize: 13,
+              fontWeight: 600,
+              color: teen.color.teal,
+            }}
+          >
             My plans
           </button>
-          <button onClick={() => { logout(); navigate('/teen/login') }} style={{ fontSize: '13px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button
+            onClick={() => {
+              logout()
+              navigate('/teen/login')
+            }}
+            style={{
+              background: 'none',
+              border: 0,
+              cursor: 'pointer',
+              fontFamily: teen.font.sans,
+              fontSize: 13,
+              color: teen.color.muted,
+            }}
+          >
             Sign out
           </button>
         </div>
       </div>
 
-      <div style={{ padding: '24px' }}>
-        {/* Greeting */}
-        <div style={{ marginBottom: '20px' }}>
-          <p style={{ fontSize: '22px', fontWeight: '600', color: '#1e293b', margin: 0 }}>
-            Hi {firstName} 👋
-          </p>
-          {streak > 0 && (
-            <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
-              🔥 {streak} day streak
-            </p>
-          )}
-        </div>
-
-        {/* Record banner — always at top when applicable */}
-        {readyToRecord.length > 0 && (
-          <button
-            onClick={() => navigate(`/teen/record/${readyToRecord[0].id}`)}
-            style={{
-              width: '100%', padding: '16px 20px', background: '#fffbeb', border: '1px solid #fde68a',
-              borderRadius: '14px', cursor: 'pointer', textAlign: 'left', marginBottom: '20px'
-            }}
-          >
-            <p style={{ fontSize: '15px', fontWeight: '600', color: '#92400e', margin: 0 }}>
-              📋 Time to record your experiment
-              {readyToRecord[0].scheduled_date && ` from ${new Date(readyToRecord[0].scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`} →
-            </p>
-          </button>
-        )}
-
-        {/* No situations */}
-        {situations.length === 0 && (
-          <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-            <p style={{ fontSize: '15px', color: '#64748b' }}>
-              Your clinician hasn't set up your plan yet. Check back soon.
-            </p>
-          </div>
-        )}
-
-        {/* Situation tabs (only if multiple) */}
-        {situations.length > 1 && (
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '20px', paddingBottom: '4px' }}>
-            {situations.map(s => {
-              const isSelected = s.id === selectedSituationId
-              const isActive = s.is_active
-              let border: string
-              let background: string
-              let color: string
-              if (isSelected) {
-                border = '2px solid #0d9488'
-                background = '#f0fdfa'
-                color = '#0d9488'
-              } else if (isActive) {
-                border = '1px solid #5eead4'
-                background = '#f0fdfa'
-                color = '#0d9488'
-              } else {
-                border = '1px solid #e2e8f0'
-                background = '#f8fafc'
-                color = '#94a3b8'
-              }
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedSituationId(s.id)}
-                  style={{
-                    flex: '0 0 auto', padding: '8px 14px', borderRadius: '999px',
-                    border, background, color,
-                    fontSize: '13px', fontWeight: '600',
-                    cursor: 'pointer', whiteSpace: 'nowrap',
-                    display: 'flex', alignItems: 'center', gap: '6px'
-                  }}
-                >
-                  {isActive && <span style={{ fontSize: '8px', color: '#0d9488' }}>●</span>}
-                  <span>{s.name}</span>
-                  {isActive && (
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#0d9488', opacity: 0.85 }}>
-                      suggested
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Selected situation */}
-        {selectedSituation && (
-          <div>
-            <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-              Working on
-            </p>
-            <p style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
-              {selectedSituation.name}
-            </p>
-            {selectedSituation.feared_outcome && (
-              <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', marginBottom: '20px' }}>
-                Your worry: &ldquo;{selectedSituation.feared_outcome}&rdquo;
-              </p>
-            )}
-            {!selectedSituation.feared_outcome && <div style={{ height: '20px' }} />}
-
-            {/* Jump warning */}
-            {jumpWarning && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
-                <p style={{ fontSize: '14px', color: '#78350f', margin: '0 0 10px', lineHeight: '1.5' }}>
-                  This step is quite a jump from where you are. Your clinician suggested starting with <strong>{jumpWarning.suggestedName}</strong>.
-                </p>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => { const id = jumpWarning.targetBehaviorId; setJumpWarning(null); navigate(`/teen/experiment/${id}`) }}
-                    style={{ fontSize: '13px', padding: '8px 14px', background: '#fff', border: '1px solid #fcd34d', borderRadius: '8px', color: '#92400e', cursor: 'pointer', fontWeight: '600' }}
-                  >
-                    Start here anyway
-                  </button>
-                  <button
-                    onClick={() => { const id = jumpWarning.suggestedBehaviorId; setJumpWarning(null); navigate(`/teen/experiment/${id}`) }}
-                    style={{ fontSize: '13px', padding: '8px 14px', background: '#0d9488', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: '600' }}
-                  >
-                    Go to suggested step
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* First-time ladder hint */}
-            {showLadderHint && sortedBehaviors.length > 0 && (
-              <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', lineHeight: 1.5, margin: '0 0 12px' }}>
-                Your ladder shows the behaviors to work through, starting with the easiest.
-                Tap the suggested one to start your first experiment.
-              </p>
-            )}
-
-            {/* Ladder */}
-            {sortedBehaviors.length > 0 ? (
-              <div style={{ background: '#fff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0' }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
-                  Your ladder
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {sortedBehaviors.map((behavior, i) => {
-                    const displayNum = i + 1
-                    const isCurrent = behavior.id === suggestedBehavior?.id
-                    const isMastered = behavior.status === 'mastered'
-                    const isInProgress = behavior.status === 'in_progress'
-                    return (
-                      <button
-                        key={behavior.id}
-                        onClick={() => handleBehaviorTap(behavior)}
-                        disabled={isMastered}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '12px',
-                          padding: '12px 14px', borderRadius: '12px', border: 'none',
-                          background: isMastered ? '#f0fdf4' : isCurrent ? '#f0fdfa' : '#f8fafc',
-                          cursor: isMastered ? 'default' : 'pointer', textAlign: 'left',
-                          outline: isCurrent ? '2px solid #99f6e4' : 'none',
-                          width: '100%',
-                          position: 'relative',
-                        }}
-                      >
-                        <div style={{
-                          width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-                          background: isMastered ? '#22c55e' : isCurrent ? '#0d9488' : isInProgress ? '#f59e0b' : '#e2e8f0',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '13px', fontWeight: '700',
-                          color: isMastered || isCurrent || isInProgress ? '#fff' : '#94a3b8',
-                        }}>
-                          {isMastered ? '✓' : displayNum}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {behavior.name}
-                          </p>
-                          {isCurrent && (
-                            <p style={{ fontSize: '11px', color: '#0d9488', fontWeight: '600', margin: '2px 0 0' }}>suggested</p>
-                          )}
-                          {isInProgress && !isCurrent && (
-                            <p style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', margin: '2px 0 0' }}>in progress</p>
-                          )}
-                        </div>
-                        {behavior.dt != null && (
-                          <span style={{
-                            fontSize: '12px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px',
-                            background: isCurrent ? '#ccfbf1' : '#f1f5f9',
-                            color: isCurrent ? '#0d9488' : '#94a3b8'
-                          }}>
-                            {behavior.dt}/10
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                <p style={{ fontSize: '14px', color: '#64748b' }}>No steps yet for this situation.</p>
-              </div>
-            )}
-
-            {/* Upcoming experiments */}
-            {upcomingExperiments.length > 0 && (
-              <div style={{ marginTop: '24px' }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
-                  Upcoming
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {upcomingExperiments.map((exp: any) => {
-                    const b = behaviorById[exp.avoidance_behavior_id]
-                    const name = b?.name ?? 'Experiment'
-                    const scheduled = exp.scheduled_date ? new Date(exp.scheduled_date) : null
-                    const dateLabel = scheduled
-                      ? scheduled.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                      : 'Not scheduled'
-                    const times = parseTimes(exp.tempting_behaviors)
-                    const handleTap = () => {
-                      if (!scheduled || scheduled <= endOfToday) {
-                        navigate(`/teen/record/${exp.id}`)
-                      } else {
-                        setToastMessage(`This experiment is scheduled for ${dateLabel}`)
-                        setTimeout(() => setToastMessage(null), 2500)
-                      }
-                    }
-                    return (
-                      <button
-                        key={exp.id}
-                        onClick={handleTap}
-                        style={{
-                          display: 'flex', alignItems: 'flex-start', gap: '10px',
-                          padding: '12px 14px', borderRadius: '12px',
-                          background: '#fff', border: '1px solid #e2e8f0',
-                          cursor: 'pointer', textAlign: 'left', width: '100%'
-                        }}
-                      >
-                        <span style={{ fontSize: '18px' }}>📅</span>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: 'block', fontSize: '14px', color: '#1e293b', fontWeight: '600' }}>
-                            {dateLabel} · {times}× per day
-                          </span>
-                          <span style={{ display: 'block', fontSize: '13px', color: '#94a3b8', fontWeight: '400', marginTop: '2px' }}>
-                            {name}
-                          </span>
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
       {toastMessage && (
-        <div style={{
-          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1e293b', color: '#fff', padding: '12px 20px', borderRadius: '999px',
-          fontSize: '13px', fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          maxWidth: '90%', textAlign: 'center', zIndex: 100
-        }}>
+        <div
+          role="status"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: teen.color.ink,
+            color: '#fff',
+            padding: '12px 20px',
+            borderRadius: teen.radius.pill,
+            fontFamily: teen.font.sans,
+            fontSize: 13,
+            fontWeight: 500,
+            maxWidth: '90%',
+            textAlign: 'center',
+            zIndex: 100,
+          }}
+        >
           {toastMessage}
         </div>
       )}
-    </div>
+    </TeenScreen>
   )
 }

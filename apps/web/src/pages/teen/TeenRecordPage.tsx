@@ -1,342 +1,904 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
-import { calculateStreak } from '../../api/streak'
+import TeenScreen from '../../components/teen/TeenScreen'
+import Chip from '../../components/teen/Chip'
+import BeliefSlider from '../../components/teen/BeliefSlider'
+import Thermometer from '../../components/teen/Thermometer'
+import teen from '../../styles/teenTokens'
 
-type Phase = 'record' | 'results'
+/**
+ * The post-commit journey.
+ *
+ * `moment` is the quiet screen a teen lands on when they open a due
+ * experiment — the app says its piece and gets out of the way. `outcome` is
+ * the disconfirmation question, asked on its own before any form.
+ */
+type Phase = 'moment' | 'outcome' | 'win' | 'faced' | 'toohard' | 'capture' | 'score'
 
-function Shell({ phase, onBack, children }: { phase: Phase; onBack: () => void; children: React.ReactNode }) {
-  return (
-    <div style={{ minHeight: '100vh', background: '#f0fdfa', maxWidth: '480px', margin: '0 auto' }}>
-      <div style={{ background: '#fff', padding: '14px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '4px', color: '#64748b' }}>
-          &larr;
-        </button>
-        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
-          {phase === 'record' ? 'How did it go?' : 'Experiment complete'}
-        </span>
-      </div>
-      <div style={{ padding: '20px 24px 80px' }}>{children}</div>
-    </div>
-  )
-}
+const WHAT_HAPPENED = ['A few glanced', 'Nobody cared', 'Awkward but fine']
+
+/**
+ * What they learned reframes by path: when the fear did not come true the
+ * learning is about the prediction being wrong; when it did, the learning has
+ * to be about coping and survivability, never about the prediction.
+ */
+const WHAT_LEARNED_DISCONFIRMED = [
+  'My anxiety exaggerates',
+  'I can handle awkward',
+  'Nothing bad happened',
+]
+const WHAT_LEARNED_COPED = [
+  'I got through it',
+  'It passed quicker than I thought',
+  'I can handle it happening',
+]
+
+const ORDINALS = [
+  '',
+  'First',
+  'Second',
+  'Third',
+  'Fourth',
+  'Fifth',
+  'Sixth',
+  'Seventh',
+  'Eighth',
+  'Ninth',
+  'Tenth',
+]
+const ordinal = (n: number) => ORDINALS[n] ?? `${n}th`
 
 export default function TeenRecordPage() {
   const { experimentId } = useParams<{ experimentId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [phase, setPhase] = useState<Phase>('record')
 
-  // Form state
-  const [didIt, setDidIt] = useState<'yes' | 'partially' | 'no' | null>(null)
-  const [skipReason, setSkipReason] = useState('')
+  const [phase, setPhase] = useState<Phase>('moment')
+
   const [actualDT, setActualDT] = useState<number | null>(null)
-  const [bipAfter, setBipAfter] = useState(50)
+  const [bipAfterRaw, setBipAfterRaw] = useState<number | null>(null)
   const [fearedOccurred, setFearedOccurred] = useState<boolean | null>(null)
-  const [whatLearned, setWhatLearned] = useState('')
+  const [whatHappened, setWhatHappened] = useState<string | null>(null)
+  const [customHappened, setCustomHappened] = useState<string[]>([])
+  const [addingHappened, setAddingHappened] = useState(false)
+  const [happenedDraft, setHappenedDraft] = useState('')
+  const [whatLearned, setWhatLearned] = useState<string | null>(null)
+
+  const [tooHardReason, setTooHardReason] = useState('')
+  const [tooHardOpen, setTooHardOpen] = useState(false)
+  const [tooHardMarked, setTooHardMarked] = useState(false)
+  const [reasonSent, setReasonSent] = useState(false)
 
   const { data: experiment } = useQuery({
     queryKey: ['teen-experiment', experimentId],
     queryFn: async () => (await teenApiClient.get(`/experiments/${experimentId}`)).data,
-    enabled: !!experimentId
+    enabled: !!experimentId,
   })
 
-  // For streak on results page
-  const { data: allExperiments } = useQuery({
-    queryKey: ['teen-streak-experiments'],
-    queryFn: async () => {
-      if (!experiment?.ladder_rung_id) return []
-      const res = await teenApiClient.get(`/rungs/${experiment.ladder_rung_id}/experiments`)
-      return res.data
-    },
-    enabled: !!experiment?.ladder_rung_id && phase === 'results'
+  const bipBefore: number | null = experiment?.bip_before ?? null
+  const prediction: string | null = experiment?.prediction ?? null
+  const planText: string | null = experiment?.plan_description ?? null
+  const dtExpected: number | null = experiment?.distress_thermometer_expected ?? null
+
+  // Starts where their belief started, so the slider shows movement they make.
+  const bipAfter = bipAfterRaw ?? (bipBefore != null ? Math.round(bipBefore) : 50)
+
+  const learnedOptions = fearedOccurred ? WHAT_LEARNED_COPED : WHAT_LEARNED_DISCONFIRMED
+  const happenedOptions = [...WHAT_HAPPENED, ...customHappened]
+
+  /** Pulled once we reach the scoreboard, to make its headline claim true. */
+  const { data: ladder } = useQuery({
+    queryKey: ['teen-ladder-score'],
+    queryFn: async () => (await teenApiClient.get('/patient/ladder')).data,
+    enabled: phase === 'score',
   })
 
-  const bipBefore = experiment?.bip_before
-
-  // Initialize bipAfter from bipBefore
-  useState(() => {
-    if (bipBefore != null) setBipAfter(bipBefore)
-  })
+  const beatThisWeek = useMemo(() => {
+    const situations: Array<{ behaviors: Array<{ experiments: Array<Record<string, unknown>> }> }> =
+      ladder?.situations ?? []
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    let count = 0
+    for (const s of situations) {
+      for (const b of s.behaviors ?? []) {
+        for (const e of b.experiments ?? []) {
+          if (e.feared_outcome_occurred !== false) continue
+          const raw = e.scheduled_date as string | null | undefined
+          const when = raw ? new Date(raw).getTime() : null
+          // If we don't know when it happened, don't claim it was this week.
+          if (when != null && when >= weekAgo) count++
+        }
+      }
+    }
+    return count
+  }, [ladder])
 
   const recordMutation = useMutation({
     mutationFn: async () => {
       await teenApiClient.put(`/patient/experiments/${experimentId}/after`, {
         feared_outcome_occurred: fearedOccurred ?? false,
-        what_happened: didIt === 'no' ? `Did not attempt: ${skipReason}` :
-          fearedOccurred ? 'Feared outcome occurred' : 'Feared outcome did not occur',
+        what_happened: whatHappened ?? '',
         distress_thermometer_actual: actualDT ?? 0,
         bip_after: bipAfter,
-        what_learned: whatLearned || 'Completed experiment'
+        // Genuinely optional — a fabricated learning would pollute the
+        // clinician's recent_learnings digest.
+        what_learned: whatLearned ?? '',
       })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
+      queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
       queryClient.invalidateQueries({ queryKey: ['teen-experiment', experimentId] })
-      setPhase('results')
-    }
-  })
-
-  const skipMutation = useMutation({
-    mutationFn: async () => {
-      // Send skip reason as a message to clinician
-      await teenApiClient.post(`/patient/experiments/${experimentId}/too-hard`, {
-        reason: skipReason || 'Could not attempt the experiment'
-      })
+      setPhase('score')
     },
-    onSuccess: () => navigate('/teen/home')
   })
 
-  const streak = allExperiments ? calculateStreak(allExperiments) : 0
-  const bipDrop = bipBefore != null ? bipBefore - bipAfter : null
+  /**
+   * Marks the experiment too_hard. Called with no reason the instant the teen
+   * bails — the effort still counts even if they close the app right there —
+   * and again, optionally, if they choose to say why (a reason is what
+   * generates the message to their clinician).
+   */
+  const tooHardMutation = useMutation({
+    mutationFn: async (reason: string) => {
+      await teenApiClient.post(`/patient/experiments/${experimentId}/too-hard`, { reason })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
+    },
+  })
 
-  // ── Results Phase ──
-  if (phase === 'results') {
+  const enterTooHard = () => {
+    if (!tooHardMarked) {
+      setTooHardMarked(true)
+      tooHardMutation.mutate('')
+    }
+    setPhase('toohard')
+  }
+
+  const commitHappenedDraft = () => {
+    const v = happenedDraft.trim()
+    if (v && !happenedOptions.includes(v)) {
+      setCustomHappened(prev => [...prev, v])
+      setWhatHappened(v)
+    }
+    setHappenedDraft('')
+    setAddingHappened(false)
+  }
+
+  // ─────────────────────────────── MOMENT ───────────────────────────────
+  if (phase === 'moment') {
     return (
-      <Shell phase={phase} onBack={() => navigate('/teen/home')}>
-        <div style={{ textAlign: 'center', paddingTop: '20px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎉</div>
-          <h2 style={{ fontSize: '22px', fontWeight: '600', color: '#1e293b' }}>
-            Experiment complete
-          </h2>
-        </div>
+      <TeenScreen bubbles>
+        <div
+          style={{
+            position: 'relative',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: `0 ${teen.space.padLg}`,
+          }}
+        >
+          <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>You're in it</span>
 
-        {/* Comparison */}
-        <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div>
-              <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>My prediction</p>
-              <p style={{ fontSize: '24px', fontWeight: '700', color: '#64748b' }}>{bipBefore ?? '—'}%</p>
+          {planText && (
+            <h2
+              style={{
+                ...teen.type.headline,
+                fontSize: teen.headSize.sm,
+                margin: '14px 0 30px',
+              }}
+            >
+              {planText}
+            </h2>
+          )}
+
+          <div
+            style={{
+              width: '100%',
+              background: teen.color.ink,
+              borderRadius: teen.radius.cardLg,
+              padding: '30px 24px',
+              boxShadow: teen.shadow.cardDark,
+            }}
+          >
+            <div style={{ fontFamily: teen.font.sans, fontSize: 14, color: teen.color.onDark }}>
+              You said
             </div>
-            <div style={{ fontSize: '20px', color: '#94a3b8', alignSelf: 'center' }}>&rarr;</div>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Now</p>
-              <p style={{ fontSize: '24px', fontWeight: '700', color: '#0d9488' }}>{bipAfter}%</p>
+            <div
+              style={{
+                fontFamily: teen.font.mono,
+                fontSize: teen.dataSize.xl,
+                color: '#fff',
+                lineHeight: 1,
+                margin: '6px 0',
+              }}
+            >
+              {bipBefore ?? '—'}
+              <span style={{ fontSize: 26, color: teen.color.mint }}>%</span>
             </div>
+            {prediction && (
+              <div
+                style={{
+                  fontFamily: teen.font.sans,
+                  fontSize: 18,
+                  color: teen.color.mintSoft,
+                  lineHeight: 1.4,
+                }}
+              >
+                {prediction}
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div>
-              <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Expected fear</p>
-              <p style={{ fontSize: '18px', fontWeight: '600', color: '#f59e0b' }}>{experiment?.distress_thermometer_expected ?? '—'}/10</p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Actual fear</p>
-              <p style={{ fontSize: '18px', fontWeight: '600', color: '#f59e0b' }}>{actualDT}/10</p>
-            </div>
-          </div>
-
-          <div>
-            <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Feared outcome</p>
-            <p style={{ fontSize: '16px', fontWeight: '600', color: fearedOccurred ? '#ef4444' : '#22c55e' }}>
-              {fearedOccurred ? 'Happened' : 'Did not happen'}
-            </p>
-          </div>
-        </div>
-
-        {/* Insight */}
-        <div style={{ background: '#f0fdfa', borderRadius: '14px', padding: '16px 20px', border: '1px solid #99f6e4', marginBottom: '16px' }}>
-          <p style={{ fontSize: '14px', color: '#134e4a', lineHeight: '1.5' }}>
-            {bipDrop != null && bipDrop > 0
-              ? `Your prediction dropped from ${bipBefore}% to ${bipAfter}%. Your brain is updating — that's real progress.`
-              : !fearedOccurred
-                ? `Your anxiety predicted it would happen. It didn't. That's important data.`
-                : `Even when things are tough, you showed up. That takes strength.`
-            }
+          <p style={{ ...teen.type.body, color: teen.color.mutedQuiet, marginTop: 26 }}>
+            Let's find out.
           </p>
         </div>
 
-        {/* Streak */}
-        {streak > 0 && (
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <span style={{ fontSize: '28px' }}>🔥</span>
-            <p style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginTop: '4px' }}>
-              You're on a {streak} day streak!
-            </p>
-          </div>
-        )}
-
-        <button
-          onClick={() => navigate('/teen/home')}
+        <div
           style={{
-            width: '100%', padding: '16px', background: '#0d9488', color: '#fff',
-            border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: '600', cursor: 'pointer'
+            position: 'relative',
+            padding: `0 ${teen.space.padLg} 34px`,
+            textAlign: 'center',
           }}
         >
-          Back to home
-        </button>
-      </Shell>
+          <p
+            style={{
+              fontFamily: teen.font.sans,
+              fontSize: 14,
+              color: teen.color.mutedQuiet,
+              margin: '0 0 14px',
+            }}
+          >
+            Come back and tell me how it went.
+          </p>
+          <button className="teen-btn teen-btn--primary" onClick={() => setPhase('outcome')}>
+            I'm through it →
+          </button>
+
+          <div style={{ marginTop: 14 }}>
+            <button className="teen-btn teen-btn--quiet" onClick={enterTooHard}>
+              It felt like too much
+            </button>
+          </div>
+        </div>
+      </TeenScreen>
     )
   }
 
-  // ── Record Phase ──
-  return (
-    <Shell phase={phase} onBack={() => navigate('/teen/home')}>
-      {/* Did you do it? */}
-      <div style={{ marginBottom: '24px' }}>
-        <p style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b', marginBottom: '10px' }}>
-          Did you do the experiment?
-        </p>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {([
-            { key: 'yes', label: 'Yes', emoji: '✅' },
-            { key: 'partially', label: 'Partially', emoji: '〰️' },
-            { key: 'no', label: 'No', emoji: '❌' },
-          ] as const).map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => setDidIt(opt.key)}
+  // ────────────────────────────── OUTCOME ───────────────────────────────
+  if (phase === 'outcome') {
+    return (
+      <TeenScreen variant="alt">
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: `0 ${teen.space.pad}`,
+          }}
+        >
+          <div style={{ marginTop: 36 }}>
+            <span style={teen.type.eyebrow}>You came back</span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              fontFamily: teen.font.sans,
+              fontSize: 15,
+              color: teen.color.mutedQuiet,
+            }}
+          >
+            You said
+          </div>
+          <div
+            style={{
+              fontFamily: teen.font.mono,
+              fontSize: teen.dataSize.lg,
+              lineHeight: 1.1,
+              color: teen.color.ink,
+              marginTop: 4,
+            }}
+          >
+            {bipBefore ?? '—'}%
+          </div>
+          {prediction && (
+            <div
               style={{
-                flex: 1, padding: '14px 8px', borderRadius: '12px', cursor: 'pointer',
-                border: didIt === opt.key ? '2px solid #0d9488' : '1px solid #e2e8f0',
-                background: didIt === opt.key ? '#f0fdfa' : '#fff', textAlign: 'center'
+                fontFamily: teen.font.sans,
+                fontSize: 22,
+                color: teen.color.inkSoft,
+                marginTop: 6,
+                lineHeight: 1.35,
+                textWrap: 'balance',
               }}
             >
-              <div style={{ fontSize: '20px', marginBottom: '4px' }}>{opt.emoji}</div>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: didIt === opt.key ? '#0d9488' : '#64748b' }}>
-                {opt.label}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+              {prediction}
+            </div>
+          )}
 
-      {/* No — what got in the way */}
-      {didIt === 'no' && (
-        <div style={{ marginBottom: '24px' }}>
-          <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
-            What got in the way?
-          </p>
-          <textarea
-            value={skipReason}
-            onChange={e => setSkipReason(e.target.value)}
-            placeholder="It's okay — tell your clinician what happened"
-            rows={3}
-            style={{
-              width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0',
-              fontSize: '14px', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '12px'
-            }}
-          />
+          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '32px 0 0' }}>
+            Did it happen?
+          </h2>
+
+          <div style={{ flex: 1, minHeight: 24 }} />
+
           <button
-            onClick={() => skipMutation.mutate()}
-            disabled={skipMutation.isPending}
+            className="teen-btn teen-btn--primary"
             style={{
-              width: '100%', padding: '14px', background: '#f59e0b', color: '#fff',
-              border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '600',
-              cursor: 'pointer', opacity: skipMutation.isPending ? 0.6 : 1
+              padding: 20,
+              fontSize: 17,
+              borderRadius: teen.radius.btnLg,
+              marginBottom: 12,
+            }}
+            onClick={() => {
+              setFearedOccurred(false)
+              setPhase('win')
             }}
           >
-            {skipMutation.isPending ? 'Sending...' : 'Send to my clinician'}
+            No — it didn't
+          </button>
+          <button
+            className="teen-btn teen-btn--outline"
+            style={{
+              padding: 20,
+              fontSize: 17,
+              borderRadius: teen.radius.btnLg,
+              marginBottom: 30,
+              background: teen.color.cardPure,
+            }}
+            onClick={() => {
+              setFearedOccurred(true)
+              setPhase('faced')
+            }}
+          >
+            Yeah, it did
           </button>
         </div>
-      )}
+      </TeenScreen>
+    )
+  }
 
-      {/* Fear thermometer */}
-      {didIt && didIt !== 'no' && (
-        <>
-          <div style={{ marginBottom: '24px' }}>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '10px' }}>
-              Fear thermometer during the experiment
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setActualDT(n)}
-                  style={{
-                    padding: '12px 4px', borderRadius: '10px', cursor: 'pointer',
-                    border: actualDT === n ? '2px solid #0d9488' : '1px solid #e2e8f0',
-                    background: actualDT === n ? '#f0fdfa' : '#fff',
-                    fontSize: '16px', fontWeight: '700',
-                    color: actualDT === n ? '#0d9488' : n >= 7 ? '#dc2626' : n >= 4 ? '#d97706' : '#64748b'
-                  }}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
-              <span>Calm</span><span>Extreme</span>
-            </div>
-          </div>
-
-          {/* BIP after */}
-          <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0', marginBottom: '24px', textAlign: 'center' }}>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
-              Update your prediction
-            </p>
-            <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
-              How likely is the feared outcome now?
-            </p>
-            <p style={{ fontSize: '40px', fontWeight: '700', color: '#0d9488', margin: '0 0 12px' }}>
-              {bipAfter}%
-            </p>
-            <input type="range" min={0} max={100} step={5} value={bipAfter}
-              onChange={e => setBipAfter(Number(e.target.value))}
-              style={{ width: '100%', maxWidth: '280px' }}
-            />
-          </div>
-
-          {/* Feared outcome occurred */}
-          <div style={{ marginBottom: '24px' }}>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
-              Did your feared outcome actually happen?
-            </p>
-            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px' }}>
-              Think about what actually happened — not how you felt, but what you could observe.
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {[{ label: 'No', value: false }, { label: 'Yes', value: true }].map(opt => (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => setFearedOccurred(opt.value)}
-                  style={{
-                    flex: 1, padding: '14px', borderRadius: '12px', cursor: 'pointer',
-                    border: fearedOccurred === opt.value ? '2px solid #0d9488' : '1px solid #e2e8f0',
-                    background: fearedOccurred === opt.value ? '#f0fdfa' : '#fff',
-                    fontSize: '15px', fontWeight: '600',
-                    color: fearedOccurred === opt.value ? '#0d9488' : '#64748b'
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* What I learned */}
-          <div style={{ marginBottom: '24px' }}>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
-              What did you learn?
-            </p>
-            <textarea
-              value={whatLearned}
-              onChange={e => setWhatLearned(e.target.value)}
-              placeholder="e.g. It wasn't as bad as I thought. Nobody actually noticed me."
-              rows={3}
+  // ──────────────────────────────── WIN ─────────────────────────────────
+  // Feared outcome did not occur. Celebrate the disconfirmation.
+  if (phase === 'win') {
+    return (
+      <TeenScreen variant="alt">
+        <div
+          style={{
+            position: 'relative',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '0 30px',
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: -40,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 220,
+              height: 220,
+              borderRadius: '50%',
+              background: teen.decor.glowMint,
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            className="teen-pop"
+            style={{
+              position: 'relative',
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              background: teen.color.mint,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: teen.shadow.mint,
+            }}
+          >
+            <div
+              aria-hidden="true"
               style={{
-                width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0',
-                fontSize: '14px', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box'
+                width: 22,
+                height: 12,
+                borderLeft: `4px solid ${teen.color.ink}`,
+                borderBottom: `4px solid ${teen.color.ink}`,
+                transform: 'rotate(-45deg) translate(2px, -3px)',
               }}
             />
           </div>
 
-          {/* Submit */}
-          <button
-            onClick={() => recordMutation.mutate()}
-            disabled={recordMutation.isPending || actualDT === null || fearedOccurred === null}
+          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '26px 0 0' }}>
+            It didn't happen.
+          </h2>
+          <p style={{ ...teen.type.body, fontSize: 17, marginTop: 16 }}>
+            You believed it <b style={{ color: teen.color.ink }}>{bipBefore ?? '—'}%</b> — and it
+            still didn't happen.
+          </p>
+        </div>
+
+        <div style={{ position: 'relative', padding: `0 ${teen.space.padLg} 34px` }}>
+          <button className="teen-btn teen-btn--primary" onClick={() => setPhase('capture')}>
+            Keep going →
+          </button>
+        </div>
+      </TeenScreen>
+    )
+  }
+
+  // ─────────────────────────────── FACED ────────────────────────────────
+  // Feared outcome did occur. Lead with the act, reframe toward coping.
+  if (phase === 'faced') {
+    return (
+      <TeenScreen variant="card">
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: `0 ${teen.space.padLg}`,
+          }}
+        >
+          <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>You did it</span>
+          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '16px 0 0' }}>
+            You did it. That's the part that counts.
+          </h2>
+          <div
             style={{
-              width: '100%', padding: '16px', background: '#0d9488', color: '#fff',
-              border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: '600',
-              cursor: 'pointer',
-              opacity: (recordMutation.isPending || actualDT === null || fearedOccurred === null) ? 0.5 : 1
+              marginTop: 20,
+              background: teen.color.cardPure,
+              borderRadius: teen.radius.card,
+              padding: 22,
+              boxShadow: teen.shadow.cardSoft,
             }}
           >
-            {recordMutation.isPending ? 'Saving...' : 'Submit →'}
+            <p style={{ ...teen.type.body, fontSize: 16, margin: 0 }}>
+              It happened — and you got through it. You thought it'd be unbearable.{' '}
+              <b style={{ color: teen.color.ink }}>Was it?</b>
+            </p>
+          </div>
+        </div>
+
+        <div style={{ padding: `0 ${teen.space.padLg} 34px` }}>
+          <button className="teen-btn teen-btn--primary" onClick={() => setPhase('capture')}>
+            Tell float about it →
           </button>
-        </>
-      )}
-    </Shell>
+        </div>
+      </TeenScreen>
+    )
+  }
+
+  // ────────────────────────────── TOO HARD ──────────────────────────────
+  // No scoreboard, no red. Credit showing up.
+  if (phase === 'toohard') {
+    return (
+      <TeenScreen variant="card">
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: `0 ${teen.space.padLg}`,
+            overflowY: 'auto',
+          }}
+        >
+          <span style={teen.type.eyebrow}>Showing up counts</span>
+          <h2 style={{ ...teen.type.headline, fontSize: 26, margin: '16px 0 0' }}>
+            This one was too big. That's useful, not a fail.
+          </h2>
+          <p style={{ ...teen.type.body, fontSize: 16, marginTop: 20 }}>
+            I'll tell your clinician — they'll make the next step easier.
+          </p>
+
+          <div
+            style={{
+              marginTop: 22,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              background: teen.color.mintSoft,
+              border: `1px solid ${teen.color.mint}`,
+              borderRadius: 14,
+              padding: '14px 16px',
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                background: teen.color.tealMid,
+                flex: 'none',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: teen.font.sans,
+                fontSize: 13,
+                fontWeight: 600,
+                color: teen.color.teal,
+              }}
+            >
+              Still counts — you showed up today.
+            </span>
+          </div>
+
+          {/* Saying why is optional — nothing to type at the hard moment. */}
+          {!reasonSent && !tooHardOpen && (
+            <div style={{ marginTop: 18 }}>
+              <button
+                className="teen-btn teen-btn--quiet"
+                style={{ padding: 0 }}
+                onClick={() => setTooHardOpen(true)}
+              >
+                Want to say what made it too big?
+              </button>
+            </div>
+          )}
+
+          {!reasonSent && tooHardOpen && (
+            <div style={{ marginTop: 18 }}>
+              <textarea
+                value={tooHardReason}
+                onChange={e => setTooHardReason(e.target.value)}
+                rows={3}
+                placeholder="Only your clinician sees this."
+                style={{
+                  width: '100%',
+                  padding: 12,
+                  borderRadius: 12,
+                  border: `1px solid ${teen.color.lineChip}`,
+                  fontFamily: teen.font.sans,
+                  fontSize: 14,
+                  resize: 'none',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+              />
+              <button
+                className="teen-btn teen-btn--outline"
+                style={{ marginTop: 10 }}
+                disabled={!tooHardReason.trim() || tooHardMutation.isPending}
+                onClick={() =>
+                  tooHardMutation.mutate(tooHardReason.trim(), {
+                    onSuccess: () => setReasonSent(true),
+                  })
+                }
+              >
+                {tooHardMutation.isPending ? 'Sending…' : 'Send it'}
+              </button>
+            </div>
+          )}
+
+          {reasonSent && (
+            <p
+              style={{ ...teen.type.body, fontSize: 13, color: teen.color.muted, marginTop: 18 }}
+            >
+              Sent — they'll see it before your next session.
+            </p>
+          )}
+        </div>
+
+        <div style={{ padding: `0 ${teen.space.padLg} 34px` }}>
+          <button
+            className="teen-btn teen-btn--primary"
+            onClick={() => navigate('/teen/progress')}
+          >
+            See my progress →
+          </button>
+        </div>
+      </TeenScreen>
+    )
+  }
+
+  // ─────────────────────────────── SCORE ────────────────────────────────
+  if (phase === 'score') {
+    const dropped = bipBefore != null ? Math.round(bipBefore) - bipAfter : 0
+    const headline =
+      beatThisWeek >= 2
+        ? `${ordinal(beatThisWeek)} time you beat your prediction this week.`
+        : dropped > 0
+          ? `Your belief dropped ${dropped} points.`
+          : 'You showed up and got the data.'
+
+    return (
+      <TeenScreen variant="dark">
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 280,
+            height: 280,
+            borderRadius: '50%',
+            background: teen.decor.glowMintFaint,
+            pointerEvents: 'none',
+          }}
+        />
+        <div
+          style={{
+            position: 'relative',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: '0 28px',
+          }}
+        >
+          <span style={{ ...teen.type.eyebrow, color: teen.color.mint }}>The scoreboard</span>
+
+          <div style={{ marginTop: 24, display: 'flex', gap: 14 }}>
+            <div
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,.06)',
+                borderRadius: teen.radius.btnLg,
+                padding: '18px 16px',
+              }}
+            >
+              <div
+                style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.onDark }}
+              >
+                Fear
+              </div>
+              <div
+                style={{
+                  fontFamily: teen.font.mono,
+                  fontSize: teen.dataSize.md,
+                  color: '#fff',
+                  marginTop: 6,
+                }}
+              >
+                {dtExpected ?? '—'}
+                <span style={{ color: teen.color.mint, fontSize: 18 }}> → {actualDT ?? '—'}</span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,.06)',
+                borderRadius: teen.radius.btnLg,
+                padding: '18px 16px',
+              }}
+            >
+              <div
+                style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.onDark }}
+              >
+                Belief
+              </div>
+              <div
+                style={{
+                  fontFamily: teen.font.mono,
+                  fontSize: teen.dataSize.md,
+                  color: '#fff',
+                  marginTop: 6,
+                }}
+              >
+                {bipBefore != null ? Math.round(bipBefore) : '—'}
+                <span style={{ color: teen.color.mint, fontSize: 18 }}> → {bipAfter}</span>
+              </div>
+            </div>
+          </div>
+
+          <p
+            style={{
+              fontFamily: teen.font.sans,
+              fontSize: 21,
+              lineHeight: 1.4,
+              color: '#fff',
+              textWrap: 'balance',
+              marginTop: 26,
+            }}
+          >
+            {headline}
+          </p>
+        </div>
+
+        <div style={{ position: 'relative', padding: `0 ${teen.space.padLg} 34px` }}>
+          <button
+            className="teen-btn teen-btn--mint"
+            onClick={() => navigate('/teen/progress')}
+          >
+            See my progress →
+          </button>
+        </div>
+      </TeenScreen>
+    )
+  }
+
+  // ────────────────────────────── CAPTURE ───────────────────────────────
+  return (
+    <TeenScreen>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: `16px ${teen.space.pad} 12px`,
+          flex: 'none',
+        }}
+      >
+        <span
+          style={{
+            ...teen.type.eyebrow,
+            color: teen.color.tealMid,
+            letterSpacing: 'var(--teen-eyebrow-track-tight)',
+          }}
+        >
+          After · how'd it go
+        </span>
+      </div>
+
+      <div className="teen-sheet">
+        {/* actual distress + live delta */}
+        <div>
+          <div style={{ ...teen.type.label, marginBottom: 10 }}>
+            How anxious did you actually feel?
+          </div>
+          <Thermometer
+            value={actualDT}
+            onChange={setActualDT}
+            height={46}
+            label="How anxious you actually felt"
+          />
+          {actualDT != null && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                marginTop: 8,
+                fontFamily: teen.font.mono,
+                fontSize: 13,
+                color: teen.color.tealMid,
+              }}
+            >
+              <span>expected {dtExpected ?? '—'}</span>
+              <span style={{ color: teen.chart.label }}>→</span>
+              <span style={{ color: teen.color.teal, fontSize: 15 }}>actual {actualDT}</span>
+            </div>
+          )}
+        </div>
+
+        {/* belief after + live delta */}
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+              marginBottom: 11,
+            }}
+          >
+            <span style={teen.type.label}>Believe it now?</span>
+            <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bipAfter}%</span>
+          </div>
+          <BeliefSlider
+            value={bipAfter}
+            onChange={setBipAfterRaw}
+            label="How much you believe it now"
+          />
+          {bipBefore != null && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                marginTop: 8,
+                fontFamily: teen.font.mono,
+                fontSize: 13,
+                color: teen.color.tealMid,
+              }}
+            >
+              <span>was {Math.round(bipBefore)}%</span>
+              <span style={{ color: teen.chart.label }}>→</span>
+              <span style={{ color: teen.color.teal, fontSize: 15 }}>now {bipAfter}%</span>
+            </div>
+          )}
+        </div>
+
+        {/* what happened */}
+        <div>
+          <div style={{ ...teen.type.label, marginBottom: 9 }}>What actually happened?</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+            {happenedOptions.map(opt => (
+              <Chip
+                key={opt}
+                label={opt}
+                selected={whatHappened === opt}
+                onClick={() => setWhatHappened(opt)}
+              />
+            ))}
+            {addingHappened ? (
+              <input
+                autoFocus
+                value={happenedDraft}
+                onChange={e => setHappenedDraft(e.target.value)}
+                onBlur={commitHappenedDraft}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') commitHappenedDraft()
+                  if (e.key === 'Escape') {
+                    setHappenedDraft('')
+                    setAddingHappened(false)
+                  }
+                }}
+                placeholder="Something else"
+                style={{
+                  padding: '8px 13px',
+                  borderRadius: teen.radius.pill,
+                  border: `1px solid ${teen.color.mint}`,
+                  background: teen.color.mintSoft,
+                  fontFamily: teen.font.sans,
+                  fontSize: 'var(--teen-text-chip)',
+                  fontWeight: 600,
+                  color: teen.color.ink,
+                  outline: 'none',
+                  minWidth: 120,
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                className="teen-chip teen-chip--add"
+                onClick={() => setAddingHappened(true)}
+              >
+                <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
+                Add your own
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* what learned — optional, and reframed on the came-true path */}
+        <div>
+          <div style={{ ...teen.type.label, marginBottom: 9 }}>
+            What'd you learn?{' '}
+            <span style={{ fontWeight: 400, color: teen.chart.label }}>— if anything</span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+            {learnedOptions.map(opt => (
+              <Chip
+                key={opt}
+                label={opt}
+                selected={whatLearned === opt}
+                onClick={() => setWhatLearned(whatLearned === opt ? null : opt)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 6 }} />
+
+        <div style={{ paddingBottom: 16 }}>
+          <button
+            className="teen-btn teen-btn--primary"
+            disabled={recordMutation.isPending || actualDT === null || !whatHappened}
+            onClick={() => recordMutation.mutate()}
+          >
+            {recordMutation.isPending ? 'Saving…' : 'See the scoreboard →'}
+          </button>
+        </div>
+      </div>
+    </TeenScreen>
   )
 }

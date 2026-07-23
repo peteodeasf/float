@@ -22,6 +22,7 @@ import TeenHomePage from './pages/teen/TeenHomePage'
 import TeenExperimentPage from './pages/teen/TeenExperimentPage'
 import TeenRecordPage from './pages/teen/TeenRecordPage'
 import TeenPlansPage from './pages/teen/TeenPlansPage'
+import TeenProgressPage from './pages/teen/TeenProgressPage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
@@ -87,6 +88,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/teen/plans" element={
                 <TeenProtectedRoute><TeenPlansPage /></TeenProtectedRoute>
+              } />
+              <Route path="/teen/progress" element={
+                <TeenProtectedRoute><TeenProgressPage /></TeenProtectedRoute>
               } />
               <Route path="/teen/messages" element={
                 <TeenProtectedRoute><TeenMessagesPage /></TeenProtectedRoute>

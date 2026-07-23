@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, text, Numeric, Boolean, Text
+from sqlalchemy import String, DateTime, ForeignKey, text, Numeric, Boolean, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -41,6 +41,9 @@ class Experiment(Base):
     )
     tempting_behaviors: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence_level: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Scheduling: repeats per scheduled day. Previously encoded as `times:N`
+    # inside tempting_behaviors.
+    times_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # After state
     feared_outcome_occurred: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     what_happened: Mapped[str | None] = mapped_column(Text, nullable=True)

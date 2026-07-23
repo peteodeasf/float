@@ -1,0 +1,455 @@
+/* ============================================================================
+   Float — Teen surface design tokens
+   Source: design_handoff_teen_exposure_flow (FloatCBT Flow.dc.html + README)
+
+   Namespaced `--teen-*` so the practitioner/admin surface (which uses the
+   `--float-*` tokens in styles/tokens.css) is unaffected.
+
+   The device bezel/notch from the prototype is deliberately NOT tokenised —
+   it is presentation chrome only and does not ship.
+   ========================================================================= */
+
+:root {
+  /* ---- Base channels (for composing rgba) ---------------------------- */
+  --teen-ink-rgb: 13, 61, 58;
+  --teen-mint-rgb: 154, 246, 228;
+
+  /* ---- Color ---------------------------------------------------------- */
+  --teen-ink: #0d3d3a;         /* primary text, primary buttons, dark cards */
+  --teen-teal: #135450;        /* data values, slider/graph fill, accents   */
+  --teen-teal-mid: #3f817b;    /* secondary accent, eyebrows on tinted bg   */
+  --teen-ink-soft: #3a5551;    /* body text                                 */
+  --teen-muted: #7c9994;       /* labels, captions, inactive                */
+  --teen-muted-quiet: #6f8d88; /* quiet body                                */
+  --teen-on-dark: #9ac6bf;     /* captions on dark surfaces                 */
+
+  --teen-mint: #9af6e4;        /* THE accent — used sparingly               */
+  --teen-mint-soft: #eafaf6;   /* selected-mint chip fill, highlight cards  */
+  --teen-mint-line: #cdeee6;   /* decorative circle                         */
+  --teen-mint-deep: #7fd8c8;   /* decorative gradient stop                  */
+
+  --teen-canvas: #eaf4f1;      /* default bg (home, before, moment, capture)*/
+  --teen-canvas-alt: #f2f8f6;  /* alt bg (outcome, win)                     */
+  --teen-card: #fbfdfc;        /* off-white surface                         */
+  --teen-card-pure: #ffffff;   /* pure white surface                        */
+  --teen-track: #d7ebe6;       /* slider / thermometer empty track          */
+  --teen-chevron: #b9cfc9;     /* row chevrons                              */
+
+  /* Hairlines — all rgba(ink, α) */
+  --teen-line: rgba(var(--teen-ink-rgb), 0.08);        /* dividers          */
+  --teen-line-card: rgba(var(--teen-ink-rgb), 0.09);   /* card borders      */
+  --teen-line-soft: rgba(var(--teen-ink-rgb), 0.14);   /* tiles, chat btn   */
+  --teen-line-chip: rgba(var(--teen-ink-rgb), 0.16);   /* unselected chips  */
+  --teen-line-btn: rgba(var(--teen-ink-rgb), 0.2);     /* outline buttons   */
+
+  /* ---- Typography ------------------------------------------------------ */
+  --teen-font-sans: Arial, Helvetica, sans-serif;
+  --teen-font-mono: "Courier New", ui-monospace, monospace;
+
+  --teen-eyebrow-size: 10px;
+  --teen-eyebrow-track: 0.16em;
+  --teen-eyebrow-track-tight: 0.14em;
+
+  --teen-text-xs: 11px;
+  --teen-text-sm: 12px;
+  --teen-text-chip: 12.5px;
+  --teen-text-base: 13px;
+  --teen-text-label: 14px;
+  --teen-text-md: 15px;
+  --teen-text-lg: 16px;
+  --teen-text-xl: 17px;
+
+  /* Headlines — Arial 400, tight leading, balanced wrap */
+  --teen-head-sm: 21px;
+  --teen-head-md: 25px;
+  --teen-head-lg: 27px;
+  --teen-head-xl: 29px;
+  --teen-head-leading: 1.3;
+  --teen-head-track: -0.01em;
+
+  /* Data numerals — Courier New 400 */
+  --teen-data-sm: 20px;
+  --teen-data-md: 30px;
+  --teen-data-lg: 40px;
+  --teen-data-xl: 60px;
+  --teen-data-2xl: 76px;
+
+  --teen-body-leading: 1.6;
+
+  /* ---- Spacing / layout ------------------------------------------------ */
+  --teen-pad: 22px;            /* screen horizontal padding (22–26)        */
+  --teen-pad-lg: 26px;
+  --teen-max-w: 480px;         /* mobile viewport cap (matches teen pages) */
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --teen-radius-pill: 99px;
+  --teen-radius-btn: 16px;
+  --teen-radius-btn-lg: 18px;
+  --teen-radius-card: 20px;
+  --teen-radius-card-lg: 24px;
+  --teen-radius-sheet: 26px;   /* top corners of the rising white sheet    */
+
+  /* ---- Shadow ---------------------------------------------------------- */
+  --teen-shadow-btn: 0 10px 24px -10px rgba(var(--teen-ink-rgb), 0.6);
+  --teen-shadow-card: 0 18px 40px -20px rgba(var(--teen-ink-rgb), 0.4);
+  --teen-shadow-card-soft: 0 14px 34px -20px rgba(var(--teen-ink-rgb), 0.4);
+  --teen-shadow-card-dark: 0 18px 40px -18px rgba(var(--teen-ink-rgb), 0.55);
+  --teen-shadow-tile: 0 6px 16px -6px rgba(var(--teen-ink-rgb), 0.5);
+  --teen-shadow-knob: 0 2px 7px rgba(var(--teen-ink-rgb), 0.35);
+  --teen-shadow-mint: 0 10px 26px -8px rgba(var(--teen-mint-rgb), 0.9);
+
+  /* ---- Decorative ------------------------------------------------------ */
+  --teen-bubble: radial-gradient(
+    circle at 40% 40%,
+    var(--teen-mint),
+    var(--teen-mint-deep)
+  );
+  --teen-glow-mint: radial-gradient(
+    circle,
+    rgba(var(--teen-mint-rgb), 0.55),
+    transparent 70%
+  );
+  --teen-glow-mint-faint: radial-gradient(
+    circle,
+    rgba(var(--teen-mint-rgb), 0.14),
+    transparent 70%
+  );
+
+  /* ---- Progress / chart ------------------------------------------------ */
+  --teen-chart-grid: #eaf4f1;
+  --teen-chart-axis: #d7ebe6;
+  --teen-chart-bip: #135450;   /* solid line — belief it'll go wrong       */
+  --teen-chart-dt: #3f817b;    /* dashed line — how anxious                */
+  --teen-chart-label: #9ac6bf;
+  --teen-spark-up: #135450;    /* improving                                */
+  --teen-spark-flat: #7c9994;  /* still scary                              */
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --teen-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --teen-dur: 220ms;           /* screen cross-fades: 200–250ms            */
+}
+
+/* ============================================================================
+   Primitives
+   Only what inline styles cannot express (pseudo-states, transitions) or what
+   repeats across enough screens to be worth centralising.
+   ========================================================================= */
+
+/* ---- Layout ------------------------------------------------------------ */
+.teen-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: var(--teen-max-w);
+  margin: 0 auto;
+  background: var(--teen-canvas);
+  font-family: var(--teen-font-sans);
+  color: var(--teen-ink);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.teen-screen--alt { background: var(--teen-canvas-alt); }
+.teen-screen--card { background: var(--teen-card); }
+.teen-screen--dark { background: var(--teen-ink); color: #fff; }
+
+/* The white sheet that rises from the bottom on before/capture */
+.teen-sheet {
+  flex: 1;
+  background: var(--teen-card);
+  border-radius: var(--teen-radius-sheet) var(--teen-radius-sheet) 0 0;
+  padding: 16px var(--teen-pad) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  overflow-y: auto;
+}
+
+.teen-card {
+  background: var(--teen-card-pure);
+  border-radius: var(--teen-radius-card-lg);
+  box-shadow: var(--teen-shadow-card);
+}
+
+/* Decorative mint bubble bleeding off a corner */
+.teen-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--teen-bubble);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.teen-bubble--soft {
+  background: var(--teen-mint-line);
+  opacity: 0.6;
+}
+
+/* ---- Type composites --------------------------------------------------- */
+.teen-eyebrow {
+  font-family: var(--teen-font-mono);
+  font-size: var(--teen-eyebrow-size);
+  font-weight: 700;
+  letter-spacing: var(--teen-eyebrow-track);
+  text-transform: uppercase;
+  color: var(--teen-muted);
+}
+.teen-eyebrow--accent { color: var(--teen-teal-mid); }
+.teen-eyebrow--mint { color: var(--teen-mint); }
+
+.teen-step-num {
+  font-family: var(--teen-font-mono);
+  font-size: var(--teen-eyebrow-size);
+  font-weight: 700;
+  color: var(--teen-chart-label);
+}
+
+.teen-label {
+  font-family: var(--teen-font-sans);
+  font-size: var(--teen-text-label);
+  font-weight: 600;
+  color: var(--teen-ink);
+}
+
+.teen-headline {
+  font-family: var(--teen-font-sans);
+  font-weight: 400; /* regular, not bold — deliberate */
+  font-size: var(--teen-head-md);
+  line-height: var(--teen-head-leading);
+  letter-spacing: var(--teen-head-track);
+  color: var(--teen-ink);
+  text-wrap: balance;
+  margin: 0;
+}
+
+.teen-body {
+  font-family: var(--teen-font-sans);
+  font-size: var(--teen-text-md);
+  line-height: var(--teen-body-leading);
+  color: var(--teen-ink-soft);
+}
+
+.teen-data {
+  font-family: var(--teen-font-mono);
+  font-weight: 400;
+  color: var(--teen-teal);
+  line-height: 1;
+}
+
+.teen-wordmark {
+  font-family: var(--teen-font-sans);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--teen-ink);
+}
+
+/* Mono status pill — manageable / getting there / still scary */
+.teen-pill {
+  display: inline-block;
+  font-family: var(--teen-font-mono);
+  font-size: var(--teen-eyebrow-size);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: var(--teen-radius-pill);
+}
+.teen-pill--manageable { background: var(--teen-mint); color: var(--teen-ink); }
+.teen-pill--progressing { background: var(--teen-mint-soft); color: var(--teen-teal); }
+.teen-pill--scary { background: var(--teen-canvas-alt); color: var(--teen-muted); }
+
+/* ---- Buttons ----------------------------------------------------------- */
+.teen-btn {
+  width: 100%;
+  border: 0;
+  border-radius: var(--teen-radius-btn);
+  font-family: var(--teen-font-sans);
+  font-size: var(--teen-text-lg);
+  font-weight: 600;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform var(--teen-dur) var(--teen-ease),
+              opacity var(--teen-dur) var(--teen-ease),
+              background var(--teen-dur) var(--teen-ease);
+}
+.teen-btn:active { transform: scale(0.985); }
+.teen-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+.teen-btn:focus-visible {
+  outline: 2px solid var(--teen-teal);
+  outline-offset: 2px;
+}
+
+.teen-btn--primary {
+  background: var(--teen-ink);
+  color: #fff;
+  box-shadow: var(--teen-shadow-btn);
+}
+/* The one mint-filled CTA — scoreboard only */
+.teen-btn--mint {
+  background: var(--teen-mint);
+  color: var(--teen-ink);
+  font-weight: 700;
+}
+.teen-btn--outline {
+  background: transparent;
+  color: var(--teen-ink);
+  border: 1.5px solid var(--teen-line-btn);
+}
+.teen-btn--quiet {
+  background: transparent;
+  box-shadow: none;
+  color: var(--teen-muted);
+  font-size: var(--teen-text-base);
+  padding: 8px;
+  width: auto;
+}
+
+/* ---- Chips ------------------------------------------------------------- */
+.teen-chip {
+  font-family: var(--teen-font-sans);
+  font-size: var(--teen-text-chip);
+  font-weight: 600;
+  padding: 8px 13px;
+  border-radius: var(--teen-radius-pill);
+  cursor: pointer;
+  background: var(--teen-card-pure);
+  color: var(--teen-ink-soft);
+  border: 1px solid var(--teen-line-chip);
+  transition: background var(--teen-dur) var(--teen-ease),
+              border-color var(--teen-dur) var(--teen-ease),
+              color var(--teen-dur) var(--teen-ease);
+}
+.teen-chip:focus-visible {
+  outline: 2px solid var(--teen-teal);
+  outline-offset: 2px;
+}
+/* single-select selected */
+.teen-chip[aria-pressed="true"],
+.teen-chip--selected {
+  background: var(--teen-ink);
+  color: #fff;
+  border-color: var(--teen-ink);
+}
+/* multi-select (tempting behaviours) selected — mint */
+.teen-chip--mint[aria-pressed="true"],
+.teen-chip--mint.teen-chip--selected {
+  background: var(--teen-mint-soft);
+  color: var(--teen-ink);
+  border-color: var(--teen-mint);
+}
+/* "+ Add your own" */
+.teen-chip--add {
+  background: transparent;
+  color: var(--teen-teal-mid);
+  border: 1px dashed var(--teen-chart-label);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---- Face tiles (confidence) ------------------------------------------- */
+.teen-face {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  border-radius: 15px;
+  font-size: 25px;
+  cursor: pointer;
+  background: var(--teen-card-pure);
+  border: 1px solid var(--teen-line-soft);
+  transition: background var(--teen-dur) var(--teen-ease),
+              box-shadow var(--teen-dur) var(--teen-ease);
+}
+.teen-face[aria-pressed="true"] {
+  background: var(--teen-ink);
+  border-color: var(--teen-ink);
+  box-shadow: var(--teen-shadow-tile);
+}
+.teen-face:focus-visible {
+  outline: 2px solid var(--teen-teal);
+  outline-offset: 2px;
+}
+
+/* ---- Slider (belief 0–100, snaps to 5) --------------------------------- */
+.teen-slider {
+  position: relative;
+  height: 10px;
+  background: var(--teen-track);
+  border-radius: var(--teen-radius-pill);
+  cursor: pointer;
+  touch-action: none;
+}
+.teen-slider__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--teen-teal);
+  border-radius: var(--teen-radius-pill);
+}
+.teen-slider__knob {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--teen-shadow-knob), inset 0 0 0 5px var(--teen-teal);
+}
+.teen-slider:focus-visible {
+  outline: 2px solid var(--teen-teal);
+  outline-offset: 6px;
+  border-radius: var(--teen-radius-pill);
+}
+
+/* ---- Thermometer (10 rising bars, tap to set 1–10) --------------------- */
+.teen-therm {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 48px;
+}
+.teen-therm__bar {
+  flex: 1;
+  border: 0;
+  padding: 0;
+  border-radius: 5px;
+  background: var(--teen-track);
+  cursor: pointer;
+  transition: background var(--teen-dur) var(--teen-ease);
+}
+.teen-therm__bar[data-filled="true"] { background: var(--teen-teal); }
+.teen-therm__bar:focus-visible {
+  outline: 2px solid var(--teen-teal);
+  outline-offset: 2px;
+}
+
+/* ---- Screen transition -------------------------------------------------- */
+.teen-fade-enter {
+  animation: teen-fade-in var(--teen-dur) var(--teen-ease) both;
+}
+@keyframes teen-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Celebration mark on `win` — scales in, never bouncy */
+.teen-pop {
+  animation: teen-pop 320ms var(--teen-ease) both;
+}
+@keyframes teen-pop {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teen-btn,
+  .teen-chip,
+  .teen-face,
+  .teen-therm__bar {
+    transition: none;
+  }
+  .teen-btn:active { transform: none; }
+  .teen-fade-enter,
+  .teen-pop { animation: none; }
+}

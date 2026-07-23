@@ -963,6 +963,8 @@ async def get_my_ladder(
                     "bip_before": float(e.bip_before) if e.bip_before is not None else None,
                     "bip_after": float(e.bip_after) if e.bip_after is not None else None,
                     "feared_outcome_occurred": e.feared_outcome_occurred,
+                    "what_learned": e.what_learned,
+                    "times_per_day": e.times_per_day,
                 })
 
             behaviors_data.append({
