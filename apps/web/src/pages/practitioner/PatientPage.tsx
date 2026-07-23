@@ -4118,50 +4118,68 @@ export default function PatientPage() {
               )
             })}
 
-            {/* TREATMENT — the ongoing weekly workspace; visible always, inert until the plan is built */}
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '18px 16px 8px' }}>Treatment{treatmentUnlocked ? '' : ' (locked)'}</div>
-            {([
-              { id: 'experiments', label: 'Experiments' },
-              { id: 'weekly', label: 'Weekly Session' },
-              { id: 'plans', label: 'Action Plans', badge: draftPlanCount },
-              { id: 'messages', label: 'Messages', badge: unreadMessageCount },
-              { id: 'close', label: 'Close · Consolidation' },
-            ] as { id: PersistentTabId; label: string; badge?: number }[]).map(s => {
-              const selected = activePersistentTab === s.id
+            {/* TREATMENT — the ongoing weekly workspace; a single destination with in-view tabs */}
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '18px 16px 8px' }}>Treatment</div>
+            {(() => {
+              const selected = activePersistentTab !== null
+              const aggregateBadge = draftPlanCount + unreadMessageCount
               return (
                 <div
-                  key={s.id}
-                  onClick={() => setActivePersistentTab(s.id)}
+                  onClick={() => setActivePersistentTab(prev => prev ?? 'experiments')}
                   style={{
                     padding: '8px 16px',
                     borderLeft: selected ? '3px solid #0d9488' : '3px solid transparent',
                     background: selected ? '#f0fdfa' : 'transparent',
                     cursor: 'pointer',
-                    opacity: treatmentUnlocked ? 1 : 0.5,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: selected ? 600 : 500, color: selected ? '#1e293b' : '#475569' }}>{s.label}</div>
-                    {s.badge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#0d9488', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{s.badge}</span> : null}
+                    <div style={{ fontSize: '13px', fontWeight: selected ? 600 : 500, color: selected ? '#1e293b' : '#475569' }}>Workspace</div>
+                    {aggregateBadge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#0d9488', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{aggregateBadge}</span> : null}
                   </div>
                 </div>
               )
-            })}
+            })()}
           </div>
 
           {/* Right content */}
           <div style={{ flex: 1, minWidth: 0, paddingLeft: '24px' }}>
-            {/* Treatment-mode surfaces (gated until the plan is built) */}
+            {/* Treatment-mode surfaces — always viewable; empty states carry the "nothing yet" message */}
             {activePersistentTab !== null && (
-              !treatmentUnlocked ? (
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Treatment workspace</div>
-                  <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-                    This becomes active once the treatment plan is built. Finish Setup → <strong>Build Treatment Plan</strong>, then Experiments, Weekly Sessions, Action Plans, and accommodation work all happen here, week to week.
-                  </p>
-                </div>
-              ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* In-view tab strip */}
+                  <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                    {([
+                      { id: 'experiments', label: 'Experiments' },
+                      { id: 'weekly', label: 'Weekly Session' },
+                      { id: 'plans', label: 'Action Plans', badge: draftPlanCount },
+                      { id: 'messages', label: 'Messages', badge: unreadMessageCount },
+                      { id: 'close', label: 'Close' },
+                    ] as { id: PersistentTabId; label: string; badge?: number }[]).map(t => {
+                      const active = activePersistentTab === t.id
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => setActivePersistentTab(t.id)}
+                          className="bg-transparent border-none cursor-pointer"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '8px 12px',
+                            marginBottom: '-1px',
+                            borderBottom: active ? '2px solid #0d9488' : '2px solid transparent',
+                            fontSize: '13px',
+                            fontWeight: active ? 600 : 500,
+                            color: active ? '#0d9488' : '#64748b',
+                          }}
+                        >
+                          {t.label}
+                          {t.badge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#0d9488', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{t.badge}</span> : null}
+                        </button>
+                      )
+                    })}
+                  </div>
                   {/* One-time activation + teen invite, until the plan is active */}
                   {plan?.status !== 'active' && activateStepContent}
                   {activePersistentTab === 'experiments' && (
@@ -4187,7 +4205,6 @@ export default function PatientPage() {
                     </div>
                   )}
                 </div>
-              )
             )}
 
             {/* Setup-mode step content */}
