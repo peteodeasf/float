@@ -49,3 +49,27 @@ teenApiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+export const parentApiClient = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+parentApiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('parent_access_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+parentApiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const hadToken = !!localStorage.getItem('parent_access_token')
+      localStorage.removeItem('parent_access_token')
+      localStorage.removeItem('parent_patient_id')
+      if (hadToken) window.location.href = '/parent/login'
+    }
+    return Promise.reject(error)
+  }
+)

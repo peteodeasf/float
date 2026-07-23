@@ -25,6 +25,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
@@ -4242,6 +4243,11 @@ export default function PatientPage() {
                   <>
                     {renderGuide(5)}
                     {treatmentPlanBuilder}
+                    {plan && (
+                      <div style={{ marginTop: '8px' }}>
+                        <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
+                      </div>
+                    )}
                   </>
                 )}
               </div>

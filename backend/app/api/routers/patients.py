@@ -25,7 +25,7 @@ from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehav
 from app.models.formulation import ClinicalFormulation
 from app.models.checklist import ConsultationChecklist
 from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse
-from app.services.email_service import send_teen_invitation_email
+from app.services.email_service import send_teen_invitation_email, send_parent_invitation_email
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
 from app.services.patient_service import (
     create_patient,
@@ -45,6 +45,10 @@ class TooHardRequest(BaseModel):
 
 
 class InviteTeenRequest(BaseModel):
+    email: EmailStr
+
+
+class InviteParentRequest(BaseModel):
     email: EmailStr
 
 
@@ -90,6 +94,28 @@ async def get_patient_context(
             detail="Patient profile not found"
         )
     return current_user, patient
+
+
+async def get_parent_context(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> tuple[User, list[PatientProfile]]:
+    """A parent and the child(ren) they're linked to (via parent_patient_links).
+
+    MVP is single-child, but returns all links so sibling support is additive.
+    """
+    result = await db.execute(
+        select(PatientProfile)
+        .join(ParentPatientLink, ParentPatientLink.patient_id == PatientProfile.id)
+        .where(ParentPatientLink.parent_user_id == current_user.id)
+    )
+    children = list(result.scalars().all())
+    if not children:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No linked patient found for this parent"
+        )
+    return current_user, children
 
 
 async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfile) -> dict:
@@ -422,6 +448,87 @@ async def invite_teen(
         "email": email,
         "invited_at": patient.teen_invited_at.isoformat(),
     }
+
+
+@router.post("/{patient_id}/invite-parent")
+async def invite_parent(
+    patient_id: uuid.UUID,
+    data: InviteParentRequest,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    """Invite a parent to a case. Mirrors invite-teen, but links via
+    parent_patient_links (so a case can have any number of parents) rather than
+    the single patient.user_id. No cap on parents per case.
+    """
+    _, practitioner = context
+    patient = await get_patient_by_id(
+        db, patient_id, practitioner.organization_id
+    )
+
+    email = data.email.lower().strip()
+
+    existing_user_result = await db.execute(
+        select(User).where(User.email == email)
+    )
+    existing_user = existing_user_result.scalar_one_or_none()
+
+    temp_password = _generate_temp_password()
+
+    if existing_user is None:
+        parent_user = User(
+            email=email,
+            password_hash=hash_password(temp_password),
+            must_change_password=True,
+        )
+        db.add(parent_user)
+        await db.flush()
+    else:
+        # Re-invite: reset the password to a fresh temp.
+        parent_user = existing_user
+        parent_user.password_hash = hash_password(temp_password)
+        parent_user.must_change_password = True
+
+    # Ensure a parent role exists for this org.
+    role_result = await db.execute(
+        select(UserRole).where(
+            UserRole.user_id == parent_user.id,
+            UserRole.organization_id == patient.organization_id,
+            UserRole.role == "parent",
+        )
+    )
+    if role_result.scalar_one_or_none() is None:
+        db.add(UserRole(
+            user_id=parent_user.id,
+            organization_id=patient.organization_id,
+            role="parent",
+        ))
+
+    # Ensure the parent↔patient link exists (unique on parent_user_id+patient_id).
+    link_result = await db.execute(
+        select(ParentPatientLink).where(
+            ParentPatientLink.parent_user_id == parent_user.id,
+            ParentPatientLink.patient_id == patient.id,
+        )
+    )
+    if link_result.scalar_one_or_none() is None:
+        db.add(ParentPatientLink(
+            parent_user_id=parent_user.id,
+            patient_id=patient.id,
+            organization_id=patient.organization_id,
+        ))
+
+    await db.commit()
+
+    login_url = f"{settings.BASE_URL}/parent/login"
+    await send_parent_invitation_email(
+        to_email=email,
+        login_url=login_url,
+        temporary_password=temp_password,
+        child_name=patient.name,
+    )
+
+    return {"success": True, "email": email}
 
 
 # Tuned via the extraction harness (AI-dev/Extraction Loop). Emits the 4-type shape

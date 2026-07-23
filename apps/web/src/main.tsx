@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { TeenAuthProvider } from './context/TeenAuthContext'
+import { ParentAuthProvider } from './context/ParentAuthContext'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import ProtectedRoute from './components/ui/ProtectedRoute'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
@@ -23,6 +24,10 @@ import TeenExperimentPage from './pages/teen/TeenExperimentPage'
 import TeenRecordPage from './pages/teen/TeenRecordPage'
 import TeenPlansPage from './pages/teen/TeenPlansPage'
 import TeenProgressPage from './pages/teen/TeenProgressPage'
+import ParentLoginPage from './pages/parent/ParentLoginPage'
+import ParentSetPasswordPage from './pages/parent/ParentSetPasswordPage'
+import ParentResetPasswordPage from './pages/parent/ParentResetPasswordPage'
+import ParentHomePage from './pages/parent/ParentHomePage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
@@ -38,11 +43,18 @@ function TeenProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function ParentProtectedRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('parent_access_token')
+  if (!token) return <Navigate to="/parent/login" replace />
+  return <>{children}</>
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TeenAuthProvider>
+          <ParentAuthProvider>
           <AdminAuthProvider>
           <BrowserRouter>
             <Routes>
@@ -96,6 +108,16 @@ createRoot(document.getElementById('root')!).render(
                 <TeenProtectedRoute><TeenMessagesPage /></TeenProtectedRoute>
               } />
 
+              {/* Parent routes */}
+              <Route path="/parent/login" element={<ParentLoginPage />} />
+              <Route path="/parent/reset-password" element={<ParentResetPasswordPage />} />
+              <Route path="/parent/set-password" element={
+                <ParentProtectedRoute><ParentSetPasswordPage /></ParentProtectedRoute>
+              } />
+              <Route path="/parent/home" element={
+                <ParentProtectedRoute><ParentHomePage /></ParentProtectedRoute>
+              } />
+
               {/* Public monitoring form */}
               <Route path="/monitor/:token" element={<MonitorLandingPage />} />
 
@@ -110,6 +132,7 @@ createRoot(document.getElementById('root')!).render(
             </Routes>
           </BrowserRouter>
           </AdminAuthProvider>
+          </ParentAuthProvider>
         </TeenAuthProvider>
       </AuthProvider>
     </QueryClientProvider>

@@ -82,17 +82,26 @@ class AccommodationBehavior(Base):
     treatment_plan_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("treatment_plans.id"), nullable=False
     )
-    parent_user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False
+    # Optional — the parent may not yet have an account when the therapist
+    # enters the accommodation from monitoring/consultation.
+    parent_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False
     )
+    # Optional situation link — some accommodations belong to no single situation.
+    trigger_situation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("trigger_situations.id"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    distress_thermometer_when_refraining: Mapped[float | None] = mapped_column(
-        Numeric(3, 1), nullable=True
-    )
+    # The child's distress if the parent stops the accommodation, as a range.
+    # A single value is just min == max. Seeds the per-child ladder order.
+    distress_min: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    distress_max: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    # Per-child ladder position; authoritative and reorderable.
+    display_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="active")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

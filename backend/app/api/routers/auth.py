@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import JWTError
 from app.core.dependencies import get_current_user
-from app.models.patient import PatientProfile
+from app.models.patient import PatientProfile, ParentPatientLink
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -119,16 +119,38 @@ async def get_me(
         role = "practitioner"
     elif any(r.role == "patient" for r in roles):
         role = "patient"
+    elif any(r.role == "parent" for r in roles):
+        role = "parent"
     elif roles:
         role = roles[0].role
+
+    # Parents link to their child(ren) via parent_patient_links, not user_id.
+    # MVP is single-child, but the model returns all links.
+    children: list[dict] = []
+    if role == "parent":
+        link_result = await db.execute(
+            select(ParentPatientLink, PatientProfile)
+            .join(PatientProfile, ParentPatientLink.patient_id == PatientProfile.id)
+            .where(ParentPatientLink.parent_user_id == current_user.id)
+        )
+        for _link, child in link_result.all():
+            children.append({"patient_id": str(child.id), "patient_name": child.name})
+
+    # Convenience: first child surfaces as patient_id/patient_name for the
+    # single-child MVP, mirroring how the teen client reads its own profile.
+    primary_child = children[0] if children else None
 
     return {
         "user_id": str(current_user.id),
         "email": current_user.email,
         "role": role,
-        "patient_id": str(patient.id) if patient else None,
-        "patient_name": patient.name if patient else None,
+        "patient_id": (str(patient.id) if patient else
+                       primary_child["patient_id"] if primary_child else None),
+        "patient_name": (patient.name if patient else
+                         primary_child["patient_name"] if primary_child else None),
         "is_patient": patient is not None,
+        "is_parent": role == "parent",
+        "children": children,
         "must_change_password": current_user.must_change_password,
     }
 
@@ -170,10 +192,11 @@ async def forgot_password(
             select(UserRole).where(UserRole.user_id == user.id)
         )
         roles = role_result.scalars().all()
-        is_patient = any(r.role == "patient" for r in roles)
 
-        if is_patient:
+        if any(r.role == "patient" for r in roles):
             reset_path = f"/teen/reset-password?token={token}"
+        elif any(r.role == "parent" for r in roles):
+            reset_path = f"/parent/reset-password?token={token}"
         else:
             reset_path = f"/reset-password?token={token}"
 
