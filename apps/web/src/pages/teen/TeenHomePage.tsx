@@ -406,7 +406,9 @@ export default function TeenHomePage() {
                         width: 7,
                         height: 7,
                         borderRadius: '50%',
-                        background: teen.color.mint,
+                        // Teal, not mint: this dot sits on the white hero card,
+                        // where mint is 1.26:1 and reads as nothing.
+                        background: teen.color.tealMid,
                       }}
                     />
                     {heroMeta}

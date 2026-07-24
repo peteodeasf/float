@@ -37,8 +37,10 @@ function Mark({ arc, dot }: { arc: string; dot: string }) {
 
 export default function FloatLogo({ size = 'md', reverse = false }: FloatLogoProps) {
   const height = SIZES[size].height
+  // On light surfaces the dot is teal, not mint: mint on white is 1.26:1 and
+  // effectively invisible. Mint stays the accent on dark (9.55:1 on ink).
   const arc = reverse ? '#9af6e4' : 'var(--float-primary)'
-  const dot = reverse ? '#ffffff' : '#9af6e4'
+  const dot = reverse ? '#ffffff' : 'var(--float-primary)'
   const word = reverse ? '#ffffff' : 'var(--float-primary)'
 
   // sm: mark only

@@ -3513,7 +3513,7 @@ export default function PatientPage() {
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
                 <Tooltip formatter={(value, name) => [`${value}%`, name === 'bip_before' ? 'Before' : 'After']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
                 <Legend formatter={(value) => value === 'bip_before' ? 'Before' : 'After'} wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" dataKey="bip_before" stroke="#9af6e4" strokeWidth={2} dot={{ r: 3, fill: '#9af6e4' }} strokeDasharray="4 4" />
+                <Line type="monotone" dataKey="bip_before" stroke="#3f817b" strokeWidth={2} dot={{ r: 3, fill: '#3f817b' }} strokeDasharray="4 4" />
                 <Line type="monotone" dataKey="bip_after" stroke="#135450" strokeWidth={2} dot={{ r: 3, fill: '#135450' }} />
               </LineChart>
             </ResponsiveContainer>
@@ -3728,7 +3728,7 @@ export default function PatientPage() {
           return (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}>
               {showTypePill && (
-                <span style={{ display: 'inline-block', fontSize: '11px', color: '#135450', border: '1px solid #9af6e4', background: 'transparent', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
+                <span style={{ display: 'inline-block', fontSize: '11px', color: '#135450', border: '1px solid #9af6e4', background: '#eafaf6', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
                   {m.message_type.replace(/_/g, ' ')}
                 </span>
               )}

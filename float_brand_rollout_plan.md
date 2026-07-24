@@ -146,6 +146,39 @@ Prerequisite for 3 and 4: outline the lockup wordmark (§2.2).
 
 ---
 
+## 6b. PENDING — mint-on-light fix (kit v2, 2026-07-24)
+
+Brand kit v2 adds **`float-mark-light.svg`** and **`float-logo-lockup-light.svg`**: the dot
+is `#135450` instead of mint, for use on light backgrounds. Mint on white measures
+**1.26:1** — effectively invisible; the teal dot is **8.71:1**.
+
+Everything else in the kit is byte-identical to v1, and note `-light` is byte-identical to
+`-mono` (same artwork, two names).
+
+**Done so far:** `Float-website/index.html` nav logo only (manual deploy, not yet live).
+
+**To roll the fix across the application:**
+
+| # | Change | Notes |
+|---|---|---|
+| 1 | **`FloatLogo.tsx`** — `const dot = reverse ? '#ffffff' : '#9af6e4'` → light case uses `var(--float-primary)` | **Highest value: one line, 12 files inherit it** (practitioner nav + all auth pages, all light surfaces) |
+| 2 | `public/brand/` — add `float-mark-light.svg`, `float-logo-lockup-light.svg` | Consider making the light variant the *default* served asset; most usage is on light |
+| 3 | **`og-image.png` must be regenerated** | It renders the mint-dot lockup on `#eafaf6` — same low contrast, and it's the social preview card. Rebuild via the Playwright + Pillow raster pipeline |
+| 4 | `favicon.svg` (app) and the website's inline data-URI favicon | Dot sits on the browser-tab background, usually light. **Kit v2 left these mint** — user's call, flagged not changed |
+| 5 | No change needed | `apple-touch-icon`, `icon-192/512`, `icon-maskable`, `email-logo` — all put the mark on a teal tile with a **white** dot |
+
+**Wider audit (beyond the logo).** The same principle applies to non-logo UI. The rule:
+**mint is an accent for dark surfaces, or a fill with dark text on top — never a foreground
+element on white.** Instances to check:
+- Teen home card's ~7px mint status dot on a white card — same problem as the logo dot.
+- `.teen-chip--mint` mint 1px border on mint-soft fill — faint, low stakes.
+- `--float-primary-mid` (`#9af6e4`) used as a border on light fills, e.g. the
+  ParentPlanPanel "Sort by distress" button.
+- Fine as-is: `teen-pill--manageable` (mint fill, ink text ≈ 11:1) and every mint usage on
+  the ink/dark surfaces (`moment`, scoreboard, effort card).
+
+---
+
 ## 7. Decisions needed
 
 1. **Colour** — logo-only swap (accept two teals), full re-tone to `#135450` product-wide, or
