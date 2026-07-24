@@ -38,8 +38,9 @@ async def send_monitoring_form_email(
 <body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
   <!-- Header -->
-  <div style="background:#0d9488; padding:24px 32px; text-align:center;">
-    <span style="font-size:22px; font-weight:500; color:#ffffff; letter-spacing:0.03em;">float</span>
+  <div style="background:#135450; padding:24px 32px; text-align:center;">
+    <img src="{settings.BASE_URL}/brand/email-logo.png" width="150" height="50" alt="Float"
+         style="display:block; margin:0 auto; border:0;">
   </div>
 
   <!-- Body card -->
@@ -61,7 +62,7 @@ async def send_monitoring_form_email(
       <!-- CTA button -->
       <div style="text-align:center; margin:0 0 24px;">
         <a href="{monitoring_link}"
-           style="display:inline-block; padding:14px 40px; background:#0d9488;
+           style="display:inline-block; padding:14px 40px; background:#135450;
                   color:#ffffff; text-decoration:none; border-radius:6px;
                   font-size:16px; font-weight:600;">
           Open monitoring form
@@ -69,8 +70,8 @@ async def send_monitoring_form_email(
       </div>
 
       <!-- What to observe -->
-      <div style="background:#f0fdfa; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
-        <p style="font-size:14px; font-weight:600; color:#134e4a; margin:0 0 8px;">
+      <div style="background:#eafaf6; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
+        <p style="font-size:14px; font-weight:600; color:#0d3d3a; margin:0 0 8px;">
           What should I observe?
         </p>
         <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
@@ -152,8 +153,9 @@ async def send_teen_invitation_email(
 </head>
 <body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
-  <div style="background:#0d9488; padding:24px 32px; text-align:center;">
-    <span style="font-size:22px; font-weight:500; color:#ffffff; letter-spacing:0.03em;">float</span>
+  <div style="background:#135450; padding:24px 32px; text-align:center;">
+    <img src="{settings.BASE_URL}/brand/email-logo.png" width="150" height="50" alt="Float"
+         style="display:block; margin:0 auto; border:0;">
   </div>
 
   <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
@@ -169,15 +171,15 @@ async def send_teen_invitation_email(
 
       <div style="text-align:center; margin:0 0 24px;">
         <a href="{login_url}"
-           style="display:inline-block; padding:14px 40px; background:#0d9488;
+           style="display:inline-block; padding:14px 40px; background:#135450;
                   color:#ffffff; text-decoration:none; border-radius:6px;
                   font-size:16px; font-weight:600;">
           Open Float
         </a>
       </div>
 
-      <div style="background:#f0fdfa; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
-        <p style="font-size:13px; font-weight:600; color:#134e4a; margin:0 0 8px;">
+      <div style="background:#eafaf6; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
+        <p style="font-size:13px; font-weight:600; color:#0d3d3a; margin:0 0 8px;">
           Your login
         </p>
         <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
@@ -192,7 +194,7 @@ async def send_teen_invitation_email(
       </div>
 
       <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0;">
-        Log in here: <a href="{login_url}" style="color:#0d9488;">{login_url}</a>
+        Log in here: <a href="{login_url}" style="color:#135450;">{login_url}</a>
       </p>
 
     </div>
@@ -264,8 +266,9 @@ async def send_parent_invitation_email(
 </head>
 <body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
-  <div style="background:#0d9488; padding:24px 32px; text-align:center;">
-    <span style="font-size:22px; font-weight:500; color:#ffffff; letter-spacing:0.03em;">float</span>
+  <div style="background:#135450; padding:24px 32px; text-align:center;">
+    <img src="{settings.BASE_URL}/brand/email-logo.png" width="150" height="50" alt="Float"
+         style="display:block; margin:0 auto; border:0;">
   </div>
 
   <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
@@ -282,15 +285,15 @@ async def send_parent_invitation_email(
 
       <div style="text-align:center; margin:0 0 24px;">
         <a href="{login_url}"
-           style="display:inline-block; padding:14px 40px; background:#0d9488;
+           style="display:inline-block; padding:14px 40px; background:#135450;
                   color:#ffffff; text-decoration:none; border-radius:6px;
                   font-size:16px; font-weight:600;">
           Open Float
         </a>
       </div>
 
-      <div style="background:#f0fdfa; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
-        <p style="font-size:13px; font-weight:600; color:#134e4a; margin:0 0 8px;">
+      <div style="background:#eafaf6; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
+        <p style="font-size:13px; font-weight:600; color:#0d3d3a; margin:0 0 8px;">
           Your login
         </p>
         <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
@@ -305,7 +308,7 @@ async def send_parent_invitation_email(
       </div>
 
       <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0;">
-        Log in here: <a href="{login_url}" style="color:#0d9488;">{login_url}</a>
+        Log in here: <a href="{login_url}" style="color:#135450;">{login_url}</a>
       </p>
 
     </div>
@@ -374,8 +377,9 @@ async def send_clinician_invitation_email(
 </head>
 <body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
-  <div style="background:#0d9488; padding:24px 32px; text-align:center;">
-    <span style="font-size:22px; font-weight:500; color:#ffffff; letter-spacing:0.03em;">float</span>
+  <div style="background:#135450; padding:24px 32px; text-align:center;">
+    <img src="{settings.BASE_URL}/brand/email-logo.png" width="150" height="50" alt="Float"
+         style="display:block; margin:0 auto; border:0;">
   </div>
 
   <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
@@ -391,15 +395,15 @@ async def send_clinician_invitation_email(
 
       <div style="text-align:center; margin:0 0 24px;">
         <a href="{login_url}"
-           style="display:inline-block; padding:14px 40px; background:#0d9488;
+           style="display:inline-block; padding:14px 40px; background:#135450;
                   color:#ffffff; text-decoration:none; border-radius:6px;
                   font-size:16px; font-weight:600;">
           Log in to Float
         </a>
       </div>
 
-      <div style="background:#f0fdfa; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
-        <p style="font-size:13px; font-weight:600; color:#134e4a; margin:0 0 8px;">
+      <div style="background:#eafaf6; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
+        <p style="font-size:13px; font-weight:600; color:#0d3d3a; margin:0 0 8px;">
           Your login
         </p>
         <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
@@ -414,7 +418,7 @@ async def send_clinician_invitation_email(
       </div>
 
       <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0;">
-        Log in here: <a href="{login_url}" style="color:#0d9488;">{login_url}</a>
+        Log in here: <a href="{login_url}" style="color:#135450;">{login_url}</a>
       </p>
 
     </div>
@@ -479,8 +483,9 @@ async def send_password_reset_email(to_email: str, reset_link: str) -> bool:
 </head>
 <body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
-  <div style="background:#0d9488; padding:24px 32px; text-align:center;">
-    <span style="font-size:22px; font-weight:500; color:#ffffff; letter-spacing:0.03em;">float</span>
+  <div style="background:#135450; padding:24px 32px; text-align:center;">
+    <img src="{settings.BASE_URL}/brand/email-logo.png" width="150" height="50" alt="Float"
+         style="display:block; margin:0 auto; border:0;">
   </div>
 
   <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
@@ -496,7 +501,7 @@ async def send_password_reset_email(to_email: str, reset_link: str) -> bool:
 
       <div style="text-align:center; margin:0 0 24px;">
         <a href="{reset_link}"
-           style="display:inline-block; padding:14px 40px; background:#0d9488;
+           style="display:inline-block; padding:14px 40px; background:#135450;
                   color:#ffffff; text-decoration:none; border-radius:6px;
                   font-size:16px; font-weight:600;">
           Reset password

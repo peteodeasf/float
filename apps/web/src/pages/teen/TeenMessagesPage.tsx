@@ -178,7 +178,7 @@ export default function TeenMessagesPage() {
           if (isFromMe) {
             return (
               <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
-                <div style={{ maxWidth: '70%', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
+                <div style={{ maxWidth: '70%', background: '#eafaf6', border: '1px solid #eafaf6', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
                   <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                 </div>
                 {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
@@ -240,7 +240,7 @@ export default function TeenMessagesPage() {
           disabled={!replyContent.trim() || sendMessage.isPending}
           style={{
             padding: '10px 16px',
-            background: '#0d9488',
+            background: '#135450',
             color: '#fff',
             border: 'none',
             borderRadius: '10px',

@@ -1,0 +1,15 @@
+{
+  "name": "Float",
+  "short_name": "Float",
+  "description": "Anxiety treatment for kids, teens and families.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eaf4f1",
+  "theme_color": "#135450",
+  "icons": [
+    { "src": "/brand/float-app-icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "/brand/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/brand/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/brand/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

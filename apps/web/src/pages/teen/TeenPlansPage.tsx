@@ -124,15 +124,15 @@ export default function TeenPlansPage() {
 
             {plan.next_appointment && (
               <div style={{
-                background: '#f0fdfa',
+                background: '#eafaf6',
                 borderRadius: '10px',
                 padding: '12px 14px',
                 marginTop: '12px'
               }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#14b8a6', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#135450', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Next appointment
                 </p>
-                <p style={{ fontSize: '14px', color: '#134e4a', fontWeight: '500', margin: 0 }}>
+                <p style={{ fontSize: '14px', color: '#0d3d3a', fontWeight: '500', margin: 0 }}>
                   {plan.next_appointment}
                 </p>
               </div>

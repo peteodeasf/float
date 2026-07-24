@@ -148,9 +148,9 @@ export default function ProgressPage() {
                 <Line
                   type="monotone"
                   dataKey="bip_after"
-                  stroke="#0d9488"
+                  stroke="#135450"
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#0d9488' }}
+                  dot={{ r: 4, fill: '#135450' }}
                 />
               </LineChart>
             </ResponsiveContainer>

@@ -1,10 +1,11 @@
 :root {
-  /* Primary — teal */
-  --float-primary: #0d9488;
-  --float-primary-dark: #0f766e;
-  --float-primary-light: #f0fdfa;
-  --float-primary-mid: #99f6e4;
-  --float-primary-text: #134e4a;
+  /* Primary — brand teal. Matches the teen/parent token system (--teen-teal /
+     --teen-mint / --teen-ink) so the whole product shares one palette. */
+  --float-primary: #135450;
+  --float-primary-dark: #0d3d3a;
+  --float-primary-light: #eafaf6;
+  --float-primary-mid: #9af6e4;
+  --float-primary-text: #0d3d3a;
 
   /* Neutrals */
   --float-bg: #fafafa;

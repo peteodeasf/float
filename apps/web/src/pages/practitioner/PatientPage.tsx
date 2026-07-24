@@ -111,12 +111,12 @@ function isSimilar(a: string, b: string): boolean {
 function StepStatusIcon({ status }: { status: StepStatus }) {
   if (status === 'complete') {
     return (
-      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#0d9488', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
+      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#135450', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
     )
   }
   if (status === 'active') {
     return (
-      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#0d9488', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#135450', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <span style={{ width: '7px', height: '7px', borderRadius: '999px', background: '#fff' }} />
       </span>
     )
@@ -234,7 +234,7 @@ function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepT
           onClick={handleShow}
           style={{
             fontSize: '12px',
-            color: '#0d9488',
+            color: '#135450',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -254,8 +254,8 @@ function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepT
     <div
       style={{
         position: 'relative',
-        background: '#f0fdfa',
-        borderLeft: '3px solid #0d9488',
+        background: '#eafaf6',
+        borderLeft: '3px solid #135450',
         borderRadius: '8px',
         padding: '14px 36px 14px 16px',
         marginBottom: '12px',
@@ -289,7 +289,7 @@ function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepT
         style={{
           fontSize: '11px',
           fontWeight: 700,
-          color: '#0d9488',
+          color: '#135450',
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
           marginBottom: '10px',
@@ -309,7 +309,7 @@ function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepT
               lineHeight: 1.5,
             }}
           >
-            <span style={{ color: '#0d9488', flexShrink: 0 }}>·</span>
+            <span style={{ color: '#135450', flexShrink: 0 }}>·</span>
             <span>{s}</span>
           </li>
         ))}
@@ -413,7 +413,7 @@ function StepGuideCard({ stepNumber, patientId }: { stepNumber: number; patientI
           onClick={handleShow}
           style={{
             fontSize: '12px',
-            color: '#0d9488',
+            color: '#135450',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -433,8 +433,8 @@ function StepGuideCard({ stepNumber, patientId }: { stepNumber: number; patientI
     <div
       style={{
         position: 'relative',
-        background: '#f0fdfa',
-        borderLeft: '3px solid #0d9488',
+        background: '#eafaf6',
+        borderLeft: '3px solid #135450',
         borderRadius: '8px',
         padding: '14px 36px 14px 16px',
         marginBottom: '12px',
@@ -468,7 +468,7 @@ function StepGuideCard({ stepNumber, patientId }: { stepNumber: number; patientI
         style={{
           fontSize: '11px',
           fontWeight: 700,
-          color: '#0d9488',
+          color: '#135450',
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
           marginBottom: '10px',
@@ -488,7 +488,7 @@ function StepGuideCard({ stepNumber, patientId }: { stepNumber: number; patientI
               lineHeight: 1.5,
             }}
           >
-            <span style={{ color: '#0d9488', flexShrink: 0 }}>·</span>
+            <span style={{ color: '#135450', flexShrink: 0 }}>·</span>
             <span>{s}</span>
           </li>
         ))}
@@ -1337,11 +1337,11 @@ function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituatio
 
           {/* Feared outcome + approval */}
           {hasFearedOutcome && (
-            <div style={{ marginTop: '8px', padding: '12px 14px', background: '#f0fdfa', borderLeft: '3px solid var(--float-primary)', borderRadius: '6px' }}>
+            <div style={{ marginTop: '8px', padding: '12px 14px', background: '#eafaf6', borderLeft: '3px solid var(--float-primary)', borderRadius: '6px' }}>
               <p style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--float-primary)', margin: '0 0 6px' }}>
                 Feared outcome
               </p>
-              <p style={{ fontSize: '14px', fontStyle: 'italic', color: '#134e4a', margin: '0 0 10px' }}>
+              <p style={{ fontSize: '14px', fontStyle: 'italic', color: '#0d3d3a', margin: '0 0 10px' }}>
                 &ldquo;{arrow.feared_outcome}&rdquo;
               </p>
               {isApproved ? (
@@ -1688,7 +1688,7 @@ function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCo
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleMut.mutate({ key: item.key, value: !isChecked })}
-                    style={{ accentColor: '#0d9488', width: '15px', height: '15px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
+                    style={{ accentColor: '#135450', width: '15px', height: '15px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: 'block', fontSize: '12.5px', lineHeight: 1.4, color: isChecked ? '#94a3b8' : '#334155' }}>{item.text}</span>
@@ -1783,7 +1783,7 @@ function StepWithChecklist({ patientId, stepNumber, title, groups, children, onN
     <div>
       {firstUnchecked ? (
         <div onClick={handleBannerClick}
-          style={{ background: '#f0fdfa', borderLeft: '3px solid #0d9488', borderRadius: '8px', padding: '8px 14px', marginBottom: '16px', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          style={{ background: '#eafaf6', borderLeft: '3px solid #135450', borderRadius: '8px', padding: '8px 14px', marginBottom: '16px', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
           <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Next →</span>
           <span style={{ fontSize: '13px', color: '#1e293b' }}>{firstUnchecked.text}</span>
         </div>
@@ -2856,7 +2856,7 @@ export default function PatientPage() {
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {conceptualizationDraft.accommodationPatterns.map((p, i) => (
               <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#475569' }}>
-                <span style={{ color: '#0d9488' }}>&#9633;</span><span>{p}</span>
+                <span style={{ color: '#135450' }}>&#9633;</span><span>{p}</span>
               </li>
             ))}
           </ul>
@@ -3274,7 +3274,7 @@ export default function PatientPage() {
 
       {/* Plan activated confirmation */}
       {planActivatedConfirm && (
-        <div style={{ background: '#f0fdfa', borderBottom: '1px solid #99f6e4', padding: '8px 20px' }}>
+        <div style={{ background: '#eafaf6', borderBottom: '1px solid #9af6e4', padding: '8px 20px' }}>
           <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', margin: 0 }}>
             &#10003; Plan activated.
           </p>
@@ -3290,7 +3290,7 @@ export default function PatientPage() {
           </div>
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {triggers?.map(t => (
-              <div key={t.id} className="group" style={{ width: '100%', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#f0fdfa' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}
+              <div key={t.id} className="group" style={{ width: '100%', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: t.id === selectedTriggerId ? '#eafaf6' : 'transparent', borderLeft: t.id === selectedTriggerId ? '2px solid var(--float-primary)' : '2px solid transparent', borderRadius: '6px', marginBottom: '8px' }}
                 onClick={() => { if (editingTriggerId !== t.id && deletingTriggerId !== t.id) setSelectedTriggerId(t.id) }}>
                 {deletingTriggerId === t.id ? (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
@@ -3513,8 +3513,8 @@ export default function PatientPage() {
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
                 <Tooltip formatter={(value, name) => [`${value}%`, name === 'bip_before' ? 'Before' : 'After']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
                 <Legend formatter={(value) => value === 'bip_before' ? 'Before' : 'After'} wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" dataKey="bip_before" stroke="#5eead4" strokeWidth={2} dot={{ r: 3, fill: '#5eead4' }} strokeDasharray="4 4" />
-                <Line type="monotone" dataKey="bip_after" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
+                <Line type="monotone" dataKey="bip_before" stroke="#9af6e4" strokeWidth={2} dot={{ r: 3, fill: '#9af6e4' }} strokeDasharray="4 4" />
+                <Line type="monotone" dataKey="bip_after" stroke="#135450" strokeWidth={2} dot={{ r: 3, fill: '#135450' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -3525,7 +3525,7 @@ export default function PatientPage() {
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(value) => [value, 'DT']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="dt_actual" stroke="#0d9488" strokeWidth={2} dot={{ r: 3, fill: '#0d9488' }} />
+                <Line type="monotone" dataKey="dt_actual" stroke="#135450" strokeWidth={2} dot={{ r: 3, fill: '#135450' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -3717,7 +3717,7 @@ export default function PatientPage() {
           if (patient && m.sender_user_id === patient.user_id) {
             return (
               <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
-                <div style={{ maxWidth: '70%', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
+                <div style={{ maxWidth: '70%', background: '#eafaf6', border: '1px solid #eafaf6', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
                   <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                 </div>
                 {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
@@ -3728,7 +3728,7 @@ export default function PatientPage() {
           return (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}>
               {showTypePill && (
-                <span style={{ display: 'inline-block', fontSize: '11px', color: '#0d9488', border: '1px solid #5eead4', background: 'transparent', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
+                <span style={{ display: 'inline-block', fontSize: '11px', color: '#135450', border: '1px solid #9af6e4', background: 'transparent', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
                   {m.message_type.replace(/_/g, ' ')}
                 </span>
               )}
@@ -3863,8 +3863,8 @@ export default function PatientPage() {
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
         </div>
         {plan?.nickname && (
-          <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: '#0f766e' }}>
+          <div style={{ background: '#eafaf6', border: '1px solid #9af6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '13px', color: '#0d3d3a' }}>
               Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
             </span>
           </div>
@@ -3874,7 +3874,7 @@ export default function PatientPage() {
             <a
               href="#messages-section"
               onClick={(e) => { e.preventDefault(); setActivePersistentTab('messages'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
-              style={{ fontSize: '13px', color: '#0f766e', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+              style={{ fontSize: '13px', color: '#0d3d3a', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
             >
               ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
             </a>
@@ -3962,7 +3962,7 @@ export default function PatientPage() {
         subtitleExtra: (patient?.anxiety_presentations && patient.anxiety_presentations.length > 0) ? (
           <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
             {patient.anxiety_presentations.map(p => (
-              <span key={p} style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', background: '#ccfbf1', color: '#0f766e' }}>
+              <span key={p} style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', background: '#eafaf6', color: '#0d3d3a' }}>
                 {presentationLabel(p)}
               </span>
             ))}
@@ -4103,8 +4103,8 @@ export default function PatientPage() {
                   onClick={() => { setActiveStep(i); setActivePersistentTab(null) }}
                   style={{
                     padding: '8px 16px',
-                    borderLeft: selected ? '3px solid #0d9488' : '3px solid transparent',
-                    background: selected ? '#f0fdfa' : 'transparent',
+                    borderLeft: selected ? '3px solid #135450' : '3px solid transparent',
+                    background: selected ? '#eafaf6' : 'transparent',
                     cursor: 'pointer',
                   }}
                 >
@@ -4129,14 +4129,14 @@ export default function PatientPage() {
                   onClick={() => setActivePersistentTab(prev => prev ?? 'experiments')}
                   style={{
                     padding: '8px 16px',
-                    borderLeft: selected ? '3px solid #0d9488' : '3px solid transparent',
-                    background: selected ? '#f0fdfa' : 'transparent',
+                    borderLeft: selected ? '3px solid #135450' : '3px solid transparent',
+                    background: selected ? '#eafaf6' : 'transparent',
                     cursor: 'pointer',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ fontSize: '13px', fontWeight: selected ? 600 : 500, color: selected ? '#1e293b' : '#475569' }}>Workspace</div>
-                    {aggregateBadge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#0d9488', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{aggregateBadge}</span> : null}
+                    {aggregateBadge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{aggregateBadge}</span> : null}
                   </div>
                 </div>
               )
@@ -4169,14 +4169,14 @@ export default function PatientPage() {
                             gap: '6px',
                             padding: '8px 12px',
                             marginBottom: '-1px',
-                            borderBottom: active ? '2px solid #0d9488' : '2px solid transparent',
+                            borderBottom: active ? '2px solid #135450' : '2px solid transparent',
                             fontSize: '13px',
                             fontWeight: active ? 600 : 500,
-                            color: active ? '#0d9488' : '#64748b',
+                            color: active ? '#135450' : '#64748b',
                           }}
                         >
                           {t.label}
-                          {t.badge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#0d9488', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{t.badge}</span> : null}
+                          {t.badge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{t.badge}</span> : null}
                         </button>
                       )
                     })}
@@ -4285,7 +4285,7 @@ export default function PatientPage() {
 
             {!extractLoading && extraction && (
               <div style={{ padding: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Extraction Results</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#135450', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Extraction Results</div>
                 <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 18px' }}>Based on {monitoringForm?.entries_count ?? 0} monitoring entries</p>
 
                 <div style={{ marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>

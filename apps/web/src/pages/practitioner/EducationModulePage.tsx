@@ -104,8 +104,8 @@ function QuizSection({ questions, moduleId, onComplete }: {
       </div>
 
       {revealed && (
-        <div className="p-4 rounded-lg mb-4" style={{ background: '#f0fdfa', border: '1px solid #99f6e4' }}>
-          <p className="text-sm" style={{ color: '#134e4a' }}>
+        <div className="p-4 rounded-lg mb-4" style={{ background: '#eafaf6', border: '1px solid #9af6e4' }}>
+          <p className="text-sm" style={{ color: '#0d3d3a' }}>
             {q.explanation}
           </p>
         </div>
@@ -192,13 +192,13 @@ function ExerciseSection({ exercise, moduleId, onComplete }: {
         </button>
       ) : (
         <div>
-          <div className="p-5 rounded-lg mb-4" style={{ background: '#f0fdfa', border: '1px solid #99f6e4' }}>
-            <p className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: '#0d9488' }}>
+          <div className="p-5 rounded-lg mb-4" style={{ background: '#eafaf6', border: '1px solid #9af6e4' }}>
+            <p className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: '#135450' }}>
               Model answer
             </p>
             <div
               className="text-sm leading-relaxed prose prose-sm max-w-none"
-              style={{ color: '#134e4a' }}
+              style={{ color: '#0d3d3a' }}
               dangerouslySetInnerHTML={{
                 __html: exercise.modelAnswer
                   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
