@@ -26,6 +26,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
+import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
@@ -1901,6 +1902,8 @@ export default function PatientPage() {
   const [showTeenInviteForm, setShowTeenInviteForm] = useState(false)
   const [teenEmailInput, setTeenEmailInput] = useState('')
   const [teenInviteConfirmation, setTeenInviteConfirmation] = useState<string | null>(null)
+  // Persistent teen-access panel, opened from the patient header (any mode).
+  const [showTeenAccess, setShowTeenAccess] = useState(false)
 
   // Patient profile edit
   const [editingProfile, setEditingProfile] = useState(false)
@@ -3969,17 +3972,38 @@ export default function PatientPage() {
           </span>
         ) : undefined,
         rightAction: patient && !editingProfile ? (
-          <button
-            onClick={openProfileEdit}
-            className="text-xs font-medium bg-transparent border-none cursor-pointer hover:underline"
-            style={{ color: 'var(--float-primary)' }}
-          >
-            Edit profile
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button
+              onClick={() => setShowTeenAccess(v => !v)}
+              className="text-xs font-medium bg-transparent border-none cursor-pointer hover:underline"
+              style={{ color: patient.teen_invited_at ? 'var(--float-primary)' : '#64748b' }}
+            >
+              Teen access{patient.teen_invited_at ? '' : ' · not set up'}
+            </button>
+            <button
+              onClick={openProfileEdit}
+              className="text-xs font-medium bg-transparent border-none cursor-pointer hover:underline"
+              style={{ color: 'var(--float-primary)' }}
+            >
+              Edit profile
+            </button>
+          </div>
         ) : undefined
       }} />
 
       <div style={{ padding: '24px' }}>
+
+        {/* Teen access — persistent, opened from the patient header, shown in any mode */}
+        {showTeenAccess && patient && (
+          <TeenAccessPanel
+            patientId={patientId!}
+            teenEmail={patient.teen_email}
+            teenInvitedAt={patient.teen_invited_at}
+            fallbackEmail={patient.email}
+            onViewMessages={() => { setShowTeenAccess(false); setActivePersistentTab('messages') }}
+            onClose={() => setShowTeenAccess(false)}
+          />
+        )}
 
         {/* Profile edit form (inline) */}
         {editingProfile && patient && (
