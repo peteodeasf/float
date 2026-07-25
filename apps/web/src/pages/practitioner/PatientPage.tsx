@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPatient, getMessages, sendMessage, inviteTeen, getPatientProgress, updatePatient } from '../../api/patients'
+import { getPatient, getMessages, sendMessage, getPatientProgress, updatePatient } from '../../api/patients'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine
 } from 'recharts'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
-  updatePlanStatus, updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
+  updatePlanNickname, getBehaviors, getLadder, getLadderFlags, reviewLadder,
   createBehavior, updateBehavior, deleteBehavior, updateTrigger, deleteTrigger,
   getSituationDownwardArrow, createSituationDownwardArrow, updateDownwardArrow, listPatientDownwardArrows,
   getPatientExperiments, planExperimentForBehavior,
@@ -1898,10 +1898,6 @@ export default function PatientPage() {
   const addAccommodation = (si: number) =>
     updateExtraction(d => { d.situations[si].accommodations.push({ description: '' }) })
 
-  // Teen invitation
-  const [showTeenInviteForm, setShowTeenInviteForm] = useState(false)
-  const [teenEmailInput, setTeenEmailInput] = useState('')
-  const [teenInviteConfirmation, setTeenInviteConfirmation] = useState<string | null>(null)
   // Persistent teen-access panel, opened from the patient header (any mode).
   const [showTeenAccess, setShowTeenAccess] = useState(false)
 
@@ -1920,10 +1916,6 @@ export default function PatientPage() {
   const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
   const [noteContent, setNoteContent] = useState('')
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
-
-  // Activation warning
-  const [showActivationWarning, setShowActivationWarning] = useState(false)
-  const [planActivatedConfirm, setPlanActivatedConfirm] = useState(false)
 
   // Treatment Journey navigation
   const [activeStep, setActiveStep] = useState<number>(0)
@@ -2054,15 +2046,6 @@ export default function PatientPage() {
 
   // Mutations
   const createPlanMut = useMutation({ mutationFn: () => createTreatmentPlan(patientId!, { clinical_track: 'exposure', parent_visibility_level: 'summary' }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plan', patientId] }) })
-  const activatePlanMut = useMutation({
-    mutationFn: () => updatePlanStatus(patientId!, plan!.id, 'active'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
-      setShowActivationWarning(false)
-      setPlanActivatedConfirm(true)
-      setTimeout(() => setPlanActivatedConfirm(false), 3000)
-    }
-  })
   const nicknameMut = useMutation({
     mutationFn: () => updatePlanNickname(patientId!, plan!.id, nicknameVal.trim()),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['plan', patientId] }); setEditingNickname(false) }
@@ -2344,22 +2327,6 @@ export default function PatientPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['messages', patientId] }); setMsgContent(''); setShowMsgForm(false) }
   })
 
-  const inviteTeenMut = useMutation({
-    mutationFn: (email: string) => inviteTeen(patientId!, email),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
-      setTeenInviteConfirmation(data.email)
-      setShowTeenInviteForm(false)
-      setTeenEmailInput('')
-      setTimeout(() => setTeenInviteConfirmation(null), 4000)
-    }
-  })
-
-  const openTeenInviteForm = () => {
-    setTeenEmailInput(patient?.teen_email || patient?.email || '')
-    setShowTeenInviteForm(true)
-  }
-
   const updatePatientMut = useMutation({
     mutationFn: () => updatePatient(patientId!, {
       name: profileName.trim(),
@@ -2437,36 +2404,6 @@ export default function PatientPage() {
     }
   }, [showPlanEditor, editingPlan, editor])
 
-  // Fetch behaviors for every trigger (for activation validation)
-  const { data: allBehaviors } = useQuery({
-    queryKey: ['all-behaviors', patientId, triggerIds.join(',')],
-    queryFn: async () => {
-      const results = await Promise.all(triggerIds.map(async (id) => {
-        const bs = await getBehaviors(id)
-        return [id, bs] as const
-      }))
-      return Object.fromEntries(results) as Record<string, AvoidanceBehavior[]>
-    },
-    enabled: triggerIds.length > 0
-  })
-
-  // Activation validation — only check active situations for missing DT
-  const activeTriggersMissingDT: TriggerSituation[] = []
-  if (triggers && allBehaviors) {
-    for (const t of triggers) {
-      if (!t.is_active) continue
-      const bs = allBehaviors[t.id] || []
-      if (bs.some(b => b.distress_thermometer_when_refraining == null)) {
-        activeTriggersMissingDT.push(t)
-      }
-    }
-  }
-  const noActiveTriggers = !!triggers && triggers.length > 0 && !triggers.some(t => t.is_active)
-  const activationWarnings: string[] = [
-    ...(noActiveTriggers ? ['No situations are marked as active'] : []),
-    ...activeTriggersMissingDT.map(t => `"${t.name}" has behaviors missing DT scores`)
-  ]
-  const lastMsg = messages?.[0]
   const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
   const badgeColors: Record<string, string> = { consultation_1: 'bg-purple-100 text-purple-700', consultation_2: 'bg-purple-100 text-purple-700', consultation_3: 'bg-purple-100 text-purple-700', weekly_session: 'bg-teal-100 text-teal-700', other: 'bg-slate-100 text-slate-600' }
 
@@ -3096,109 +3033,6 @@ export default function PatientPage() {
     </div>
   )
 
-  const teenAccessCard = (
-    <div style={cardStyle}>
-      <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Teen access</div>
-      {patient && (patient.teen_invited_at ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-          <span className="text-xs text-slate-600">invited {new Date(patient.teen_invited_at).toLocaleDateString()}</span>
-          {patient.teen_email && <span className="text-xs text-slate-500">{patient.teen_email}</span>}
-          <button
-            onClick={openTeenInviteForm}
-            className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
-          >
-            Resend invite
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-          <span className="text-xs text-slate-500">not set up</span>
-          <button
-            onClick={openTeenInviteForm}
-            className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
-          >
-            + Invite teen
-          </button>
-        </div>
-      ))}
-      {teenInviteConfirmation && (
-        <div className="text-xs text-green-600" style={{ marginTop: '8px' }}>&#10003; Invitation sent to {teenInviteConfirmation}</div>
-      )}
-      {showTeenInviteForm && (
-        <div style={{ marginTop: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label className="text-xs font-medium text-slate-500">Teen's email:</label>
-          <input
-            type="email"
-            value={teenEmailInput}
-            onChange={e => setTeenEmailInput(e.target.value)}
-            placeholder="teen@email.com"
-            autoFocus
-            className="text-xs border border-slate-200 rounded"
-            style={{ padding: '6px 8px' }}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && teenEmailInput.trim()) inviteTeenMut.mutate(teenEmailInput.trim())
-              if (e.key === 'Escape') setShowTeenInviteForm(false)
-            }}
-          />
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              onClick={() => teenEmailInput.trim() && inviteTeenMut.mutate(teenEmailInput.trim())}
-              disabled={!teenEmailInput.trim() || inviteTeenMut.isPending}
-              className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
-              style={{ padding: '6px 10px' }}
-            >
-              {inviteTeenMut.isPending ? 'Sending...' : 'Send invite'}
-            </button>
-            <button
-              onClick={() => { setShowTeenInviteForm(false); setTeenEmailInput('') }}
-              className="text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-
-  const activateStepContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '720px' }}>
-      {teenAccessCard}
-      <div style={cardStyle}>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Activate treatment plan</div>
-        {!plan ? (
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Create and build the treatment plan first (Step 4).</p>
-        ) : plan.status === 'active' ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '10px 14px' }}>
-            <span>&#10003;</span> Treatment plan is active.
-          </div>
-        ) : (
-          <>
-            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>Activate the plan to make exposures available to the teen.</p>
-            {showActivationWarning && activationWarnings.length > 0 && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
-                <p style={{ fontSize: '12px', fontWeight: 600, color: '#78350f', margin: '0 0 6px' }}>&#9888; Before activating:</p>
-                <ul style={{ margin: '0 0 0 18px', padding: 0, fontSize: '12px', color: '#78350f', lineHeight: '1.5' }}>
-                  {activationWarnings.map((w, i) => <li key={i}>{w}</li>)}
-                </ul>
-              </div>
-            )}
-            <button
-              onClick={() => { if (activationWarnings.length > 0 && !showActivationWarning) { setShowActivationWarning(true) } else { activatePlanMut.mutate() } }}
-              disabled={activatePlanMut.isPending}
-              className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50"
-              style={{ padding: '8px 16px' }}
-            >
-              {activatePlanMut.isPending ? 'Activating...' : (showActivationWarning && activationWarnings.length > 0 ? 'Activate anyway' : 'Activate plan')}
-            </button>
-          </>
-        )}
-        {planActivatedConfirm && (
-          <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)' }}>&#10003; Plan activated.</div>
-        )}
-      </div>
-    </div>
-  )
 
   const treatmentPlanBuilder = (plan ? (
     <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
@@ -3229,59 +3063,7 @@ export default function PatientPage() {
               className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add nickname</button>
           )}
         </div>
-        {plan.status === 'setup' && triggers && triggers.length > 0 && (
-          <button
-            onClick={() => {
-              if (activationWarnings.length > 0) {
-                setShowActivationWarning(true)
-              } else {
-                activatePlanMut.mutate()
-              }
-            }}
-            disabled={activatePlanMut.isPending}
-            className="text-xs px-2.5 py-1 bg-teal-600 text-white rounded-full disabled:opacity-50 border-none cursor-pointer"
-          >
-            {activatePlanMut.isPending ? '...' : 'Activate plan'}
-          </button>
-        )}
       </div>
-
-      {/* Activation warning — only shown when Activate is clicked */}
-      {plan.status === 'setup' && showActivationWarning && (
-        <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '12px 20px' }}>
-          <p style={{ fontSize: '12px', fontWeight: 600, color: '#78350f', margin: '0 0 6px' }}>
-            &#9888; Before activating:
-          </p>
-          <ul style={{ margin: '0 0 10px', padding: '0 0 0 18px', fontSize: '12px', color: '#78350f', lineHeight: '1.5' }}>
-            {activationWarnings.map((w, i) => <li key={i}>{w}</li>)}
-          </ul>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => activatePlanMut.mutate()}
-              disabled={activatePlanMut.isPending}
-              className="text-[11px] px-2.5 py-1 bg-amber-600 text-white rounded-full border-none cursor-pointer font-medium disabled:opacity-50"
-            >
-              {activatePlanMut.isPending ? 'Activating...' : 'Activate anyway'}
-            </button>
-            <button
-              onClick={() => setShowActivationWarning(false)}
-              className="text-[11px] px-2.5 py-1 bg-white text-amber-900 rounded-full cursor-pointer font-medium"
-              style={{ border: '1px solid #fde68a' }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Plan activated confirmation */}
-      {planActivatedConfirm && (
-        <div style={{ background: '#eafaf6', borderBottom: '1px solid #9af6e4', padding: '8px 20px' }}>
-          <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', margin: 0 }}>
-            &#10003; Plan activated.
-          </p>
-        </div>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
         {/* Situations list */}
@@ -4205,8 +3987,6 @@ export default function PatientPage() {
                       )
                     })}
                   </div>
-                  {/* One-time activation + teen invite, until the plan is active */}
-                  {plan?.status !== 'active' && activateStepContent}
                   {activePersistentTab === 'plan' && (
                     <>
                       {renderGuide(5)}

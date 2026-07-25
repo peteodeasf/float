@@ -84,7 +84,7 @@ export default function TeenAccessPanel({
           </div>
         ) : (
           <div style={{ fontSize: '13px', color: '#64748b', background: '#f8fafc', borderRadius: '8px', padding: '8px 12px' }}>
-            The teen hasn't been invited yet. Invite them before activating the plan so they can see their ladder.
+            The teen hasn't been invited yet. Invite them so they can sign in and see their ladder once you activate a situation.
           </div>
         )}
       </div>

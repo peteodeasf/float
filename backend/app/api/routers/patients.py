@@ -1037,10 +1037,11 @@ async def get_my_ladder(
     plan_result = await db.execute(
         select(TreatmentPlan).where(
             TreatmentPlan.patient_id == patient.id,
-            # Only an ACTIVATED plan is visible to the teen. A plan still in
-            # setup means the clinician hasn't turned it on yet — the teen
-            # should see nothing (the empty "no active experiments" state).
-            TreatmentPlan.status == "active",
+            # Teen visibility is gated per-situation by is_active (filtered on
+            # the home), not by a plan-level activation step — there is no
+            # separate "activate plan" button. A plan with no active situations
+            # renders the empty state.
+            TreatmentPlan.status.in_(["setup", "active"]),
         )
     )
     plan = plan_result.scalar_one_or_none()

@@ -1,9 +1,10 @@
 import uuid
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from app.models.treatment import TriggerSituation
+from app.models.treatment import TriggerSituation, TreatmentPlan
 from app.schemas.trigger_situation import TriggerSituationCreate, TriggerSituationUpdate
 
 
@@ -79,6 +80,18 @@ async def update_trigger(
         trigger.distress_thermometer_rating = data.distress_thermometer_rating
     if data.is_active is not None:
         trigger.is_active = data.is_active
+        # Activating a situation is what "starts" treatment — there is no
+        # separate clinician "activate plan" step. The first situation turned
+        # on flips the plan to active and stamps activated_at (the real
+        # treatment-start data point) once, and never again.
+        if data.is_active:
+            plan = (await db.execute(
+                select(TreatmentPlan).where(TreatmentPlan.id == trigger.treatment_plan_id)
+            )).scalar_one_or_none()
+            if plan and plan.status != "active":
+                plan.status = "active"
+                if plan.activated_at is None:
+                    plan.activated_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(trigger)
