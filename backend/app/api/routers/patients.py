@@ -424,10 +424,48 @@ async def invite_teen(
         # Link patient profile to the new user
         patient.user_id = new_user.id
     else:
-        # Resend invitation: reset the user's password to a fresh temp
-        # and flag that they must change it on next login.
+        # This email already has an account. A teen account can only belong to
+        # one patient (patient.user_id is a single FK), so refuse if it's
+        # already the teen for a *different* patient — otherwise the invite
+        # would silently point the wrong account at this patient (or steal it
+        # from the other one). This is the guard for the cross-patient mixup.
+        other_patient_result = await db.execute(
+            select(PatientProfile).where(
+                PatientProfile.user_id == existing_user.id,
+                PatientProfile.id != patient.id,
+            )
+        )
+        other_patient = other_patient_result.scalars().first()
+        if other_patient is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"{email} is already the teen login for another patient "
+                    f"({other_patient.name}). Use a different email for this teen."
+                ),
+            )
+
+        # The account is free (or already this patient's). Reset the password,
+        # ensure the patient role exists in this org, and — the previously
+        # missing step — actually link the account to this patient.
         existing_user.password_hash = hash_password(temp_password)
         existing_user.must_change_password = True
+
+        role_result = await db.execute(
+            select(UserRole).where(
+                UserRole.user_id == existing_user.id,
+                UserRole.organization_id == patient.organization_id,
+                UserRole.role == "patient",
+            )
+        )
+        if role_result.scalar_one_or_none() is None:
+            db.add(UserRole(
+                user_id=existing_user.id,
+                organization_id=patient.organization_id,
+                role="patient",
+            ))
+
+        patient.user_id = existing_user.id
 
     # Save teen email + invited_at
     patient.teen_email = email
