@@ -160,16 +160,19 @@ export default function TeenHomePage() {
   ).length
 
   const situations: TeenSituation[] = ladderData?.situations ?? []
+  // Only situations the clinician has set active are "experiments the teen can
+  // do now". Inactive ones (built but not turned on) don't appear on the home;
+  // the ladder already gates non-activated plans out entirely.
+  const activeSituations = situations.filter(s => s.is_active)
   const firstName = me?.patient_name?.split(' ')[0] ?? ''
 
   useEffect(() => {
-    if (!selectedSituationId && situations.length > 0) {
-      const active = situations.find(s => s.is_active)
-      setSelectedSituationId(active?.id ?? situations[0].id)
+    if (!selectedSituationId && activeSituations.length > 0) {
+      setSelectedSituationId(activeSituations[0].id)
     }
-  }, [situations, selectedSituationId])
+  }, [activeSituations, selectedSituationId])
 
-  const selectedSituation = situations.find(s => s.id === selectedSituationId)
+  const selectedSituation = activeSituations.find(s => s.id === selectedSituationId)
 
   // Easiest first — lowest distress rating at the top, nulls last.
   const sortedBehaviors: TeenBehavior[] = selectedSituation
@@ -256,44 +259,9 @@ export default function TeenHomePage() {
               margin: '16px 0 0',
             }}
           >
-            Hi {firstName}. Let's find out what's actually true.
+            {firstName ? `Hi ${firstName}, your` : 'Your'} clinician has invited you to use
+            the Float platform.
           </h1>
-          <p
-            style={{
-              ...teen.type.body,
-              color: teen.color.onDark,
-              marginTop: 16,
-            }}
-          >
-            Your clinician set up some experiments for you.
-          </p>
-
-          <div style={{ marginTop: 30, display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {[
-              'Pick a step and say you’ll do it',
-              'Guess what’ll happen before you go',
-              'Come back and tell me what really happened',
-            ].map((line, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-                <span
-                  style={{
-                    fontFamily: teen.font.mono,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: teen.color.mint,
-                    flex: 'none',
-                  }}
-                >
-                  0{i + 1}
-                </span>
-                <span
-                  style={{ fontFamily: teen.font.sans, fontSize: 16, color: '#fff', lineHeight: 1.5 }}
-                >
-                  {line}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div style={{ padding: `0 ${teen.space.padLg} 34px` }}>
@@ -350,11 +318,23 @@ export default function TeenHomePage() {
       >
         {/* ── hero ── */}
         <div style={{ padding: `0 ${teen.space.pad}` }}>
-          {situations.length === 0 ? (
-            <div className="teen-card" style={{ marginTop: 30, padding: '24px 22px' }}>
-              <p style={{ ...teen.type.body, margin: 0 }}>
-                Your clinician hasn't set up your plan yet. Check back soon.
-              </p>
+          {activeSituations.length === 0 ? (
+            <div style={{ marginTop: 30 }}>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Nothing yet</div>
+              <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
+                <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
+                  You have no active experiments yet.
+                </h2>
+                <p style={{ ...teen.type.body, margin: '12px 0 0' }}>
+                  Your clinician will set these up with you. Reach out with any questions in
+                  the meantime.
+                </p>
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <button className="teen-btn teen-btn--primary" onClick={() => navigate('/teen/messages')}>
+                  Message your clinician
+                </button>
+              </div>
             </div>
           ) : heroTitle ? (
             <>
@@ -478,7 +458,7 @@ export default function TeenHomePage() {
         )}
 
         {/* ── the ladder ── */}
-        {situations.length > 0 && (
+        {activeSituations.length > 0 && (
           <div style={{ padding: `28px ${teen.space.pad} 0` }}>
             <div style={teen.type.eyebrow}>Your ladder</div>
             {showLadderHint && sortedBehaviors.length > 0 && (
@@ -494,7 +474,7 @@ export default function TeenHomePage() {
               </p>
             )}
 
-            {situations.length > 1 && (
+            {activeSituations.length > 1 && (
               <div
                 style={{
                   display: 'flex',
@@ -504,7 +484,7 @@ export default function TeenHomePage() {
                   paddingBottom: 4,
                 }}
               >
-                {situations.map(s => (
+                {activeSituations.map(s => (
                   <button
                     key={s.id}
                     className="teen-chip"
@@ -674,6 +654,9 @@ export default function TeenHomePage() {
         {/* ── quiet footer ── */}
         <div
           style={{
+            // Push to the bottom of the scroll area so the nav holds its
+            // position even when the page content is short (empty state).
+            marginTop: 'auto',
             display: 'flex',
             justifyContent: 'center',
             gap: 20,

@@ -33,8 +33,11 @@ export default function MessagesPanel({ patientId, patientUserId }: Props) {
     queryKey: ['messages', patientId],
     queryFn: () => getMessages(patientId),
     // No websockets — poll so the teen's new messages appear while the panel is
-    // open, not only after the clinician sends a reply.
-    refetchInterval: 10000,
+    // open, not only after the clinician sends a reply. Background polling +
+    // refetch-on-focus so it stays live even if the tab loses focus.
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   const sendMutation = useMutation({

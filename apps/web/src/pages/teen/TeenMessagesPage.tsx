@@ -48,8 +48,11 @@ export default function TeenMessagesPage() {
     queryFn: async () => (await teenApiClient.get('/patient/messages')).data,
     enabled: !!patientId,
     // No websockets — poll so the clinician's replies appear while the thread
-    // is open, not only after the teen sends something.
-    refetchInterval: 10000,
+    // is open, not only after the teen sends something. Background polling +
+    // refetch-on-focus so it stays live even if the tab loses focus.
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   const markRead = useMutation({
