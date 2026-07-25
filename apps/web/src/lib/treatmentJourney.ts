@@ -6,12 +6,13 @@
 // Completion of the treatment plan is what moves a patient from setup into treatment;
 // this is derived from live treatment-plan state, NOT a stored step counter.
 
+// Build Treatment Plan is no longer a setup step — it moved into the Treatment
+// workspace as the "Treatment Plan" tab.
 export const SETUP_STEPS: readonly string[] = [
   'Parent Monitoring Form',
   'Analyze Monitoring Data',
   'Parent Consultation',
   'Patient Consultation',
-  'Build Treatment Plan',
 ]
 
 export type TreatmentMode = 'setup' | 'treatment'

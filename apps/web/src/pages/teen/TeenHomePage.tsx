@@ -153,6 +153,7 @@ export default function TeenHomePage() {
     queryKey: ['teen-messages', patientId],
     queryFn: async () => (await teenApiClient.get('/patient/messages')).data,
     enabled: !!patientId,
+    refetchInterval: 30000,
   })
   const unreadMessageCount = (messages ?? []).filter(
     m => m.sender_user_id !== me?.user_id && !m.read_at
@@ -427,22 +428,6 @@ export default function TeenHomePage() {
                 >
                   {dueExperiment ? 'Tell me how it went →' : "I'm going to do it"}
                 </button>
-                <div style={{ textAlign: 'center', padding: '16px 0 0' }}>
-                  <button
-                    onClick={() => navigate('/teen/messages')}
-                    style={{
-                      background: 'none',
-                      border: 0,
-                      cursor: 'pointer',
-                      fontFamily: teen.font.sans,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: teen.color.teal,
-                    }}
-                  >
-                    Talk to float first
-                  </button>
-                </div>
               </div>
             </>
           ) : (
@@ -695,6 +680,20 @@ export default function TeenHomePage() {
             padding: `32px ${teen.space.pad} 34px`,
           }}
         >
+          <button
+            onClick={() => navigate('/teen/messages')}
+            style={{
+              background: 'none',
+              border: 0,
+              cursor: 'pointer',
+              fontFamily: teen.font.sans,
+              fontSize: 13,
+              fontWeight: 600,
+              color: teen.color.teal,
+            }}
+          >
+            Chat{unreadMessageCount > 0 ? ` (${unreadMessageCount})` : ''}
+          </button>
           <button
             onClick={() => navigate('/teen/progress')}
             style={{

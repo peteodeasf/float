@@ -47,6 +47,9 @@ export default function TeenMessagesPage() {
     queryKey: ['teen-messages', patientId],
     queryFn: async () => (await teenApiClient.get('/patient/messages')).data,
     enabled: !!patientId,
+    // No websockets — poll so the clinician's replies appear while the thread
+    // is open, not only after the teen sends something.
+    refetchInterval: 10000,
   })
 
   const markRead = useMutation({

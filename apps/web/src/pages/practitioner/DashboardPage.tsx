@@ -20,14 +20,17 @@ function relativeActivityLabel(iso: string | null | undefined): string {
 // Two-mode journey progress: Setup (numbered, worked once) → Treatment (ongoing).
 // Setup completes — and treatment begins — when the plan is built.
 function computeProgress(p: Patient): { label: string } {
+  // Setup is the 4 assessment steps; building the plan happens in the workspace.
   const setupComplete: boolean[] = [
     p.has_monitoring_form,
     p.situation_count >= 1,
     p.has_consultation_1_note && p.has_parent_da,
     p.has_consultation_2_note && p.has_patient_da,
-    p.has_active_situation_with_behaviors,
   ]
   if (setupComplete.every(Boolean)) {
+    if (!p.has_active_situation_with_behaviors) {
+      return { label: 'Building treatment plan' }
+    }
     return { label: p.plan_status === 'active' ? 'In treatment' : 'In treatment · activate plan' }
   }
   const firstIncomplete = setupComplete.findIndex(c => !c)

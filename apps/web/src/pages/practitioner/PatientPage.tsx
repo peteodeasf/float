@@ -59,7 +59,7 @@ function ReportSection({ label, items }: { label: string; items: string[] }) {
 }
 
 // Treatment-mode surfaces (the ongoing weekly workspace). Ordered roughly by weekly use.
-type PersistentTabId = 'experiments' | 'weekly' | 'plans' | 'messages' | 'close'
+type PersistentTabId = 'plan' | 'experiments' | 'weekly' | 'plans' | 'messages' | 'close'
 
 type StepStatus = 'complete' | 'active' | 'incomplete'
 
@@ -2607,15 +2607,13 @@ export default function PatientPage() {
 
   const notesList = sessionNotes ?? []
   const hasPatientDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'practitioner')
-  const hasActiveSituationWithBehaviors = !!triggers && !!allBehaviors && triggers.some(t => t.is_active && (allBehaviors[t.id]?.length ?? 0) > 0)
-
-  // Setup-mode completion (5 steps). Treatment mode is gated on this, not a stored counter.
+  // Setup-mode completion (4 steps). "Build Treatment Plan" moved to the
+  // Treatment workspace, so setup is just the assessment steps now.
   const stepComplete: boolean[] = [
     !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
     notesList.some(n => n.session_type === 'consultation_1') || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
     notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
-    hasActiveSituationWithBehaviors,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
   const currentActiveStep = firstIncompleteStep === -1 ? STEP_LABELS.length - 1 : firstIncompleteStep
@@ -2623,8 +2621,9 @@ export default function PatientPage() {
     c ? 'complete' : (i === currentActiveStep ? 'active' : 'incomplete')
   )
 
-  // Treatment mode unlocks once the plan is built (an active situation has behaviors).
-  const treatmentUnlocked = hasActiveSituationWithBehaviors
+  // Treatment mode unlocks once the assessment steps are done. Building the
+  // plan happens in the workspace (the "Treatment Plan" tab), not in setup.
+  const treatmentUnlocked = firstIncompleteStep === -1
   const setupComplete = treatmentUnlocked
 
   // Default selected step to current active step once core data has loaded
@@ -2640,7 +2639,7 @@ export default function PatientPage() {
     if (!coreLoaded) return
     if (treatmentUnlocked) {
       // Plan already built — land in the treatment workspace, setup collapsed.
-      setActivePersistentTab('experiments')
+      setActivePersistentTab('plan')
       setSetupExpanded(false)
     } else {
       setActiveStep(currentActiveStep)
@@ -4150,7 +4149,7 @@ export default function PatientPage() {
               const aggregateBadge = draftPlanCount + unreadMessageCount
               return (
                 <div
-                  onClick={() => setActivePersistentTab(prev => prev ?? 'experiments')}
+                  onClick={() => setActivePersistentTab(prev => prev ?? 'plan')}
                   style={{
                     padding: '8px 16px',
                     borderLeft: selected ? '3px solid #135450' : '3px solid transparent',
@@ -4175,6 +4174,7 @@ export default function PatientPage() {
                   {/* In-view tab strip */}
                   <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
                     {([
+                      { id: 'plan', label: 'Treatment Plan' },
                       { id: 'experiments', label: 'Experiments' },
                       { id: 'weekly', label: 'Weekly Session' },
                       { id: 'plans', label: 'Action Plans', badge: draftPlanCount },
@@ -4207,6 +4207,17 @@ export default function PatientPage() {
                   </div>
                   {/* One-time activation + teen invite, until the plan is active */}
                   {plan?.status !== 'active' && activateStepContent}
+                  {activePersistentTab === 'plan' && (
+                    <>
+                      {renderGuide(5)}
+                      {treatmentPlanBuilder}
+                      {plan && (
+                        <div style={{ marginTop: '8px' }}>
+                          <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
+                        </div>
+                      )}
+                    </>
+                  )}
                   {activePersistentTab === 'experiments' && (
                     <>
                       {renderPrep('session_3')}
@@ -4262,17 +4273,6 @@ export default function PatientPage() {
                     <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />
                     <div id="patient-da-section">{patientDAContent}</div>
                   </StepWithChecklist>
-                )}
-                {activeStep === 4 && (
-                  <>
-                    {renderGuide(5)}
-                    {treatmentPlanBuilder}
-                    {plan && (
-                      <div style={{ marginTop: '8px' }}>
-                        <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
-                      </div>
-                    )}
-                  </>
                 )}
               </div>
             )}

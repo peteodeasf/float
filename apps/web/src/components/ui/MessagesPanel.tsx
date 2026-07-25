@@ -31,7 +31,10 @@ export default function MessagesPanel({ patientId, patientUserId }: Props) {
 
   const { data: messages } = useQuery({
     queryKey: ['messages', patientId],
-    queryFn: () => getMessages(patientId)
+    queryFn: () => getMessages(patientId),
+    // No websockets — poll so the teen's new messages appear while the panel is
+    // open, not only after the clinician sends a reply.
+    refetchInterval: 10000,
   })
 
   const sendMutation = useMutation({
