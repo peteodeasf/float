@@ -853,6 +853,11 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['triggers'] })
   })
 
+  // A situation can't be activated until it has at least one behavior — the
+  // teen ladder has nothing to show for an empty situation.
+  const hasBehaviors = (behaviors?.length ?? 0) > 0
+  const canToggleActive = trigger.is_active || hasBehaviors
+
   // Sort behaviors by DT ascending (lowest first), nulls at end
   const sortedBehaviors = behaviors ? [...behaviors].sort((a, b) => {
     const aDT = a.distress_thermometer_when_refraining
@@ -875,8 +880,8 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             <DTBadge value={trigger.distress_thermometer_rating} />
             <button
               onClick={() => toggleActive.mutate()}
-              disabled={toggleActive.isPending}
-              className="cursor-pointer"
+              disabled={toggleActive.isPending || !canToggleActive}
+              title={!canToggleActive ? 'Add at least one behavior before activating this situation' : undefined}
               style={{
                 fontSize: '11px',
                 fontWeight: 600,
@@ -888,6 +893,8 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
+                cursor: canToggleActive ? 'pointer' : 'not-allowed',
+                opacity: canToggleActive ? 1 : 0.5,
               }}
             >
               <span style={{ fontSize: '8px' }}>{trigger.is_active ? '●' : '○'}</span>

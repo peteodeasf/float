@@ -1,10 +1,10 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from fastapi import HTTPException, status
 
-from app.models.treatment import TriggerSituation, TreatmentPlan
+from app.models.treatment import TriggerSituation, TreatmentPlan, AvoidanceBehavior
 from app.schemas.trigger_situation import TriggerSituationCreate, TriggerSituationUpdate
 
 
@@ -79,6 +79,19 @@ async def update_trigger(
     if data.distress_thermometer_rating is not None:
         trigger.distress_thermometer_rating = data.distress_thermometer_rating
     if data.is_active is not None:
+        # A situation with no behaviors has nothing for the teen to work on —
+        # the ladder skips it entirely — so it can't be activated.
+        if data.is_active and not trigger.is_active:
+            behavior_count = (await db.execute(
+                select(func.count()).select_from(AvoidanceBehavior).where(
+                    AvoidanceBehavior.trigger_situation_id == trigger.id
+                )
+            )).scalar_one()
+            if behavior_count == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Add at least one behavior before activating this situation.",
+                )
         trigger.is_active = data.is_active
         # Activating a situation is what "starts" treatment — there is no
         # separate clinician "activate plan" step. The first situation turned
