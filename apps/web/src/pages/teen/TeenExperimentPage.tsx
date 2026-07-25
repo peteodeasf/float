@@ -6,7 +6,6 @@ import TeenScreen from '../../components/teen/TeenScreen'
 import Chip from '../../components/teen/Chip'
 import BeliefSlider from '../../components/teen/BeliefSlider'
 import Thermometer from '../../components/teen/Thermometer'
-import { encodeSafetyBehaviors } from '../../lib/temptingBehaviors'
 import teen from '../../styles/teenTokens'
 
 type Step = 'before' | 'schedule' | 'committed'
@@ -19,9 +18,6 @@ const CONFIDENCE = [
 ] as const
 
 type ConfidenceKey = (typeof CONFIDENCE)[number]['key']
-
-/** Generic starting points — safety behaviours aren't modelled per situation. */
-const SAFETY_BEHAVIOURS = ['Headphones in', 'Check phone', 'Leave early']
 
 function Field({
   step,
@@ -69,10 +65,6 @@ export default function TeenExperimentPage() {
   const [fearDraft, setFearDraft] = useState('')
   const [bip, setBip] = useState(50)
   const [dtExpected, setDtExpected] = useState<number | null>(null)
-  const [safety, setSafety] = useState<string[]>([])
-  const [customSafety, setCustomSafety] = useState<string[]>([])
-  const [addingSafety, setAddingSafety] = useState(false)
-  const [safetyDraft, setSafetyDraft] = useState('')
   const [confidence, setConfidence] = useState<ConfidenceKey | null>(null)
 
   // ── schedule ──
@@ -107,20 +99,6 @@ export default function TeenExperimentPage() {
     return d
   })
   const sortedSelectedDates = [...selectedDates].sort((a, b) => a - b)
-
-  const allSafety = [...SAFETY_BEHAVIOURS, ...customSafety]
-  const toggleSafety = (item: string) =>
-    setSafety(prev => (prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]))
-
-  const commitSafetyDraft = () => {
-    const v = safetyDraft.trim()
-    if (v && !allSafety.includes(v)) {
-      setCustomSafety(prev => [...prev, v])
-      setSafety(prev => [...prev, v])
-    }
-    setSafetyDraft('')
-    setAddingSafety(false)
-  }
 
   const commitFearDraft = () => {
     const v = fearDraft.trim()
@@ -159,7 +137,6 @@ export default function TeenExperimentPage() {
           prediction: fearText,
           bip_before: bip,
           distress_thermometer_expected: effectiveDT,
-          tempting_behaviors: encodeSafetyBehaviors(safety),
           confidence_level: confidence ?? 'medium',
           times_per_day: times,
         })
@@ -216,6 +193,28 @@ export default function TeenExperimentPage() {
         </div>
 
         <div className="teen-sheet">
+          {/* Which situation + step this experiment is for */}
+          {(behaviorData?.situation?.name || behaviorData?.name) && (
+            <div>
+              {behaviorData?.situation?.name && (
+                <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
+                  {behaviorData.situation.name}
+                </div>
+              )}
+              {behaviorData?.name && (
+                <h1
+                  style={{
+                    ...teen.type.headline,
+                    fontSize: teen.headSize.sm,
+                    margin: '8px 0 0',
+                  }}
+                >
+                  {behaviorData.name}
+                </h1>
+              )}
+            </div>
+          )}
+
           {/* 01 — the prediction */}
           <Field step="01" label="What are you afraid will happen?">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
@@ -279,7 +278,7 @@ export default function TeenExperimentPage() {
           {/* 02 — belief */}
           <Field
             step="02"
-            label="Believe that?"
+            label="How much do you believe that?"
             value={
               <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
             }
@@ -305,60 +304,8 @@ export default function TeenExperimentPage() {
             />
           </Field>
 
-          {/* 04 — safety behaviours */}
-          <Field step="04" label="Tempted to do to feel safer?">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-              {allSafety.map(item => (
-                <Chip
-                  key={item}
-                  label={item}
-                  variant="mint"
-                  selected={safety.includes(item)}
-                  onClick={() => toggleSafety(item)}
-                />
-              ))}
-              {addingSafety ? (
-                <input
-                  autoFocus
-                  value={safetyDraft}
-                  onChange={e => setSafetyDraft(e.target.value)}
-                  onBlur={commitSafetyDraft}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') commitSafetyDraft()
-                    if (e.key === 'Escape') {
-                      setSafetyDraft('')
-                      setAddingSafety(false)
-                    }
-                  }}
-                  placeholder="Something else"
-                  style={{
-                    padding: '8px 13px',
-                    borderRadius: teen.radius.pill,
-                    border: `1px solid ${teen.color.mint}`,
-                    background: teen.color.mintSoft,
-                    fontFamily: teen.font.sans,
-                    fontSize: 'var(--teen-text-chip)',
-                    fontWeight: 600,
-                    color: teen.color.ink,
-                    outline: 'none',
-                    minWidth: 120,
-                  }}
-                />
-              ) : (
-                <button
-                  type="button"
-                  className="teen-chip teen-chip--add"
-                  onClick={() => setAddingSafety(true)}
-                >
-                  <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
-                  Add your own
-                </button>
-              )}
-            </div>
-          </Field>
-
-          {/* 05 — confidence */}
-          <Field step="05" label="How ready do you feel?">
+          {/* 04 — confidence */}
+          <Field step="04" label="How ready do you feel?">
             <div style={{ display: 'flex', gap: 9 }}>
               {CONFIDENCE.map(opt => (
                 <button
