@@ -185,34 +185,31 @@ export default function TeenExperimentPage() {
               ...teen.type.eyebrow,
               color: teen.color.tealMid,
               letterSpacing: 'var(--teen-eyebrow-track-tight)',
+              flex: 1,
+              minWidth: 0,
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
-            Before · 15 sec
+            {behaviorData?.situation?.name || 'Before'}
           </span>
           <span style={{ width: 22 }} />
         </div>
 
         <div className="teen-sheet">
-          {/* Which situation + step this experiment is for */}
-          {(behaviorData?.situation?.name || behaviorData?.name) && (
-            <div>
-              {behaviorData?.situation?.name && (
-                <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
-                  {behaviorData.situation.name}
-                </div>
-              )}
-              {behaviorData?.name && (
-                <h1
-                  style={{
-                    ...teen.type.headline,
-                    fontSize: teen.headSize.sm,
-                    margin: '8px 0 0',
-                  }}
-                >
-                  {behaviorData.name}
-                </h1>
-              )}
-            </div>
+          {/* The specific behavior this experiment is about (situation is in the header) */}
+          {behaviorData?.name && (
+            <h1
+              style={{
+                ...teen.type.headline,
+                fontSize: teen.headSize.sm,
+                margin: 0,
+              }}
+            >
+              {behaviorData.name}
+            </h1>
           )}
 
           {/* 01 — the prediction */}
