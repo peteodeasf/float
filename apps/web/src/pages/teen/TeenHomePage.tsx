@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
-import { readTimesPerDay } from '../../lib/temptingBehaviors'
 import TeenScreen from '../../components/teen/TeenScreen'
 import teen from '../../styles/teenTokens'
 
@@ -189,28 +188,73 @@ export default function TeenHomePage() {
     ? sortedBehaviors.findIndex(b => b.id === suggestedBehavior.id)
     : -1
 
-  const endOfToday = new Date()
-  endOfToday.setHours(23, 59, 59, 999)
+  // ── Front-door routing ─────────────────────────────────────────────
+  // One home screen, four states, picked automatically from the experiment
+  // lifecycle + scheduled time — the teen never chooses "scheduling or
+  // reporting". A locked-in experiment is 'committed' with a scheduled_date;
+  // once reported it becomes 'completed' and drops out of the pending set. No
+  // new status field is needed — the existing lifecycle already expresses this.
+  const now = Date.now()
+  const schedTime = (e: any) =>
+    e.scheduled_date ? new Date(e.scheduled_date).getTime() : 0
+  const committedExps = ((pendingExperiments ?? []) as any[])
+    .filter(e => e.status === 'committed' && e.scheduled_date)
+    .sort((a, b) => schedTime(a) - schedTime(b))
+  const dueExps = committedExps.filter(e => schedTime(e) <= now) // State 3
+  const futureExps = committedExps.filter(e => schedTime(e) > now) // State 2
+  const dueExp = dueExps[0] ?? null
+  const upcomingExp = futureExps[0] ?? null
 
-  const readyToRecord = (pendingExperiments ?? []).filter((e: any) => {
-    if (e.status !== 'committed') return false
-    if (!e.scheduled_date) return true
-    return new Date(e.scheduled_date) <= endOfToday
-  })
-
-  const upcomingExperiments = ((pendingExperiments ?? []).filter(
-    (e: any) => e.status === 'committed' || e.status === 'planned'
-  ) as any[]).sort((a, b) => {
-    if (!a.scheduled_date && !b.scheduled_date) return 0
-    if (!a.scheduled_date) return 1
-    if (!b.scheduled_date) return -1
-    return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
-  })
+  type HomeState = 'empty' | 'schedule' | 'pre' | 'report' | 'browse'
+  const homeState: HomeState =
+    activeSituations.length === 0 && committedExps.length === 0
+      ? 'empty'
+      : dueExp
+        ? 'report' // State 3 — scheduled, time reached, not yet reported
+        : upcomingExp
+          ? 'pre' // State 2 — scheduled, still ahead
+          : suggestedBehavior
+            ? 'schedule' // State 1 — approved experiment, nothing committed
+            : 'browse' // State 4 — nothing pending; progress / browse ladder
 
   const behaviorById: Record<string, TeenBehavior> = {}
+  const situationNameByBehaviorId: Record<string, string> = {}
   for (const s of situations) {
-    for (const b of s.behaviors) behaviorById[b.id] = b
+    for (const b of s.behaviors) {
+      behaviorById[b.id] = b
+      situationNameByBehaviorId[b.id] = s.name
+    }
   }
+
+  // Display helpers for a committed experiment (used by the report + pre states).
+  const expName = (e: any) =>
+    e?.plan_description || behaviorById[e?.avoidance_behavior_id]?.name || 'Your experiment'
+  const expSituation = (e: any) => situationNameByBehaviorId[e?.avoidance_behavior_id] ?? null
+  const expWhen = (e: any) => {
+    if (!e?.scheduled_date) return null
+    const day = new Date(e.scheduled_date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    })
+    const b: string | null = e.scheduled_time_bucket ?? null
+    return b ? `${day} · ${b.charAt(0).toUpperCase()}${b.slice(1)}` : day
+  }
+
+  // State 2 lightens as the moment arrives: tips are prominent in the calmer
+  // days before, then recede near the scheduled time so the "just before"
+  // moment stays a get-out-of-the-way one. Provisional — flag for testing.
+  const hoursUntil = upcomingExp ? (schedTime(upcomingExp) - now) / 3.6e6 : Infinity
+  const nearMoment = hoursUntil <= 3
+
+  // Teen-side JIT tips for the pre-exposure state. PROVISIONAL placeholder —
+  // these should be sourced from the shared JIT education content model once it
+  // exists (same content model scoped elsewhere), not authored here.
+  const EXPOSURE_TIPS = [
+    { t: 'The goal isn’t to feel calm', d: 'It’s to find out what actually happens when you don’t avoid it.' },
+    { t: 'Anxiety comes down on its own', d: 'It rises, peaks, then fades — you don’t have to make it stop.' },
+    { t: 'Skip the safety moves', d: 'Let yourself be in it without the little things you’d do to feel safer.' },
+  ]
 
   const dismissLadderHint = () => {
     if (patientId) localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
@@ -273,22 +317,29 @@ export default function TeenHomePage() {
     )
   }
 
-  // Hero: reporting a due experiment takes priority over starting a new one.
-  const dueExperiment = readyToRecord[0] ?? null
-  const heroTitle: string | null = dueExperiment
-    ? (dueExperiment.plan_description ?? 'Your experiment')
-    : (suggestedBehavior?.name ?? null)
-  const heroMeta = dueExperiment
-    ? dueExperiment.scheduled_date
-      ? new Date(dueExperiment.scheduled_date).toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'short',
-          day: 'numeric',
-        })
-      : 'Whenever you’re ready'
-    : suggestedIndex >= 0
-      ? `Step ${suggestedIndex + 1} of ${sortedBehaviors.length}`
-      : null
+  // Shared bits of the primary "card" look, reused across the states.
+  const forLabel = {
+    fontFamily: teen.font.mono,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase' as const,
+    color: teen.color.muted,
+  }
+  const metaRow = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingTop: 18,
+    borderTop: `1px solid ${teen.color.line}`,
+    fontFamily: teen.font.sans,
+    fontSize: 13,
+    fontWeight: 600,
+    color: teen.color.tealMid,
+  }
+  // Teal, not mint: this dot sits on the white card, where mint is 1.26:1.
+  const metaDot = { width: 7, height: 7, borderRadius: '50%' as const, background: teen.color.tealMid }
 
   return (
     <TeenScreen bubbles>
@@ -316,9 +367,10 @@ export default function TeenHomePage() {
           flexDirection: 'column',
         }}
       >
-        {/* ── hero ── */}
+        {/* ── primary state — exactly one of the four ── */}
         <div style={{ padding: `0 ${teen.space.pad}` }}>
-          {activeSituations.length === 0 ? (
+          {/* No active experiments at all */}
+          {homeState === 'empty' && (
             <div style={{ marginTop: 30 }}>
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Nothing yet</div>
               <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
@@ -336,81 +388,129 @@ export default function TeenHomePage() {
                 </button>
               </div>
             </div>
-          ) : heroTitle ? (
+          )}
+
+          {/* State 3 — scheduled time has arrived: tell me how it went */}
+          {homeState === 'report' && dueExp && (
             <>
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
-                {dueExperiment ? 'Ready to report' : 'Approved experiment'}
+                Ready to report
               </div>
-
               <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
-                {selectedSituation && (
-                  <div
-                    style={{
-                      fontFamily: teen.font.mono,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: teen.color.muted,
-                    }}
-                  >
-                    For · {selectedSituation.name}
-                  </div>
-                )}
-                <h2
-                  style={{
-                    ...teen.type.headline,
-                    fontSize: teen.headSize.md,
-                    margin: '14px 0 0',
-                  }}
-                >
-                  {heroTitle}
+                {expSituation(dueExp) && <div style={forLabel}>For · {expSituation(dueExp)}</div>}
+                <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '14px 0 0' }}>
+                  {expName(dueExp)}
                 </h2>
-                {heroMeta && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginTop: 20,
-                      paddingTop: 18,
-                      borderTop: `1px solid ${teen.color.line}`,
-                      fontFamily: teen.font.sans,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: teen.color.tealMid,
-                    }}
-                  >
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        // Teal, not mint: this dot sits on the white hero card,
-                        // where mint is 1.26:1 and reads as nothing.
-                        background: teen.color.tealMid,
-                      }}
-                    />
-                    {heroMeta}
+                {expWhen(dueExp) && (
+                  <div style={metaRow}>
+                    <span aria-hidden="true" style={metaDot} />
+                    {expWhen(dueExp)}
                   </div>
                 )}
               </div>
-
               <div style={{ marginTop: 20 }}>
                 <button
                   className="teen-btn teen-btn--primary"
-                  onClick={() =>
-                    dueExperiment
-                      ? navigate(`/teen/record/${dueExperiment.id}`)
-                      : suggestedBehavior && handleBehaviorTap(suggestedBehavior)
-                  }
+                  onClick={() => navigate(`/teen/record/${dueExp.id}`)}
                 >
-                  {dueExperiment ? 'Tell me how it went →' : "I'm going to do it"}
+                  Tell me how it went →
                 </button>
               </div>
             </>
-          ) : (
+          )}
+
+          {/* State 2 — scheduled, still ahead: pre-exposure check-in. Reminders
+              deep-link here. Tips recede as the moment gets close. */}
+          {homeState === 'pre' && upcomingExp && (
+            <>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
+                Coming up
+              </div>
+              <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
+                {expSituation(upcomingExp) && (
+                  <div style={forLabel}>For · {expSituation(upcomingExp)}</div>
+                )}
+                <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '14px 0 0' }}>
+                  {expName(upcomingExp)}
+                </h2>
+                {expWhen(upcomingExp) && (
+                  <div style={metaRow}>
+                    <span aria-hidden="true" style={metaDot} />
+                    {expWhen(upcomingExp)}
+                  </div>
+                )}
+              </div>
+
+              {nearMoment ? (
+                <p style={{ ...teen.type.body, color: teen.color.mutedQuiet, marginTop: 20 }}>
+                  It’s almost time. You know the plan — you’ve got this. When it’s done, come
+                  back and tell me how it went.
+                </p>
+              ) : (
+                <div style={{ marginTop: 24 }}>
+                  <div style={teen.type.eyebrow}>How to handle it</div>
+                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {EXPOSURE_TIPS.map((tip, i) => (
+                      <div key={i} className="teen-card" style={{ padding: '14px 16px' }}>
+                        <div
+                          style={{
+                            fontFamily: teen.font.sans,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: teen.color.ink,
+                          }}
+                        >
+                          {tip.t}
+                        </div>
+                        <div
+                          style={{
+                            ...teen.type.body,
+                            fontSize: 13,
+                            color: teen.color.muted,
+                            marginTop: 4,
+                          }}
+                        >
+                          {tip.d}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* State 1 — approved experiment, nothing committed: schedule + commit */}
+          {homeState === 'schedule' && suggestedBehavior && (
+            <>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
+                Approved experiment
+              </div>
+              <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
+                {selectedSituation && <div style={forLabel}>For · {selectedSituation.name}</div>}
+                <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '14px 0 0' }}>
+                  {suggestedBehavior.name}
+                </h2>
+                {suggestedIndex >= 0 && (
+                  <div style={metaRow}>
+                    <span aria-hidden="true" style={metaDot} />
+                    Step {suggestedIndex + 1} of {sortedBehaviors.length}
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <button
+                  className="teen-btn teen-btn--primary"
+                  onClick={() => handleBehaviorTap(suggestedBehavior)}
+                >
+                  I'm going to do it
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* State 4 — nothing pending: browse / progress */}
+          {homeState === 'browse' && (
             <div className="teen-card" style={{ marginTop: 30, padding: '24px 22px' }}>
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Nice work</div>
               <p style={{ ...teen.type.body, marginTop: 12, marginBottom: 0 }}>
@@ -457,8 +557,8 @@ export default function TeenHomePage() {
           </div>
         )}
 
-        {/* ── the ladder ── */}
-        {activeSituations.length > 0 && (
+        {/* ── the ladder — only in the schedule/browse states ── */}
+        {(homeState === 'schedule' || homeState === 'browse') && activeSituations.length > 0 && (
           <div style={{ padding: `28px ${teen.space.pad} 0` }}>
             <div style={teen.type.eyebrow}>Your ladder</div>
             {showLadderHint && sortedBehaviors.length > 0 && (
@@ -578,78 +678,75 @@ export default function TeenHomePage() {
           </div>
         )}
 
-        {/* ── upcoming ── */}
-        {upcomingExperiments.length > 0 && (
-          <div style={{ padding: `28px ${teen.space.pad} 0` }}>
-            <div style={teen.type.eyebrow}>Coming up</div>
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {upcomingExperiments.map((exp: any) => {
-                const name = behaviorById[exp.avoidance_behavior_id]?.name ?? 'Experiment'
-                const scheduled = exp.scheduled_date ? new Date(exp.scheduled_date) : null
-                const dateLabel = scheduled
-                  ? scheduled.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                  : 'Not scheduled'
-                const times = readTimesPerDay(exp)
-                return (
-                  <button
-                    key={exp.id}
-                    onClick={() => {
-                      if (!scheduled || scheduled <= endOfToday) {
-                        navigate(`/teen/record/${exp.id}`)
-                      } else {
-                        setToastMessage(`That one's for ${dateLabel}`)
-                        setTimeout(() => setToastMessage(null), 2500)
-                      }
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '14px 15px',
-                      borderRadius: teen.radius.btn,
-                      background: teen.color.card,
-                      border: `1px solid ${teen.color.lineCard}`,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
-                  >
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span
+        {/* ── also scheduled — the other committed experiments (multi-day) ── */}
+        {(homeState === 'pre' || homeState === 'report') &&
+          (() => {
+            const others =
+              homeState === 'report' ? [...dueExps.slice(1), ...futureExps] : futureExps.slice(1)
+            if (others.length === 0) return null
+            return (
+              <div style={{ padding: `28px ${teen.space.pad} 0` }}>
+                <div style={teen.type.eyebrow}>Also scheduled</div>
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {others.map((exp: any) => {
+                    const isDue = schedTime(exp) <= now
+                    return (
+                      <button
+                        key={exp.id}
+                        onClick={() => {
+                          if (isDue) {
+                            navigate(`/teen/record/${exp.id}`)
+                          } else {
+                            setToastMessage(`That one's for ${expWhen(exp) ?? 'later'}`)
+                            setTimeout(() => setToastMessage(null), 2500)
+                          }
+                        }}
                         style={{
-                          display: 'block',
-                          fontFamily: teen.font.sans,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: teen.color.ink,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '14px 15px',
+                          borderRadius: teen.radius.btn,
+                          background: teen.color.card,
+                          border: `1px solid ${teen.color.lineCard}`,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
                         }}
                       >
-                        {name}
-                      </span>
-                      <span
-                        style={{
-                          display: 'block',
-                          fontFamily: teen.font.mono,
-                          fontSize: 11,
-                          color: teen.color.muted,
-                          marginTop: 4,
-                        }}
-                      >
-                        {dateLabel}
-                        {times > 1 ? ` · ×${times}` : ''}
-                      </span>
-                    </span>
-                    <span style={{ color: teen.color.chevron, flex: 'none' }}>›</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span
+                            style={{
+                              display: 'block',
+                              fontFamily: teen.font.sans,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: teen.color.ink,
+                            }}
+                          >
+                            {expName(exp)}
+                          </span>
+                          <span
+                            style={{
+                              display: 'block',
+                              fontFamily: teen.font.mono,
+                              fontSize: 11,
+                              color: teen.color.muted,
+                              marginTop: 4,
+                            }}
+                          >
+                            {expWhen(exp) ?? 'Not scheduled'}
+                            {isDue ? ' · ready' : ''}
+                          </span>
+                        </span>
+                        <span style={{ color: teen.color.chevron, flex: 'none' }}>›</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
 
         {/* ── quiet footer ── */}
         <div
