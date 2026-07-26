@@ -22,6 +22,7 @@ class ExperimentBeforeState(BaseModel):
     tempting_behaviors: Optional[str] = None
     confidence_level: str
     times_per_day: Optional[int] = None
+    scheduled_time_bucket: Optional[str] = None
 
 
 class ExperimentAfterState(BaseModel):
@@ -48,6 +49,7 @@ class ExperimentResponse(BaseModel):
     tempting_behaviors: Optional[str] = None
     confidence_level: Optional[str] = None
     times_per_day: Optional[int] = None
+    scheduled_time_bucket: Optional[str] = None
     # After state
     feared_outcome_occurred: Optional[bool] = None
     what_happened: Optional[str] = None
@@ -67,6 +69,7 @@ class ExperimentListResponse(BaseModel):
     avoidance_behavior_id: Optional[uuid.UUID] = None
     status: str
     scheduled_date: Optional[datetime] = None
+    scheduled_time_bucket: Optional[str] = None
     completed_date: Optional[datetime] = None
     plan_description: Optional[str] = None
     confidence_level: Optional[str] = None

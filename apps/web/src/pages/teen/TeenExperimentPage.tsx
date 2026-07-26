@@ -8,7 +8,7 @@ import BeliefSlider from '../../components/teen/BeliefSlider'
 import Thermometer from '../../components/teen/Thermometer'
 import teen from '../../styles/teenTokens'
 
-type Step = 'before' | 'schedule' | 'committed'
+type Step = 'before' | 'committed'
 
 /** Face tiles map straight onto the backend's confidence_level enum. */
 const CONFIDENCE = [
@@ -18,6 +18,20 @@ const CONFIDENCE = [
 ] as const
 
 type ConfidenceKey = (typeof CONFIDENCE)[number]['key']
+
+/**
+ * Coarse "when" buckets. Deliberately not a clock — a specific-ish time makes
+ * the teen far likelier to actually do the exposure than "whenever". Labels are
+ * provisional; `hour` is the representative time stamped onto scheduled_date so
+ * a future reminder has something to fire on.
+ */
+const TIME_BUCKETS = [
+  { key: 'morning', label: 'Morning', hour: 9 },
+  { key: 'afternoon', label: 'Afternoon', hour: 14 },
+  { key: 'evening', label: 'Evening', hour: 19 },
+] as const
+
+type BucketKey = (typeof TIME_BUCKETS)[number]['key']
 
 function Field({
   step,
@@ -67,9 +81,9 @@ export default function TeenExperimentPage() {
   const [dtExpected, setDtExpected] = useState<number | null>(null)
   const [confidence, setConfidence] = useState<ConfidenceKey | null>(null)
 
-  // ── schedule ──
+  // ── schedule (now part of the before screen) ──
   const [selectedDates, setSelectedDates] = useState<number[]>([0])
-  const [times, setTimes] = useState(1)
+  const [bucket, setBucket] = useState<BucketKey | null>(null)
 
   // ── committed ──
   const [lastCommittedExperimentId, setLastCommittedExperimentId] = useState<string | null>(null)
@@ -107,7 +121,10 @@ export default function TeenExperimentPage() {
     setAddingFear(false)
   }
 
-  const canLockIn = !!fearText.trim() && !!confidence
+  // Each block contributes its own guard; removing a block means removing its
+  // clause here, not restructuring. Schedule (day + bucket) is now required.
+  const canLockIn =
+    selectedDates.length > 0 && !!bucket && !!fearText.trim() && !!confidence
 
   const tooHardMutation = useMutation({
     mutationFn: async (experimentId: string) => {
@@ -118,13 +135,18 @@ export default function TeenExperimentPage() {
     onSuccess: () => setTooHardSent(true),
   })
 
+  const bucketHour = TIME_BUCKETS.find(b => b.key === bucket)?.hour ?? 12
+
   const handleCommit = async () => {
-    if (selectedDates.length === 0) return
+    if (selectedDates.length === 0 || !bucket) return
     setCommitPending(true)
     try {
       let lastId: string | null = null
       for (const dateIdx of sortedSelectedDates) {
-        const date = next7Days[dateIdx]
+        // Stamp the bucket's representative hour onto the chosen day so the
+        // scheduled_date is a real committed moment (and a reminder anchor).
+        const date = new Date(next7Days[dateIdx])
+        date.setHours(bucketHour, 0, 0, 0)
         const createRes = await teenApiClient.post(
           `/patient/behaviors/${behaviorId}/experiments`,
           { scheduled_date: date.toISOString() }
@@ -138,7 +160,7 @@ export default function TeenExperimentPage() {
           bip_before: bip,
           distress_thermometer_expected: effectiveDT,
           confidence_level: confidence ?? 'medium',
-          times_per_day: times,
+          scheduled_time_bucket: bucket,
         })
         await teenApiClient.post(`/patient/experiments/${newExp.id}/commit`)
         lastId = newExp.id
@@ -212,6 +234,93 @@ export default function TeenExperimentPage() {
             </h1>
           )}
 
+          {/* When — day + coarse time. First thing they set: committing to a
+              specific moment (a commitment) comes before the predictions.
+              Independently removable, like each block below. */}
+          <div>
+            <div style={{ ...teen.type.label, marginBottom: 9 }}>When will you do it?</div>
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+              {next7Days.map((d, i) => {
+                const isSelected = selectedDates.includes(i)
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() =>
+                      setSelectedDates(prev =>
+                        prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]
+                      )
+                    }
+                    style={{
+                      flex: '0 0 auto',
+                      width: 52,
+                      padding: '9px 4px',
+                      borderRadius: 14,
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      background: isSelected ? teen.color.ink : teen.color.cardPure,
+                      border: `1px solid ${isSelected ? teen.color.ink : teen.color.lineSoft}`,
+                      color: isSelected ? '#fff' : teen.color.ink,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: teen.font.mono,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        color: isSelected ? teen.color.mint : teen.color.muted,
+                      }}
+                    >
+                      {i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: teen.font.mono,
+                        fontSize: 17,
+                        marginTop: 3,
+                        color: isSelected ? '#fff' : teen.color.ink,
+                      }}
+                    >
+                      {d.getDate()}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              {TIME_BUCKETS.map(b => {
+                const isSel = bucket === b.key
+                return (
+                  <button
+                    key={b.key}
+                    type="button"
+                    aria-pressed={isSel}
+                    onClick={() => setBucket(b.key)}
+                    style={{
+                      flex: 1,
+                      padding: '12px 0',
+                      borderRadius: 14,
+                      cursor: 'pointer',
+                      fontFamily: teen.font.sans,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      background: isSel ? teen.color.ink : teen.color.cardPure,
+                      border: `1px solid ${isSel ? teen.color.ink : teen.color.lineSoft}`,
+                      color: isSel ? '#fff' : teen.color.ink,
+                    }}
+                  >
+                    {b.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div style={{ flex: 1 }} aria-hidden="true" />
+
           {/* 01 — the prediction */}
           <Field step="01" label="What are you afraid will happen?">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
@@ -272,6 +381,8 @@ export default function TeenExperimentPage() {
             )}
           </Field>
 
+          <div style={{ flex: 1 }} aria-hidden="true" />
+
           {/* 02 — belief */}
           <Field
             step="02"
@@ -282,6 +393,8 @@ export default function TeenExperimentPage() {
           >
             <BeliefSlider value={bip} onChange={setBip} label="How much you believe it" />
           </Field>
+
+          <div style={{ flex: 1 }} aria-hidden="true" />
 
           {/* 03 — expected distress */}
           <Field
@@ -301,6 +414,8 @@ export default function TeenExperimentPage() {
             />
           </Field>
 
+          <div style={{ flex: 1 }} aria-hidden="true" />
+
           {/* 04 — confidence */}
           <Field step="04" label="How ready do you feel?">
             <div style={{ display: 'flex', gap: 9 }}>
@@ -319,158 +434,15 @@ export default function TeenExperimentPage() {
             </div>
           </Field>
 
-          <div style={{ flex: 1, minHeight: 6 }} />
+          <div style={{ flex: 1 }} aria-hidden="true" />
 
           <div style={{ paddingBottom: 16 }}>
             <button
               className="teen-btn teen-btn--primary"
-              disabled={!canLockIn}
-              onClick={() => setStep('schedule')}
-            >
-              Lock it in
-            </button>
-          </div>
-        </div>
-      </TeenScreen>
-    )
-  }
-
-  // ───────────────────────────── SCHEDULE ─────────────────────────────
-  if (step === 'schedule') {
-    return (
-      <TeenScreen>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: `16px ${teen.space.pad} 12px`,
-            flex: 'none',
-          }}
-        >
-          <button
-            onClick={() => setStep('before')}
-            aria-label="Back"
-            style={{
-              background: 'none',
-              border: 0,
-              cursor: 'pointer',
-              font: '600 22px ' + teen.font.sans,
-              color: teen.color.ink,
-              lineHeight: 1,
-              padding: 0,
-            }}
-          >
-            ‹
-          </button>
-          <span
-            style={{
-              ...teen.type.eyebrow,
-              color: teen.color.tealMid,
-              letterSpacing: 'var(--teen-eyebrow-track-tight)',
-            }}
-          >
-            When
-          </span>
-          <span style={{ width: 22 }} />
-        </div>
-
-        <div className="teen-sheet">
-          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.sm }}>
-            When will you do this?
-          </h2>
-
-          <div>
-            <div style={{ ...teen.type.label, marginBottom: 9 }}>Which days?</div>
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-              {next7Days.map((d, i) => {
-                const isSelected = selectedDates.includes(i)
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() =>
-                      setSelectedDates(prev =>
-                        prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]
-                      )
-                    }
-                    style={{
-                      flex: '0 0 auto',
-                      width: 56,
-                      padding: '10px 4px',
-                      borderRadius: 14,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      background: isSelected ? teen.color.ink : teen.color.cardPure,
-                      border: `1px solid ${isSelected ? teen.color.ink : teen.color.lineSoft}`,
-                      color: isSelected ? '#fff' : teen.color.ink,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontFamily: teen.font.mono,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        color: isSelected ? teen.color.mint : teen.color.muted,
-                      }}
-                    >
-                      {i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: teen.font.mono,
-                        fontSize: 18,
-                        marginTop: 3,
-                        color: isSelected ? '#fff' : teen.color.ink,
-                      }}
-                    >
-                      {d.getDate()}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div>
-            <div style={{ ...teen.type.label, marginBottom: 9 }}>How many times each day?</div>
-            <div style={{ display: 'flex', gap: 9 }}>
-              {[1, 2, 3].map(n => (
-                <button
-                  key={n}
-                  type="button"
-                  aria-pressed={times === n}
-                  onClick={() => setTimes(n)}
-                  style={{
-                    flex: 1,
-                    padding: '14px 0',
-                    borderRadius: 15,
-                    cursor: 'pointer',
-                    fontFamily: teen.font.mono,
-                    fontSize: 20,
-                    background: times === n ? teen.color.ink : teen.color.cardPure,
-                    border: `1px solid ${times === n ? teen.color.ink : teen.color.lineSoft}`,
-                    color: times === n ? '#fff' : teen.color.ink,
-                  }}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minHeight: 6 }} />
-
-          <div style={{ paddingBottom: 16 }}>
-            <button
-              className="teen-btn teen-btn--primary"
-              disabled={commitPending || selectedDates.length === 0}
+              disabled={!canLockIn || commitPending}
               onClick={handleCommit}
             >
-              {commitPending ? 'Locking in…' : "I'm going to do it"}
+              {commitPending ? 'Locking in…' : 'Lock it in'}
             </button>
           </div>
         </div>
@@ -537,7 +509,7 @@ export default function TeenExperimentPage() {
                 }}
               >
                 {next7Days[idx].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                {times > 1 ? ` ×${times}` : ''}
+                {bucket ? ` · ${TIME_BUCKETS.find(b => b.key === bucket)?.label}` : ''}
               </span>
             ))}
           </div>

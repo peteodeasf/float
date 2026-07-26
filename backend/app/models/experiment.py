@@ -44,6 +44,11 @@ class Experiment(Base):
     # Scheduling: repeats per scheduled day. Previously encoded as `times:N`
     # inside tempting_behaviors.
     times_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Coarse "when" the teen commits to (e.g. morning / afternoon / evening).
+    # scheduled_date carries the day (and a representative hour for the bucket);
+    # this keeps the bucket label so it survives relabelling/time changes and
+    # can drive a future reminder. Provisional — labels are UI-side.
+    scheduled_time_bucket: Mapped[str | None] = mapped_column(String, nullable=True)
     # After state
     feared_outcome_occurred: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     what_happened: Mapped[str | None] = mapped_column(Text, nullable=True)

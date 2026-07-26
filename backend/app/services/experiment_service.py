@@ -185,6 +185,8 @@ async def save_before_state(
     experiment.confidence_level = data.confidence_level
     if data.times_per_day is not None:
         experiment.times_per_day = data.times_per_day
+    if data.scheduled_time_bucket is not None:
+        experiment.scheduled_time_bucket = data.scheduled_time_bucket
     experiment.status = "in_progress"
     experiment.updated_at = datetime.now(timezone.utc)
 
