@@ -9,13 +9,12 @@ import Thermometer from '../../components/teen/Thermometer'
 import teen from '../../styles/teenTokens'
 
 /**
- * The post-commit journey.
- *
- * `moment` is the quiet screen a teen lands on when they open a due
- * experiment — the app says its piece and gets out of the way. `outcome` is
- * the disconfirmation question, asked on its own before any form.
+ * The post-exposure reporting journey. The teen reaches this by tapping "Tell
+ * me how it went" on a due experiment, so it opens straight on the
+ * disconfirmation question (`outcome`) — the app no longer shows a "you're in
+ * it" moment here; that now lives on the home's pre-exposure state.
  */
-type Phase = 'moment' | 'outcome' | 'win' | 'faced' | 'toohard' | 'capture' | 'score'
+type Phase = 'outcome' | 'win' | 'faced' | 'toohard' | 'capture' | 'score'
 
 const WHAT_HAPPENED = ['A few glanced', 'Nobody cared', 'Awkward but fine']
 
@@ -55,7 +54,7 @@ export default function TeenRecordPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const [phase, setPhase] = useState<Phase>('moment')
+  const [phase, setPhase] = useState<Phase>('outcome')
 
   const [actualDT, setActualDT] = useState<number | null>(null)
   const [bipAfterRaw, setBipAfterRaw] = useState<number | null>(null)
@@ -167,110 +166,6 @@ export default function TeenRecordPage() {
     setAddingHappened(false)
   }
 
-  // ─────────────────────────────── MOMENT ───────────────────────────────
-  if (phase === 'moment') {
-    return (
-      <TeenScreen bubbles>
-        <div
-          style={{
-            position: 'relative',
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            padding: `0 ${teen.space.padLg}`,
-          }}
-        >
-          <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>You're in it</span>
-
-          {planText && (
-            <h2
-              style={{
-                ...teen.type.headline,
-                fontSize: teen.headSize.sm,
-                margin: '14px 0 30px',
-              }}
-            >
-              {planText}
-            </h2>
-          )}
-
-          <div
-            style={{
-              width: '100%',
-              background: teen.color.ink,
-              borderRadius: teen.radius.cardLg,
-              padding: '30px 24px',
-              boxShadow: teen.shadow.cardDark,
-            }}
-          >
-            <div style={{ fontFamily: teen.font.sans, fontSize: 14, color: teen.color.onDark }}>
-              You said
-            </div>
-            <div
-              style={{
-                fontFamily: teen.font.mono,
-                fontSize: teen.dataSize.xl,
-                color: '#fff',
-                lineHeight: 1,
-                margin: '6px 0',
-              }}
-            >
-              {bipBefore ?? '—'}
-              <span style={{ fontSize: 26, color: teen.color.mint }}>%</span>
-            </div>
-            {prediction && (
-              <div
-                style={{
-                  fontFamily: teen.font.sans,
-                  fontSize: 18,
-                  color: teen.color.mintSoft,
-                  lineHeight: 1.4,
-                }}
-              >
-                {prediction}
-              </div>
-            )}
-          </div>
-
-          <p style={{ ...teen.type.body, color: teen.color.mutedQuiet, marginTop: 26 }}>
-            Let's find out.
-          </p>
-        </div>
-
-        <div
-          style={{
-            position: 'relative',
-            padding: `0 ${teen.space.padLg} 34px`,
-            textAlign: 'center',
-          }}
-        >
-          <p
-            style={{
-              fontFamily: teen.font.sans,
-              fontSize: 14,
-              color: teen.color.mutedQuiet,
-              margin: '0 0 14px',
-            }}
-          >
-            Come back and tell me how it went.
-          </p>
-          <button className="teen-btn teen-btn--primary" onClick={() => setPhase('outcome')}>
-            I'm through it →
-          </button>
-
-          <div style={{ marginTop: 14 }}>
-            <button className="teen-btn teen-btn--quiet" onClick={enterTooHard}>
-              It felt like too much
-            </button>
-          </div>
-        </div>
-      </TeenScreen>
-    )
-  }
-
   // ────────────────────────────── OUTCOME ───────────────────────────────
   if (phase === 'outcome') {
     return (
@@ -284,29 +179,29 @@ export default function TeenRecordPage() {
           }}
         >
           <div style={{ marginTop: 36 }}>
-            <span style={teen.type.eyebrow}>You came back</span>
+            <span style={teen.type.eyebrow}>How it went</span>
+            {planText && (
+              <div
+                style={{
+                  ...teen.type.headline,
+                  fontSize: teen.headSize.sm,
+                  margin: '10px 0 0',
+                }}
+              >
+                {planText}
+              </div>
+            )}
           </div>
 
           <div
             style={{
-              marginTop: 16,
+              marginTop: 24,
               fontFamily: teen.font.sans,
               fontSize: 15,
               color: teen.color.mutedQuiet,
             }}
           >
-            You said
-          </div>
-          <div
-            style={{
-              fontFamily: teen.font.mono,
-              fontSize: teen.dataSize.lg,
-              lineHeight: 1.1,
-              color: teen.color.ink,
-              marginTop: 4,
-            }}
-          >
-            {bipBefore ?? '—'}%
+            You were worried that
           </div>
           {prediction && (
             <div
@@ -322,9 +217,19 @@ export default function TeenRecordPage() {
               {prediction}
             </div>
           )}
+          <div
+            style={{
+              fontFamily: teen.font.mono,
+              fontSize: 14,
+              color: teen.color.tealMid,
+              marginTop: 10,
+            }}
+          >
+            You believed it {bipBefore ?? '—'}%
+          </div>
 
-          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '32px 0 0' }}>
-            Did it happen?
+          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '30px 0 0' }}>
+            Did that happen?
           </h2>
 
           <div style={{ flex: 1, minHeight: 24 }} />
@@ -350,7 +255,7 @@ export default function TeenRecordPage() {
               padding: 20,
               fontSize: 17,
               borderRadius: teen.radius.btnLg,
-              marginBottom: 30,
+              marginBottom: 14,
               background: teen.color.cardPure,
             }}
             onClick={() => {
@@ -360,6 +265,12 @@ export default function TeenRecordPage() {
           >
             Yeah, it did
           </button>
+          {/* Escape for "I couldn't actually do it" — credited, not a fail. */}
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <button className="teen-btn teen-btn--quiet" onClick={enterTooHard}>
+              I couldn't do it this time
+            </button>
+          </div>
         </div>
       </TeenScreen>
     )
