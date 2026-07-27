@@ -371,7 +371,7 @@ export default function TeenHomePage() {
               return (
                 <>
                   <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
-                    Coming up
+                    Next experiment
                   </div>
                   <button
                     className="teen-card"
@@ -411,7 +411,7 @@ export default function TeenHomePage() {
           {/* Scheduled — everything after the soonest one */}
           {scheduledRest.length > 0 && (
             <div style={{ marginTop: 28 }}>
-              <div style={teen.type.eyebrow}>Scheduled</div>
+              <div style={teen.type.eyebrow}>Scheduled experiments</div>
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {scheduledRest.map((exp: any) => {
                   const due = schedTime(exp) <= now
@@ -489,7 +489,7 @@ export default function TeenHomePage() {
           {hasLadder && suggestedBehavior && (
             <div style={{ marginTop: 30 }}>
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
-                {hasCommitted ? 'Start another' : 'Ready to start'}
+                {hasCommitted ? 'Set up another experiment' : 'Set up an experiment'}
               </div>
               <div className="teen-card" style={{ marginTop: 14, padding: '22px' }}>
                 {selectedSituation && <div style={forLabel}>For · {selectedSituation.name}</div>}
@@ -510,7 +510,7 @@ export default function TeenHomePage() {
                   className="teen-btn teen-btn--primary"
                   onClick={() => handleBehaviorTap(suggestedBehavior)}
                 >
-                  I'm going to do it
+                  Set it up
                 </button>
               </div>
             </div>
