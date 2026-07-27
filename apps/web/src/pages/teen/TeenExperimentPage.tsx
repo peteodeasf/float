@@ -522,7 +522,7 @@ export default function TeenExperimentPage() {
 
       <div style={{ position: 'relative', padding: `0 ${teen.space.padLg} 34px` }}>
         <button className="teen-btn teen-btn--primary" onClick={() => navigate('/teen/home')}>
-          Back to today
+          Home
         </button>
 
         {!tooHardSent && !tooHardOpen && (

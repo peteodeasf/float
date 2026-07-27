@@ -299,7 +299,7 @@ export default function TeenProgressPage() {
 
         <div style={{ paddingBottom: 18 }}>
           <button className="teen-btn teen-btn--outline" onClick={() => navigate('/teen/home')}>
-            Back to today
+            Home
           </button>
         </div>
       </div>

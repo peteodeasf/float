@@ -678,75 +678,94 @@ export default function TeenHomePage() {
           </div>
         )}
 
-        {/* ── also scheduled — the other committed experiments (multi-day) ── */}
-        {(homeState === 'pre' || homeState === 'report') &&
-          (() => {
-            const others =
-              homeState === 'report' ? [...dueExps.slice(1), ...futureExps] : futureExps.slice(1)
-            if (others.length === 0) return null
-            return (
-              <div style={{ padding: `28px ${teen.space.pad} 0` }}>
-                <div style={teen.type.eyebrow}>Also scheduled</div>
-                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {others.map((exp: any) => {
-                    const isDue = schedTime(exp) <= now
-                    return (
-                      <button
-                        key={exp.id}
-                        onClick={() => {
-                          if (isDue) {
-                            navigate(`/teen/record/${exp.id}`)
-                          } else {
-                            setToastMessage(`That one's for ${expWhen(exp) ?? 'later'}`)
-                            setTimeout(() => setToastMessage(null), 2500)
-                          }
-                        }}
+        {/* ── Scheduled — the teen's upcoming commitments. Home is a hub, not a
+            "today" screen, so it always shows the schedule when there's more
+            than the one already in focus above. ── */}
+        {committedExps.length > 1 && (
+          <div style={{ padding: `28px ${teen.space.pad} 0` }}>
+            <div style={teen.type.eyebrow}>Scheduled</div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {committedExps.map((exp: any) => {
+                const isDue = schedTime(exp) <= now
+                const isFocus = exp.id === (dueExp?.id ?? upcomingExp?.id)
+                const tag = isFocus ? (isDue ? 'Now' : 'Next') : isDue ? 'Ready' : null
+                return (
+                  <button
+                    key={exp.id}
+                    onClick={() => {
+                      if (isDue) {
+                        navigate(`/teen/record/${exp.id}`)
+                      } else {
+                        setToastMessage(`That one's for ${expWhen(exp) ?? 'later'}`)
+                        setTimeout(() => setToastMessage(null), 2500)
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '14px 15px',
+                      borderRadius: teen.radius.btn,
+                      background: teen.color.card,
+                      border: `1px solid ${isFocus ? teen.color.mint : teen.color.lineCard}`,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                    }}
+                  >
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: '14px 15px',
-                          borderRadius: teen.radius.btn,
-                          background: teen.color.card,
-                          border: `1px solid ${teen.color.lineCard}`,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
+                          display: 'block',
+                          fontFamily: teen.font.sans,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: teen.color.ink,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span
-                            style={{
-                              display: 'block',
-                              fontFamily: teen.font.sans,
-                              fontSize: 14,
-                              fontWeight: 600,
-                              color: teen.color.ink,
-                            }}
-                          >
-                            {expName(exp)}
-                          </span>
-                          <span
-                            style={{
-                              display: 'block',
-                              fontFamily: teen.font.mono,
-                              fontSize: 11,
-                              color: teen.color.muted,
-                              marginTop: 4,
-                            }}
-                          >
-                            {expWhen(exp) ?? 'Not scheduled'}
-                            {isDue ? ' · ready' : ''}
-                          </span>
-                        </span>
-                        <span style={{ color: teen.color.chevron, flex: 'none' }}>›</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })()}
+                        {expName(exp)}
+                      </span>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontFamily: teen.font.mono,
+                          fontSize: 11,
+                          color: teen.color.muted,
+                          marginTop: 4,
+                        }}
+                      >
+                        {expWhen(exp) ?? 'Not scheduled'}
+                      </span>
+                    </span>
+                    {tag && (
+                      <span
+                        style={{
+                          fontFamily: teen.font.mono,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          padding: '3px 8px',
+                          borderRadius: teen.radius.pill,
+                          flex: 'none',
+                          background: isDue ? teen.color.mintSoft : teen.color.card,
+                          color: isDue ? teen.color.teal : teen.color.muted,
+                          border: isDue ? 'none' : `1px solid ${teen.color.lineCard}`,
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    )}
+                    <span style={{ color: teen.color.chevron, flex: 'none' }}>›</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── quiet footer ── */}
         <div
