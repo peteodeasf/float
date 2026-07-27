@@ -149,13 +149,7 @@ export default function TeenProgressPage() {
             </p>
           </div>
 
-          <div style={{ flex: 1, minHeight: 4 }} />
-
-          <div style={{ paddingBottom: 18 }}>
-            <button className="teen-btn teen-btn--outline" onClick={() => setSelectedId(null)}>
-              Back
-            </button>
-          </div>
+          <div style={{ height: 20, flex: 'none' }} />
         </div>
       </TeenScreen>
     )
