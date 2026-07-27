@@ -320,11 +320,11 @@ export default function TeenHomePage() {
   // Shared bits of the primary "card" look, reused across the states.
   const forLabel = {
     fontFamily: teen.font.mono,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 600,
-    letterSpacing: '0.06em',
+    letterSpacing: '0.05em',
     textTransform: 'uppercase' as const,
-    color: teen.color.muted,
+    color: teen.color.inkSoft,
   }
   const metaRow = {
     display: 'flex',

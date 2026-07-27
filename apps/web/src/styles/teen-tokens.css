@@ -46,9 +46,9 @@
   --teen-font-sans: Arial, Helvetica, sans-serif;
   --teen-font-mono: "Courier New", ui-monospace, monospace;
 
-  --teen-eyebrow-size: 10px;
-  --teen-eyebrow-track: 0.16em;
-  --teen-eyebrow-track-tight: 0.14em;
+  --teen-eyebrow-size: 12px;
+  --teen-eyebrow-track: 0.14em;
+  --teen-eyebrow-track-tight: 0.12em;
 
   --teen-text-xs: 11px;
   --teen-text-sm: 12px;
