@@ -1,7 +1,7 @@
-import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { getMyActionPlans, ActionPlan } from '../../api/action_plans'
+import TeenTabBar from '../../components/teen/TeenTabBar'
 
 const contentStyles: React.CSSProperties = {
   fontSize: '14px',
@@ -10,8 +10,7 @@ const contentStyles: React.CSSProperties = {
 }
 
 export default function TeenPlansPage() {
-  const { patientId, logout } = useTeenAuth()
-  const navigate = useNavigate()
+  const { patientId } = useTeenAuth()
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ['teen-action-plans', patientId],
@@ -19,45 +18,27 @@ export default function TeenPlansPage() {
     enabled: !!patientId
   })
 
-  const handleLogout = () => {
-    logout()
-    navigate('/teen/login')
-  }
-
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100dvh',
+      minHeight: '100dvh',
       background: '#f8fafc',
       maxWidth: '480px',
-      margin: '0 auto'
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       {/* Header */}
       <div style={{
+        flex: 'none',
         background: '#fff',
         padding: '20px 24px 16px',
-        borderBottom: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
+        borderBottom: '1px solid #e2e8f0'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            onClick={() => navigate('/teen/home')}
-            style={{ fontSize: '14px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            ← Back
-          </button>
-          <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>My Plans</span>
-        </div>
-        <button
-          onClick={handleLogout}
-          style={{ fontSize: '13px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          Sign out
-        </button>
+        <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>My plan</span>
       </div>
 
-      <div style={{ padding: '24px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '24px' }}>
         {isLoading && (
           <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
             Loading...
@@ -166,6 +147,8 @@ export default function TeenPlansPage() {
           font-weight: 600;
         }
       `}</style>
+
+      <TeenTabBar active="plan" />
     </div>
   )
 }

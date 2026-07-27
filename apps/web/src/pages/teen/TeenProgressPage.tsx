@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
+import TeenTabBar from '../../components/teen/TeenTabBar'
 import Sparkline from '../../components/teen/Sparkline'
 import SituationChart from '../../components/teen/SituationChart'
 import {
@@ -25,7 +25,6 @@ const PILL_CLASS: Record<SituationTag, string> = {
 
 export default function TeenProgressPage() {
   const { patientId } = useTeenAuth()
-  const navigate = useNavigate()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const { data: ladderData } = useQuery({
@@ -295,14 +294,10 @@ export default function TeenProgressPage() {
           </div>
         )}
 
-        <div style={{ flex: 1, minHeight: 4 }} />
-
-        <div style={{ paddingBottom: 18 }}>
-          <button className="teen-btn teen-btn--outline" onClick={() => navigate('/teen/home')}>
-            Home
-          </button>
-        </div>
+        <div style={{ height: 20, flex: 'none' }} />
       </div>
+
+      <TeenTabBar active="progress" />
     </TeenScreen>
   )
 }
