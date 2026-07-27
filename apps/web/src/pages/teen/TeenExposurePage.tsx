@@ -83,6 +83,31 @@ export default function TeenExposurePage() {
         <div
           style={{
             position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            padding: `16px ${teen.space.pad} 0`,
+            flex: 'none',
+          }}
+        >
+          <button
+            onClick={() => setPhase('overview')}
+            aria-label="Back"
+            style={{
+              background: 'none',
+              border: 0,
+              cursor: 'pointer',
+              font: '600 22px ' + teen.font.sans,
+              color: teen.color.ink,
+              lineHeight: 1,
+              padding: 0,
+            }}
+          >
+            ‹
+          </button>
+        </div>
+        <div
+          style={{
+            position: 'relative',
             flex: 1,
             display: 'flex',
             flexDirection: 'column',

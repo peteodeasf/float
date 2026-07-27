@@ -166,10 +166,40 @@ export default function TeenRecordPage() {
     setAddingHappened(false)
   }
 
+  // A back affordance for the steps a teen might want to reconsider. The
+  // terminal screens (scoreboard, too-hard) deliberately omit it.
+  const renderBack = (onBack: () => void) => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: `16px ${teen.space.pad} 0`,
+        flex: 'none',
+      }}
+    >
+      <button
+        onClick={onBack}
+        aria-label="Back"
+        style={{
+          background: 'none',
+          border: 0,
+          cursor: 'pointer',
+          font: '600 22px ' + teen.font.sans,
+          color: teen.color.ink,
+          lineHeight: 1,
+          padding: 0,
+        }}
+      >
+        ‹
+      </button>
+    </div>
+  )
+
   // ────────────────────────────── OUTCOME ───────────────────────────────
   if (phase === 'outcome') {
     return (
       <TeenScreen variant="alt">
+        {renderBack(() => navigate(`/teen/exposure/${experimentId}`))}
         <div
           style={{
             flex: 1,
@@ -178,7 +208,7 @@ export default function TeenRecordPage() {
             padding: `0 ${teen.space.pad}`,
           }}
         >
-          <div style={{ marginTop: 36 }}>
+          <div style={{ marginTop: 16 }}>
             <span style={teen.type.eyebrow}>How it went</span>
             {planText && (
               <div
@@ -281,6 +311,7 @@ export default function TeenRecordPage() {
   if (phase === 'win') {
     return (
       <TeenScreen variant="alt">
+        {renderBack(() => setPhase('outcome'))}
         <div
           style={{
             position: 'relative',
@@ -356,6 +387,7 @@ export default function TeenRecordPage() {
   if (phase === 'faced') {
     return (
       <TeenScreen variant="card">
+        {renderBack(() => setPhase('outcome'))}
         <div
           style={{
             flex: 1,
@@ -644,11 +676,26 @@ export default function TeenRecordPage() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
           padding: `16px ${teen.space.pad} 12px`,
           flex: 'none',
         }}
       >
+        <button
+          onClick={() => setPhase(fearedOccurred ? 'faced' : 'win')}
+          aria-label="Back"
+          style={{
+            background: 'none',
+            border: 0,
+            cursor: 'pointer',
+            font: '600 22px ' + teen.font.sans,
+            color: teen.color.ink,
+            lineHeight: 1,
+            padding: 0,
+          }}
+        >
+          ‹
+        </button>
         <span
           style={{
             ...teen.type.eyebrow,
@@ -658,6 +705,7 @@ export default function TeenRecordPage() {
         >
           After · how'd it go
         </span>
+        <span style={{ width: 22 }} />
       </div>
 
       <div className="teen-sheet">
