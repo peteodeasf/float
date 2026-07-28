@@ -101,6 +101,7 @@ export default function TeenHomePage() {
   const { patientId } = useTeenAuth()
   const navigate = useNavigate()
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null)
+  const [selectedBehaviorId, setSelectedBehaviorId] = useState<string | null>(null)
   const [jumpWarning, setJumpWarning] = useState<{
     targetBehaviorId: string
     suggestedBehaviorId: string
@@ -183,9 +184,14 @@ export default function TeenHomePage() {
     : []
 
   const suggestedBehavior = sortedBehaviors.find(b => b.status !== 'mastered') ?? null
-  const suggestedIndex = suggestedBehavior
-    ? sortedBehaviors.findIndex(b => b.id === suggestedBehavior.id)
-    : -1
+
+  // The step previewed in the "set up an experiment" card. Defaults to the
+  // suggested next step; tapping a ladder step selects it (updates the card,
+  // no navigation). Falls back to the suggested step when the current
+  // selection isn't in the active situation.
+  const previewBehavior =
+    sortedBehaviors.find(b => b.id === selectedBehaviorId && b.status !== 'mastered') ??
+    suggestedBehavior
 
   // ── What the home shows ────────────────────────────────────────────
   // The home is a persistent dashboard, not a single flipping state: what's
@@ -234,24 +240,34 @@ export default function TeenHomePage() {
     setShowLadderHint(false)
   }
 
-  const handleBehaviorTap = (behavior: TeenBehavior) => {
+  // Tapping a ladder step just selects it — the top card updates, no navigation.
+  const selectBehavior = (behavior: TeenBehavior) => {
     if (behavior.status === 'mastered') return
+    dismissLadderHint()
+    setSelectedBehaviorId(behavior.id)
+  }
+
+  // Only "Set it up" navigates. A big jump from the suggested step is gated
+  // behind the clinician's suggestion first.
+  const handleSetItUp = () => {
+    const b = previewBehavior
+    if (!b) return
     dismissLadderHint()
     if (
       suggestedBehavior &&
-      behavior.id !== suggestedBehavior.id &&
-      behavior.dt != null &&
+      b.id !== suggestedBehavior.id &&
+      b.dt != null &&
       suggestedBehavior.dt != null &&
-      behavior.dt - suggestedBehavior.dt > 2
+      b.dt - suggestedBehavior.dt > 2
     ) {
       setJumpWarning({
-        targetBehaviorId: behavior.id,
+        targetBehaviorId: b.id,
         suggestedBehaviorId: suggestedBehavior.id,
         suggestedName: suggestedBehavior.name,
       })
       return
     }
-    navigate(`/teen/experiment/${behavior.id}`)
+    navigate(`/teen/experiment/${b.id}`)
   }
 
   // ───────────────────────────── WELCOME ──────────────────────────────
@@ -485,8 +501,9 @@ export default function TeenHomePage() {
             </div>
           )}
 
-          {/* Start an experiment — the approved next step */}
-          {hasLadder && suggestedBehavior && (
+          {/* Set up an experiment — a preview of the currently-selected step.
+              Pick a situation + step from the ladder below to change it. */}
+          {hasLadder && previewBehavior && (
             <div style={{ marginTop: 30 }}>
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
                 {hasCommitted ? 'Set up another experiment' : 'Set up an experiment'}
@@ -496,22 +513,14 @@ export default function TeenHomePage() {
                 <h2
                   style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '14px 0 0' }}
                 >
-                  {suggestedBehavior.name}
+                  {previewBehavior.name}
                 </h2>
-                {suggestedIndex >= 0 && (
+                {previewBehavior.dt != null && (
                   <div style={metaRow}>
                     <span aria-hidden="true" style={metaDot} />
-                    Step {suggestedIndex + 1} of {sortedBehaviors.length}
+                    Feels about {Math.round(previewBehavior.dt)}/10
                   </div>
                 )}
-              </div>
-              <div style={{ marginTop: 16 }}>
-                <button
-                  className="teen-btn teen-btn--primary"
-                  onClick={() => handleBehaviorTap(suggestedBehavior)}
-                >
-                  Set it up
-                </button>
               </div>
             </div>
           )}
@@ -527,41 +536,7 @@ export default function TeenHomePage() {
           )}
         </div>
 
-        {/* ── jump warning ── */}
-        {jumpWarning && (
-          <div style={{ padding: `20px ${teen.space.pad} 0` }}>
-            <div className="teen-card" style={{ padding: 18, boxShadow: teen.shadow.cardSoft }}>
-              <p style={{ ...teen.type.body, fontSize: 14, margin: '0 0 12px' }}>
-                That's a big jump from where you are. Your clinician suggested starting with{' '}
-                <b style={{ color: teen.color.ink }}>{jumpWarning.suggestedName}</b>.
-              </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  className="teen-chip"
-                  onClick={() => {
-                    const id = jumpWarning.suggestedBehaviorId
-                    setJumpWarning(null)
-                    navigate(`/teen/experiment/${id}`)
-                  }}
-                >
-                  Go to that one
-                </button>
-                <button
-                  className="teen-chip"
-                  onClick={() => {
-                    const id = jumpWarning.targetBehaviorId
-                    setJumpWarning(null)
-                    navigate(`/teen/experiment/${id}`)
-                  }}
-                >
-                  Start here anyway
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── the ladder — pick a different step ── */}
+        {/* ── the ladder — pick which step to set up ── */}
         {hasLadder && activeSituations.length > 0 && (
           <div style={{ padding: `28px ${teen.space.pad} 0` }}>
             <div style={teen.type.eyebrow}>Your ladder</div>
@@ -574,7 +549,7 @@ export default function TeenHomePage() {
                   margin: '6px 0 0',
                 }}
               >
-                Easiest at the top. Tap any step to start it.
+                Easiest at the top. Tap a step to pick it.
               </p>
             )}
 
@@ -604,21 +579,23 @@ export default function TeenHomePage() {
 
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {sortedBehaviors.map((behavior, i) => {
-                const isCurrent = behavior.id === suggestedBehavior?.id
+                const isSuggested = behavior.id === suggestedBehavior?.id
+                const isSelected = behavior.id === previewBehavior?.id
                 const isMastered = behavior.status === 'mastered'
                 return (
                   <button
                     key={behavior.id}
-                    onClick={() => handleBehaviorTap(behavior)}
+                    onClick={() => selectBehavior(behavior)}
                     disabled={isMastered}
+                    aria-pressed={isSelected}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 12,
                       padding: '14px 15px',
                       borderRadius: teen.radius.btn,
-                      background: teen.color.card,
-                      border: `1px solid ${isCurrent ? teen.color.mint : teen.color.lineCard}`,
+                      background: isSelected ? teen.color.mintSoft : teen.color.card,
+                      border: `1px solid ${isSelected ? teen.color.mint : teen.color.lineCard}`,
                       cursor: isMastered ? 'default' : 'pointer',
                       textAlign: 'left',
                       width: '100%',
@@ -630,7 +607,7 @@ export default function TeenHomePage() {
                         fontFamily: teen.font.mono,
                         fontSize: 11,
                         fontWeight: 700,
-                        color: isCurrent ? teen.color.teal : teen.chart.label,
+                        color: isSelected ? teen.color.teal : teen.chart.label,
                         flex: 'none',
                         width: 18,
                       }}
@@ -652,7 +629,7 @@ export default function TeenHomePage() {
                       >
                         {behavior.name}
                       </span>
-                      {isCurrent && (
+                      {isSuggested && (
                         <span className="teen-pill teen-pill--progressing" style={{ marginTop: 6 }}>
                           suggested
                         </span>
@@ -674,6 +651,48 @@ export default function TeenHomePage() {
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* ── set it up — the only thing that navigates to the setup screen ── */}
+        {hasLadder && previewBehavior && (
+          <div style={{ padding: `24px ${teen.space.pad} 0` }}>
+            {jumpWarning && (
+              <div
+                className="teen-card"
+                style={{ padding: 18, marginBottom: 14, boxShadow: teen.shadow.cardSoft }}
+              >
+                <p style={{ ...teen.type.body, fontSize: 14, margin: '0 0 12px' }}>
+                  That's a big jump from where you are. Your clinician suggested starting with{' '}
+                  <b style={{ color: teen.color.ink }}>{jumpWarning.suggestedName}</b>.
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    className="teen-chip"
+                    onClick={() => {
+                      const id = jumpWarning.suggestedBehaviorId
+                      setJumpWarning(null)
+                      navigate(`/teen/experiment/${id}`)
+                    }}
+                  >
+                    Set up that one
+                  </button>
+                  <button
+                    className="teen-chip"
+                    onClick={() => {
+                      const id = jumpWarning.targetBehaviorId
+                      setJumpWarning(null)
+                      navigate(`/teen/experiment/${id}`)
+                    }}
+                  >
+                    Set up this one anyway
+                  </button>
+                </div>
+              </div>
+            )}
+            <button className="teen-btn teen-btn--primary" onClick={handleSetItUp}>
+              Set it up
+            </button>
           </div>
         )}
 
