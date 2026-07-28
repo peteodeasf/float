@@ -15,6 +15,7 @@ from app.models.user import User, UserRole
 from app.models.organization import Organization
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
+from app.models.jit_content import Tag, JitTip, JitTipTag
 from app.services.email_service import (
     send_clinician_invitation_email,
     send_password_reset_email,
@@ -674,3 +675,174 @@ async def delete_patient(
     await _delete_patient_cascade(patient_id, db)
     await db.commit()
     return {"success": True}
+
+
+# ─────────────────────────── JIT content ────────────────────────────
+# Platform-wide tag vocabulary + tips library for the teen exposure screen.
+
+class TagCreate(BaseModel):
+    slug: str
+    label: str
+
+
+class TagUpdate(BaseModel):
+    label: str | None = None
+    is_active: bool | None = None
+
+
+class JitTipPayload(BaseModel):
+    title: str
+    body: str
+    always_show: bool = False
+    display_order: int = 0
+    is_active: bool = True
+    tag_ids: list[str] = []
+
+
+def _tag_out(t: Tag) -> dict:
+    return {"id": str(t.id), "slug": t.slug, "label": t.label, "is_active": t.is_active}
+
+
+@router.get("/tags")
+async def list_tags(
+    _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db)
+):
+    rows = (await db.execute(select(Tag).order_by(Tag.label))).scalars().all()
+    return [_tag_out(t) for t in rows]
+
+
+@router.post("/tags")
+async def create_tag(
+    body: TagCreate, _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db)
+):
+    slug = body.slug.strip().lower()
+    label = body.label.strip()
+    if not slug or not label:
+        raise HTTPException(status_code=400, detail="Slug and label are required")
+    exists = (await db.execute(select(Tag).where(Tag.slug == slug))).scalar_one_or_none()
+    if exists:
+        raise HTTPException(status_code=409, detail="A tag with that slug already exists")
+    tag = Tag(slug=slug, label=label)
+    db.add(tag)
+    await db.commit()
+    await db.refresh(tag)
+    return _tag_out(tag)
+
+
+@router.put("/tags/{tag_id}")
+async def update_tag(
+    tag_id: uuid.UUID,
+    body: TagUpdate,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    tag = (await db.execute(select(Tag).where(Tag.id == tag_id))).scalar_one_or_none()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    if body.label is not None:
+        tag.label = body.label.strip()
+    if body.is_active is not None:
+        tag.is_active = body.is_active
+    await db.commit()
+    await db.refresh(tag)
+    return _tag_out(tag)
+
+
+@router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tag(
+    tag_id: uuid.UUID,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    tag = (await db.execute(select(Tag).where(Tag.id == tag_id))).scalar_one_or_none()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    # ON DELETE CASCADE clears the tip/situation join rows.
+    await db.delete(tag)
+    await db.commit()
+
+
+async def _tip_out(db: AsyncSession, tip: JitTip) -> dict:
+    tag_ids = (
+        await db.execute(select(JitTipTag.tag_id).where(JitTipTag.jit_tip_id == tip.id))
+    ).scalars().all()
+    return {
+        "id": str(tip.id),
+        "title": tip.title,
+        "body": tip.body,
+        "always_show": tip.always_show,
+        "display_order": tip.display_order,
+        "is_active": tip.is_active,
+        "tag_ids": [str(t) for t in tag_ids],
+    }
+
+
+@router.get("/jit-tips")
+async def list_jit_tips(
+    _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db)
+):
+    tips = (
+        await db.execute(select(JitTip).order_by(JitTip.display_order, JitTip.created_at))
+    ).scalars().all()
+    return [await _tip_out(db, t) for t in tips]
+
+
+@router.post("/jit-tips")
+async def create_jit_tip(
+    body: JitTipPayload,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    if not body.title.strip() or not body.body.strip():
+        raise HTTPException(status_code=400, detail="Title and body are required")
+    tip = JitTip(
+        title=body.title.strip(),
+        body=body.body.strip(),
+        always_show=body.always_show,
+        display_order=body.display_order,
+        is_active=body.is_active,
+    )
+    db.add(tip)
+    await db.flush()
+    for tid in body.tag_ids:
+        db.add(JitTipTag(jit_tip_id=tip.id, tag_id=uuid.UUID(tid)))
+    await db.commit()
+    await db.refresh(tip)
+    return await _tip_out(db, tip)
+
+
+@router.put("/jit-tips/{tip_id}")
+async def update_jit_tip(
+    tip_id: uuid.UUID,
+    body: JitTipPayload,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    tip = (await db.execute(select(JitTip).where(JitTip.id == tip_id))).scalar_one_or_none()
+    if not tip:
+        raise HTTPException(status_code=404, detail="Tip not found")
+    tip.title = body.title.strip()
+    tip.body = body.body.strip()
+    tip.always_show = body.always_show
+    tip.display_order = body.display_order
+    tip.is_active = body.is_active
+    tip.updated_at = datetime.now(timezone.utc)
+    await db.execute(delete(JitTipTag).where(JitTipTag.jit_tip_id == tip.id))
+    for tid in body.tag_ids:
+        db.add(JitTipTag(jit_tip_id=tip.id, tag_id=uuid.UUID(tid)))
+    await db.commit()
+    await db.refresh(tip)
+    return await _tip_out(db, tip)
+
+
+@router.delete("/jit-tips/{tip_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_jit_tip(
+    tip_id: uuid.UUID,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    tip = (await db.execute(select(JitTip).where(JitTip.id == tip_id))).scalar_one_or_none()
+    if not tip:
+        raise HTTPException(status_code=404, detail="Tip not found")
+    await db.delete(tip)
+    await db.commit()

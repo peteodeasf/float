@@ -16,14 +16,7 @@ import teen from '../../styles/teenTokens'
  * the app says its piece and gets out of the way.
  */
 type Phase = 'overview' | 'now'
-
-// Teen-side JIT tips. PROVISIONAL placeholder — should be sourced from the
-// shared JIT education content model once that has a teen-side implementation.
-const EXPOSURE_TIPS = [
-  { t: 'The goal isn’t to feel calm', d: 'It’s to find out what actually happens when you don’t avoid it.' },
-  { t: 'Anxiety comes down on its own', d: 'It rises, peaks, then fades — you don’t have to make it stop.' },
-  { t: 'Skip the safety moves', d: 'Let yourself be in it without the little things you’d do to feel safer.' },
-]
+type Tip = { id: string; title: string; body: string }
 
 export default function TeenExposurePage() {
   const { experimentId } = useParams<{ experimentId: string }>()
@@ -33,6 +26,15 @@ export default function TeenExposurePage() {
   const { data: experiment } = useQuery({
     queryKey: ['teen-experiment', experimentId],
     queryFn: async () => (await teenApiClient.get(`/experiments/${experimentId}`)).data,
+    enabled: !!experimentId,
+  })
+
+  // JIT "how to handle it" tips: always-show ones plus any whose tags match the
+  // situation's tags, resolved server-side.
+  const { data: tips } = useQuery<Tip[]>({
+    queryKey: ['teen-exp-tips', experimentId],
+    queryFn: async () =>
+      (await teenApiClient.get(`/patient/experiments/${experimentId}/tips`)).data,
     enabled: !!experimentId,
   })
 
@@ -293,28 +295,37 @@ export default function TeenExposurePage() {
           )}
         </div>
 
-        <div style={{ marginTop: 26 }}>
-          <div style={teen.type.eyebrow}>How to handle it</div>
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {EXPOSURE_TIPS.map((tip, i) => (
-              <div key={i} className="teen-card" style={{ padding: '14px 16px' }}>
-                <div
-                  style={{
-                    fontFamily: teen.font.sans,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: teen.color.ink,
-                  }}
-                >
-                  {tip.t}
+        {tips && tips.length > 0 && (
+          <div style={{ marginTop: 26 }}>
+            <div style={teen.type.eyebrow}>How to handle it</div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {tips.map(tip => (
+                <div key={tip.id} className="teen-card" style={{ padding: '14px 16px' }}>
+                  <div
+                    style={{
+                      fontFamily: teen.font.sans,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: teen.color.ink,
+                    }}
+                  >
+                    {tip.title}
+                  </div>
+                  <div
+                    style={{
+                      ...teen.type.body,
+                      fontSize: 13,
+                      color: teen.color.muted,
+                      marginTop: 4,
+                    }}
+                  >
+                    {tip.body}
+                  </div>
                 </div>
-                <div style={{ ...teen.type.body, fontSize: 13, color: teen.color.muted, marginTop: 4 }}>
-                  {tip.d}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div style={{ height: 18 }} />
       </div>

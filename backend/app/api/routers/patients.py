@@ -1314,6 +1314,67 @@ async def too_hard_experiment(
     return {"status": experiment.status, "too_hard_at": experiment.too_hard_at.isoformat()}
 
 
+@patient_router.get("/experiments/{experiment_id}/tips")
+async def get_experiment_tips(
+    experiment_id: uuid.UUID,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """JIT tips for an experiment's situation: every always_show tip, plus any
+    tip whose tags overlap the situation's tags. Ordered by display_order."""
+    from app.models.treatment import AvoidanceBehavior
+    from app.models.jit_content import JitTip, JitTipTag, TriggerSituationTag
+
+    _, patient = context
+
+    experiment = (await db.execute(
+        select(Experiment).where(
+            Experiment.id == experiment_id,
+            Experiment.patient_id == patient.id,
+        )
+    )).scalar_one_or_none()
+    if not experiment:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+
+    # experiment -> behavior -> situation
+    situation_id = None
+    if experiment.avoidance_behavior_id:
+        situation_id = (await db.execute(
+            select(AvoidanceBehavior.trigger_situation_id).where(
+                AvoidanceBehavior.id == experiment.avoidance_behavior_id
+            )
+        )).scalar_one_or_none()
+
+    situation_tag_ids: set = set()
+    if situation_id:
+        situation_tag_ids = set((await db.execute(
+            select(TriggerSituationTag.tag_id).where(
+                TriggerSituationTag.trigger_situation_id == situation_id
+            )
+        )).scalars().all())
+
+    tips = (await db.execute(
+        select(JitTip).where(JitTip.is_active.is_(True)).order_by(
+            JitTip.display_order, JitTip.created_at
+        )
+    )).scalars().all()
+
+    out = []
+    for tip in tips:
+        if tip.always_show:
+            out.append({"id": str(tip.id), "title": tip.title, "body": tip.body})
+            continue
+        if not situation_tag_ids:
+            continue
+        tip_tag_ids = set((await db.execute(
+            select(JitTipTag.tag_id).where(JitTipTag.jit_tip_id == tip.id)
+        )).scalars().all())
+        if tip_tag_ids & situation_tag_ids:
+            out.append({"id": str(tip.id), "title": tip.title, "body": tip.body})
+
+    return out
+
+
 @patient_router.get("/experiments/pending")
 async def get_pending_experiments(
     context: tuple = Depends(get_patient_context),
