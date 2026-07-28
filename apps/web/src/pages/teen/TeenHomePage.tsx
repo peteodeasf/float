@@ -38,66 +38,6 @@ type TeenSituation = {
   behaviors: TeenBehavior[]
 }
 
-function ChatButton({ unread, onClick }: { unread: number; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label={unread > 0 ? `Messages, ${unread} unread` : 'Messages'}
-      style={{
-        position: 'relative',
-        width: 36,
-        height: 36,
-        borderRadius: '50%',
-        background: teen.color.cardPure,
-        border: `1px solid ${teen.color.lineSoft}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 3,
-        cursor: 'pointer',
-        flex: 'none',
-      }}
-    >
-      {[0, 1, 2].map(i => (
-        <span
-          key={i}
-          aria-hidden="true"
-          style={{
-            width: 4,
-            height: 4,
-            borderRadius: '50%',
-            background: teen.color.tealMid,
-          }}
-        />
-      ))}
-      {unread > 0 && (
-        <span
-          style={{
-            position: 'absolute',
-            top: -2,
-            right: -4,
-            minWidth: 16,
-            height: 16,
-            padding: '0 4px',
-            background: teen.color.ink,
-            color: '#fff',
-            borderRadius: 999,
-            fontFamily: teen.font.mono,
-            fontSize: 10,
-            fontWeight: 700,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            lineHeight: 1,
-          }}
-        >
-          {unread}
-        </span>
-      )}
-    </button>
-  )
-}
-
 export default function TeenHomePage() {
   const { patientId } = useTeenAuth()
   const navigate = useNavigate()
@@ -356,7 +296,6 @@ export default function TeenHomePage() {
         }}
       >
         <FloatLogo size="md" />
-        <ChatButton unread={unreadMessageCount} onClick={() => navigate('/teen/messages')} />
       </div>
 
       <div
