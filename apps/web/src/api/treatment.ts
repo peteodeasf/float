@@ -44,6 +44,27 @@ export const deleteTrigger = async (planId: string, triggerId: string): Promise<
   await apiClient.delete(`/plans/${planId}/triggers/${triggerId}`)
 }
 
+// ── Content tags (situation targeting for JIT tips) ──
+export interface ContentTag {
+  id: string
+  slug: string
+  label: string
+}
+
+export const getActiveTags = async (): Promise<ContentTag[]> => {
+  const res = await apiClient.get('/tags')
+  return res.data
+}
+
+export const getSituationTags = async (situationId: string): Promise<string[]> => {
+  const res = await apiClient.get(`/situations/${situationId}/tags`)
+  return res.data.tag_ids as string[]
+}
+
+export const setSituationTags = async (situationId: string, tagIds: string[]): Promise<void> => {
+  await apiClient.put(`/situations/${situationId}/tags`, { tag_ids: tagIds })
+}
+
 export interface AvoidanceBehavior {
   id: string
   trigger_situation_id: string

@@ -12,6 +12,7 @@ import {
   createBehavior, updateBehavior, deleteBehavior, updateTrigger, deleteTrigger,
   getSituationDownwardArrow, createSituationDownwardArrow, updateDownwardArrow, listPatientDownwardArrows,
   getPatientExperiments, planExperimentForBehavior,
+  getActiveTags, getSituationTags, setSituationTags,
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport, type ExtractedBehaviorType, type ExtractedSituation, type ExtractedBehavior } from '../../api/monitoring'
@@ -816,6 +817,24 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
     enabled: !!ladder?.id
   })
 
+  // Content tags: which JIT tips are relevant to this situation.
+  const { data: allTags } = useQuery({ queryKey: ['content-tags'], queryFn: getActiveTags })
+  const { data: situationTagIds } = useQuery({
+    queryKey: ['situation-tags', trigger.id],
+    queryFn: () => getSituationTags(trigger.id),
+  })
+  const setTagsMut = useMutation({
+    mutationFn: (ids: string[]) => setSituationTags(trigger.id, ids),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['situation-tags', trigger.id] }),
+  })
+  const toggleSituationTag = (tagId: string) => {
+    const current = situationTagIds ?? []
+    const next = current.includes(tagId)
+      ? current.filter(x => x !== tagId)
+      : [...current, tagId]
+    setTagsMut.mutate(next)
+  }
+
   const addMut = useMutation({
     mutationFn: () => createBehavior(trigger.id, { name, behavior_type: type, distress_thermometer_when_refraining: dt ? Number(dt) : undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setName(''); setDt(''); setShowAdd(false) }
@@ -901,6 +920,40 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
               {trigger.is_active ? 'Active' : 'Not active'}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Tags — targets the JIT tips the teen sees on this situation's exposures */}
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+          Tags
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {(allTags ?? []).map(tag => {
+            const on = (situationTagIds ?? []).includes(tag.id)
+            return (
+              <button
+                key={tag.id}
+                onClick={() => toggleSituationTag(tag.id)}
+                disabled={setTagsMut.isPending}
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '4px 11px',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  border: `1px solid ${on ? 'var(--float-primary)' : '#cbd5e1'}`,
+                  background: on ? 'var(--float-primary)' : '#fff',
+                  color: on ? '#fff' : '#64748b',
+                }}
+              >
+                {tag.label}
+              </button>
+            )
+          })}
+          {allTags && allTags.length === 0 && (
+            <span style={{ fontSize: '11px', color: '#94a3b8' }}>No tags defined yet.</span>
+          )}
         </div>
       </div>
 
