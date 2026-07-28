@@ -419,9 +419,10 @@ export default function TeenHomePage() {
                         <span
                           style={{
                             display: 'block',
-                            fontFamily: teen.font.mono,
-                            fontSize: 11,
-                            color: teen.color.muted,
+                            fontFamily: teen.font.sans,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: teen.color.inkSoft,
                             marginTop: 4,
                           }}
                         >
@@ -592,8 +593,9 @@ export default function TeenHomePage() {
                       <span
                         style={{
                           fontFamily: teen.font.mono,
-                          fontSize: 12,
-                          color: teen.color.muted,
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: teen.color.inkSoft,
                           flex: 'none',
                         }}
                       >

@@ -2076,7 +2076,7 @@ export default function PatientPage() {
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
-  const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId })
+  const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
   const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
 
   // Fetch DA status for every trigger situation (incl. the placeholder, so the parent DA is captured)

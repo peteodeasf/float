@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import Chip from '../../components/teen/Chip'
@@ -86,10 +86,6 @@ export default function TeenExperimentPage() {
   const [bucket, setBucket] = useState<BucketKey | null>(null)
 
   // ── committed ──
-  const [lastCommittedExperimentId, setLastCommittedExperimentId] = useState<string | null>(null)
-  const [tooHardOpen, setTooHardOpen] = useState(false)
-  const [tooHardReason, setTooHardReason] = useState('')
-  const [tooHardSent, setTooHardSent] = useState(false)
   const [commitPending, setCommitPending] = useState(false)
 
   const { data: behaviorData } = useQuery({
@@ -126,22 +122,12 @@ export default function TeenExperimentPage() {
   const canLockIn =
     selectedDates.length > 0 && !!bucket && !!fearText.trim() && !!confidence
 
-  const tooHardMutation = useMutation({
-    mutationFn: async (experimentId: string) => {
-      await teenApiClient.post(`/patient/experiments/${experimentId}/too-hard`, {
-        reason: tooHardReason,
-      })
-    },
-    onSuccess: () => setTooHardSent(true),
-  })
-
   const bucketHour = TIME_BUCKETS.find(b => b.key === bucket)?.hour ?? 12
 
   const handleCommit = async () => {
     if (selectedDates.length === 0 || !bucket) return
     setCommitPending(true)
     try {
-      let lastId: string | null = null
       for (const dateIdx of sortedSelectedDates) {
         // Stamp the bucket's representative hour onto the chosen day so the
         // scheduled_date is a real committed moment (and a reminder anchor).
@@ -163,9 +149,7 @@ export default function TeenExperimentPage() {
           scheduled_time_bucket: bucket,
         })
         await teenApiClient.post(`/patient/experiments/${newExp.id}/commit`)
-        lastId = newExp.id
       }
-      setLastCommittedExperimentId(lastId)
       queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
       queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
       setStep('committed')
@@ -194,7 +178,7 @@ export default function TeenExperimentPage() {
               background: 'none',
               border: 0,
               cursor: 'pointer',
-              font: '600 22px ' + teen.font.sans,
+              font: '600 30px ' + teen.font.sans,
               color: teen.color.ink,
               lineHeight: 1,
               padding: 0,
@@ -524,85 +508,6 @@ export default function TeenExperimentPage() {
         <button className="teen-btn teen-btn--primary" onClick={() => navigate('/teen/home')}>
           Home
         </button>
-
-        {!tooHardSent && !tooHardOpen && (
-          <div style={{ textAlign: 'center', marginTop: 14 }}>
-            <button className="teen-btn teen-btn--quiet" onClick={() => setTooHardOpen(true)}>
-              It feels like too much
-            </button>
-          </div>
-        )}
-
-        {tooHardOpen && !tooHardSent && (
-          <div className="teen-card" style={{ marginTop: 16, padding: 18 }}>
-            <div style={teen.type.label}>What's making this feel too big?</div>
-            <textarea
-              value={tooHardReason}
-              onChange={e => setTooHardReason(e.target.value)}
-              rows={3}
-              placeholder="Your clinician will see this."
-              style={{
-                width: '100%',
-                marginTop: 10,
-                padding: 12,
-                borderRadius: 12,
-                border: `1px solid ${teen.color.lineChip}`,
-                fontFamily: teen.font.sans,
-                fontSize: 14,
-                resize: 'none',
-                boxSizing: 'border-box',
-                outline: 'none',
-              }}
-            />
-            <button
-              className="teen-btn teen-btn--outline"
-              style={{ marginTop: 10 }}
-              disabled={
-                !tooHardReason.trim() || tooHardMutation.isPending || !lastCommittedExperimentId
-              }
-              onClick={() =>
-                lastCommittedExperimentId && tooHardMutation.mutate(lastCommittedExperimentId)
-              }
-            >
-              {tooHardMutation.isPending ? 'Sending…' : 'Tell my clinician'}
-            </button>
-          </div>
-        )}
-
-        {tooHardSent && (
-          <div
-            style={{
-              marginTop: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              background: teen.color.mintSoft,
-              border: `1px solid ${teen.color.mint}`,
-              borderRadius: 14,
-              padding: '14px 16px',
-            }}
-          >
-            <span
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: '50%',
-                background: teen.color.tealMid,
-                flex: 'none',
-              }}
-            />
-            <span
-              style={{
-                fontFamily: teen.font.sans,
-                fontSize: 13,
-                fontWeight: 600,
-                color: teen.color.teal,
-              }}
-            >
-              Sent — they'll make the next step easier.
-            </span>
-          </div>
-        )}
       </div>
     </TeenScreen>
   )
