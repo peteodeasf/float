@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ui/ProtectedRoute'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import AdminLoginPage from './pages/admin/AdminLoginPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
+import AdminContentPage from './pages/admin/AdminContentPage'
 import LoginPage from './pages/auth/LoginPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
@@ -129,6 +130,9 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/admin/login" element={<AdminLoginPage />} />
               <Route path="/admin/dashboard" element={
                 <AdminProtectedRoute><AdminDashboardPage /></AdminProtectedRoute>
+              } />
+              <Route path="/admin/content" element={
+                <AdminProtectedRoute><AdminContentPage /></AdminProtectedRoute>
               } />
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 

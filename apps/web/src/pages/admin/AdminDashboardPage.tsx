@@ -280,6 +280,12 @@ export default function AdminDashboardPage() {
           >
             Admin
           </span>
+          <button
+            onClick={() => navigate('/admin/content')}
+            style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Content
+          </button>
         </div>
         <button
           onClick={handleLogout}
