@@ -14,7 +14,7 @@ import teen from '../../styles/teenTokens'
  * disconfirmation question (`outcome`) — the app no longer shows a "you're in
  * it" moment here; that now lives on the home's pre-exposure state.
  */
-type Phase = 'outcome' | 'win' | 'faced' | 'toohard' | 'capture' | 'score'
+type Phase = 'outcome' | 'toohard' | 'capture' | 'score'
 
 const WHAT_HAPPENED = ['A few glanced', 'Nobody cared', 'Awkward but fine']
 
@@ -76,9 +76,18 @@ export default function TeenRecordPage() {
     enabled: !!experimentId,
   })
 
+  // The situation isn't on the experiment payload; fetch the behavior for it.
+  const behaviorId: string | undefined = experiment?.avoidance_behavior_id ?? undefined
+  const { data: behaviorData } = useQuery({
+    queryKey: ['teen-behavior', behaviorId],
+    queryFn: async () => (await teenApiClient.get(`/patient/behaviors/${behaviorId}`)).data,
+    enabled: !!behaviorId,
+  })
+
   const bipBefore: number | null = experiment?.bip_before ?? null
   const prediction: string | null = experiment?.prediction ?? null
   const planText: string | null = experiment?.plan_description ?? null
+  const situationName: string | null = behaviorData?.situation?.name ?? null
   const dtExpected: number | null = experiment?.distress_thermometer_expected ?? null
 
   // Starts where their belief started, so the slider shows movement they make.
@@ -210,15 +219,24 @@ export default function TeenRecordPage() {
         >
           <div style={{ marginTop: 16 }}>
             <span style={teen.type.eyebrow}>How it went</span>
+            {situationName && (
+              <div
+                style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: '10px 0 0' }}
+              >
+                {situationName}
+              </div>
+            )}
             {planText && (
               <div
                 style={{
-                  ...teen.type.headline,
-                  fontSize: teen.headSize.sm,
-                  margin: '10px 0 0',
+                  fontFamily: teen.font.sans,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: teen.color.inkSoft,
+                  marginTop: 4,
                 }}
               >
-                {planText}
+                without {planText}
               </div>
             )}
           </div>
@@ -226,12 +244,15 @@ export default function TeenRecordPage() {
           <div
             style={{
               marginTop: 24,
-              fontFamily: teen.font.sans,
-              fontSize: 15,
-              color: teen.color.mutedQuiet,
+              fontFamily: teen.font.mono,
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: teen.color.muted,
             }}
           >
-            You were worried that
+            Your fear
           </div>
           {prediction && (
             <div
@@ -244,7 +265,7 @@ export default function TeenRecordPage() {
                 textWrap: 'balance',
               }}
             >
-              {prediction}
+              “{prediction}”
             </div>
           )}
           <div
@@ -255,11 +276,11 @@ export default function TeenRecordPage() {
               marginTop: 10,
             }}
           >
-            You believed it {bipBefore ?? '—'}%
+            You put it at {bipBefore ?? '—'}%
           </div>
 
           <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '30px 0 0' }}>
-            Did that happen?
+            Did it happen?
           </h2>
 
           <div style={{ flex: 1, minHeight: 24 }} />
@@ -274,7 +295,7 @@ export default function TeenRecordPage() {
             }}
             onClick={() => {
               setFearedOccurred(false)
-              setPhase('win')
+              setPhase('capture')
             }}
           >
             No — it didn't
@@ -290,7 +311,7 @@ export default function TeenRecordPage() {
             }}
             onClick={() => {
               setFearedOccurred(true)
-              setPhase('faced')
+              setPhase('capture')
             }}
           >
             Yeah, it did
@@ -301,126 +322,6 @@ export default function TeenRecordPage() {
               I couldn't do it this time
             </button>
           </div>
-        </div>
-      </TeenScreen>
-    )
-  }
-
-  // ──────────────────────────────── WIN ─────────────────────────────────
-  // Feared outcome did not occur. Celebrate the disconfirmation.
-  if (phase === 'win') {
-    return (
-      <TeenScreen variant="alt">
-        {renderBack(() => setPhase('outcome'))}
-        <div
-          style={{
-            position: 'relative',
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            padding: '0 30px',
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: -40,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 220,
-              height: 220,
-              borderRadius: '50%',
-              background: teen.decor.glowMint,
-              pointerEvents: 'none',
-            }}
-          />
-          <div
-            className="teen-pop"
-            style={{
-              position: 'relative',
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              background: teen.color.mint,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: teen.shadow.mint,
-            }}
-          >
-            <div
-              aria-hidden="true"
-              style={{
-                width: 22,
-                height: 12,
-                borderLeft: `4px solid ${teen.color.ink}`,
-                borderBottom: `4px solid ${teen.color.ink}`,
-                transform: 'rotate(-45deg) translate(2px, -3px)',
-              }}
-            />
-          </div>
-
-          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '26px 0 0' }}>
-            It didn't happen.
-          </h2>
-          <p style={{ ...teen.type.body, fontSize: 17, marginTop: 16 }}>
-            You believed it <b style={{ color: teen.color.ink }}>{bipBefore ?? '—'}%</b> — and it
-            still didn't happen.
-          </p>
-        </div>
-
-        <div style={{ position: 'relative', padding: `0 ${teen.space.padLg} 34px` }}>
-          <button className="teen-btn teen-btn--primary" onClick={() => setPhase('capture')}>
-            Keep going →
-          </button>
-        </div>
-      </TeenScreen>
-    )
-  }
-
-  // ─────────────────────────────── FACED ────────────────────────────────
-  // Feared outcome did occur. Lead with the act, reframe toward coping.
-  if (phase === 'faced') {
-    return (
-      <TeenScreen variant="card">
-        {renderBack(() => setPhase('outcome'))}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            padding: `0 ${teen.space.padLg}`,
-          }}
-        >
-          <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>You did it</span>
-          <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '16px 0 0' }}>
-            You did it. That's the part that counts.
-          </h2>
-          <div
-            style={{
-              marginTop: 20,
-              background: teen.color.cardPure,
-              borderRadius: teen.radius.card,
-              padding: 22,
-              boxShadow: teen.shadow.cardSoft,
-            }}
-          >
-            <p style={{ ...teen.type.body, fontSize: 16, margin: 0 }}>
-              It happened — and you got through it. You thought it'd be unbearable.{' '}
-              <b style={{ color: teen.color.ink }}>Was it?</b>
-            </p>
-          </div>
-        </div>
-
-        <div style={{ padding: `0 ${teen.space.padLg} 34px` }}>
-          <button className="teen-btn teen-btn--primary" onClick={() => setPhase('capture')}>
-            Tell float about it →
-          </button>
         </div>
       </TeenScreen>
     )
@@ -683,7 +584,7 @@ export default function TeenRecordPage() {
         }}
       >
         <button
-          onClick={() => setPhase(fearedOccurred ? 'faced' : 'win')}
+          onClick={() => setPhase('outcome')}
           aria-label="Back"
           style={{
             background: 'none',
@@ -710,6 +611,32 @@ export default function TeenRecordPage() {
       </div>
 
       <div className="teen-sheet">
+        {/* The disconfirmation / coping moment, inline (no separate screen). */}
+        <div
+          style={{
+            background: fearedOccurred ? teen.color.card : teen.color.mintSoft,
+            border: `1px solid ${fearedOccurred ? teen.color.lineCard : teen.color.mint}`,
+            borderRadius: 14,
+            padding: '14px 16px',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: teen.font.sans,
+              fontSize: 15,
+              fontWeight: 600,
+              color: teen.color.ink,
+            }}
+          >
+            {fearedOccurred ? 'You did it. That’s the part that counts.' : 'It didn’t happen.'}
+          </div>
+          <div style={{ ...teen.type.body, fontSize: 13, color: teen.color.inkSoft, marginTop: 4 }}>
+            {fearedOccurred
+              ? 'It happened — and you got through it.'
+              : `You put it at ${bipBefore ?? '—'}% — and it still didn’t happen.`}
+          </div>
+        </div>
+
         {/* actual distress + live delta */}
         <div>
           <div style={{ ...teen.type.label, marginBottom: 10 }}>

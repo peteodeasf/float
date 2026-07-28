@@ -129,12 +129,23 @@ export default function TeenExposurePage() {
         >
           <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>You're in it</span>
 
-          {planText && (
-            <h2
-              style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: '14px 0 30px' }}
-            >
-              {planText}
+          {situationName && (
+            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: '14px 0 2px' }}>
+              {situationName}
             </h2>
+          )}
+          {planText && (
+            <div
+              style={{
+                fontFamily: teen.font.sans,
+                fontSize: 17,
+                fontWeight: 600,
+                color: teen.color.inkSoft,
+                margin: '0 0 28px',
+              }}
+            >
+              without {planText}
+            </div>
           )}
 
           <div
@@ -142,41 +153,50 @@ export default function TeenExposurePage() {
               width: '100%',
               background: teen.color.ink,
               borderRadius: teen.radius.cardLg,
-              padding: '30px 24px',
+              padding: '26px 24px',
               boxShadow: teen.shadow.cardDark,
+              textAlign: 'left',
             }}
           >
-            <div style={{ fontFamily: teen.font.sans, fontSize: 14, color: teen.color.onDark }}>
-              You said
-            </div>
             <div
               style={{
                 fontFamily: teen.font.mono,
-                fontSize: teen.dataSize.xl,
-                color: '#fff',
-                lineHeight: 1,
-                margin: '6px 0',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: teen.color.mint,
               }}
             >
-              {bipBefore ?? '—'}
-              <span style={{ fontSize: 26, color: teen.color.mint }}>%</span>
+              Your fear
             </div>
             {prediction && (
               <div
                 style={{
                   fontFamily: teen.font.sans,
-                  fontSize: 18,
-                  color: teen.color.mintSoft,
-                  lineHeight: 1.4,
+                  fontSize: 20,
+                  color: '#fff',
+                  lineHeight: 1.35,
+                  marginTop: 8,
                 }}
               >
-                {prediction}
+                “{prediction}”
               </div>
             )}
+            <div
+              style={{
+                fontFamily: teen.font.mono,
+                fontSize: 14,
+                color: teen.color.onDark,
+                marginTop: 12,
+              }}
+            >
+              You put it at {bipBefore ?? '—'}%
+            </div>
           </div>
 
           <p style={{ ...teen.type.body, color: teen.color.mutedQuiet, marginTop: 26 }}>
-            Don’t do anything to feel safer. Just let yourself be in it.
+            Don’t do anything to feel safer. Just be in it.
           </p>
         </div>
 
@@ -238,21 +258,7 @@ export default function TeenExposurePage() {
         >
           ‹
         </button>
-        <span
-          style={{
-            ...teen.type.eyebrow,
-            color: teen.color.tealMid,
-            letterSpacing: 'var(--teen-eyebrow-track-tight)',
-            flex: 1,
-            minWidth: 0,
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {situationName || 'Your experiment'}
-        </span>
+        <span style={{ flex: 1 }} />
         <span style={{ width: 22 }} />
       </div>
 
@@ -270,8 +276,21 @@ export default function TeenExposurePage() {
         </div>
         <div className="teen-card" style={{ marginTop: 14, padding: '22px' }}>
           <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
-            {planText ?? 'Your experiment'}
+            {situationName ?? 'Your experiment'}
           </h1>
+          {planText && (
+            <div
+              style={{
+                fontFamily: teen.font.sans,
+                fontSize: 16,
+                fontWeight: 600,
+                color: teen.color.inkSoft,
+                marginTop: 6,
+              }}
+            >
+              without {planText}
+            </div>
+          )}
           {whenLabel && (
             <div
               style={{

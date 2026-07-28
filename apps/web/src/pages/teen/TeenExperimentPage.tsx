@@ -465,9 +465,28 @@ export default function TeenExperimentPage() {
 
         <div className="teen-card" style={{ marginTop: 20, padding: 22 }}>
           <div style={{ ...teen.type.eyebrow, fontSize: 10 }}>The plan</div>
-          <div style={{ ...teen.type.body, color: teen.color.inkSoft, marginTop: 10 }}>
-            {behaviorData?.name ?? 'Your experiment'}
+          <div
+            style={{
+              ...teen.type.headline,
+              fontSize: teen.headSize.sm,
+              margin: '10px 0 0',
+            }}
+          >
+            {behaviorData?.situation?.name ?? 'Your experiment'}
           </div>
+          {behaviorData?.name && (
+            <div
+              style={{
+                fontFamily: teen.font.sans,
+                fontSize: 15,
+                fontWeight: 600,
+                color: teen.color.inkSoft,
+                marginTop: 4,
+              }}
+            >
+              without {behaviorData.name}
+            </div>
+          )}
           <div
             style={{
               display: 'flex',
