@@ -137,8 +137,11 @@
 
 /* ---- Layout ------------------------------------------------------------ */
 .teen-screen {
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* Bounded to the viewport (height, not min-height) so a fixed bottom bar /
+     CTA stays pinned and the inner scroll region scrolls instead of pushing
+     siblings off-screen. 100dvh tracks the mobile URL-bar collapse. */
+  height: 100vh;
+  height: 100dvh;
   max-width: var(--teen-max-w);
   margin: 0 auto;
   background: var(--teen-canvas);
@@ -156,6 +159,7 @@
 /* The white sheet that rises from the bottom on before/capture */
 .teen-sheet {
   flex: 1;
+  min-height: 0;
   background: var(--teen-card);
   border-radius: var(--teen-radius-sheet) var(--teen-radius-sheet) 0 0;
   padding: 16px var(--teen-pad) 0;

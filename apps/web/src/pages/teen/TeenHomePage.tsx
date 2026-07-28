@@ -302,6 +302,7 @@ export default function TeenHomePage() {
         style={{
           position: 'relative',
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',

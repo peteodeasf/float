@@ -95,6 +95,7 @@ export default function TeenProgressPage() {
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: 'auto',
             padding: `2px ${teen.space.pad} 0`,
             display: 'flex',
@@ -175,6 +176,7 @@ export default function TeenProgressPage() {
       <div
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           padding: `6px ${teen.space.pad} 0`,
           display: 'flex',

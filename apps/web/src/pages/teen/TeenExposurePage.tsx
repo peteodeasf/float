@@ -260,6 +260,7 @@ export default function TeenExposurePage() {
         style={{
           position: 'relative',
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           padding: `0 ${teen.space.pad}`,
         }}

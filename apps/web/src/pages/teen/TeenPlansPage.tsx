@@ -23,6 +23,7 @@ export default function TeenPlansPage() {
       <div
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           padding: `14px ${teen.space.pad} 0`,
           display: 'flex',

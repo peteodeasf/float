@@ -91,12 +91,13 @@ export default function TeenMessagesPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100dvh',
       background: '#f8fafc',
       maxWidth: '480px',
       margin: '0 auto',
       display: 'flex',
       flexDirection: 'column',
+      overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{
@@ -111,6 +112,7 @@ export default function TeenMessagesPage() {
       {/* Thread (scrollable) */}
       <div style={{
         flex: 1,
+        minHeight: 0,
         overflowY: 'auto',
         padding: '20px 16px',
         display: 'flex',
