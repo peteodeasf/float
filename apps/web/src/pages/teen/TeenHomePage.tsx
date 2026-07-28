@@ -5,6 +5,7 @@ import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import TeenTabBar from '../../components/teen/TeenTabBar'
+import FloatLogo from '../../components/ui/FloatLogo'
 import teen from '../../styles/teenTokens'
 
 type TeenExperiment = {
@@ -342,7 +343,7 @@ export default function TeenHomePage() {
           flex: 'none',
         }}
       >
-        <span style={teen.type.wordmark}>float</span>
+        <FloatLogo size="md" />
         <ChatButton unread={unreadMessageCount} onClick={() => navigate('/teen/messages')} />
       </div>
 
