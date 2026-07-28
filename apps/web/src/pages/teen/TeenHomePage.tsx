@@ -203,8 +203,20 @@ export default function TeenHomePage() {
   const now = Date.now()
   const schedTime = (e: any) =>
     e.scheduled_date ? new Date(e.scheduled_date).getTime() : 0
+  // A committed experiment only counts if its situation is still active. When
+  // the clinician deactivates a situation, its experiments drop off the home —
+  // deactivate all of them and the teen sees the empty state.
+  const activeBehaviorIds = new Set<string>()
+  for (const s of activeSituations) {
+    for (const b of s.behaviors) activeBehaviorIds.add(b.id)
+  }
   const committedExps = ((pendingExperiments ?? []) as any[])
-    .filter(e => e.status === 'committed' && e.scheduled_date)
+    .filter(
+      e =>
+        e.status === 'committed' &&
+        e.scheduled_date &&
+        activeBehaviorIds.has(e.avoidance_behavior_id)
+    )
     .sort((a, b) => schedTime(a) - schedTime(b))
   const comingUp = committedExps[0] ?? null // soonest — the hero
   const scheduledRest = committedExps.slice(1) // everything after it
