@@ -1201,6 +1201,7 @@ async def get_behavior_detail(
         "situation": {
             "id": str(trigger.id),
             "name": trigger.name,
+            "is_active": trigger.is_active,
             "feared_outcome": feared_outcome,
             "da_approved": bool(da and da.feared_outcome_approved),
         }

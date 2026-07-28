@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
+import TeenTabBar from '../../components/teen/TeenTabBar'
 
 type TeenMessage = {
   id: string
@@ -32,8 +32,7 @@ function formatMsgTime(iso: string | null | undefined): string {
 }
 
 export default function TeenMessagesPage() {
-  const { patientId, logout } = useTeenAuth()
-  const navigate = useNavigate()
+  const { patientId } = useTeenAuth()
   const queryClient = useQueryClient()
   const [replyContent, setReplyContent] = useState('')
 
@@ -84,11 +83,6 @@ export default function TeenMessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.length, me?.user_id])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/teen/login')
-  }
-
   const handleSend = () => {
     const content = replyContent.trim()
     if (!content) return
@@ -106,28 +100,12 @@ export default function TeenMessagesPage() {
     }}>
       {/* Header */}
       <div style={{
+        flex: 'none',
         background: '#fff',
         padding: '20px 24px 16px',
         borderBottom: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            onClick={() => navigate('/teen/home')}
-            style={{ fontSize: '14px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            ← Back
-          </button>
-          <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Messages</span>
-        </div>
-        <button
-          onClick={handleLogout}
-          style={{ fontSize: '13px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          Sign out
-        </button>
+        <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Messages</span>
       </div>
 
       {/* Thread (scrollable) */}
@@ -259,6 +237,8 @@ export default function TeenMessagesPage() {
           {sendMessage.isPending ? '…' : 'Send'}
         </button>
       </div>
+
+      <TeenTabBar active="chat" unread={0} />
     </div>
   )
 }

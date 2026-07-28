@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
@@ -49,6 +49,14 @@ export default function TeenExposurePage() {
     },
     onSuccess: () => navigate('/teen/progress'),
   })
+
+  // Deep-link guard: if the situation was deactivated, this experiment is no
+  // longer something the teen should work on — send them home.
+  useEffect(() => {
+    if (behaviorData?.situation && behaviorData.situation.is_active === false) {
+      navigate('/teen/home', { replace: true })
+    }
+  }, [behaviorData, navigate])
 
   const planText: string | null = experiment?.plan_description || behaviorData?.name || null
   const situationName: string | null = behaviorData?.situation?.name ?? null
