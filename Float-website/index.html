@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Float gives clinicians a structured toolkit to deliver evidence-based treatment for anxious kids, teens, and families — and keeps everyone connected between sessions.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 120%27 fill=%27none%27><g transform=%27rotate(-50 60 60)%27><path d=%27M52 97 A38 38 0 1 1 68 97%27 stroke=%27%23135450%27 stroke-width=%2716%27 stroke-linecap=%27round%27/></g><circle cx=%2760%27 cy=%2760%27 r=%2719%27 fill=%27%239af6e4%27/></svg>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="apple-touch-icon" href="https://app.floatcbt.com/brand/apple-touch-icon.png">
+  <meta name="theme-color" content="#135450">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Float — Anxiety Treatment for Kids &amp; Teens">
+  <meta property="og:image" content="https://app.floatcbt.com/brand/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Float — Anxiety Treatment for Kids & Teens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal: #135450;
+      --teal-dark: #0d3d3a;
+      --teal-deeper: #0d3d3a;
+      --teal-light: #eafaf6;
+      --teal-mid: #9af6e4;
+      --white: #ffffff;
+      --off-white: #fafafa;
+      --text: #1e293b;
+      --text-mid: #475569;
+      --text-light: #94a3b8;
+      --border: #e2e8f0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background: var(--white);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 84px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    /* Lockup is 3:1 — size by height and let the width follow, or it
+       letterboxes inside a mismatched box and renders far smaller. */
+    .nav-logo svg { height: 56px; width: auto; }
+
+    .nav-login {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-mid);
+      text-decoration: none;
+      padding: 8px 20px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .nav-login:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      background: var(--teal-deeper);
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 120px 48px 80px;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(13,148,136,0.4) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 20% 80%, rgba(20,184,166,0.2) 0%, transparent 60%);
+    }
+
+    /* Subtle wave pattern */
+    .hero-waves {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      opacity: 0.06;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--teal-mid);
+      margin-bottom: 32px;
+      letter-spacing: 0.01em;
+    }
+
+    .hero-badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--teal-mid);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(42px, 5.5vw, 68px);
+      line-height: 1.08;
+      color: var(--white);
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--teal-mid);
+    }
+
+    .hero p {
+      font-size: clamp(17px, 2vw, 20px);
+      line-height: 1.65;
+      color: rgba(255,255,255,0.72);
+      max-width: 560px;
+      margin-bottom: 48px;
+      font-weight: 300;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      color: var(--teal-dark);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: -0.01em;
+    }
+
+    .btn-primary:hover {
+      background: var(--teal-light);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: rgba(255,255,255,0.85);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 14px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1.5px solid rgba(255,255,255,0.25);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ── PROBLEM ── */
+    .problem {
+      padding: 100px 48px;
+      background: var(--off-white);
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 16px;
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .problem-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .problem-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--teal);
+    }
+
+    .problem-card-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--teal);
+      background: var(--teal-light);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .problem-card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .problem-card p {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text-mid);
+      font-weight: 300;
+    }
+
+    /* ── WAITLIST ── */
+    .waitlist {
+      padding: 100px 48px;
+      background: var(--white);
+    }
+
+    .waitlist-inner {
+      max-width: 560px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .waitlist h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1.1;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .waitlist h2 em {
+      font-style: italic;
+      color: var(--teal);
+    }
+
+    .waitlist > .waitlist-inner > p {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--text-mid);
+      margin-bottom: 48px;
+      font-weight: 300;
+    }
+
+    .waitlist-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: left;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-mid);
+    }
+
+    .form-group input,
+    .form-group select {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--text);
+      transition: border-color 0.2s;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(13,148,136,0.08);
+    }
+
+    .form-submit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--teal);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 16px 32px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      margin-top: 4px;
+      letter-spacing: -0.01em;
+    }
+
+    .form-submit:hover {
+      background: var(--teal-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(13,148,136,0.25);
+    }
+
+    .form-note {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 8px;
+    }
+
+    /* Success state */
+    .form-success {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      background: var(--teal-light);
+      border-radius: 16px;
+      border: 1px solid rgba(13,148,136,0.2);
+    }
+
+    .form-success.show { display: block; }
+
+    .form-success h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      color: var(--teal-dark);
+      margin-bottom: 12px;
+    }
+
+    .form-success p {
+      font-size: 16px;
+      color: var(--text-mid);
+      font-weight: 300;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--teal-deeper);
+      padding: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .footer-logo svg { height: 34px; width: auto; }
+
+    .footer-tagline {
+      font-size: 14px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 4px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--white); }
+
+    .footer-login {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--teal-mid) !important;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; height: 68px; }
+      .nav-logo svg { height: 42px; }
+      .nav-login { padding: 7px 14px; font-size: 13px; }
+      .hero { padding: 108px 20px 60px; }
+      .problem { padding: 60px 20px; }
+      .problem-grid { grid-template-columns: 1fr; }
+      .waitlist { padding: 60px 20px; }
+      .form-row { grid-template-columns: 1fr; }
+      footer { padding: 40px 20px; flex-direction: column; align-items: flex-start; }
+    }
+
+    /* ── SCROLL ANIMATIONS ── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">
+      <svg viewBox="0 0 360 120" width="96" height="32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Float"><g transform="rotate(-50 60 60)"><path d="M51 99 A40 40 0 1 1 69 99" stroke="#135450" stroke-width="13" stroke-linecap="round"/></g><circle cx="60" cy="60" r="17" fill="#135450"/><path d="M136.406 86.0V50.224000000000004H128.494V39.044000000000004H136.406V38.356Q136.406 32.766000000000005 138.599 28.896000000000004Q140.792 25.026000000000003 144.92000000000002 22.962000000000007Q149.048 20.89800000000001 154.896 20.89800000000001Q156.014 20.89800000000001 157.304 21.027000000000008Q158.594 21.156000000000006 159.454 21.328000000000003V32.336000000000006Q158.594 32.164 157.949 32.121Q157.304 32.078 156.61599999999999 32.078Q153.004 32.078 151.15499999999997 33.669000000000004Q149.30599999999998 35.260000000000005 149.30599999999998 38.356V39.044000000000004H159.368V50.224000000000004H149.30599999999998V86.0Z M162.98999999999998 86.0V20.89800000000001H175.89V86.0Z M205.656 87.032Q198.69 87.032 192.971 83.85Q187.252 80.668 183.85500000000002 75.12100000000001Q180.458 69.574 180.458 62.522000000000006Q180.458 55.384 183.85500000000002 49.88Q187.252 44.376000000000005 192.971 41.194Q198.69 38.012 205.656 38.012Q212.622 38.012 218.298 41.194Q223.974 44.376000000000005 227.37099999999998 49.88Q230.768 55.384 230.768 62.522000000000006Q230.768 69.574 227.37099999999998 75.12100000000001Q223.974 80.668 218.298 83.85Q212.622 87.032 205.656 87.032ZM205.656 75.422Q209.18200000000002 75.422 211.805 73.788Q214.428 72.154 215.933 69.22999999999999Q217.438 66.306 217.438 62.522000000000006Q217.438 58.738 215.933 55.857Q214.428 52.976 211.805 51.299Q209.18200000000002 49.622 205.656 49.622Q202.13 49.622 199.464 51.299Q196.798 52.976 195.293 55.857Q193.788 58.738 193.788 62.522000000000006Q193.788 66.306 195.293 69.22999999999999Q196.798 72.154 199.464 73.788Q202.13 75.422 205.656 75.422Z M249.87 87.032Q244.796 87.032 241.098 85.398Q237.4 83.764 235.422 80.711Q233.444 77.658 233.444 73.444Q233.444 69.488 235.25 66.435Q237.05599999999998 63.382000000000005 240.79699999999997 61.318000000000005Q244.53799999999998 59.254000000000005 250.128 58.394000000000005L264.49 56.072V65.532L252.45 67.682Q249.69799999999998 68.19800000000001 248.236 69.44500000000001Q246.774 70.69200000000001 246.774 73.014Q246.774 75.164 248.40800000000002 76.368Q250.042 77.572 252.45 77.572Q255.632 77.572 258.03999999999996 76.196Q260.448 74.82 261.78099999999995 72.455Q263.114 70.09 263.114 67.25200000000001V55.040000000000006Q263.114 52.374 261.00699999999995 50.568Q258.9 48.762 255.28799999999998 48.762Q251.84799999999998 48.762 249.225 50.653999999999996Q246.602 52.546 245.398 55.642L235.078 50.74Q236.454 46.784000000000006 239.464 43.946000000000005Q242.474 41.108000000000004 246.688 39.56Q250.902 38.012 255.89 38.012Q261.824 38.012 266.382 40.162000000000006Q270.94 42.312000000000005 273.477 46.139Q276.014 49.966 276.014 55.040000000000006V86.0H263.974V78.432L266.89799999999997 77.916Q264.834 81.012 262.34000000000003 83.033Q259.846 85.054 256.75 86.043Q253.654 87.032 249.87 87.032Z M304.232 86.516Q295.718 86.516 291.031 81.91499999999999Q286.344 77.314 286.344 69.05799999999999V50.224000000000004H278.432V39.044000000000004H278.862Q282.474 39.044000000000004 284.409 37.238Q286.344 35.432 286.344 31.820000000000007V28.380000000000003H299.244V39.044000000000004H310.252V50.224000000000004H299.244V68.19800000000001Q299.244 70.606 300.10400000000004 72.197Q300.964 73.788 302.77 74.562Q304.576 75.336 307.242 75.336Q307.844 75.336 308.618 75.25Q309.392 75.164 310.252 75.078V86.0Q308.962 86.172 307.328 86.344Q305.694 86.516 304.232 86.516Z" fill="#135450"/></svg>
+      
+    </a>
+    <a href="https://app.floatcbt.com/login" class="nav-login">Clinician login →</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <svg class="hero-waves" viewBox="0 0 1440 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,100 C180,160 360,40 540,100 C720,160 900,40 1080,100 C1260,160 1440,40 1440,100 L1440,200 L0,200 Z" fill="white"/>
+    </svg>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Now in pilot with a select group of clinicians
+      </div>
+      <h1>Anxiety is <em>treatable.</em><br>Float makes the best<br>treatment accessible.</h1>
+      <p>Float gives clinicians a structured toolkit to deliver evidence-based treatment for anxious kids, teens, and families — and keeps everyone connected between sessions.</p>
+      <div class="hero-ctas">
+        <a href="#waitlist" class="btn-primary">I'm a clinician →</a>
+        <a href="#waitlist" class="btn-secondary">I'm a parent →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section class="problem" id="about">
+    <div class="problem-grid">
+      <div class="problem-card fade-up">
+        <span class="problem-card-tag">For clinicians</span>
+        <h3>The tools to deliver treatment that actually works.</h3>
+        <p>Float gives clinicians a structured clinical toolkit to deliver evidence-based CBT treatment for anxious kids and teens — streamlining treatment planning, between-session practice, and family communication so you can focus on what matters most: your patients.</p>
+      </div>
+      <div class="problem-card fade-up" style="transition-delay: 0.15s">
+        <span class="problem-card-tag">For families</span>
+        <h3>Real support for your anxious child.</h3>
+        <p>When your child is struggling with anxiety, it can feel impossible to know how to help. Float connects families with clinicians who use a structured, evidence-based approach — and keeps parents actively involved in their child's recovery.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WAITLIST -->
+  <section class="waitlist" id="waitlist">
+    <div class="waitlist-inner">
+      <div class="section-label">Join the waitlist</div>
+      <h2>Be part of<br><em>what's next.</em></h2>
+      <p>Float is currently in pilot with a small group of clinicians. Join the waitlist to be notified when access opens — whether you're a clinician looking to use Float or a parent looking for a clinician who does.</p>
+
+      <form class="waitlist-form" id="waitlistForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First name</label>
+            <input type="text" id="firstName" placeholder="Jane" required>
+          </div>
+          <div class="form-group">
+            <label for="lastName">Last name</label>
+            <input type="text" id="lastName" placeholder="Smith" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email address</label>
+          <input type="email" id="email" placeholder="jane@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="role">I am a...</label>
+          <select id="role" required>
+            <option value="" disabled selected>Select your role</option>
+            <option value="clinician">Clinician (therapist, school counselor, psychologist)</option>
+            <option value="parent">Parent or caregiver</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button type="submit" class="form-submit">Join the waitlist →</button>
+        <p class="form-note">No spam. We'll only reach out when access is available.</p>
+      </form>
+
+      <div class="form-success" id="formSuccess">
+        <h3>You're on the list.</h3>
+        <p>Thank you — we'll be in touch when access opens. In the meantime, feel free to share Float with a colleague or clinician who might benefit.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div>
+      <a href="/" class="footer-logo">
+        <svg viewBox="0 0 360 120" width="90" height="30" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Float"><g transform="rotate(-50 60 60)"><path d="M51 99 A40 40 0 1 1 69 99" stroke="#9af6e4" stroke-width="13" stroke-linecap="round"/></g><circle cx="60" cy="60" r="17" fill="#ffffff"/><path d="M136.406 86.0V50.224000000000004H128.494V39.044000000000004H136.406V38.356Q136.406 32.766000000000005 138.599 28.896000000000004Q140.792 25.026000000000003 144.92000000000002 22.962000000000007Q149.048 20.89800000000001 154.896 20.89800000000001Q156.014 20.89800000000001 157.304 21.027000000000008Q158.594 21.156000000000006 159.454 21.328000000000003V32.336000000000006Q158.594 32.164 157.949 32.121Q157.304 32.078 156.61599999999999 32.078Q153.004 32.078 151.15499999999997 33.669000000000004Q149.30599999999998 35.260000000000005 149.30599999999998 38.356V39.044000000000004H159.368V50.224000000000004H149.30599999999998V86.0Z M162.98999999999998 86.0V20.89800000000001H175.89V86.0Z M205.656 87.032Q198.69 87.032 192.971 83.85Q187.252 80.668 183.85500000000002 75.12100000000001Q180.458 69.574 180.458 62.522000000000006Q180.458 55.384 183.85500000000002 49.88Q187.252 44.376000000000005 192.971 41.194Q198.69 38.012 205.656 38.012Q212.622 38.012 218.298 41.194Q223.974 44.376000000000005 227.37099999999998 49.88Q230.768 55.384 230.768 62.522000000000006Q230.768 69.574 227.37099999999998 75.12100000000001Q223.974 80.668 218.298 83.85Q212.622 87.032 205.656 87.032ZM205.656 75.422Q209.18200000000002 75.422 211.805 73.788Q214.428 72.154 215.933 69.22999999999999Q217.438 66.306 217.438 62.522000000000006Q217.438 58.738 215.933 55.857Q214.428 52.976 211.805 51.299Q209.18200000000002 49.622 205.656 49.622Q202.13 49.622 199.464 51.299Q196.798 52.976 195.293 55.857Q193.788 58.738 193.788 62.522000000000006Q193.788 66.306 195.293 69.22999999999999Q196.798 72.154 199.464 73.788Q202.13 75.422 205.656 75.422Z M249.87 87.032Q244.796 87.032 241.098 85.398Q237.4 83.764 235.422 80.711Q233.444 77.658 233.444 73.444Q233.444 69.488 235.25 66.435Q237.05599999999998 63.382000000000005 240.79699999999997 61.318000000000005Q244.53799999999998 59.254000000000005 250.128 58.394000000000005L264.49 56.072V65.532L252.45 67.682Q249.69799999999998 68.19800000000001 248.236 69.44500000000001Q246.774 70.69200000000001 246.774 73.014Q246.774 75.164 248.40800000000002 76.368Q250.042 77.572 252.45 77.572Q255.632 77.572 258.03999999999996 76.196Q260.448 74.82 261.78099999999995 72.455Q263.114 70.09 263.114 67.25200000000001V55.040000000000006Q263.114 52.374 261.00699999999995 50.568Q258.9 48.762 255.28799999999998 48.762Q251.84799999999998 48.762 249.225 50.653999999999996Q246.602 52.546 245.398 55.642L235.078 50.74Q236.454 46.784000000000006 239.464 43.946000000000005Q242.474 41.108000000000004 246.688 39.56Q250.902 38.012 255.89 38.012Q261.824 38.012 266.382 40.162000000000006Q270.94 42.312000000000005 273.477 46.139Q276.014 49.966 276.014 55.040000000000006V86.0H263.974V78.432L266.89799999999997 77.916Q264.834 81.012 262.34000000000003 83.033Q259.846 85.054 256.75 86.043Q253.654 87.032 249.87 87.032Z M304.232 86.516Q295.718 86.516 291.031 81.91499999999999Q286.344 77.314 286.344 69.05799999999999V50.224000000000004H278.432V39.044000000000004H278.862Q282.474 39.044000000000004 284.409 37.238Q286.344 35.432 286.344 31.820000000000007V28.380000000000003H299.244V39.044000000000004H310.252V50.224000000000004H299.244V68.19800000000001Q299.244 70.606 300.10400000000004 72.197Q300.964 73.788 302.77 74.562Q304.576 75.336 307.242 75.336Q307.844 75.336 308.618 75.25Q309.392 75.164 310.252 75.078V86.0Q308.962 86.172 307.328 86.344Q305.694 86.516 304.232 86.516Z" fill="#ffffff"/></svg>
+        
+      </a>
+      <p class="footer-tagline">floatcbt.com</p>
+    </div>
+    <div class="footer-links">
+      <a href="https://app.floatcbt.com/login" class="footer-login">Clinician login →</a>
+      <a href="https://app.floatcbt.com/teen/login">Teen login</a>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(el => {
+        if (el.isIntersecting) el.target.classList.add('visible');
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // Waitlist form
+    document.getElementById('waitlistForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const btn = this.querySelector('.form-submit');
+      btn.textContent = 'Submitting...';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch('https://floatcbt-production.up.railway.app/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            first_name: document.getElementById('firstName').value,
+            last_name: document.getElementById('lastName').value,
+            email: document.getElementById('email').value,
+            role: document.getElementById('role').value
+          })
+        });
+
+        if (response.ok) {
+          this.style.display = 'none';
+          document.getElementById('formSuccess').classList.add('show');
+        } else {
+          btn.textContent = 'Join the waitlist →';
+          btn.disabled = false;
+          alert('Something went wrong. Please try again.');
+        }
+      } catch (err) {
+        btn.textContent = 'Join the waitlist →';
+        btn.disabled = false;
+        alert('Something went wrong. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>

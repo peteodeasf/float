@@ -1,0 +1,465 @@
+{
+  "deterministic_pass": true,
+  "type_accuracy": 0.8704,
+  "judge_pass_rate": 0.8333333333333334,
+  "stable": true,
+  "unstable_cases": [],
+  "stability_runs": 1,
+  "failures": [
+    {
+      "case_id": 2,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Raising hand in class",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 2,
+      "layer": "type",
+      "check": "missed_situation",
+      "detail": "Raising hand in class"
+    },
+    {
+      "case_id": 2,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior 2 describes Sam telling the parent his fear as a 'safety' behavior labeled 'seeking reassurance', but the note does not say Sam sought reassurance \u2014 it says he stated why he is scared; the reassurance-seeking framing is an inference not supported by the note"
+    },
+    {
+      "case_id": 3,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Bedtime",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 4,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Getting ready for school",
+        "gold_types": {
+          "unclear": 1
+        },
+        "output_types": {
+          "unclear": 2
+        }
+      }
+    },
+    {
+      "case_id": 4,
+      "layer": "type",
+      "check": "missed_situation",
+      "detail": "Getting ready for school"
+    },
+    {
+      "case_id": 5,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Going to soccer practice",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math test at school",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 2
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math homework",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "escape": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior order 2 in 'Math test at school' states Ruby 'stayed home and did not go to school for the math test', but the note only says the parent let her stay home \u2014 it does not explicitly confirm she actually stayed home, and more importantly this fact is the parent's accommodation, not a separately reported child behavior; the note does not describe it as a child behavior at all"
+    },
+    {
+      "case_id": 11,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Making a mistake in a soccer game",
+        "gold_types": {
+          "escape": 1
+        },
+        "output_types": {
+          "escape": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "At home when parent is not in the same room",
+        "gold_types": {
+          "safety": 1,
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 3
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Packing for the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Staying overnight at the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at a party",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at dinner",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 4
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Taekwondo drop-off",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "School drop-off behavior 2 adds an interpretive parenthetical '(coercive behavior to get parent to stay or not leave)' that the parent did not report"
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Texting in front of others",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Talking on the phone",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 1,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 2,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior 2 describes Sam telling the parent his fear as a 'safety' behavior labeled 'seeking reassurance', but the note does not say Sam sought reassurance \u2014 it says he stated why he is scared; the reassurance-seeking framing is an inference not supported by the note"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 3,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 4,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 5,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 6,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 7,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 8,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 9,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 10,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior order 2 in 'Math test at school' states Ruby 'stayed home and did not go to school for the math test', but the note only says the parent let her stay home \u2014 it does not explicitly confirm she actually stayed home, and more importantly this fact is the parent's accommodation, not a separately reported child behavior; the note does not describe it as a child behavior at all"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 11,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 12,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 13,
+      "deterministic_pass": true,
+      "type_accuracy": 0.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 14,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 15,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "School drop-off behavior 2 adds an interpretive parenthetical '(coercive behavior to get parent to stay or not leave)' that the parent did not report"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 16,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 17,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 18,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    }
+  ]
+}

@@ -1,0 +1,727 @@
+{
+  "deterministic_pass": false,
+  "type_accuracy": 0.8889,
+  "judge_pass_rate": 0.7222222222222222,
+  "stable": false,
+  "unstable_cases": [
+    1,
+    2,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18
+  ],
+  "stability_runs": 3,
+  "failures": [
+    {
+      "case_id": 1,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 1,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 2,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 2,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 2,
+      "layer": "type",
+      "check": "missed_situation",
+      "detail": "Raising hand in class"
+    },
+    {
+      "case_id": 2,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Two separate situation entries (fear 8/10 and fear 6/10) were merged into one, losing the first fear rating of 8 and keeping only 6"
+    },
+    {
+      "case_id": 2,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The behavior 'Still not raising his hand / says he's scared he'll get it wrong and everyone will laugh' from the second entry is omitted"
+    },
+    {
+      "case_id": 2,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Both accommodations are present but their association with separate incidents is collapsed, obscuring which accommodation matched which observation"
+    },
+    {
+      "case_id": 3,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 3,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 3,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Bedtime",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 4,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 4,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 5,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 5,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 5,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Going to soccer practice",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 6,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 6,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 7,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 7,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 8,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 8,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 9,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 9,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 10,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 10,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math test at school",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 2,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math homework",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math homework",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior order 3 for 'Math test at school' states 'Stayed home and did not take the test' \u2014 the note only says the parent let her stay home; it does not explicitly state Ruby actually stayed home or missed the test (the outcome is implied by the accommodation, not reported as a behavior by the parent)"
+    },
+    {
+      "case_id": 11,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 11,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 11,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Making a mistake in a soccer game",
+        "gold_types": {
+          "escape": 1
+        },
+        "output_types": {
+          "escape": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 12,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "At home when parent is not in the same room",
+        "gold_types": {
+          "safety": 1,
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "spurious_situation",
+      "detail": "M and parent not being in the same room at home"
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The note gives a single fear rating of 8/10 tied to 'not being in the same room' at home, but the extracted output assigns that rating only to 'parent being out of the house' and leaves the 'not in the same room' situation with null \u2014 misattributing the stated rating"
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The note does not separate the crying/pleading/hyperventilating/near-vomiting from the 'parent out of the house' situation with any ambiguity about timing; the note presents these as M's reaction to parent being out, so labeling them 'unclear' adds an interpretive caveat the parent did not express"
+    },
+    {
+      "case_id": 13,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 13,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Packing for the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Staying overnight at the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 14,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at a party",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at dinner",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 4
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 15,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 15,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Taekwondo drop-off",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "School drop-off behavior 2 adds an interpretive clause ('behavior whose function is to get parent to stay or give in') that the parent never stated"
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "School drop-off behavior 2 changes 'I'm the worst mother ever' (first-person quote) to 'she's the worst mother ever', altering the parent's own wording"
+    },
+    {
+      "case_id": 16,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 16,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 16,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "'to deflect or minimize the interaction' is an interpretation not stated by the parent \u2014 the note only describes the observable behaviors (averting eye contact, shrugging, mumbling 'I don't know') without attributing intent or purpose"
+    },
+    {
+      "case_id": 17,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 17,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Texting in front of others",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Talking on the phone",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 2,
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 18,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output contains markdown code fences (```)"
+    },
+    {
+      "case_id": 18,
+      "layer": "deterministic",
+      "check": "clean_json",
+      "detail": "output is not valid JSON: Expecting value: line 1 column 1 (char 0)"
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 1,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    },
+    {
+      "case_id": 2,
+      "deterministic_pass": false,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Two separate situation entries (fear 8/10 and fear 6/10) were merged into one, losing the first fear rating of 8 and keeping only 6",
+          "The behavior 'Still not raising his hand / says he's scared he'll get it wrong and everyone will laugh' from the second entry is omitted",
+          "Both accommodations are present but their association with separate incidents is collapsed, obscuring which accommodation matched which observation"
+        ]
+      },
+      "stable": false
+    },
+    {
+      "case_id": 3,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 4,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 5,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 6,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    },
+    {
+      "case_id": 7,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 8,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    },
+    {
+      "case_id": 9,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    },
+    {
+      "case_id": 10,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior order 3 for 'Math test at school' states 'Stayed home and did not take the test' \u2014 the note only says the parent let her stay home; it does not explicitly state Ruby actually stayed home or missed the test (the outcome is implied by the accommodation, not reported as a behavior by the parent)"
+        ]
+      },
+      "stable": false
+    },
+    {
+      "case_id": 11,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    },
+    {
+      "case_id": 12,
+      "deterministic_pass": false,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "The note gives a single fear rating of 8/10 tied to 'not being in the same room' at home, but the extracted output assigns that rating only to 'parent being out of the house' and leaves the 'not in the same room' situation with null \u2014 misattributing the stated rating",
+          "The note does not separate the crying/pleading/hyperventilating/near-vomiting from the 'parent out of the house' situation with any ambiguity about timing; the note presents these as M's reaction to parent being out, so labeling them 'unclear' adds an interpretive caveat the parent did not express"
+        ]
+      },
+      "stable": false
+    },
+    {
+      "case_id": 13,
+      "deterministic_pass": false,
+      "type_accuracy": 0.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    },
+    {
+      "case_id": 14,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 15,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "School drop-off behavior 2 adds an interpretive clause ('behavior whose function is to get parent to stay or give in') that the parent never stated",
+          "School drop-off behavior 2 changes 'I'm the worst mother ever' (first-person quote) to 'she's the worst mother ever', altering the parent's own wording"
+        ]
+      },
+      "stable": false
+    },
+    {
+      "case_id": 16,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "'to deflect or minimize the interaction' is an interpretation not stated by the parent \u2014 the note only describes the observable behaviors (averting eye contact, shrugging, mumbling 'I don't know') without attributing intent or purpose"
+        ]
+      },
+      "stable": false
+    },
+    {
+      "case_id": 17,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    },
+    {
+      "case_id": 18,
+      "deterministic_pass": false,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": false
+    }
+  ]
+}

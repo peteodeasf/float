@@ -1,9 +1,10 @@
 # Float — Parent & Accommodation Foundation: Design & Build Plan
 
-Status: **spine built (not deployed).** Steps 1–2 implemented against the settled
-decisions; migration `b8c4d1e9f207` is a file only, not yet applied to prod. The feature
-layers (chat, reminders, child-rates-accommodations, milestone rewards, JIT education)
-depend on the spine and get their own docs.
+Status: **steps 1–3 built and DEPLOYED** (commit `1ec9820`). Migration `b8c4d1e9f207`
+applied to production 2026-07-24 — verified: new columns present, old distress column
+dropped, `uq_parent_patient_link` in place. The feature layers (chat, reminders,
+child-rates-accommodations, milestone rewards, JIT education) depend on the spine and get
+their own docs.
 
 Scope of this doc: the **spine** only — parent auth foundation + the accommodation entity.
 

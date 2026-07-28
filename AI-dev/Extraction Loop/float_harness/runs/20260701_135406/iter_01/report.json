@@ -1,0 +1,441 @@
+{
+  "deterministic_pass": true,
+  "type_accuracy": 0.8472,
+  "judge_pass_rate": 0.7777777777777778,
+  "stable": true,
+  "unstable_cases": [],
+  "stability_runs": 1,
+  "failures": [
+    {
+      "case_id": 4,
+      "layer": "type",
+      "check": "missed_situation",
+      "detail": "Getting ready for school"
+    },
+    {
+      "case_id": 4,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The note describes two separate 'Getting ready for school' entries with distinct observations and accommodations, but the extraction merges them into one situation, combining accommodations from both entries without distinguishing that the second entry had its own separate observation ('Something seemed off again but I honestly couldn't tell what; not sure if it was anxiety or just a bad morning') which is omitted from the behaviors"
+    },
+    {
+      "case_id": 5,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Going to soccer practice",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 9,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Feeling unwell before school",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math test at school",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 11,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Making a mistake in a soccer game",
+        "gold_types": {
+          "escape": 1
+        },
+        "output_types": {
+          "escape": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "At home when parent is not in the same room",
+        "gold_types": {
+          "safety": 1,
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "avoidance": 1,
+          "escape": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior order 3 is labeled 'escape' but the note describes these reactions as occurring when the parent has to be out of the house, which is a different situation (parent leaving/being away) than the named situation (not in the same room at home); the extraction conflates two distinct contexts"
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The note states crying, pleading, and hyperventilating occur specifically when the parent is out of the house without him, but the extracted situation is framed as 'not in the same room at home' \u2014 this mismatch means the behavior description does not faithfully match the named situation"
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "fear_rating_max is null but the note clearly states '8/10', so the max of 10 was reported and should be captured"
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Packing for the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The accommodation description omits 'like she always does', which implies this is a recurring pattern the parent reported, not a one-time offer \u2014 dropping it loses a clinically relevant detail the parent did include"
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at a party",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at dinner",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 4
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "School drop-off",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior description for school drop-off misquotes the child: the note says he yells 'you're the worst mother ever' (directed at the parent), but the extraction renders it as 'I'm the worst mother ever', changing the meaning entirely"
+    },
+    {
+      "case_id": 16,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Being called on in class",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Texting in front of others",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Talking on the phone",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 1,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 2,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 3,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 4,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "The note describes two separate 'Getting ready for school' entries with distinct observations and accommodations, but the extraction merges them into one situation, combining accommodations from both entries without distinguishing that the second entry had its own separate observation ('Something seemed off again but I honestly couldn't tell what; not sure if it was anxiety or just a bad morning') which is omitted from the behaviors"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 5,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 6,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 7,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 8,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 9,
+      "deterministic_pass": true,
+      "type_accuracy": 0.75,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 10,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 11,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 12,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior order 3 is labeled 'escape' but the note describes these reactions as occurring when the parent has to be out of the house, which is a different situation (parent leaving/being away) than the named situation (not in the same room at home); the extraction conflates two distinct contexts",
+          "The note states crying, pleading, and hyperventilating occur specifically when the parent is out of the house without him, but the extracted situation is framed as 'not in the same room at home' \u2014 this mismatch means the behavior description does not faithfully match the named situation",
+          "fear_rating_max is null but the note clearly states '8/10', so the max of 10 was reported and should be captured"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 13,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "The accommodation description omits 'like she always does', which implies this is a recurring pattern the parent reported, not a one-time offer \u2014 dropping it loses a clinically relevant detail the parent did include"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 14,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 15,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior description for school drop-off misquotes the child: the note says he yells 'you're the worst mother ever' (directed at the parent), but the extraction renders it as 'I'm the worst mother ever', changing the meaning entirely"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 16,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 17,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 18,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    }
+  ]
+}

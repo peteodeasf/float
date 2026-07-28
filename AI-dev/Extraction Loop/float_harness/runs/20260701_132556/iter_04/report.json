@@ -1,0 +1,499 @@
+{
+  "deterministic_pass": true,
+  "type_accuracy": 0.8519,
+  "judge_pass_rate": 0.8333333333333334,
+  "stable": true,
+  "unstable_cases": [],
+  "stability_runs": 1,
+  "failures": [
+    {
+      "case_id": 2,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Raising hand in class",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 3,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Bedtime",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 4,
+      "layer": "type",
+      "check": "missed_situation",
+      "detail": "Getting ready for school"
+    },
+    {
+      "case_id": 4,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The two separate situation entries in the note (each with its own fear rating and parent action) were merged into one situation, causing the second accommodation to be attributed to the first situation rather than a distinct second occurrence; the note also describes the second instance with different language ('something seemed off again' / uncertainty about anxiety vs bad morning) that is lost in the merge"
+    },
+    {
+      "case_id": 5,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Going to soccer practice",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math test at school",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math homework",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 11,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Making a mistake in a soccer game",
+        "gold_types": {
+          "escape": 1
+        },
+        "output_types": {
+          "escape": 1,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "At home when parent is not in the same room",
+        "gold_types": {
+          "safety": 1,
+          "avoidance": 1
+        },
+        "output_types": {
+          "safety": 2,
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior 2 omits 'gets so upset he almost vomits', which the parent explicitly reported as part of the distress response when the parent is out of the house"
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "fear_rating_max is null but the parent reported a scale maximum of 10 (implicit in '8/10')"
+    },
+    {
+      "case_id": 12,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The situation name says 'not in the same room at home' but the most severe behaviors (crying, hyperventilating, near-vomiting) are specifically tied to the parent being out of the house, not merely in another room \u2014 conflating these two distinct triggers into one situation loses a distinction the parent drew"
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Packing for the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Staying overnight at the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at a party",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at dinner",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 4
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "School drop-off",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Taekwondo drop-off",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior order 3 in School drop-off ('Hard to tell from the note whether these behaviors continued once in school or resolved once the parent stayed') adds an inference/uncertainty the parent never expressed \u2014 the note does not raise this ambiguity"
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior order 2 in School drop-off says 'she's the worst mother ever' but the note says 'I'm the worst mother ever' \u2014 minor pronoun shift that could cause confusion, though both refer to the mother"
+    },
+    {
+      "case_id": 16,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Being called on in class",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Texting in front of others",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Talking on the phone",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 1,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 2,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 3,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 4,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "The two separate situation entries in the note (each with its own fear rating and parent action) were merged into one situation, causing the second accommodation to be attributed to the first situation rather than a distinct second occurrence; the note also describes the second instance with different language ('something seemed off again' / uncertainty about anxiety vs bad morning) that is lost in the merge"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 5,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 6,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 7,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 8,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 9,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 10,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 11,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 12,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior 2 omits 'gets so upset he almost vomits', which the parent explicitly reported as part of the distress response when the parent is out of the house",
+          "fear_rating_max is null but the parent reported a scale maximum of 10 (implicit in '8/10')",
+          "The situation name says 'not in the same room at home' but the most severe behaviors (crying, hyperventilating, near-vomiting) are specifically tied to the parent being out of the house, not merely in another room \u2014 conflating these two distinct triggers into one situation loses a distinction the parent drew"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 13,
+      "deterministic_pass": true,
+      "type_accuracy": 0.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 14,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 15,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior order 3 in School drop-off ('Hard to tell from the note whether these behaviors continued once in school or resolved once the parent stayed') adds an inference/uncertainty the parent never expressed \u2014 the note does not raise this ambiguity",
+          "Behavior order 2 in School drop-off says 'she's the worst mother ever' but the note says 'I'm the worst mother ever' \u2014 minor pronoun shift that could cause confusion, though both refer to the mother"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 16,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 17,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 18,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    }
+  ]
+}

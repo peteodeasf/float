@@ -260,14 +260,6 @@ export default function TeenHomePage() {
   }
 
   // Shared bits of the primary "card" look.
-  const forLabel = {
-    fontFamily: teen.font.mono,
-    fontSize: 13,
-    fontWeight: 600,
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase' as const,
-    color: teen.color.inkSoft,
-  }
   const metaRow = {
     display: 'flex',
     alignItems: 'center',
@@ -355,18 +347,26 @@ export default function TeenHomePage() {
                       padding: '24px 22px',
                     }}
                   >
-                    {expSituation(comingUp) && (
-                      <div style={forLabel}>For · {expSituation(comingUp)}</div>
-                    )}
                     <h2
                       style={{
                         ...teen.type.headline,
                         fontSize: teen.headSize.md,
-                        margin: '14px 0 0',
+                        margin: 0,
                       }}
                     >
-                      {expName(comingUp)}
+                      {expSituation(comingUp) ?? 'Your experiment'}
                     </h2>
+                    <div
+                      style={{
+                        fontFamily: teen.font.sans,
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: teen.color.inkSoft,
+                        marginTop: 6,
+                      }}
+                    >
+                      without {expName(comingUp)}
+                    </div>
                     <div style={metaRow}>
                       <span aria-hidden="true" style={metaDot} />
                       {due ? 'Ready now' : expWhen(comingUp)}
@@ -414,7 +414,18 @@ export default function TeenHomePage() {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {expName(exp)}
+                          {expSituation(exp) ?? expName(exp)}
+                        </span>
+                        <span
+                          style={{
+                            display: 'block',
+                            fontFamily: teen.font.sans,
+                            fontSize: 13,
+                            color: teen.color.inkSoft,
+                            marginTop: 3,
+                          }}
+                        >
+                          without {expName(exp)}
                         </span>
                         <span
                           style={{
@@ -422,8 +433,8 @@ export default function TeenHomePage() {
                             fontFamily: teen.font.sans,
                             fontSize: 13,
                             fontWeight: 600,
-                            color: teen.color.inkSoft,
-                            marginTop: 4,
+                            color: teen.color.tealMid,
+                            marginTop: 3,
                           }}
                         >
                           {expWhen(exp) ?? 'Not scheduled'}
@@ -462,13 +473,23 @@ export default function TeenHomePage() {
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
                 {hasCommitted ? 'Set up another experiment' : 'Set up an experiment'}
               </div>
-              <div className="teen-card" style={{ marginTop: 14, padding: '22px' }}>
-                {selectedSituation && <div style={forLabel}>For · {selectedSituation.name}</div>}
-                <h2
-                  style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '14px 0 0' }}
+              <div className="teen-card" style={{ marginTop: 14, padding: '24px' }}>
+                {selectedSituation && (
+                  <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
+                    {selectedSituation.name}
+                  </h2>
+                )}
+                <div
+                  style={{
+                    fontFamily: teen.font.sans,
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: teen.color.inkSoft,
+                    marginTop: 6,
+                  }}
                 >
-                  {previewBehavior.name}
-                </h2>
+                  without {previewBehavior.name}
+                </div>
                 {previewBehavior.dt != null && (
                   <div style={metaRow}>
                     <span aria-hidden="true" style={metaDot} />

@@ -1,0 +1,34 @@
+[
+  {
+    "description": "Added an explicit rule that distress reactions (crying, getting upset, almost vomiting, feeling sick, shaking) are NOT a behavior type and must not be classified as safety/avoidance/escape or split into a separate behavior; instead attach the distress detail to the accompanying behavior's description or omit it. This addresses repeated over-classification where distress was turned into an extra behavior or a spurious 'safety' entry (cases 3, 5, 10, 11, 12).",
+    "kind": "clinical"
+  },
+  {
+    "description": "Strengthened the 'do not label safety unless reassurance/protection sought' rule to explicitly include a child being upset or explaining why as not constituting a safety behavior.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Clarified in the split-notes rule that a distress reaction must not be split off from the behavior it accompanies.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Added a rule prohibiting editorial or meta commentary as a behavior entry (e.g. 'Hard to tell whether these behaviors continued'), directing use of a single 'unclear' behavior only for genuine ambiguity (case 15).",
+    "kind": "wording"
+  },
+  {
+    "description": "Added a 'Faithfulness to the note' section requiring preservation of original speaker and pronouns in quotes/paraphrases (case 15 pronoun shift).",
+    "kind": "wording"
+  },
+  {
+    "description": "Added guidance to capture brief/passive accommodations such as encouraging the child to try again next time, and added a matching accommodation example and updated the passive-accommodation rule (case 2 missing accommodation).",
+    "kind": "clinical"
+  },
+  {
+    "description": "Added a worked example showing distress accompanying a refusal counted as a single avoidance behavior plus separate accommodations, to reinforce the new distress rule.",
+    "kind": "wording"
+  },
+  {
+    "description": "Bumped draft version note from v2 to v3.",
+    "kind": "wording"
+  }
+]

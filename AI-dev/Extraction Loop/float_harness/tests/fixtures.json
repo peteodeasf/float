@@ -1,0 +1,889 @@
+{
+  "schema_version": "1.0",
+  "source": "Float sample monitoring data + Dr. Walker entry-form batch 2 (reviewed, confirmed 2026-06-23)",
+  "notes": "Ground-truth labels for the monitoring-extraction loop. Each element of `situations` is one parent monitoring entry (occurrence); a recurring situation appears as multiple elements sharing a name. `fear_rating` is the parent's own number or null (never estimated). `behaviors` is ordered; one entry can hold a sequence (e.g. avoidance -> escape). `decision_ref` points to the entry in Float-Extraction-Decisions-Log.md that drove a non-obvious label. | fear_rating_max is optional, present only for a genuine same-trigger range (one trigger whose intensity varies by occurrence). diagnosis is case-level metadata; the behavior taxonomy is diagnosis-agnostic. in_session_questions (parent/patient) seed the Stage 2 templates.",
+  "taxonomy": {
+    "behavior_types": [
+      "avoidance",
+      "safety",
+      "escape",
+      "unclear"
+    ],
+    "definitions": {
+      "avoidance": "Child does not enter the situation.",
+      "escape": "Child was already in the situation and leaves once anxiety spikes.",
+      "safety": "Child stays in the situation but acts to feel safer or reduce attention (incl. reassurance-seeking, keeping a parent close).",
+      "unclear": "Note doesn't give enough detail to classify; flag rather than guess."
+    },
+    "rules": {
+      "R1": "fear_rating is the parent's own number or null; never estimated.",
+      "R2": "Reassurance-seeking classifies as safety.",
+      "R3": "OCD / ritual / compulsion presentations out of scope for now."
+    },
+    "diagnosis_field": "Descriptive metadata only. NOT consumed by extraction or question generation. The diagnostic pattern is implicit in the inputs; the pipeline keys off extracted triggers, behaviors, and accommodations, never the diagnosis label. Recording it would let the model shortcut into clinical authority, which is out of scope.",
+    "stage_2_questions": "in_session_questions are generated from the extracted pattern (mix of triggers, behavior types, accommodations), not from the diagnosis. Parent- and patient-facing sets are distinct outputs."
+  },
+  "cases": [
+    {
+      "case_id": 1,
+      "title": "Lunchtime at school",
+      "situations": [
+        {
+          "name": "Lunchtime at school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "behavior_id": "c1-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Eats in the library instead of the cafeteria"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c1-a1",
+              "description": "Parent emails the teacher to arrange a lunch buddy"
+            }
+          ]
+        },
+        {
+          "name": "Lunchtime at school",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "behavior_id": "c1-b2",
+              "order": 1,
+              "type": "safety",
+              "description": "Wears headphones so nobody talks to her"
+            }
+          ],
+          "accommodations": []
+        }
+      ],
+      "source_note": "(Lunchtime at school, fear 8/10) Mia ate in the library again instead of the cafeteria. She said the cafeteria was too loud but then admitted she didn't want to sit alone. Parent did: I emailed her teacher to ask about a lunch buddy. (Lunchtime at school, fear 6/10) She went to the cafeteria but wore her headphones the whole time so nobody would talk to her. Parent did: I told her that was a good first step."
+    },
+    {
+      "case_id": 2,
+      "title": "Raising hand in class",
+      "situations": [
+        {
+          "name": "Raising hand in class",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "behavior_id": "c2-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Doesn't raise his hand even when he knows the answer"
+            }
+          ],
+          "accommodations": []
+        },
+        {
+          "name": "Raising hand in class",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "behavior_id": "c2-b2",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Still doesn't raise his hand"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c2-a1",
+              "description": "Parent reassures the child that everyone makes mistakes"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Raising hand in class, fear 8/10) Sam wouldn't raise his hand even though he knew the answer. Parent did: I encouraged him to try next time. (Raising hand in class, fear 6/10) Still not raising his hand. He says he's scared he'll get it wrong and everyone will laugh. Parent did: I reassured him that everyone makes mistakes."
+    },
+    {
+      "case_id": 3,
+      "title": "Bedtime",
+      "situations": [
+        {
+          "name": "Bedtime",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c3-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to sleep in her own room"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c3-a1",
+              "description": "Parent sleeps in the child's room so she will settle"
+            }
+          ]
+        },
+        {
+          "name": "Bedtime",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c3-b2",
+              "order": 1,
+              "type": "safety",
+              "description": "Repeatedly calls parent back to check for monsters"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c3-a2",
+              "description": "Parent repeatedly checks the closet and under the bed to reassure her"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Bedtime, fear 7/10) Lily refused to sleep in her own room and cried until I lay down with her. Parent did: I ended up sleeping in her room again so she would settle. (Bedtime, fear 7/10) She kept calling me back into the room to check for monsters. Parent did: I checked the closet and under the bed several times to reassure her."
+    },
+    {
+      "case_id": 4,
+      "title": "Getting ready for school",
+      "situations": [
+        {
+          "name": "Getting ready for school",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "behavior_id": "c4-b1",
+              "order": 1,
+              "type": "unclear",
+              "description": "Quiet and slow during the morning routine",
+              "decision_ref": "O2"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c4-a1",
+              "description": "Parent gives him space / allows the delay",
+              "decision_ref": "D3"
+            }
+          ]
+        },
+        {
+          "name": "Getting ready for school",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "behavior_id": "c4-b2",
+              "order": 1,
+              "type": "unclear",
+              "description": "Something seemed off but the parent couldn't tell what (anxiety vs bad morning)",
+              "decision_ref": "O2"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c4-a2",
+              "description": "Parent waits with him and allows the delay until it is time to go",
+              "decision_ref": "D3"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Getting ready for school, fear 5/10) Noah was very quiet and slow this morning. Hard to tell what was going on with him. Parent did: I gave him some space. (Getting ready for school, fear 5/10) Something seemed off again but I honestly couldn't tell what. I'm not sure if it was anxiety or just a bad morning. Parent did: I waited with him until it was time to go."
+    },
+    {
+      "case_id": 5,
+      "title": "Soccer practice",
+      "situations": [
+        {
+          "name": "Going to soccer practice",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c5-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to get out of the car at the field",
+              "decision_ref": "D2"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c5-a1",
+              "description": "Parent takes the child home"
+            }
+          ]
+        },
+        {
+          "name": "Soccer practice attendance",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c5-b2",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Won't get out of the car; stays in the back seat"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c5-a2",
+              "description": "Parent lets her skip practice"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Going to soccer practice, fear 7/10) Ava said she felt sick in the car and refused to get out at the field. Parent did: I took her home. (Soccer practice attendance, fear 7/10) Again wouldn't get out of the car at soccer. Stayed in the back seat. Parent did: I let her skip it."
+    },
+    {
+      "case_id": 6,
+      "title": "Around school (halls, bus, class)",
+      "situations": [
+        {
+          "name": "Walking between classes",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "behavior_id": "c6-b1",
+              "order": 1,
+              "type": "safety",
+              "description": "Rushes through the halls so nobody can talk to him"
+            },
+            {
+              "behavior_id": "c6-b2",
+              "order": 2,
+              "type": "safety",
+              "description": "Pretends not to see kids he knows"
+            }
+          ],
+          "accommodations": []
+        },
+        {
+          "name": "Taking the school bus",
+          "fear_rating": 3,
+          "behaviors": [
+            {
+              "behavior_id": "c6-b3",
+              "order": 1,
+              "type": "safety",
+              "description": "Sits at the back so kids don't notice him"
+            },
+            {
+              "behavior_id": "c6-b4",
+              "order": 2,
+              "type": "safety",
+              "description": "Keeps headphones on the whole ride"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c6-a1",
+              "description": "Parent provides headphones to make the bus ride easier"
+            }
+          ]
+        },
+        {
+          "name": "Being called on in class",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c6-b5",
+              "order": 1,
+              "type": "safety",
+              "description": "Looks down at his notes and avoids eye contact so he won't be picked"
+            }
+          ],
+          "accommodations": []
+        }
+      ],
+      "source_note": "(Walking between classes, fear 4/10) Ethan rushes through the halls so nobody has a chance to talk to him. He also pretends not to see kids he knows. Parent did: I didn't know about this until his teacher mentioned it. (Taking the school bus, fear 3/10) He sits right at the back so kids don't notice him, and keeps his headphones on the whole ride. Parent did: I let him take headphones to make it easier. (Being called on in class, fear 7/10) When the teacher might call on him he looks down at his notes and avoids eye contact so he won't be picked. Parent did: I talked to him about it after school."
+    },
+    {
+      "case_id": 7,
+      "title": "Lunch with peers",
+      "situations": [
+        {
+          "name": "Lunch with peers",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "behavior_id": "c7-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Goes to the library when her close friends aren't there"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c7-a1",
+              "description": "Parent endorses the child going to the library to stay comfortable"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Lunch with peers, fear 4/10) Zoe goes to the library at lunch whenever her two close friends aren't there, so she doesn't have to sit with anyone else. Parent did: I said that was fine if it made her comfortable."
+    },
+    {
+      "case_id": 8,
+      "title": "Birthday parties",
+      "situations": [
+        {
+          "name": "Birthday parties",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "behavior_id": "c8-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to go into the party",
+              "decision_ref": "O2"
+            },
+            {
+              "behavior_id": "c8-b2",
+              "order": 2,
+              "type": "escape",
+              "description": "Asked to leave after ten minutes",
+              "decision_ref": "D2, O2"
+            },
+            {
+              "behavior_id": "c8-b3",
+              "order": 3,
+              "type": "safety",
+              "description": "Stayed glued to the parent's side the whole time"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c8-a1",
+              "description": "Parent lets the child leave the party early"
+            },
+            {
+              "accommodation_id": "c8-a2",
+              "description": "Parent provides a reward (ice cream) following the avoidance"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Birthday parties, fear 9/10) Jack refused to go into the party and asked to leave after ten minutes. He stayed glued to my side the whole time. Parent did: I let him leave and bought him ice cream on the way home to cheer him up."
+    },
+    {
+      "case_id": 9,
+      "title": "Health worries",
+      "situations": [
+        {
+          "name": "Noticing body sensations after activity",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c9-b1",
+              "order": 1,
+              "type": "escape",
+              "description": "Stops the activity and comes inside when he notices body sensations",
+              "decision_ref": "D2"
+            },
+            {
+              "behavior_id": "c9-b2",
+              "order": 2,
+              "type": "safety",
+              "description": "Repeatedly asks whether his heart is OK (reassurance-seeking)",
+              "decision_ref": "R2"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c9-a1",
+              "description": "Parent checks his pulse and repeatedly reassures him"
+            }
+          ]
+        },
+        {
+          "name": "Feeling unwell before school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "behavior_id": "c9-b3",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to go to school when he feels unwell"
+            },
+            {
+              "behavior_id": "c9-b4",
+              "order": 2,
+              "type": "safety",
+              "description": "Asks to see a doctor to check he is not seriously ill",
+              "decision_ref": "R2"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c9-a2",
+              "description": "Parent keeps him home from school when he reports feeling unwell"
+            },
+            {
+              "accommodation_id": "c9-a3",
+              "description": "Parent books doctor's appointments in response to his health worries"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Noticing body sensations after activity, fear 7/10) After running around in the yard Theo noticed his heart beating fast. He stopped playing and came inside, then kept asking me if his heart was OK and whether he needed to see a doctor. Parent did: I checked his pulse, told him he was fine, and reassured him several times. (Feeling unwell before school, fear 8/10) Theo said his stomach felt strange and he was sure something was wrong. He didn't want to go to school and asked to see a doctor. Parent did: I kept him home and booked a doctor's appointment to put his mind at rest."
+    },
+    {
+      "case_id": 10,
+      "title": "Math",
+      "situations": [
+        {
+          "name": "Math homework",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "behavior_id": "c10-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to attempt math problems"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c10-a1",
+              "description": "Parent does the math problems for her"
+            }
+          ]
+        },
+        {
+          "name": "Math homework",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c10-b2",
+              "order": 1,
+              "type": "safety",
+              "description": "Will only do math if a parent sits next to her"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c10-a2",
+              "description": "Parent sits next to her the whole time she does math"
+            }
+          ]
+        },
+        {
+          "name": "Math test at school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "behavior_id": "c10-b3",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Asks to stay home when a math test is coming"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c10-a3",
+              "description": "Parent lets her stay home to avoid the math test"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Math homework, fear 9/10) Ruby cried and said 'I can't do this', pushed the book away and refused to attempt any of the problems. Parent did: I told her she could do it and ended up doing the first few problems for her. (Math homework, fear 7/10) She would only start her math if I sat right next to her the whole time. As soon as I got up she stopped. Parent did: I sat with her. (Math test at school, fear 8/10) The night before her math test she said she felt sick and begged to stay home. Parent did: I let her stay home."
+    },
+    {
+      "case_id": 11,
+      "title": "Making a mistake in a game",
+      "situations": [
+        {
+          "name": "Making a mistake in a soccer game",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "behavior_id": "c11-b1",
+              "order": 1,
+              "type": "escape",
+              "description": "Withdraws and sits alone away from the team after a mistake",
+              "decision_ref": "D2, O1"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c11-a1",
+              "description": "Parent reassures him and gives him space after he withdraws"
+            }
+          ]
+        }
+      ],
+      "source_note": "(Making a mistake in a soccer game, fear 6/10) Leo missed an easy goal, then walked off to the far end of the bench and sat by himself. He wouldn't talk to his teammates or the coach for the rest of the game. Parent did: I told him it was fine and gave him space."
+    },
+    {
+      "case_id": 12,
+      "title": "Separation from parent at home",
+      "diagnosis": "Separation Anxiety Disorder",
+      "situations": [
+        {
+          "name": "At home when parent is not in the same room",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "behavior_id": "c12-b1",
+              "order": 1,
+              "type": "safety",
+              "description": "Calls out to parent, stays by her side, repeatedly asks about her location (reassurance-seeking)",
+              "decision_ref": "R2"
+            },
+            {
+              "behavior_id": "c12-b2",
+              "order": 2,
+              "type": "avoidance",
+              "description": "Refuses sitters"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c12-a1",
+              "description": "Parent allows the child to stay with her"
+            },
+            {
+              "accommodation_id": "c12-a2",
+              "description": "Parent doesn't go out unless she must"
+            },
+            {
+              "accommodation_id": "c12-a3",
+              "description": "Parent never goes out unless the father is home"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [
+              "What do you worry will happen if you leave him with a sitter or his father?"
+            ],
+            "patient": [
+              "What do you worry will happen if your mom is not with you?"
+            ]
+          }
+        }
+      ],
+      "source_note": "(At home when M, age 6, and I are not in the same room, fear 8/10) M cries, pleads, hyperventilates, and gets so upset he almost vomits when I have to be out of the house without him for even an hour. He calls out to me, stays by my side, and asks many questions about where I am throughout the day. He refuses sitters. Parent did: I avoid leaving him; I don't go out unless I must, and never unless his father is home."
+    },
+    {
+      "case_id": 13,
+      "title": "Sleep-away school event",
+      "diagnosis": "Separation Anxiety Disorder",
+      "situations": [
+        {
+          "name": "Packing for the outdoor-ed trip",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "behavior_id": "c13-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Says she's worried about going and may not want to go after all"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c13-a1",
+              "description": "Parent allows the avoidance"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [
+              "What do you think would happen if P went to camp without the option of being picked up?"
+            ],
+            "patient": [
+              "What will happen to you if you sleep at the camp without your parents?"
+            ]
+          }
+        },
+        {
+          "name": "Staying overnight at the outdoor-ed trip",
+          "fear_rating": 10,
+          "behaviors": [
+            {
+              "behavior_id": "c13-b2",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Cries and doesn't sleep the night before; relies on the option to come home"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c13-a2",
+              "description": "Parent tells her she can come home when bedtime comes, as she always does"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [],
+            "patient": []
+          }
+        }
+      ],
+      "source_note": "(Packing for the outdoor-ed trip, fear 6/10) Pippa is excited about Outdoor Ed until about two weeks before the departure date, when she tells me she's worried about going and may not want to after all. Parent did: I urge her to go. (Staying overnight at outdoor ed, fear 10/10) The night before camp she cries and doesn't sleep much. Parent did: I tell her she can come home when bedtime comes, like she always does."
+    },
+    {
+      "case_id": 14,
+      "title": "Parent goes out without child",
+      "diagnosis": "Separation Anxiety Disorder",
+      "situations": [
+        {
+          "name": "Parent out at dinner",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "behavior_id": "c14-b1",
+              "order": 1,
+              "type": "safety",
+              "description": "Begs parents not to go, says she feels sick, asks many questions about where/who, texts and calls after they leave (reassurance-seeking)",
+              "decision_ref": "R2"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c14-a1",
+              "description": "Parents provide excessive reassurance before and during the absence"
+            },
+            {
+              "accommodation_id": "c14-a2",
+              "description": "Parents ensure the long-time sitter comes"
+            },
+            {
+              "accommodation_id": "c14-a3",
+              "description": "Parents give text updates that all is well"
+            },
+            {
+              "accommodation_id": "c14-a4",
+              "description": "Parents come home early, before they want to"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [
+              "What are you concerned will happen to F if you do not text with her or reassure her?",
+              "What is your theory about what Francis fears will happen when you are away?"
+            ],
+            "patient": [
+              "What are you worried will happen when your parents are out without you?"
+            ]
+          }
+        },
+        {
+          "name": "Parent out at a party",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "behavior_id": "c14-b2",
+              "order": 1,
+              "type": "safety",
+              "description": "Asks many questions about party location and timing, texts and calls nonstop telling them to come home (reassurance-seeking)",
+              "decision_ref": "R2"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c14-a5",
+              "description": "Parents provide excessive reassurance before and during the absence"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [],
+            "patient": []
+          }
+        }
+      ],
+      "source_note": "(Parent out at dinner, fear 7/10) F begs us not to go, sometimes says she feels sick, asks all sorts of questions about where the restaurant is and who we're going with, and texts and calls us after we've been away thirty minutes. Parent did: We reassure her she'll be fine, make sure our long-time sitter comes, give her text updates that all is well, and tell her we'll come home early -- and we do come home before we want to. (Parent out at a party, fear 9/10) F asks lots of questions about the party location, how long we'll stay, and when we'll be back, then texts and calls nonstop telling us to come home and asking where we are. Parent did: We give the same reassurance before and during."
+    },
+    {
+      "case_id": 15,
+      "title": "Drop-off separations",
+      "diagnosis": "Separation Anxiety Disorder",
+      "situations": [
+        {
+          "name": "School drop-off",
+          "fear_rating": 5,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "behavior_id": "c15-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to get out of the car"
+            },
+            {
+              "behavior_id": "c15-b2",
+              "order": 2,
+              "type": "safety",
+              "description": "Insults, physical aggression, and kicking to get mom to come into the classroom",
+              "decision_ref": "coercive-safety"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c15-a1",
+              "description": "Mom goes into the classroom and stays the first hour, then slips out"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [
+              "Does this happen when his father drops him off?",
+              "What is your theory about his difficulty separating from you at school/Taekwondo?",
+              "Do you believe this relates to fears of harm coming to you, or to needing your comfort if he feels bad?"
+            ],
+            "patient": [
+              "What are you worried will happen when your parents leave you at school or Taekwondo?"
+            ]
+          }
+        },
+        {
+          "name": "Taekwondo drop-off",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "behavior_id": "c15-b3",
+              "order": 1,
+              "type": "safety",
+              "description": "Insists a parent stay to watch the whole class; scans the room and reacts if they leave"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c15-a2",
+              "description": "Parent stays to watch the class and reassures him they'll stay"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [],
+            "patient": []
+          }
+        }
+      ],
+      "source_note": "(School drop-off, fear 5-8/10) Edward refuses to get out of the car, kicks the back of my seat, cries, and yells that I'm the worst mother ever. Parent did: I go into his classroom and stay the first hour until he's more comfortable, then slip out when he can't see. (Drop-off at Taekwondo, fear 5/10) E insists that either I or his father stay to watch the entire class; he scans the room for us and comes running or gives a mean look even if we just go to the bathroom. Parent did: We stay to watch and reassure him we'll stay."
+    },
+    {
+      "case_id": 16,
+      "title": "Speaking in class",
+      "diagnosis": "Social Anxiety Disorder",
+      "situations": [
+        {
+          "name": "Being called on in class",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "behavior_id": "c16-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Does not speak in class"
+            },
+            {
+              "behavior_id": "c16-b2",
+              "order": 2,
+              "type": "safety",
+              "description": "Averts eye contact, mumbles 'I don't know', shrugs when called on"
+            }
+          ],
+          "accommodations": [],
+          "in_session_questions": {
+            "parent": [
+              "What is your theory about what's happening?",
+              "How does R explain his behavior to you?"
+            ],
+            "patient": [
+              "What are you worried would happen if you said something in class or answered the teacher's question?"
+            ]
+          }
+        }
+      ],
+      "source_note": "(Being called on in class, fear 4/10) Rosco's teachers report that he doesn't speak in class; when he is called on he averts eye contact, shrugs, and mumbles 'I don't know'. Parent did: I told him to try harder, that his grades count for college now and are lower because he doesn't participate."
+    },
+    {
+      "case_id": 17,
+      "title": "Phone and texting around others",
+      "diagnosis": "Social Anxiety Disorder",
+      "situations": [
+        {
+          "name": "Talking on the phone",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "behavior_id": "c17-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to talk on the phone unless alone; doesn't pick up until she finds a private place"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c17-a1",
+              "description": "Parent answers the home phone and makes excuses that she's not home or busy"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [],
+            "patient": [
+              "What are you worried will happen if you talk on the phone to someone in front of others?"
+            ]
+          }
+        },
+        {
+          "name": "Texting in front of others",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "behavior_id": "c17-b2",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Never texts in front of friends"
+            },
+            {
+              "behavior_id": "c17-b3",
+              "order": 2,
+              "type": "safety",
+              "description": "Hides her phone and conceals that she is texting"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c17-a2",
+              "description": "Parent makes excuses for her so friends don't know"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [],
+            "patient": [
+              "What are you worried will happen if you text while others can see?"
+            ]
+          }
+        }
+      ],
+      "source_note": "(Talking on the phone, fear 9/10) Rosie refuses to talk on the phone except to me when she's alone; she never picks up my call at first but finds a private place and then answers. Parent did: If she gets a call on the home phone I answer and say she's not home or is busy -- I make excuses so she doesn't feel embarrassed. (Texting in front of others, fear 6/10) She hides her phone if she texts in front of me so I can't see, and never texts in front of her friends unless she hides what she's doing. Parent did: I make excuses for her so her friends don't know."
+    },
+    {
+      "case_id": 18,
+      "title": "No fear rating provided",
+      "diagnosis": null,
+      "source_note": "(Dentist appointment) Aiden refused to go into the dentist's office and waited out in the car with his dad. He wouldn't go in no matter what we tried. Parent did: We let him wait in the car and rebooked for another day.",
+      "situations": [
+        {
+          "name": "Dentist appointment",
+          "fear_rating": null,
+          "behaviors": [
+            {
+              "behavior_id": "c18-b1",
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to go into the dentist office; waits in the car"
+            }
+          ],
+          "accommodations": [
+            {
+              "accommodation_id": "c18-a1",
+              "description": "Parent lets him wait in the car and rebooks the appointment"
+            }
+          ],
+          "in_session_questions": {
+            "parent": [],
+            "patient": []
+          },
+          "note": "Synthetic fixture: parent submitted a note with no fear rating. Exercises the null-rating path; not clinically reviewed (tests data integrity, not classification)."
+        }
+      ]
+    }
+  ]
+}

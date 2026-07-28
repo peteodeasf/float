@@ -1,0 +1,30 @@
+[
+  {
+    "description": "Added a 'Classifying carefully \u2014 do not over-classify' section instructing that a single refusal/action is one behavior and not to add a spurious second behavior (e.g. an extra 'safety') from the same action. Addresses the recurring pattern of extra safety/escape behaviors appearing alongside avoidance.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Clarified that a child merely stating or explaining their fear is not reassurance-seeking; only label 'safety'/reassurance when the note shows the child actually sought comfort or protection. Addresses inferred reassurance framing.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Added rule to not attach interpretive parentheticals or inferred functions (e.g. 'coercive behavior to get parent to stay') unless the note states that function.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Added rule that a parent/adult action (allowed, let, arranged) is an accommodation and must not be converted into a separately reported child behavior.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Added guidance to use 'unclear' once for an ambiguous note rather than repeatedly, and to pick the single best-fitting type when an action could fit two. Addresses duplicate-unclear and double-count failures.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Strengthened the Situations instruction to not drop a distinct trigger because it seems minor or the response is brief. Addresses missed situations.",
+    "kind": "clinical"
+  },
+  {
+    "description": "Qualified the existing 'Reassurance-seeking is safety' rule and the split rule with conservative caveats (only when actually sought; do not split a single action).",
+    "kind": "wording"
+  }
+]
