@@ -19,6 +19,8 @@ export const color = {
   muted: 'var(--teen-muted)',
   mutedQuiet: 'var(--teen-muted-quiet)',
   onDark: 'var(--teen-on-dark)',
+  textSecondary: 'var(--teen-text-secondary)',
+  textTertiary: 'var(--teen-text-tertiary)',
 
   mint: 'var(--teen-mint)',
   mintSoft: 'var(--teen-mint-soft)',
@@ -95,18 +97,18 @@ export const motion = {
 /** Recurring type composites, ready to spread into `style`. */
 export const type = {
   eyebrow: {
-    fontFamily: font.mono,
+    fontFamily: font.sans,
     fontSize: 'var(--teen-eyebrow-size)',
     fontWeight: 700,
     letterSpacing: 'var(--teen-eyebrow-track)',
     textTransform: 'uppercase',
-    color: color.muted,
+    color: color.tealMid,
   },
   stepNum: {
     fontFamily: font.mono,
     fontSize: 'var(--teen-eyebrow-size)',
     fontWeight: 700,
-    color: chart.label,
+    color: color.tealMid,
   },
   label: {
     fontFamily: font.sans,

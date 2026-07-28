@@ -19,9 +19,14 @@
   --teen-teal: #135450;        /* data values, slider/graph fill, accents   */
   --teen-teal-mid: #3f817b;    /* secondary accent, eyebrows on tinted bg   */
   --teen-ink-soft: #3a5551;    /* body text                                 */
-  --teen-muted: #7c9994;       /* labels, captions, inactive                */
-  --teen-muted-quiet: #6f8d88; /* quiet body                                */
-  --teen-on-dark: #9ac6bf;     /* captions on dark surfaces                 */
+  --teen-muted: #7c9994;       /* DECORATIVE ONLY (hairlines, inactive) — fails AA as text */
+  --teen-muted-quiet: #6f8d88; /* DECORATIVE ONLY — fails AA as text        */
+  --teen-on-dark: #9ac6bf;     /* captions on DARK surfaces only            */
+
+  /* Readable secondary/tertiary copy on light surfaces (the muted greens
+     above are ~3:1 and must not be used for text). */
+  --teen-text-secondary: #3f6b64; /* helper/secondary copy — ~5:1 on canvas */
+  --teen-text-tertiary: #5c7a75;  /* tertiary copy, min 15px                */
 
   --teen-mint: #9af6e4;        /* THE accent — used sparingly               */
   --teen-mint-soft: #eafaf6;   /* selected-mint chip fill, highlight cards  */
@@ -46,7 +51,7 @@
   --teen-font-sans: Arial, Helvetica, sans-serif;
   --teen-font-mono: "Courier New", ui-monospace, monospace;
 
-  --teen-eyebrow-size: 12px;
+  --teen-eyebrow-size: 13px;
   --teen-eyebrow-track: 0.14em;
   --teen-eyebrow-track-tight: 0.12em;
 
@@ -190,12 +195,12 @@
 
 /* ---- Type composites --------------------------------------------------- */
 .teen-eyebrow {
-  font-family: var(--teen-font-mono);
+  font-family: var(--teen-font-sans);
   font-size: var(--teen-eyebrow-size);
   font-weight: 700;
   letter-spacing: var(--teen-eyebrow-track);
   text-transform: uppercase;
-  color: var(--teen-muted);
+  color: var(--teen-teal-mid);
 }
 .teen-eyebrow--accent { color: var(--teen-teal-mid); }
 .teen-eyebrow--mint { color: var(--teen-mint); }
@@ -204,7 +209,7 @@
   font-family: var(--teen-font-mono);
   font-size: var(--teen-eyebrow-size);
   font-weight: 700;
-  color: var(--teen-chart-label);
+  color: var(--teen-teal-mid);
 }
 
 .teen-label {
@@ -250,16 +255,16 @@
 /* Mono status pill — manageable / getting there / still scary */
 .teen-pill {
   display: inline-block;
-  font-family: var(--teen-font-mono);
-  font-size: var(--teen-eyebrow-size);
+  font-family: var(--teen-font-sans);
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
+  letter-spacing: 0;
+  padding: 3px 10px;
   border-radius: var(--teen-radius-pill);
 }
 .teen-pill--manageable { background: var(--teen-mint); color: var(--teen-ink); }
 .teen-pill--progressing { background: var(--teen-mint-soft); color: var(--teen-teal); }
-.teen-pill--scary { background: var(--teen-canvas-alt); color: var(--teen-muted); }
+.teen-pill--scary { background: var(--teen-canvas-alt); color: var(--teen-text-secondary); }
 
 /* ---- Buttons ----------------------------------------------------------- */
 .teen-btn {
