@@ -73,7 +73,7 @@ export default function TeenLoginPage() {
           <FloatLogo size="lg" />
           <p
             className="text-sm"
-            style={{ color: 'var(--float-text-hint)', marginTop: '12px' }}
+            style={{ color: 'var(--float-text-secondary)', marginTop: '12px' }}
           >
             Your anxiety toolkit
           </p>
@@ -125,17 +125,19 @@ export default function TeenLoginPage() {
                 } as React.CSSProperties}
                 placeholder="••••••••"
               />
-              <div style={{ textAlign: 'right', marginTop: '6px' }}>
+              <div style={{ textAlign: 'right', marginTop: '2px', marginRight: '-8px' }}>
                 <button
                   type="button"
                   onClick={() => setView('forgot')}
                   style={{
-                    fontSize: '12px',
-                    color: '#94a3b8',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: 'var(--float-primary)',
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    padding: 0,
+                    padding: '10px 8px',
+                    minHeight: '44px',
                   }}
                 >
                   Forgot password?

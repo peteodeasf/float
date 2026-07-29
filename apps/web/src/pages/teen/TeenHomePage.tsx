@@ -39,7 +39,7 @@ type TeenSituation = {
 }
 
 export default function TeenHomePage() {
-  const { patientId } = useTeenAuth()
+  const { patientId, logout } = useTeenAuth()
   const navigate = useNavigate()
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null)
   const [selectedBehaviorId, setSelectedBehaviorId] = useState<string | null>(null)
@@ -288,6 +288,28 @@ export default function TeenHomePage() {
         }}
       >
         <FloatLogo size="md" />
+        <button
+          onClick={() => {
+            logout()
+            navigate('/teen/login')
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 44,
+            padding: '8px 4px',
+            margin: '-8px -4px',
+            background: 'none',
+            border: 0,
+            cursor: 'pointer',
+            fontFamily: teen.font.sans,
+            fontSize: 13,
+            fontWeight: 600,
+            color: teen.color.textSecondary,
+          }}
+        >
+          Sign out
+        </button>
       </div>
 
       <div
@@ -359,9 +381,9 @@ export default function TeenHomePage() {
                     <div
                       style={{
                         fontFamily: teen.font.sans,
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: 600,
-                        color: teen.color.inkSoft,
+                        color: teen.color.textSecondary,
                         marginTop: 6,
                       }}
                     >
@@ -404,14 +426,14 @@ export default function TeenHomePage() {
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span
                           style={{
-                            display: 'block',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
                             fontFamily: teen.font.sans,
                             fontSize: 14,
                             fontWeight: 600,
                             color: teen.color.ink,
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
                           }}
                         >
                           {expSituation(exp) ?? expName(exp)}
@@ -420,8 +442,9 @@ export default function TeenHomePage() {
                           style={{
                             display: 'block',
                             fontFamily: teen.font.sans,
-                            fontSize: 13,
-                            color: teen.color.inkSoft,
+                            fontSize: 17,
+                            fontWeight: 600,
+                            color: teen.color.textSecondary,
                             marginTop: 3,
                           }}
                         >
@@ -443,10 +466,10 @@ export default function TeenHomePage() {
                       {due && (
                         <span
                           style={{
-                            fontFamily: teen.font.mono,
-                            fontSize: 10,
+                            fontFamily: teen.font.sans,
+                            fontSize: 13,
                             fontWeight: 700,
-                            letterSpacing: '0.06em',
+                            letterSpacing: '0.04em',
                             textTransform: 'uppercase',
                             padding: '3px 8px',
                             borderRadius: teen.radius.pill,
@@ -482,9 +505,9 @@ export default function TeenHomePage() {
                 <div
                   style={{
                     fontFamily: teen.font.sans,
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: 600,
-                    color: teen.color.inkSoft,
+                    color: teen.color.textSecondary,
                     marginTop: 6,
                   }}
                 >
@@ -519,8 +542,8 @@ export default function TeenHomePage() {
               <p
                 style={{
                   ...teen.type.body,
-                  fontSize: 12,
-                  color: teen.color.muted,
+                  fontSize: 13,
+                  color: teen.color.textSecondary,
                   margin: '6px 0 0',
                 }}
               >
@@ -535,7 +558,14 @@ export default function TeenHomePage() {
                   gap: 7,
                   overflowX: 'auto',
                   margin: '12px 0 0',
+                  // Right-edge fade + trailing space so the row reads as
+                  // scrollable and the next chip peeks in rather than clipping.
                   paddingBottom: 4,
+                  paddingRight: 24,
+                  WebkitMaskImage:
+                    'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
+                  maskImage:
+                    'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
                 }}
               >
                 {activeSituations.map(s => (
@@ -543,7 +573,14 @@ export default function TeenHomePage() {
                     key={s.id}
                     className="teen-chip"
                     aria-pressed={s.id === selectedSituationId}
-                    style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}
+                    style={{
+                      flex: '0 0 auto',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textAlign: 'left',
+                    }}
                     onClick={() => setSelectedSituationId(s.id)}
                   >
                     {s.name}
@@ -580,9 +617,9 @@ export default function TeenHomePage() {
                     <span
                       style={{
                         fontFamily: teen.font.mono,
-                        fontSize: 11,
+                        fontSize: 13,
                         fontWeight: 700,
-                        color: isSelected ? teen.color.teal : teen.chart.label,
+                        color: isSelected ? teen.color.teal : teen.color.tealMid,
                         flex: 'none',
                         width: 18,
                       }}
@@ -592,14 +629,14 @@ export default function TeenHomePage() {
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span
                         style={{
-                          display: 'block',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
                           fontFamily: teen.font.sans,
                           fontSize: 14,
                           fontWeight: 600,
                           color: teen.color.ink,
                           overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
                         }}
                       >
                         {behavior.name}
@@ -613,7 +650,7 @@ export default function TeenHomePage() {
                     {behavior.dt != null && (
                       <span
                         style={{
-                          fontFamily: teen.font.mono,
+                          fontFamily: teen.font.sans,
                           fontSize: 14,
                           fontWeight: 700,
                           color: teen.color.inkSoft,
@@ -642,9 +679,9 @@ export default function TeenHomePage() {
                   That's a big jump from where you are. Your clinician suggested starting with{' '}
                   <b style={{ color: teen.color.ink }}>{jumpWarning.suggestedName}</b>.
                 </p>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <button
-                    className="teen-chip"
+                    className="teen-btn teen-btn--primary"
                     onClick={() => {
                       const id = jumpWarning.suggestedBehaviorId
                       setJumpWarning(null)
@@ -654,7 +691,7 @@ export default function TeenHomePage() {
                     Set up that one
                   </button>
                   <button
-                    className="teen-chip"
+                    className="teen-btn teen-btn--outline"
                     onClick={() => {
                       const id = jumpWarning.targetBehaviorId
                       setJumpWarning(null)

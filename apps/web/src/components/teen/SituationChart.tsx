@@ -44,17 +44,17 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
             style={{ width: 16, height: 3, borderRadius: 2, background: teen.chart.bip }}
             aria-hidden="true"
           />
-          <span style={{ fontFamily: teen.font.sans, fontSize: 11, color: teen.color.inkSoft }}>
+          <span style={{ fontFamily: teen.font.sans, fontSize: 15, color: teen.color.inkSoft }}>
             Believe it'll go wrong
           </span>
         </span>
         {dtIndexed.length >= 2 && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span
-              style={{ width: 16, height: 0, borderTop: `2px dashed ${teen.chart.dt}` }}
+              style={{ width: 16, height: 0, borderTop: `2px dashed ${teen.color.mintDeep}` }}
               aria-hidden="true"
             />
-            <span style={{ fontFamily: teen.font.sans, fontSize: 11, color: teen.color.inkSoft }}>
+            <span style={{ fontFamily: teen.font.sans, fontSize: 15, color: teen.color.inkSoft }}>
               How anxious
             </span>
           </span>
@@ -77,11 +77,11 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
               />
               <text
                 x={X0 - 6}
-                y={y + 3}
+                y={y + 4}
                 textAnchor="end"
-                fontFamily="'Courier New', monospace"
-                fontSize={8}
-                fill={teen.chart.label}
+                fontFamily="Arial"
+                fontSize={13}
+                fill={teen.color.textSecondary}
               >
                 {value}
               </text>
@@ -93,7 +93,7 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
           <polyline
             points={dtPoints}
             fill="none"
-            stroke={teen.chart.dt}
+            stroke={teen.color.mintDeep}
             strokeWidth={2}
             strokeDasharray="4 4"
             strokeLinecap="round"
@@ -117,7 +117,7 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
               cy={cy(p.dt * 10)}
               r={2.5}
               fill="#fff"
-              stroke={teen.chart.dt}
+              stroke={teen.color.mintDeep}
               strokeWidth={1.5}
             />
           ))}
@@ -127,22 +127,22 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
 
         <text
           x={X0}
-          y={164}
+          y={166}
           textAnchor="start"
           fontFamily="Arial"
-          fontSize={9}
-          fill={teen.color.muted}
+          fontSize={13}
+          fill={teen.color.inkSoft}
         >
           {startLabel}
         </text>
         <text
           x={X1}
-          y={164}
+          y={166}
           textAnchor="end"
           fontFamily="Arial"
-          fontSize={9}
+          fontSize={13}
           fontWeight="bold"
-          fill={teen.color.ink}
+          fill={teen.color.inkSoft}
         >
           now
         </text>

@@ -72,7 +72,7 @@ export default function TeenPlansPage() {
                     style={{
                       ...teen.type.body,
                       fontSize: 13,
-                      color: teen.color.muted,
+                      color: teen.color.inkSoft,
                       marginTop: 5,
                     }}
                   >
@@ -86,10 +86,9 @@ export default function TeenPlansPage() {
                 {plan.nickname && (
                   <span
                     style={{
-                      fontFamily: teen.font.mono,
-                      fontSize: 11,
+                      fontFamily: teen.font.sans,
+                      fontSize: 13,
                       fontWeight: 700,
-                      letterSpacing: '0.04em',
                       padding: '4px 10px',
                       borderRadius: teen.radius.pill,
                       background: teen.color.mintSoft,
@@ -118,7 +117,7 @@ export default function TeenPlansPage() {
                     marginTop: 14,
                   }}
                 >
-                  <div style={{ ...teen.type.eyebrow, color: teen.color.teal, fontSize: 10 }}>
+                  <div style={{ ...teen.type.eyebrow, color: teen.color.teal }}>
                     Next appointment
                   </div>
                   <div

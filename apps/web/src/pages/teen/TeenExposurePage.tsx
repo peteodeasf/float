@@ -140,8 +140,11 @@ export default function TeenExposurePage() {
                 fontFamily: teen.font.sans,
                 fontSize: 17,
                 fontWeight: 600,
-                color: teen.color.inkSoft,
+                color: teen.color.textSecondary,
                 margin: '0 0 28px',
+                // §3.9 — left-align so a long behavior doesn't orphan one word when centered
+                width: '100%',
+                textAlign: 'left',
               }}
             >
               without {planText}
@@ -160,8 +163,8 @@ export default function TeenExposurePage() {
           >
             <div
               style={{
-                fontFamily: teen.font.mono,
-                fontSize: 12,
+                fontFamily: teen.font.sans,
+                fontSize: 13,
                 fontWeight: 700,
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
@@ -185,7 +188,7 @@ export default function TeenExposurePage() {
             )}
             <div
               style={{
-                fontFamily: teen.font.mono,
+                fontFamily: teen.font.sans,
                 fontSize: 14,
                 color: teen.color.onDark,
                 marginTop: 12,
@@ -195,7 +198,7 @@ export default function TeenExposurePage() {
             </div>
           </div>
 
-          <p style={{ ...teen.type.body, color: teen.color.mutedQuiet, marginTop: 26 }}>
+          <p style={{ ...teen.type.body, color: teen.color.inkSoft, marginTop: 26 }}>
             Don’t do anything to feel safer. Just be in it.
           </p>
         </div>
@@ -207,7 +210,7 @@ export default function TeenExposurePage() {
             style={{
               fontFamily: teen.font.sans,
               fontSize: 14,
-              color: teen.color.mutedQuiet,
+              color: teen.color.textSecondary,
               margin: '0 0 14px',
             }}
           >
@@ -217,10 +220,23 @@ export default function TeenExposurePage() {
             I'm through it →
           </button>
           <div style={{ marginTop: 14 }}>
+            {/* §2.6 — real tertiary escape hatch: bordered chip, teal, ≥48px tap height */}
             <button
-              className="teen-btn teen-btn--quiet"
               disabled={tooHard.isPending}
               onClick={() => tooHard.mutate()}
+              style={{
+                fontFamily: teen.font.sans,
+                fontSize: 16,
+                fontWeight: 700,
+                color: teen.color.teal,
+                background: 'transparent',
+                border: `1.5px solid ${teen.color.line}`,
+                borderRadius: teen.radius.pill,
+                minHeight: 48,
+                padding: '12px 22px',
+                cursor: tooHard.isPending ? 'default' : 'pointer',
+                opacity: tooHard.isPending ? 0.5 : 1,
+              }}
             >
               It felt like too much
             </button>
@@ -282,9 +298,9 @@ export default function TeenExposurePage() {
             <div
               style={{
                 fontFamily: teen.font.sans,
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: 600,
-                color: teen.color.inkSoft,
+                color: teen.color.textSecondary,
                 marginTop: 6,
               }}
             >
@@ -335,7 +351,7 @@ export default function TeenExposurePage() {
                     style={{
                       ...teen.type.body,
                       fontSize: 13,
-                      color: teen.color.muted,
+                      color: teen.color.inkSoft,
                       marginTop: 4,
                     }}
                   >
@@ -375,7 +391,12 @@ export default function TeenExposurePage() {
             <button className="teen-btn teen-btn--primary" onClick={() => setPhase('now')}>
               Do it now
             </button>
-            <button className="teen-btn teen-btn--outline" onClick={goReport}>
+            {/* §1.3 — equal-prominence peer (crisp ink border), not a downgrade */}
+            <button
+              className="teen-btn teen-btn--outline"
+              style={{ borderColor: teen.color.ink }}
+              onClick={goReport}
+            >
               I already did it
             </button>
           </>

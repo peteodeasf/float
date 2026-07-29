@@ -87,17 +87,20 @@
   --teen-max-w: 480px;         /* mobile viewport cap (matches teen pages) */
 
   /* ---- Radius ---------------------------------------------------------- */
-  --teen-radius-pill: 99px;
-  --teen-radius-btn: 16px;
-  --teen-radius-btn-lg: 18px;
-  --teen-radius-card: 20px;
-  --teen-radius-card-lg: 24px;
+  /* Normalized per design review (§2.7): buttons 14, inner cards 14,
+     main cards 20, pills 999. */
+  --teen-radius-pill: 999px;
+  --teen-radius-btn: 14px;
+  --teen-radius-btn-lg: 14px;
+  --teen-radius-card: 14px;
+  --teen-radius-card-lg: 20px;
   --teen-radius-sheet: 26px;   /* top corners of the rising white sheet    */
 
   /* ---- Shadow ---------------------------------------------------------- */
   --teen-shadow-btn: 0 10px 24px -10px rgba(var(--teen-ink-rgb), 0.6);
-  --teen-shadow-card: 0 18px 40px -20px rgba(var(--teen-ink-rgb), 0.4);
-  --teen-shadow-card-soft: 0 14px 34px -20px rgba(var(--teen-ink-rgb), 0.4);
+  /* One normalized card shadow (§2.7); soft aliases to it. */
+  --teen-shadow-card: 0 8px 24px -14px rgba(var(--teen-ink-rgb), 0.18);
+  --teen-shadow-card-soft: 0 8px 24px -14px rgba(var(--teen-ink-rgb), 0.18);
   --teen-shadow-card-dark: 0 18px 40px -18px rgba(var(--teen-ink-rgb), 0.55);
   --teen-shadow-tile: 0 6px 16px -6px rgba(var(--teen-ink-rgb), 0.5);
   --teen-shadow-knob: 0 2px 7px rgba(var(--teen-ink-rgb), 0.35);

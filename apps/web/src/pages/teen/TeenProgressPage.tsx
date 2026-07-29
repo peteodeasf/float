@@ -23,6 +23,16 @@ const PILL_CLASS: Record<SituationTag, string> = {
   'just started': 'teen-pill teen-pill--scary',
 }
 
+// Display-only: plainer teen wording for the effort-tile labels. Values/wiring
+// stay exactly as `effortTiles` returns them; only the caption text changes.
+const EFFORT_LABEL: Record<string, string> = {
+  'times committed': 'times committed',
+  'experiments faced': 'experiments',
+  'reflections logged': 'reflections',
+  'steps mastered': 'steps',
+  'situations worked': 'situations',
+}
+
 export default function TeenProgressPage() {
   const { patientId } = useTeenAuth()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -62,6 +72,11 @@ export default function TeenProgressPage() {
             onClick={() => setSelectedId(null)}
             aria-label="Back to progress"
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 44,
+              minHeight: 44,
               background: 'none',
               border: 0,
               cursor: 'pointer',
@@ -69,6 +84,7 @@ export default function TeenProgressPage() {
               color: teen.color.ink,
               lineHeight: 1,
               padding: 0,
+              margin: '-8px -10px',
             }}
           >
             ‹
@@ -81,9 +97,10 @@ export default function TeenProgressPage() {
                 fontWeight: 700,
                 letterSpacing: '-0.01em',
                 color: teen.color.ink,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
               }}
             >
               {selected.name}
@@ -217,12 +234,12 @@ export default function TeenProgressPage() {
                 <div
                   style={{
                     fontFamily: teen.font.sans,
-                    fontSize: 12,
+                    fontSize: 13,
                     color: teen.color.onDark,
                     marginTop: 5,
                   }}
                 >
-                  {label}
+                  {EFFORT_LABEL[label] ?? label}
                 </div>
               </div>
             ))}
@@ -235,8 +252,8 @@ export default function TeenProgressPage() {
             <div
               style={{
                 fontFamily: teen.font.sans,
-                fontSize: 12,
-                color: teen.chart.label,
+                fontSize: 13,
+                color: teen.color.textSecondary,
                 margin: '2px 0 8px',
               }}
             >
@@ -264,14 +281,14 @@ export default function TeenProgressPage() {
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span
                     style={{
-                      display: 'block',
                       fontFamily: teen.font.sans,
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: 600,
                       color: teen.color.ink,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
                     }}
                   >
                     {situation.name}

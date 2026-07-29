@@ -1,5 +1,5 @@
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTeenAuth } from '../../context/TeenAuthContext'
 import teen from '../../styles/teenTokens'
 
 /**
@@ -8,8 +8,54 @@ import teen from '../../styles/teenTokens'
  * screen column so it stays visible without position:fixed (which would escape
  * the centered mobile column). Focused task flows — schedule, exposure, report —
  * deliberately don't show it; they keep their own back button + primary CTA.
+ *
+ * Sign out lives in the home header, not here — the tab row is navigation only.
  */
 type Tab = 'home' | 'chat' | 'progress' | 'plan'
+
+// Minimal single-stroke line icons, sized to inherit the tab's text color.
+const iconProps = {
+  width: 22,
+  height: 22,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.8,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+}
+
+const ICONS: Record<Tab, ReactNode> = {
+  home: (
+    <svg {...iconProps}>
+      <path d="M3.5 10.5 12 3.5l8.5 7" />
+      <path d="M5.5 9.5V20h13V9.5" />
+    </svg>
+  ),
+  chat: (
+    <svg {...iconProps}>
+      <path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.3-4.2A7.5 7.5 0 1 1 20 12Z" />
+    </svg>
+  ),
+  progress: (
+    <svg {...iconProps}>
+      <path d="M5 20V12" />
+      <path d="M12 20V5" />
+      <path d="M19 20v-5" />
+    </svg>
+  ),
+  plan: (
+    <svg {...iconProps}>
+      <path d="M8 6h11" />
+      <path d="M8 12h11" />
+      <path d="M8 18h11" />
+      <path d="M3.5 6h.01" />
+      <path d="M3.5 12h.01" />
+      <path d="M3.5 18h.01" />
+    </svg>
+  ),
+}
 
 const ITEMS: { key: Tab; label: string; path: string }[] = [
   { key: 'home', label: 'Home', path: '/teen/home' },
@@ -20,7 +66,6 @@ const ITEMS: { key: Tab; label: string; path: string }[] = [
 
 export default function TeenTabBar({ active, unread = 0 }: { active: Tab; unread?: number }) {
   const navigate = useNavigate()
-  const { logout } = useTeenAuth()
 
   return (
     <nav
@@ -33,7 +78,7 @@ export default function TeenTabBar({ active, unread = 0 }: { active: Tab; unread
         gap: 4,
         borderTop: `1px solid ${teen.color.lineSoft}`,
         background: teen.color.cardPure,
-        padding: '10px 6px calc(12px + env(safe-area-inset-bottom, 0px))',
+        padding: '8px 6px calc(10px + env(safe-area-inset-bottom, 0px))',
       }}
     >
       {ITEMS.map(it => {
@@ -46,64 +91,57 @@ export default function TeenTabBar({ active, unread = 0 }: { active: Tab; unread
             style={{
               position: 'relative',
               flex: 1,
+              minHeight: 44,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
               background: 'none',
               border: 0,
               cursor: 'pointer',
-              padding: '4px 2px',
+              padding: '6px 2px',
               fontFamily: teen.font.sans,
               fontSize: 13,
               fontWeight: isActive ? 700 : 600,
-              color: isActive ? teen.color.teal : teen.color.muted,
+              color: isActive ? teen.color.teal : teen.color.textSecondary,
             }}
           >
+            <span
+              aria-hidden="true"
+              style={{ position: 'relative', display: 'inline-flex', lineHeight: 0 }}
+            >
+              {ICONS[it.key]}
+              {it.key === 'chat' && unread > 0 && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -8,
+                    minWidth: 15,
+                    height: 15,
+                    padding: '0 4px',
+                    background: teen.color.ink,
+                    color: '#fff',
+                    borderRadius: 999,
+                    fontFamily: teen.font.sans,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                  }}
+                >
+                  {unread}
+                </span>
+              )}
+            </span>
             {it.label}
-            {it.key === 'chat' && unread > 0 && (
-              <span
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  top: -2,
-                  marginLeft: 4,
-                  minWidth: 15,
-                  height: 15,
-                  padding: '0 4px',
-                  background: teen.color.ink,
-                  color: '#fff',
-                  borderRadius: 999,
-                  fontFamily: teen.font.mono,
-                  fontSize: 9,
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: 1,
-                }}
-              >
-                {unread}
-              </span>
-            )}
           </button>
         )
       })}
-      <button
-        onClick={() => {
-          logout()
-          navigate('/teen/login')
-        }}
-        style={{
-          flex: 1,
-          background: 'none',
-          border: 0,
-          cursor: 'pointer',
-          padding: '4px 2px',
-          fontFamily: teen.font.sans,
-          fontSize: 13,
-          color: teen.color.muted,
-          opacity: 0.75,
-        }}
-      >
-        Sign out
-      </button>
     </nav>
   )
 }

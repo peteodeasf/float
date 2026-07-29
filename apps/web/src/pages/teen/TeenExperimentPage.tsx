@@ -10,11 +10,15 @@ import teen from '../../styles/teenTokens'
 
 type Step = 'before' | 'committed'
 
-/** Face tiles map straight onto the backend's confidence_level enum. */
+/**
+ * Word chips map straight onto the backend's confidence_level enum. Keys are
+ * unchanged (low/medium/high) — the same values the old emoji faces recorded —
+ * so clinician-facing data is identical; only the presentation changed.
+ */
 const CONFIDENCE = [
-  { key: 'low', emoji: '😰', label: 'Not sure' },
-  { key: 'medium', emoji: '😐', label: 'Getting there' },
-  { key: 'high', emoji: '💪', label: "I've got this" },
+  { key: 'low', label: 'Not really' },
+  { key: 'medium', label: 'Kind of' },
+  { key: 'high', label: 'Ready' },
 ] as const
 
 type ConfidenceKey = (typeof CONFIDENCE)[number]['key']
@@ -186,36 +190,38 @@ export default function TeenExperimentPage() {
           >
             ‹
           </button>
-          <span
-            style={{
-              ...teen.type.eyebrow,
-              color: teen.color.tealMid,
-              letterSpacing: 'var(--teen-eyebrow-track-tight)',
-              flex: 1,
-              minWidth: 0,
-              textAlign: 'center',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {behaviorData?.situation?.name || 'Before'}
-          </span>
+          {/* Situation moved to the headline below (§2.2) — header is just the back affordance */}
+          <span style={{ flex: 1 }} />
           <span style={{ width: 22 }} />
         </div>
 
         <div className="teen-sheet">
-          {/* The specific behavior this experiment is about (situation is in the header) */}
-          {behaviorData?.name && (
-            <h1
-              style={{
-                ...teen.type.headline,
-                fontSize: teen.headSize.sm,
-                margin: 0,
-              }}
-            >
-              {behaviorData.name}
-            </h1>
+          {/* Situation is the headline; the safety behavior is the "without" sub-line (§2.2 / G6) */}
+          {(behaviorData?.situation?.name || behaviorData?.name) && (
+            <div>
+              <h1
+                style={{
+                  ...teen.type.headline,
+                  fontSize: teen.headSize.md,
+                  margin: 0,
+                }}
+              >
+                {behaviorData?.situation?.name ?? 'Your experiment'}
+              </h1>
+              {behaviorData?.name && (
+                <div
+                  style={{
+                    fontFamily: teen.font.sans,
+                    fontSize: 17,
+                    fontWeight: 600,
+                    color: teen.color.textSecondary,
+                    marginTop: 6,
+                  }}
+                >
+                  without {behaviorData.name}
+                </div>
+              )}
+            </div>
           )}
 
           {/* When — day + coarse time. First thing they set: committing to a
@@ -238,8 +244,8 @@ export default function TeenExperimentPage() {
                     }
                     style={{
                       flex: '0 0 auto',
-                      width: 52,
-                      padding: '9px 4px',
+                      width: 64,
+                      padding: '10px 4px',
                       borderRadius: 14,
                       cursor: 'pointer',
                       textAlign: 'center',
@@ -250,20 +256,19 @@ export default function TeenExperimentPage() {
                   >
                     <div
                       style={{
-                        fontFamily: teen.font.mono,
-                        fontSize: 10,
+                        fontFamily: teen.font.sans,
+                        fontSize: 13,
                         fontWeight: 700,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        color: isSelected ? teen.color.mint : teen.color.muted,
+                        color: isSelected ? teen.color.mint : teen.color.textSecondary,
                       }}
                     >
                       {i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })}
                     </div>
                     <div
                       style={{
-                        fontFamily: teen.font.mono,
+                        fontFamily: teen.font.sans,
                         fontSize: 17,
+                        fontWeight: 600,
                         marginTop: 3,
                         color: isSelected ? '#fff' : teen.color.ink,
                       }}
@@ -356,7 +361,7 @@ export default function TeenExperimentPage() {
                 style={{
                   ...teen.type.body,
                   fontSize: 'var(--teen-text-sm)',
-                  color: teen.color.muted,
+                  color: teen.color.textSecondary,
                   margin: '8px 0 0',
                 }}
               >
@@ -387,7 +392,11 @@ export default function TeenExperimentPage() {
             value={
               <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>
                 {effectiveDT}
-                <span style={{ fontSize: 12, color: teen.color.muted }}>/10</span>
+                <span
+                  style={{ fontFamily: teen.font.sans, fontSize: 13, color: teen.color.textSecondary }}
+                >
+                  /10
+                </span>
               </span>
             }
           >
@@ -396,24 +405,35 @@ export default function TeenExperimentPage() {
               onChange={setDtExpected}
               label="How anxious you expect to feel"
             />
+            {/* §3.6 — scale anchors */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: 6,
+                fontFamily: teen.font.sans,
+                fontSize: 13,
+                color: teen.color.textSecondary,
+              }}
+            >
+              <span>a little</span>
+              <span>a lot</span>
+            </div>
           </Field>
 
           <div style={{ flex: 1 }} aria-hidden="true" />
 
-          {/* 04 — confidence */}
+          {/* 04 — readiness. Word chips replace the emoji faces; keys still map to
+              the confidence_level enum, so the value recorded is unchanged (§1.5). */}
           <Field step="04" label="How ready do you feel?">
-            <div style={{ display: 'flex', gap: 9 }}>
+            <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
               {CONFIDENCE.map(opt => (
-                <button
+                <Chip
                   key={opt.key}
-                  type="button"
-                  className="teen-face"
-                  aria-pressed={confidence === opt.key}
-                  aria-label={opt.label}
+                  label={opt.label}
+                  selected={confidence === opt.key}
                   onClick={() => setConfidence(opt.key)}
-                >
-                  {opt.emoji}
-                </button>
+                />
               ))}
             </div>
           </Field>
@@ -460,11 +480,11 @@ export default function TeenExperimentPage() {
                 weekday: 'long',
               })
             : `${sortedSelectedDates.length} days`}
-          . You said {bip}%.
+          . You believe it {bip}%.
         </h2>
 
         <div className="teen-card" style={{ marginTop: 20, padding: 22 }}>
-          <div style={{ ...teen.type.eyebrow, fontSize: 10 }}>The plan</div>
+          <div style={{ ...teen.type.eyebrow, fontSize: 13 }}>The plan</div>
           <div
             style={{
               ...teen.type.headline,
@@ -478,9 +498,9 @@ export default function TeenExperimentPage() {
             <div
               style={{
                 fontFamily: teen.font.sans,
-                fontSize: 15,
+                fontSize: 17,
                 fontWeight: 600,
-                color: teen.color.inkSoft,
+                color: teen.color.textSecondary,
                 marginTop: 4,
               }}
             >
@@ -501,11 +521,10 @@ export default function TeenExperimentPage() {
               <span
                 key={idx}
                 style={{
-                  fontFamily: teen.font.mono,
-                  fontSize: 11,
+                  fontFamily: teen.font.sans,
+                  fontSize: 13,
                   fontWeight: 700,
-                  letterSpacing: '0.04em',
-                  padding: '3px 8px',
+                  padding: '4px 10px',
                   borderRadius: teen.radius.pill,
                   background: teen.color.mintSoft,
                   color: teen.color.teal,
@@ -518,12 +537,13 @@ export default function TeenExperimentPage() {
           </div>
         </div>
 
-        <p style={{ ...teen.type.body, color: teen.color.mutedQuiet, marginTop: 22 }}>
+        <p style={{ ...teen.type.body, color: teen.color.textSecondary, marginTop: 22 }}>
           Come back and tell me how it went.
         </p>
       </div>
 
       <div style={{ position: 'relative', padding: `0 ${teen.space.padLg} 34px` }}>
+        {/* TODO: "Add to reminder/calendar" action belongs here — depends on the separate reminders work */}
         <button className="teen-btn teen-btn--primary" onClick={() => navigate('/teen/home')}>
           Home
         </button>

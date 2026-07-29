@@ -57,7 +57,7 @@ export default function TeenSetPasswordPage() {
         <h1 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 8px', textAlign: 'center' }}>
           Welcome to Float.
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--float-text-hint)', margin: '0 0 24px', textAlign: 'center' }}>
+        <p style={{ fontSize: '14px', color: 'var(--float-text-secondary)', margin: '0 0 24px', textAlign: 'center' }}>
           Set your password to get started.
         </p>
 

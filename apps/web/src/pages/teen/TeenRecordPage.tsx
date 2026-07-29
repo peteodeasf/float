@@ -244,12 +244,12 @@ export default function TeenRecordPage() {
           <div
             style={{
               marginTop: 24,
-              fontFamily: teen.font.mono,
-              fontSize: 12,
+              fontFamily: teen.font.sans,
+              fontSize: 13,
               fontWeight: 700,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: teen.color.muted,
+              color: teen.color.inkSoft,
             }}
           >
             Your fear
@@ -270,8 +270,9 @@ export default function TeenRecordPage() {
           )}
           <div
             style={{
-              fontFamily: teen.font.mono,
+              fontFamily: teen.font.sans,
               fontSize: 14,
+              fontWeight: 600,
               color: teen.color.tealMid,
               marginTop: 10,
             }}
@@ -285,13 +286,21 @@ export default function TeenRecordPage() {
 
           <div style={{ flex: 1, minHeight: 24 }} />
 
+          {/*
+           * Both answers carry equal visual weight — no primary. The result
+           * screen does the reframing; the buttons must not put a thumb on the
+           * scale toward either outcome.
+           */}
           <button
-            className="teen-btn teen-btn--primary"
+            className="teen-btn teen-btn--outline"
             style={{
               padding: 20,
               fontSize: 17,
               borderRadius: teen.radius.btnLg,
               marginBottom: 12,
+              background: 'transparent',
+              border: `1.5px solid ${teen.color.teal}`,
+              color: teen.color.ink,
             }}
             onClick={() => {
               setFearedOccurred(false)
@@ -307,7 +316,9 @@ export default function TeenRecordPage() {
               fontSize: 17,
               borderRadius: teen.radius.btnLg,
               marginBottom: 14,
-              background: teen.color.cardPure,
+              background: 'transparent',
+              border: `1.5px solid ${teen.color.teal}`,
+              color: teen.color.ink,
             }}
             onClick={() => {
               setFearedOccurred(true)
@@ -316,9 +327,20 @@ export default function TeenRecordPage() {
           >
             Yeah, it did
           </button>
-          {/* Escape for "I couldn't actually do it" — credited, not a fail. */}
+          {/* Escape for "I couldn't actually do it" — a real tertiary button, credited, not a fail. */}
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <button className="teen-btn teen-btn--quiet" onClick={enterTooHard}>
+            <button
+              className="teen-btn teen-btn--quiet"
+              style={{
+                fontFamily: teen.font.sans,
+                fontWeight: 700,
+                fontSize: 16,
+                color: teen.color.teal,
+                minHeight: 48,
+                padding: '12px 16px',
+              }}
+              onClick={enterTooHard}
+            >
               I couldn't do it this time
             </button>
           </div>
@@ -389,11 +411,23 @@ export default function TeenRecordPage() {
           {!reasonSent && !tooHardOpen && (
             <div style={{ marginTop: 18 }}>
               <button
-                className="teen-btn teen-btn--quiet"
-                style={{ padding: 0 }}
+                className="teen-btn teen-btn--outline"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  minHeight: 48,
+                  padding: '14px 16px',
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: teen.color.ink,
+                  textAlign: 'left',
+                }}
                 onClick={() => setTooHardOpen(true)}
               >
                 Want to say what made it too big?
+                <span aria-hidden="true" style={{ color: teen.color.teal }}>›</span>
               </button>
             </div>
           )}
@@ -434,7 +468,7 @@ export default function TeenRecordPage() {
 
           {reasonSent && (
             <p
-              style={{ ...teen.type.body, fontSize: 13, color: teen.color.muted, marginTop: 18 }}
+              style={{ ...teen.type.body, fontSize: 13, color: teen.color.textSecondary, marginTop: 18 }}
             >
               Sent — they'll see it before your next session.
             </p>
@@ -495,52 +529,52 @@ export default function TeenRecordPage() {
             <div
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,.06)',
+                background: 'rgba(255,255,255,0.10)',
                 borderRadius: teen.radius.btnLg,
                 padding: '18px 16px',
               }}
             >
               <div
-                style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.onDark }}
+                style={{ fontFamily: teen.font.sans, fontSize: 13, color: teen.color.mint }}
               >
-                Fear
+                Distress
               </div>
               <div
                 style={{
                   fontFamily: teen.font.mono,
-                  fontSize: teen.dataSize.md,
+                  fontSize: teen.dataSize.sm,
                   color: '#fff',
                   marginTop: 6,
                 }}
               >
                 {dtExpected ?? '—'}
-                <span style={{ color: teen.color.mint, fontSize: 18 }}> → {actualDT ?? '—'}</span>
+                <span style={{ color: teen.color.mint, fontSize: 16 }}> → {actualDT ?? '—'}</span>
               </div>
             </div>
 
             <div
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,.06)',
+                background: 'rgba(255,255,255,0.10)',
                 borderRadius: teen.radius.btnLg,
                 padding: '18px 16px',
               }}
             >
               <div
-                style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.onDark }}
+                style={{ fontFamily: teen.font.sans, fontSize: 13, color: teen.color.mint }}
               >
                 Belief
               </div>
               <div
                 style={{
                   fontFamily: teen.font.mono,
-                  fontSize: teen.dataSize.md,
+                  fontSize: teen.dataSize.sm,
                   color: '#fff',
                   marginTop: 6,
                 }}
               >
                 {bipBefore != null ? Math.round(bipBefore) : '—'}
-                <span style={{ color: teen.color.mint, fontSize: 18 }}> → {bipAfter}</span>
+                <span style={{ color: teen.color.mint, fontSize: 16 }}> → {bipAfter}</span>
               </div>
             </div>
           </div>
@@ -548,8 +582,9 @@ export default function TeenRecordPage() {
           <p
             style={{
               fontFamily: teen.font.sans,
-              fontSize: 21,
-              lineHeight: 1.4,
+              fontSize: 30,
+              fontWeight: 600,
+              lineHeight: 1.25,
               color: '#fff',
               textWrap: 'balance',
               marginTop: 26,
@@ -656,12 +691,12 @@ export default function TeenRecordPage() {
                 gap: 8,
                 marginTop: 8,
                 fontFamily: teen.font.mono,
-                fontSize: 13,
-                color: teen.color.tealMid,
+                fontSize: 14,
+                color: teen.color.textSecondary,
               }}
             >
               <span>expected {dtExpected ?? '—'}</span>
-              <span style={{ color: teen.chart.label }}>→</span>
+              <span style={{ color: teen.color.inkSoft }}>→</span>
               <span style={{ color: teen.color.teal, fontSize: 15 }}>actual {actualDT}</span>
             </div>
           )}
@@ -693,12 +728,12 @@ export default function TeenRecordPage() {
                 gap: 8,
                 marginTop: 8,
                 fontFamily: teen.font.mono,
-                fontSize: 13,
-                color: teen.color.tealMid,
+                fontSize: 14,
+                color: teen.color.textSecondary,
               }}
             >
               <span>was {Math.round(bipBefore)}%</span>
-              <span style={{ color: teen.chart.label }}>→</span>
+              <span style={{ color: teen.color.inkSoft }}>→</span>
               <span style={{ color: teen.color.teal, fontSize: 15 }}>now {bipAfter}%</span>
             </div>
           )}
@@ -760,7 +795,7 @@ export default function TeenRecordPage() {
         <div>
           <div style={{ ...teen.type.label, marginBottom: 9 }}>
             What'd you learn?{' '}
-            <span style={{ fontWeight: 400, color: teen.chart.label }}>— if anything</span>
+            <span style={{ fontWeight: 400, color: teen.color.textSecondary }}>— if anything</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
             {learnedOptions.map(opt => (

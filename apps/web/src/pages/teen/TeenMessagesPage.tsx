@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
 import TeenTabBar from '../../components/teen/TeenTabBar'
+import teen from '../../styles/teenTokens'
 
 type TeenMessage = {
   id: string
@@ -92,7 +93,8 @@ export default function TeenMessagesPage() {
   return (
     <div style={{
       height: '100dvh',
-      background: '#f8fafc',
+      background: teen.color.canvas,
+      fontFamily: teen.font.sans,
       maxWidth: '480px',
       margin: '0 auto',
       display: 'flex',
@@ -102,11 +104,11 @@ export default function TeenMessagesPage() {
       {/* Header */}
       <div style={{
         flex: 'none',
-        background: '#fff',
+        background: teen.color.cardPure,
         padding: '20px 24px 16px',
-        borderBottom: '1px solid #e2e8f0',
+        borderBottom: `1px solid ${teen.color.track}`,
       }}>
-        <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Messages</span>
+        <span style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.02em', color: teen.color.ink }}>Messages</span>
       </div>
 
       {/* Thread (scrollable) */}
@@ -119,13 +121,13 @@ export default function TeenMessagesPage() {
         flexDirection: 'column',
       }}>
         {isLoading && (
-          <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
+          <p style={{ fontSize: '14px', color: teen.color.textSecondary, textAlign: 'center', marginTop: '40px' }}>
             Loading...
           </p>
         )}
 
         {!isLoading && messages && messages.length === 0 && (
-          <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
+          <p style={{ fontSize: '14px', color: teen.color.textSecondary, textAlign: 'center', marginTop: '40px' }}>
             No messages from your clinician yet.
           </p>
         )}
@@ -140,11 +142,11 @@ export default function TeenMessagesPage() {
           if (m.message_type === 'experiment_completed') {
             return (
               <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
-                <div style={{ maxWidth: '70%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', marginBottom: '4px' }}>✓ Experiment completed</div>
-                  <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                <div style={{ maxWidth: '70%', background: teen.color.mintSoft, border: `1px solid ${teen.color.mint}`, borderRadius: '12px', padding: '10px 14px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: teen.color.teal, marginBottom: '4px' }}>✓ Experiment completed</div>
+                  <p style={{ fontSize: '15px', color: teen.color.ink, margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                 </div>
-                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+                {ts && <span style={{ fontSize: '13px', color: teen.color.textSecondary, marginTop: '4px' }}>{ts}</span>}
               </div>
             )
           }
@@ -153,10 +155,10 @@ export default function TeenMessagesPage() {
             return (
               <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
                 <div style={{ maxWidth: '70%', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', marginBottom: '4px' }}>⚠ Too hard</div>
-                  <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#b45309', marginBottom: '4px' }}>⚠ Too hard</div>
+                  <p style={{ fontSize: '15px', color: teen.color.ink, margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                 </div>
-                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+                {ts && <span style={{ fontSize: '13px', color: teen.color.textSecondary, marginTop: '4px' }}>{ts}</span>}
               </div>
             )
           }
@@ -164,10 +166,10 @@ export default function TeenMessagesPage() {
           if (isFromMe) {
             return (
               <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
-                <div style={{ maxWidth: '70%', background: '#eafaf6', border: '1px solid #eafaf6', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
-                  <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                <div style={{ maxWidth: '70%', background: teen.color.mintLine, border: `1px solid ${teen.color.mintLine}`, borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
+                  <p style={{ fontSize: '15px', color: teen.color.ink, margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                 </div>
-                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+                {ts && <span style={{ fontSize: '13px', color: teen.color.textSecondary, marginTop: '4px' }}>{ts}</span>}
               </div>
             )
           }
@@ -179,10 +181,10 @@ export default function TeenMessagesPage() {
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}
               onClick={() => { if (!m.read_at) markRead.mutate(m.id) }}
             >
-              <div style={{ maxWidth: '70%', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px 12px 12px 4px', padding: '10px 14px', cursor: m.read_at ? 'default' : 'pointer' }}>
-                <p style={{ fontSize: '14px', color: '#1e293b', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+              <div style={{ maxWidth: '70%', background: teen.color.cardPure, border: `1px solid ${teen.color.track}`, borderRadius: '12px 12px 12px 4px', padding: '10px 14px', cursor: m.read_at ? 'default' : 'pointer' }}>
+                <p style={{ fontSize: '15px', color: teen.color.ink, margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
               </div>
-              {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
+              {ts && <span style={{ fontSize: '13px', color: teen.color.textSecondary, marginTop: '4px' }}>{ts}</span>}
             </div>
           )
         })}
@@ -190,8 +192,8 @@ export default function TeenMessagesPage() {
 
       {/* Reply input — always visible at bottom */}
       <div style={{
-        background: '#f8fafc',
-        borderTop: '1px solid #e2e8f0',
+        background: teen.color.canvas,
+        borderTop: `1px solid ${teen.color.track}`,
         padding: '12px 16px',
         display: 'flex',
         gap: '8px',
@@ -210,28 +212,30 @@ export default function TeenMessagesPage() {
           }}
           style={{
             flex: 1,
-            padding: '10px 12px',
+            padding: '12px 14px',
             fontSize: '15px',
-            border: '1px solid #cbd5e1',
-            borderRadius: '10px',
+            border: `1px solid ${teen.color.lineChip}`,
+            borderRadius: teen.radius.btn,
             resize: 'none',
-            fontFamily: 'inherit',
+            fontFamily: teen.font.sans,
+            color: teen.color.ink,
             lineHeight: 1.4,
             maxHeight: '120px',
-            background: '#fff',
+            background: teen.color.cardPure,
           }}
         />
         <button
           onClick={handleSend}
           disabled={!replyContent.trim() || sendMessage.isPending}
           style={{
-            padding: '10px 16px',
-            background: '#135450',
+            minHeight: '44px',
+            padding: '0 18px',
+            background: teen.color.teal,
             color: '#fff',
             border: 'none',
-            borderRadius: '10px',
-            fontSize: '14px',
-            fontWeight: 600,
+            borderRadius: teen.radius.btn,
+            fontSize: '15px',
+            fontWeight: 700,
             cursor: replyContent.trim() && !sendMessage.isPending ? 'pointer' : 'not-allowed',
             opacity: replyContent.trim() && !sendMessage.isPending ? 1 : 0.5,
           }}
