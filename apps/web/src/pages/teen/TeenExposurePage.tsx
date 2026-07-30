@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import teen from '../../styles/teenTokens'
@@ -43,13 +43,6 @@ export default function TeenExposurePage() {
     queryKey: ['teen-behavior', behaviorId],
     queryFn: async () => (await teenApiClient.get(`/patient/behaviors/${behaviorId}`)).data,
     enabled: !!behaviorId,
-  })
-
-  const tooHard = useMutation({
-    mutationFn: async () => {
-      await teenApiClient.post(`/patient/experiments/${experimentId}/too-hard`, { reason: '' })
-    },
-    onSuccess: () => navigate('/teen/progress'),
   })
 
   // Deep-link guard: if the situation was deactivated, this experiment is no
@@ -222,8 +215,7 @@ export default function TeenExposurePage() {
           <div style={{ marginTop: 14 }}>
             {/* §2.6 — real tertiary escape hatch: bordered chip, teal, ≥48px tap height */}
             <button
-              disabled={tooHard.isPending}
-              onClick={() => tooHard.mutate()}
+              onClick={() => navigate(`/teen/record/${experimentId}?toohard=1`)}
               style={{
                 fontFamily: teen.font.sans,
                 fontSize: 16,
@@ -234,8 +226,7 @@ export default function TeenExposurePage() {
                 borderRadius: teen.radius.pill,
                 minHeight: 48,
                 padding: '12px 22px',
-                cursor: tooHard.isPending ? 'default' : 'pointer',
-                opacity: tooHard.isPending ? 0.5 : 1,
+                cursor: 'pointer',
               }}
             >
               It felt like too much

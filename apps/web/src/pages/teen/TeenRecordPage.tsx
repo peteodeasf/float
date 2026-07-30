@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
@@ -53,8 +53,12 @@ export default function TeenRecordPage() {
   const { experimentId } = useParams<{ experimentId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  // Arriving via the in-the-moment bail ("It felt like too much") opens straight
+  // on the too-hard screen instead of the outcome question.
+  const startTooHard = searchParams.get('toohard') === '1'
 
-  const [phase, setPhase] = useState<Phase>('outcome')
+  const [phase, setPhase] = useState<Phase>(startTooHard ? 'toohard' : 'outcome')
 
   const [actualDT, setActualDT] = useState<number | null>(null)
   const [bipAfterRaw, setBipAfterRaw] = useState<number | null>(null)
@@ -157,13 +161,15 @@ export default function TeenRecordPage() {
     },
   })
 
-  const enterTooHard = () => {
-    if (!tooHardMarked) {
+  // When the teen bailed in the moment, mark the experiment too_hard once (empty
+  // reason) as soon as this screen opens — the effort counts even if they leave.
+  useEffect(() => {
+    if (startTooHard && !tooHardMarked) {
       setTooHardMarked(true)
       tooHardMutation.mutate('')
     }
-    setPhase('toohard')
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startTooHard])
 
   const commitHappenedDraft = () => {
     const v = happenedDraft.trim()
@@ -327,26 +333,7 @@ export default function TeenRecordPage() {
           >
             Yeah, it did
           </button>
-          {/* Escape for "I couldn't actually do it" — a real tertiary button, credited, not a fail. */}
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <button
-              onClick={enterTooHard}
-              style={{
-                fontFamily: teen.font.sans,
-                fontSize: 16,
-                fontWeight: 700,
-                color: teen.color.teal,
-                background: 'transparent',
-                border: `1.5px solid ${teen.color.lineBtn}`,
-                borderRadius: teen.radius.pill,
-                minHeight: 48,
-                padding: '12px 22px',
-                cursor: 'pointer',
-              }}
-            >
-              I couldn't do it this time
-            </button>
-          </div>
+          <div style={{ marginBottom: 28 }} />
         </div>
       </TeenScreen>
     )
