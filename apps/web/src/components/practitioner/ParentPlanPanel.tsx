@@ -10,6 +10,7 @@ import {
   listAccommodationMoments,
   type Accommodation,
 } from '../../api/accommodations'
+import { inviteParent } from '../../api/patients'
 
 type TriggerLite = { id: string; name: string }
 
@@ -36,13 +37,21 @@ function distressLabel(a: Accommodation): string {
  */
 export default function ParentPlanPanel({
   planId,
+  patientId,
   triggers,
 }: {
   planId: string
+  patientId: string
   triggers: TriggerLite[]
 }) {
   const qc = useQueryClient()
   const key = ['accommodations', planId]
+
+  const [inviteEmail, setInviteEmail] = useState('')
+  const inviteMut = useMutation({
+    mutationFn: () => inviteParent(patientId, inviteEmail.trim()),
+    onSuccess: () => setInviteEmail(''),
+  })
 
   const { data: accommodations = [], isLoading } = useQuery({
     queryKey: key,
@@ -157,6 +166,37 @@ export default function ParentPlanPanel({
           >
             {reseedMut.isPending ? 'Sorting…' : 'Sort by distress'}
           </button>
+        )}
+      </div>
+
+      {/* Invite a parent */}
+      <div style={cardStyle}>
+        <label style={labelStyle}>Invite a parent</label>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <input
+            type="email"
+            value={inviteEmail}
+            onChange={e => setInviteEmail(e.target.value)}
+            placeholder="parent@example.com"
+            style={{ ...inputStyle, flex: 1 }}
+          />
+          <button
+            onClick={() => inviteMut.mutate()}
+            disabled={!inviteEmail.trim() || inviteMut.isPending}
+            style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: 'var(--float-radius-sm)', padding: '9px 16px', cursor: 'pointer', opacity: !inviteEmail.trim() || inviteMut.isPending ? 0.5 : 1 }}
+          >
+            {inviteMut.isPending ? 'Inviting…' : 'Invite'}
+          </button>
+        </div>
+        {inviteMut.isSuccess && (
+          <p style={{ fontSize: '12px', color: 'var(--float-primary)', margin: '8px 0 0' }}>
+            Invite sent — the parent gets an email with a temporary password to sign in at <code>/parent/login</code>. No cap on parents per child.
+          </p>
+        )}
+        {inviteMut.isError && (
+          <p style={{ fontSize: '12px', color: 'var(--float-danger)', margin: '8px 0 0' }}>
+            {(inviteMut.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Could not send invite.'}
+          </p>
         )}
       </div>
 

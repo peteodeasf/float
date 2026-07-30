@@ -189,6 +189,14 @@ export const sendMessage = async (
   return response.data
 }
 
+export const inviteParent = async (
+  patientId: string,
+  email: string
+): Promise<{ success: boolean; email: string }> => {
+  const res = await apiClient.post(`/patients/${patientId}/invite-parent`, { email })
+  return res.data
+}
+
 /** The separate parent<->clinician thread (audience='parent'). */
 export const getParentMessages = async (patientId: string): Promise<Message[]> => {
   const response = await apiClient.get(`/patients/${patientId}/parent-messages`)

@@ -4083,7 +4083,7 @@ export default function PatientPage() {
                       {treatmentPlanBuilder}
                       {plan && (
                         <div style={{ marginTop: '8px' }}>
-                          <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
+                          <ParentPlanPanel planId={plan.id} patientId={patient!.id} triggers={triggers ?? []} />
                         </div>
                       )}
                     </>
