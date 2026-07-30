@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers.patients import router as patients_router, patient_router
+from app.api.routers.parent import parent_router
 
 from app.core.config import settings
 from app.api.routers import (
@@ -40,6 +41,7 @@ app.include_router(downward_arrows.router)
 app.include_router(messages.router)
 app.include_router(patients_router)
 app.include_router(patient_router)
+app.include_router(parent_router)
 app.include_router(monitoring.practitioner_router)
 app.include_router(monitoring.public_router)
 app.include_router(session_notes.router)

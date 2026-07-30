@@ -108,10 +108,48 @@ class AccommodationBehavior(Base):
     # Per-child ladder position; authoritative and reorderable.
     display_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="active")
+    # The one accommodation the clinician has set as this week's focus for the
+    # parent. Only one per plan should be true (enforced in the service).
+    is_weekly_focus: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false"), default=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
     )
     accommodator: Mapped[str] = mapped_column(
     String, nullable=False, default="parent"
+    )
+
+
+class AccommodationMoment(Base):
+    """A lightweight parent log — one tap recording that an accommodation came up
+    and whether the parent held the line. Its job is a coaching signal for the
+    clinician, not a journal."""
+
+    __tablename__ = "accommodation_moments"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    treatment_plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("treatment_plans.id"), nullable=False
+    )
+    accommodation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("accommodation_behaviors.id"), nullable=True
+    )
+    parent_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False
+    )
+    # True = parent held the line (didn't accommodate); False = gave in.
+    held: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("now()")
     )

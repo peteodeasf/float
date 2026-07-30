@@ -20,6 +20,7 @@ class AccommodationUpdate(BaseModel):
     distress_min: Optional[float] = None
     distress_max: Optional[float] = None
     status: Optional[str] = None
+    is_weekly_focus: Optional[bool] = None
 
 
 class AccommodationResponse(BaseModel):
@@ -33,6 +34,7 @@ class AccommodationResponse(BaseModel):
     distress_max: Optional[float] = None
     display_order: Optional[int] = None
     status: str
+    is_weekly_focus: bool = False
     accommodator: str
     created_at: datetime
 

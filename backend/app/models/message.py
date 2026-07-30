@@ -28,6 +28,12 @@ class Message(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     message_type: Mapped[str] = mapped_column(String, nullable=False, default="general")
     sender_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Which thread this message belongs to for a patient: the child's own
+    # thread ("teen") or the parent<->clinician thread ("parent"). Keeps the two
+    # from leaking into each other even though both anchor to the same patient_id.
+    audience: Mapped[str] = mapped_column(
+        String, nullable=False, server_default=text("'teen'"), default="teen"
+    )
     read_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

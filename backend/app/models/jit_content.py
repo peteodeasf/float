@@ -46,6 +46,11 @@ class JitTip(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true"), default=True
     )
+    # Which surface the tip is written for: the child's exposure screen ("teen")
+    # or the parent app ("parent"). Scopes always_show tips per audience.
+    audience: Mapped[str] = mapped_column(
+        String, nullable=False, server_default=text("'teen'"), default="teen"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()")
     )
