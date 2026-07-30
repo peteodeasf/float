@@ -258,7 +258,7 @@ function AccommodationRow({
   triggers: TriggerLite[]
   onMove: (index: number, dir: -1 | 1) => void
   onDelete: () => void
-  onSave: (data: { name?: string; trigger_situation_id?: string | null; distress_min?: number | null; distress_max?: number | null }) => Promise<unknown>
+  onSave: (data: { name?: string; trigger_situation_id?: string | null; distress_min?: number | null; distress_max?: number | null; is_weekly_focus?: boolean }) => Promise<unknown>
 }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(a.name)
@@ -315,7 +315,7 @@ function AccommodationRow({
   }
 
   return (
-    <div style={{ background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div style={{ background: 'var(--float-surface)', border: `1px solid ${a.is_weekly_focus ? 'var(--float-primary)' : 'var(--float-border)'}`, borderRadius: 'var(--float-radius)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', flex: 'none' }}>
         <button onClick={() => onMove(index, -1)} disabled={index === 0} style={{ background: 'none', border: 'none', cursor: index === 0 ? 'default' : 'pointer', color: index === 0 ? 'var(--float-border-strong)' : 'var(--float-text-secondary)', fontSize: '11px', lineHeight: 1, padding: '1px' }} aria-label="Move up">▲</button>
         <button onClick={() => onMove(index, 1)} disabled={index === total - 1} style={{ background: 'none', border: 'none', cursor: index === total - 1 ? 'default' : 'pointer', color: index === total - 1 ? 'var(--float-border-strong)' : 'var(--float-text-secondary)', fontSize: '11px', lineHeight: 1, padding: '1px' }} aria-label="Move down">▼</button>
@@ -330,6 +330,19 @@ function AccommodationRow({
       <span style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', borderRadius: '999px', padding: '2px 10px' }} title="Child's distress if stopped">
         {distressLabel(a)}
       </span>
+      <button
+        onClick={() => onSave({ is_weekly_focus: !a.is_weekly_focus })}
+        title={a.is_weekly_focus ? "This week's focus for the parent" : "Set as this week's focus"}
+        style={{
+          flex: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+          borderRadius: '999px', padding: '2px 10px',
+          border: `1px solid ${a.is_weekly_focus ? 'var(--float-primary)' : 'var(--float-border)'}`,
+          background: a.is_weekly_focus ? 'var(--float-primary-light)' : 'transparent',
+          color: a.is_weekly_focus ? 'var(--float-primary)' : 'var(--float-text-secondary)',
+        }}
+      >
+        {a.is_weekly_focus ? '★ Focus' : 'Set focus'}
+      </button>
       <button onClick={() => setEditing(true)} style={{ flex: 'none', fontSize: '12px', color: 'var(--float-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
       <button onClick={onDelete} style={{ flex: 'none', fontSize: '12px', color: 'var(--float-danger)', background: 'none', border: 'none', cursor: 'pointer' }}>Delete</button>
     </div>

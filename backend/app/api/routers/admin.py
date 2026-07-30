@@ -696,6 +696,7 @@ class JitTipPayload(BaseModel):
     always_show: bool = False
     display_order: int = 0
     is_active: bool = True
+    audience: str = "teen"  # 'teen' (child exposure screen) | 'parent' (parent app)
     tag_ids: list[str] = []
 
 
@@ -773,6 +774,7 @@ async def _tip_out(db: AsyncSession, tip: JitTip) -> dict:
         "always_show": tip.always_show,
         "display_order": tip.display_order,
         "is_active": tip.is_active,
+        "audience": tip.audience,
         "tag_ids": [str(t) for t in tag_ids],
     }
 
@@ -801,6 +803,7 @@ async def create_jit_tip(
         always_show=body.always_show,
         display_order=body.display_order,
         is_active=body.is_active,
+        audience=body.audience,
     )
     db.add(tip)
     await db.flush()
@@ -826,6 +829,7 @@ async def update_jit_tip(
     tip.always_show = body.always_show
     tip.display_order = body.display_order
     tip.is_active = body.is_active
+    tip.audience = body.audience
     tip.updated_at = datetime.now(timezone.utc)
     await db.execute(delete(JitTipTag).where(JitTipTag.jit_tip_id == tip.id))
     for tid in body.tag_ids:

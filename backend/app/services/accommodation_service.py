@@ -102,6 +102,20 @@ async def update_accommodation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Accommodation not found")
 
     fields = data.model_dump(exclude_unset=True)
+
+    # Only one accommodation per plan can be this week's focus — setting it here
+    # clears the flag on every sibling in the same plan.
+    if fields.get("is_weekly_focus"):
+        siblings = (await db.execute(
+            select(AccommodationBehavior).where(
+                AccommodationBehavior.treatment_plan_id == accommodation.treatment_plan_id,
+                AccommodationBehavior.organization_id == organization_id,
+                AccommodationBehavior.id != accommodation.id,
+            )
+        )).scalars().all()
+        for sib in siblings:
+            sib.is_weekly_focus = False
+
     for field, value in fields.items():
         setattr(accommodation, field, value)
 

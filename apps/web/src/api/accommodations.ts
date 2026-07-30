@@ -11,6 +11,7 @@ export interface Accommodation {
   distress_max: number | null
   display_order: number | null
   status: string
+  is_weekly_focus: boolean
   accommodator: string
   created_at: string
 }
@@ -23,7 +24,9 @@ export interface CreateAccommodationData {
   distress_max?: number | null
 }
 
-export type UpdateAccommodationData = Partial<CreateAccommodationData & { status: string }>
+export type UpdateAccommodationData = Partial<
+  CreateAccommodationData & { status: string; is_weekly_focus: boolean }
+>
 
 export const listAccommodations = async (planId: string): Promise<Accommodation[]> => {
   const res = await apiClient.get(`/plans/${planId}/accommodations`)

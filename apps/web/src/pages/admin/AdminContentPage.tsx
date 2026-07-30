@@ -11,6 +11,7 @@ type Tip = {
   always_show: boolean
   display_order: number
   is_active: boolean
+  audience: string
   tag_ids: string[]
 }
 
@@ -20,6 +21,7 @@ type TipDraft = {
   always_show: boolean
   display_order: number
   is_active: boolean
+  audience: string
   tag_ids: string[]
 }
 
@@ -29,6 +31,7 @@ const emptyDraft: TipDraft = {
   always_show: false,
   display_order: 0,
   is_active: true,
+  audience: 'teen',
   tag_ids: [],
 }
 
@@ -156,6 +159,7 @@ export default function AdminContentPage() {
       always_show: tip.always_show,
       display_order: tip.display_order,
       is_active: tip.is_active,
+      audience: tip.audience ?? 'teen',
       tag_ids: [...tip.tag_ids],
     })
     setEditing(tip.id)
@@ -259,6 +263,17 @@ export default function AdminContentPage() {
             onChange={e => setDraft({ ...draft, is_active: e.target.checked })}
           />
           Active
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#334155' }}>
+          Audience
+          <select
+            style={{ ...input, width: '110px' }}
+            value={draft.audience}
+            onChange={e => setDraft({ ...draft, audience: e.target.value })}
+          >
+            <option value="teen">Child</option>
+            <option value="parent">Parent</option>
+          </select>
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#334155' }}>
           Order
@@ -428,6 +443,7 @@ export default function AdminContentPage() {
                             #{tip.display_order}
                           </span>
                           <span style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>{tip.title}</span>
+                          {tip.audience === 'parent' && <span style={pill(true)}>Parent</span>}
                           {tip.always_show && <span style={pill(true)}>Always show</span>}
                           {!tip.is_active && <span style={pill(false)}>Inactive</span>}
                         </div>
