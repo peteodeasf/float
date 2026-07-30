@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
@@ -36,6 +36,7 @@ export default function TeenMessagesPage() {
   const { patientId } = useTeenAuth()
   const queryClient = useQueryClient()
   const [replyContent, setReplyContent] = useState('')
+  const threadRef = useRef<HTMLDivElement>(null)
 
   const { data: me } = useQuery<{ user_id: string }>({
     queryKey: ['teen-me', patientId],
@@ -84,6 +85,12 @@ export default function TeenMessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.length, me?.user_id])
 
+  // Keep the newest message in view when one arrives (poll or send) or on open.
+  useEffect(() => {
+    const el = threadRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [messages?.length])
+
   const handleSend = () => {
     const content = replyContent.trim()
     if (!content) return
@@ -112,7 +119,7 @@ export default function TeenMessagesPage() {
       </div>
 
       {/* Thread (scrollable) */}
-      <div style={{
+      <div ref={threadRef} style={{
         flex: 1,
         minHeight: 0,
         overflowY: 'auto',

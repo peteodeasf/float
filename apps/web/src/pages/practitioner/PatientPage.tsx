@@ -2077,6 +2077,12 @@ export default function PatientPage() {
   const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
+  const messagesScrollRef = useRef<HTMLDivElement>(null)
+  // Keep the newest message in view when one arrives (poll) or when the tab opens.
+  useEffect(() => {
+    const el = messagesScrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [messages?.length])
   const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
 
   // Fetch DA status for every trigger situation (incl. the placeholder, so the parent DA is captured)
@@ -3524,7 +3530,7 @@ export default function PatientPage() {
       <div style={{ marginBottom: '12px' }}>
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
       </div>
-      <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', marginBottom: '0' }}>
+      <div ref={messagesScrollRef} style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', marginBottom: '0' }}>
         {(!messages || messages.length === 0) && (
           <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
             Send check-ins, encouragement, or plan adjustments to the patient between sessions.

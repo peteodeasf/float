@@ -330,16 +330,19 @@ export default function TeenRecordPage() {
           {/* Escape for "I couldn't actually do it" — a real tertiary button, credited, not a fail. */}
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
             <button
-              className="teen-btn teen-btn--quiet"
+              onClick={enterTooHard}
               style={{
                 fontFamily: teen.font.sans,
-                fontWeight: 700,
                 fontSize: 16,
+                fontWeight: 700,
                 color: teen.color.teal,
+                background: 'transparent',
+                border: `1.5px solid ${teen.color.lineBtn}`,
+                borderRadius: teen.radius.pill,
                 minHeight: 48,
-                padding: '12px 16px',
+                padding: '12px 22px',
+                cursor: 'pointer',
               }}
-              onClick={enterTooHard}
             >
               I couldn't do it this time
             </button>

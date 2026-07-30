@@ -230,7 +230,7 @@ export default function TeenExposurePage() {
                 fontWeight: 700,
                 color: teen.color.teal,
                 background: 'transparent',
-                border: `1.5px solid ${teen.color.line}`,
+                border: `1.5px solid ${teen.color.lineBtn}`,
                 borderRadius: teen.radius.pill,
                 minHeight: 48,
                 padding: '12px 22px',

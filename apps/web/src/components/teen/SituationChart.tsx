@@ -51,7 +51,7 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
         {dtIndexed.length >= 2 && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span
-              style={{ width: 16, height: 0, borderTop: `2px dashed ${teen.color.mintDeep}` }}
+              style={{ width: 16, height: 0, borderTop: `2px dashed ${teen.color.tealMid}` }}
               aria-hidden="true"
             />
             <span style={{ fontFamily: teen.font.sans, fontSize: 15, color: teen.color.inkSoft }}>
@@ -80,7 +80,7 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
                 y={y + 4}
                 textAnchor="end"
                 fontFamily="Arial"
-                fontSize={13}
+                fontSize={14}
                 fill={teen.color.textSecondary}
               >
                 {value}
@@ -93,7 +93,7 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
           <polyline
             points={dtPoints}
             fill="none"
-            stroke={teen.color.mintDeep}
+            stroke={teen.color.tealMid}
             strokeWidth={2}
             strokeDasharray="4 4"
             strokeLinecap="round"
@@ -117,7 +117,7 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
               cy={cy(p.dt * 10)}
               r={2.5}
               fill="#fff"
-              stroke={teen.color.mintDeep}
+              stroke={teen.color.tealMid}
               strokeWidth={1.5}
             />
           ))}
