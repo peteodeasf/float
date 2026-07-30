@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select, or_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -221,15 +221,15 @@ async def parent_messages(
     context: tuple = Depends(get_parent_context),
     db: AsyncSession = Depends(get_db),
 ):
-    current_user, _ = context
+    # The parent thread is child-scoped (audience='parent'), so co-parents linked
+    # to the same child share one conversation with the clinician.
+    _, children = context
+    child = _first_child(children)
     rows = (await db.execute(
         select(Message)
         .where(
+            Message.patient_id == child.id,
             Message.audience == "parent",
-            or_(
-                Message.recipient_user_id == current_user.id,
-                Message.sender_user_id == current_user.id,
-            ),
         )
         .order_by(Message.created_at.asc())
     )).scalars().all()

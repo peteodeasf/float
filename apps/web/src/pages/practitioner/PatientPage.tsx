@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPatient, getMessages, sendMessage, getPatientProgress, updatePatient } from '../../api/patients'
+import { getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine
@@ -1903,6 +1903,7 @@ export default function PatientPage() {
   const [showEntries, setShowEntries] = useState(false)
   const [msgContent, setMsgContent] = useState('')
   const [showMsgForm, setShowMsgForm] = useState(false)
+  const [msgThread, setMsgThread] = useState<'teen' | 'parent'>('teen')
 
   // Inline monitoring report (Step 1)
   const [showInlineReport, setShowInlineReport] = useState(false)
@@ -2077,12 +2078,16 @@ export default function PatientPage() {
   const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
+  const { data: parentMessages } = useQuery({ queryKey: ['parent-messages', patientId], queryFn: () => getParentMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
+  // The child thread and the parent thread share this panel; a toggle switches.
+  const activeMessages = msgThread === 'parent' ? (parentMessages ?? []) : (messages ?? [])
   const messagesScrollRef = useRef<HTMLDivElement>(null)
-  // Keep the newest message in view when one arrives (poll) or when the tab opens.
+  // Keep the newest message in view when one arrives (poll), the thread switches,
+  // or when the tab opens.
   useEffect(() => {
     const el = messagesScrollRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages?.length])
+  }, [messages?.length, parentMessages?.length, msgThread])
   const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
 
   // Fetch DA status for every trigger situation (incl. the placeholder, so the parent DA is captured)
@@ -2389,8 +2394,10 @@ export default function PatientPage() {
   // AI extraction is offered once there's enough monitoring data and the plan has no situations yet
   const canExtract = (monitoringForm?.entries_count ?? 0) >= 3 && (triggers?.length ?? 0) === 0
   const sendMsgMut = useMutation({
-    mutationFn: () => sendMessage(patientId!, patient!.user_id, msgContent, 'general'),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['messages', patientId] }); setMsgContent(''); setShowMsgForm(false) }
+    mutationFn: () => msgThread === 'parent'
+      ? sendParentMessage(patientId!, msgContent, 'general')
+      : sendMessage(patientId!, patient!.user_id, msgContent, 'general'),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [msgThread === 'parent' ? 'parent-messages' : 'messages', patientId] }); setMsgContent(''); setShowMsgForm(false) }
   })
 
   const updatePatientMut = useMutation({
@@ -3527,17 +3534,31 @@ export default function PatientPage() {
 
   const messagesContent = (
     <div id="messages-section" style={cardStyle}>
-      <div style={{ marginBottom: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {(['teen', 'parent'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setMsgThread(t)}
+              className="text-xs rounded cursor-pointer"
+              style={{ padding: '3px 10px', fontWeight: 600, border: '1px solid ' + (msgThread === t ? '#135450' : '#e2e8f0'), background: msgThread === t ? '#eafaf6' : '#fff', color: msgThread === t ? '#135450' : '#64748b' }}
+            >
+              {t === 'teen' ? 'Child' : 'Parent'}
+            </button>
+          ))}
+        </div>
       </div>
       <div ref={messagesScrollRef} style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', marginBottom: '0' }}>
-        {(!messages || messages.length === 0) && (
+        {activeMessages.length === 0 && (
           <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-            Send check-ins, encouragement, or plan adjustments to the patient between sessions.
+            {msgThread === 'parent'
+              ? 'Message the parent between sessions — coaching, encouragement, plan notes.'
+              : 'Send check-ins, encouragement, or plan adjustments to the patient between sessions.'}
           </p>
         )}
-        {messages && messages.map((m, i) => {
-          const prev = i > 0 ? messages[i - 1] : null
+        {activeMessages.map((m, i) => {
+          const prev = i > 0 ? activeMessages[i - 1] : null
           const sameSender = prev && prev.sender_user_id === m.sender_user_id
           const marginTop = i === 0 ? 0 : (sameSender ? 4 : 8)
           const ts = formatMsgTime(m.created_at)
@@ -3564,7 +3585,10 @@ export default function PatientPage() {
               </div>
             )
           }
-          if (patient && m.sender_user_id === patient.user_id) {
+          const isFamily = msgThread === 'parent'
+            ? m.sender_type === 'parent'
+            : !!(patient && m.sender_user_id === patient.user_id)
+          if (isFamily) {
             return (
               <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
                 <div style={{ maxWidth: '70%', background: '#eafaf6', border: '1px solid #eafaf6', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>

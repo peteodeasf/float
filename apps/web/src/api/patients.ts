@@ -165,6 +165,7 @@ export interface Message {
   patient_id: string
   content: string
   message_type: string
+  sender_type?: string | null
   read_at: string | null
   created_at: string
 }
@@ -184,6 +185,24 @@ export const sendMessage = async (
     recipient_user_id: recipientUserId,
     content,
     message_type: messageType
+  })
+  return response.data
+}
+
+/** The separate parent<->clinician thread (audience='parent'). */
+export const getParentMessages = async (patientId: string): Promise<Message[]> => {
+  const response = await apiClient.get(`/patients/${patientId}/parent-messages`)
+  return response.data
+}
+
+export const sendParentMessage = async (
+  patientId: string,
+  content: string,
+  messageType: string = 'general'
+): Promise<Message> => {
+  const response = await apiClient.post(`/patients/${patientId}/parent-messages`, {
+    content,
+    message_type: messageType,
   })
   return response.data
 }

@@ -30,6 +30,7 @@ import ParentLoginPage from './pages/parent/ParentLoginPage'
 import ParentSetPasswordPage from './pages/parent/ParentSetPasswordPage'
 import ParentResetPasswordPage from './pages/parent/ParentResetPasswordPage'
 import ParentHomePage from './pages/parent/ParentHomePage'
+import ParentMessagesPage from './pages/parent/ParentMessagesPage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
@@ -121,6 +122,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/parent/home" element={
                 <ParentProtectedRoute><ParentHomePage /></ParentProtectedRoute>
+              } />
+              <Route path="/parent/messages" element={
+                <ParentProtectedRoute><ParentMessagesPage /></ParentProtectedRoute>
               } />
 
               {/* Public monitoring form */}

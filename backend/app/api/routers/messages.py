@@ -1,5 +1,6 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
@@ -7,7 +8,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.message import Message
-from app.models.patient import PatientProfile
+from app.models.patient import PatientProfile, ParentPatientLink
 from app.api.routers.patients import get_practitioner_context
 from app.services.message_service import (
     get_messages_for_patient,
@@ -87,3 +88,75 @@ async def read_message(
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Not authorized")
     return await mark_read(db, message_id, practitioner.organization_id)
+
+
+# ── Parent thread (audience='parent') — the separate parent<->clinician chat ──
+
+class ParentThreadMessageCreate(BaseModel):
+    content: str
+    message_type: str = "general"
+
+
+async def _load_patient(db: AsyncSession, patient_id: uuid.UUID, org_id: uuid.UUID) -> PatientProfile:
+    patient = (await db.execute(
+        select(PatientProfile).where(
+            PatientProfile.id == patient_id,
+            PatientProfile.organization_id == org_id,
+        )
+    )).scalar_one_or_none()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return patient
+
+
+@router.get("/patients/{patient_id}/parent-messages", response_model=list[MessageResponse])
+async def list_parent_messages(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    _, practitioner = context
+    patient = await _load_patient(db, patient_id, practitioner.organization_id)
+    rows = (await db.execute(
+        select(Message)
+        .where(
+            Message.patient_id == patient.id,
+            Message.audience == "parent",
+            Message.organization_id == practitioner.organization_id,
+        )
+        .order_by(Message.created_at.asc())
+    )).scalars().all()
+    return rows
+
+
+@router.post(
+    "/patients/{patient_id}/parent-messages",
+    response_model=MessageResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_parent_message(
+    patient_id: uuid.UUID,
+    data: ParentThreadMessageCreate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    _, practitioner = context
+    patient = await _load_patient(db, patient_id, practitioner.organization_id)
+    link = (await db.execute(
+        select(ParentPatientLink).where(ParentPatientLink.patient_id == patient.id)
+    )).scalars().first()
+    if not link:
+        raise HTTPException(status_code=400, detail="No parent linked to this patient")
+    message = Message(
+        organization_id=practitioner.organization_id,
+        sender_user_id=practitioner.user_id,
+        recipient_user_id=link.parent_user_id,
+        patient_id=patient.id,
+        content=data.content,
+        message_type=data.message_type,
+        audience="parent",
+    )
+    db.add(message)
+    await db.commit()
+    await db.refresh(message)
+    return message
