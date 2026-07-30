@@ -11,6 +11,7 @@ from app.services.accommodation_service import (
     delete_accommodation,
     reorder_accommodations,
     reseed_by_distress,
+    get_moments_for_plan,
 )
 from app.schemas.accommodation import (
     AccommodationCreate,
@@ -32,6 +33,17 @@ async def list_accommodations(
 ):
     _, practitioner = context
     return await get_accommodations_for_plan(db, plan_id, practitioner.organization_id)
+
+
+@router.get("/moments")
+async def list_accommodation_moments(
+    plan_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The parent's logged moments for this plan (clinician coaching view)."""
+    _, practitioner = context
+    return await get_moments_for_plan(db, plan_id, practitioner.organization_id)
 
 
 @router.post("", response_model=AccommodationResponse, status_code=status.HTTP_201_CREATED)

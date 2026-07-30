@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from app.models.experiment import AccommodationBehavior
+from app.models.experiment import AccommodationBehavior, AccommodationMoment
 from app.schemas.accommodation import AccommodationCreate, AccommodationUpdate
 
 
@@ -186,3 +186,35 @@ async def reseed_by_distress(
         acc.display_order = order
     await db.commit()
     return await get_accommodations_for_plan(db, plan_id, organization_id)
+
+
+async def get_moments_for_plan(
+    db: AsyncSession,
+    plan_id: uuid.UUID,
+    organization_id: uuid.UUID,
+) -> list[dict]:
+    """The parent's logged moments for a plan, newest first, with the
+    accommodation name resolved — for the clinician to coach from."""
+    rows = (await db.execute(
+        select(AccommodationMoment, AccommodationBehavior.name)
+        .outerjoin(
+            AccommodationBehavior,
+            AccommodationBehavior.id == AccommodationMoment.accommodation_id,
+        )
+        .where(
+            AccommodationMoment.treatment_plan_id == plan_id,
+            AccommodationMoment.organization_id == organization_id,
+        )
+        .order_by(AccommodationMoment.created_at.desc())
+    )).all()
+    return [
+        {
+            "id": str(m.id),
+            "accommodation_id": str(m.accommodation_id) if m.accommodation_id else None,
+            "accommodation_name": name,
+            "held": m.held,
+            "note": m.note,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m, name in rows
+    ]

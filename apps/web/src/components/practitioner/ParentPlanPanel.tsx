@@ -7,6 +7,7 @@ import {
   deleteAccommodation,
   reorderAccommodations,
   reseedAccommodations,
+  listAccommodationMoments,
   type Accommodation,
 } from '../../api/accommodations'
 
@@ -46,6 +47,12 @@ export default function ParentPlanPanel({
   const { data: accommodations = [], isLoading } = useQuery({
     queryKey: key,
     queryFn: () => listAccommodations(planId),
+    enabled: !!planId,
+  })
+
+  const { data: moments = [] } = useQuery({
+    queryKey: ['accommodation-moments', planId],
+    queryFn: () => listAccommodationMoments(planId),
     enabled: !!planId,
   })
 
@@ -237,6 +244,54 @@ export default function ParentPlanPanel({
               onSave={(data) => updateAccommodation(planId, a.id, data).then(invalidate)}
             />
           ))}
+        </div>
+      )}
+
+      {moments.length > 0 && (
+        <div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '8px' }}>
+            Recent parent logs
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {moments.slice(0, 12).map(m => (
+              <div
+                key={m.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '13px',
+                  background: 'var(--float-surface)',
+                  border: '1px solid var(--float-border)',
+                  borderRadius: 'var(--float-radius-sm)',
+                  padding: '8px 12px',
+                }}
+              >
+                <span
+                  style={{
+                    flex: 'none',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    borderRadius: '999px',
+                    padding: '2px 8px',
+                    background: m.held ? '#eafaf6' : '#fef2f2',
+                    color: m.held ? 'var(--float-primary)' : '#b91c1c',
+                  }}
+                >
+                  {m.held ? 'Held' : 'Gave in'}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, color: 'var(--float-text)' }}>
+                  {m.accommodation_name ?? 'An accommodation'}
+                  {m.note && <span style={{ color: 'var(--float-text-hint)' }}> — “{m.note}”</span>}
+                </span>
+                {m.created_at && (
+                  <span style={{ flex: 'none', fontSize: '12px', color: 'var(--float-text-hint)' }}>
+                    {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

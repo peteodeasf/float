@@ -16,6 +16,22 @@ export interface Accommodation {
   created_at: string
 }
 
+export interface AccommodationMoment {
+  id: string
+  accommodation_id: string | null
+  accommodation_name: string | null
+  held: boolean
+  note: string | null
+  created_at: string | null
+}
+
+export const listAccommodationMoments = async (
+  planId: string
+): Promise<AccommodationMoment[]> => {
+  const res = await apiClient.get(`/plans/${planId}/accommodations/moments`)
+  return res.data
+}
+
 export interface CreateAccommodationData {
   name: string
   description?: string | null
