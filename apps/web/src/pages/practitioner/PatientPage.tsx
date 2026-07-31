@@ -62,7 +62,6 @@ function ReportSection({ label, items }: { label: string; items: string[] }) {
 // Treatment-mode surfaces (the ongoing weekly workspace). Ordered roughly by weekly use.
 type PersistentTabId = 'plan' | 'experiments' | 'weekly' | 'plans' | 'messages' | 'close'
 
-type StepStatus = 'complete' | 'active' | 'incomplete'
 
 // Setup-mode steps (numbered, worked once). Single source of truth in lib/treatmentJourney.
 const STEP_LABELS: readonly string[] = SETUP_STEPS
@@ -108,24 +107,6 @@ function isSimilar(a: string, b: string): boolean {
   // First 15 characters match (same stem)
   if (na.slice(0, 15) === nb.slice(0, 15)) return true
   return false
-}
-
-function StepStatusIcon({ status }: { status: StepStatus }) {
-  if (status === 'complete') {
-    return (
-      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#135450', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
-    )
-  }
-  if (status === 'active') {
-    return (
-      <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#135450', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <span style={{ width: '7px', height: '7px', borderRadius: '999px', background: '#fff' }} />
-      </span>
-    )
-  }
-  return (
-    <span style={{ width: '20px', height: '20px', borderRadius: '999px', background: '#fff', border: '1px solid #cbd5e1', flexShrink: 0, boxSizing: 'border-box' }} />
-  )
 }
 
 // Next school day (Mon-Fri) after today
@@ -1928,7 +1909,16 @@ export default function PatientPage() {
   // Treatment Journey navigation
   const [activeStep, setActiveStep] = useState<number>(0)
   const [activePersistentTab, setActivePersistentTab] = useState<PersistentTabId | null>(null)
-  const [setupExpanded, setSetupExpanded] = useState(true)
+  const [, setSetupExpanded] = useState(true)
+  // The case's current phase (the top spine). Drives which working surfaces the
+  // rail shows; the underlying activeStep / activePersistentTab still route content.
+  const [activePhase, setActivePhase] = useState<'assess' | 'consult' | 'treat'>('assess')
+  const selectPhase = (p: 'assess' | 'consult' | 'treat') => {
+    setActivePhase(p)
+    if (p === 'assess') { setActiveStep(0); setActivePersistentTab(null) }
+    else if (p === 'consult') { setActiveStep(2); setActivePersistentTab(null) }
+    else { setActivePersistentTab('experiments') }
+  }
   const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
   const stepInitializedRef = useRef(false)
 
@@ -2574,14 +2564,10 @@ export default function PatientPage() {
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
   const currentActiveStep = firstIncompleteStep === -1 ? STEP_LABELS.length - 1 : firstIncompleteStep
-  const stepStatus: StepStatus[] = stepComplete.map((c, i) =>
-    c ? 'complete' : (i === currentActiveStep ? 'active' : 'incomplete')
-  )
 
   // Treatment mode unlocks once the assessment steps are done. Building the
-  // plan happens in the workspace (the "Treatment Plan" tab), not in setup.
+  // plan happens on the Case file, not in setup.
   const treatmentUnlocked = firstIncompleteStep === -1
-  const setupComplete = treatmentUnlocked
 
   // Default selected step to current active step once core data has loaded
   const coreLoaded = !!patient
@@ -2595,11 +2581,13 @@ export default function PatientPage() {
     if (stepInitializedRef.current) return
     if (!coreLoaded) return
     if (treatmentUnlocked) {
-      // Plan already built — land in the treatment workspace, setup collapsed.
+      // Plan already built — land in the treatment workspace on the Case file.
       setActivePersistentTab('plan')
       setSetupExpanded(false)
+      setActivePhase('treat')
     } else {
       setActiveStep(currentActiveStep)
+      setActivePhase(currentActiveStep <= 1 ? 'assess' : 'consult')
     }
     stepInitializedRef.current = true
   }, [coreLoaded, currentActiveStep, treatmentUnlocked])
@@ -3286,7 +3274,7 @@ export default function PatientPage() {
                 <li key={`overdue-${e.id}`} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
                   <span style={{ fontWeight: 700 }}>·</span>
                   <span><strong>Overdue:</strong> &ldquo;{e.behavior_name || e.plan_description || 'Experiment'}&rdquo; was scheduled {dateStr} — not yet recorded</span>
-                  <button onClick={() => { setActivePersistentTab('messages'); setShowMsgForm(true) }} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
+                  <button onClick={() => { setActivePhase('treat'); setActivePersistentTab('messages'); setShowMsgForm(true) }} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
                 </li>
               )
             })}
@@ -3694,7 +3682,7 @@ export default function PatientPage() {
           <div style={{ marginBottom: '12px' }}>
             <a
               href="#messages-section"
-              onClick={(e) => { e.preventDefault(); setActivePersistentTab('messages'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+              onClick={(e) => { e.preventDefault(); setActivePhase('treat'); setActivePersistentTab('messages'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
               style={{ fontSize: '13px', color: '#0d3d3a', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
             >
               ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
@@ -3818,7 +3806,7 @@ export default function PatientPage() {
             teenEmail={patient.teen_email}
             teenInvitedAt={patient.teen_invited_at}
             fallbackEmail={patient.email}
-            onViewMessages={() => { setShowTeenAccess(false); setActivePersistentTab('messages') }}
+            onViewMessages={() => { setShowTeenAccess(false); setActivePhase('treat'); setActivePersistentTab('messages') }}
             onClose={() => setShowTeenAccess(false)}
           />
         )}
@@ -3924,63 +3912,66 @@ export default function PatientPage() {
           </div>
         )}
 
-        {/* Treatment Journey layout */}
-        <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)' }}>
-          {/* Sidebar */}
-          <div style={{ width: '220px', flexShrink: 0, background: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '16px 0' }}>
-            {/* SETUP — numbered, worked once; collapses to a minimized presence once complete */}
-            <div
-              onClick={() => { if (setupComplete) setSetupExpanded(v => !v) }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', marginBottom: '8px', cursor: setupComplete ? 'pointer' : 'default' }}
-            >
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Setup{setupComplete ? ' ✓' : ''}</div>
-              {setupComplete && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{setupExpanded ? '▾' : '▸'}</span>}
-            </div>
-            {(!setupComplete || setupExpanded) && STEP_LABELS.map((label, i) => {
-              const selected = activePersistentTab === null && activeStep === i
-              const status = stepStatus[i]
-              return (
-                <div
-                  key={i}
-                  onClick={() => { setActiveStep(i); setActivePersistentTab(null) }}
-                  style={{
-                    padding: '8px 16px',
-                    borderLeft: selected ? '3px solid #135450' : '3px solid transparent',
-                    background: selected ? '#eafaf6' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                    <StepStatusIcon status={status} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '10px', color: '#94a3b8' }}>Step {i + 1}</div>
-                      <div style={{ fontSize: '13px', fontWeight: status === 'incomplete' ? 400 : 500, color: status === 'incomplete' ? '#94a3b8' : '#1e293b' }}>{label}</div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+        {/* Phase spine — where the case is (Assess -> Consult -> Treat) */}
+        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+          {([
+            { id: 'assess', label: 'Assess', n: '1' },
+            { id: 'consult', label: 'Consult', n: '2' },
+            { id: 'treat', label: 'Treat & track', n: '3' },
+          ] as const).map(p => {
+            const cur = activePhase === p.id
+            return (
+              <button
+                key={p.id}
+                onClick={() => selectPhase(p.id)}
+                className="bg-transparent border-none cursor-pointer"
+                style={{ flex: '0 0 auto', minWidth: 160, textAlign: 'left', padding: '10px 20px', borderBottom: cur ? '2px solid #135450' : '2px solid transparent', marginBottom: '-1px' }}
+              >
+                <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.06em', color: cur ? '#7cc3b6' : '#cbd5e1' }}>PHASE {p.n}</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: cur ? '#135450' : '#94a3b8' }}>{p.label}</div>
+              </button>
+            )
+          })}
+        </div>
 
-            {/* TREATMENT — the ongoing weekly workspace; a single destination with in-view tabs */}
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '18px 16px 8px' }}>Treatment</div>
+        {/* Body: rail + content */}
+        <div style={{ display: 'flex', minHeight: 'calc(100vh - 180px)' }}>
+          {/* Rail — persistent components (Case file, Sessions) + current phase surfaces */}
+          <div style={{ width: '220px', flexShrink: 0, background: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '16px 0' }}>
             {(() => {
-              const selected = activePersistentTab !== null
-              const aggregateBadge = draftPlanCount + unreadMessageCount
+              const railCap: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 16px', margin: '0 0 8px' }
+              const itemStyle = (on: boolean): React.CSSProperties => ({ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', textAlign: 'left', background: on ? '#eafaf6' : 'transparent', border: 'none', borderLeft: on ? '3px solid #135450' : '3px solid transparent', cursor: 'pointer', padding: '8px 16px', fontSize: '13px', fontWeight: on ? 600 : 500, color: on ? '#1e293b' : '#475569' })
+              const subStyle = (on: boolean): React.CSSProperties => ({ ...itemStyle(on), paddingLeft: '28px', fontSize: '12.5px' })
+              const badge = (n: number) => n ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{n}</span> : null
+              const phaseSurfaces: { id: string; label: string; on: boolean; go: () => void; b?: number }[] =
+                activePhase === 'assess' ? [
+                  { id: 'm', label: 'Monitoring', on: activePersistentTab === null && activeStep === 0, go: () => { setActiveStep(0); setActivePersistentTab(null) } },
+                  { id: 'a', label: 'Analyze', on: activePersistentTab === null && activeStep === 1, go: () => { setActiveStep(1); setActivePersistentTab(null) } },
+                ] : activePhase === 'consult' ? [
+                  { id: 'pc', label: 'Parent consult', on: activePersistentTab === null && activeStep === 2, go: () => { setActiveStep(2); setActivePersistentTab(null) } },
+                  { id: 'ptc', label: 'Patient consult', on: activePersistentTab === null && activeStep === 3, go: () => { setActiveStep(3); setActivePersistentTab(null) } },
+                ] : [
+                  { id: 'e', label: 'Experiments', on: activePersistentTab === 'experiments', go: () => setActivePersistentTab('experiments') },
+                  { id: 'msg', label: 'Messages', on: activePersistentTab === 'messages', go: () => setActivePersistentTab('messages'), b: unreadMessageCount },
+                ]
+              const phaseLabel = activePhase === 'assess' ? 'Assess' : activePhase === 'consult' ? 'Consult' : 'Treat & track'
               return (
-                <div
-                  onClick={() => setActivePersistentTab(prev => prev ?? 'plan')}
-                  style={{
-                    padding: '8px 16px',
-                    borderLeft: selected ? '3px solid #135450' : '3px solid transparent',
-                    background: selected ? '#eafaf6' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: selected ? 600 : 500, color: selected ? '#1e293b' : '#475569' }}>Workspace</div>
-                    {aggregateBadge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{aggregateBadge}</span> : null}
+                <>
+                  <div style={railCap}>Always available</div>
+                  <button onClick={() => setActivePersistentTab('plan')} style={itemStyle(activePersistentTab === 'plan')}>Case file</button>
+                  <div style={{ ...railCap, marginTop: '10px' }}>Sessions</div>
+                  <button onClick={() => setActivePersistentTab('weekly')} style={subStyle(activePersistentTab === 'weekly')}>Weekly review</button>
+                  <button onClick={() => setActivePersistentTab('plans')} style={subStyle(activePersistentTab === 'plans')}>Action plans {badge(draftPlanCount)}</button>
+
+                  <div style={{ ...railCap, marginTop: '18px' }}>{phaseLabel}</div>
+                  {phaseSurfaces.map(s => (
+                    <button key={s.id} onClick={s.go} style={itemStyle(s.on)}>{s.label} {s.b ? badge(s.b) : null}</button>
+                  ))}
+
+                  <div style={{ marginTop: '22px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                    <button onClick={() => setActivePersistentTab('close')} style={itemStyle(activePersistentTab === 'close')}>Close case</button>
                   </div>
-                </div>
+                </>
               )
             })()}
           </div>
@@ -3990,40 +3981,6 @@ export default function PatientPage() {
             {/* Treatment-mode surfaces — always viewable; empty states carry the "nothing yet" message */}
             {activePersistentTab !== null && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {/* In-view tab strip */}
-                  <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-                    {([
-                      { id: 'plan', label: 'Treatment Plan' },
-                      { id: 'experiments', label: 'Experiments' },
-                      { id: 'weekly', label: 'Weekly Session' },
-                      { id: 'plans', label: 'Action Plans', badge: draftPlanCount },
-                      { id: 'messages', label: 'Messages', badge: unreadMessageCount },
-                      { id: 'close', label: 'Close' },
-                    ] as { id: PersistentTabId; label: string; badge?: number }[]).map(t => {
-                      const active = activePersistentTab === t.id
-                      return (
-                        <button
-                          key={t.id}
-                          onClick={() => setActivePersistentTab(t.id)}
-                          className="bg-transparent border-none cursor-pointer"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '8px 12px',
-                            marginBottom: '-1px',
-                            borderBottom: active ? '2px solid #135450' : '2px solid transparent',
-                            fontSize: '13px',
-                            fontWeight: active ? 600 : 500,
-                            color: active ? '#135450' : '#64748b',
-                          }}
-                        >
-                          {t.label}
-                          {t.badge ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{t.badge}</span> : null}
-                        </button>
-                      )
-                    })}
-                  </div>
                   {activePersistentTab === 'plan' && (
                     <>
                       {renderGuide(5)}
