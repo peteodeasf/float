@@ -759,12 +759,6 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
     queryFn: () => getBehaviors(trigger.id),
   })
 
-  const { data: experiments } = useQuery({
-    queryKey: ['experiments', patientId],
-    queryFn: () => getPatientExperiments(patientId),
-    enabled: !!patientId,
-  })
-
   const planExpMut = useMutation({
     mutationFn: (vars: { behaviorId: string; force: boolean }) =>
       planExperimentForBehavior(vars.behaviorId, {
@@ -1208,53 +1202,6 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
         </p>
       )}
 
-      {/* Recent experiments for this situation */}
-      {(() => {
-        const situationExperiments = (experiments ?? []).filter(e => e.trigger_situation_id === trigger.id)
-        if (situationExperiments.length === 0) return null
-        return (
-          <div style={{ marginTop: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-              Recent experiments
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {situationExperiments.slice(0, 6).map(exp => {
-                const conf = confidenceMeta(exp.confidence_level)
-                const isCompleted = exp.status === 'completed'
-                const dateStr = exp.scheduled_date
-                  ? new Date(exp.scheduled_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                  : new Date(exp.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                const icon = isCompleted ? '✓' : exp.status === 'too_hard' ? '⚠' : exp.status === 'skipped' ? '—' : '\u{1F4C5}'
-                const bipBefore = exp.bip_before != null ? Math.round(Number(exp.bip_before)) : null
-                const bipAfter = exp.bip_after != null ? Math.round(Number(exp.bip_after)) : null
-                const statusLabel = EXPERIMENT_STATUS_LABEL[exp.status] || exp.status
-                return (
-                  <div key={exp.id} style={{ fontSize: '12px', color: '#475569', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ flexShrink: 0 }}>{icon}</span>
-                    <span style={{ fontWeight: 500, color: '#1e293b' }}>{exp.behavior_name || exp.plan_description || 'Experiment'}</span>
-                    <span style={{ color: '#94a3b8' }}>&middot;</span>
-                    <span>{dateStr}</span>
-                    {conf.label && (
-                      <>
-                        <span style={{ color: '#94a3b8' }}>&middot;</span>
-                        <span>{conf.emoji} {conf.label} confidence</span>
-                      </>
-                    )}
-                    <span style={{ color: '#94a3b8' }}>&middot;</span>
-                    <span style={{ color: isCompleted ? '#16a34a' : '#64748b' }}>{statusLabel}</span>
-                    {isCompleted && bipBefore != null && bipAfter != null && (
-                      <>
-                        <span style={{ color: '#94a3b8' }}>&middot;</span>
-                        <span style={{ fontWeight: 600 }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
-                      </>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })()}
     </div>
   )
 }
@@ -4083,7 +4030,7 @@ export default function PatientPage() {
                       {treatmentPlanBuilder}
                       {plan && (
                         <div style={{ marginTop: '8px' }}>
-                          <ParentPlanPanel planId={plan.id} patientId={patient!.id} triggers={triggers ?? []} />
+                          <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
                         </div>
                       )}
                     </>

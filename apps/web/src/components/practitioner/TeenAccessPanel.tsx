@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { inviteTeen } from '../../api/patients'
+import { inviteTeen, inviteParent } from '../../api/patients'
 
 /**
  * Persistent teen-access manager for a patient.
@@ -43,6 +43,17 @@ export default function TeenAccessPanel({
   const emailChanged = invited && email.trim().toLowerCase() !== (teenEmail || '').toLowerCase()
   const sendLabel = !invited ? 'Send invite' : emailChanged ? 'Update & resend' : 'Resend invite'
 
+  // Parent invite — no stored status yet; a case can have any number of parents.
+  const [parentEmail, setParentEmail] = useState('')
+  const [parentConfirmation, setParentConfirmation] = useState<string | null>(null)
+  const parentInviteMut = useMutation({
+    mutationFn: (addr: string) => inviteParent(patientId, addr),
+    onSuccess: (data) => {
+      setParentConfirmation(data.email)
+      setTimeout(() => setParentConfirmation(null), 4000)
+    },
+  })
+
   const label: React.CSSProperties = {
     fontSize: '11px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px',
   }
@@ -61,7 +72,7 @@ export default function TeenAccessPanel({
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
         <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Teen access
+          Access
         </span>
         <button
           onClick={onClose}
@@ -72,6 +83,7 @@ export default function TeenAccessPanel({
         </button>
       </div>
 
+      <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Teen</div>
       {/* Status */}
       <div style={{ marginBottom: '14px' }}>
         {invited ? (
@@ -151,6 +163,37 @@ export default function TeenAccessPanel({
           </button>
         </div>
       )}
+
+      {/* Parent access */}
+      <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Parent</div>
+        <label style={label}>Parent's email</label>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <input
+            type="email"
+            value={parentEmail}
+            onChange={e => setParentEmail(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && parentEmail.trim()) parentInviteMut.mutate(parentEmail.trim()) }}
+            placeholder="parent@example.com"
+            style={{ flex: '1 1 220px', padding: '9px 12px', fontSize: '13px', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box' }}
+          />
+          <button
+            onClick={() => parentEmail.trim() && parentInviteMut.mutate(parentEmail.trim())}
+            disabled={!parentEmail.trim() || parentInviteMut.isPending}
+            style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '8px', padding: '9px 16px', cursor: 'pointer', opacity: !parentEmail.trim() || parentInviteMut.isPending ? 0.5 : 1 }}
+          >
+            {parentInviteMut.isPending ? 'Sending…' : 'Invite parent'}
+          </button>
+        </div>
+        <p style={{ fontSize: '12px', color: '#94a3b8', margin: '6px 0 0' }}>
+          Emails a temporary password to sign in at /parent/login. No cap on parents per child.
+        </p>
+        {parentConfirmation && (
+          <p style={{ fontSize: '12px', color: '#16a34a', margin: '8px 0 0' }}>
+            &#10003; Invitation sent to {parentConfirmation}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
