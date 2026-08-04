@@ -31,7 +31,10 @@ Distress itself is **not** a behavior type — it's the fear rating, not a categ
 
 ## Product surfaces
 
-- **The three experiences** — parent, teen, clinician; distinct products on a shared spine.
+- **The three experiences** — parent, child, clinician; distinct products on a shared spine.
+  **Terminology:** "child" is the canonical product/clinical term. The codebase still uses
+  **"teen"** as a legacy alias (`teen-tokens.css`, `teen-*` classes, "teen experience") —
+  treat it as the same role until/unless a rename happens.
 - **Monitoring extraction** — turning a family's free-text monitoring note into structured
   situations/behaviors/accommodations/ratings. Output is an **editable preliminary draft**
   a clinician confirms in-session; not persisted as truth until committed.
@@ -40,4 +43,4 @@ Distress itself is **not** a behavior type — it's the fear rating, not a categ
 - **Plan** — the treatment plan built from confirmed situations/behaviors; what the family
   actually works through.
 
-_(add: teen home/exposure screens, clinician case-file & sessions IA, parent log-a-moment, etc.)_
+_(add: child home/exposure screens, clinician case-file & sessions IA, parent log-a-moment, etc.)_

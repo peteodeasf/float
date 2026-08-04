@@ -1,7 +1,7 @@
 # Float — project instructions
 
 Float is a CBT app for anxiety treatment (exposure + accommodation reduction) with three
-distinct experiences: **parent**, **teen**, and **clinician**. Backend is FastAPI +
+distinct experiences: **parent**, **child**, and **clinician**. Backend is FastAPI +
 Postgres (`backend/`); frontend is React + Vite (`apps/web/`), deployed on Netlify;
 Railway hosts the backend and auto-migrates on deploy.
 
@@ -24,10 +24,11 @@ defined in the global process. Grounded in this repo's artifacts:
    avoidance/safety/escape, accommodation and fear-rating rules, or plan-commit behavior —
    are clinical decisions, not wording tweaks. They ship only with **Dr. Walker's
    approval**, never on a training metric alone.
-2. **PHI & role boundaries.** Separation between parent, teen, and clinician data is a
-   hard boundary. Run `/security-review` on any change that touches authentication, data
-   access, or role scoping — a teen seeing clinician data (or a parent seeing a teen's
-   private log) is a serious defect, not a bug.
+2. **PHI & role boundaries.** Separation between parent, child, and clinician data is a
+   hard boundary, and data handling must meet **HIPAA** requirements. Run
+   `/security-review` on any change that touches authentication, data access, or role
+   scoping — a child seeing clinician data (or a parent seeing a child's private log) is a
+   serious defect, not a bug.
 3. **Production is close to your keyboard.** The local `.env` points at **production**
    Postgres, and Railway **auto-migrates on deploy**. Treat migrations and pushes as
    production-affecting; there is little buffer between "push" and "live."
