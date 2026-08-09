@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine
+  LineChart, Line, XAxis, YAxis,
+  Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
@@ -16,7 +16,6 @@ import {
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport, type ExtractedBehaviorType, type ExtractedSituation, type ExtractedBehavior } from '../../api/monitoring'
-import { SETUP_STEPS } from '../../lib/treatmentJourney'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PARENT_CHECKLIST, PATIENT_CHECKLIST, type ChecklistGroup, type ChecklistNav } from '../../lib/checklists'
@@ -59,13 +58,6 @@ function ReportSection({ label, items }: { label: string; items: string[] }) {
   )
 }
 
-// Treatment-mode surfaces (the ongoing weekly workspace). Ordered roughly by weekly use.
-type PersistentTabId = 'plan' | 'experiments' | 'weekly' | 'plans' | 'messages' | 'close'
-
-
-// Setup-mode steps (numbered, worked once). Single source of truth in lib/treatmentJourney.
-const STEP_LABELS: readonly string[] = SETUP_STEPS
-
 interface ConceptualizationDraft {
   situations: string[]            // from extraction
   behaviors: string[]             // from extraction
@@ -92,9 +84,6 @@ const ANXIETY_PRESENTATIONS: { value: string; label: string }[] = [
   { value: 'ocd', label: 'OCD / ERP' },
   { value: 'other', label: 'Other' },
 ]
-
-const presentationLabel = (value: string): string =>
-  ANXIETY_PRESENTATIONS.find(p => p.value === value)?.label ?? value
 
 function isSimilar(a: string, b: string): boolean {
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -193,291 +182,6 @@ const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: str
       'Bring parent in for the last 5-10 minutes to review the plan together',
     ],
   },
-}
-
-function SessionPrepCard({ sessionType, patientId }: { sessionType: SessionPrepType; patientId: string }) {
-  const storageKey = `float_prep_dismissed_${patientId}_${sessionType}`
-  const [dismissed, setDismissed] = useState<boolean>(() => {
-    try { return localStorage.getItem(storageKey) === '1' } catch { return false }
-  })
-
-  const handleDismiss = () => {
-    try { localStorage.setItem(storageKey, '1') } catch {}
-    setDismissed(true)
-  }
-  const handleShow = () => {
-    try { localStorage.removeItem(storageKey) } catch {}
-    setDismissed(false)
-  }
-
-  if (dismissed) {
-    return (
-      <div style={{ marginBottom: '12px' }}>
-        <button
-          onClick={handleShow}
-          style={{
-            fontSize: '12px',
-            color: '#135450',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-            fontWeight: 500,
-          }}
-        >
-          Show step guide →
-        </button>
-      </div>
-    )
-  }
-
-  const { header, steps } = SESSION_PREP_CONTENT[sessionType]
-
-  return (
-    <div
-      style={{
-        position: 'relative',
-        background: '#eafaf6',
-        borderLeft: '3px solid #135450',
-        borderRadius: '8px',
-        padding: '14px 36px 14px 16px',
-        marginBottom: '12px',
-      }}
-    >
-      <button
-        onClick={handleDismiss}
-        aria-label="Dismiss step guide"
-        style={{
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          width: '24px',
-          height: '24px',
-          background: 'transparent',
-          border: 'none',
-          color: '#94a3b8',
-          fontSize: '18px',
-          lineHeight: 1,
-          cursor: 'pointer',
-          padding: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '4px',
-        }}
-      >
-        ×
-      </button>
-      <div
-        style={{
-          fontSize: '11px',
-          fontWeight: 700,
-          color: '#135450',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: '10px',
-        }}
-      >
-        {header}
-      </div>
-      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {steps.map((s) => (
-          <li
-            key={s}
-            style={{
-              fontSize: '13px',
-              color: '#475569',
-              display: 'flex',
-              gap: '8px',
-              lineHeight: 1.5,
-            }}
-          >
-            <span style={{ color: '#135450', flexShrink: 0 }}>·</span>
-            <span>{s}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-const STEP_GUIDE_CONTENT: Record<number, { header: string; steps: string[] }> = {
-  1: {
-    header: 'STEP GUIDE — PARENT MONITORING FORM',
-    steps: [
-      'Send the monitoring form to the parent before the first session',
-      "Ask the parent to observe and record their child's anxiety over 1-2 weeks",
-      "They should note: the situation, what the child did, how they responded, and their estimate of the child's distress (1-10)",
-      'Aim for at least 3-5 observations before the first session',
-      'The more specific the observations, the more useful the data',
-    ],
-  },
-  2: {
-    header: 'STEP GUIDE — ANALYZE MONITORING DATA',
-    steps: [
-      'Run the AI analysis once you have at least 3 monitoring entries',
-      'Review the suggested trigger situations and behaviors carefully — they are suggestions, not clinical judgments',
-      "Edit, add, or remove anything that doesn't fit what you know about this patient",
-      'You can re-analyze if new monitoring entries are added',
-    ],
-  },
-  5: {
-    header: 'STEP GUIDE — BUILD TREATMENT PLAN',
-    steps: [
-      'Build the exposure ladder from the trigger list',
-      'For each situation, add the avoidance and safety behaviors with DT ratings',
-      'Order behaviors from lowest DT to highest — the teen starts with the easiest',
-      'Make sure each behavior is specific enough that the teen knows exactly what to do',
-      'The treatment plan is built with the child — their DT ratings and input matter',
-      'Add the anxiety nickname before activating',
-    ],
-  },
-  6: {
-    header: 'STEP GUIDE — ACTIVATE TREATMENT PLAN',
-    steps: [
-      'Review the plan is complete — situations, behaviors, DT ratings, and nickname all set',
-      'Invite the teen to Float before or at activation so they can see their plan',
-      'Once activated, the teen can see their exposure ladder and start planning experiments',
-      'You can still edit the plan after activation — add situations, adjust DT ratings, update behaviors',
-    ],
-  },
-  7: {
-    header: 'STEP GUIDE — BEGIN EXPOSURES',
-    steps: [
-      'The teen plans and commits to experiments from their Float app',
-      'Each experiment tests a specific feared outcome — the prediction is set before, the result recorded after',
-      "Check the experiments tab regularly between sessions — don't wait until the session to review progress",
-      'If experiments are overdue or confidence is low, reach out via messages before the next session',
-      "BIP and DT should trend downward over time — if they don't, revisit the treatment plan",
-    ],
-  },
-  8: {
-    header: 'STEP GUIDE — WEEKLY SESSION',
-    steps: [
-      'Check in on nickname use — how often has the child noticed their anxiety?',
-      'Review all experiments since last session — BIP and DT trends, what they learned',
-      "Note any overdue or incomplete experiments and explore what got in the way",
-      'Set new experiments for the coming week — confirm High confidence before finalizing',
-      'Write and publish the action plan before the child leaves the session',
-      'Bring the parent in for the last 5-10 minutes to review the plan together',
-    ],
-  },
-  9: {
-    header: 'STEP GUIDE — PARENT ACCOMMODATION CHECK-INS',
-    steps: [
-      'Review accommodation reduction progress at the end of each weekly session',
-      'Ask the parent to describe situations where they were tempted to accommodate — what did they do?',
-      'Reinforce non-accommodating responses — specific praise for specific actions',
-      "If accommodation is increasing, explore what's driving it — anxiety in the parent, not just the child",
-      'Accommodation reduction and exposure work must progress together for treatment to be effective',
-    ],
-  },
-}
-
-function StepGuideCard({ stepNumber, patientId }: { stepNumber: number; patientId: string }) {
-  const storageKey = `float_guide_dismissed_${patientId}_step${stepNumber}`
-  const [dismissed, setDismissed] = useState<boolean>(() => {
-    try { return localStorage.getItem(storageKey) === '1' } catch { return false }
-  })
-
-  const handleDismiss = () => {
-    try { localStorage.setItem(storageKey, '1') } catch {}
-    setDismissed(true)
-  }
-  const handleShow = () => {
-    try { localStorage.removeItem(storageKey) } catch {}
-    setDismissed(false)
-  }
-
-  if (dismissed) {
-    return (
-      <div style={{ marginBottom: '12px' }}>
-        <button
-          onClick={handleShow}
-          style={{
-            fontSize: '12px',
-            color: '#135450',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-            fontWeight: 500,
-          }}
-        >
-          Show step guide →
-        </button>
-      </div>
-    )
-  }
-
-  const { header, steps } = STEP_GUIDE_CONTENT[stepNumber]
-
-  return (
-    <div
-      style={{
-        position: 'relative',
-        background: '#eafaf6',
-        borderLeft: '3px solid #135450',
-        borderRadius: '8px',
-        padding: '14px 36px 14px 16px',
-        marginBottom: '12px',
-      }}
-    >
-      <button
-        onClick={handleDismiss}
-        aria-label="Dismiss step guide"
-        style={{
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          width: '24px',
-          height: '24px',
-          background: 'transparent',
-          border: 'none',
-          color: '#94a3b8',
-          fontSize: '18px',
-          lineHeight: 1,
-          cursor: 'pointer',
-          padding: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '4px',
-        }}
-      >
-        ×
-      </button>
-      <div
-        style={{
-          fontSize: '11px',
-          fontWeight: 700,
-          color: '#135450',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: '10px',
-        }}
-      >
-        {header}
-      </div>
-      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {steps.map((s) => (
-          <li
-            key={s}
-            style={{
-              fontSize: '13px',
-              color: '#475569',
-              display: 'flex',
-              gap: '8px',
-              lineHeight: 1.5,
-            }}
-          >
-            <span style={{ color: '#135450', flexShrink: 0 }}>·</span>
-            <span>{s}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
 }
 
 function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onClose: () => void }) {
@@ -1717,96 +1421,6 @@ function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCo
   )
 }
 
-// Two-column wrapper for Steps 3 & 4: main content + collapsible sticky checklist panel.
-function StepWithChecklist({ patientId, stepNumber, title, groups, children, onNavigate }: {
-  patientId: string
-  stepNumber: number
-  title: string
-  groups: ChecklistGroup[]
-  children: ReactNode
-  onNavigate: (action: ChecklistNav['action']) => void
-}) {
-  const storageKey = `float_checklist_collapsed_${patientId}_step${stepNumber}`
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem(storageKey) === 'true' } catch { return false }
-  })
-  const toggleCollapse = () => {
-    setCollapsed(prev => {
-      const next = !prev
-      try { localStorage.setItem(storageKey, String(next)) } catch { /* ignore */ }
-      return next
-    })
-  }
-
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isNarrow, setIsNarrow] = useState(false)
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el || typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(entries => {
-      for (const entry of entries) setIsNarrow(entry.contentRect.width < 900)
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  const sideBySide = !isNarrow
-
-  // First unchecked item across the step's checklist — surfaced in the "Next" banner.
-  const { data: checked } = useQuery({
-    queryKey: ['checklist', patientId],
-    queryFn: () => getChecklist(patientId),
-    enabled: !!patientId,
-  })
-  const checkedItems = checked ?? {}
-  const firstUnchecked = groups.flatMap(g => g.items).find(i => !checkedItems[i.key])
-
-  const handleBannerClick = () => {
-    if (collapsed) {
-      setCollapsed(false)
-      try { localStorage.setItem(storageKey, 'false') } catch { /* ignore */ }
-    }
-  }
-
-  return (
-    <div>
-      {firstUnchecked ? (
-        <div onClick={handleBannerClick}
-          style={{ background: '#eafaf6', borderLeft: '3px solid #135450', borderRadius: '8px', padding: '8px 14px', marginBottom: '16px', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Next →</span>
-          <span style={{ fontSize: '13px', color: '#1e293b' }}>{firstUnchecked.text}</span>
-        </div>
-      ) : (
-        <div onClick={handleBannerClick}
-          style={{ background: '#f0fdf4', borderLeft: '3px solid #16a34a', borderRadius: '8px', padding: '8px 14px', marginBottom: '16px', cursor: 'pointer' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#16a34a' }}>✓ All checklist items complete</span>
-        </div>
-      )}
-      <div ref={containerRef} style={{ display: 'flex', flexDirection: sideBySide ? 'row' : 'column', gap: '20px', alignItems: 'stretch' }}>
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {children}
-        </div>
-        <div style={{
-          width: sideBySide ? (collapsed ? '44px' : '300px') : '100%',
-          flexShrink: 0,
-          position: sideBySide ? 'sticky' : 'static',
-          top: sideBySide ? '16px' : undefined,
-          alignSelf: 'flex-start',
-        }}>
-          <ConsultationChecklist
-            patientId={patientId}
-            title={title}
-            groups={groups}
-            collapsed={sideBySide && collapsed}
-            onToggleCollapse={toggleCollapse}
-            onNavigate={onNavigate}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Main Page ──
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -1906,19 +1520,11 @@ export default function PatientPage() {
   const [noteContent, setNoteContent] = useState('')
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
 
-  // Treatment Journey navigation
-  const [activeStep, setActiveStep] = useState<number>(0)
-  const [activePersistentTab, setActivePersistentTab] = useState<PersistentTabId | null>(null)
-  const [, setSetupExpanded] = useState(true)
-  // The case's current phase (the top spine). Drives which working surfaces the
-  // rail shows; the underlying activeStep / activePersistentTab still route content.
-  const [activePhase, setActivePhase] = useState<'assess' | 'consult' | 'treat'>('assess')
-  const selectPhase = (p: 'assess' | 'consult' | 'treat') => {
-    setActivePhase(p)
-    if (p === 'assess') { setActiveStep(0); setActivePersistentTab(null) }
-    else if (p === 'consult') { setActiveStep(2); setActivePersistentTab(null) }
-    else { setActivePersistentTab('experiments') }
-  }
+  // Flat-tab navigation (replaces the old phase spine + rail + setup-step machine)
+  const [activeTab, setActiveTab] = useState<'monitoring' | 'sessions' | 'plan' | 'experiments' | 'chat'>('monitoring')
+  const [sessionsFilter, setSessionsFilter] = useState<'all' | 'consults' | 'weekly' | 'action_plans'>('all')
+  const [processPanelOpen, setProcessPanelOpen] = useState(false)
+  const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
   const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
   const stepInitializedRef = useRef(false)
 
@@ -2423,6 +2029,11 @@ export default function PatientPage() {
   const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
   const draftPlanCount = (actionPlans ?? []).filter(ap => !ap.visible_to_patient).length
 
+  // Process-panel checklist progress (setup groups: parent + patient consults)
+  const processChecklistKeys = [...PARENT_CHECKLIST, ...PATIENT_CHECKLIST].flatMap(g => g.items.map(i => i.key))
+  const processChecklistDone = processChecklistKeys.filter(k => !!(checklistItems ?? {})[k]).length
+  const processChecklistTotal = processChecklistKeys.length
+
   // Experiments tab — overdue helper + tab badge count
   const todayISO = new Date().toISOString().split('T')[0]
   const isOverdue = (e: { scheduled_date: string | null; status: string }) =>
@@ -2514,7 +2125,7 @@ export default function PatientPage() {
   const { data: progress } = useQuery({
     queryKey: ['progress', patientId],
     queryFn: () => getPatientProgress(patientId!),
-    enabled: !!patientId && activePersistentTab === 'experiments'
+    enabled: !!patientId && activeTab === 'experiments'
   })
   const progressChartData = progress?.recent_experiments
     .filter(e => e.completed_date)
@@ -2563,13 +2174,13 @@ export default function PatientPage() {
     notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
-  const currentActiveStep = firstIncompleteStep === -1 ? STEP_LABELS.length - 1 : firstIncompleteStep
 
-  // Treatment mode unlocks once the assessment steps are done. Building the
-  // plan happens on the Case file, not in setup.
+  // Treatment mode unlocks once the assessment steps are done.
   const treatmentUnlocked = firstIncompleteStep === -1
 
-  // Default selected step to current active step once core data has loaded
+  // Default landing tab once core data has loaded: the Plan once assessment is
+  // done, otherwise Monitoring (the start of the workflow). Tabs are freely
+  // navigable — this only sets the initial view.
   const coreLoaded = !!patient
     && monitoringForm !== undefined
     && sessionNotes !== undefined
@@ -2580,17 +2191,9 @@ export default function PatientPage() {
   useEffect(() => {
     if (stepInitializedRef.current) return
     if (!coreLoaded) return
-    if (treatmentUnlocked) {
-      // Plan already built — land in the treatment workspace on the Case file.
-      setActivePersistentTab('plan')
-      setSetupExpanded(false)
-      setActivePhase('treat')
-    } else {
-      setActiveStep(currentActiveStep)
-      setActivePhase(currentActiveStep <= 1 ? 'assess' : 'consult')
-    }
+    setActiveTab(treatmentUnlocked ? 'plan' : 'monitoring')
     stepInitializedRef.current = true
-  }, [coreLoaded, currentActiveStep, treatmentUnlocked])
+  }, [coreLoaded, treatmentUnlocked])
 
   // Accept/reject an AI-suggested anxiety presentation by toggling it on the patient profile
   const acceptPresentationMut = useMutation({
@@ -2603,12 +2206,6 @@ export default function PatientPage() {
     acceptPresentationMut.mutate(next)
   }
 
-
-  const renderPrep = (t: SessionPrepType) =>
-    patientId ? <SessionPrepCard key={`${patientId}-${t}`} sessionType={t} patientId={patientId} /> : null
-
-  const renderGuide = (stepNumber: number) =>
-    patientId ? <StepGuideCard key={`${patientId}-guide-${stepNumber}`} stepNumber={stepNumber} patientId={patientId} /> : null
 
   const renderNotesSection = (filterType: string, addLabel: string) => {
     const filtered = notesList.filter(n => n.session_type === filterType)
@@ -2831,10 +2428,11 @@ export default function PatientPage() {
   // Checklist item navigation links (Step 4 patient checklist)
   const handleChecklistNav = (action: 'treatmentPlan' | 'scrollDA') => {
     if (action === 'treatmentPlan') {
-      setActivePersistentTab(null)
-      setActiveStep(4)
+      setActiveTab('plan')
     } else if (action === 'scrollDA') {
-      document.getElementById('patient-da-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setActiveTab('sessions')
+      setSessionsFilter('consults')
+      setTimeout(() => document.getElementById('patient-da-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     }
   }
 
@@ -3274,7 +2872,7 @@ export default function PatientPage() {
                 <li key={`overdue-${e.id}`} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
                   <span style={{ fontWeight: 700 }}>·</span>
                   <span><strong>Overdue:</strong> &ldquo;{e.behavior_name || e.plan_description || 'Experiment'}&rdquo; was scheduled {dateStr} — not yet recorded</span>
-                  <button onClick={() => { setActivePhase('treat'); setActivePersistentTab('messages'); setShowMsgForm(true) }} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
+                  <button onClick={() => { setActiveTab('chat'); setShowMsgForm(true) }} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
                 </li>
               )
             })}
@@ -3682,7 +3280,7 @@ export default function PatientPage() {
           <div style={{ marginBottom: '12px' }}>
             <a
               href="#messages-section"
-              onClick={(e) => { e.preventDefault(); setActivePhase('treat'); setActivePersistentTab('messages'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+              onClick={(e) => { e.preventDefault(); setActiveTab('chat'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
               style={{ fontSize: '13px', color: '#0d3d3a', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
             >
               ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
@@ -3762,42 +3360,65 @@ export default function PatientPage() {
       <PractitionerNav activePage="patients" subHeader={{
         backTo: '/dashboard', backLabel: 'Back to patients',
         title: patient?.name ?? 'Loading...',
-        subtitle: [
-          patient?.age ? `Age ${patient.age}` : null,
-          patient?.gender || null,
-          patient?.phone_number || null,
-          activitySummary
-        ].filter(Boolean).join(' \u00B7 '),
-        subtitleExtra: (patient?.anxiety_presentations && patient.anxiety_presentations.length > 0) ? (
-          <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-            {patient.anxiety_presentations.map(p => (
-              <span key={p} style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', background: '#eafaf6', color: '#0d3d3a' }}>
-                {presentationLabel(p)}
-              </span>
-            ))}
-          </span>
-        ) : undefined,
-        rightAction: patient && !editingProfile ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button
-              onClick={() => setShowTeenAccess(v => !v)}
-              className="text-xs font-medium bg-transparent border-none cursor-pointer hover:underline"
-              style={{ color: patient.teen_invited_at ? 'var(--float-primary)' : '#64748b' }}
-            >
-              Teen access{patient.teen_invited_at ? '' : ' · not set up'}
-            </button>
-            <button
-              onClick={openProfileEdit}
-              className="text-xs font-medium bg-transparent border-none cursor-pointer hover:underline"
-              style={{ color: 'var(--float-primary)' }}
-            >
-              Edit profile
-            </button>
-          </div>
-        ) : undefined
       }} />
 
       <div style={{ padding: '24px' }}>
+
+        {/* Patient header — identity + access + actions */}
+        {patient && !editingProfile && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '9999px', background: '#eafaf6', color: 'var(--float-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px', fontWeight: 700, flexShrink: 0 }}>
+                {(patient.name || '?').split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>{patient.name}</span>
+                  {activitySummary && (
+                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 10px', borderRadius: '999px', background: plan?.status === 'active' ? '#eafaf6' : '#f1f5f9', color: plan?.status === 'active' ? '#0d3d3a' : '#64748b' }}>{activitySummary}</span>
+                  )}
+                </div>
+                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
+                  {[
+                    patient.age ? `Age ${patient.age}` : null,
+                    patient.gender || null,
+                    plan?.nickname ? `Nickname: “${plan.nickname}”` : null,
+                  ].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {/* Teen access card */}
+              <button onClick={() => setShowTeenAccess(v => !v)} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '9999px', background: patient.teen_invited_at ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
+                <span>
+                  <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155' }}>Teen access</span>
+                  <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8' }}>{patient.teen_invited_at ? 'Set up' : 'Not set up'}</span>
+                </span>
+              </button>
+              {/* Parent access card */}
+              <button onClick={() => setShowTeenAccess(v => !v)} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '9999px', background: patient.parent_email ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
+                <span>
+                  <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155' }}>Parent access</span>
+                  <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8' }}>{patient.parent_email ? 'Invite / manage' : 'Not set up'}</span>
+                </span>
+              </button>
+              <button onClick={openProfileEdit} className="text-xs font-medium bg-transparent cursor-pointer" style={{ color: 'var(--float-primary)', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}>
+                Edit profile
+              </button>
+              <button
+                onClick={() => setProcessPanelOpen(v => !v)}
+                className="text-xs font-medium cursor-pointer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: processPanelOpen ? '#fff' : 'var(--float-primary)', background: processPanelOpen ? 'var(--float-primary)' : 'transparent', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '8px 14px' }}
+              >
+                Process
+                <span style={{ fontSize: '10px', fontWeight: 700, color: processPanelOpen ? 'var(--float-primary)' : '#fff', background: processPanelOpen ? '#fff' : 'var(--float-primary)', borderRadius: '9999px', padding: '0 6px', lineHeight: '15px' }}>{processChecklistDone}/{processChecklistTotal}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Teen access — persistent, opened from the patient header, shown in any mode */}
         {showTeenAccess && patient && (
@@ -3806,7 +3427,7 @@ export default function PatientPage() {
             teenEmail={patient.teen_email}
             teenInvitedAt={patient.teen_invited_at}
             fallbackEmail={patient.email}
-            onViewMessages={() => { setShowTeenAccess(false); setActivePhase('treat'); setActivePersistentTab('messages') }}
+            onViewMessages={() => { setShowTeenAccess(false); setActiveTab('chat') }}
             onClose={() => setShowTeenAccess(false)}
           />
         )}
@@ -3912,145 +3533,148 @@ export default function PatientPage() {
           </div>
         )}
 
-        {/* Phase spine — where the case is (Assess -> Consult -> Treat) */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+        {/* Flat tab bar (replaces the phase spine + rail) */}
+        <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid #e2e8f0', marginBottom: '20px' }}>
           {([
-            { id: 'assess', label: 'Assess', n: '1' },
-            { id: 'consult', label: 'Consult', n: '2' },
-            { id: 'treat', label: 'Treat & track', n: '3' },
-          ] as const).map(p => {
-            const cur = activePhase === p.id
+            { id: 'monitoring', label: 'Monitoring' },
+            { id: 'sessions', label: 'Sessions' },
+            { id: 'plan', label: 'Plan' },
+            { id: 'experiments', label: 'Experiments' },
+            { id: 'chat', label: 'Chat', b: unreadMessageCount },
+          ] as const).map(t => {
+            const cur = activeTab === t.id
+            const b = 'b' in t ? t.b : 0
             return (
               <button
-                key={p.id}
-                onClick={() => selectPhase(p.id)}
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
                 className="bg-transparent border-none cursor-pointer"
-                style={{ flex: '0 0 auto', minWidth: 160, textAlign: 'left', padding: '10px 20px', borderBottom: cur ? '2px solid #135450' : '2px solid transparent', marginBottom: '-1px' }}
+                style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', fontSize: '14px', fontWeight: cur ? 700 : 500, color: cur ? '#1e293b' : '#94a3b8', borderBottom: cur ? '3px solid #135450' : '3px solid transparent', marginBottom: '-1px' }}
               >
-                <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.06em', color: cur ? '#7cc3b6' : '#cbd5e1' }}>PHASE {p.n}</div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: cur ? '#135450' : '#94a3b8' }}>{p.label}</div>
+                {t.label}
+                {b ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{b}</span> : null}
               </button>
             )
           })}
         </div>
 
-        {/* Body: rail + content */}
-        <div style={{ display: 'flex', minHeight: 'calc(100vh - 180px)' }}>
-          {/* Rail — persistent components (Case file, Sessions) + current phase surfaces */}
-          <div style={{ width: '220px', flexShrink: 0, background: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '16px 0' }}>
-            {(() => {
-              const railCap: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 16px', margin: '0 0 8px' }
-              const itemStyle = (on: boolean): React.CSSProperties => ({ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', textAlign: 'left', background: on ? '#eafaf6' : 'transparent', border: 'none', borderLeft: on ? '3px solid #135450' : '3px solid transparent', cursor: 'pointer', padding: '8px 16px', fontSize: '13px', fontWeight: on ? 600 : 500, color: on ? '#1e293b' : '#475569' })
-              const subStyle = (on: boolean): React.CSSProperties => ({ ...itemStyle(on), paddingLeft: '28px', fontSize: '12.5px' })
-              const badge = (n: number) => n ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{n}</span> : null
-              const phaseSurfaces: { id: string; label: string; on: boolean; go: () => void; b?: number }[] =
-                activePhase === 'assess' ? [
-                  { id: 'm', label: 'Monitoring', on: activePersistentTab === null && activeStep === 0, go: () => { setActiveStep(0); setActivePersistentTab(null) } },
-                  { id: 'a', label: 'Analyze', on: activePersistentTab === null && activeStep === 1, go: () => { setActiveStep(1); setActivePersistentTab(null) } },
-                ] : activePhase === 'consult' ? [
-                  { id: 'pc', label: 'Parent consult', on: activePersistentTab === null && activeStep === 2, go: () => { setActiveStep(2); setActivePersistentTab(null) } },
-                  { id: 'ptc', label: 'Patient consult', on: activePersistentTab === null && activeStep === 3, go: () => { setActiveStep(3); setActivePersistentTab(null) } },
-                ] : [
-                  { id: 'e', label: 'Experiments', on: activePersistentTab === 'experiments', go: () => setActivePersistentTab('experiments') },
-                  { id: 'msg', label: 'Messages', on: activePersistentTab === 'messages', go: () => setActivePersistentTab('messages'), b: unreadMessageCount },
-                ]
-              const phaseLabel = activePhase === 'assess' ? 'Assess' : activePhase === 'consult' ? 'Consult' : 'Treat & track'
-              return (
+        {/* Body: content + optional process panel */}
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {activeTab === 'monitoring' && (
+              showInlineReport ? (
+                <InlineMonitoringReport patientId={patientId!} onClose={() => setShowInlineReport(false)} />
+              ) : (
                 <>
-                  <div style={railCap}>Always available</div>
-                  <button onClick={() => setActivePersistentTab('plan')} style={itemStyle(activePersistentTab === 'plan')}>Case file</button>
-                  <div style={{ ...railCap, marginTop: '10px' }}>Sessions</div>
-                  <button onClick={() => setActivePersistentTab('weekly')} style={subStyle(activePersistentTab === 'weekly')}>Weekly review</button>
-                  <button onClick={() => setActivePersistentTab('plans')} style={subStyle(activePersistentTab === 'plans')}>Action plans {badge(draftPlanCount)}</button>
-
-                  <div style={{ ...railCap, marginTop: '18px' }}>{phaseLabel}</div>
-                  {phaseSurfaces.map(s => (
-                    <button key={s.id} onClick={s.go} style={itemStyle(s.on)}>{s.label} {s.b ? badge(s.b) : null}</button>
-                  ))}
-
-                  <div style={{ marginTop: '22px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-                    <button onClick={() => setActivePersistentTab('close')} style={itemStyle(activePersistentTab === 'close')}>Close case</button>
-                  </div>
+                  {monitoringCard}
+                  {monitoringExtractContent}
+                  {preliminaryReportContent}
                 </>
               )
-            })()}
-          </div>
-
-          {/* Right content */}
-          <div style={{ flex: 1, minWidth: 0, paddingLeft: '24px' }}>
-            {/* Treatment-mode surfaces — always viewable; empty states carry the "nothing yet" message */}
-            {activePersistentTab !== null && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {activePersistentTab === 'plan' && (
-                    <>
-                      {renderGuide(5)}
-                      {treatmentPlanBuilder}
-                      {plan && (
-                        <div style={{ marginTop: '8px' }}>
-                          <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {activePersistentTab === 'experiments' && (
-                    <>
-                      {renderPrep('session_3')}
-                      {experimentsContent}
-                    </>
-                  )}
-                  {activePersistentTab === 'weekly' && (
-                    <>
-                      {preSessionBriefContent}
-                      {renderPrep('weekly')}
-                      {renderNotesSection('weekly_session', '+ Add weekly note')}
-                      {accommodationContent}
-                    </>
-                  )}
-                  {activePersistentTab === 'plans' && actionPlansContent}
-                  {activePersistentTab === 'messages' && messagesContent}
-                  {activePersistentTab === 'close' && (
-                    <div style={cardStyle}>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Consolidation / Relapse Prevention</div>
-                      <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>Placeholder — the eventual off-ramp from treatment (consolidation, relapse-prevention planning, discharge summary).</p>
-                    </div>
-                  )}
-                </div>
             )}
 
-            {/* Setup-mode step content */}
-            {activePersistentTab === null && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {activeStep === 0 && (
-                  showInlineReport ? (
-                    <InlineMonitoringReport patientId={patientId!} onClose={() => setShowInlineReport(false)} />
-                  ) : (
-                    <>
-                      {renderGuide(1)}
-                      {monitoringCard}
-                    </>
-                  )
-                )}
-                {activeStep === 1 && (
+            {activeTab === 'sessions' && (
+              <>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {([
+                    { id: 'all', label: 'All' },
+                    { id: 'consults', label: 'Consults' },
+                    { id: 'weekly', label: 'Weekly' },
+                    { id: 'action_plans', label: 'Action plans', b: draftPlanCount },
+                  ] as const).map(f => {
+                    const on = sessionsFilter === f.id
+                    const b = 'b' in f ? f.b : 0
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setSessionsFilter(f.id)}
+                        className="cursor-pointer"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 600, border: on ? '1px solid var(--float-primary)' : '1px solid #cbd5e1', background: on ? 'var(--float-primary)' : '#fff', color: on ? '#fff' : '#475569' }}
+                      >
+                        {f.label}
+                        {b ? <span style={{ fontSize: '10px', fontWeight: 700, color: on ? 'var(--float-primary)' : '#fff', background: on ? '#fff' : '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{b}</span> : null}
+                      </button>
+                    )
+                  })}
+                </div>
+                {(sessionsFilter === 'all' || sessionsFilter === 'consults') && patientId && (
                   <>
-                    {renderGuide(2)}
-                    {monitoringExtractContent}
-                    {preliminaryReportContent}
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Parent consult</div>
+                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from the parent consult..." />
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px' }}>Patient consult</div>
+                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from the patient consult..." />
+                    <div id="patient-da-section">{patientDAContent}</div>
                   </>
                 )}
-                {activeStep === 2 && patientId && (
-                  <StepWithChecklist patientId={patientId} stepNumber={3} title="PARENT CONSULTATION CHECKLIST" groups={PARENT_CHECKLIST} onNavigate={handleChecklistNav}>
-                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from this session..." />
-                  </StepWithChecklist>
+                {(sessionsFilter === 'all' || sessionsFilter === 'weekly') && (
+                  <>
+                    {preSessionBriefContent}
+                    {renderNotesSection('weekly_session', '+ Add weekly note')}
+                    {accommodationContent}
+                  </>
                 )}
-                {activeStep === 3 && patientId && (
-                  <StepWithChecklist patientId={patientId} stepNumber={4} title="PATIENT CONSULTATION CHECKLIST" groups={PATIENT_CHECKLIST} onNavigate={handleChecklistNav}>
-                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from this session..." />
-                    <div id="patient-da-section">{patientDAContent}</div>
-                  </StepWithChecklist>
-                )}
-              </div>
+                {sessionsFilter === 'action_plans' && actionPlansContent}
+              </>
             )}
+
+            {activeTab === 'plan' && (
+              <>
+                {treatmentPlanBuilder}
+                {plan && (
+                  <div style={{ marginTop: '8px' }}>
+                    <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab === 'experiments' && experimentsContent}
+
+            {activeTab === 'chat' && messagesContent}
           </div>
+
+          {/* Process panel — checklist + tips, available on every tab */}
+          {processPanelOpen && (
+            <div style={{ width: '340px', flexShrink: 0, position: 'sticky', top: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {([{ id: 'checklist', label: 'Checklist' }, { id: 'tips', label: 'Tips' }] as const).map(pt => {
+                    const on = processTab === pt.id
+                    return (
+                      <button
+                        key={pt.id}
+                        onClick={() => setProcessTab(pt.id)}
+                        className="bg-transparent border-none cursor-pointer"
+                        style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: on ? 'var(--float-primary)' : '#94a3b8', background: on ? '#eafaf6' : 'transparent' }}
+                      >{pt.label}</button>
+                    )
+                  })}
+                </div>
+                <button onClick={() => setProcessPanelOpen(false)} aria-label="Close process panel" className="bg-transparent border-none cursor-pointer" style={{ fontSize: '18px', color: '#94a3b8', lineHeight: 1 }}>×</button>
+              </div>
+
+              {processTab === 'checklist' && patientId && (
+                <>
+                  <ConsultationChecklist patientId={patientId} title="Parent consultation" groups={PARENT_CHECKLIST} collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
+                  <ConsultationChecklist patientId={patientId} title="Patient consultation" groups={PATIENT_CHECKLIST} collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
+                </>
+              )}
+
+              {processTab === 'tips' && (
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Session tips</div>
+                  {(Object.keys(SESSION_PREP_CONTENT) as SessionPrepType[]).map(k => (
+                    <div key={k} style={{ marginBottom: '14px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>{SESSION_PREP_CONTENT[k].header}</div>
+                      <ul style={{ margin: 0, paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {SESSION_PREP_CONTENT[k].steps.map((s, i) => <li key={i} style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{s}</li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

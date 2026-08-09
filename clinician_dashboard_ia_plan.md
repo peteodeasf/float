@@ -1,6 +1,12 @@
 # Clinician Dashboard — IA Refactor + Cleanups
 
-Status: **planned, not started.** Target structure locked (see `~/Downloads/dashboard-ia.png`, v3).
+> **⚠️ SUPERSEDED (2026-08-09).** This v3 direction (phase spine + persistent "Case file") was
+> built but judged too complex/workflow-enforcing. The active direction — flat tabs, no phases, no
+> case-file framing, process-level checklist — lives in
+> [`docs/plans/clinician_portal_redesign_brief.md`](docs/plans/clinician_portal_redesign_brief.md).
+> Kept for history and for the still-valid feature map / Sessions data-model notes.
+
+Status: ~~planned, not started~~ **built, now being replaced.** Target structure locked (see `~/Downloads/dashboard-ia.png`, v3).
 Scope: reorganize the clinician patient workspace (`apps/web/src/pages/practitioner/PatientPage.tsx`)
 around a clearer information architecture, plus two small cleanups that can ship immediately.
 
