@@ -1,11 +1,15 @@
 import { apiClient } from './client'
 
+export type SessionParticipant = 'parent' | 'patient'
+
 export interface SessionNote {
   id: string
   patient_id: string
   organization_id: string
   practitioner_id: string
-  session_type: string
+  session_type: string | null
+  participant: SessionParticipant | null
+  tags: string[]
   session_date: string
   content: string
   created_at: string
@@ -13,13 +17,15 @@ export interface SessionNote {
 }
 
 export interface CreateSessionNote {
-  session_type: string
+  participant: SessionParticipant | null
+  tags: string[]
   session_date?: string
   content: string
 }
 
 export interface UpdateSessionNote {
-  session_type?: string
+  participant?: SessionParticipant | null
+  tags?: string[]
   session_date?: string
   content?: string
 }

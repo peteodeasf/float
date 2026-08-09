@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
@@ -16,7 +16,7 @@ import {
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport, type ExtractedBehaviorType, type ExtractedSituation, type ExtractedBehavior } from '../../api/monitoring'
-import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote } from '../../api/session_notes'
+import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PARENT_CHECKLIST, PATIENT_CHECKLIST, type ChecklistGroup, type ChecklistNav } from '../../lib/checklists'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
@@ -273,93 +273,6 @@ function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onC
           </tbody>
         </table>
       </div>
-    </div>
-  )
-}
-
-function AutoSaveSessionNote({ patientId, sessionType, placeholder }: { patientId: string; sessionType: string; placeholder: string }) {
-  const queryClient = useQueryClient()
-  const { data: sessionNotes } = useQuery({
-    queryKey: ['session-notes', patientId],
-    queryFn: () => getSessionNotes(patientId),
-    enabled: !!patientId,
-  })
-
-  const [content, setContent] = useState('')
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
-
-  const noteIdRef = useRef<string | null>(null)
-  const initializedRef = useRef(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const taRef = useRef<HTMLTextAreaElement | null>(null)
-
-  // Hydrate once from the existing note for this session type
-  useEffect(() => {
-    if (initializedRef.current) return
-    if (sessionNotes === undefined) return
-    const existing = sessionNotes.find(n => n.session_type === sessionType) ?? null
-    if (existing) {
-      noteIdRef.current = existing.id
-      setContent(existing.content)
-    }
-    initializedRef.current = true
-  }, [sessionNotes, sessionType])
-
-  // Auto-expand the textarea as content grows
-  useEffect(() => {
-    const el = taRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = Math.max(160, el.scrollHeight) + 'px'
-  }, [content])
-
-  // Clean up timers on unmount
-  useEffect(() => () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-  }, [])
-
-  const save = async (value: string) => {
-    if (!noteIdRef.current && !value.trim()) { setStatus('idle'); return }
-    setStatus('saving')
-    try {
-      if (noteIdRef.current) {
-        await updateSessionNote(noteIdRef.current, { content: value })
-      } else {
-        const created = await createSessionNote(patientId, { session_type: sessionType, content: value })
-        noteIdRef.current = created.id
-      }
-      queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] })
-      setStatus('saved')
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setStatus('idle'), 2000)
-    } catch {
-      setStatus('idle')
-    }
-  }
-
-  const handleChange = (value: string) => {
-    setContent(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => save(value), 1500)
-  }
-
-  return (
-    <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <span className="text-sm font-semibold text-slate-700">Session notes</span>
-        {status === 'saving' && <span className="text-xs text-slate-400">Saving...</span>}
-        {status === 'saved' && <span className="text-xs text-slate-400">Saved</span>}
-      </div>
-      <textarea
-        ref={taRef}
-        value={content}
-        onChange={e => handleChange(e.target.value)}
-        placeholder={placeholder}
-        className="text-sm border border-slate-200 rounded"
-        style={{ width: '100%', minHeight: '160px', padding: '10px', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit', overflow: 'hidden' }}
-      />
     </div>
   )
 }
@@ -1254,6 +1167,9 @@ function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCo
   )
 }
 
+// Preset session-note tags (multi-select); custom tags can also be typed.
+const SESSION_NOTE_TAGS = ['Initial', 'Consult', 'Weekly', 'Review']
+
 // ── Main Page ──
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -1346,14 +1262,17 @@ export default function PatientPage() {
   // Session notes
   const [showNoteForm, setShowNoteForm] = useState(false)
   const [editingNote, setEditingNote] = useState<SessionNote | null>(null)
-  const [noteType, setNoteType] = useState('weekly_session')
+  const [noteParticipant, setNoteParticipant] = useState<SessionParticipant | ''>('')
+  const [noteTags, setNoteTags] = useState<string[]>([])
+  const [noteTagInput, setNoteTagInput] = useState('')
   const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
   const [noteContent, setNoteContent] = useState('')
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
 
   // Flat-tab navigation (replaces the old phase spine + rail + setup-step machine)
   const [activeTab, setActiveTab] = useState<'monitoring' | 'sessions' | 'plan' | 'experiments' | 'chat'>('monitoring')
-  const [sessionsFilter, setSessionsFilter] = useState<'all' | 'consults' | 'weekly' | 'action_plans'>('all')
+  const [sessionsFilter, setSessionsFilter] = useState<'all' | 'parent' | 'patient' | 'action_plans'>('all')
+  const [sessionTagFilter, setSessionTagFilter] = useState<string | null>(null)
   const [processPanelOpen, setProcessPanelOpen] = useState(false)
   const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
   const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
@@ -1804,9 +1723,9 @@ export default function PatientPage() {
   }
 
   // Session notes
-  const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteType('weekly_session'); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
-  const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { session_type: noteType, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
-  const updateNoteMut = useMutation({ mutationFn: () => updateSessionNote(editingNote!.id, { session_type: noteType, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
+  const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteParticipant(''); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
+  const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { participant: noteParticipant || null, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
+  const updateNoteMut = useMutation({ mutationFn: () => updateSessionNote(editingNote!.id, { participant: noteParticipant || null, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
   const deleteNoteMut = useMutation({ mutationFn: (id: string) => deleteSessionNote(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }) })
 
   // Action plans
@@ -1851,8 +1770,6 @@ export default function PatientPage() {
     }
   }, [showPlanEditor, editingPlan, editor])
 
-  const sessionTypeLabels: Record<string, string> = { consultation_1: 'Consult 1', consultation_2: 'Consult 2', consultation_3: 'Consult 3', weekly_session: 'Session', other: 'Other' }
-  const badgeColors: Record<string, string> = { consultation_1: 'bg-purple-100 text-purple-700', consultation_2: 'bg-purple-100 text-purple-700', consultation_3: 'bg-purple-100 text-purple-700', weekly_session: 'bg-teal-100 text-teal-700', other: 'bg-slate-100 text-slate-600' }
 
   const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
@@ -2001,8 +1918,8 @@ export default function PatientPage() {
   const stepComplete: boolean[] = [
     !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
-    notesList.some(n => n.session_type === 'consultation_1') || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
-    notesList.some(n => n.session_type === 'consultation_2') && hasPatientDA,
+    notesList.some(n => n.participant === 'parent') || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
+    notesList.some(n => n.participant === 'patient') && hasPatientDA,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
 
@@ -2027,87 +1944,105 @@ export default function PatientPage() {
   }, [coreLoaded, treatmentUnlocked])
 
 
-  const renderNotesSection = (filterType: string, addLabel: string) => {
-    const filtered = notesList.filter(n => n.session_type === filterType)
-    return (
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="text-sm font-semibold text-slate-700">Session notes</span>
-            {filtered.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{filtered.length}</span>}
-          </div>
-          {!showNoteForm && <button onClick={() => { setEditingNote(null); setNoteType(filterType); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent(''); setShowNoteForm(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">{addLabel}</button>}
-        </div>
-        {showNoteForm && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                Session type
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[
-                  { key: 'consultation_1', label: 'Session 1' },
-                  { key: 'consultation_2', label: 'Session 2' },
-                  { key: 'weekly_session', label: 'Weekly' },
-                  { key: 'other', label: 'Other' },
-                ].map(opt => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setNoteType(opt.key)}
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      padding: '10px 18px',
-                      borderRadius: '999px',
-                      cursor: 'pointer',
-                      background: noteType === opt.key ? 'var(--float-primary)' : '#fff',
-                      color: noteType === opt.key ? '#fff' : '#475569',
-                      border: noteType === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                    }}
-                  >{opt.label}</button>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Date:</label>
-              <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
-            </div>
-            <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
-              <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-            </div>
-          </div>
-        )}
-        {filtered.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {filtered.map(n => (
-              <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className={`px-1 py-0.5 rounded font-medium ${badgeColors[n.session_type] || 'bg-slate-100 text-slate-600'}`}>{sessionTypeLabels[n.session_type] || n.session_type}</span>
-                    <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button onClick={() => { setEditingNote(n); setNoteType(n.session_type); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
-                    <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
-                  </div>
-                </div>
-                <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
-                  {expandedNoteId === n.id ? n.content : n.content.length > 100 ? n.content.slice(0, 100) + '...' : n.content}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : !showNoteForm && (
-          <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-            No notes yet for this session type. Add one to capture clinical observations.
-          </p>
-        )}
-      </div>
-    )
+  // ── Unified session-notes list (participant + flexible tags) ──
+  const noteFieldCap: CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }
+  const notePill = (on: boolean): CSSProperties => ({ fontSize: '13px', fontWeight: 600, padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', background: on ? 'var(--float-primary)' : '#fff', color: on ? '#fff' : '#475569', border: on ? '1px solid var(--float-primary)' : '1px solid #cbd5e1' })
+  const noteTagFilterChip = (on: boolean): CSSProperties => ({ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '999px', cursor: 'pointer', background: on ? '#eafaf6' : '#fff', color: on ? '#0d3d3a' : '#64748b', border: on ? '1px solid var(--float-primary)' : '1px solid #e2e8f0' })
+
+  const noteParticipantFilter: SessionParticipant | null =
+    sessionsFilter === 'parent' ? 'parent' : sessionsFilter === 'patient' ? 'patient' : null
+  const allNoteTags = Array.from(new Set(notesList.flatMap(n => n.tags ?? []))).sort()
+  const filteredNotes = notesList.filter(n =>
+    (noteParticipantFilter === null || n.participant === noteParticipantFilter) &&
+    (sessionTagFilter === null || (n.tags ?? []).includes(sessionTagFilter))
+  )
+  const toggleNoteTag = (t: string) => setNoteTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+  const addCustomNoteTag = () => {
+    const t = noteTagInput.trim()
+    if (t && !noteTags.includes(t)) setNoteTags(prev => [...prev, t])
+    setNoteTagInput('')
   }
+  const startNewNote = () => { setEditingNote(null); setNoteParticipant(noteParticipantFilter ?? ''); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent(''); setShowNoteForm(true) }
+
+  const sessionNotesList = (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="text-sm font-semibold text-slate-700">Session notes</span>
+          {filteredNotes.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{filteredNotes.length}</span>}
+        </div>
+        {!showNoteForm && <button onClick={startNewNote} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
+      </div>
+
+      {allNoteTags.length > 0 && !showNoteForm && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <button onClick={() => setSessionTagFilter(null)} style={noteTagFilterChip(sessionTagFilter === null)}>All tags</button>
+          {allNoteTags.map(t => <button key={t} onClick={() => setSessionTagFilter(sessionTagFilter === t ? null : t)} style={noteTagFilterChip(sessionTagFilter === t)}>{t}</button>)}
+        </div>
+      )}
+
+      {showNoteForm && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+          <div>
+            <div style={noteFieldCap}>Who was the session with?</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(['parent', 'patient'] as SessionParticipant[]).map(p => (
+                <button key={p} type="button" onClick={() => setNoteParticipant(p)} style={notePill(noteParticipant === p)}>{p === 'parent' ? 'Parent' : 'Patient'}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={noteFieldCap}>Tags</div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              {Array.from(new Set([...SESSION_NOTE_TAGS, ...noteTags])).map(t => (
+                <button key={t} type="button" onClick={() => toggleNoteTag(t)} style={notePill(noteTags.includes(t))}>{t}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input value={noteTagInput} onChange={e => setNoteTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomNoteTag() } }} placeholder="Add custom tag…" className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px', boxSizing: 'border-box' }} />
+              <button type="button" onClick={addCustomNoteTag} disabled={!noteTagInput.trim()} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-40">+ Add</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Date:</label>
+            <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
+          </div>
+          <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim() || !noteParticipant} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
+            <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {filteredNotes.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {filteredNotes.map(n => (
+            <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span className="px-1 py-0.5 rounded font-medium" style={{ background: n.participant === 'parent' ? '#eafaf6' : '#ede9fe', color: n.participant === 'parent' ? '#0d3d3a' : '#5b21b6' }}>{n.participant === 'parent' ? 'Parent' : n.participant === 'patient' ? 'Patient' : '—'}</span>
+                  {(n.tags ?? []).map(t => <span key={t} className="px-1 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#475569', fontWeight: 500 }}>{t}</span>)}
+                  <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                  <button onClick={() => { setEditingNote(n); setNoteParticipant(n.participant ?? ''); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
+                  <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
+                </div>
+              </div>
+              <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
+                {expandedNoteId === n.id ? n.content : n.content.length > 100 ? n.content.slice(0, 100) + '...' : n.content}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : !showNoteForm && (
+        <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+          No session notes{noteParticipantFilter || sessionTagFilter ? ' match this filter' : ' yet'}. Add one to capture clinical observations.
+        </p>
+      )}
+    </div>
+  )
 
   const situationsExist = (triggers?.length ?? 0) > 0
   const hasNewMonitoring = plan?.has_new_monitoring_entries ?? true
@@ -2249,8 +2184,7 @@ export default function PatientPage() {
     if (action === 'treatmentPlan') {
       setActiveTab('plan')
     } else if (action === 'scrollDA') {
-      setActiveTab('sessions')
-      setSessionsFilter('consults')
+      setActiveTab('plan')
       setTimeout(() => document.getElementById('patient-da-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     }
   }
@@ -3397,8 +3331,8 @@ export default function PatientPage() {
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {([
                     { id: 'all', label: 'All' },
-                    { id: 'consults', label: 'Consults' },
-                    { id: 'weekly', label: 'Weekly' },
+                    { id: 'parent', label: 'Parent' },
+                    { id: 'patient', label: 'Patient' },
                     { id: 'action_plans', label: 'Action plans', b: draftPlanCount },
                   ] as const).map(f => {
                     const on = sessionsFilter === f.id
@@ -3406,7 +3340,7 @@ export default function PatientPage() {
                     return (
                       <button
                         key={f.id}
-                        onClick={() => setSessionsFilter(f.id)}
+                        onClick={() => { setSessionsFilter(f.id); if (f.id === 'action_plans') resetNoteForm() }}
                         className="cursor-pointer"
                         style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 600, border: on ? '1px solid var(--float-primary)' : '1px solid #cbd5e1', background: on ? 'var(--float-primary)' : '#fff', color: on ? '#fff' : '#475569' }}
                       >
@@ -3416,23 +3350,15 @@ export default function PatientPage() {
                     )
                   })}
                 </div>
-                {(sessionsFilter === 'all' || sessionsFilter === 'consults') && patientId && (
-                  <>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Parent consult</div>
-                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_1" placeholder="Capture your observations from the parent consult..." />
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px' }}>Patient consult</div>
-                    <AutoSaveSessionNote patientId={patientId} sessionType="consultation_2" placeholder="Capture your observations from the patient consult..." />
-                    <div id="patient-da-section">{patientDAContent}</div>
-                  </>
-                )}
-                {(sessionsFilter === 'all' || sessionsFilter === 'weekly') && (
+                {sessionsFilter === 'action_plans' ? (
+                  actionPlansContent
+                ) : (
                   <>
                     {preSessionBriefContent}
-                    {renderNotesSection('weekly_session', '+ Add weekly note')}
+                    {sessionNotesList}
                     {accommodationContent}
                   </>
                 )}
-                {sessionsFilter === 'action_plans' && actionPlansContent}
               </>
             )}
 
@@ -3444,6 +3370,7 @@ export default function PatientPage() {
                     <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
                   </div>
                 )}
+                <div id="patient-da-section">{patientDAContent}</div>
               </>
             )}
 

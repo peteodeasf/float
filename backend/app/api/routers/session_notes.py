@@ -17,13 +17,18 @@ from app.api.routers.patients import get_practitioner_context
 # --- Schemas ---
 
 class SessionNoteCreate(BaseModel):
-    session_type: str
+    # `session_type` is legacy/optional now; new notes use participant + tags.
+    session_type: Optional[str] = None
+    participant: Optional[str] = None  # 'parent' | 'patient'
+    tags: list[str] = []
     session_date: Optional[date] = None
     content: str
 
 
 class SessionNoteUpdate(BaseModel):
     session_type: Optional[str] = None
+    participant: Optional[str] = None
+    tags: Optional[list[str]] = None
     session_date: Optional[date] = None
     content: Optional[str] = None
 
@@ -33,7 +38,9 @@ class SessionNoteResponse(BaseModel):
     patient_id: uuid.UUID
     organization_id: uuid.UUID
     practitioner_id: uuid.UUID
-    session_type: str
+    session_type: Optional[str] = None
+    participant: Optional[str] = None
+    tags: list[str] = []
     session_date: date
     content: str
     created_at: datetime
@@ -86,6 +93,8 @@ async def create_session_note(
         organization_id=practitioner.organization_id,
         practitioner_id=practitioner.id,
         session_type=data.session_type,
+        participant=data.participant,
+        tags=data.tags or [],
         session_date=data.session_date or date.today(),
         content=data.content
     )
@@ -121,6 +130,10 @@ async def update_session_note(
 
     if data.session_type is not None:
         note.session_type = data.session_type
+    if data.participant is not None:
+        note.participant = data.participant
+    if data.tags is not None:
+        note.tags = data.tags
     if data.session_date is not None:
         note.session_date = data.session_date
     if data.content is not None:
