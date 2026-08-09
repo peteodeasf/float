@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
 import {
@@ -892,173 +892,6 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 }
 
 // ── Case Conceptualization (living draft) ──
-// ── Session Downward Arrow (used in Session 1 / Session 2 steps) ──
-function SessionDownwardArrow({ trigger, facilitatedBy, onApproved, showSituation, childName }: {
-  trigger: TriggerSituation
-  facilitatedBy: 'parent' | 'practitioner'
-  onApproved: (fearedOutcome: string) => void
-  showSituation: boolean
-  childName?: string
-}) {
-  const qc = useQueryClient()
-  const [firstAnswer, setFirstAnswer] = useState('')
-  const [nextAnswer, setNextAnswer] = useState('')
-
-  const { data: arrow } = useQuery({
-    queryKey: ['downward-arrow', trigger.id],
-    queryFn: () => getSituationDownwardArrow(trigger.id),
-    enabled: !!trigger.id
-  })
-
-  const createMut = useMutation({
-    mutationFn: () => createSituationDownwardArrow(trigger.id, firstAnswer, facilitatedBy),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); qc.invalidateQueries({ queryKey: ['da-statuses'] }); setFirstAnswer('') }
-  })
-
-  const addStepMut = useMutation({
-    mutationFn: (newSteps: ArrowStep[]) => updateDownwardArrow(arrow!.id, { arrow_steps: newSteps }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); setNextAnswer('') }
-  })
-
-  const setFearedOutcomeMut = useMutation({
-    mutationFn: (fo: string) => updateDownwardArrow(arrow!.id, { feared_outcome: fo }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] }); qc.invalidateQueries({ queryKey: ['da-statuses'] }); setNextAnswer('') }
-  })
-
-  const approveMut = useMutation({
-    mutationFn: () => updateDownwardArrow(arrow!.id, { is_approved: true }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['downward-arrow', trigger.id] })
-      qc.invalidateQueries({ queryKey: ['da-statuses'] })
-      if (arrow?.feared_outcome) onApproved(arrow.feared_outcome)
-    }
-  })
-
-  const isParent = facilitatedBy === 'parent'
-  const openingQuestion = isParent
-    ? `What does ${childName?.trim() || 'your child'} worry will happen when they feel anxious?`
-    : 'What will happen in this situation?'
-  const steps: ArrowStep[] = arrow?.arrow_steps ?? []
-  const lastAnswer = steps.length > 0 ? steps[steps.length - 1].response : ''
-  const nextQuestion = lastAnswer ? `What will happen if... ${lastAnswer}?` : openingQuestion
-  const hasFearedOutcome = !!arrow?.feared_outcome
-  const isApproved = !!arrow?.feared_outcome_approved
-
-  const handleAddStep = () => {
-    if (!nextAnswer.trim()) return
-    const newSteps = [...steps, { question: nextQuestion, response: nextAnswer.trim() }]
-    addStepMut.mutate(newSteps)
-  }
-
-  const handleMarkFearedOutcome = () => {
-    const fo = nextAnswer.trim() || lastAnswer
-    if (!fo) return
-    setFearedOutcomeMut.mutate(fo)
-  }
-
-  return (
-    <div>
-      {/* Header */}
-      {showSituation && (
-        <div style={{ marginBottom: '12px' }}>
-          <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Situation: {trigger.name}</p>
-        </div>
-      )}
-
-      {/* No DA yet */}
-      {!arrow && (
-        <div>
-          {!isParent && (
-            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', marginBottom: '12px' }}>
-              The Downward Arrow helps identify the child's core feared outcome for this situation.
-            </p>
-          )}
-          <p style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
-            Start with: "{openingQuestion}"
-          </p>
-          <textarea value={firstAnswer} onChange={e => setFirstAnswer(e.target.value)} rows={2}
-            placeholder={isParent ? "The parent's response..." : "The child's answer..."}
-            className="text-sm border border-slate-200 rounded"
-            style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', marginBottom: '8px' }} />
-          <button onClick={() => createMut.mutate()} disabled={!firstAnswer.trim() || createMut.isPending}
-            className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
-            style={{ padding: '7px 14px' }}>
-            {createMut.isPending ? 'Starting...' : 'Start \u2192'}
-          </button>
-        </div>
-      )}
-
-      {/* DA exists — show chain */}
-      {arrow && (
-        <div>
-          {/* Show all existing steps */}
-          {steps.map((step, i) => (
-            <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
-              <span style={{ fontSize: '18px', color: 'var(--float-primary)', lineHeight: '1.2', flexShrink: 0 }}>↓</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#334155', margin: '0 0 4px' }}>{step.question}</p>
-                <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>&ldquo;{step.response}&rdquo;</p>
-              </div>
-            </div>
-          ))}
-
-          {/* If no feared outcome yet — show next question input */}
-          {!hasFearedOutcome && (
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '18px', color: 'var(--float-primary)', lineHeight: '1.2', flexShrink: 0 }}>↓</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#334155', margin: '0 0 4px' }}>{nextQuestion}</p>
-                <textarea value={nextAnswer} onChange={e => setNextAnswer(e.target.value)} rows={2}
-                  placeholder={isParent ? "The parent's response..." : "The child's answer..."}
-                  className="text-sm border border-slate-200 rounded"
-                  style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', marginBottom: '8px' }} />
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <button onClick={handleAddStep} disabled={!nextAnswer.trim() || addStepMut.isPending}
-                    className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
-                    style={{ padding: '6px 12px' }}>
-                    Next ↓
-                  </button>
-                  <button onClick={handleMarkFearedOutcome} disabled={(steps.length === 0 && !nextAnswer.trim()) || setFearedOutcomeMut.isPending}
-                    className="text-xs font-medium border cursor-pointer disabled:opacity-40 bg-white"
-                    style={{ padding: '6px 12px', borderRadius: '6px', borderColor: 'var(--float-primary)', color: 'var(--float-primary)' }}>
-                    This is the feared outcome
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Feared outcome + approval */}
-          {hasFearedOutcome && (
-            <div style={{ marginTop: '8px', padding: '12px 14px', background: '#eafaf6', borderLeft: '3px solid var(--float-primary)', borderRadius: '6px' }}>
-              <p style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--float-primary)', margin: '0 0 6px' }}>
-                Feared outcome
-              </p>
-              <p style={{ fontSize: '14px', fontStyle: 'italic', color: '#0d3d3a', margin: '0 0 10px' }}>
-                &ldquo;{arrow.feared_outcome}&rdquo;
-              </p>
-              {isApproved ? (
-                <p style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', margin: '0 0 8px' }}>
-                  &#10003; Added to case conceptualization.
-                </p>
-              ) : (
-                <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}
-                  className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
-                  style={{ padding: '6px 12px', marginBottom: '8px' }}>
-                  {approveMut.isPending ? 'Approving...' : 'Approve this feared outcome'}
-                </button>
-              )}
-              <p style={{ fontSize: '11px', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
-                This feared outcome will be used as the prediction in experiments for this situation.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Patient Downward Arrows (Step 4) — post-session entry: list + entry form ──
 function PatientDownwardArrows({ patientId, planId, triggers, onFearedOutcome }: {
   patientId: string
@@ -1424,7 +1257,6 @@ function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCo
 // ── Main Page ──
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [selectedTriggerId, setSelectedTriggerId] = useState<string | null>(null)
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
@@ -1444,7 +1276,6 @@ export default function PatientPage() {
   const [smsSentTo, setSmsSentTo] = useState<string | null>(null)
   const [showEntries, setShowEntries] = useState(false)
   const [msgContent, setMsgContent] = useState('')
-  const [showMsgForm, setShowMsgForm] = useState(false)
   const [msgThread, setMsgThread] = useState<'teen' | 'parent'>('teen')
 
   // Inline monitoring report (Step 1)
@@ -1940,7 +1771,7 @@ export default function PatientPage() {
     mutationFn: () => msgThread === 'parent'
       ? sendParentMessage(patientId!, msgContent, 'general')
       : sendMessage(patientId!, patient!.user_id, msgContent, 'general'),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [msgThread === 'parent' ? 'parent-messages' : 'messages', patientId] }); setMsgContent(''); setShowMsgForm(false) }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [msgThread === 'parent' ? 'parent-messages' : 'messages', patientId] }); setMsgContent('') }
   })
 
   const updatePatientMut = useMutation({
@@ -2195,17 +2026,6 @@ export default function PatientPage() {
     stepInitializedRef.current = true
   }, [coreLoaded, treatmentUnlocked])
 
-  // Accept/reject an AI-suggested anxiety presentation by toggling it on the patient profile
-  const acceptPresentationMut = useMutation({
-    mutationFn: (presentations: string[]) => updatePatient(patientId!, { anxiety_presentations: presentations.length > 0 ? presentations : null }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patient', patientId] }),
-  })
-  const toggleSuggestedPresentation = (value: string) => {
-    const current = patient?.anxiety_presentations ?? []
-    const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value]
-    acceptPresentationMut.mutate(next)
-  }
-
 
   const renderNotesSection = (filterType: string, addLabel: string) => {
     const filtered = notesList.filter(n => n.session_type === filterType)
@@ -2291,7 +2111,6 @@ export default function PatientPage() {
 
   const situationsExist = (triggers?.length ?? 0) > 0
   const hasNewMonitoring = plan?.has_new_monitoring_entries ?? true
-  const noNewToAnalyze = situationsExist && !hasNewMonitoring
 
   const monitoringExtractContent = (
     <div style={cardStyle}>
@@ -2872,7 +2691,7 @@ export default function PatientPage() {
                 <li key={`overdue-${e.id}`} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
                   <span style={{ fontWeight: 700 }}>·</span>
                   <span><strong>Overdue:</strong> &ldquo;{e.behavior_name || e.plan_description || 'Experiment'}&rdquo; was scheduled {dateStr} — not yet recorded</span>
-                  <button onClick={() => { setActiveTab('chat'); setShowMsgForm(true) }} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
+                  <button onClick={() => setActiveTab('chat')} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
                 </li>
               )
             })}

@@ -1,11 +1,10 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getMonitoringReport } from '../../api/monitoring'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 
 export default function MonitoringReportPage() {
   const { patientId } = useParams<{ patientId: string }>()
-  const navigate = useNavigate()
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['monitoring-report', patientId],

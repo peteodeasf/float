@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -20,7 +20,6 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 
 export default function ProgressPage() {
   const { patientId } = useParams<{ patientId: string }>()
-  const navigate = useNavigate()
 
   const { data: patient } = useQuery({
     queryKey: ['patient', patientId],
