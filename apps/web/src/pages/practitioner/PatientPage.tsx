@@ -2779,91 +2779,85 @@ export default function PatientPage() {
     </div>
   )
 
+  const parentUnreadCount = (parentMessages ?? []).filter(m => !m.read_at).length
+  const lastMsgPreview = (arr?: typeof messages) => { const a = arr ?? []; return a.length ? a[a.length - 1].content : '' }
+  const chatThreads = [
+    { id: 'teen' as const, name: patient?.name || 'Patient', role: 'Teen · private thread', preview: lastMsgPreview(messages), unread: unreadMessageCount },
+    { id: 'parent' as const, name: patient?.parent_name || 'Parent', role: 'Parent · private thread', preview: lastMsgPreview(parentMessages), unread: parentUnreadCount },
+  ]
+  const chatRecipientName = msgThread === 'teen' ? (patient?.name || 'Patient') : (patient?.parent_name || 'Parent')
+
   const messagesContent = (
-    <div id="messages-section" style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Messages</span>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {(['teen', 'parent'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setMsgThread(t)}
-              className="text-xs rounded cursor-pointer"
-              style={{ padding: '3px 10px', fontWeight: 600, border: '1px solid ' + (msgThread === t ? '#135450' : '#e2e8f0'), background: msgThread === t ? '#eafaf6' : '#fff', color: msgThread === t ? '#135450' : '#64748b' }}
-            >
-              {t === 'teen' ? 'Child' : 'Parent'}
-            </button>
-          ))}
+    <div id="messages-section" style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', height: '620px', display: 'flex', overflow: 'hidden' }}>
+      {/* Thread list */}
+      <div style={{ width: '250px', flexShrink: 0, borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {chatThreads.map(t => {
+            const on = msgThread === t.id
+            return (
+              <button
+                key={t.id}
+                onClick={() => setMsgThread(t.id)}
+                className="cursor-pointer"
+                style={{ display: 'block', width: '100%', textAlign: 'left', background: on ? '#eafaf6' : 'transparent', border: 'none', borderLeft: on ? '3px solid #135450' : '3px solid transparent', padding: '12px 14px', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
+                  {t.unread > 0 && <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{t.unread}</span>}
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '1px' }}>{t.role}</div>
+                {t.preview && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.preview}</div>}
+              </button>
+            )
+          })}
+        </div>
+        <div style={{ borderTop: '1px solid #f1f5f9', padding: '10px 14px', fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>
+          Threads are role-scoped. Teen messages are never visible to the parent.
         </div>
       </div>
-      <div ref={messagesScrollRef} style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', marginBottom: '0' }}>
-        {activeMessages.length === 0 && (
-          <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-            {msgThread === 'parent'
-              ? 'Message the parent between sessions — coaching, encouragement, plan notes.'
-              : 'Send check-ins, encouragement, or plan adjustments to the patient between sessions.'}
-          </p>
-        )}
-        {activeMessages.map((m, i) => {
-          const prev = i > 0 ? activeMessages[i - 1] : null
-          const sameSender = prev && prev.sender_user_id === m.sender_user_id
-          const marginTop = i === 0 ? 0 : (sameSender ? 4 : 8)
-          const ts = formatMsgTime(m.created_at)
 
-          if (m.message_type === 'experiment_completed') {
+      {/* Conversation pane */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{chatRecipientName}</span>
+          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: '#135450', background: '#eafaf6', border: '1px solid #9af6e4', borderRadius: '999px', padding: '2px 8px' }}>{msgThread === 'teen' ? 'TEEN ONLY' : 'PARENT ONLY'}</span>
+        </div>
+
+        <div ref={messagesScrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+          {activeMessages.length === 0 && (
+            <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
+              {msgThread === 'parent'
+                ? 'Message the parent between sessions — coaching, encouragement, plan notes.'
+                : 'Send check-ins, encouragement, or plan adjustments to the patient between sessions.'}
+            </p>
+          )}
+          {activeMessages.map(m => {
+            const ts = formatMsgTime(m.created_at)
+            const isFamily = msgThread === 'parent'
+              ? m.sender_type === 'parent'
+              : !!(patient && m.sender_user_id === patient.user_id)
+            const special = m.message_type === 'experiment_completed'
+              ? { bg: '#f0fdf4', border: '#bbf7d0', label: '✓ Experiment completed', labelColor: '#15803d' }
+              : m.message_type === 'too_hard'
+                ? { bg: '#fffbeb', border: '#fde68a', label: '⚠ Too hard', labelColor: '#b45309' }
+                : null
+            const clinician = !isFamily && !special
             return (
-              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
-                <div style={{ maxWidth: '70%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', marginBottom: '4px' }}>✓ Experiment completed</div>
-                  <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+              <div key={m.id} style={{ display: 'flex', justifyContent: clinician ? 'flex-end' : 'flex-start' }}>
+                <div style={{ maxWidth: '62%', background: clinician ? '#135450' : special ? special.bg : '#f1f5f9', border: special ? `1px solid ${special.border}` : clinician ? 'none' : '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 13px' }}>
+                  {special && <div style={{ fontSize: '11px', fontWeight: 600, color: special.labelColor, marginBottom: '4px' }}>{special.label}</div>}
+                  <p style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.55, color: clinician ? '#fff' : '#334155', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                  {ts && <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px', textAlign: 'right', color: clinician ? '#fff' : '#64748b' }}>{ts}</div>}
                 </div>
-                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
               </div>
             )
-          }
-          if (m.message_type === 'too_hard') {
-            return (
-              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop }}>
-                <div style={{ maxWidth: '70%', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', marginBottom: '4px' }}>⚠ Too hard</div>
-                  <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
-                </div>
-                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
-              </div>
-            )
-          }
-          const isFamily = msgThread === 'parent'
-            ? m.sender_type === 'parent'
-            : !!(patient && m.sender_user_id === patient.user_id)
-          if (isFamily) {
-            return (
-              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop }}>
-                <div style={{ maxWidth: '70%', background: '#eafaf6', border: '1px solid #eafaf6', borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
-                  <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
-                </div>
-                {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
-              </div>
-            )
-          }
-          const showTypePill = m.message_type && m.message_type !== 'general'
-          return (
-            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop }}>
-              {showTypePill && (
-                <span style={{ display: 'inline-block', fontSize: '11px', color: '#135450', border: '1px solid #9af6e4', background: '#eafaf6', padding: '2px 8px', borderRadius: '999px', marginBottom: '4px', textTransform: 'capitalize' }}>
-                  {m.message_type.replace(/_/g, ' ')}
-                </span>
-              )}
-              <div style={{ maxWidth: '70%', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
-                <p className="text-xs text-slate-700" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
-              </div>
-              {ts && <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{ts}</span>}
-            </div>
-          )
-        })}
-      </div>
-      <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', padding: '12px 16px', margin: '12px -20px -20px' }}>
-        <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Reply..." className="text-xs border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px', background: '#fff' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
-        <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40" style={{ padding: '6px 12px' }}>Send</button>
+          })}
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', padding: '12px 16px', flexShrink: 0 }}>
+          <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Type a message…" className="border border-slate-200 rounded" style={{ flex: 1, fontSize: '13.5px', padding: '8px 10px', background: '#fff', boxSizing: 'border-box' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
+          <button onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} className="font-medium cursor-pointer disabled:opacity-40" style={{ background: '#135450', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 20px', fontSize: '13.5px' }}>Send</button>
+        </div>
       </div>
     </div>
   )
