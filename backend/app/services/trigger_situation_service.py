@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 
 from app.models.treatment import TriggerSituation, TreatmentPlan, AvoidanceBehavior
 from app.schemas.trigger_situation import TriggerSituationCreate, TriggerSituationUpdate
+from app.services.library_service import upsert_situation_library
 
 
 async def get_triggers_for_plan(
@@ -39,6 +40,9 @@ async def create_trigger(
     existing = result.scalars().all()
     next_order = len(existing)
 
+    # Reuse the picked library entry, or find-or-create one from the name.
+    library_id = data.situation_library_id or await upsert_situation_library(db, data.name)
+
     trigger = TriggerSituation(
         treatment_plan_id=plan_id,
         organization_id=organization_id,
@@ -46,6 +50,7 @@ async def create_trigger(
         description=data.description,
         distress_thermometer_rating=data.distress_thermometer_rating,
         distress_thermometer_max=data.distress_thermometer_max,
+        situation_library_id=library_id,
         display_order=next_order,
         is_active=data.is_active if data.is_active is not None else False,
         is_placeholder=data.is_placeholder if data.is_placeholder is not None else False

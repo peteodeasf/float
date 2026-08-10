@@ -9,6 +9,8 @@ class AvoidanceBehaviorCreate(BaseModel):
     description: Optional[str] = None
     behavior_type: str = "avoidance"
     distress_thermometer_when_refraining: Optional[float] = None
+    behavior_library_id: Optional[uuid.UUID] = None
+    parent_behavior_id: Optional[uuid.UUID] = None
 
 
 class AvoidanceBehaviorUpdate(BaseModel):
@@ -25,6 +27,8 @@ class AvoidanceBehaviorResponse(BaseModel):
     description: Optional[str] = None
     behavior_type: str
     distress_thermometer_when_refraining: Optional[float] = None
+    behavior_library_id: Optional[uuid.UUID] = None
+    parent_behavior_id: Optional[uuid.UUID] = None
     created_at: datetime
 
     class Config:

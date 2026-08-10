@@ -26,6 +26,7 @@ export interface TriggerSituation {
   description: string | null
   distress_thermometer_rating: number | null
   distress_thermometer_max: number | null
+  situation_library_id: string | null
   display_order: number
   is_active: boolean
   is_placeholder?: boolean
@@ -73,6 +74,8 @@ export interface AvoidanceBehavior {
   description: string | null
   behavior_type: string
   distress_thermometer_when_refraining: number | null
+  behavior_library_id: string | null
+  parent_behavior_id: string | null
   created_at: string
 }
 
@@ -154,6 +157,7 @@ export interface CreateTriggerData {
   description?: string
   distress_thermometer_rating?: number
   distress_thermometer_max?: number
+  situation_library_id?: string
   is_active?: boolean
   is_placeholder?: boolean
 }
@@ -163,6 +167,22 @@ export interface CreateBehaviorData {
   description?: string
   behavior_type: string
   distress_thermometer_when_refraining?: number
+  behavior_library_id?: string
+  parent_behavior_id?: string
+}
+
+// ── Library (select-from-list reuse) ──
+export interface SituationLibraryItem { id: string; name: string }
+export interface BehaviorLibraryItem { id: string; name: string; behavior_type: string | null }
+
+export const searchSituationLibrary = async (q: string): Promise<SituationLibraryItem[]> => {
+  const res = await apiClient.get('/situation-library', { params: q ? { q } : {} })
+  return res.data
+}
+
+export const searchBehaviorLibrary = async (q: string): Promise<BehaviorLibraryItem[]> => {
+  const res = await apiClient.get('/behavior-library', { params: q ? { q } : {} })
+  return res.data
 }
 
 export interface CreateRungData {

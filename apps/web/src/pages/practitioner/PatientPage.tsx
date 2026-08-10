@@ -13,6 +13,7 @@ import {
   getSituationDownwardArrow, createSituationDownwardArrow, updateDownwardArrow, listPatientDownwardArrows,
   getPatientExperiments, planExperimentForBehavior,
   getActiveTags, getSituationTags, setSituationTags,
+  searchSituationLibrary, searchBehaviorLibrary,
   type TriggerSituation, type AvoidanceBehavior, type DownwardArrow, type ArrowStep
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport, type ExtractedBehaviorType, type ExtractedSituation, type ExtractedBehavior } from '../../api/monitoring'
@@ -337,6 +338,12 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   const [name, setName] = useState('')
   const [type, setType] = useState('avoidance')
   const [dt, setDt] = useState('')
+  const [behaviorLibraryId, setBehaviorLibraryId] = useState<string | null>(null)
+  const [showBehSuggest, setShowBehSuggest] = useState(false)
+  // Sub-behaviors (#7): a smaller, lower-scored step under a parent behavior.
+  const [subParentId, setSubParentId] = useState<string | null>(null)
+  const [subName, setSubName] = useState('')
+  const [subDt, setSubDt] = useState('')
   const [reviewMsg, setReviewMsg] = useState<string | null>(null)
   const [editingBehaviorId, setEditingBehaviorId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -429,11 +436,30 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
     setTagsMut.mutate(next)
   }
 
+  // Behavior library suggestions (select-from-list; typing a new name still creates one)
+  const { data: behSuggestions } = useQuery({
+    queryKey: ['behavior-library', name.trim()],
+    queryFn: () => searchBehaviorLibrary(name.trim()),
+    enabled: showAdd && showBehSuggest && name.trim().length >= 2,
+  })
+
   const addMut = useMutation({
     // Avoidance is defined by the situation it avoids, so the name is optional —
     // default it to "Avoids {situation}" when left blank.
-    mutationFn: () => createBehavior(trigger.id, { name: name.trim() || `Avoids ${trigger.name}`, behavior_type: type, distress_thermometer_when_refraining: dt ? Number(dt) : undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setName(''); setDt(''); setShowAdd(false) }
+    mutationFn: () => createBehavior(trigger.id, { name: name.trim() || `Avoids ${trigger.name}`, behavior_type: type, distress_thermometer_when_refraining: dt ? Number(dt) : undefined, behavior_library_id: behaviorLibraryId ?? undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setName(''); setDt(''); setBehaviorLibraryId(null); setShowBehSuggest(false); setShowAdd(false) }
+  })
+
+  const resetSub = () => { setSubParentId(null); setSubName(''); setSubDt('') }
+  const subMut = useMutation({
+    mutationFn: (parent: AvoidanceBehavior) => createBehavior(trigger.id, {
+      name: subName.trim(),
+      behavior_type: parent.behavior_type,
+      distress_thermometer_when_refraining: subDt ? Number(subDt) : undefined,
+      parent_behavior_id: parent.id,
+      behavior_library_id: undefined,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); resetSub() },
   })
 
   const editMut = useMutation({
@@ -591,7 +617,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 
       {/* Behaviors — sorted by DT ascending */}
       <div className="space-y-1.5 mb-3">
-        {sortedBehaviors.map(b => (
+        {sortedBehaviors.filter(b => !b.parent_behavior_id).map(b => (
           <div key={b.id}>
             {editingBehaviorId === b.id ? (
               /* Edit mode */
@@ -754,6 +780,42 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                     )}
                   </div>
                 )}
+                {/* Sub-behaviors (#7) — smaller, lower-scored steps under this behavior */}
+                {sortedBehaviors.filter(c => c.parent_behavior_id === b.id).map(c => (
+                  <div key={c.id} className="flex items-center justify-between group" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '7px 12px', margin: '0 0 6px 20px' }}>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span style={{ color: '#94a3b8', fontSize: '12px' }}>&#8627;</span>
+                      <span className="text-[13px] text-slate-600 truncate">{c.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <DTBadge value={c.distress_thermometer_when_refraining} />
+                      <button onClick={() => { if (confirm('Delete this step?')) delMut.mutate(c.id) }} className="text-[10px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                    </div>
+                  </div>
+                ))}
+                {subParentId === b.id ? (
+                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px', margin: '0 0 6px 20px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Smaller step under “{b.name}”</div>
+                    <input value={subName} onChange={e => setSubName(e.target.value)} placeholder="More specific, easier version" className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '8px' }} autoFocus
+                      onKeyDown={e => e.key === 'Enter' && subName.trim() && subMut.mutate(b)} />
+                    <div style={{ marginBottom: '8px' }}>
+                      <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (lower than {b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : '—'})</label>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <button type="button" onClick={() => setSubDt(String(Math.max(1, (Number(subDt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
+                        <input value={subDt} onChange={e => setSubDt(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                        <button type="button" onClick={() => setSubDt(String(Math.min(10, (Number(subDt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <button onClick={() => subMut.mutate(b)} disabled={!subName.trim() || subMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add step</button>
+                      <button onClick={resetSub} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ margin: '0 0 8px 20px' }}>
+                    <button onClick={() => { resetSub(); setSubParentId(b.id) }} className="text-[11px] font-medium bg-transparent border-none cursor-pointer" style={{ color: '#94a3b8', padding: '2px 0' }}>+ Add a smaller step</button>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -763,11 +825,22 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
       {/* Add behavior inline */}
       {showAdd && (
         <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
-          <input value={name} onChange={e => setName(e.target.value)}
-            placeholder={type === 'avoidance' ? `Optional — defaults to “Avoids ${trigger.name}”` : 'Behavior name'}
-            className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" autoFocus
-            style={{ marginBottom: type === 'avoidance' ? '4px' : '8px' }}
-            onKeyDown={e => e.key === 'Enter' && (name.trim() || type === 'avoidance') && addMut.mutate()} />
+          <div style={{ position: 'relative', marginBottom: type === 'avoidance' ? '4px' : '8px' }}>
+            <input value={name} onChange={e => { setName(e.target.value); setBehaviorLibraryId(null); setShowBehSuggest(true) }}
+              placeholder={type === 'avoidance' ? `Optional — type to search, or leave blank for “Avoids ${trigger.name}”` : 'Behavior name — type to search or add new'}
+              className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" autoFocus
+              onKeyDown={e => e.key === 'Enter' && (name.trim() || type === 'avoidance') && addMut.mutate()} />
+            {showBehSuggest && (behSuggestions?.length ?? 0) > 0 && (
+              <div style={{ position: 'absolute', top: '34px', left: 0, right: 0, zIndex: 30, background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', maxHeight: '160px', overflowY: 'auto' }}>
+                {behSuggestions!.map(s => (
+                  <button key={s.id} type="button" onClick={() => { setName(s.name); if (s.behavior_type) setType(s.behavior_type); setBehaviorLibraryId(s.id); setShowBehSuggest(false) }}
+                    className="cursor-pointer" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f1f5f9', padding: '7px 10px', fontSize: '13px', color: '#334155' }}>
+                    {s.name}{s.behavior_type ? <span style={{ color: '#94a3b8', fontSize: '11px' }}> · {s.behavior_type}</span> : null}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {type === 'avoidance' && (
             <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px' }}>Leave blank to name it “Avoids {trigger.name}”.</p>
           )}
@@ -1185,6 +1258,8 @@ export default function PatientPage() {
   const [selectedTriggerId, setSelectedTriggerId] = useState<string | null>(null)
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
   const [newTriggerName, setNewTriggerName] = useState('')
+  const [newTriggerLibraryId, setNewTriggerLibraryId] = useState<string | null>(null)
+  const [showSitSuggest, setShowSitSuggest] = useState(false)
   const [newTriggerDT, setNewTriggerDT] = useState('')
   const [newTriggerDTMax, setNewTriggerDTMax] = useState('')
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
@@ -1429,9 +1504,15 @@ export default function PatientPage() {
     mutationFn: () => updatePlanNickname(patientId!, plan!.id, nicknameVal.trim()),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['plan', patientId] }); setEditingNickname(false) }
   })
+  // Situation library suggestions (select-from-list; typing a new name still creates one)
+  const { data: sitSuggestions } = useQuery({
+    queryKey: ['situation-library', newTriggerName.trim()],
+    queryFn: () => searchSituationLibrary(newTriggerName.trim()),
+    enabled: showTriggerAdd && showSitSuggest && newTriggerName.trim().length >= 2,
+  })
   const addTriggerMut = useMutation({
-    mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined, distress_thermometer_max: newTriggerDTMax ? Number(newTriggerDTMax) : undefined }),
-    onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerDT(''); setNewTriggerDTMax(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
+    mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined, distress_thermometer_max: newTriggerDTMax ? Number(newTriggerDTMax) : undefined, situation_library_id: newTriggerLibraryId ?? undefined }),
+    onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerLibraryId(null); setShowSitSuggest(false); setNewTriggerDT(''); setNewTriggerDTMax(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
   })
   const updateTriggerNameMut = useMutation({
     mutationFn: () => updateTrigger(plan!.id, editingTriggerId!, { name: editTriggerName.trim() }),
@@ -2468,15 +2549,27 @@ export default function PatientPage() {
             ))}
             {showTriggerAdd && (
               <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
-                <input
-                  value={newTriggerName}
-                  onChange={e => setNewTriggerName(e.target.value)}
-                  placeholder="Situation name"
-                  className="text-sm border border-slate-200 rounded"
-                  style={{ width: '100%', height: '36px', padding: '6px 10px', marginBottom: '10px', boxSizing: 'border-box' }}
-                  autoFocus
-                  onKeyDown={e => e.key === 'Enter' && newTriggerName.trim() && addTriggerMut.mutate()}
-                />
+                <div style={{ position: 'relative', marginBottom: '10px' }}>
+                  <input
+                    value={newTriggerName}
+                    onChange={e => { setNewTriggerName(e.target.value); setNewTriggerLibraryId(null); setShowSitSuggest(true) }}
+                    placeholder="Situation name — type to search or add new"
+                    className="text-sm border border-slate-200 rounded"
+                    style={{ width: '100%', height: '36px', padding: '6px 10px', boxSizing: 'border-box' }}
+                    autoFocus
+                    onKeyDown={e => e.key === 'Enter' && newTriggerName.trim() && addTriggerMut.mutate()}
+                  />
+                  {showSitSuggest && (sitSuggestions?.length ?? 0) > 0 && (
+                    <div style={{ position: 'absolute', top: '38px', left: 0, right: 0, zIndex: 30, background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', maxHeight: '180px', overflowY: 'auto' }}>
+                      {sitSuggestions!.map(s => (
+                        <button key={s.id} type="button" onClick={() => { setNewTriggerName(s.name); setNewTriggerLibraryId(s.id); setShowSitSuggest(false) }}
+                          className="cursor-pointer" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f1f5f9', padding: '8px 10px', fontSize: '13px', color: '#334155' }}>
+                          {s.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div style={{ marginBottom: '10px' }}>
                   <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (DT) — single value, or a range with an optional max:</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -2489,7 +2582,7 @@ export default function PatientPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                   <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '7px 14px' }}>Add situation</button>
-                  <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerDT(''); setNewTriggerDTMax('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                  <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerLibraryId(null); setShowSitSuggest(false); setNewTriggerDT(''); setNewTriggerDTMax('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                 </div>
               </div>
             )}
