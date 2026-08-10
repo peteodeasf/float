@@ -54,6 +54,11 @@ class PatientProfile(Base):
     teen_invited_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Parental consent to connect the child into the app. Gates the teen invite.
+    child_connect_consent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    consent_source: Mapped[str | None] = mapped_column(String, nullable=True)  # 'parent_form' | 'clinician'
     primary_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )

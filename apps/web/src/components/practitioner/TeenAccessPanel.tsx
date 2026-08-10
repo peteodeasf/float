@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { inviteTeen, inviteParent } from '../../api/patients'
+import { inviteTeen, inviteParent, setChildConnectConsent } from '../../api/patients'
 
 /**
  * Persistent teen-access manager for a patient.
@@ -16,6 +16,7 @@ export default function TeenAccessPanel({
   focus,
   teenEmail,
   teenInvitedAt,
+  consentAt,
   fallbackEmail,
   onViewMessages,
   onClose,
@@ -24,12 +25,14 @@ export default function TeenAccessPanel({
   focus: 'teen' | 'parent'
   teenEmail: string | null | undefined
   teenInvitedAt: string | null | undefined
+  consentAt: string | null | undefined
   fallbackEmail: string | null | undefined
   onViewMessages: () => void
   onClose: () => void
 }) {
   const qc = useQueryClient()
   const invited = !!teenInvitedAt
+  const consentGiven = !!consentAt
   const [email, setEmail] = useState(teenEmail || fallbackEmail || '')
   const [confirmation, setConfirmation] = useState<string | null>(null)
 
@@ -40,6 +43,13 @@ export default function TeenAccessPanel({
       qc.invalidateQueries({ queryKey: ['patient', patientId] })
       setTimeout(() => setConfirmation(null), 4000)
     },
+  })
+
+  // Parental consent to connect the child gates the teen invite; clinician can
+  // record it here when consent was obtained offline.
+  const consentMut = useMutation({
+    mutationFn: () => setChildConnectConsent(patientId, true),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['patient', patientId] }),
   })
 
   const emailChanged = invited && email.trim().toLowerCase() !== (teenEmail || '').toLowerCase()
@@ -105,6 +115,27 @@ export default function TeenAccessPanel({
         )}
       </div>
 
+      {/* Parent-consent gate — a teen can't be invited until consent is on record */}
+      {!consentGiven ? (
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px' }}>
+          <div style={{ fontSize: '13px', color: '#92400e', fontWeight: 600, marginBottom: '2px' }}>Awaiting parent consent</div>
+          <p style={{ fontSize: '12px', color: '#b45309', margin: '0 0 8px', lineHeight: 1.5 }}>
+            A parent must give permission to connect the child before the teen can be invited. It's captured on the parent monitoring form — or record it here if you obtained it offline.
+          </p>
+          <button
+            onClick={() => consentMut.mutate()}
+            disabled={consentMut.isPending}
+            style={{ fontSize: '12px', fontWeight: 600, color: '#fff', background: '#b45309', border: 'none', borderRadius: '6px', padding: '7px 12px', cursor: 'pointer', opacity: consentMut.isPending ? 0.6 : 1 }}
+          >
+            {consentMut.isPending ? 'Recording…' : 'Record consent (obtained offline)'}
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', marginBottom: '12px' }}>
+          <span>&#10003;</span> Parent consent on record.
+        </div>
+      )}
+
       {/* Editable email + send */}
       <label style={label}>Teen's email</label>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -113,9 +144,10 @@ export default function TeenAccessPanel({
           value={email}
           onChange={e => setEmail(e.target.value)}
           onKeyDown={e => {
-            if (e.key === 'Enter' && email.trim()) inviteMut.mutate(email.trim())
+            if (e.key === 'Enter' && email.trim() && consentGiven) inviteMut.mutate(email.trim())
           }}
           placeholder="teen@example.com"
+          disabled={!consentGiven}
           style={{
             flex: '1 1 220px',
             padding: '9px 12px',
@@ -124,11 +156,13 @@ export default function TeenAccessPanel({
             border: '1px solid #e2e8f0',
             borderRadius: '8px',
             boxSizing: 'border-box',
+            background: consentGiven ? '#fff' : '#f1f5f9',
           }}
         />
         <button
-          onClick={() => email.trim() && inviteMut.mutate(email.trim())}
-          disabled={!email.trim() || inviteMut.isPending}
+          onClick={() => email.trim() && consentGiven && inviteMut.mutate(email.trim())}
+          disabled={!email.trim() || inviteMut.isPending || !consentGiven}
+          title={!consentGiven ? 'Parent consent required first' : undefined}
           style={{
             flex: 'none',
             fontSize: '13px',
@@ -139,7 +173,7 @@ export default function TeenAccessPanel({
             borderRadius: '8px',
             padding: '9px 16px',
             cursor: 'pointer',
-            opacity: !email.trim() || inviteMut.isPending ? 0.5 : 1,
+            opacity: !email.trim() || inviteMut.isPending || !consentGiven ? 0.5 : 1,
           }}
         >
           {inviteMut.isPending ? 'Sending…' : sendLabel}

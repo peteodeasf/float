@@ -393,6 +393,14 @@ async def invite_teen(
         db, patient_id, practitioner.organization_id
     )
 
+    # Hard gate: the teen can only be invited once parental consent to connect
+    # the child is on record (parent monitoring form or clinician override).
+    if patient.child_connect_consent_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Parental consent to connect the child is required before inviting the teen.",
+        )
+
     email = data.email.lower().strip()
 
     # Check if a user already exists with this email
@@ -486,6 +494,34 @@ async def invite_teen(
         "email": email,
         "invited_at": patient.teen_invited_at.isoformat(),
     }
+
+
+class ChildConnectConsentRequest(BaseModel):
+    granted: bool = True
+
+
+@router.post("/{patient_id}/child-connect-consent", response_model=PatientResponse)
+async def set_child_connect_consent(
+    patient_id: uuid.UUID,
+    data: ChildConnectConsentRequest,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Clinician-recorded parental consent to connect the child (offline override).
+    Consent is also captured via the parent monitoring form."""
+    _, practitioner = context
+    patient = await get_patient_by_id(
+        db, patient_id, practitioner.organization_id
+    )
+    if data.granted:
+        patient.child_connect_consent_at = datetime.now(timezone.utc)
+        patient.consent_source = "clinician"
+    else:
+        patient.child_connect_consent_at = None
+        patient.consent_source = None
+    await db.commit()
+    await db.refresh(patient)
+    return patient
 
 
 @router.post("/{patient_id}/invite-parent")

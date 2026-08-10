@@ -41,6 +41,8 @@ export interface PatientDetail {
   parent_phone?: string | null
   teen_email?: string | null
   teen_invited_at?: string | null
+  child_connect_consent_at?: string | null
+  consent_source?: string | null
   primary_practitioner_id: string
   created_at: string
 }
@@ -56,6 +58,15 @@ export const inviteTeen = async (
   email: string
 ): Promise<InviteTeenResponse> => {
   const response = await apiClient.post(`/patients/${patientId}/invite-teen`, { email })
+  return response.data
+}
+
+// Clinician-recorded parental consent to connect the child (offline override).
+export const setChildConnectConsent = async (
+  patientId: string,
+  granted: boolean
+): Promise<PatientDetail> => {
+  const response = await apiClient.post(`/patients/${patientId}/child-connect-consent`, { granted })
   return response.data
 }
 

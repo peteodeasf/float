@@ -3120,7 +3120,7 @@ export default function PatientPage() {
                 <span style={{ width: '8px', height: '8px', borderRadius: '9999px', background: patient.teen_invited_at ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
                 <span>
                   <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155' }}>Teen access</span>
-                  <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8' }}>{patient.teen_invited_at ? 'Set up' : 'Not set up'}</span>
+                  <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8' }}>{patient.teen_invited_at ? 'Set up' : patient.child_connect_consent_at ? 'Ready to invite' : 'Awaiting consent'}</span>
                 </span>
               </button>
               {/* Parent access card */}
@@ -3153,6 +3153,7 @@ export default function PatientPage() {
             focus={accessFocus}
             teenEmail={patient.teen_email}
             teenInvitedAt={patient.teen_invited_at}
+            consentAt={patient.child_connect_consent_at}
             fallbackEmail={patient.email}
             onViewMessages={() => { setShowTeenAccess(false); setActiveTab('chat') }}
             onClose={() => setShowTeenAccess(false)}

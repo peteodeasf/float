@@ -544,3 +544,25 @@ async def submit_form(
     await db.commit()
 
     return {"status": "submitted"}
+
+
+class MonitorConsentRequest(BaseModel):
+    granted: bool = True
+
+
+@public_router.post("/monitor/{access_token}/consent")
+async def record_parent_consent(
+    access_token: str,
+    data: MonitorConsentRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Parent-given consent (from the monitoring form) to connect the child into
+    the app. Token-scoped to this form's patient; records it once."""
+    form = await get_form_by_token(access_token, db)
+    if data.granted:
+        patient = await db.get(PatientProfile, form.patient_id)
+        if patient is not None and patient.child_connect_consent_at is None:
+            patient.child_connect_consent_at = datetime.now(timezone.utc)
+            patient.consent_source = "parent_form"
+            await db.commit()
+    return {"status": "ok"}

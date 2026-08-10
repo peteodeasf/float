@@ -35,6 +35,8 @@ export default function MonitorLandingPage() {
   const [showResend, setShowResend] = useState(false)
   const [resendValue, setResendValue] = useState('')
   const [bookmarkDismissed, setBookmarkDismissed] = useState(false)
+  const [consentGiven, setConsentGiven] = useState(false)
+  const [consentSaving, setConsentSaving] = useState(false)
 
   // Entry form state
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null)
@@ -189,6 +191,26 @@ export default function MonitorLandingPage() {
               </div>
             )}
           </div>
+
+          {/* Consent to connect the child to the app (unblocks the clinician's teen invite) */}
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', textAlign: 'left', background: consentGiven ? '#f0fdf4' : '#f8fafc', border: '1px solid ' + (consentGiven ? '#bbf7d0' : '#e2e8f0'), borderRadius: '14px', padding: '14px 16px', marginBottom: '20px', cursor: consentGiven || consentSaving ? 'default' : 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={consentGiven}
+              disabled={consentGiven || consentSaving}
+              onChange={async () => {
+                setConsentSaving(true)
+                try { await axios.post(`${API_URL}/monitor/${token}/consent`, { granted: true }); setConsentGiven(true) }
+                catch { /* leave unchecked so they can retry */ }
+                finally { setConsentSaving(false) }
+              }}
+              style={{ marginTop: '3px', width: '18px', height: '18px', flexShrink: 0, accentColor: '#135450' }}
+            />
+            <span style={{ fontSize: '14px', color: '#475569', lineHeight: 1.5 }}>
+              I give permission for {childName} to be connected to the Float app, so their clinician can invite them to sign in and use it as part of treatment.
+              {consentGiven && <span style={{ display: 'block', color: '#16a34a', fontWeight: 600, marginTop: '4px' }}>✓ Thank you — permission recorded.</span>}
+            </span>
+          </label>
 
           <button
             onClick={handleAdd}
