@@ -1248,8 +1248,15 @@ export default function PatientPage() {
   const addAccommodation = (si: number) =>
     updateExtraction(d => { d.situations[si].accommodations.push({ description: '' }) })
 
-  // Persistent teen-access panel, opened from the patient header (any mode).
+  // Persistent access panel, opened from the patient header (any mode).
+  // `accessFocus` scopes it to the card that opened it (Teen vs Parent).
   const [showTeenAccess, setShowTeenAccess] = useState(false)
+  const [accessFocus, setAccessFocus] = useState<'teen' | 'parent'>('teen')
+  const openAccess = (focus: 'teen' | 'parent') => {
+    if (showTeenAccess && accessFocus === focus) { setShowTeenAccess(false); return }
+    setAccessFocus(focus)
+    setShowTeenAccess(true)
+  }
 
   // Patient profile edit
   const [editingProfile, setEditingProfile] = useState(false)
@@ -3098,7 +3105,7 @@ export default function PatientPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               {/* Teen access card */}
-              <button onClick={() => setShowTeenAccess(v => !v)} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+              <button onClick={() => openAccess('teen')} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: showTeenAccess && accessFocus === 'teen' ? '#eafaf6' : '#fff', border: showTeenAccess && accessFocus === 'teen' ? '1px solid var(--float-primary)' : '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '9999px', background: patient.teen_invited_at ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
                 <span>
                   <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155' }}>Teen access</span>
@@ -3106,7 +3113,7 @@ export default function PatientPage() {
                 </span>
               </button>
               {/* Parent access card */}
-              <button onClick={() => setShowTeenAccess(v => !v)} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+              <button onClick={() => openAccess('parent')} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: showTeenAccess && accessFocus === 'parent' ? '#eafaf6' : '#fff', border: showTeenAccess && accessFocus === 'parent' ? '1px solid var(--float-primary)' : '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '9999px', background: patient.parent_email ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
                 <span>
                   <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155' }}>Parent access</span>
@@ -3132,6 +3139,7 @@ export default function PatientPage() {
         {showTeenAccess && patient && (
           <TeenAccessPanel
             patientId={patientId!}
+            focus={accessFocus}
             teenEmail={patient.teen_email}
             teenInvitedAt={patient.teen_invited_at}
             fallbackEmail={patient.email}

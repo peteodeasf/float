@@ -13,6 +13,7 @@ import { inviteTeen, inviteParent } from '../../api/patients'
  */
 export default function TeenAccessPanel({
   patientId,
+  focus,
   teenEmail,
   teenInvitedAt,
   fallbackEmail,
@@ -20,6 +21,7 @@ export default function TeenAccessPanel({
   onClose,
 }: {
   patientId: string
+  focus: 'teen' | 'parent'
   teenEmail: string | null | undefined
   teenInvitedAt: string | null | undefined
   fallbackEmail: string | null | undefined
@@ -72,7 +74,7 @@ export default function TeenAccessPanel({
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
         <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Access
+          {focus === 'teen' ? 'Teen access' : 'Parent access'}
         </span>
         <button
           onClick={onClose}
@@ -83,6 +85,8 @@ export default function TeenAccessPanel({
         </button>
       </div>
 
+      {focus === 'teen' && (
+      <>
       <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Teen</div>
       {/* Status */}
       <div style={{ marginBottom: '14px' }}>
@@ -164,8 +168,12 @@ export default function TeenAccessPanel({
         </div>
       )}
 
+      </>
+      )}
+
       {/* Parent access */}
-      <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
+      {focus === 'parent' && (
+      <div>
         <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Parent</div>
         <label style={label}>Parent's email</label>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -194,6 +202,7 @@ export default function TeenAccessPanel({
           </p>
         )}
       </div>
+      )}
     </div>
   )
 }
