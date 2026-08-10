@@ -10,7 +10,7 @@ from app.api.routers import (
     ladders, experiments, progress,
     downward_arrows, messages, monitoring,
     session_notes, action_plans, admin, waitlist,
-    formulation, checklist, accommodations, situation_tags
+    formulation, checklist, accommodations, situation_tags, library
 )
 
 app = FastAPI(
@@ -33,6 +33,7 @@ app.include_router(treatment_plans.router)
 app.include_router(trigger_situations.router)
 app.include_router(accommodations.router)
 app.include_router(situation_tags.router)
+app.include_router(library.router)
 app.include_router(avoidance_behaviors.router)
 app.include_router(ladders.router)
 app.include_router(experiments.router)

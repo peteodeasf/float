@@ -61,6 +61,10 @@ class TriggerSituation(Base):
     distress_thermometer_max: Mapped[float | None] = mapped_column(
         Numeric(3, 1), nullable=True
     )
+    # Reuse link — the shared, cross-org library definition this situation is an instance of.
+    situation_library_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("situation_library.id"), nullable=True
+    )
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_placeholder: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"), default=False)
@@ -90,6 +94,52 @@ class AvoidanceBehavior(Base):
     distress_thermometer_when_refraining: Mapped[float | None] = mapped_column(
         Numeric(3, 1), nullable=True
     )
+    # Reuse link — the shared, cross-org library definition this instance is an instance of.
+    behavior_library_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("behavior_library.id"), nullable=True
+    )
+    # Sub-behaviors (#7): a finer, lower-scored step under a parent behavior (same situation).
+    parent_behavior_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("avoidance_behaviors.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("now()")
+    )
+
+
+class SituationLibrary(Base):
+    """Shared, cross-org vocabulary of situation names for select-from-list reuse.
+    Generic name only — NO patient data, scores, or plan links."""
+    __tablename__ = "situation_library"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    # Lowercased/trimmed/punctuation-stripped name; unique to prevent near-duplicates.
+    normalized_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("now()")
+    )
+
+
+class BehaviorLibrary(Base):
+    """Shared, cross-org vocabulary of behavior names for select-from-list reuse.
+    Generic name + type only — NO patient data, scores, or plan links."""
+    __tablename__ = "behavior_library"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    normalized_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    behavior_type: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
