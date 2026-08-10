@@ -45,6 +45,7 @@ async def create_trigger(
         name=data.name,
         description=data.description,
         distress_thermometer_rating=data.distress_thermometer_rating,
+        distress_thermometer_max=data.distress_thermometer_max,
         display_order=next_order,
         is_active=data.is_active if data.is_active is not None else False,
         is_placeholder=data.is_placeholder if data.is_placeholder is not None else False
@@ -78,6 +79,8 @@ async def update_trigger(
         trigger.description = data.description
     if data.distress_thermometer_rating is not None:
         trigger.distress_thermometer_rating = data.distress_thermometer_rating
+    if data.distress_thermometer_max is not None:
+        trigger.distress_thermometer_max = data.distress_thermometer_max
     if data.is_active is not None:
         # A situation with no behaviors has nothing for the teen to work on —
         # the ladder skips it entirely — so it can't be activated.

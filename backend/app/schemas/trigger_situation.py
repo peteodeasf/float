@@ -8,6 +8,7 @@ class TriggerSituationCreate(BaseModel):
     name: str
     description: Optional[str] = None
     distress_thermometer_rating: Optional[float] = None
+    distress_thermometer_max: Optional[float] = None
     is_active: Optional[bool] = None
     is_placeholder: Optional[bool] = None
 
@@ -16,6 +17,7 @@ class TriggerSituationUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     distress_thermometer_rating: Optional[float] = None
+    distress_thermometer_max: Optional[float] = None
     is_active: Optional[bool] = None
 
 
@@ -25,6 +27,7 @@ class TriggerSituationResponse(BaseModel):
     name: str
     description: Optional[str] = None
     distress_thermometer_rating: Optional[float] = None
+    distress_thermometer_max: Optional[float] = None
     display_order: int
     is_active: bool = False
     is_placeholder: bool = False

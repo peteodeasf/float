@@ -57,6 +57,10 @@ class TriggerSituation(Base):
     distress_thermometer_rating: Mapped[float | None] = mapped_column(
         Numeric(3, 1), nullable=True
     )
+    # Optional upper bound — when set, the DT is a range (rating = min, max = upper).
+    distress_thermometer_max: Mapped[float | None] = mapped_column(
+        Numeric(3, 1), nullable=True
+    )
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_placeholder: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"), default=False)

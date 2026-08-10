@@ -30,11 +30,13 @@ import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
-function DTBadge({ value }: { value: number | null | undefined }) {
+function DTBadge({ value, max }: { value: number | null | undefined; max?: number | null }) {
   if (value == null) return null
   const v = Number(value)
-  const color = v >= 7 ? 'bg-red-100 text-red-700' : v >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-  return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{v}</span>
+  const hasRange = max != null && Number(max) > v
+  const hi = hasRange ? Number(max) : v
+  const color = hi >= 7 ? 'bg-red-100 text-red-700' : hi >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+  return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${color}`}>{hasRange ? `${v}–${hi}` : v}</span>
 }
 
 // Shared teal section header for the Step-2 Preliminary Report
@@ -490,7 +492,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
         <div>
           <h3 className="text-sm font-semibold text-slate-800">{trigger.name}</h3>
           <div className="flex items-center gap-2 mt-0.5">
-            <DTBadge value={trigger.distress_thermometer_rating} />
+            <DTBadge value={trigger.distress_thermometer_rating} max={trigger.distress_thermometer_max} />
             <button
               onClick={() => toggleActive.mutate()}
               disabled={toggleActive.isPending || !canToggleActive}
@@ -1184,6 +1186,7 @@ export default function PatientPage() {
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
   const [newTriggerName, setNewTriggerName] = useState('')
   const [newTriggerDT, setNewTriggerDT] = useState('')
+  const [newTriggerDTMax, setNewTriggerDTMax] = useState('')
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
   const [editTriggerName, setEditTriggerName] = useState('')
   const [deletingTriggerId, setDeletingTriggerId] = useState<string | null>(null)
@@ -1427,8 +1430,8 @@ export default function PatientPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['plan', patientId] }); setEditingNickname(false) }
   })
   const addTriggerMut = useMutation({
-    mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined }),
-    onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerDT(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
+    mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined, distress_thermometer_max: newTriggerDTMax ? Number(newTriggerDTMax) : undefined }),
+    onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerDT(''); setNewTriggerDTMax(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
   })
   const updateTriggerNameMut = useMutation({
     mutationFn: () => updateTrigger(plan!.id, editingTriggerId!, { name: editTriggerName.trim() }),
@@ -2444,7 +2447,7 @@ export default function PatientPage() {
                       className="text-slate-700"
                       style={{ flex: 1, fontSize: '13px', fontWeight: 500, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >{t.name}</span>
-                    <DTBadge value={t.distress_thermometer_rating} />
+                    <DTBadge value={t.distress_thermometer_rating} max={t.distress_thermometer_max} />
                     <button
                       onClick={e => { e.stopPropagation(); setSelectedTriggerId(t.id); setEditTriggerName(t.name); setEditingTriggerId(t.id) }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
@@ -2475,16 +2478,18 @@ export default function PatientPage() {
                   onKeyDown={e => e.key === 'Enter' && newTriggerName.trim() && addTriggerMut.mutate()}
                 />
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (DT):</label>
+                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (DT) — single value, or a range with an optional max:</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
-                    <input value={newTriggerDT} onChange={e => setNewTriggerDT(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                    <input value={newTriggerDT} onChange={e => setNewTriggerDT(e.target.value)} type="number" min="1" max="10" placeholder="min" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                     <button type="button" onClick={() => setNewTriggerDT(String(Math.min(10, (Number(newTriggerDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                    <span style={{ color: '#94a3b8', padding: '0 2px' }}>–</span>
+                    <input value={newTriggerDTMax} onChange={e => setNewTriggerDTMax(e.target.value)} type="number" min="1" max="10" placeholder="max" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                   <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '7px 14px' }}>Add situation</button>
-                  <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerDT('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                  <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerDT(''); setNewTriggerDTMax('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                 </div>
               </div>
             )}
