@@ -326,14 +326,15 @@ export default function TeenHomePage() {
           {/* No active experiments at all */}
           {isEmpty && (
             <div style={{ marginTop: 30 }}>
-              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Nothing yet</div>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Ready when you are</div>
               <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
                 <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
-                  You have no active experiments yet.
+                  You're just getting started.
                 </h2>
                 <p style={{ ...teen.type.body, margin: '12px 0 0' }}>
-                  Your clinician will set these up with you. Reach out with any questions in
-                  the meantime.
+                  You and your clinician will set up your first steps together — small, doable
+                  challenges that build real confidence. Each one you try makes the next a little
+                  easier. You've got this.
                 </p>
               </div>
               <div style={{ marginTop: 20 }}>

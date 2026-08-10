@@ -428,7 +428,9 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   }
 
   const addMut = useMutation({
-    mutationFn: () => createBehavior(trigger.id, { name, behavior_type: type, distress_thermometer_when_refraining: dt ? Number(dt) : undefined }),
+    // Avoidance is defined by the situation it avoids, so the name is optional —
+    // default it to "Avoids {situation}" when left blank.
+    mutationFn: () => createBehavior(trigger.id, { name: name.trim() || `Avoids ${trigger.name}`, behavior_type: type, distress_thermometer_when_refraining: dt ? Number(dt) : undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setName(''); setDt(''); setShowAdd(false) }
   })
 
@@ -554,7 +556,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Avoidance &amp; safety behaviors</span>
           {!showAdd && (
-            <button onClick={() => setShowAdd(true)} className="text-[10px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add</button>
+            <button onClick={() => setShowAdd(true)} className="cursor-pointer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>+ Add behavior</button>
           )}
         </div>
         {behaviors && behaviors.length > 0 && ladder && (
@@ -759,10 +761,14 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
       {/* Add behavior inline */}
       {showAdd && (
         <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Behavior name"
+          <input value={name} onChange={e => setName(e.target.value)}
+            placeholder={type === 'avoidance' ? `Optional — defaults to “Avoids ${trigger.name}”` : 'Behavior name'}
             className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" autoFocus
-            style={{ marginBottom: '8px' }}
-            onKeyDown={e => e.key === 'Enter' && name.trim() && addMut.mutate()} />
+            style={{ marginBottom: type === 'avoidance' ? '4px' : '8px' }}
+            onKeyDown={e => e.key === 'Enter' && (name.trim() || type === 'avoidance') && addMut.mutate()} />
+          {type === 'avoidance' && (
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px' }}>Leave blank to name it “Avoids {trigger.name}”.</p>
+          )}
           <div style={{ marginBottom: '8px' }}>
             <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Type</div>
             <div style={{ display: 'flex', gap: '4px' }}>
@@ -787,7 +793,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <button onClick={() => addMut.mutate()} disabled={!name.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add</button>
+            <button onClick={() => addMut.mutate()} disabled={!name.trim() && type !== 'avoidance'} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add</button>
             <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
           </div>
         </div>
@@ -2397,7 +2403,7 @@ export default function PatientPage() {
         <div style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Situations</span>
-            {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="text-[10px] text-teal-600 font-bold bg-transparent border-none cursor-pointer">+</button>}
+            {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="cursor-pointer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>+ Add</button>}
           </div>
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {triggers?.map(t => (
@@ -2485,7 +2491,7 @@ export default function PatientPage() {
             {(!triggers || triggers.length === 0) && !showTriggerAdd && (
               <div>
                 <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.4', margin: '0 0 8px' }}>Add trigger situations identified in your sessions.</p>
-                <button onClick={() => setShowTriggerAdd(true)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add first situation</button>
+                <button onClick={() => setShowTriggerAdd(true)} className="cursor-pointer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '8px', padding: '9px 16px' }}>+ Add first situation</button>
               </div>
             )}
           </div>
