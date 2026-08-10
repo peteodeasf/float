@@ -1275,7 +1275,6 @@ export default function PatientPage() {
   const [sessionTagFilter, setSessionTagFilter] = useState<string | null>(null)
   const [processPanelOpen, setProcessPanelOpen] = useState(false)
   const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
-  const [accommodationCheckinComplete, setAccommodationCheckinComplete] = useState(false)
   const stepInitializedRef = useRef(false)
 
   // Case conceptualization — living draft, persisted to the backend formulation record
@@ -1895,17 +1894,6 @@ export default function PatientPage() {
     })
   }
 
-  // ----- Treatment Journey: step status -----
-  const accomStorageKey = patientId ? `float_accom_${patientId}` : null
-  useEffect(() => {
-    if (!accomStorageKey) return
-    setAccommodationCheckinComplete(localStorage.getItem(accomStorageKey) === 'true')
-  }, [accomStorageKey])
-  const markAccommodationComplete = () => {
-    if (accomStorageKey) localStorage.setItem(accomStorageKey, 'true')
-    setAccommodationCheckinComplete(true)
-  }
-
   // Conceptualization draft — feared outcome contributions from the DA sub-steps
   const addPatientFearedOutcome = (fo: string) => setConceptualizationDraft(prev =>
     prev.patientFearedOutcomes.includes(fo) ? prev
@@ -2142,33 +2130,6 @@ export default function PatientPage() {
     </div>
   ) : null
 
-  const accommodationContent = (
-    <div style={cardStyle}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '8px' }}>Parent Accommodation Check-ins</div>
-      <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 16px' }}>
-        Track accommodation reduction progress with the parent at the end of each weekly session.
-      </p>
-      {conceptualizationDraft.accommodationPatterns.length > 0 && (
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Accommodation patterns</div>
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {conceptualizationDraft.accommodationPatterns.map((p, i) => (
-              <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#475569' }}>
-                <span style={{ color: '#135450' }}>&#9633;</span><span>{p}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {accommodationCheckinComplete ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '10px 14px' }}>
-          <span>&#10003;</span> Check-in marked complete.
-        </div>
-      ) : (
-        <button onClick={markAccommodationComplete} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Mark check-in complete</button>
-      )}
-    </div>
-  )
 
   const patientDAContent = patientId ? (
     <PatientDownwardArrows
@@ -3356,7 +3317,6 @@ export default function PatientPage() {
                   <>
                     {preSessionBriefContent}
                     {sessionNotesList}
-                    {accommodationContent}
                   </>
                 )}
               </>
