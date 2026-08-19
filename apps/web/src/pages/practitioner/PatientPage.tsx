@@ -101,6 +101,28 @@ function isSimilar(a: string, b: string): boolean {
   return false
 }
 
+// Distress-thermometer / fear scores are a 1–10 scale. These guard every entry
+// point so an out-of-range value (e.g. a typed "16", or an AI-extracted number)
+// can never be stored. clampDt normalizes a value for sending to the API; DT_MIN/
+// DT_MAX back the number inputs' live clamping.
+const DT_MIN = 1
+const DT_MAX = 10
+function clampDt(v: number | string | null | undefined): number | undefined {
+  if (v === null || v === undefined || v === '') return undefined
+  const n = Number(v)
+  if (Number.isNaN(n)) return undefined
+  return Math.min(DT_MAX, Math.max(DT_MIN, n))
+}
+// Live-clamp for a number <input>'s onChange: cap the upper bound as the clinician
+// types (the reported bug), but leave partial/empty input alone so typing stays smooth.
+function clampDtInput(raw: string): string {
+  if (raw === '') return ''
+  const n = Number(raw)
+  if (Number.isNaN(n)) return raw
+  if (n > DT_MAX) return String(DT_MAX)
+  return raw
+}
+
 // Next school day (Mon-Fri) after today
 function getNextSchoolDayISO(): string {
   const d = new Date()
@@ -454,7 +476,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   const addMut = useMutation({
     // Avoidance is defined by the situation it avoids, so the name is optional —
     // default it to "Avoids {situation}" when left blank.
-    mutationFn: () => createBehavior(trigger.id, { name: name.trim() || `Avoids ${trigger.name}`, behavior_type: type, distress_thermometer_when_refraining: dt ? Number(dt) : undefined, behavior_library_id: behaviorLibraryId ?? undefined }),
+    mutationFn: () => createBehavior(trigger.id, { name: name.trim() || `Avoids ${trigger.name}`, behavior_type: type, distress_thermometer_when_refraining: clampDt(dt), behavior_library_id: behaviorLibraryId ?? undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setName(''); setDt(''); setBehaviorLibraryId(null); setShowBehSuggest(false); setShowAdd(false) }
   })
 
@@ -463,7 +485,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
     mutationFn: (parent: AvoidanceBehavior) => createBehavior(trigger.id, {
       name: subName.trim(),
       behavior_type: parent.behavior_type,
-      distress_thermometer_when_refraining: subDt ? Number(subDt) : undefined,
+      distress_thermometer_when_refraining: clampDt(subDt),
       parent_behavior_id: parent.id,
       behavior_library_id: undefined,
     }),
@@ -471,7 +493,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   })
 
   const editMut = useMutation({
-    mutationFn: () => updateBehavior(trigger.id, editingBehaviorId!, { name: editName, behavior_type: editType, distress_thermometer_when_refraining: editDT ? Number(editDT) : undefined }),
+    mutationFn: () => updateBehavior(trigger.id, editingBehaviorId!, { name: editName, behavior_type: editType, distress_thermometer_when_refraining: clampDt(editDT) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setEditingBehaviorId(null) }
   })
 
@@ -755,7 +777,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     <button type="button" onClick={() => setEditDT(String(Math.max(1, (Number(editDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>&minus;</button>
-                    <input value={editDT} onChange={e => setEditDT(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                    <input value={editDT} onChange={e => setEditDT(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                     <button type="button" onClick={() => setEditDT(String(Math.min(10, (Number(editDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
                   </div>
                 </div>
@@ -826,7 +848,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                         <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (lower than {b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : '—'})</label>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <button type="button" onClick={() => setSubDt(String(Math.max(1, (Number(subDt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>&minus;</button>
-                          <input value={subDt} onChange={e => setSubDt(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                          <input value={subDt} onChange={e => setSubDt(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                           <button type="button" onClick={() => setSubDt(String(Math.min(10, (Number(subDt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
                         </div>
                       </div>
@@ -884,7 +906,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <button type="button" onClick={() => setDt(String(Math.max(1, (Number(dt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
-              <input value={dt} onChange={e => setDt(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+              <input value={dt} onChange={e => setDt(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
               <button type="button" onClick={() => setDt(String(Math.min(10, (Number(dt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
             </div>
           </div>
@@ -969,7 +991,7 @@ function PatientDownwardArrows({ patientId, planId, triggers, onFearedOutcome }:
           const newPlan = await createTreatmentPlan(patientId, { clinical_track: 'exposure', parent_visibility_level: 'summary' })
           pid = newPlan.id
         }
-        const dt = newSituationDT.trim() ? Number(newSituationDT) : undefined
+        const dt = clampDt(newSituationDT)
         const trig = await createTrigger(pid, { name: newSituationName.trim(), distress_thermometer_rating: dt })
         sitId = trig.id
       }
@@ -1075,7 +1097,7 @@ function PatientDownwardArrows({ patientId, planId, triggers, onFearedOutcome }:
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                     <input value={newSituationName} onChange={e => setNewSituationName(e.target.value)} placeholder="Situation name"
                       className="text-sm border border-slate-200 rounded" style={{ flex: 1, padding: '8px 10px', boxSizing: 'border-box' }} />
-                    <input value={newSituationDT} onChange={e => setNewSituationDT(e.target.value)} type="number" min={1} max={10} placeholder="DT"
+                    <input value={newSituationDT} onChange={e => setNewSituationDT(clampDtInput(e.target.value))} type="number" min={1} max={10} placeholder="DT"
                       className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '8px 10px', boxSizing: 'border-box' }} />
                   </div>
                 )}
@@ -1532,7 +1554,7 @@ export default function PatientPage() {
     enabled: showTriggerAdd && showSitSuggest && newTriggerName.trim().length >= 2,
   })
   const addTriggerMut = useMutation({
-    mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: newTriggerDT ? Number(newTriggerDT) : undefined, distress_thermometer_max: newTriggerDTMax ? Number(newTriggerDTMax) : undefined, situation_library_id: newTriggerLibraryId ?? undefined }),
+    mutationFn: () => createTrigger(plan!.id, { name: newTriggerName, distress_thermometer_rating: clampDt(newTriggerDT), distress_thermometer_max: clampDt(newTriggerDTMax), situation_library_id: newTriggerLibraryId ?? undefined }),
     onSuccess: (t) => { queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] }); setNewTriggerName(''); setNewTriggerLibraryId(null); setShowSitSuggest(false); setNewTriggerDT(''); setNewTriggerDTMax(''); setShowTriggerAdd(false); setSelectedTriggerId(t.id) }
   })
   const updateTriggerNameMut = useMutation({
@@ -1718,7 +1740,7 @@ export default function PatientPage() {
           setExtractProgress(`Creating situations... ${sit.name}`)
           trigger = await createTrigger(planId!, {
             name: sit.name,
-            distress_thermometer_rating: situationDT ?? undefined,
+            distress_thermometer_rating: clampDt(situationDT),
           })
           existingTriggers.push(trigger)
           anyCreated = true
@@ -1753,7 +1775,7 @@ export default function PatientPage() {
             await createBehavior(trigger.id, {
               name: beh.description,
               behavior_type: planType,
-              distress_thermometer_when_refraining: sit.fear_rating ?? undefined,
+              distress_thermometer_when_refraining: clampDt(sit.fear_rating),
             })
             behaviorNames.push(beh.description)
             anyCreated = true
@@ -2595,10 +2617,10 @@ export default function PatientPage() {
                   <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (DT) — single value, or a range with an optional max:</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
-                    <input value={newTriggerDT} onChange={e => setNewTriggerDT(e.target.value)} type="number" min="1" max="10" placeholder="min" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                    <input value={newTriggerDT} onChange={e => setNewTriggerDT(clampDtInput(e.target.value))} type="number" min="1" max="10" placeholder="min" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                     <button type="button" onClick={() => setNewTriggerDT(String(Math.min(10, (Number(newTriggerDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
                     <span style={{ color: '#94a3b8', padding: '0 2px' }}>–</span>
-                    <input value={newTriggerDTMax} onChange={e => setNewTriggerDTMax(e.target.value)} type="number" min="1" max="10" placeholder="max" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                    <input value={newTriggerDTMax} onChange={e => setNewTriggerDTMax(clampDtInput(e.target.value))} type="number" min="1" max="10" placeholder="max" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
@@ -3560,7 +3582,7 @@ export default function PatientPage() {
                     <div key={si} style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px' }}>
                         <input value={sit.name} onChange={e => editSituation(si, { name: e.target.value })} placeholder="Situation name" className="text-sm border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px', fontWeight: 500, minWidth: 0, boxSizing: 'border-box' }} />
-                        <input type="number" min={0} max={10} value={sit.fear_rating ?? ''} onChange={e => editSituation(si, { fear_rating: e.target.value === '' ? null : Number(e.target.value) })} title="Fear rating (0–10)" placeholder="DT" className="text-sm border border-slate-200 rounded" style={{ width: '54px', padding: '6px 6px', textAlign: 'center', flexShrink: 0 }} />
+                        <input type="number" min={1} max={10} value={sit.fear_rating ?? ''} onChange={e => editSituation(si, { fear_rating: e.target.value === '' ? null : (clampDt(e.target.value) ?? null) })} title="Fear rating (1–10)" placeholder="DT" className="text-sm border border-slate-200 rounded" style={{ width: '54px', padding: '6px 6px', textAlign: 'center', flexShrink: 0 }} />
                         <button onClick={() => removeSituation(si)} title="Remove situation" className="bg-transparent border-none cursor-pointer text-slate-400 hover:text-red-500" style={{ fontSize: '16px', padding: '0 4px', flexShrink: 0 }}>×</button>
                       </div>
 
