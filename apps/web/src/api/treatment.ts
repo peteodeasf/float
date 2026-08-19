@@ -278,6 +278,22 @@ export const updateDownwardArrow = async (
   return response.data
 }
 
+// Patient-level (situation-agnostic) arrow — the pre-ladder downward arrow whose
+// feared_outcome anchors the ladder. Get-or-create per (patient, facilitated_by).
+export const createPatientDownwardArrow = async (patientId: string, firstAnswer?: string, facilitatedBy: string = 'practitioner'): Promise<DownwardArrow> => {
+  const response = await apiClient.post(`/patients/${patientId}/downward-arrows`, {
+    facilitated_by: facilitatedBy,
+    first_answer: firstAnswer,
+  })
+  return response.data
+}
+
+// Phrase the next downward-arrow probe (AI, confirm-first — clinician edits before asking aloud).
+export const getNextProbe = async (startingThought: string, steps: ArrowStep[]): Promise<string> => {
+  const response = await apiClient.post('/downward-arrows/next-probe', { starting_thought: startingThought, steps })
+  return response.data.probe as string
+}
+
 export interface PlannedExperiment {
   id: string
   ladder_rung_id: string | null

@@ -11,11 +11,17 @@
 > - `apps/web/src/pages/practitioner/SessionPage.tsx` — full-screen shell + `Phase` machine, with
 >   **intro**, **hub** (situations set, add-your-own), and **situation** (tap-1–10 fear + behaviors
 >   with clinician type tag) wired to the **existing** `api/treatment.ts` CRUD. Deterministic, no AI.
-> - **arrow** + **review** are intentional stubs.
+>   The "core worry" chip reads the arrow's `feared_outcome`.
+> - **Backend probe endpoint:** `POST /downward-arrows/next-probe` (`downward_arrows.py`) — additive,
+>   practitioner-guarded, mirrors the extraction call pattern, **no migration**. FE:
+>   `getNextProbe(...)` + `createPatientDownwardArrow(...)` in `api/treatment.ts`.
+> - **arrow** + **review** phases are still intentional stubs.
 >
-> **Not built yet (next up, now that the 4 questions are resolved):** the next-probe AI endpoint
-> (additive route, **no migration**); the real downward-arrow phase (fresh start thought → chain →
-> confirmed `feared_outcome` anchor); the ladder-review handoff reusing the builder view.
+> **Not built yet (next up):** the interactive **downward-arrow phase** (fresh start thought → probe
+> loop via the endpoint, confirm-first → confirmed `feared_outcome` anchor). ⚠️ Its persistence must
+> match the **existing** `PatientDownwardArrows` editor + `downward_arrow_service` `arrow_steps` shape
+> — study that (and test against a **non-prod** DB) before wiring, to avoid corrupting live arrows.
+> Then the **ladder-review** handoff reusing the builder view.
 >
 > ⚠️ **Do not run this route against the local dev server** — the local `.env` points at **prod**, and
 > the situation/behavior writes are real. Verified by compile (tsc/vite) only, not a live click-through.

@@ -22,6 +22,16 @@ class DownwardArrowUpdate(BaseModel):
     is_approved: Optional[bool] = None
 
 
+class NextProbeRequest(BaseModel):
+    """The running downward-arrow chain, for phrasing the next probe question."""
+    starting_thought: str
+    steps: list[ArrowStep] = []
+
+
+class NextProbeResponse(BaseModel):
+    probe: str
+
+
 class DownwardArrowResponse(BaseModel):
     id: uuid.UUID
     trigger_situation_id: Optional[uuid.UUID] = None
