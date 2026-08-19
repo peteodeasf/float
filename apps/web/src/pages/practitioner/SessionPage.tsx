@@ -27,6 +27,7 @@ import {
   createBehavior,
   updateBehavior,
   deleteBehavior,
+  listPatientDownwardArrows,
   type TriggerSituation,
 } from '../../api/treatment'
 
@@ -63,12 +64,19 @@ export default function SessionPage() {
     enabled: !!planId,
   })
 
+  const { data: patientArrows } = useQuery({
+    queryKey: ['patient-das', patientId],
+    queryFn: () => listPatientDownwardArrows(patientId!),
+    enabled: !!patientId,
+  })
+
   const sortedTriggers = [...(triggers ?? [])].sort(
     (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
   )
-  // The core belief that anchors the ladder — produced by the downward arrow (Phase `arrow`).
-  // Backed by `treatment_plans.core_belief` once the additive migration lands; optional until then.
-  const coreBelief = (plan as { core_belief?: string | null } | undefined)?.core_belief ?? null
+  // The ladder's anchor = the downward arrow's confirmed bottom-of-chain statement
+  // (`feared_outcome`, approved) — no separate "core belief" column exists. The `arrow`
+  // phase creates/approves it; here we surface it as the "core worry" chip.
+  const coreBelief = (patientArrows ?? []).find(a => a.feared_outcome_approved && a.feared_outcome)?.feared_outcome ?? null
 
   const exit = () => navigate(`/patients/${patientId}`)
 

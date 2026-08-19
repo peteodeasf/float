@@ -13,9 +13,9 @@
 >   with clinician type tag) wired to the **existing** `api/treatment.ts` CRUD. Deterministic, no AI.
 > - **arrow** + **review** are intentional stubs.
 >
-> **Not built yet (pending owner answers + review):** backend `core_belief` migration + schema; the
-> next-probe AI endpoint; the real downward-arrow phase; the full ladder-review handoff. Not started
-> because they encode still-open decisions (see "Open questions") or are production-affecting.
+> **Not built yet (next up, now that the 4 questions are resolved):** the next-probe AI endpoint
+> (additive route, **no migration**); the real downward-arrow phase (fresh start thought → chain →
+> confirmed `feared_outcome` anchor); the ladder-review handoff reusing the builder view.
 >
 > ⚠️ **Do not run this route against the local dev server** — the local `.env` points at **prod**, and
 > the situation/behavior writes are real. Verified by compile (tsc/vite) only, not a live click-through.
@@ -45,9 +45,15 @@ front-end surface over data models and endpoints that already exist** — not a 
   (`--teen-teal`) equals clinician `--float-primary` (`#135450`). A clinician-app surface can use them.
 
 ### What genuinely does NOT exist (the only net-new backend)
-1. **A "core belief" field.** Zero hits across the codebase. Needed as the anchor the downward arrow
-   produces and the ladder capture displays atop each situation.
-2. **AI probe phrasing** for the downward arrow (the one live-AI piece we opted into).
+1. **AI probe phrasing** for the downward arrow (the one live-AI piece we opted into) — an additive
+   route, no schema change.
+
+**Resolved (2026-08-19): no `core_belief` column needed.** Verified against
+`backend/app/models/downward_arrow.py` + `schemas/downward_arrow.py`: the arrow already stores its
+terminal statement in **`feared_outcome`** (Text) with a **`feared_outcome_approved`** confirm flag
+(+ `bip_derived` belief strength). That is functionally the "core belief / bottom" my design captures.
+The ladder anchor = the **patient-level arrow's `feared_outcome`** (the model supports a patient-
+agnostic arrow: `trigger_situation_id` nullable, `patient_id` set). **No migration.**
 
 ## Architecture decisions
 1. **Session mode is its own full-screen route:** `/patients/:patientId/session`, added under
@@ -69,17 +75,12 @@ front-end surface over data models and endpoints that already exist** — not a 
 5. **Ladder capture: deterministic, no live AI** (decision round 5). **Downward arrow: one live-AI
    call** for next-probe phrasing, confirm-first.
 
-## Backend changes (small, additive)
-1. **`core_belief` (Text, nullable) — the ladder's anchor.** Recommend storing on **`treatment_plans`**
-   (one active plan per patient → one anchor shown atop every situation in ladder capture), rather
-   than on `downward_arrows` (which is per-situation and can be parent-facilitated). Keep the arrow's
-   own bottom in `feared_outcome`; `core_belief` is the patient-level anchor the ladder reads.
-   - Migration: additive `op.add_column('treatment_plans', core_belief Text nullable)`,
-     `down_revision = 'a7b8c9d0e1f2'` (current head), 12-hex id + snake suffix, with `downgrade()`.
-   - Schemas: add `core_belief` to `TreatmentPlanResponse` + `TreatmentPlanUpdate`
-     (`backend/app/schemas/treatment_plan.py`); the existing `PUT /patients/{id}/plan/{plan_id}`
-     already carries updates. FE `getTreatmentPlan`/`updatePlan…` gain the field.
-   - *(Open Q for owner: anchor on the plan, vs. a dedicated per-patient belief. Plan is cleanest.)*
+## Backend changes (small, additive — no migration)
+1. **The ladder anchor reuses `downward_arrows.feared_outcome`** — no new column, no migration
+   (resolved 2026-08-19; see above). The pre-ladder **patient-level** arrow (created fresh in-session,
+   `trigger_situation_id` null, `patient_id` set) holds the anchor string in `feared_outcome`, with
+   `feared_outcome_approved` as the confirm flag. Ladder capture reads it via
+   `listPatientDownwardArrows(patientId)` (`api/treatment.ts`) and shows it as the "core worry" chip.
 2. **`POST` next-probe endpoint (the only new AI call).** Given the running chain, return the next
    probe string. Mirror the extraction pipeline exactly (there is **no** shared LLM helper — calls are
    inline in routers).
@@ -135,10 +136,10 @@ patient + `getTriggers(planId)` + behaviors + existing downward arrow on entry.
   practitioner-authed and org-scoped; no child/parent data crosses boundaries. (Non-negotiable #2.)
 - **Clinical sign-off:** owner waived Dr. Walker gating for this design (round 5).
 
-## Open questions to confirm with owner (when back)
-1. **`core_belief` home:** on `treatment_plans` (recommended anchor) — confirm.
-2. **Downward-arrow starting thought:** seeded from a monitoring entry, or typed fresh in-session?
-3. **Prereq situations:** assume the plan already has seeded situations (normal extract-apply flow),
-   or should session mode be able to run extraction itself? (v1 assumes they exist / are added live.)
-4. **Ladder review:** reuse the exact shipped builder view (read-styled), or a simpler child-facing
-   review screen?
+## Open questions — RESOLVED (2026-08-19)
+1. **Anchor storage:** ~~new `core_belief` column~~ → **reuse `downward_arrows.feared_outcome`**; no
+   migration (verified against the model).
+2. **Downward-arrow starting thought:** **typed fresh in-session** for now (not seeded from monitoring).
+3. **Prereq situations:** **session mode assumes situations are already seeded** — we always seed some
+   before a session (normal extract-apply flow); session mode does not run extraction itself in v1.
+4. **Ladder review:** **reuse the shipped builder view** (read-styled) — confirmed.
