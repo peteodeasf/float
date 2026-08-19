@@ -795,10 +795,6 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 <button onClick={() => { const rung = topRungs.find(x => x.id === effectiveRungId); if (rung) startPlanning(rung) }}
                   disabled={!effectiveRungId} className="disabled:opacity-40"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 800, color: '#135450', background: '#fff', border: '1.5px solid #135450', borderRadius: '9px', padding: '8px 13px', cursor: 'pointer' }}>&#9656; Plan an experiment</button>
-                {effectiveRungId && (() => {
-                  const r = topRungs.find(x => x.id === effectiveRungId)
-                  return r ? <span style={{ fontSize: '12px', color: '#94a3b8' }}>on <b style={{ color: '#64748b', fontWeight: 700 }}>{r.name}</b> &mdash; change when you start</span> : null
-                })()}
                 {expSavedFor && (
                   <span style={{ fontSize: '12px', color: '#16a34a', marginLeft: 'auto' }}>&#10003; Experiment planned for {fmtDate(expSavedFor.date + 'T00:00:00')}</span>
                 )}
