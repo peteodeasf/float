@@ -358,12 +358,20 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   const [expDate, setExpDate] = useState(getNextSchoolDayISO())
   const [expWarning, setExpWarning] = useState(false)
   const [expSavedFor, setExpSavedFor] = useState<{ behaviorId: string; date: string } | null>(null)
+  // Which rung the single top-of-ladder "Plan an experiment" control targets.
+  const [selectedRungId, setSelectedRungId] = useState<string | null>(null)
 
   const planActive = planStatus === 'active'
 
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
+  })
+
+  const { data: patientExps } = useQuery({
+    queryKey: ['experiments', patientId],
+    queryFn: () => getPatientExperiments(patientId),
+    enabled: !!patientId,
   })
 
   const planExpMut = useMutation({
@@ -511,6 +519,24 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 
   const openFlags = ladderFlags ?? []
 
+  // Ladder derivations: which rungs have an experiment (scheduled vs any), and the
+  // default rung for the top "Plan an experiment" control (lowest rung without one).
+  const topRungs = sortedBehaviors.filter(b => !b.parent_behavior_id)
+  const scheduledByBehavior = new Map<string, { date: string | null }>()
+  const behaviorsWithAnyExp = new Set<string>()
+  ;(patientExps ?? []).forEach(e => {
+    if (!e.avoidance_behavior_id) return
+    behaviorsWithAnyExp.add(e.avoidance_behavior_id)
+    if (e.status !== 'completed' && !scheduledByBehavior.has(e.avoidance_behavior_id)) {
+      scheduledByBehavior.set(e.avoidance_behavior_id, { date: e.scheduled_date })
+    }
+  })
+  const defaultRungId = (topRungs.find(b => !behaviorsWithAnyExp.has(b.id)) ?? topRungs[0])?.id ?? null
+  const effectiveRungId = (selectedRungId && topRungs.some(b => b.id === selectedRungId)) ? selectedRungId : defaultRungId
+  const planningBehavior = sortedBehaviors.find(b => b.id === planningBehaviorId) ?? null
+  const fmtDate = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
+
   return (
     <div className="p-4 h-full overflow-y-auto">
       {/* Header */}
@@ -579,21 +605,24 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
         </div>
       </div>
 
-      {/* Section header with AI review */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Avoidance &amp; safety behaviors</span>
+      {/* Ladder header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Exposure ladder</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Avoidance &amp; safety behaviors · easiest first</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {!showAdd && (
             <button onClick={() => setShowAdd(true)} className="cursor-pointer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>+ Add behavior</button>
           )}
+          {behaviors && behaviors.length > 0 && ladder && (
+            <button onClick={() => reviewMut.mutate()} disabled={reviewMut.isPending}
+              className="text-[11px] font-medium bg-transparent border-none cursor-pointer disabled:opacity-50"
+              style={{ color: '#64748b' }}>
+              {reviewMut.isPending ? 'Reviewing...' : 'Run AI review'}
+            </button>
+          )}
         </div>
-        {behaviors && behaviors.length > 0 && ladder && (
-          <button onClick={() => reviewMut.mutate()} disabled={reviewMut.isPending}
-            className="text-[10px] font-medium bg-transparent border-none cursor-pointer disabled:opacity-50"
-            style={{ color: 'var(--float-primary)' }}>
-            {reviewMut.isPending ? 'Reviewing...' : 'Run AI review'}
-          </button>
-        )}
       </div>
 
       {/* Review confirmation */}
@@ -615,10 +644,95 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
         </div>
       )}
 
-      {/* Behaviors — sorted by DT ascending */}
-      <div className="space-y-1.5 mb-3">
-        {sortedBehaviors.filter(b => !b.parent_behavior_id).map(b => (
-          <div key={b.id}>
+      {/* Single "Plan an experiment" control at the top of the ladder */}
+      {planActive && topRungs.length > 0 && (
+        <div style={{ marginBottom: '14px' }}>
+          {planningBehaviorId == null ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#eafaf4', border: '1px solid #bfe9dc', borderRadius: '10px', padding: '10px 12px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#0d5c4d' }}>&#9656; Plan an experiment</span>
+              <select value={effectiveRungId ?? ''} onChange={e => setSelectedRungId(e.target.value)}
+                style={{ marginLeft: 'auto', fontSize: '12.5px', color: '#0d3d3a', fontWeight: 600, border: '1px solid #bfe9dc', background: '#fff', borderRadius: '8px', padding: '6px 8px', maxWidth: '260px', cursor: 'pointer' }}>
+                {topRungs.map(b => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}{b.distress_thermometer_when_refraining != null ? ` · ${Number(b.distress_thermometer_when_refraining)}` : ''}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => { const rung = topRungs.find(x => x.id === effectiveRungId); if (rung) startPlanning(rung) }}
+                disabled={!effectiveRungId}
+                className="disabled:opacity-40"
+                style={{ fontSize: '13px', fontWeight: 800, color: '#fff', background: '#135450', border: 'none', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer' }}>Start</button>
+            </div>
+          ) : planningBehavior && (
+            <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px', border: '1px solid #e2e8f0' }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '0 0 8px' }}>
+                Plan experiment for: <span style={{ color: '#1e293b' }}>{planningBehavior.name}</span>
+              </p>
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>Confidence level (ask the child):</div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {CONFIDENCE_OPTIONS.map(opt => (
+                    <button key={opt.key} type="button" onClick={() => { setExpConfidence(opt.key); setExpWarning(false) }}
+                      style={{ fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '999px', cursor: 'pointer',
+                        background: expConfidence === opt.key ? 'var(--float-primary)' : '#fff',
+                        color: expConfidence === opt.key ? '#fff' : '#475569',
+                        border: expConfidence === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                        display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span>{opt.emoji}</span>{opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>Specific plan:</div>
+                <textarea value={expPlan} onChange={e => setExpPlan(e.target.value)} rows={2}
+                  placeholder="e.g. Sit at the cafeteria table without headphones on Tuesday at lunch"
+                  className="text-sm border border-slate-200 rounded"
+                  style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>Scheduled date:</div>
+                <input type="date" value={expDate} onChange={e => setExpDate(e.target.value)} className="text-sm border border-slate-200 rounded" style={{ padding: '6px 8px' }} />
+              </div>
+              {expWarning && (
+                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 12px', marginBottom: '10px' }}>
+                  <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px', lineHeight: '1.4' }}>
+                    &#9888; Confidence is {expConfidence === 'low' ? 'Low' : 'Medium'} &mdash; consider simplifying this experiment before the teen attempts it.
+                  </p>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => planExpMut.mutate({ behaviorId: planningBehavior.id, force: true })} disabled={planExpMut.isPending}
+                      className="text-[11px] font-medium border-none cursor-pointer disabled:opacity-50"
+                      style={{ background: '#d97706', color: '#fff', padding: '5px 10px', borderRadius: '6px' }}>Save anyway</button>
+                    <button onClick={() => { setPlanningBehaviorId(null); setExpWarning(false) }}
+                      className="text-[11px] bg-white cursor-pointer" style={{ border: '1px solid #fde68a', color: '#78350f', padding: '5px 10px', borderRadius: '6px' }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+              {!expWarning && (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={() => handleSaveExperiment(planningBehavior.id)} disabled={!expPlan.trim() || planExpMut.isPending}
+                    className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>
+                    {planExpMut.isPending ? 'Saving...' : 'Save experiment plan'}</button>
+                  <button onClick={() => setPlanningBehaviorId(null)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                </div>
+              )}
+            </div>
+          )}
+          {expSavedFor && planningBehaviorId == null && (
+            <p style={{ fontSize: '11px', color: '#16a34a', margin: '6px 0 0' }}>
+              &#10003; Experiment planned for {fmtDate(expSavedFor.date + 'T00:00:00')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Exposure ladder — rungs on a color-graded rail, easiest first */}
+      <div style={{ position: 'relative', paddingLeft: '30px', marginBottom: '12px' }}>
+        {topRungs.length > 0 && (
+          <div style={{ position: 'absolute', left: '10px', top: '12px', bottom: '12px', width: '2px', background: 'linear-gradient(#4bb98a, #f2a33f 55%, #ef6b53)' }} />
+        )}
+        {topRungs.map((b, i) => (
+          <div key={b.id} style={{ position: 'relative', marginBottom: '5px' }}>
             {editingBehaviorId === b.id ? (
               /* Edit mode */
               <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
@@ -629,20 +743,18 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   <div style={{ display: 'flex', gap: '4px' }}>
                     {['avoidance', 'safety', 'ritual'].map(opt => (
                       <button key={opt} onClick={() => setEditType(opt)} type="button"
-                        style={{
-                          fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '999px', cursor: 'pointer',
+                        style={{ fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '999px', cursor: 'pointer',
                           background: editType === opt ? 'var(--float-primary)' : '#fff',
                           color: editType === opt ? '#fff' : '#475569',
                           border: editType === opt ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                          textTransform: 'capitalize'
-                        }}>{opt}</button>
+                          textTransform: 'capitalize' }}>{opt}</button>
                     ))}
                   </div>
                 </div>
                 <div style={{ marginBottom: '8px' }}>
                   <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <button type="button" onClick={() => setEditDT(String(Math.max(1, (Number(editDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
+                    <button type="button" onClick={() => setEditDT(String(Math.max(1, (Number(editDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>&minus;</button>
                     <input value={editDT} onChange={e => setEditDT(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                     <button type="button" onClick={() => setEditDT(String(Math.min(10, (Number(editDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
                   </div>
@@ -662,158 +774,67 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 </div>
               </div>
             ) : (
-              /* Normal row */
               <>
-                <div className="flex items-center justify-between group" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', marginBottom: '6px' }}>
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
-                      {b.behavior_type.slice(0, 3)}
+                {/* Rung node */}
+                <div style={{ position: 'absolute', left: '-30px', top: '12px', width: '22px', height: '22px', borderRadius: '50%', background: planningBehaviorId === b.id ? '#135450' : '#fff', border: `2px solid ${planningBehaviorId === b.id ? '#135450' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, color: planningBehaviorId === b.id ? '#fff' : '#64748b', zIndex: 2 }}>{i + 1}</div>
+                {/* Rung card */}
+                <div className="group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '11px 14px' }}>
+                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`} style={{ flexShrink: 0 }}>
+                    {b.behavior_type.slice(0, 3)}
+                  </span>
+                  <span className="text-sm text-slate-700 truncate" style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>{b.name}</span>
+                  {scheduledByBehavior.has(b.id) && (
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#3f8a78', background: '#eafaf4', border: '1px solid #cdeee2', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {scheduledByBehavior.get(b.id)?.date ? `Scheduled ${fmtDate(scheduledByBehavior.get(b.id)!.date)}` : 'Planned'}
                     </span>
-                    <span className="text-sm text-slate-700 truncate">{b.name}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  )}
+                  <div style={{ width: '38px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
                     <DTBadge value={b.distress_thermometer_when_refraining} />
-                    <button onClick={() => startEdit(b)} className="text-[10px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
-                    <button onClick={() => setDeletingBehaviorId(b.id)} className="text-[10px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                  </div>
+                  <div style={{ width: '92px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
+                    <button onClick={() => { resetSub(); setSubParentId(b.id) }} className="text-[12px] font-medium bg-transparent border-none cursor-pointer" style={{ color: '#3f8a78', whiteSpace: 'nowrap' }}>&#65291; step</button>
+                    <button onClick={() => startEdit(b)} className="text-[12px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
                   </div>
                 </div>
-                {planActive && planningBehaviorId !== b.id && (
-                  <div style={{ marginTop: '4px', marginLeft: '4px' }}>
-                    <button
-                      onClick={() => startPlanning(b)}
-                      className="text-[11px] font-medium bg-transparent border-none cursor-pointer"
-                      style={{ color: 'var(--float-primary)', padding: '2px 0' }}
-                    >+ Plan experiment</button>
-                    {expSavedFor?.behaviorId === b.id && (
-                      <span style={{ fontSize: '11px', color: '#16a34a', marginLeft: '8px' }}>
-                        &#10003; Experiment planned for {new Date(expSavedFor.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {planningBehaviorId === b.id && (
-                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginTop: '6px', border: '1px solid #e2e8f0' }}>
-                    <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '0 0 8px' }}>
-                      Plan experiment for: <span style={{ color: '#1e293b' }}>{b.name}</span>
-                    </p>
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>
-                        Confidence level (ask the child):
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {CONFIDENCE_OPTIONS.map(opt => (
-                          <button
-                            key={opt.key}
-                            type="button"
-                            onClick={() => { setExpConfidence(opt.key); setExpWarning(false) }}
-                            style={{
-                              fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '999px', cursor: 'pointer',
-                              background: expConfidence === opt.key ? 'var(--float-primary)' : '#fff',
-                              color: expConfidence === opt.key ? '#fff' : '#475569',
-                              border: expConfidence === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                              display: 'inline-flex', alignItems: 'center', gap: '4px',
-                            }}
-                          >
-                            <span>{opt.emoji}</span>{opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
-                        Specific plan:
-                      </div>
-                      <textarea
-                        value={expPlan}
-                        onChange={e => setExpPlan(e.target.value)}
-                        rows={2}
-                        placeholder="e.g. Sit at the cafeteria table without headphones on Tuesday at lunch"
-                        className="text-sm border border-slate-200 rounded"
-                        style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
-                      />
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
-                        Scheduled date:
-                      </div>
-                      <input
-                        type="date"
-                        value={expDate}
-                        onChange={e => setExpDate(e.target.value)}
-                        className="text-sm border border-slate-200 rounded"
-                        style={{ padding: '6px 8px' }}
-                      />
-                    </div>
-                    {expWarning && (
-                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 12px', marginBottom: '10px' }}>
-                        <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px', lineHeight: '1.4' }}>
-                          &#9888; Confidence is {expConfidence === 'low' ? 'Low' : 'Medium'} &mdash; consider simplifying this experiment before the teen attempts it.
-                        </p>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            onClick={() => planExpMut.mutate({ behaviorId: b.id, force: true })}
-                            disabled={planExpMut.isPending}
-                            className="text-[11px] font-medium border-none cursor-pointer disabled:opacity-50"
-                            style={{ background: '#d97706', color: '#fff', padding: '5px 10px', borderRadius: '6px' }}
-                          >Save anyway</button>
-                          <button
-                            onClick={() => { setPlanningBehaviorId(null); setExpWarning(false) }}
-                            className="text-[11px] bg-white cursor-pointer"
-                            style={{ border: '1px solid #fde68a', color: '#78350f', padding: '5px 10px', borderRadius: '6px' }}
-                          >Cancel</button>
-                        </div>
-                      </div>
-                    )}
-                    {!expWarning && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => handleSaveExperiment(b.id)}
-                          disabled={!expPlan.trim() || planExpMut.isPending}
-                          className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer"
-                          style={{ padding: '6px 12px' }}
-                        >{planExpMut.isPending ? 'Saving...' : 'Save experiment plan'}</button>
-                        <button
-                          onClick={() => setPlanningBehaviorId(null)}
-                          className="text-xs text-slate-400 bg-transparent border-none cursor-pointer"
-                        >Cancel</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Sub-behaviors (#7) — smaller, lower-scored steps under this behavior */}
+
+                {/* Sub-steps — same rail + same columns, only a smaller node + lighter card mark them children */}
                 {sortedBehaviors.filter(c => c.parent_behavior_id === b.id).map(c => (
-                  <div key={c.id} className="flex items-center justify-between group" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '7px 12px', margin: '0 0 6px 20px' }}>
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span style={{ color: '#94a3b8', fontSize: '12px' }}>&#8627;</span>
-                      <span className="text-[13px] text-slate-600 truncate">{c.name}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <DTBadge value={c.distress_thermometer_when_refraining} />
-                      <button onClick={() => { if (confirm('Delete this step?')) delMut.mutate(c.id) }} className="text-[10px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                  <div key={c.id} style={{ position: 'relative', marginTop: '5px' }}>
+                    <div style={{ position: 'absolute', left: '-25px', top: '13px', width: '12px', height: '12px', borderRadius: '50%', background: '#fff', border: '2px solid #cbd5e1', zIndex: 2 }} />
+                    <div className="group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f8fafc', border: '1px dashed #d5dee2', borderRadius: '10px', padding: '9px 14px' }}>
+                      <span style={{ color: '#94a3b8', fontSize: '13px', flexShrink: 0 }}>&#8627;</span>
+                      <span className="truncate" style={{ flex: 1, minWidth: 0, fontSize: '13.5px', color: '#64748b', fontWeight: 500 }}>{c.name}</span>
+                      <div style={{ width: '38px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+                        <DTBadge value={c.distress_thermometer_when_refraining} />
+                      </div>
+                      <div style={{ width: '92px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
+                        <button onClick={() => { if (confirm('Delete this step?')) delMut.mutate(c.id) }} className="text-[12px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                      </div>
                     </div>
                   </div>
                 ))}
-                {subParentId === b.id ? (
-                  <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px', margin: '0 0 6px 20px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Smaller step under “{b.name}”</div>
-                    <input value={subName} onChange={e => setSubName(e.target.value)} placeholder="More specific, easier version" className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '8px' }} autoFocus
-                      onKeyDown={e => e.key === 'Enter' && subName.trim() && subMut.mutate(b)} />
-                    <div style={{ marginBottom: '8px' }}>
-                      <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (lower than {b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : '—'})</label>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <button type="button" onClick={() => setSubDt(String(Math.max(1, (Number(subDt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
-                        <input value={subDt} onChange={e => setSubDt(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
-                        <button type="button" onClick={() => setSubDt(String(Math.min(10, (Number(subDt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+
+                {/* Sub-step add form */}
+                {subParentId === b.id && (
+                  <div style={{ position: 'relative', marginTop: '5px' }}>
+                    <div style={{ position: 'absolute', left: '-25px', top: '15px', width: '12px', height: '12px', borderRadius: '50%', background: '#fff', border: '2px solid #cbd5e1', zIndex: 2 }} />
+                    <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Smaller step under &ldquo;{b.name}&rdquo;</div>
+                      <input value={subName} onChange={e => setSubName(e.target.value)} placeholder="More specific, easier version" className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '8px' }} autoFocus
+                        onKeyDown={e => e.key === 'Enter' && subName.trim() && subMut.mutate(b)} />
+                      <div style={{ marginBottom: '8px' }}>
+                        <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (lower than {b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : '—'})</label>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <button type="button" onClick={() => setSubDt(String(Math.max(1, (Number(subDt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>&minus;</button>
+                          <input value={subDt} onChange={e => setSubDt(e.target.value)} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
+                          <button type="button" onClick={() => setSubDt(String(Math.min(10, (Number(subDt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <button onClick={() => subMut.mutate(b)} disabled={!subName.trim() || subMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add step</button>
+                        <button onClick={resetSub} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <button onClick={() => subMut.mutate(b)} disabled={!subName.trim() || subMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add step</button>
-                      <button onClick={resetSub} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ margin: '0 0 8px 20px' }}>
-                    <button onClick={() => { resetSub(); setSubParentId(b.id) }} className="text-[11px] font-medium bg-transparent border-none cursor-pointer" style={{ color: '#94a3b8', padding: '2px 0' }}>+ Add a smaller step</button>
                   </div>
                 )}
               </>
