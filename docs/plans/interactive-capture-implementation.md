@@ -15,13 +15,18 @@
 > - **Backend probe endpoint:** `POST /downward-arrows/next-probe` (`downward_arrows.py`) — additive,
 >   practitioner-guarded, mirrors the extraction call pattern, **no migration**. FE:
 >   `getNextProbe(...)` + `createPatientDownwardArrow(...)` in `api/treatment.ts`.
-> - **arrow** + **review** phases are still intentional stubs.
+> - **arrow phase** — real, interactive: fresh start thought → probe loop (AI, confirm-first, editable
+>   before asking) → "this is the bottom" → confirmed `feared_outcome` (`is_approved`). Persists to the
+>   **patient-level** `downward_arrows` row, matching the existing `PatientDownwardArrows` shape
+>   (`arrow_steps` = `{question, response}[]`, starting thought = step 0); preloads any existing chain
+>   so it never overwrites blindly. Falls back to a default probe if the AI call fails.
+> - **review phase** — read-styled ladder (DT-ordered) that hands off to the full builder (Q4).
 >
-> **Not built yet (next up):** the interactive **downward-arrow phase** (fresh start thought → probe
-> loop via the endpoint, confirm-first → confirmed `feared_outcome` anchor). ⚠️ Its persistence must
-> match the **existing** `PatientDownwardArrows` editor + `downward_arrow_service` `arrow_steps` shape
-> — study that (and test against a **non-prod** DB) before wiring, to avoid corrupting live arrows.
-> Then the **ladder-review** handoff reusing the builder view.
+> **v1 flow is now code-complete** (intro → arrow → hub ⇄ situation → review). What remains is
+> **validation and hardening, not new features:**
+> - ⚠️ **Runtime-test against a non-prod DB** — nothing here has been executed (local `.env` = prod).
+> - **`/security-review`** on the new route + AI endpoint before any deploy (non-negotiable #2).
+> - Polish: age register, empty/edge states, the clinician "driver" affordances, optional BIP capture.
 >
 > ⚠️ **Do not run this route against the local dev server** — the local `.env` points at **prod**, and
 > the situation/behavior writes are real. Verified by compile (tsc/vite) only, not a live click-through.

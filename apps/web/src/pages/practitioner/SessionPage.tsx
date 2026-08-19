@@ -15,7 +15,7 @@
  * arrow + review are stubs pending the backend `core_belief` column + next-probe endpoint and a
  * couple of owner answers (see the implementation plan's "Open questions").
  */
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useState, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -28,7 +28,11 @@ import {
   updateBehavior,
   deleteBehavior,
   listPatientDownwardArrows,
+  createPatientDownwardArrow,
+  updateDownwardArrow,
+  getNextProbe,
   type TriggerSituation,
+  type ArrowStep,
 } from '../../api/treatment'
 
 type Phase = 'intro' | 'arrow' | 'hub' | 'situation' | 'review' | 'done'
@@ -119,7 +123,7 @@ export default function SessionPage() {
   return (
     <Chrome>
       {phase === 'intro' && <IntroPhase coreBelief={coreBelief} onStartArrow={() => setPhase('arrow')} onSkipToLadder={() => setPhase('hub')} />}
-      {phase === 'arrow' && <ArrowStub onDone={() => setPhase('hub')} onBack={() => setPhase('intro')} />}
+      {phase === 'arrow' && <ArrowPhase patientId={patientId!} onDone={() => setPhase('hub')} onBack={() => setPhase('intro')} />}
       {phase === 'hub' && (
         <HubPhase
           triggers={sortedTriggers}
@@ -136,7 +140,7 @@ export default function SessionPage() {
           onBack={() => setPhase('hub')}
         />
       )}
-      {phase === 'review' && <ReviewStub triggers={sortedTriggers} onBack={() => setPhase('hub')} onOpenBuilder={exit} />}
+      {phase === 'review' && <ReviewPhase triggers={sortedTriggers} onBack={() => setPhase('hub')} onOpenBuilder={exit} />}
     </Chrome>
   )
 }
@@ -166,19 +170,165 @@ function IntroPhase({ coreBelief, onStartArrow, onSkipToLadder }: { coreBelief: 
   )
 }
 
-// ── Phase: downward arrow (STUB — needs core_belief column + next-probe endpoint) ──
-function ArrowStub({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
+// ── Phase: downward arrow — descending chain with AI-phrased probes (confirm-first) ──
+// Persists into the patient-level `downward_arrows` row (situation-agnostic), matching the
+// existing PatientDownwardArrows editor: arrow_steps = {question, response}[], and the confirmed
+// bottom stored as `feared_outcome` with is_approved. The starting thought is arrow_steps[0].
+const FALLBACK_PROBE = 'If that were true, what would that say about you?'
+
+function ArrowPhase({ patientId, onDone, onBack }: { patientId: string; onDone: () => void; onBack: () => void }) {
+  const qc = useQueryClient()
+  const [arrowId, setArrowId] = useState<string | null>(null)
+  const [stage, setStage] = useState<'start' | 'probe' | 'bottom'>('start')
+  const [startingThought, setStartingThought] = useState('')
+  const [probeSteps, setProbeSteps] = useState<ArrowStep[]>([])
+  const [currentProbe, setCurrentProbe] = useState('')
+  const [answer, setAnswer] = useState('')
+  const [fearedDraft, setFearedDraft] = useState('')
+  const [busy, setBusy] = useState(false)   // network in flight (create / probe / save)
+  const [err, setErr] = useState<string | null>(null)
+
+  const persistChain = async (thought: string, steps: ArrowStep[]) => {
+    if (!arrowId) return
+    const arrow_steps: ArrowStep[] = [{ question: 'Starting thought', response: thought }, ...steps]
+    await updateDownwardArrow(arrowId, { arrow_steps })
+    qc.invalidateQueries({ queryKey: ['patient-das', patientId] })
+  }
+
+  const requestProbe = async (thought: string, steps: ArrowStep[]) => {
+    setBusy(true); setErr(null)
+    try {
+      setCurrentProbe(await getNextProbe(thought, steps))
+    } catch {
+      setCurrentProbe(FALLBACK_PROBE)  // confirm-first: clinician can reword anyway
+    } finally { setBusy(false) }
+  }
+
+  const beginChain = async () => {
+    const t = startingThought.trim()
+    if (!t) return
+    setBusy(true)
+    try { await persistChain(t, []); setStage('probe'); await requestProbe(t, []) }
+    catch { setErr('Could not save. Try again.') } finally { setBusy(false) }
+  }
+
+  const nextStep = async () => {
+    const q = currentProbe.trim(); const a = answer.trim()
+    if (!a) return
+    const steps = [...probeSteps, { question: q, response: a }]
+    setProbeSteps(steps); setAnswer('')
+    try { await persistChain(startingThought, steps); await requestProbe(startingThought, steps) }
+    catch { setErr('Could not save that step. Try again.') }
+  }
+
+  const reachedBottom = async () => {
+    let steps = probeSteps
+    const a = answer.trim()
+    if (a) { steps = [...probeSteps, { question: currentProbe.trim(), response: a }]; setProbeSteps(steps); setAnswer(''); try { await persistChain(startingThought, steps) } catch { /* keep draft */ } }
+    setFearedDraft(steps.length ? steps[steps.length - 1].response : startingThought)
+    setStage('bottom')
+  }
+
+  const confirmBottom = async () => {
+    if (!arrowId || !fearedDraft.trim()) return
+    setBusy(true)
+    try {
+      await updateDownwardArrow(arrowId, { feared_outcome: fearedDraft.trim(), is_approved: true })
+      qc.invalidateQueries({ queryKey: ['patient-das', patientId] })
+      onDone()
+    } catch { setErr('Could not save. Try again.') } finally { setBusy(false) }
+  }
+
+  // Get-or-create the patient-level arrow on entry; preload any existing chain so we never
+  // silently overwrite a prior arrow. (Q2: we start fresh, but never destroy existing data.)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const arrow = await createPatientDownwardArrow(patientId, undefined, 'practitioner')
+        if (cancelled) return
+        setArrowId(arrow.id)
+        if (arrow.arrow_steps.length > 0) {
+          const thought = arrow.arrow_steps[0].response
+          const steps = arrow.arrow_steps.slice(1)
+          setStartingThought(thought)
+          setProbeSteps(steps)
+          setFearedDraft(arrow.feared_outcome ?? '')
+          if (arrow.feared_outcome) { setStage('bottom') }
+          else { setStage('probe'); void requestProbe(thought, steps) }
+        }
+      } catch { if (!cancelled) setErr('Could not start the downward arrow. Try again.') }
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId])
+
+  // ── render ──
+  const chain = (
+    <div style={{ marginTop: 14, borderLeft: '3px solid', borderImage: 'linear-gradient(#9af6e4,#0d3d3a) 1', paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {startingThought && <div style={{ background: '#fff', border: '1px solid #dbeae5', borderRadius: 10, padding: '10px 13px', fontSize: 13.5, color: '#1e293b', fontWeight: 600 }}>“{startingThought}”</div>}
+      {probeSteps.map((s, i) => (
+        <div key={i}>
+          <div style={{ fontSize: 12, color: '#8a9998', fontStyle: 'italic', margin: '2px 0 4px' }}>↓ {s.question}</div>
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 13px', fontSize: 13.5, color: '#1e293b', fontWeight: 600 }}>“{s.response}”</div>
+        </div>
+      ))}
+    </div>
+  )
+
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Downward arrow</div>
-      <p style={lead}>
-        Coming next: the guided descending-chain capture with AI-phrased probes (confirm-first). This
-        phase needs the backend <code>core_belief</code> column and the next-probe endpoint before it’s wired.
-      </p>
-      <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-        <button onClick={onBack} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>← Back</button>
-        <button onClick={onDone} style={primaryBtn}>Skip to situations →</button>
-      </div>
+      <div style={bigQ}>Let’s follow a worry down to what it’s really about.</div>
+      {err && <div style={{ marginTop: 10, background: '#fff4f2', border: '1px solid #f6c8bd', color: '#b3402a', borderRadius: 8, padding: '8px 11px', fontSize: 12.5 }}>{err}</div>}
+
+      {stage === 'start' && (
+        <div style={{ marginTop: 14 }}>
+          <p style={lead}>What’s a worry we can start with? (In the child’s own words.)</p>
+          <textarea value={startingThought} onChange={e => setStartingThought(e.target.value)} rows={2}
+            placeholder="e.g. Everyone will laugh if I get a question wrong"
+            style={{ width: '100%', marginTop: 8, border: '1.5px solid #cfe0db', borderRadius: 11, padding: '11px 13px', fontSize: 14, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <button onClick={onBack} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>← Back</button>
+            <button onClick={beginChain} disabled={!startingThought.trim() || busy} style={{ ...primaryBtn, opacity: !startingThought.trim() ? 0.4 : 1 }}>Follow it down →</button>
+          </div>
+        </div>
+      )}
+
+      {stage === 'probe' && (
+        <div style={{ marginTop: 6 }}>
+          {chain}
+          <div style={{ marginTop: 14, background: '#fff', border: '1.5px solid #135450', borderRadius: 14, padding: '13px 15px', boxShadow: '0 4px 14px rgba(19,84,80,.08)' }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94a3b8', letterSpacing: '.05em', marginBottom: 6 }}>NEXT QUESTION {busy && '· thinking…'} <span style={{ color: '#c7d2d0', fontWeight: 600 }}>· edit before you ask it aloud</span></div>
+            <textarea value={currentProbe} onChange={e => setCurrentProbe(e.target.value)} rows={2}
+              style={{ width: '100%', border: 'none', outline: 'none', fontSize: 15, fontWeight: 700, color: '#0d3d3a', resize: 'vertical', fontFamily: 'inherit', background: 'none' }} />
+            <input value={answer} onChange={e => setAnswer(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void nextStep() } }}
+              placeholder="Type the child’s answer…"
+              style={{ width: '100%', marginTop: 8, border: '1px solid #cfe0db', borderRadius: 10, padding: '10px 12px', fontSize: 13.5, boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+            <button onClick={nextStep} disabled={!answer.trim() || busy} style={{ ...primaryBtn, opacity: !answer.trim() ? 0.4 : 1 }}>Next ↓</button>
+            <button onClick={reachedBottom} disabled={busy} style={{ ...primaryBtn, background: '#0d3d3a' }}>This is the bottom ✓</button>
+            <button onClick={onBack} style={{ fontSize: 12.5, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', marginTop: 14 }}>Exit arrow</button>
+          </div>
+        </div>
+      )}
+
+      {stage === 'bottom' && (
+        <div style={{ marginTop: 6 }}>
+          {chain}
+          <div style={{ marginTop: 14, background: '#0d3d3a', borderRadius: 14, padding: '14px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: 6 }}>♡ the worry underneath · edit if needed</div>
+            <textarea value={fearedDraft} onChange={e => setFearedDraft(e.target.value)} rows={2}
+              style={{ width: '100%', border: 'none', outline: 'none', fontSize: 16, fontWeight: 800, color: '#fff', background: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+          </div>
+          <p style={{ fontSize: 12, color: '#8a9998', marginTop: 10 }}>This becomes the “core worry” that anchors the ladder.</p>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <button onClick={() => setStage('probe')} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>← Keep going</button>
+            <button onClick={confirmBottom} disabled={!fearedDraft.trim() || busy} style={{ ...primaryBtn, opacity: !fearedDraft.trim() ? 0.4 : 1 }}>That’s it — start the ladder →</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -355,15 +505,15 @@ function SituationPhase({ planId, trigger, onBack }: { planId: string; trigger: 
   )
 }
 
-// ── Phase: ladder review (STUB — reuse builder aesthetic; owner Q4) ──
-function ReviewStub({ triggers, onBack, onOpenBuilder }: { triggers: TriggerSituation[]; onBack: () => void; onOpenBuilder: () => void }) {
+// ── Phase: ladder review — read-styled ladder that hands off to the full builder (Q4) ──
+function ReviewPhase({ triggers, onBack, onOpenBuilder }: { triggers: TriggerSituation[]; onBack: () => void; onOpenBuilder: () => void }) {
   const rungs = [...triggers]
     .filter(t => t.distress_thermometer_rating != null)
     .sort((a, b) => Number(b.distress_thermometer_rating) - Number(a.distress_thermometer_rating))
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Here’s the ladder so far</div>
-      <p style={lead}>Biggest at the top, smallest at the bottom. (Full review — reorder, focus, behaviours — reuses the builder view; wiring pending owner Q4.)</p>
+      <div style={bigQ}>Here’s your whole ladder</div>
+      <p style={lead}>Biggest at the top, smallest at the bottom. Open the full builder to reorder, set the focus rung, and fine-tune the steps.</p>
       <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rungs.map(t => (
           <div key={t.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px' }}>
