@@ -15,6 +15,7 @@ import LoginPage from './pages/auth/LoginPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
+import SessionPage from './pages/practitioner/SessionPage'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
@@ -72,6 +73,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/patients/:patientId" element={
                 <ProtectedRoute><PatientPage /></ProtectedRoute>
+              } />
+              <Route path="/patients/:patientId/session" element={
+                <ProtectedRoute><SessionPage /></ProtectedRoute>
               } />
               <Route path="/patients/:patientId/progress" element={
                 <ProtectedRoute><ProgressPage /></ProtectedRoute>

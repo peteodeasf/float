@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
 import {
@@ -1298,6 +1298,7 @@ const SESSION_NOTE_TAGS = ['Initial', 'Consult', 'Weekly', 'Review']
 // ── Main Page ──
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [selectedTriggerId, setSelectedTriggerId] = useState<string | null>(null)
   const [showTriggerAdd, setShowTriggerAdd] = useState(false)
@@ -2524,6 +2525,11 @@ export default function PatientPage() {
               className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add nickname</button>
           )}
         </div>
+        {/* Launch the co-located, child-friendly capture flow (session mode). */}
+        <button onClick={() => navigate(`/patients/${patientId}/session`)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '999px', padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
+          ▸ Start session
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
