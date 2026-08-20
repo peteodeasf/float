@@ -27,8 +27,8 @@ import {
   createBehavior,
   updateBehavior,
   deleteBehavior,
-  listPatientDownwardArrows,
-  createPatientDownwardArrow,
+  getSituationDownwardArrow,
+  createSituationDownwardArrow,
   updateDownwardArrow,
   getNextProbe,
   type TriggerSituation,
@@ -68,19 +68,9 @@ export default function SessionPage() {
     enabled: !!planId,
   })
 
-  const { data: patientArrows } = useQuery({
-    queryKey: ['patient-das', patientId],
-    queryFn: () => listPatientDownwardArrows(patientId!),
-    enabled: !!patientId,
-  })
-
   const sortedTriggers = [...(triggers ?? [])].sort(
     (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
   )
-  // The ladder's anchor = the downward arrow's confirmed bottom-of-chain statement
-  // (`feared_outcome`, approved) — no separate "core belief" column exists. The `arrow`
-  // phase creates/approves it; here we surface it as the "core worry" chip.
-  const coreBelief = (patientArrows ?? []).find(a => a.feared_outcome_approved && a.feared_outcome)?.feared_outcome ?? null
 
   const exit = () => navigate(`/patients/${patientId}`)
 
@@ -93,12 +83,6 @@ export default function SessionPage() {
             style={{ fontSize: 13, fontWeight: 700, color: '#6b7a79', background: '#fff', border: '1px solid #dbe8e5', borderRadius: 999, padding: '7px 14px', cursor: 'pointer' }}>
             ← Exit session
           </button>
-          {coreBelief && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid #dbeae5', borderRadius: 999, padding: '5px 12px', fontSize: 11.5, color: '#5b6b6a' }}>
-              <span style={{ color: '#0d3d3a' }}>♡ core worry</span> ·
-              <b style={{ color: '#0d3d3a', fontStyle: 'italic', fontWeight: 700 }}>“{coreBelief}”</b>
-            </span>
-          )}
         </div>
         {children}
       </div>
@@ -122,8 +106,14 @@ export default function SessionPage() {
 
   return (
     <Chrome>
-      {phase === 'intro' && <IntroPhase coreBelief={coreBelief} onStartArrow={() => setPhase('arrow')} onSkipToLadder={() => setPhase('hub')} />}
-      {phase === 'arrow' && <ArrowPhase patientId={patientId!} onDone={() => setPhase('hub')} onBack={() => setPhase('intro')} />}
+      {phase === 'intro' && <IntroPhase onStart={() => setPhase('hub')} />}
+      {phase === 'arrow' && currentTriggerId && (
+        <ArrowPhase
+          trigger={sortedTriggers.find(t => t.id === currentTriggerId) ?? null}
+          onDone={() => setPhase('situation')}
+          onBack={() => setPhase('situation')}
+        />
+      )}
       {phase === 'hub' && (
         <HubPhase
           triggers={sortedTriggers}
@@ -137,6 +127,7 @@ export default function SessionPage() {
         <SituationPhase
           planId={plan.id}
           trigger={sortedTriggers.find(t => t.id === currentTriggerId) ?? null}
+          onOpenArrow={() => setPhase('arrow')}
           onBack={() => setPhase('hub')}
         />
       )}
@@ -152,31 +143,50 @@ const primaryBtn: CSSProperties = { marginTop: 14, background: '#135450', color:
 const bigQ: CSSProperties = { fontSize: 20, fontWeight: 800, color: '#0d3d3a', lineHeight: 1.3 }
 const lead: CSSProperties = { fontSize: 14, color: '#4b5a59', lineHeight: 1.5, marginTop: 6 }
 
+// Shared 1–10 fear scale — tappable, colour-graded. Used for the situation and per behaviour.
+function FearScale({ value, onPick, height = 40 }: { value: number | null; onPick: (n: number) => void; height?: number }) {
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
+        const active = value === n
+        return (
+          <button key={n} onClick={() => onPick(n)}
+            style={{ flex: 1, height, borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: height >= 38 ? 13.5 : 12,
+              border: active ? '2px solid #0d3d3a' : '1px solid #e2e8f0',
+              background: active ? dtColor(n) : '#fff',
+              color: active ? '#fff' : '#94a3b8' }}>
+            {n}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Phase: intro ───────────────────────────────────────────────
-function IntroPhase({ coreBelief, onStartArrow, onSkipToLadder }: { coreBelief: string | null; onStartArrow: () => void; onSkipToLadder: () => void }) {
+function IntroPhase({ onStart }: { onStart: () => void }) {
   return (
     <div style={screenSurface}>
       <div style={bigQ}>Let’s map out what feels hard — together.</div>
       <p style={lead}>
-        We’ll start by following one worry down to what it’s really about, then go through the
-        situations and what you do about them. No rush — we can change anything as we go.
+        We’ll go through the situations that feel hard — for each one, what you do about it, how hard
+        it’d be without that, and the worry underneath. No rush — we can change anything as we go.
       </p>
-      <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
-        <button onClick={onStartArrow} style={primaryBtn}>Start with the worry underneath →</button>
-        <button onClick={onSkipToLadder} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>Go straight to situations</button>
+      <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+        <button onClick={onStart} style={primaryBtn}>Let’s start →</button>
       </div>
-      {coreBelief && <p style={{ fontSize: 12, color: '#8a9998', marginTop: 12 }}>Core worry already captured: “{coreBelief}”.</p>}
     </div>
   )
 }
 
 // ── Phase: downward arrow — descending chain with AI-phrased probes (confirm-first) ──
-// Persists into the patient-level `downward_arrows` row (situation-agnostic), matching the
-// existing PatientDownwardArrows editor: arrow_steps = {question, response}[], and the confirmed
-// bottom stored as `feared_outcome` with is_approved. The starting thought is arrow_steps[0].
+// Tied to a SITUATION: persists into that situation's `downward_arrows` row, matching the existing
+// PatientDownwardArrows editor (arrow_steps = {question, response}[], starting thought = step 0),
+// with the confirmed bottom stored as `feared_outcome` (is_approved) — the feared outcome *for this
+// situation*. The chain stays visible; the clinician (not the AI) decides when it's reached bottom.
 const FALLBACK_PROBE = 'If that were true, what would that say about you?'
 
-function ArrowPhase({ patientId, onDone, onBack }: { patientId: string; onDone: () => void; onBack: () => void }) {
+function ArrowPhase({ trigger, onDone, onBack }: { trigger: TriggerSituation | null; onDone: () => void; onBack: () => void }) {
   const qc = useQueryClient()
   const [arrowId, setArrowId] = useState<string | null>(null)
   const [stage, setStage] = useState<'start' | 'probe' | 'bottom'>('start')
@@ -192,7 +202,7 @@ function ArrowPhase({ patientId, onDone, onBack }: { patientId: string; onDone: 
     if (!arrowId) return
     const arrow_steps: ArrowStep[] = [{ question: 'Starting thought', response: thought }, ...steps]
     await updateDownwardArrow(arrowId, { arrow_steps })
-    qc.invalidateQueries({ queryKey: ['patient-das', patientId] })
+    qc.invalidateQueries({ queryKey: ['situation-da', trigger?.id] })
   }
 
   const requestProbe = async (thought: string, steps: ArrowStep[]) => {
@@ -234,18 +244,19 @@ function ArrowPhase({ patientId, onDone, onBack }: { patientId: string; onDone: 
     setBusy(true)
     try {
       await updateDownwardArrow(arrowId, { feared_outcome: fearedDraft.trim(), is_approved: true })
-      qc.invalidateQueries({ queryKey: ['patient-das', patientId] })
+      qc.invalidateQueries({ queryKey: ['situation-da', trigger?.id] })
       onDone()
     } catch { setErr('Could not save. Try again.') } finally { setBusy(false) }
   }
 
-  // Get-or-create the patient-level arrow on entry; preload any existing chain so we never
+  // Get-or-create this situation's arrow on entry; preload any existing chain so we never
   // silently overwrite a prior arrow. (Q2: we start fresh, but never destroy existing data.)
   useEffect(() => {
+    if (!trigger) return
     let cancelled = false
     ;(async () => {
       try {
-        const arrow = await createPatientDownwardArrow(patientId, undefined, 'practitioner')
+        const arrow = await createSituationDownwardArrow(trigger.id, undefined, 'practitioner')
         if (cancelled) return
         setArrowId(arrow.id)
         if (arrow.arrow_steps.length > 0) {
@@ -261,7 +272,9 @@ function ArrowPhase({ patientId, onDone, onBack }: { patientId: string; onDone: 
     })()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patientId])
+  }, [trigger?.id])
+
+  if (!trigger) return null
 
   // ── render ──
   const chain = (
@@ -278,7 +291,8 @@ function ArrowPhase({ patientId, onDone, onBack }: { patientId: string; onDone: 
 
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Let’s follow a worry down to what it’s really about.</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 2 }}>WORRY UNDERNEATH · {trigger.name}</div>
+      <div style={bigQ}>Let’s follow this worry down to what it’s really about.</div>
       {err && <div style={{ marginTop: 10, background: '#fff4f2', border: '1px solid #f6c8bd', color: '#b3402a', borderRadius: 8, padding: '8px 11px', fontSize: 12.5 }}>{err}</div>}
 
       {stage === 'start' && (
@@ -322,10 +336,10 @@ function ArrowPhase({ patientId, onDone, onBack }: { patientId: string; onDone: 
             <textarea value={fearedDraft} onChange={e => setFearedDraft(e.target.value)} rows={2}
               style={{ width: '100%', border: 'none', outline: 'none', fontSize: 16, fontWeight: 800, color: '#fff', background: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
           </div>
-          <p style={{ fontSize: 12, color: '#8a9998', marginTop: 10 }}>This becomes the “core worry” that anchors the ladder.</p>
+          <p style={{ fontSize: 12, color: '#8a9998', marginTop: 10 }}>This is the feared outcome for “{trigger.name}”.</p>
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <button onClick={() => setStage('probe')} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>← Keep going</button>
-            <button onClick={confirmBottom} disabled={!fearedDraft.trim() || busy} style={{ ...primaryBtn, opacity: !fearedDraft.trim() ? 0.4 : 1 }}>That’s it — start the ladder →</button>
+            <button onClick={confirmBottom} disabled={!fearedDraft.trim() || busy} style={{ ...primaryBtn, opacity: !fearedDraft.trim() ? 0.4 : 1 }}>That’s it — save →</button>
           </div>
         </div>
       )}
@@ -406,7 +420,7 @@ function HubPhase({ triggers, planId, onOpen, onReview, onCreated }: {
 }
 
 // ── Phase: one situation — fear + behaviors on one screen ──────
-function SituationPhase({ planId, trigger, onBack }: { planId: string; trigger: TriggerSituation | null; onBack: () => void }) {
+function SituationPhase({ planId, trigger, onOpenArrow, onBack }: { planId: string; trigger: TriggerSituation | null; onOpenArrow: () => void; onBack: () => void }) {
   const qc = useQueryClient()
   const [newBeh, setNewBeh] = useState('')
   const [newBehType, setNewBehType] = useState<string>('avoidance')
@@ -414,6 +428,11 @@ function SituationPhase({ planId, trigger, onBack }: { planId: string; trigger: 
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger?.id],
     queryFn: () => getBehaviors(trigger!.id),
+    enabled: !!trigger,
+  })
+  const { data: situationDA } = useQuery({
+    queryKey: ['situation-da', trigger?.id],
+    queryFn: () => getSituationDownwardArrow(trigger!.id),
     enabled: !!trigger,
   })
 
@@ -427,6 +446,11 @@ function SituationPhase({ planId, trigger, onBack }: { planId: string; trigger: 
   })
   const typeMut = useMutation({
     mutationFn: (v: { id: string; behavior_type: string }) => updateBehavior(trigger!.id, v.id, { behavior_type: v.behavior_type }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['behaviors', trigger!.id] }),
+  })
+  // Per-behaviour fear score = how hard the situation would be WITHOUT using this behaviour.
+  const scoreMut = useMutation({
+    mutationFn: (v: { id: string; dt: number }) => updateBehavior(trigger!.id, v.id, { distress_thermometer_when_refraining: v.dt }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['behaviors', trigger!.id] }),
   })
   const delMut = useMutation({
@@ -443,45 +467,65 @@ function SituationPhase({ planId, trigger, onBack }: { planId: string; trigger: 
       <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 2 }}>SITUATION</div>
       <div style={bigQ}>{trigger.name}</div>
 
-      {/* fear meter — tappable 1–10, colour-graded */}
+      {/* the worry underneath this situation — the downward arrow, tied to this situation */}
+      <div style={{ marginTop: 14, background: situationDA?.feared_outcome ? '#0d3d3a' : '#fff', border: situationDA?.feared_outcome ? 'none' : '1px solid #e2e8f0', borderRadius: 12, padding: '12px 14px' }}>
+        {situationDA?.feared_outcome ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: 3 }}>♡ the worry underneath</div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, color: '#fff' }}>“{situationDA.feared_outcome}”</div>
+            </div>
+            <button onClick={onOpenArrow} style={{ fontSize: 12, fontWeight: 700, color: '#9af6e4', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>Revisit ›</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#0d3d3a' }}>What’s the worry underneath this?</div>
+              <div style={{ fontSize: 12, color: '#8a9998', marginTop: 2 }}>Follow it down to the feared outcome for this situation.</div>
+            </div>
+            <button onClick={onOpenArrow} style={{ ...primaryBtn, marginTop: 0 }}>Downward arrow →</button>
+          </div>
+        )}
+      </div>
+
+      {/* situation-level fear — tappable 1–10 */}
       <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0d3d3a', marginBottom: 8 }}>How nervous does it make you? <span style={{ color: '#4b5a59', fontWeight: 600 }}>— tap a number</span></div>
-        <div style={{ display: 'flex', gap: 5 }}>
-          {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
-            const active = currentDt === n
-            return (
-              <button key={n} onClick={() => dtMut.mutate(clampDt(n))}
-                style={{ flex: 1, height: 40, borderRadius: 9, cursor: 'pointer', fontWeight: 800, fontSize: 13.5,
-                  border: active ? '2px solid #0d3d3a' : '1px solid #e2e8f0',
-                  background: active ? dtColor(n) : '#fff',
-                  color: active ? '#fff' : '#94a3b8' }}>
-                {n}
-              </button>
-            )
-          })}
-        </div>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0d3d3a', marginBottom: 8 }}>How nervous does this situation make you overall? <span style={{ color: '#4b5a59', fontWeight: 600 }}>— tap a number</span></div>
+        <FearScale value={currentDt} onPick={n => dtMut.mutate(clampDt(n))} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginTop: 5 }}>
           <span style={{ color: '#2f9e6f' }}>1 · no big deal</span><span style={{ color: '#ef6b53' }}>10 · super scary</span>
         </div>
       </div>
 
-      {/* behaviors */}
+      {/* behaviors — each scored: how hard the situation would be WITHOUT this behaviour */}
       <div style={{ marginTop: 18 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0d3d3a', marginBottom: 9 }}>What do you do so it feels safer — or so you can skip it? <span style={{ color: '#4b5a59', fontWeight: 600 }}>— add the things you do</span></div>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0d3d3a', marginBottom: 9 }}>What do you do so it feels safer — or so you can skip it? <span style={{ color: '#4b5a59', fontWeight: 600 }}>— add each, then score it</span></div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {topBehaviors.map(b => (
-            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 11, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '10px 13px' }}>
-              <span style={{ width: 20, height: 20, borderRadius: 6, background: '#135450', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>✓</span>
-              <span style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 600, flex: 1, minWidth: 0 }}>{b.name}</span>
-              {/* clinician-only: behaviour type tag */}
-              <select value={b.behavior_type} onChange={e => typeMut.mutate({ id: b.id, behavior_type: e.target.value })}
-                title="Clinician: behaviour type"
-                style={{ fontSize: 10.5, fontWeight: 800, border: '1px solid #e4efeb', borderRadius: 6, padding: '3px 6px', color: '#5b6b82', background: '#f8fafc', cursor: 'pointer' }}>
-                {BEHAVIOR_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-              </select>
-              <button onClick={() => delMut.mutate(b.id)} title="Remove" style={{ color: '#c7d2d0', fontWeight: 800, fontSize: 15, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
-            </div>
-          ))}
+          {topBehaviors.map(b => {
+            const bScore = b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : null
+            return (
+              <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '10px 13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+                  <span style={{ width: 20, height: 20, borderRadius: 6, background: '#135450', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>✓</span>
+                  <span style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 600, flex: 1, minWidth: 0 }}>{b.name}</span>
+                  {/* clinician-only: behaviour type tag */}
+                  <select value={b.behavior_type} onChange={e => typeMut.mutate({ id: b.id, behavior_type: e.target.value })}
+                    title="Clinician: behaviour type"
+                    style={{ fontSize: 10.5, fontWeight: 800, border: '1px solid #e4efeb', borderRadius: 6, padding: '3px 6px', color: '#5b6b82', background: '#f8fafc', cursor: 'pointer' }}>
+                    {BEHAVIOR_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  </select>
+                  <button onClick={() => delMut.mutate(b.id)} title="Remove" style={{ color: '#c7d2d0', fontWeight: 800, fontSize: 15, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                </div>
+                <div style={{ marginTop: 9, paddingTop: 9, borderTop: '1px dashed #eef2f1' }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4b5a59', marginBottom: 6 }}>
+                    Without doing this, how hard would the situation be?
+                    {bScore == null && <span style={{ color: '#ef6b53', fontWeight: 800 }}> · tap to score</span>}
+                  </div>
+                  <FearScale value={bScore} onPick={n => scoreMut.mutate({ id: b.id, dt: clampDt(n) })} height={30} />
+                </div>
+              </div>
+            )
+          })}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', border: '1.5px dashed #cfe0db', borderRadius: 11, padding: '8px 10px' }}>
             <input value={newBeh} onChange={e => setNewBeh(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && newBeh.trim() && addBehMut.mutate()}

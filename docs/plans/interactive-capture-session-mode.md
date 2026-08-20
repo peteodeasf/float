@@ -131,6 +131,19 @@ the paper path, layer AI in as confirm-first assists once the interaction model 
   it aloud and can reword. Core-belief "is this the bottom?" detection stays **clinician-driven** in
   v1 (not AI). No other live AI in the arrow for v1.
 
+## Decisions — round 6 (2026-08-19, from first prod testing)
+- **Behaviors are individually fear-scored.** Each behavior on a situation gets its own
+  `distress_thermometer_when_refraining` = "how hard the situation would be **without using this
+  behavior**." This is the real scoring that builds the ladder (rungs = behaviors by that score); the
+  situation-level rating is a separate overall summary. The capture screen now scores each behavior.
+- **The downward arrow is SITUATION-tied, not global** (corrects round-4's patient-level "anchor").
+  The feared outcome belongs to the *situation* — the model already scopes it per situation
+  (`downward_arrows.trigger_situation_id`, `createSituationDownwardArrow`, unique per situation). So:
+  - The arrow lives **inside the per-situation flow**, launched from the situation screen ("What's the
+    worry underneath this?" → `Downward arrow →`), and writes the situation's `feared_outcome`.
+  - Removed the global pre-ladder arrow step and the single global "core worry" chip. There is no one
+    patient-level core belief; each situation has its own feared outcome, shown on that situation.
+
 ## Plan
 Mock **3 directions** for the exposure-ladder session capture, converge on one (or a merge), then
 apply the chosen pattern to downward arrow, then detail + implementation-plan. Each direction
