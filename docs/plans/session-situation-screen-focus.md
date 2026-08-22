@@ -98,9 +98,10 @@ so non-negotiable #1 applies.
 
 1. **"I stay away from it" is itself the avoidance behaviour**, and its
    `distress_thermometer_when_refraining` **is the situation's own DT** — being in the situation
-   without avoiding it just *is* the situation. Implemented as an inference and shown back to the
-   child in the transcript (`7 out of 10 — same as the situation`) rather than hidden. If the
-   situation has no DT yet there is nothing to infer from, so it asks normally instead of guessing.
+   without avoiding it just *is* the situation. The record simply reads `7 out of 10` — the
+   inference is **not** narrated on screen (owner, 2026-08-22: explaining where the number came from
+   is internal logic, and the app should not talk about itself to a child). If the situation has no
+   DT yet there is nothing to infer from, so it asks normally instead of guessing.
 2. **Behaviour type is derived, never asked** — "I do this…" → `safety`, "I avoid this altogether" →
    `avoidance`. Ritual is not offered in session mode; it stays settable in the Plan-tab builder.
 

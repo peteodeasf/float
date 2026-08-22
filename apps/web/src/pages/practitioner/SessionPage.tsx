@@ -452,6 +452,10 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
   // situation's own DT — being in the situation without avoiding it just is the situation. A
   // clinical rule, sourced from her (see the plan). With no situation DT there is nothing to
   // infer from, so it falls through to the normal question instead of guessing.
+  //
+  // The inference is NOT explained on screen. The record reads "8 out of 10", not
+  // "8 out of 10 — same as the situation": how the number was arrived at is our internal logic,
+  // and narrating it to a child is the app talking about itself.
   const avoidYesMut = useMutation({
     mutationFn: () => createBehavior(trigger.id, {
       name: avoidName,
@@ -491,7 +495,7 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
       {avoidAnswer === 'yes' && avoidBeh && dtOf(avoidBeh.distress_thermometer_when_refraining) != null && (
         <Exchange
           q="So how hard is it to be in it at all?"
-          a={`${dtOf(avoidBeh.distress_thermometer_when_refraining)} out of 10 — same as the situation`}
+          a={`${dtOf(avoidBeh.distress_thermometer_when_refraining)} out of 10`}
           onReopen={() => { setScoringId(avoidBeh.id); setStep('score') }}
         />
       )}
