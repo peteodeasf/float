@@ -110,11 +110,32 @@ function FearScale({ value, onPick, height = 44 }: { value: number | null; onPic
   )
 }
 
-const DTBadge = ({ v }: { v: number | null }) => (
+const DTBadge = ({ v, size = 26 }: { v: number | null; size?: number }) => (
   v == null ? null : (
-    <span style={{ minWidth: 26, height: 26, padding: '0 8px', borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: dtColor(v), flexShrink: 0 }}>{v}</span>
+    <span style={{ minWidth: size, height: size, padding: `0 ${Math.round(size / 3.2)}px`, borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: Math.round(size * 0.46), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: dtColor(v), flexShrink: 0 }}>{v}</span>
   )
 )
+
+// The thing being talked about. It gets a block of its own rather than a line of text, because it
+// is the frame for every question on the screen — styled like body copy it reads as just more
+// words. The score sits INSIDE the block, next to the name: a number parked at the far right edge
+// doesn't read as belonging to anything.
+function Context({ text, dt, quiet }: { text: string; dt?: number | null; quiet?: boolean }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap',
+      background: quiet ? 'transparent' : '#e8f7f1',
+      border: quiet ? 'none' : '1px solid #cdeee2',
+      borderLeft: `${quiet ? 3 : 4}px solid ${quiet ? '#cdeee2' : '#135450'}`,
+      borderRadius: quiet ? 0 : 12,
+      padding: quiet ? '2px 0 2px 11px' : '13px 16px',
+      marginBottom: quiet ? 14 : 18,
+    }}>
+      <span style={{ fontSize: quiet ? 13.5 : 19, fontWeight: quiet ? 700 : 800, color: quiet ? '#93a8a3' : '#0d3d3a', minWidth: 0, lineHeight: 1.25 }}>{text}</span>
+      {dt != null && <DTBadge v={dt} size={quiet ? 21 : 34} />}
+    </div>
+  )
+}
 
 export default function SessionPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -345,8 +366,10 @@ export function RatePhase({ planId, triggers, index, onIndex, onBack, onDone }: 
   return (
     <div style={screenSurface}>
       {i === 0 && <p style={{ ...lead, marginTop: 0, marginBottom: 14 }}>Now let&rsquo;s see how big each one feels.</p>}
-      <div style={{ ...bigQ, marginBottom: 4 }}>{t.name}</div>
-      <p style={{ fontSize: 14, color: '#4b5a59', marginTop: 0, marginBottom: 14 }}>How big does this one feel?</p>
+      {/* Same context treatment as the situation screens — this is the thing being rated. No badge:
+          the scale below is the answer. */}
+      <Context text={t.name} />
+      <div style={{ ...bigQ, marginBottom: 14 }}>How big does this one feel?</div>
       <FearScale value={dtOf(t.distress_thermometer_rating)} onPick={n => { dtMut.mutate({ id: t.id, dt: clampDt(n) }); advance() }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 18 }}>
         {i > 0
@@ -524,10 +547,7 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
 
   return (
     <div style={screenSurface}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, paddingBottom: 14, borderBottom: '1px solid #e6f0ed', marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a', flex: 1, minWidth: 0 }}>{trigger.name}</div>
-        {situationDt != null && <span style={{ fontSize: 12, fontWeight: 700, color: '#8a9998' }}>feels like {article(situationDt)} {situationDt}</span>}
-      </div>
+      <Context text={trigger.name} dt={situationDt} quiet={step === 'score'} />
 
       {showTranscript && answerCount > 0 && (
         <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px dashed #dbe8e5' }}>{transcript}</div>
@@ -564,11 +584,10 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
               ? 'How hard would it be to be in it at all?'
               : <>How hard would it be to be in it — <span style={{ color: '#135450' }}>without doing that</span>?</>}
           </Ask>
-          {/* Their own words, quoted back — says which one we mean without a form label, and
-              keeps it unambiguous when an earlier answer is reopened. */}
-          {scoring.id !== avoidBeh?.id && (
-            <p style={{ fontSize: 14, color: '#3d5451', fontWeight: 600, margin: '-6px 0 14px' }}>&ldquo;{scoring.name}&rdquo;</p>
-          )}
+          {/* Their own words, given the same context treatment as the situation — this is the
+              thing being scored, and it has to be unmistakable when an earlier answer is
+              reopened. No badge: the scale below already shows the current value. */}
+          {scoring.id !== avoidBeh?.id && <Context text={`“${scoring.name}”`} />}
           <FearScale value={dtOf(scoring.distress_thermometer_when_refraining)}
             onPick={n => { scoreMut.mutate({ id: scoring.id, dt: clampDt(n) }); setScoringId(null); setStep('name') }} />
           <div style={{ marginTop: 16 }}>

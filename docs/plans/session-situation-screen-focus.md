@@ -54,7 +54,14 @@ next starts.
    `4 answers so far ›`, that opens on demand. Tapping any line inside it reopens that answer, which
    is why there are no `×` buttons or "score it" links on the child-facing surface: editing is
    *tap what you said*.
-2. **Nothing appears twice.** The item currently being scored is suppressed from the history —
+2. **The subject of the question gets a block, not a line.** *(2026-08-22, third pass.)* The
+   situation was styled as a caption with its score floated to the far right edge, so it read as
+   just more text and the number looked unattached. Both now sit together in a tinted block with a
+   teal accent bar (`Context`), score inline beside the name at 34px. The **same treatment applies
+   to whatever the question is about**: on a scoring screen the behaviour gets the block and the
+   situation recedes to a quiet breadcrumb, so "what am I rating?" is answered by the layout. The
+   rate step uses it too.
+3. **Nothing appears twice.** The item currently being scored is suppressed from the history —
    otherwise the same behaviour showed up as the live question *and* as a stale
    "— we skipped this one" line directly above it.
 3. **Questions phrase off the last answer.** After "yes, I skip it", the next question is *"And when
