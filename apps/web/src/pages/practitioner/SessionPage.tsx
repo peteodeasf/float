@@ -11,11 +11,15 @@
  * Phase machine (like the teen pages' Phase/Step pattern):
  *   intro → arrow → hub ⇄ situation → review → done
  *
+ * Inside a situation there is a second, smaller spine — name → score → review — so the child is
+ * asked one question at a time instead of facing the whole form. See
+ * docs/plans/session-situation-screen-focus.md.
+ *
  * STATUS: foundation. intro + hub + situation are wired to real endpoints (deterministic, no AI).
  * arrow + review are stubs pending the backend `core_belief` column + next-probe endpoint and a
  * couple of owner answers (see the implementation plan's "Open questions").
  */
-import { useState, useEffect, type CSSProperties, type ReactNode } from 'react'
+import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -23,7 +27,6 @@ import {
   getTriggers,
   getBehaviors,
   createTrigger,
-  updateTrigger,
   createBehavior,
   updateBehavior,
   deleteBehavior,
@@ -41,12 +44,6 @@ type Phase = 'intro' | 'arrow' | 'hub' | 'situation' | 'review' | 'done'
 const clampDt = (n: number) => Math.min(10, Math.max(1, Math.round(n)))
 const dtColor = (v: number | null | undefined) =>
   v == null ? '#cbd5e1' : v >= 7 ? '#ef6b53' : v >= 4 ? '#f2a33f' : '#4bb98a'
-
-const BEHAVIOR_TYPES = [
-  { key: 'avoidance', label: 'Avoidance' },
-  { key: 'safety', label: 'Safety' },
-  { key: 'ritual', label: 'Ritual' },
-] as const
 
 export default function SessionPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -72,7 +69,8 @@ export default function SessionPage() {
     (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
   )
 
-  const exit = () => navigate(`/patients/${patientId}`)
+  // Session mode is launched from the Plan tab, so it hands the clinician back to it.
+  const exit = () => navigate(`/patients/${patientId}?tab=plan`)
 
   // ── shared chrome ─────────────────────────────────────────────
   const Chrome = ({ children }: { children: ReactNode }) => (
@@ -125,7 +123,7 @@ export default function SessionPage() {
       )}
       {phase === 'situation' && currentTriggerId && (
         <SituationPhase
-          planId={plan.id}
+          key={currentTriggerId}
           trigger={sortedTriggers.find(t => t.id === currentTriggerId) ?? null}
           onOpenArrow={() => setPhase('arrow')}
           onBack={() => setPhase('hub')}
@@ -167,7 +165,7 @@ function FearScale({ value, onPick, height = 40 }: { value: number | null; onPic
 function IntroPhase({ onStart }: { onStart: () => void }) {
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Let’s map out what feels hard — together.</div>
+      <div style={bigQ}>Let&rsquo;s map out together the situations that feel hard.</div>
       <p style={lead}>
         We’ll go through the situations that feel hard — for each one, what you do about it, how hard
         it’d be without that, and the worry underneath. No rush — we can change anything as we go.
@@ -372,7 +370,7 @@ function HubPhase({ triggers, planId, onOpen, onReview, onCreated }: {
 
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>The things that feel hard</div>
+      <div style={bigQ}>Pick a situation to work on</div>
       <p style={lead}>Tap one to go through it — or add something we’re missing. We’ll look at the whole ladder at the end.</p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
@@ -419,11 +417,26 @@ function HubPhase({ triggers, planId, onOpen, onReview, onCreated }: {
   )
 }
 
-// ── Phase: one situation — fear + behaviors on one screen ──────
-function SituationPhase({ planId, trigger, onOpenArrow, onBack }: { planId: string; trigger: TriggerSituation | null; onOpenArrow: () => void; onBack: () => void }) {
+// ── Phase: one situation — a step spine, one question at a time ──
+// Design + decisions: docs/plans/session-situation-screen-focus.md
+//
+// The old version put five things on one screen (arrow, overall rating, add-behaviour + a clinical
+// type dropdown, a 1–10 grid per behaviour, Done) — up to thirty numbered buttons in front of an
+// anxious child. This asks one question at a time and collapses what's answered:
+//
+//   name  →  score (one behaviour per view)  →  review
+//
+// Not asked here any more: the situation's OVERALL rating (already set before session mode, shown
+// as context in the header) and the avoidance/safety/ritual type (a clinical judgment — the child
+// picks plain language instead; the clinician retypes in the Plan-tab builder if needed).
+type SitStep = 'name' | 'score' | 'review'
+
+function SituationPhase({ trigger, onOpenArrow, onBack }: { trigger: TriggerSituation | null; onOpenArrow: () => void; onBack: () => void }) {
   const qc = useQueryClient()
   const [newBeh, setNewBeh] = useState('')
-  const [newBehType, setNewBehType] = useState<string>('avoidance')
+  const [step, setStep] = useState<SitStep>('name')
+  const [scoreIdx, setScoreIdx] = useState(0)
+  const initRef = useRef(false)
 
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger?.id],
@@ -436,17 +449,28 @@ function SituationPhase({ planId, trigger, onOpenArrow, onBack }: { planId: stri
     enabled: !!trigger,
   })
 
-  const dtMut = useMutation({
-    mutationFn: (dt: number) => updateTrigger(planId, trigger!.id, { distress_thermometer_rating: dt }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['triggers', planId] }),
-  })
-  const addBehMut = useMutation({
-    mutationFn: () => createBehavior(trigger!.id, { name: newBeh.trim(), behavior_type: newBehType }),
+  const topBehaviors = (behaviors ?? []).filter(b => !b.parent_behavior_id)
+  const scoreOf = (b: { distress_thermometer_when_refraining?: number | string | null }) =>
+    b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : null
+  const avoidWholeName = `Avoids ${trigger?.name ?? ''}`
+  const hasAvoidWhole = topBehaviors.some(b => b.name === avoidWholeName)
+
+  // Land on the first unanswered step — reopening a situation resumes it rather than restarting.
+  useEffect(() => {
+    if (initRef.current || !behaviors) return
+    initRef.current = true
+    if (topBehaviors.length === 0) { setStep('name'); return }
+    const firstUnscored = topBehaviors.findIndex(b => scoreOf(b) == null)
+    if (firstUnscored >= 0) { setScoreIdx(firstUnscored); setStep('score') } else { setStep('review') }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [behaviors])
+
+  // The child picks plain language; the type is derived, never asked (see the plan's Settled §3).
+  // "I do this…" → safety, "I avoid this altogether" → avoidance. Ritual isn't offered in session
+  // mode — it's rare, and it stays settable in the builder.
+  const addMut = useMutation({
+    mutationFn: (v: { name: string; behavior_type: string }) => createBehavior(trigger!.id, v),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger!.id] }); setNewBeh('') },
-  })
-  const typeMut = useMutation({
-    mutationFn: (v: { id: string; behavior_type: string }) => updateBehavior(trigger!.id, v.id, { behavior_type: v.behavior_type }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['behaviors', trigger!.id] }),
   })
   // Per-behaviour fear score = how hard the situation would be WITHOUT using this behaviour.
   const scoreMut = useMutation({
@@ -459,15 +483,64 @@ function SituationPhase({ planId, trigger, onOpenArrow, onBack }: { planId: stri
   })
 
   if (!trigger) return null
-  const topBehaviors = (behaviors ?? []).filter(b => !b.parent_behavior_id)
-  const currentDt = trigger.distress_thermometer_rating != null ? Number(trigger.distress_thermometer_rating) : null
+  const overallDt = trigger.distress_thermometer_rating != null ? Number(trigger.distress_thermometer_rating) : null
+  const scoredCount = topBehaviors.filter(b => scoreOf(b) != null).length
+  // Clamped, not stored — removing a behaviour while the score step points past the end must not
+  // blank the screen.
+  const curIdx = Math.min(scoreIdx, Math.max(0, topBehaviors.length - 1))
+  const advance = (from: number) => {
+    const next = from + 1
+    if (next >= topBehaviors.length) setStep('review')
+    else setScoreIdx(next)
+  }
+
+  const stepLink: CSSProperties = { fontSize: 12.5, fontWeight: 700, color: '#3f8a78', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }
+  const quietLink: CSSProperties = { fontSize: 12.5, fontWeight: 600, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }
+  const scaleLegend = (
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginTop: 5 }}>
+      <span style={{ color: '#2f9e6f' }}>1 · no big deal</span><span style={{ color: '#ef6b53' }}>10 · super scary</span>
+    </div>
+  )
+
+  // A finished step folds up to one tappable line, so progress stays visible without staying loud.
+  const doneLine = (label: string, onReopen: () => void) => (
+    <button onClick={onReopen}
+      style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid #e6f0ed', padding: '9px 2px', cursor: 'pointer' }}>
+      <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#135450', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>✓</span>
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#0d3d3a', flex: 1 }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>change</span>
+    </button>
+  )
+
+  const behaviorNameList = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      {topBehaviors.map(b => (
+        <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 11, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '11px 13px' }}>
+          <span style={{ width: 20, height: 20, borderRadius: 6, background: '#135450', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>✓</span>
+          <span style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 600, flex: 1, minWidth: 0 }}>{b.name}</span>
+          <button onClick={() => delMut.mutate(b.id)} title="Remove" style={{ color: '#c7d2d0', fontWeight: 800, fontSize: 15, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+        </div>
+      ))}
+    </div>
+  )
 
   return (
     <div style={screenSurface}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 2 }}>SITUATION</div>
-      <div style={bigQ}>{trigger.name}</div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 2 }}>SITUATION</div>
+          <div style={bigQ}>{trigger.name}</div>
+        </div>
+        {/* Context, not a question — the overall rating is set before session mode gets here. */}
+        {overallDt != null && (
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', letterSpacing: '.05em' }}>OVERALL</div>
+            <div style={{ minWidth: 30, height: 30, padding: '0 8px', borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: dtColor(overallDt), marginTop: 3 }}>{overallDt}</div>
+          </div>
+        )}
+      </div>
 
-      {/* the worry underneath this situation — the downward arrow, tied to this situation */}
+      {/* The worry underneath — stays launchable from the top at any point in the situation. */}
       <div style={{ marginTop: 14, background: situationDA?.feared_outcome ? '#0d3d3a' : '#fff', border: situationDA?.feared_outcome ? 'none' : '1px solid #e2e8f0', borderRadius: 12, padding: '12px 14px' }}>
         {situationDA?.feared_outcome ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -488,63 +561,115 @@ function SituationPhase({ planId, trigger, onOpenArrow, onBack }: { planId: stri
         )}
       </div>
 
-      {/* situation-level fear — tappable 1–10 */}
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0d3d3a', marginBottom: 8 }}>How nervous does this situation make you overall? <span style={{ color: '#4b5a59', fontWeight: 600 }}>— tap a number</span></div>
-        <FearScale value={currentDt} onPick={n => dtMut.mutate(clampDt(n))} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginTop: 5 }}>
-          <span style={{ color: '#2f9e6f' }}>1 · no big deal</span><span style={{ color: '#ef6b53' }}>10 · super scary</span>
-        </div>
-      </div>
+      {/* ── Step 1: name what you do ── */}
+      {step === 'name' && (
+        <div style={{ marginTop: 18 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#0d3d3a', marginBottom: 4 }}>What do you do so it feels safer — or so you can skip it?</div>
+          <div style={{ fontSize: 12.5, color: '#4b5a59', marginBottom: 11 }}>Name them all first — we’ll go through them one at a time after.</div>
 
-      {/* behaviors — each scored: how hard the situation would be WITHOUT this behaviour */}
-      <div style={{ marginTop: 18 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0d3d3a', marginBottom: 9 }}>What do you do so it feels safer — or so you can skip it? <span style={{ color: '#4b5a59', fontWeight: 600 }}>— add each, then score it</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {topBehaviors.map(b => {
-            const bScore = b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : null
-            return (
-              <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '10px 13px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <span style={{ width: 20, height: 20, borderRadius: 6, background: '#135450', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 600, flex: 1, minWidth: 0 }}>{b.name}</span>
-                  {/* clinician-only: behaviour type tag */}
-                  <select value={b.behavior_type} onChange={e => typeMut.mutate({ id: b.id, behavior_type: e.target.value })}
-                    title="Clinician: behaviour type"
-                    style={{ fontSize: 10.5, fontWeight: 800, border: '1px solid #e4efeb', borderRadius: 6, padding: '3px 6px', color: '#5b6b82', background: '#f8fafc', cursor: 'pointer' }}>
-                    {BEHAVIOR_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-                  </select>
-                  <button onClick={() => delMut.mutate(b.id)} title="Remove" style={{ color: '#c7d2d0', fontWeight: 800, fontSize: 15, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
-                </div>
-                <div style={{ marginTop: 9, paddingTop: 9, borderTop: '1px dashed #eef2f1' }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4b5a59', marginBottom: 6 }}>
-                    Without doing this, how hard would the situation be?
-                    {bScore == null && <span style={{ color: '#ef6b53', fontWeight: 800 }}> · tap to score</span>}
-                  </div>
-                  <FearScale value={bScore} onPick={n => scoreMut.mutate({ id: b.id, dt: clampDt(n) })} height={30} />
-                </div>
-              </div>
-            )
-          })}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', border: '1.5px dashed #cfe0db', borderRadius: 11, padding: '8px 10px' }}>
-            <input value={newBeh} onChange={e => setNewBeh(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && newBeh.trim() && addBehMut.mutate()}
-              placeholder="Add another thing you do…"
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: 13.5, background: 'none' }} />
-            <select value={newBehType} onChange={e => setNewBehType(e.target.value)}
-              style={{ fontSize: 10.5, fontWeight: 800, border: '1px solid #e4efeb', borderRadius: 6, padding: '4px 6px', color: '#5b6b82', background: '#fff', cursor: 'pointer' }}>
-              {BEHAVIOR_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-            </select>
-            <button onClick={() => addBehMut.mutate()} disabled={!newBeh.trim() || addBehMut.isPending}
-              style={{ fontSize: 12, fontWeight: 800, color: '#fff', background: '#135450', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', opacity: !newBeh.trim() ? 0.4 : 1 }}>Add</button>
+          {topBehaviors.length > 0 && <div style={{ marginBottom: 11 }}>{behaviorNameList}</div>}
+
+          <div style={{ background: '#fff', border: '1.5px solid #cfe0db', borderRadius: 12, padding: '12px 13px' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#0d3d3a', marginBottom: 7 }}>I do this…</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input value={newBeh} onChange={e => setNewBeh(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && newBeh.trim()) addMut.mutate({ name: newBeh.trim(), behavior_type: 'safety' }) }}
+                placeholder="e.g. ask a friend to answer for me"
+                style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 9, padding: '9px 11px', fontSize: 13.5, minWidth: 0 }} />
+              <button onClick={() => addMut.mutate({ name: newBeh.trim(), behavior_type: 'safety' })} disabled={!newBeh.trim() || addMut.isPending}
+                style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', background: '#135450', border: 'none', borderRadius: 9, padding: '9px 15px', cursor: 'pointer', opacity: !newBeh.trim() ? 0.4 : 1, flexShrink: 0 }}>Add</button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0' }}>
+              <div style={{ flex: 1, height: 1, background: '#eef2f1' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#b6c3c1' }}>or</span>
+              <div style={{ flex: 1, height: 1, background: '#eef2f1' }} />
+            </div>
+
+            <button
+              onClick={() => addMut.mutate({ name: avoidWholeName, behavior_type: 'avoidance' })}
+              disabled={hasAvoidWhole || addMut.isPending}
+              style={{ width: '100%', fontSize: 13, fontWeight: 800, color: hasAvoidWhole ? '#b6c3c1' : '#135450', background: '#fff', border: `1.5px solid ${hasAvoidWhole ? '#e6eeec' : '#135450'}`, borderRadius: 10, padding: '10px 14px', cursor: hasAvoidWhole ? 'default' : 'pointer' }}>
+              {hasAvoidWhole ? '✓ I avoid this altogether' : 'I avoid this altogether'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 16 }}>
+            <button onClick={() => {
+              const firstUnscored = topBehaviors.findIndex(b => scoreOf(b) == null)
+              if (firstUnscored < 0) { setStep('review'); return }
+              setScoreIdx(firstUnscored); setStep('score')
+            }}
+              disabled={topBehaviors.length === 0}
+              style={{ ...primaryBtn, marginTop: 0, opacity: topBehaviors.length === 0 ? 0.4 : 1 }}>
+              That’s everything →
+            </button>
+            <button onClick={onBack} style={quietLink}>Back to the list</button>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: '#9aa9a8', marginTop: 10 }}><b style={{ color: '#8a9998' }}>Clinician-only:</b> the type dropdown (avoidance / safety / ritual) is yours — the child just names what they do.</div>
-      </div>
+      )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18 }}>
-        <button onClick={onBack} style={primaryBtn}>Done — back to the list →</button>
-      </div>
+      {/* The naming step folds up to one line while scoring; the review step lists them itself. */}
+      {step === 'score' && doneLine(
+        `${topBehaviors.length} thing${topBehaviors.length === 1 ? '' : 's'} you do`,
+        () => setStep('name')
+      )}
+
+      {/* ── Step 2: score them, one at a time ── */}
+      {step === 'score' && topBehaviors[curIdx] && (() => {
+        const b = topBehaviors[curIdx]
+        return (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 8 }}>
+              {curIdx + 1} OF {topBehaviors.length}
+            </div>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '13px 15px', marginBottom: 13 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b' }}>{b.name}</div>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#0d3d3a', marginBottom: 9 }}>Without doing this, how hard would the situation be?</div>
+            <FearScale value={scoreOf(b)} onPick={n => { scoreMut.mutate({ id: b.id, dt: clampDt(n) }); advance(curIdx) }} height={44} />
+            {scaleLegend}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
+              {curIdx > 0 && <button onClick={() => setScoreIdx(curIdx - 1)} style={stepLink}>← Previous</button>}
+              <button onClick={() => advance(curIdx)} style={quietLink}>Skip for now</button>
+              <button onClick={() => setStep('review')} style={{ ...quietLink, marginLeft: 'auto' }}>See them all</button>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Review: everything captured for this situation ── */}
+      {step === 'review' && (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#0d3d3a', marginBottom: 4 }}>Here’s what we’ve got for this one</div>
+          <div style={{ fontSize: 12.5, color: '#4b5a59', marginBottom: 11 }}>
+            <b style={{ color: '#135450' }}>{scoredCount} of {topBehaviors.length}</b> scored — tap any number to change it.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {topBehaviors.map((b, i) => {
+              const sc = scoreOf(b)
+              return (
+                <button key={b.id} onClick={() => { setScoreIdx(i); setStep('score') }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '11px 13px', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 600, flex: 1, minWidth: 0 }}>{b.name}</span>
+                  {sc != null ? (
+                    <span style={{ minWidth: 26, height: 26, padding: '0 8px', borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', background: dtColor(sc) }}>{sc}</span>
+                  ) : (
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: '#ef6b53' }}>tap to score</span>
+                  )}
+                </button>
+              )
+            })}
+            {topBehaviors.length === 0 && (
+              <div style={{ fontSize: 13, color: '#94a3b8' }}>Nothing named yet for this situation.</div>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 18 }}>
+            <button onClick={onBack} style={{ ...primaryBtn, marginTop: 0 }}>Done — back to the list →</button>
+            <button onClick={() => setStep('name')} style={quietLink}>Add another thing</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,12 +1,17 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete, update
 from fastapi import HTTPException, status
 
 from app.models.treatment import TriggerSituation, TreatmentPlan, AvoidanceBehavior
+from app.models.ladder import ExposureLadder, LadderRung
+from app.models.notification import LadderReviewFlag
+from app.models.downward_arrow import DownwardArrow
+from app.models.experiment import Experiment, AccommodationBehavior
 from app.schemas.trigger_situation import TriggerSituationCreate, TriggerSituationUpdate
 from app.services.library_service import upsert_situation_library
+from app.services.avoidance_behavior_service import cascade_delete_behaviors
 
 
 async def get_triggers_for_plan(
@@ -134,6 +139,52 @@ async def delete_trigger(
     trigger = result.scalar_one_or_none()
     if not trigger:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trigger not found")
+
+    # Nothing pointing at trigger_situations cascades in the schema (only trigger_situation_tags
+    # does), so this has to unwind the situation by hand — otherwise deleting any situation that
+    # has been worked on at all fails with an IntegrityError. Same policy as behaviors: the
+    # situation's own structure goes, outcome/parent history is unlinked rather than destroyed.
+    behavior_rows = await db.execute(
+        select(AvoidanceBehavior.id).where(AvoidanceBehavior.trigger_situation_id == trigger.id)
+    )
+    await cascade_delete_behaviors(db, list(behavior_rows.scalars().all()))
+
+    ladder_rows = await db.execute(
+        select(ExposureLadder.id).where(ExposureLadder.trigger_situation_id == trigger.id)
+    )
+    ladder_ids = list(ladder_rows.scalars().all())
+    if ladder_ids:
+        rung_rows = await db.execute(
+            select(LadderRung.id).where(LadderRung.ladder_id.in_(ladder_ids))
+        )
+        rung_ids = list(rung_rows.scalars().all())
+        if rung_ids:
+            await db.execute(
+                update(Experiment)
+                .where(Experiment.ladder_rung_id.in_(rung_ids))
+                .values(ladder_rung_id=None)
+            )
+            await db.execute(delete(LadderRung).where(LadderRung.id.in_(rung_ids)))
+        await db.execute(delete(LadderReviewFlag).where(LadderReviewFlag.ladder_id.in_(ladder_ids)))
+        await db.execute(delete(ExposureLadder).where(ExposureLadder.id.in_(ladder_ids)))
+
+    # The downward arrow is scoped to this situation — the feared outcome has no meaning without it.
+    await db.execute(
+        delete(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
+    )
+
+    # History that merely references the situation keeps its own record; only the link goes.
+    await db.execute(
+        update(Experiment)
+        .where(Experiment.trigger_situation_id == trigger.id)
+        .values(trigger_situation_id=None)
+    )
+    await db.execute(
+        update(AccommodationBehavior)
+        .where(AccommodationBehavior.trigger_situation_id == trigger.id)
+        .values(trigger_situation_id=None)
+    )
+
     await db.delete(trigger)
     await db.commit()
 

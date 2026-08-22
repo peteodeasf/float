@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
 import {
@@ -28,6 +28,10 @@ import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
+
+// Flat tabs, in bar order. Also the `?tab=` vocabulary other surfaces navigate with.
+const TAB_IDS = ['monitoring', 'sessions', 'plan', 'experiments', 'chat'] as const
+type TabId = typeof TAB_IDS[number]
 
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
@@ -372,6 +376,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   const [editType, setEditType] = useState('avoidance')
   const [editDT, setEditDT] = useState('')
   const [deletingBehaviorId, setDeletingBehaviorId] = useState<string | null>(null)
+  const [delError, setDelError] = useState<string | null>(null)
 
   // Experiment planning
   const [planningBehaviorId, setPlanningBehaviorId] = useState<string | null>(null)
@@ -499,7 +504,8 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 
   const delMut = useMutation({
     mutationFn: (id: string) => deleteBehavior(trigger.id, id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setDeletingBehaviorId(null) }
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] }); setDeletingBehaviorId(null); setDelError(null) },
+    onError: () => setDelError('Could not delete that behavior. Try again.')
   })
 
   const startEdit = (b: AvoidanceBehavior) => {
@@ -709,12 +715,15 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
               </div>
             ) : deletingBehaviorId === b.id ? (
               /* Delete confirmation */
-              <div style={{ background: '#fef2f2', borderRadius: '8px', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this behavior?</span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button onClick={() => delMut.mutate(b.id)} disabled={delMut.isPending} className="text-[11px] text-red-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50">Yes, delete</button>
-                  <button onClick={() => setDeletingBehaviorId(null)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+              <div style={{ background: '#fef2f2', borderRadius: '8px', padding: '8px 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this behavior{sortedBehaviors.some(c => c.parent_behavior_id === b.id) ? ' and its smaller steps' : ''}?</span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => delMut.mutate(b.id)} disabled={delMut.isPending} className="text-[11px] text-red-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50">{delMut.isPending ? 'Deleting…' : 'Yes, delete'}</button>
+                    <button onClick={() => { setDeletingBehaviorId(null); setDelError(null) }} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                  </div>
                 </div>
+                {delError && <p style={{ fontSize: '11px', color: '#b91c1c', margin: '6px 0 0' }}>{delError}</p>}
               </div>
             ) : (
               <>
@@ -734,9 +743,10 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   <div style={{ width: '38px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
                     <DTBadge value={b.distress_thermometer_when_refraining} />
                   </div>
-                  <div style={{ width: '92px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
+                  <div style={{ width: '126px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
                     <button onClick={() => { resetSub(); setSubParentId(b.id) }} className="text-[12px] font-medium bg-transparent border-none cursor-pointer" style={{ color: '#3f8a78', whiteSpace: 'nowrap' }}>&#65291; step</button>
                     <button onClick={() => startEdit(b)} className="text-[12px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
+                    <button onClick={() => setDeletingBehaviorId(b.id)} className="text-[12px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
                   </div>
                 </div>
 
@@ -1310,6 +1320,7 @@ export default function PatientPage() {
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
   const [editTriggerName, setEditTriggerName] = useState('')
   const [deletingTriggerId, setDeletingTriggerId] = useState<string | null>(null)
+  const [deleteTriggerError, setDeleteTriggerError] = useState<string | null>(null)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameVal, setNicknameVal] = useState('')
   const [showSendForm, setShowSendForm] = useState(false)
@@ -1405,13 +1416,23 @@ export default function PatientPage() {
   const [noteContent, setNoteContent] = useState('')
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
 
-  // Flat-tab navigation (replaces the old phase spine + rail + setup-step machine)
-  const [activeTab, setActiveTab] = useState<'monitoring' | 'sessions' | 'plan' | 'experiments' | 'chat'>('monitoring')
+  // Flat-tab navigation (replaces the old phase spine + rail + setup-step machine).
+  // The tab lives in the URL so other surfaces can land on one — session mode exits back to Plan.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const hasTabParam = (TAB_IDS as readonly string[]).includes(tabParam ?? '')
+  const activeTab: TabId = hasTabParam ? (tabParam as TabId) : 'monitoring'
+  const setActiveTab = (id: TabId) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('tab', id)
+    setSearchParams(next, { replace: true })
+  }
   const [sessionsFilter, setSessionsFilter] = useState<'all' | 'parent' | 'patient' | 'action_plans'>('all')
   const [sessionTagFilter, setSessionTagFilter] = useState<string | null>(null)
   const [processPanelOpen, setProcessPanelOpen] = useState(false)
   const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
-  const stepInitializedRef = useRef(false)
+  // An explicit ?tab= is the clinician's intent — don't let the default-tab effect override it.
+  const stepInitializedRef = useRef(hasTabParam)
 
   // Case conceptualization — living draft, persisted to the backend formulation record
   const [conceptualizationDraft, setConceptualizationDraft] = useState<ConceptualizationDraft>(EMPTY_CONCEPTUALIZATION)
@@ -1568,8 +1589,10 @@ export default function PatientPage() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['triggers', plan?.id] })
       setDeletingTriggerId(null)
+      setDeleteTriggerError(null)
       if (selectedTriggerId === id) setSelectedTriggerId(null)
-    }
+    },
+    onError: () => setDeleteTriggerError('Could not delete that situation. Try again.')
   })
 
   const sendFormMutation = useMutation({
@@ -2547,9 +2570,10 @@ export default function PatientPage() {
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
                     <span style={{ fontSize: '11px', color: '#991b1b', lineHeight: '1.4' }}>Delete this situation and all its behaviors?</span>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => deleteTriggerMut.mutate(t.id)} disabled={deleteTriggerMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '3px 8px', borderRadius: '4px' }}>Yes</button>
-                      <button onClick={() => setDeletingTriggerId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
+                      <button onClick={() => deleteTriggerMut.mutate(t.id)} disabled={deleteTriggerMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: '#dc2626', padding: '3px 8px', borderRadius: '4px' }}>{deleteTriggerMut.isPending ? 'Deleting…' : 'Yes'}</button>
+                      <button onClick={() => { setDeletingTriggerId(null); setDeleteTriggerError(null) }} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
                     </div>
+                    {deleteTriggerError && <span style={{ fontSize: '11px', color: '#b91c1c', lineHeight: '1.4' }}>{deleteTriggerError}</span>}
                   </div>
                 ) : editingTriggerId === t.id ? (
                   <input
