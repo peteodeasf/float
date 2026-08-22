@@ -46,12 +46,17 @@ next starts.
 
 ## What makes it read as conversation, not a form
 
-1. **A transcript, not a panel.** Each answered question collapses to a single quiet line —
-   `Do you stay away from this if you can?  Yes — I skip it when I can` — stacking above the live
-   question. Tapping a line reopens it. This is why there are no `×` buttons or "score it" links on
-   the child-facing surface: editing is *tap what you said*.
-2. **One loud thing per screen.** The live question is the only heavy type. Everything else — the
-   situation name, the transcript, the footer links — is quiet.
+1. **The history is out of the screen, not on it.** *(revised 2026-08-22, second pass — the first
+   version kept every exchange visible and it crowded the screen all over again.)* A real
+   conversation doesn't hold every previous answer in front of you; keeping them there is a
+   data-entry instinct — proving the data landed. So the default screen is **situation name + one
+   question + one control**, and the record collapses to a single quiet footer line,
+   `4 answers so far ›`, that opens on demand. Tapping any line inside it reopens that answer, which
+   is why there are no `×` buttons or "score it" links on the child-facing surface: editing is
+   *tap what you said*.
+2. **Nothing appears twice.** The item currently being scored is suppressed from the history —
+   otherwise the same behaviour showed up as the live question *and* as a stale
+   "— we skipped this one" line directly above it.
 3. **Questions phrase off the last answer.** After "yes, I skip it", the next question is *"And when
    you can't skip it — what do you do?"*, not the generic opener. That adaptivity is most of what
    makes it feel like someone is listening.

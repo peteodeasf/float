@@ -55,6 +55,7 @@ const clampDt = (n: number) => Math.min(10, Math.max(1, Math.round(n)))
 const dtColor = (v: number | null | undefined) =>
   v == null ? '#cbd5e1' : v >= 7 ? '#ef6b53' : v >= 4 ? '#f2a33f' : '#4bb98a'
 const dtOf = (v: number | string | null | undefined) => (v != null ? Number(v) : null)
+const article = (n: number) => (n === 8 ? 'an' : 'a')
 
 // ── styles ──────────────────────────────────────────────────────
 const screenSurface: CSSProperties = { background: 'linear-gradient(180deg,#f2fbf8,#ffffff 55%)', border: '1px solid #d7ebe5', borderRadius: 16, padding: '22px 24px' }
@@ -417,6 +418,7 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
   const [scoringId, setScoringId] = useState<string | null>(null)
   const [newBeh, setNewBeh] = useState('')
   const [avoidAnswer, setAvoidAnswer] = useState<'yes' | 'no' | null>(null)
+  const [showTranscript, setShowTranscript] = useState(false)
   const initRef = useRef(false)
 
   const { data: behaviors } = useQuery({
@@ -475,6 +477,7 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
   })
 
   const scoring = captured.find(b => b.id === scoringId) ?? null
+  const answerCount = (avoidAnswer ? 1 : 0) + others.length
 
   // The conversation so far, in the order it happened.
   const transcript = (
@@ -494,10 +497,11 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
       )}
       {others.map((b, i) => {
         const sc = dtOf(b.distress_thermometer_when_refraining)
+        const beingAsked = step === 'score' && b.id === scoringId
         return (
           <div key={b.id}>
             <Exchange q={i === 0 ? 'When you’re in it, what do you do?' : 'What else do you do?'} a={b.name} />
-            {sc != null
+            {beingAsked ? null : sc != null
               ? <Exchange q="And how hard without doing that?" a={`${sc} out of 10`} onReopen={() => { setScoringId(b.id); setStep('score') }} />
               : <Exchange q="And how hard without doing that?" a="— we skipped this one" onReopen={() => { setScoringId(b.id); setStep('score') }} />}
           </div>
@@ -518,10 +522,10 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
     <div style={screenSurface}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, paddingBottom: 14, borderBottom: '1px solid #e6f0ed', marginBottom: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a', flex: 1, minWidth: 0 }}>{trigger.name}</div>
-        {situationDt != null && <span style={{ fontSize: 12, fontWeight: 700, color: '#8a9998' }}>feels like a {situationDt}</span>}
+        {situationDt != null && <span style={{ fontSize: 12, fontWeight: 700, color: '#8a9998' }}>feels like {article(situationDt)} {situationDt}</span>}
       </div>
 
-      {(avoidAnswer || others.length > 0) && (
+      {showTranscript && answerCount > 0 && (
         <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px dashed #dbe8e5' }}>{transcript}</div>
       )}
 
@@ -570,7 +574,12 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 20, paddingTop: 14, borderTop: '1px solid #eef2f1' }}>
-        <button onClick={onSeeAll} style={quietLink}>← All situations</button>
+        {answerCount > 0 && (
+          <button onClick={() => setShowTranscript(v => !v)} style={quietLink}>
+            {showTranscript ? 'Hide what we said' : `${answerCount} answer${answerCount === 1 ? '' : 's'} so far ›`}
+          </button>
+        )}
+        <button onClick={onSeeAll} style={{ ...quietLink, marginLeft: 'auto' }}>← All situations</button>
         <button onClick={onOpenArrow} style={{ ...quietLink, color: '#3f8a78', fontWeight: 700 }}>
           {situationDA?.feared_outcome ? 'The worry underneath ›' : 'Downward arrow ›'}
         </button>
