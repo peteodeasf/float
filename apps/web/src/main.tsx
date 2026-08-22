@@ -16,6 +16,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
 import SessionPage from './pages/practitioner/SessionPage'
+import SessionPreview from './pages/practitioner/__SessionPreview'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
@@ -63,6 +64,8 @@ createRoot(document.getElementById('root')!).render(
           <BrowserRouter>
             <Routes>
               {/* Practitioner routes */}
+              {/* Local design preview for session mode. Dev-only: stripped from prod builds. */}
+              {import.meta.env.DEV && <Route path="/__session-preview" element={<SessionPreview />} />}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/dashboard" element={

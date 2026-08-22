@@ -1,159 +1,119 @@
-# Session mode — making the situation screen one thing at a time
+# Session mode — the capture flow as a conversation
 
-> **STATUS: direction settled 2026-08-21, not built.** Owner chose **Direction A** (step spine), ruled
-> the **overall situation rating off this screen**, replaced the clinical type dropdown with a
-> **child-facing two-way choice** ("I avoid this" → `avoidance`, "I do this…" → `safety`), and kept
-> the **arrow launchable from the top**. The type mapping is queued for Dr. Walker's confirmation
-> before ship (Settled §3). Grounded in
-> [`interactive-capture-session-mode.md`](interactive-capture-session-mode.md) rounds 3 and 6.
+> **STATUS: rebuilt 2026-08-22 to Dr. Walker's actual interview order. Built, typechecked, NOT
+> deployed.** Supersedes the 2026-08-21 "step spine" version of this plan, which shipped to prod and
+> was judged a mess by the owner. Grounded in
+> [`interactive-capture-session-mode.md`](interactive-capture-session-mode.md).
 
-## Problem
+## What was wrong
 
-The per-situation screen (`SessionPage.tsx` → `SituationPhase`) presents **five things a person can
-act on at once**, to a child sitting next to their clinician:
+Two failures, one structural and one of register.
 
-1. **Downward arrow** — a dark, high-contrast button launching a whole sub-flow, at the very top,
-   before the child has answered anything.
-2. **Situation fear scale** — ten buttons, 1–10, plus two legend labels.
-3. **Add a behavior** — free-text input, *plus* a clinician-only avoidance/safety/ritual dropdown.
-4. **Per-behavior fear scale** — another ten buttons on *every* behavior card, with its own prompt
-   ("Without doing this, how hard would the situation be?").
-5. **Done — back to the list.**
+**Structural — the order didn't match the interview.** The built flow asked the child to name *all*
+their behaviours, then score *all* of them. Dr. Walker doesn't do that. She finishes one behaviour
+before starting the next: name it, score it, ask what else. Batching turns a conversation into a
+data-entry form with two passes.
 
-With two behaviors captured, the screen shows **thirty numbered buttons in three strips**. The
-dominant visual mass is a scoring grid, which is exactly the "shaped like the database schema"
-failure the session-mode work exists to fix. It also breaks the design constraint the flow was built
-on: *"one thing at a time, with a non-linear escape hatch."*
+It also asked for the situation's overall rating inside the situation screen, when that rating
+belongs to the **list** step — asked once per situation while going down the list, before any
+per-situation work starts.
 
-### Why this drifted (worth recording — it wasn't a mistake at the time)
+**Register — it read as data entry.** Section eyebrows (`SO FAR`, `HOW BIG · 2 OF 5`), progress
+counters, `input` + `Add` button pairs, badge columns, `×` delete controls on every row. Each is a
+small thing; together they say *fill in this form*, which is the exact failure session mode exists
+to fix.
 
-Round 3 decided to **merge fear + behaviors into one screen** to cut screen count. That decision was
-made when a situation had **one** scoring surface. Round 6 (first prod testing) then added
-**per-behavior scoring** — the real ladder-building measurement — which multiplied the scoring
-surfaces by the number of behaviors. The density is the interaction of two individually-correct
-decisions, so revisiting round 3 is a **re-derivation, not a reversal**.
-
-## Constraint set (from the existing design record)
-
-- One thing at a time; non-linear escape hatch (skip / back / add out of order).
-- Kid language up front; **clinician judgments stay off the child-facing surface**.
-- Capture ≠ ladder. The ordered ladder stays hidden until the review step.
-- Fear rating is a real object, not a number field.
-- Target age 10+; warm, low-pressure, clinical-not-decorative.
-- Deterministic in v1 — no live model calls in the ladder capture.
-
-## Directions
-
-### A — Step spine inside the situation (recommended)
-
-The situation stays **one place** (one route, one card), but asks **one question at a time**.
-Answered steps collapse upward into a compact, tappable summary line, so the child sees progress
-without seeing the whole form.
+## The flow (Dr. Walker's order)
 
 ```
-SITUATION · Raising my hand in class          overall 7
-  ✓ 3 things you do      ← collapsed, tap to reopen
-  ── now ──────────────────────────────────────────
-  Without asking a friend to answer for you,
-  how hard would it be?
-      [ 1 ][ 2 ][ 3 ][ 4 ][ 5 ][ 6 ][ 7 ][ 8 ][ 9 ][ 10 ]
-  1 · no big deal                     10 · super scary
-                                          Skip ·  Next →
+intro
+  └─ list       "What do you have trouble with?"        ← starter list to react to + add your own
+  └─ rate       "How big does this one feel?"           ← one situation per screen, down the list
+  └─ situation  per situation, in turn:
+                  "Do you stay away from this if you can?"
+                     yes ⇒ an avoidance behaviour, scored AT the situation's own DT
+                  "When you're in it, what do you do?"    ← name one
+                  "How hard would it be … without that?"  ← score that one
+                  "What else do you do?"                  ← loop
+  └─ review     the assembled ladder
 ```
 
-(The `overall 7` in the header is the pre-existing rating shown as **context**, not a question — it
-is set before session mode reaches this screen.)
+`arrow` (the downward arrow) hangs off a situation and stays reachable at any point — owner call,
+2026-08-21.
 
-Steps, in order (**owner decision 2026-08-21: the overall situation rating is not one of them** —
-see "Settled" below):
+**Naming and scoring alternate.** This is the load-bearing change: one thing is finished before the
+next starts.
 
-1. **Name what you do** — "What do you do so it feels safer — or so you can skip it?" Naming only:
-   free text + (later) seeded chips. **No scores, no type dropdown.**
-2. **Score each one** — one behavior per view, one scale: "Without doing this, how hard would it
-   be?" Advances through the named behaviors, so the child answers *n* single questions rather than
-   facing *n* grids.
-3. **The worry underneath** — hands off to the existing `ArrowPhase` (unchanged flow).
+## What makes it read as conversation, not a form
 
-Then **Done — back to the list**.
+1. **A transcript, not a panel.** Each answered question collapses to a single quiet line —
+   `Do you stay away from this if you can?  Yes — I skip it when I can` — stacking above the live
+   question. Tapping a line reopens it. This is why there are no `×` buttons or "score it" links on
+   the child-facing surface: editing is *tap what you said*.
+2. **One loud thing per screen.** The live question is the only heavy type. Everything else — the
+   situation name, the transcript, the footer links — is quiet.
+3. **Questions phrase off the last answer.** After "yes, I skip it", the next question is *"And when
+   you can't skip it — what do you do?"*, not the generic opener. That adaptivity is most of what
+   makes it feel like someone is listening.
+4. **Their words quoted back.** The scoring screen shows `"ask a friend to answer for me"` under the
+   question rather than a labelled field — which also disambiguates when an earlier answer is
+   reopened.
+5. **No counters or section labels.** `HOW BIG · 2 OF 5` became a quiet `3 more after this`;
+   `YOURS SO FAR` became `Yours so far — tap one to talk about it`. Sentences, not field labels.
+6. **Send, not Add.** The text input submits on Enter with a quiet round `→`. A labelled *Add*
+   button beside a field is the universal tell of a form.
+7. **Recognition over recall.** The list step offers the shared situation library as a starter list
+   (`searchSituationLibrary('')` — the existing endpoint returns the first 20 with no query, so no
+   backend change), framed as *"Other kids often say these"*, which normalises as well as prompts.
 
-- **Escape hatch:** every collapsed summary is tappable to reopen; `Skip` moves on without an
-  answer; the situation can be left at any point (the hub already shows partial state).
-- **One visible scale at any moment**, down from up to *n*+1 — and with the overall rating gone,
-  every scale on this screen now asks the same question about a different behavior.
-- Steps are derived from data, not a wizard the clinician has to complete — reopening the screen
-  lands on the first unanswered step.
+## Copy
 
-### B — Progressive disclosure, no stepping
+| Where | Line |
+|---|---|
+| Intro | **Let's map out together the situations that feel hard.** / One thing at a time: what's hard, how big it feels, and what you do about it. Nothing here is set in stone — we can change any of it as we go. |
+| List | **What do you have trouble with?** / Tap anything that sounds like you — and add your own. |
+| List — yours | Yours so far — tap one to talk about it |
+| List — library | Other kids often say these — tap any that fit |
+| List — done | That's my list → |
+| Rate (first screen only) | Now let's see how big each one feels. |
+| Rate | *{situation}* / **How big does this one feel?** · `3 more after this` |
+| Situation — avoid | **Do you stay away from this if you can?** → *Yes — I skip it* / *No — I get through it* |
+| Situation — name (after yes) | **And when you can't skip it — what do you do?** |
+| Situation — name (after no) | **When you're in it, what do you do?** / Anything that makes it easier to get through. |
+| Situation — name (later) | **What else do you do?** |
+| Situation — score | **How hard would it be to be in it — without doing that?** / *"{their words}"* |
+| Situation — score (the avoidance one) | **How hard would it be to be in it at all?** |
+| Scale ends | 1 · no big deal … 10 · the worst |
+| Situation — done | That's everything → / That's everything — see the ladder → |
 
-Keep the single scrolling card, but reveal each section only once the one above is answered, and
-show per-behavior scoring only after all behaviors are named. Less machinery than A, preserves the
-current shape, but at three behaviors the bottom of the screen is still three scoring grids.
+## Clinical rules encoded here
 
-### C — Separate screens per question
+Both are Dr. Walker's, relayed by the owner. Recorded because they are scoring logic, not wording,
+so non-negotiable #1 applies.
 
-Split into distinct screens (fear → behaviors → scoring → arrow). Cleanest focus, most Back/Next
-taps, and it discards round 3's "merge into one screen" outright rather than reconciling with it.
+1. **"I stay away from it" is itself the avoidance behaviour**, and its
+   `distress_thermometer_when_refraining` **is the situation's own DT** — being in the situation
+   without avoiding it just *is* the situation. Implemented as an inference and shown back to the
+   child in the transcript (`7 out of 10 — same as the situation`) rather than hidden. If the
+   situation has no DT yet there is nothing to infer from, so it asks normally instead of guessing.
+2. **Behaviour type is derived, never asked** — "I do this…" → `safety`, "I avoid this altogether" →
+   `avoidance`. Ritual is not offered in session mode; it stays settable in the Plan-tab builder.
 
-**Recommendation: A.** It honours round 3's intent (one *place* per situation) while delivering what
-round 3 was actually buying (low density), and it degrades gracefully — a situation with one
-behavior is barely more stepped than today.
+Both are queued for Dr. Walker's confirmation.
 
-## Settled (owner, 2026-08-21)
+## Verification
 
-- **Direction A.**
-- **The overall situation rating comes off this screen.** It is already set before session mode
-  reaches the situation — the Plan-tab builder's add-situation form and the monitoring/extraction
-  path both write `distress_thermometer_rating` at creation time
-  (`PatientPage.tsx:1006`, `:1580`, `:1768`). Asking again here was a duplicate question, and it was
-  one of the five competing actions.
-  - **Consequence to handle when building:** `HubPhase` currently uses
-    `distress_thermometer_rating != null` as its "✓ captured" mark and its "*N* of *M* have a fear
-    score" counter. If that value arrives pre-set from the builder, **every situation reads as done
-    on arrival** and the counter says nothing. Completion must switch to *"has at least one scored
-    behavior."* Cheapest route with no backend change: `useQueries` over the situations calling the
-    existing per-trigger `getBehaviors` (there is no bulk endpoint); situation counts are small. If
-    that gets slow, add a plan-level behaviors endpoint then, not now.
-
-3. **The clinical type dropdown is replaced by a child-facing two-way choice.** The
-   avoidance/safety/ritual `<select>` (on the add row *and* on every behavior card, plus the
-   "Clinician-only:" footnote explaining itself to the child) is **too many selections for the
-   room**. Instead the child picks between two plain-language options:
-
-   - **"I avoid this"** — the child skips the situation itself. Name defaults to
-     `Avoids {situation}`, which is already the builder's behavior
-     (`PatientPage.tsx` add-behavior mutation), so the child never has to name anything.
-   - **"I do this…"** — a named thing they do so it feels safer.
-
-   **Ritual is not offered** — it sees little use for now. Type stays settable in the Plan-tab
-   builder afterwards, so nothing is lost clinically.
-
-   **Mapping (owner, 2026-08-21):** "I avoid this" → `avoidance`; "I do this…" → `safety`.
-
-   > ⚠️ **Confirm with Dr. Walker before ship (non-negotiable #1).** This mapping *is* "what counts
-   > as avoidance vs safety" — a clinical decision, not a wording tweak. The owner's call above is
-   > the intended behavior; it is built to it, and it goes in the review queue rather than shipping
-   > on a UI judgment.
-
-4. **The downward arrow stays launchable from the top** (owner call — the clinician needs to be able
-   to go there at any moment, including first). Its density cost is paid down instead by (a) the
-   overall-rating step disappearing and (b) the behaviors step no longer rendering *n* scoring grids
-   beneath it, so the arrow card is no longer competing with a wall of numbers. Once the arrow is
-   complete it keeps collapsing into the existing dark "worry underneath" chip.
-
-## Scope / risk
-
-- Front-end only: `apps/web/src/pages/practitioner/SessionPage.tsx`, `SituationPhase` (and the copy
-  in `HubPhase`/`IntroPhase`). **No schema change, no new endpoints** — the same
-  `updateTrigger` / `createBehavior` / `updateBehavior` calls, just paced differently.
-- **One clinical gate:** the child-facing choice → `behavior_type` mapping above needs Dr. Walker.
-  Everything else here changes question *presentation and order*, not what counts as
-  avoidance/safety/escape, not fear-rating rules, not plan-commit behavior. Round 5 records the owner
-  waiving Dr. Walker gating for session-mode design. The re-ordering (arrow last) is worth telling
-  Dr. Walker about at the next review even though it doesn't gate the ship.
-- **No PHI/role-boundary change** — same clinician-authenticated surface, same data.
+No non-production database is reachable from a dev machine, so the real route cannot be clicked
+through without writing to real patient records.
+`apps/web/src/pages/practitioner/__SessionPreview.tsx` renders the phases against seeded
+react-query fixtures — no API, no writes — at `/__session-preview`, mounted only when
+`import.meta.env.DEV` (verified absent from the production bundle). Every screen above was checked
+there.
 
 ## Still open
 
-1. Whether the child-facing choice is two buttons up front, or one input with an "I just avoid it
-   altogether" alternative underneath — a build-time detail, settle it in the mock.
-2. Dr. Walker's confirmation of the avoidance/safety mapping (queued, not blocking the build).
+1. Owner redline on the copy table.
+2. `ReviewPhase` (the ladder) is untouched and still reads like the old build view. It is the last
+   beat of the conversation and should probably land differently.
+3. The old hub's "N of M have a fear score" counter is gone with the rewrite — the situation DT is
+   now asked in `rate`, so the counter had no meaning. Noted so it isn't reintroduced.

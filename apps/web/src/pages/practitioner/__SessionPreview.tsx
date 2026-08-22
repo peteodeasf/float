@@ -1,0 +1,60 @@
+// Local design preview for session mode — `/__session-preview`, dev builds only (see main.tsx).
+//
+// Seeds the react-query cache with fixtures so the phases render without an API and without
+// writing anything. This exists because the only database reachable from a dev machine is
+// PRODUCTION, so clicking through the real route to check a design is not an option.
+import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { ListPhase, RatePhase, SituationPhase, IntroPhase } from './SessionPage'
+
+const TRIGGERS = [
+  { id: 't1', name: 'Raising my hand in class', distress_thermometer_rating: 7, display_order: 0 },
+  { id: 't2', name: 'Ordering food for myself', distress_thermometer_rating: 5, display_order: 1 },
+  { id: 't3', name: 'Sleepovers at a friend’s house', distress_thermometer_rating: null, display_order: 2 },
+] as any[]
+
+const BEHAVIORS = [
+  { id: 'b0', name: 'Avoids Raising my hand in class', behavior_type: 'avoidance', distress_thermometer_when_refraining: 7, parent_behavior_id: null },
+  { id: 'b1', name: 'ask a friend to answer for me', behavior_type: 'safety', distress_thermometer_when_refraining: 6, parent_behavior_id: null },
+] as any[]
+
+export default function SessionPreview() {
+  const qc = useQueryClient()
+  const [ready, setReady] = useState(false)
+  const [view, setView] = useState<'intro' | 'list' | 'rate' | 'sit-start' | 'sit-mid'>('list')
+
+  useEffect(() => {
+    qc.setQueryData(['situation-library', ''], [
+      { id: 's1', name: 'Speaking in front of the class' },
+      { id: 's2', name: 'Being away from home overnight' },
+      { id: 's3', name: 'Meeting someone new' },
+      { id: 's4', name: 'Going to the school nurse' },
+    ])
+    qc.setQueryData(['behaviors', 't1'], BEHAVIORS)
+    qc.setQueryData(['behaviors', 't3'], [])
+    qc.setQueryData(['situation-da', 't1'], null)
+    qc.setQueryData(['situation-da', 't3'], null)
+    setReady(true)
+  }, [qc])
+
+  if (!ready) return null
+  const noop = () => {}
+  return (
+    <div style={{ minHeight: '100vh', background: '#eef4f3', padding: 20 }}>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+          {(['intro', 'list', 'rate', 'sit-start', 'sit-mid'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)}
+              style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
+                background: view === v ? '#135450' : '#fff', color: view === v ? '#fff' : '#475569', border: '1px solid #cbd5e1' }}>{v}</button>
+          ))}
+        </div>
+        {view === 'intro' && <IntroPhase onStart={noop} />}
+        {view === 'list' && <ListPhase triggers={TRIGGERS} planId="p1" onDone={noop} onOpen={noop} />}
+        {view === 'rate' && <RatePhase planId="p1" triggers={TRIGGERS} index={2} onIndex={noop} onBack={noop} onDone={noop} />}
+        {view === 'sit-start' && <SituationPhase key="t3" trigger={TRIGGERS[2]} isLast={true} onOpenArrow={noop} onSeeAll={noop} onFinished={noop} />}
+        {view === 'sit-mid' && <SituationPhase key="t1" trigger={TRIGGERS[0]} isLast={false} onOpenArrow={noop} onSeeAll={noop} onFinished={noop} />}
+      </div>
+    </div>
+  )
+}
