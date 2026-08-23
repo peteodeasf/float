@@ -809,28 +809,76 @@ function ArrowPhase({ trigger, onDone, onBack }: { trigger: TriggerSituation | n
   )
 }
 
-// ── Phase: ladder review — read-styled ladder that hands off to the full builder (Q4) ──
-function ReviewPhase({ triggers, onBack, onOpenBuilder }: { triggers: TriggerSituation[]; onBack: () => void; onOpenBuilder: () => void }) {
+// ── Phase: ladder review — the last beat of the conversation ──
+// Ordered LOW at the top to HIGH at the bottom (owner, 2026-08-23): you start at the top with the
+// easiest thing. The colour-graded rail says the same thing without a sentence about ordering.
+// Each rung expands to the behaviours captured under it, so the ladder shows the actual work
+// rather than just a list of titles.
+export function ReviewPhase({ triggers, onBack, onOpenBuilder }: { triggers: TriggerSituation[]; onBack: () => void; onOpenBuilder: () => void }) {
   const rungs = [...triggers]
-    .filter(t => t.distress_thermometer_rating != null)
-    .sort((a, b) => Number(b.distress_thermometer_rating) - Number(a.distress_thermometer_rating))
+    .filter(t => dtOf(t.distress_thermometer_rating) != null)
+    .sort((a, b) => Number(a.distress_thermometer_rating) - Number(b.distress_thermometer_rating))
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Here’s your whole ladder</div>
-      <p style={lead}>Biggest at the top, smallest at the bottom. Open the full builder to reorder, set the focus rung, and fine-tune the steps.</p>
-      <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {rungs.map(t => (
-          <div key={t.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px' }}>
-            <span style={{ fontSize: 14, color: '#1e293b', fontWeight: 600, flex: 1 }}>{t.name}</span>
-            <span style={{ minWidth: 26, height: 26, padding: '0 7px', borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', background: dtColor(t.distress_thermometer_rating) }}>{Number(t.distress_thermometer_rating)}</span>
-          </div>
-        ))}
-        {rungs.length === 0 && <div style={{ fontSize: 13, color: '#94a3b8' }}>No fear scores captured yet.</div>}
+      <div style={bigQ}>Here&rsquo;s your ladder</div>
+      <p style={lead}>We&rsquo;ll use this for planning and doing your exposures.</p>
+
+      <div style={{ position: 'relative', paddingLeft: 22, marginTop: 18 }}>
+        {rungs.length > 0 && (
+          <div style={{ position: 'absolute', left: 6, top: 14, bottom: 14, width: 3, borderRadius: 2, background: 'linear-gradient(#4bb98a, #f2a33f 55%, #ef6b53)' }} />
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {rungs.map(t => <LadderRung key={t.id} trigger={t} />)}
+          {rungs.length === 0 && <div style={{ fontSize: 13, color: '#94a3b8' }}>No fear scores captured yet.</div>}
+        </div>
       </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-        <button onClick={onBack} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>← Back to situations</button>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+        <button onClick={onBack} style={ghostBtn}>← Back to situations</button>
         <button onClick={onOpenBuilder} style={primaryBtn}>Open the full builder →</button>
       </div>
+    </div>
+  )
+}
+
+// One rung. Behaviours load only when it's opened — most of the time they're already in the cache
+// from the walk, so expanding a situation you just did is instant.
+function LadderRung({ trigger }: { trigger: TriggerSituation }) {
+  const [open, setOpen] = useState(false)
+  const { data: behaviors, isLoading } = useQuery({
+    queryKey: ['behaviors', trigger.id],
+    queryFn: () => getBehaviors(trigger.id),
+    enabled: open,
+  })
+  const rows = (behaviors ?? [])
+    .filter(b => !b.parent_behavior_id)
+    .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
+
+  return (
+    <div style={{ ...card, padding: 0, overflow: 'hidden', boxShadow: 'none' }}>
+      <button onClick={() => setOpen(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '12px 14px', cursor: 'pointer' }}>
+        <span style={{ fontSize: 11, color: '#a9c0bb', width: 10, flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</span>
+        <span style={{ fontSize: 14.5, color: '#1e293b', fontWeight: 700, flex: 1, minWidth: 0 }}>{trigger.name}</span>
+        <DTBadge v={dtOf(trigger.distress_thermometer_rating)} size={28} />
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 14px 12px 35px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {isLoading && <span style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</span>}
+          {!isLoading && rows.length === 0 && (
+            <span style={{ fontSize: 12.5, color: '#a9c0bb' }}>Nothing captured for this one yet.</span>
+          )}
+          {rows.map(b => (
+            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f8fbfa', border: '1px solid #eef2f1', borderRadius: 9, padding: '8px 11px' }}>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600, flex: 1, minWidth: 0 }}>{b.name}</span>
+              {dtOf(b.distress_thermometer_when_refraining) != null
+                ? <DTBadge v={dtOf(b.distress_thermometer_when_refraining)} size={23} />
+                : <span style={{ fontSize: 11, fontWeight: 700, color: '#c0ccca' }}>not scored</span>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

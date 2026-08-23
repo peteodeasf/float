@@ -156,10 +156,22 @@ more situation**, so the flow now scopes itself to what is actually new:
 exit offered mid-question is the distraction this flow exists to remove. It stays available on the
 other steps.
 
+## The ladder (owner redesign, 2026-08-23)
+
+The end of the conversation. **"Here's your ladder"** / "We'll use this for planning and doing your
+exposures."
+
+- **Low at the top, highest at the bottom** — you start at the top with the easiest thing. This
+  reverses the previous order.
+- **No sentence explaining the ordering.** A colour-graded rail down the left (green → amber → red)
+  carries it instead.
+- **Each rung expands** to the behaviours captured under it, each with its own score, sorted low to
+  high like the rungs themselves. The ladder now shows the actual work rather than a list of
+  titles. Behaviours load on expand — usually already cached from the walk, so it's instant for a
+  situation just completed.
+
 ## Still open
 
 1. Owner redline on the copy table.
-2. `ReviewPhase` (the ladder) is untouched and still reads like the old build view. It is the last
-   beat of the conversation and should probably land differently.
 3. The old hub's "N of M have a fear score" counter is gone with the rewrite — the situation DT is
    now asked in `rate`, so the counter had no meaning. Noted so it isn't reintroduced.
