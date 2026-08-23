@@ -21,13 +21,14 @@
  *                   "What else do you do?"                      → loop
  *     → review    the assembled ladder
  *
- *   arrow (the downward arrow) hangs off a situation and is reachable at any point.
+ * The downward arrow is NOT part of this flow — it is its own mode (`ArrowPage`), launched from
+ * the same place as session mode. Two interviews, one register (see `sessionKit.tsx`).
  *
  * Naming and scoring ALTERNATE per behaviour — you finish talking about one thing before
  * starting the next. Batching all the naming then all the scoring reads as a form, not a
  * conversation, and was the thing that made the previous version feel like a wall.
  */
-import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -40,105 +41,14 @@ import {
   updateBehavior,
   deleteBehavior,
   searchSituationLibrary,
-  getSituationDownwardArrow,
-  createSituationDownwardArrow,
-  updateDownwardArrow,
-  getNextProbe,
   type TriggerSituation,
-  type ArrowStep,
 } from '../../api/treatment'
+import {
+  clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink,
+  Chrome, FearScale, DTBadge, Context, Exchange, Ask, SayIt,
+} from './sessionKit'
 
-type Phase = 'intro' | 'list' | 'rate' | 'situation' | 'arrow' | 'review'
-
-// Fear scores are a fixed 1–10 scale (see docs/solutions — enforced backend + here).
-const clampDt = (n: number) => Math.min(10, Math.max(1, Math.round(n)))
-const dtColor = (v: number | null | undefined) =>
-  v == null ? '#cbd5e1' : v >= 7 ? '#ef6b53' : v >= 4 ? '#f2a33f' : '#4bb98a'
-const dtOf = (v: number | string | null | undefined) => (v != null ? Number(v) : null)
-const article = (n: number) => (n === 8 ? 'an' : 'a')
-
-// ── styles ──────────────────────────────────────────────────────
-const screenSurface: CSSProperties = { background: 'linear-gradient(180deg,#f2fbf8,#ffffff 55%)', border: '1px solid #d7ebe5', borderRadius: 16, padding: '22px 24px' }
-const card: CSSProperties = { background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: 22, boxShadow: '0 8px 24px rgba(13,61,58,.06)' }
-const primaryBtn: CSSProperties = { marginTop: 14, background: '#135450', color: '#fff', fontWeight: 800, fontSize: 14, border: 'none', borderRadius: 12, padding: '11px 22px', cursor: 'pointer' }
-const ghostBtn: CSSProperties = { ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }
-const bigQ: CSSProperties = { fontSize: 20, fontWeight: 800, color: '#0d3d3a', lineHeight: 1.3 }
-const lead: CSSProperties = { fontSize: 14, color: '#4b5a59', lineHeight: 1.5, marginTop: 6 }
-const eyebrow: CSSProperties = { fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 4 }
-const quietLink: CSSProperties = { fontSize: 12.5, fontWeight: 600, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }
-
-// Module scope, deliberately: defined inside the page it would get a new identity every render,
-// and React would remount the whole tree — losing step state and input focus mid-session.
-function Chrome({ onExit, children }: { onExit: () => void; children: ReactNode }) {
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--teen-canvas, #eef4f3)' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '20px 20px 48px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <button onClick={onExit}
-            style={{ fontSize: 13, fontWeight: 700, color: '#6b7a79', background: '#fff', border: '1px solid #dbe8e5', borderRadius: 999, padding: '7px 14px', cursor: 'pointer' }}>
-            ← Exit session
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// Shared 1–10 fear scale — tappable, colour-graded. The one scoring object in the flow.
-function FearScale({ value, onPick, height = 44 }: { value: number | null; onPick: (n: number) => void; height?: number }) {
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
-          const active = value === n
-          return (
-            <button key={n} onClick={() => onPick(n)}
-              style={{ flex: 1, height, borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: height >= 38 ? 13.5 : 12,
-                border: active ? '2px solid #0d3d3a' : '1px solid #e2e8f0',
-                background: active ? dtColor(n) : '#fff',
-                color: active ? '#fff' : '#94a3b8' }}>
-              {n}
-            </button>
-          )
-        })}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginTop: 5 }}>
-        <span style={{ color: '#2f9e6f' }}>1 · no big deal</span><span style={{ color: '#ef6b53' }}>10 · the worst</span>
-      </div>
-    </div>
-  )
-}
-
-const DTBadge = ({ v, size = 26 }: { v: number | null; size?: number }) => (
-  v == null ? null : (
-    <span style={{ minWidth: size, height: size, padding: `0 ${Math.round(size / 3.2)}px`, borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: Math.round(size * 0.46), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: dtColor(v), flexShrink: 0 }}>{v}</span>
-  )
-)
-
-// The thing being talked about. It gets a block of its own rather than a line of text, because it
-// is the frame for every question on the screen — styled like body copy it reads as just more
-// words. The score sits INSIDE the block, next to the name: a number parked at the far right edge
-// doesn't read as belonging to anything.
-function Context({ text, dt, quiet }: { text: string; dt?: number | null; quiet?: boolean }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap',
-      // `quiet` separates the two blocks by FILL, not by size. Shrinking the situation made it
-      // slower to read the context you need to answer the question — the wrong thing to trade
-      // away for visual hierarchy. Same type size, same colour; only the panel differs.
-      background: quiet ? 'transparent' : '#e8f7f1',
-      border: quiet ? 'none' : '1px solid #cdeee2',
-      borderLeft: '4px solid #135450',
-      borderRadius: quiet ? 0 : 12,
-      padding: quiet ? '1px 0 1px 12px' : '13px 16px',
-      marginBottom: quiet ? 16 : 18,
-    }}>
-      <span style={{ fontSize: 19, fontWeight: 800, color: '#0d3d3a', minWidth: 0, lineHeight: 1.25 }}>{text}</span>
-      {dt != null && <DTBadge v={dt} size={quiet ? 30 : 34} />}
-    </div>
-  )
-}
+type Phase = 'intro' | 'list' | 'rate' | 'situation' | 'review'
 
 export default function SessionPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -253,17 +163,8 @@ export default function SessionPage() {
           key={currentTrigger.id}
           trigger={currentTrigger}
           isLast={walkIds.indexOf(currentTrigger.id) === walkIds.length - 1}
-          onOpenArrow={() => setPhase('arrow')}
           onSeeAll={() => setPhase('list')}
           onFinished={nextSituation}
-        />
-      )}
-
-      {phase === 'arrow' && currentTrigger && (
-        <ArrowPhase
-          trigger={currentTrigger}
-          onDone={() => setPhase('situation')}
-          onBack={() => setPhase('situation')}
         />
       )}
 
@@ -410,55 +311,15 @@ export function RatePhase({ planId, triggers, index, onIndex, onBack, onDone }: 
   )
 }
 
-// ── The transcript: what's already been said, quiet and above the live question ──
-// This is the difference between a conversation and a form. Answers accumulate as spoken lines
-// rather than as rows in a table, and tapping one reopens it — so there are no edit affordances
-// (× buttons, "score it" links) cluttering the child-facing surface.
-function Exchange({ q, a, onReopen }: { q: string; a: string; onReopen?: () => void }) {
-  // One line per exchange, question and answer together — a spoken record, not stacked form rows.
-  // Compactness matters: five behaviours is ten exchanges, and the live question has to stay
-  // on screen underneath them.
-  return (
-    <button onClick={onReopen} disabled={!onReopen}
-      style={{ display: 'flex', alignItems: 'baseline', gap: 8, width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '5px 0', cursor: onReopen ? 'pointer' : 'default', flexWrap: 'wrap' }}>
-      <span style={{ fontSize: 12.5, color: '#a8b6b4', flexShrink: 0 }}>{q}</span>
-      <span style={{ fontSize: 13.5, fontWeight: 700, color: '#3d5451' }}>{a}</span>
-    </button>
-  )
-}
-
-// The live question. One per screen, and the only loud thing on it.
-function Ask({ children }: { children: ReactNode }) {
-  return <div style={{ ...bigQ, marginTop: 4, marginBottom: 12 }}>{children}</div>
-}
-
-// A text answer: Enter sends it. The submit control is a quiet arrow, not an "Add" button —
-// a labelled button beside a field reads as data entry.
-function SayIt({ value, onChange, onSend, placeholder, pending }: {
-  value: string; onChange: (v: string) => void; onSend: () => void; placeholder: string; pending?: boolean
-}) {
-  return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <input autoFocus value={value} onChange={e => onChange(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && value.trim()) onSend() }}
-        placeholder={placeholder}
-        style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 12, padding: '12px 14px', fontSize: 14.5, minWidth: 0, background: '#fff' }} />
-      <button onClick={onSend} disabled={!value.trim() || pending} aria-label="Send"
-        style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, border: 'none', background: '#135450', color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', opacity: !value.trim() ? 0.35 : 1 }}>→</button>
-    </div>
-  )
-}
-
 // ── Phase: one situation — the interview, one question at a time ──
 // Order is Dr. Walker's: do you avoid it → what do you do → how hard without that → what else.
 // Naming and scoring ALTERNATE, so a thing is finished before the next one starts, and each
 // question is phrased off the back of the last answer rather than read from a script.
 type SitStep = 'avoid' | 'name' | 'score'
 
-export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinished }: {
+export function SituationPhase({ trigger, isLast, onSeeAll, onFinished }: {
   trigger: TriggerSituation
   isLast: boolean
-  onOpenArrow: () => void
   onSeeAll: () => void
   onFinished: () => void
 }) {
@@ -473,10 +334,6 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
-  })
-  const { data: situationDA } = useQuery({
-    queryKey: ['situation-da', trigger.id],
-    queryFn: () => getSituationDownwardArrow(trigger.id),
   })
 
   const captured = (behaviors ?? []).filter(b => !b.parent_behavior_id)
@@ -629,182 +486,7 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
           </button>
         )}
         <button onClick={onSeeAll} style={{ ...quietLink, marginLeft: 'auto' }}>← All situations</button>
-        {/* Not while a score is being asked for — the arrow is a different conversation, and
-            offering the exit mid-question is the distraction this flow exists to remove. */}
-        {step !== 'score' && (
-          <button onClick={onOpenArrow} style={{ ...quietLink, color: '#3f8a78', fontWeight: 700 }}>
-            {situationDA?.feared_outcome ? 'The worry underneath ›' : 'Downward arrow ›'}
-          </button>
-        )}
       </div>
-    </div>
-  )
-}
-
-// ── Phase: downward arrow — descending chain with AI-phrased probes (confirm-first) ──
-// Tied to a SITUATION: persists into that situation's `downward_arrows` row, matching the existing
-// PatientDownwardArrows editor (arrow_steps = {question, response}[], starting thought = step 0),
-// with the confirmed bottom stored as `feared_outcome` (is_approved) — the feared outcome *for this
-// situation*. The chain stays visible; the clinician (not the AI) decides when it's reached bottom.
-const FALLBACK_PROBE = 'If that were true, what would that say about you?'
-
-function ArrowPhase({ trigger, onDone, onBack }: { trigger: TriggerSituation | null; onDone: () => void; onBack: () => void }) {
-  const qc = useQueryClient()
-  const [arrowId, setArrowId] = useState<string | null>(null)
-  const [stage, setStage] = useState<'start' | 'probe' | 'bottom'>('start')
-  const [startingThought, setStartingThought] = useState('')
-  const [probeSteps, setProbeSteps] = useState<ArrowStep[]>([])
-  const [currentProbe, setCurrentProbe] = useState('')
-  const [answer, setAnswer] = useState('')
-  const [fearedDraft, setFearedDraft] = useState('')
-  const [busy, setBusy] = useState(false)   // network in flight (create / probe / save)
-  const [err, setErr] = useState<string | null>(null)
-
-  const persistChain = async (thought: string, steps: ArrowStep[]) => {
-    if (!arrowId) return
-    const arrow_steps: ArrowStep[] = [{ question: 'Starting thought', response: thought }, ...steps]
-    await updateDownwardArrow(arrowId, { arrow_steps })
-    qc.invalidateQueries({ queryKey: ['situation-da', trigger?.id] })
-  }
-
-  const requestProbe = async (thought: string, steps: ArrowStep[]) => {
-    setBusy(true); setErr(null)
-    try {
-      setCurrentProbe(await getNextProbe(thought, steps))
-    } catch {
-      setCurrentProbe(FALLBACK_PROBE)  // confirm-first: clinician can reword anyway
-    } finally { setBusy(false) }
-  }
-
-  const beginChain = async () => {
-    const t = startingThought.trim()
-    if (!t) return
-    setBusy(true)
-    try { await persistChain(t, []); setStage('probe'); await requestProbe(t, []) }
-    catch { setErr('Could not save. Try again.') } finally { setBusy(false) }
-  }
-
-  const nextStep = async () => {
-    const q = currentProbe.trim(); const a = answer.trim()
-    if (!a) return
-    const steps = [...probeSteps, { question: q, response: a }]
-    setProbeSteps(steps); setAnswer('')
-    try { await persistChain(startingThought, steps); await requestProbe(startingThought, steps) }
-    catch { setErr('Could not save that step. Try again.') }
-  }
-
-  const reachedBottom = async () => {
-    let steps = probeSteps
-    const a = answer.trim()
-    if (a) { steps = [...probeSteps, { question: currentProbe.trim(), response: a }]; setProbeSteps(steps); setAnswer(''); try { await persistChain(startingThought, steps) } catch { /* keep draft */ } }
-    setFearedDraft(steps.length ? steps[steps.length - 1].response : startingThought)
-    setStage('bottom')
-  }
-
-  const confirmBottom = async () => {
-    if (!arrowId || !fearedDraft.trim()) return
-    setBusy(true)
-    try {
-      await updateDownwardArrow(arrowId, { feared_outcome: fearedDraft.trim(), is_approved: true })
-      qc.invalidateQueries({ queryKey: ['situation-da', trigger?.id] })
-      onDone()
-    } catch { setErr('Could not save. Try again.') } finally { setBusy(false) }
-  }
-
-  // Get-or-create this situation's arrow on entry; preload any existing chain so we never
-  // silently overwrite a prior arrow. (Q2: we start fresh, but never destroy existing data.)
-  useEffect(() => {
-    if (!trigger) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const arrow = await createSituationDownwardArrow(trigger.id, undefined, 'practitioner')
-        if (cancelled) return
-        setArrowId(arrow.id)
-        if (arrow.arrow_steps.length > 0) {
-          const thought = arrow.arrow_steps[0].response
-          const steps = arrow.arrow_steps.slice(1)
-          setStartingThought(thought)
-          setProbeSteps(steps)
-          setFearedDraft(arrow.feared_outcome ?? '')
-          if (arrow.feared_outcome) { setStage('bottom') }
-          else { setStage('probe'); void requestProbe(thought, steps) }
-        }
-      } catch { if (!cancelled) setErr('Could not start the downward arrow. Try again.') }
-    })()
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trigger?.id])
-
-  if (!trigger) return null
-
-  // ── render ──
-  const chain = (
-    <div style={{ marginTop: 14, borderLeft: '3px solid', borderImage: 'linear-gradient(#9af6e4,#0d3d3a) 1', paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {startingThought && <div style={{ background: '#fff', border: '1px solid #dbeae5', borderRadius: 10, padding: '10px 13px', fontSize: 13.5, color: '#1e293b', fontWeight: 600 }}>“{startingThought}”</div>}
-      {probeSteps.map((s, i) => (
-        <div key={i}>
-          <div style={{ fontSize: 12, color: '#8a9998', fontStyle: 'italic', margin: '2px 0 4px' }}>↓ {s.question}</div>
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 13px', fontSize: 13.5, color: '#1e293b', fontWeight: 600 }}>“{s.response}”</div>
-        </div>
-      ))}
-    </div>
-  )
-
-  return (
-    <div style={screenSurface}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 2 }}>WORRY UNDERNEATH · {trigger.name}</div>
-      <div style={bigQ}>Let’s follow this worry down to what it’s really about.</div>
-      {err && <div style={{ marginTop: 10, background: '#fff4f2', border: '1px solid #f6c8bd', color: '#b3402a', borderRadius: 8, padding: '8px 11px', fontSize: 12.5 }}>{err}</div>}
-
-      {stage === 'start' && (
-        <div style={{ marginTop: 14 }}>
-          <p style={lead}>What’s a worry we can start with? (In the child’s own words.)</p>
-          <textarea value={startingThought} onChange={e => setStartingThought(e.target.value)} rows={2}
-            placeholder="e.g. Everyone will laugh if I get a question wrong"
-            style={{ width: '100%', marginTop: 8, border: '1.5px solid #cfe0db', borderRadius: 11, padding: '11px 13px', fontSize: 14, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <button onClick={onBack} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>← Back</button>
-            <button onClick={beginChain} disabled={!startingThought.trim() || busy} style={{ ...primaryBtn, opacity: !startingThought.trim() ? 0.4 : 1 }}>Follow it down →</button>
-          </div>
-        </div>
-      )}
-
-      {stage === 'probe' && (
-        <div style={{ marginTop: 6 }}>
-          {chain}
-          <div style={{ marginTop: 14, background: '#fff', border: '1.5px solid #135450', borderRadius: 14, padding: '13px 15px', boxShadow: '0 4px 14px rgba(19,84,80,.08)' }}>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94a3b8', letterSpacing: '.05em', marginBottom: 6 }}>NEXT QUESTION {busy && '· thinking…'} <span style={{ color: '#c7d2d0', fontWeight: 600 }}>· edit before you ask it aloud</span></div>
-            <textarea value={currentProbe} onChange={e => setCurrentProbe(e.target.value)} rows={2}
-              style={{ width: '100%', border: 'none', outline: 'none', fontSize: 15, fontWeight: 700, color: '#0d3d3a', resize: 'vertical', fontFamily: 'inherit', background: 'none' }} />
-            <input value={answer} onChange={e => setAnswer(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void nextStep() } }}
-              placeholder="Type the child’s answer…"
-              style={{ width: '100%', marginTop: 8, border: '1px solid #cfe0db', borderRadius: 10, padding: '10px 12px', fontSize: 13.5, boxSizing: 'border-box' }} />
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-            <button onClick={nextStep} disabled={!answer.trim() || busy} style={{ ...primaryBtn, opacity: !answer.trim() ? 0.4 : 1 }}>Next ↓</button>
-            <button onClick={reachedBottom} disabled={busy} style={{ ...primaryBtn, background: '#0d3d3a' }}>This is the bottom ✓</button>
-            <button onClick={onBack} style={{ fontSize: 12.5, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', marginTop: 14 }}>Exit arrow</button>
-          </div>
-        </div>
-      )}
-
-      {stage === 'bottom' && (
-        <div style={{ marginTop: 6 }}>
-          {chain}
-          <div style={{ marginTop: 14, background: '#0d3d3a', borderRadius: 14, padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: 6 }}>♡ the worry underneath · edit if needed</div>
-            <textarea value={fearedDraft} onChange={e => setFearedDraft(e.target.value)} rows={2}
-              style={{ width: '100%', border: 'none', outline: 'none', fontSize: 16, fontWeight: 800, color: '#fff', background: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
-          </div>
-          <p style={{ fontSize: 12, color: '#8a9998', marginTop: 10 }}>This is the feared outcome for “{trigger.name}”.</p>
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-            <button onClick={() => setStage('probe')} style={{ ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }}>← Keep going</button>
-            <button onClick={confirmBottom} disabled={!fearedDraft.trim() || busy} style={{ ...primaryBtn, opacity: !fearedDraft.trim() ? 0.4 : 1 }}>That’s it — save →</button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

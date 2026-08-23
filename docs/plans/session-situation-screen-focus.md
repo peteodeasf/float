@@ -170,6 +170,39 @@ exposures."
   titles. Behaviours load on expand — usually already cached from the walk, so it's instant for a
   situation just completed.
 
+## The downward arrow (owner, 2026-08-23)
+
+The arrow was the last surface still in the old register — it survived every rewrite untouched,
+because it kept getting re-appended verbatim. It carried exactly what we removed everywhere else:
+a `WORRY UNDERNEATH · {situation}` eyebrow, the whole chain on screen with no hierarchy, a
+`NEXT QUESTION · edit before you ask it aloud` label narrating our own plumbing, three competing
+buttons, and a `Type the child's answer…` placeholder addressed to the clinician on a screen the
+child is looking at.
+
+**It is no longer inside session mode.** It is its own mode — `ArrowPage`, route
+`/patients/:patientId/arrow` — launched from the same header as `▸ Start session`. Two interviews
+should sit side by side, not one nested as a detour inside the other. The "Downward arrow ›" link
+is gone from the situation screens.
+
+Flow: `intro → pick a situation → follow the chain down → confirm the bottom → next`. The pick list
+shows each situation's confirmed feared outcome inline, so completed ones are visible at a glance.
+
+**One deliberate divergence from session mode: the chain stays on screen.** Session mode collapses
+its transcript because holding it there is only proving the data landed — but here, watching the
+worry descend *is* the therapeutic point (design record, round 4). Same principle, opposite
+conclusion: show what the conversation needs and nothing else.
+
+**The AI probe stays confirm-first**, minus the machinery. The suggested question renders *as* the
+question — a borderless field styled exactly like the heading — so the clinician clicks and rewords
+it before saying it aloud. No panel explaining that they may.
+
+### `sessionKit.tsx`
+
+Both flows now import their register from one module: `Ask`, `Context`, `Exchange`, `SayIt`,
+`Chrome`, `DTBadge`, `FearScale` and the shared styles. The arrow drifted precisely because the
+patterns lived inside `SessionPage.tsx` and nothing carried them across. The kit is where the rules
+are written down in code.
+
 ## Still open
 
 1. Owner redline on the copy table.

@@ -2540,11 +2540,18 @@ export default function PatientPage() {
               className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add nickname</button>
           )}
         </div>
-        {/* Launch the co-located, child-friendly capture flow (session mode). */}
-        <button onClick={() => navigate(`/patients/${patientId}/session`)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '999px', padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
-          ▸ Start session
-        </button>
+        {/* The two co-located, child-facing interviews. Both launch from here — the downward
+            arrow is its own mode, not a detour inside session mode. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <button onClick={() => navigate(`/patients/${patientId}/arrow`)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '7px 14px', cursor: 'pointer' }}>
+            ↓ Downward arrow
+          </button>
+          <button onClick={() => navigate(`/patients/${patientId}/session`)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '999px', padding: '7px 14px', cursor: 'pointer' }}>
+            ▸ Start session
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
