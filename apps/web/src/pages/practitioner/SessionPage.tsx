@@ -158,9 +158,9 @@ export default function SessionPage() {
     enabled: !!planId,
   })
 
-  const sortedTriggers = [...(triggers ?? [])].sort(
-    (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
-  )
+  const sortedTriggers = [...(triggers ?? [])]
+    .filter(t => !t.is_placeholder)
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
 
   // Session mode is launched from the Plan tab, so it hands the clinician back to it.
   const exit = () => navigate(`/patients/${patientId}?tab=plan`)
@@ -251,10 +251,9 @@ export default function SessionPage() {
 export function IntroPhase({ onStart }: { onStart: () => void }) {
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Let&rsquo;s map out together the situations that feel hard.</div>
+      <div style={bigQ}>Let&rsquo;s walk through the situations that feel hard.</div>
       <p style={lead}>
-        One thing at a time: what&rsquo;s hard, how big it feels, and what you do about it.
-        Nothing here is set in stone — we can change any of it as we go.
+        We&rsquo;ll look at the situations that feel hard and what happens when you&rsquo;re in them.
       </p>
       <button onClick={onStart} style={primaryBtn}>Let&rsquo;s start →</button>
     </div>
@@ -288,12 +287,12 @@ export function ListPhase({ triggers, planId, onDone, onOpen }: {
 
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>What do you have trouble with?</div>
-      <p style={lead}>Tap anything that sounds like you — and add your own.</p>
+      <div style={bigQ}>What situations do you have trouble with?</div>
+      <p style={lead}>Add your own situations. Or select from common ones.</p>
 
       {triggers.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 12.5, color: '#9aa9a8', marginBottom: 7 }}>Yours so far — tap one to talk about it</div>
+          <div style={{ fontSize: 12.5, color: '#9aa9a8', marginBottom: 7 }}>Once you add a situation, tap on it to review what happens in that situation.</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             {triggers.map(t => (
               <button key={t.id} onClick={() => onOpen(t.id)}

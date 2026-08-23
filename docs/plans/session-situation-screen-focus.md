@@ -123,6 +123,14 @@ react-query fixtures — no API, no writes — at `/__session-preview`, mounted 
 `import.meta.env.DEV` (verified absent from the production bundle). Every screen above was checked
 there.
 
+## Copy revisions (owner, 2026-08-23)
+
+Intro is now **"Let's walk through the situations that feel hard."** / "We'll look at the situations
+that feel hard and what happens when you're in them." List is **"What situations do you have trouble
+with?"** / "Add your own situations. Or select from common ones.", and the list's own label reads
+"Once you add a situation, tap on it to review what happens in that situation." The copy table above
+records the earlier wording; these supersede it.
+
 ## Still open
 
 1. Owner redline on the copy table.
