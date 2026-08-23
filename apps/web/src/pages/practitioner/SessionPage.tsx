@@ -144,6 +144,10 @@ export default function SessionPage() {
   const [phase, setPhase] = useState<Phase>('intro')
   const [currentTriggerId, setCurrentTriggerId] = useState<string | null>(null)
   const [rateIdx, setRateIdx] = useState(0)
+  // The situations queued for this pass. Re-entering session mode is almost always "I want to add
+  // one more", so the walk covers what's new rather than marching through work already done.
+  const [walkIds, setWalkIds] = useState<string[]>([])
+  const bootRef = useRef(false)
 
   const { data: plan, isLoading: planLoading } = useQuery({
     queryKey: ['plan', patientId],
@@ -165,13 +169,38 @@ export default function SessionPage() {
   // Session mode is launched from the Plan tab, so it hands the clinician back to it.
   const exit = () => navigate(`/patients/${patientId}?tab=plan`)
 
-  // Walking the situations in order is the spine of the interview — finishing one moves to the
-  // next rather than dropping back to a menu, which is what makes it feel like a conversation.
+  // "Let's walk through the situations that feel hard" is an opening line, not something to say to
+  // someone who already has a list. Coming back in, start at the list.
+  useEffect(() => {
+    if (bootRef.current || !triggers) return
+    bootRef.current = true
+    if (sortedTriggers.length > 0) setPhase('list')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggers])
+
+  // Only situations that have never been rated. Re-asking for a score that is already set — and
+  // showing it pre-selected — leaves the pair staring at a number with nothing to do.
+  const unrated = sortedTriggers.filter(t => dtOf(t.distress_thermometer_rating) == null)
+
+  // Walking in order is the spine of the interview — finishing one moves to the next rather than
+  // dropping back to a menu. The order comes from walkIds, so the walk is over this pass's work.
   const openSituation = (id: string) => { setCurrentTriggerId(id); setPhase('situation') }
+  const startWalk = (ids: string[]) => {
+    setWalkIds(ids)
+    if (ids.length > 0) openSituation(ids[0])
+    else setPhase('review')
+  }
   const nextSituation = () => {
-    const i = sortedTriggers.findIndex(t => t.id === currentTriggerId)
-    const next = sortedTriggers[i + 1]
-    if (next) openSituation(next.id)
+    const i = walkIds.indexOf(currentTriggerId ?? '')
+    const next = i >= 0 ? walkIds[i + 1] : undefined
+    if (next) openSituation(next)
+    else setPhase('review')
+  }
+
+  // Leaving the list: rate whatever is unrated, then walk exactly those. With nothing unrated
+  // there is no new work, so the ladder is the useful place to land.
+  const leaveList = () => {
+    if (unrated.length > 0) { setWalkIds(unrated.map(t => t.id)); setRateIdx(0); setPhase('rate') }
     else setPhase('review')
   }
 
@@ -191,7 +220,6 @@ export default function SessionPage() {
   }
 
   const currentTrigger = sortedTriggers.find(t => t.id === currentTriggerId) ?? null
-  const sitIndex = sortedTriggers.findIndex(t => t.id === currentTriggerId)
 
   return (
     <Chrome onExit={exit}>
@@ -201,23 +229,19 @@ export default function SessionPage() {
         <ListPhase
           triggers={sortedTriggers}
           planId={plan.id}
-          onDone={() => { setRateIdx(0); setPhase('rate') }}
-          onOpen={openSituation}
+          onDone={leaveList}
+          onOpen={(id) => startWalk([id])}
         />
       )}
 
       {phase === 'rate' && (
         <RatePhase
           planId={plan.id}
-          triggers={sortedTriggers}
+          triggers={sortedTriggers.filter(t => walkIds.includes(t.id))}
           index={rateIdx}
           onIndex={setRateIdx}
           onBack={() => setPhase('list')}
-          onDone={() => {
-            const first = sortedTriggers[0]
-            if (first) openSituation(first.id)
-            else setPhase('list')
-          }}
+          onDone={() => startWalk(walkIds)}
         />
       )}
 
@@ -225,7 +249,7 @@ export default function SessionPage() {
         <SituationPhase
           key={currentTrigger.id}
           trigger={currentTrigger}
-          isLast={sitIndex === sortedTriggers.length - 1}
+          isLast={walkIds.indexOf(currentTrigger.id) === walkIds.length - 1}
           onOpenArrow={() => setPhase('arrow')}
           onSeeAll={() => setPhase('list')}
           onFinished={nextSituation}
@@ -602,9 +626,13 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
           </button>
         )}
         <button onClick={onSeeAll} style={{ ...quietLink, marginLeft: 'auto' }}>← All situations</button>
-        <button onClick={onOpenArrow} style={{ ...quietLink, color: '#3f8a78', fontWeight: 700 }}>
-          {situationDA?.feared_outcome ? 'The worry underneath ›' : 'Downward arrow ›'}
-        </button>
+        {/* Not while a score is being asked for — the arrow is a different conversation, and
+            offering the exit mid-question is the distraction this flow exists to remove. */}
+        {step !== 'score' && (
+          <button onClick={onOpenArrow} style={{ ...quietLink, color: '#3f8a78', fontWeight: 700 }}>
+            {situationDA?.feared_outcome ? 'The worry underneath ›' : 'Downward arrow ›'}
+          </button>
+        )}
       </div>
     </div>
   )

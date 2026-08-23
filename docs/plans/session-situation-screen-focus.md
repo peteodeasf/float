@@ -131,6 +131,28 @@ with?"** / "Add your own situations. Or select from common ones.", and the list'
 "Once you add a situation, tap on it to review what happens in that situation." The copy table above
 records the earlier wording; these supersede it.
 
+## Coming back in (owner, 2026-08-23)
+
+Session mode was built as a first-run flow, so re-entering it replayed the whole thing: the opening
+line to someone who already has a list, then a rating pass over situations that were already rated,
+showing each score pre-selected with nothing to do. **The dominant reason to come back is to add one
+more situation**, so the flow now scopes itself to what is actually new:
+
+- **No intro on re-entry.** If the plan already has situations, session mode opens on the list.
+  "Let's walk through the situations that feel hard" is an opening line, not something to say to
+  someone mid-way through.
+- **The rating pass covers only unrated situations.** A situation that already has a DT is not
+  re-asked.
+- **The walk covers only this pass's situations** (`walkIds`), not every situation on the plan —
+  so adding one situation walks that one, and "That's everything →" ends the pass.
+- **Tapping a situation in the list walks just that one**, then ends on the ladder.
+- **Nothing new to do → the ladder.** Confirming the list when everything is already rated goes
+  straight to "Here's your whole ladder" rather than marching back through finished work.
+
+**The downward arrow is not offered on a scoring screen.** It is a different conversation, and an
+exit offered mid-question is the distraction this flow exists to remove. It stays available on the
+other steps.
+
 ## Still open
 
 1. Owner redline on the copy table.
