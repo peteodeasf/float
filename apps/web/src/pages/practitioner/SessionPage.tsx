@@ -124,15 +124,18 @@ function Context({ text, dt, quiet }: { text: string; dt?: number | null; quiet?
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap',
+      // `quiet` separates the two blocks by FILL, not by size. Shrinking the situation made it
+      // slower to read the context you need to answer the question — the wrong thing to trade
+      // away for visual hierarchy. Same type size, same colour; only the panel differs.
       background: quiet ? 'transparent' : '#e8f7f1',
       border: quiet ? 'none' : '1px solid #cdeee2',
-      borderLeft: `${quiet ? 3 : 4}px solid ${quiet ? '#cdeee2' : '#135450'}`,
+      borderLeft: '4px solid #135450',
       borderRadius: quiet ? 0 : 12,
-      padding: quiet ? '2px 0 2px 11px' : '13px 16px',
-      marginBottom: quiet ? 14 : 18,
+      padding: quiet ? '1px 0 1px 12px' : '13px 16px',
+      marginBottom: quiet ? 16 : 18,
     }}>
-      <span style={{ fontSize: quiet ? 13.5 : 19, fontWeight: quiet ? 700 : 800, color: quiet ? '#93a8a3' : '#0d3d3a', minWidth: 0, lineHeight: 1.25 }}>{text}</span>
-      {dt != null && <DTBadge v={dt} size={quiet ? 21 : 34} />}
+      <span style={{ fontSize: 19, fontWeight: 800, color: '#0d3d3a', minWidth: 0, lineHeight: 1.25 }}>{text}</span>
+      {dt != null && <DTBadge v={dt} size={quiet ? 30 : 34} />}
     </div>
   )
 }
@@ -605,7 +608,7 @@ export function SituationPhase({ trigger, isLast, onOpenArrow, onSeeAll, onFinis
           <Ask>
             {scoring.id === avoidBeh?.id
               ? 'How hard would it be to be in it at all?'
-              : <>How hard would it be to be in it — <span style={{ color: '#135450' }}>without doing that</span>?</>}
+              : <>How hard would it be to be in this situation — <span style={{ color: '#135450' }}>without doing that</span>?</>}
           </Ask>
           {/* Their own words, given the same context treatment as the situation — this is the
               thing being scored, and it has to be unmistakable when an earlier answer is

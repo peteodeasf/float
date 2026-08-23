@@ -58,9 +58,12 @@ next starts.
    situation was styled as a caption with its score floated to the far right edge, so it read as
    just more text and the number looked unattached. Both now sit together in a tinted block with a
    teal accent bar (`Context`), score inline beside the name at 34px. The **same treatment applies
-   to whatever the question is about**: on a scoring screen the behaviour gets the block and the
-   situation recedes to a quiet breadcrumb, so "what am I rating?" is answered by the layout. The
-   rate step uses it too.
+   to whatever the question is about**: on a scoring screen the behaviour gets the filled block too.
+   The rate step uses it as well.
+   *(Revised 2026-08-23: the two blocks were first separated by SIZE — the situation shrank to a
+   small grey breadcrumb while the behaviour stayed large. That made the context slower to read,
+   which is the opposite of the point. They are now separated by **fill** only: same 19px, same
+   colour, same accent bar; the subject of the question is the one with the tinted panel.)*
 3. **Nothing appears twice.** The item currently being scored is suppressed from the history —
    otherwise the same behaviour showed up as the live question *and* as a stale
    "— we skipped this one" line directly above it.
@@ -93,7 +96,7 @@ next starts.
 | Situation — name (after yes) | **And when you can't skip it — what do you do?** |
 | Situation — name (after no) | **When you're in it, what do you do?** / Anything that makes it easier to get through. |
 | Situation — name (later) | **What else do you do?** |
-| Situation — score | **How hard would it be to be in it — without doing that?** / *"{their words}"* |
+| Situation — score | **How hard would it be to be in this situation — without doing that?** / *"{their words}"* |
 | Situation — score (the avoidance one) | **How hard would it be to be in it at all?** |
 | Scale ends | 1 · no big deal … 10 · the worst |
 | Situation — done | That's everything → / That's everything — see the ladder → |
