@@ -356,7 +356,7 @@ function trendArrow(seq: number[]): { symbol: string; color: string } {
 }
 
 // ── Behavior Panel (right side of treatment plan) ──
-function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
+export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
   trigger: TriggerSituation; planId: string; patientId: string; planStatus: string
 }) {
   const qc = useQueryClient()
@@ -567,44 +567,52 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 
   return (
     <div className="p-4 h-full overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      {/* Section label above the situation it belongs to. Everything ABOUT the situation —
+          score, active state, tags — sits on the situation's own row, so the eye picks up the
+          whole context in one line instead of three stacked blocks. */}
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' }}>
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">{trigger.name}</h3>
-          <div className="flex items-center gap-2 mt-0.5">
-            <DTBadge value={trigger.distress_thermometer_rating} max={trigger.distress_thermometer_max} />
-            <button
-              onClick={() => toggleActive.mutate()}
-              disabled={toggleActive.isPending || !canToggleActive}
-              title={!canToggleActive ? 'Add at least one behavior before activating this situation' : undefined}
-              style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                padding: '4px 12px',
-                borderRadius: '999px',
-                border: trigger.is_active ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                background: trigger.is_active ? 'var(--float-primary)' : '#fff',
-                color: trigger.is_active ? '#fff' : '#64748b',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                cursor: canToggleActive ? 'pointer' : 'not-allowed',
-                opacity: canToggleActive ? 1 : 0.5,
-              }}
-            >
-              <span style={{ fontSize: '8px' }}>{trigger.is_active ? '●' : '○'}</span>
-              {trigger.is_active ? 'Active' : 'Not active'}
-            </button>
-          </div>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Exposure ladder</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Avoidance &amp; safety behaviors</div>
         </div>
+        {behaviors && behaviors.length > 0 && ladder && (
+          <button onClick={() => reviewMut.mutate()} disabled={reviewMut.isPending}
+            className="text-[11px] font-medium bg-transparent border-none cursor-pointer disabled:opacity-50"
+            style={{ color: '#64748b', flexShrink: 0 }}>
+            {reviewMut.isPending ? 'Reviewing...' : 'Run AI review'}
+          </button>
+        )}
       </div>
 
-      {/* Tags — targets the JIT tips the teen sees on this situation's exposures */}
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-          Tags
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '9px', flexWrap: 'wrap', margin: '10px 0 12px' }}>
+        <h3 className="text-sm font-semibold text-slate-800" style={{ margin: 0 }}>{trigger.name}</h3>
+        <DTBadge value={trigger.distress_thermometer_rating} max={trigger.distress_thermometer_max} />
+        <button
+          onClick={() => toggleActive.mutate()}
+          disabled={toggleActive.isPending || !canToggleActive}
+          title={!canToggleActive ? 'Add at least one behavior before activating this situation' : undefined}
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            padding: '4px 12px',
+            borderRadius: '999px',
+            border: trigger.is_active ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+            background: trigger.is_active ? 'var(--float-primary)' : '#fff',
+            color: trigger.is_active ? '#fff' : '#64748b',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            cursor: canToggleActive ? 'pointer' : 'not-allowed',
+            opacity: canToggleActive ? 1 : 0.5,
+          }}
+        >
+          <span style={{ fontSize: '8px' }}>{trigger.is_active ? '\u25cf' : '\u25cb'}</span>
+          {trigger.is_active ? 'Active' : 'Not active'}
+        </button>
+
+        {/* Tags — targets the JIT tips the teen sees on this situation's exposures. No heading:
+            on the situation's own row they read as properties of it. */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginLeft: 'auto' }}>
           {(allTags ?? []).map(tag => {
             const on = (situationTagIds ?? []).includes(tag.id)
             return (
@@ -612,6 +620,7 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 key={tag.id}
                 onClick={() => toggleSituationTag(tag.id)}
                 disabled={setTagsMut.isPending}
+                title="Tag — targets the tips the teen sees on this situation"
                 style={{
                   fontSize: '11px',
                   fontWeight: 600,
@@ -627,29 +636,6 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
               </button>
             )
           })}
-          {allTags && allTags.length === 0 && (
-            <span style={{ fontSize: '11px', color: '#94a3b8' }}>No tags defined yet.</span>
-          )}
-        </div>
-      </div>
-
-      {/* Ladder header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
-        <div>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Exposure ladder</div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Avoidance &amp; safety behaviors · easiest first</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-          {!showAdd && (
-            <button onClick={() => setShowAdd(true)} className="cursor-pointer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>+ Add behavior</button>
-          )}
-          {behaviors && behaviors.length > 0 && ladder && (
-            <button onClick={() => reviewMut.mutate()} disabled={reviewMut.isPending}
-              className="text-[11px] font-medium bg-transparent border-none cursor-pointer disabled:opacity-50"
-              style={{ color: '#64748b' }}>
-              {reviewMut.isPending ? 'Reviewing...' : 'Run AI review'}
-            </button>
-          )}
         </div>
       </div>
 
@@ -875,6 +861,12 @@ function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
           )}
         </div>
       </div>
+
+      {/* Below the list it adds to, not up in the section header. */}
+      {!showAdd && (
+        <button onClick={() => setShowAdd(true)} className="cursor-pointer"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px', marginBottom: '12px' }}>+ Add behavior</button>
+      )}
 
       {/* Add behavior inline */}
       {showAdd && (
