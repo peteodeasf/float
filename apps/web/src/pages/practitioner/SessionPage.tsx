@@ -75,9 +75,18 @@ export default function SessionPage() {
     enabled: !!planId,
   })
 
+  // Lowest distress first, everywhere a situation list appears (the ladder, the arrow's pick
+  // list, and here). Unrated situations sit at the end rather than counting as a zero.
   const sortedTriggers = [...(triggers ?? [])]
     .filter(t => !t.is_placeholder)
-    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    .sort((a, b) => {
+      const x = dtOf(a.distress_thermometer_rating)
+      const y = dtOf(b.distress_thermometer_rating)
+      if (x == null && y == null) return (a.display_order ?? 0) - (b.display_order ?? 0)
+      if (x == null) return 1
+      if (y == null) return -1
+      return x - y
+    })
 
   // Session mode is launched from the Plan tab, so it hands the clinician back to it.
   const exit = () => navigate(`/patients/${patientId}?tab=plan`)
