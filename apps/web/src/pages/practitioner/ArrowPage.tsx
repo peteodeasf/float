@@ -17,13 +17,14 @@
  * The probe phrasing is the one live-AI call in either flow, and it stays confirm-first: the
  * clinician reads the question and can reword it before saying it aloud.
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getTreatmentPlan,
   getTriggers,
   getSituationDownwardArrow,
+  listPatientDownwardArrows,
   createSituationDownwardArrow,
   updateDownwardArrow,
   getNextProbe,
@@ -73,6 +74,7 @@ export default function ArrowPage() {
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('intro')
   const [currentId, setCurrentId] = useState<string | null>(null)
+  const bootRef = useRef(false)
 
   const { data: plan, isLoading: planLoading } = useQuery({
     queryKey: ['plan', patientId],
@@ -84,6 +86,27 @@ export default function ArrowPage() {
     queryFn: () => getTriggers(plan!.id),
     enabled: !!plan?.id,
   })
+
+  // One call for every arrow on this patient, used only to decide where to land. Coming back to
+  // a patient whose arrows are already underway, the opening line is the wrong screen.
+  const { data: arrows } = useQuery({
+    queryKey: ['patient-arrows', patientId],
+    queryFn: () => listPatientDownwardArrows(patientId!),
+    enabled: !!patientId,
+  })
+
+  // Opening a situation get-or-creates its arrow row, so merely having a row proves nothing —
+  // the signal is a row with something IN it.
+  const anyStarted = (arrows ?? []).some(
+    a => a.trigger_situation_id && (!!a.feared_outcome || (a.arrow_steps?.length ?? 0) > 0)
+  )
+
+  useEffect(() => {
+    if (bootRef.current || !arrows) return
+    bootRef.current = true
+    if (anyStarted) setPhase('pick')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrows])
 
   const situations = [...(triggers ?? [])]
     .filter(t => !t.is_placeholder)
@@ -267,6 +290,7 @@ export function ChainPhase({ trigger, onBack, onDone }: { trigger: TriggerSituat
     try {
       await updateDownwardArrow(arrowId, { feared_outcome: fearedDraft.trim(), is_approved: true })
       qc.invalidateQueries({ queryKey: ['situation-da', trigger.id] })
+      qc.invalidateQueries({ queryKey: ['patient-arrows'] })
       onDone()
     } catch { setErr('Could not save. Try again.') }
     finally { setBusy(false) }
