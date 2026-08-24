@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient } from '../../context/AdminAuthContext'
+import ChecklistAdmin from './ChecklistAdmin'
 import FloatLogo from '../../components/ui/FloatLogo'
 
 type Tag = { id: string; slug: string; label: string; is_active: boolean }
@@ -347,6 +348,8 @@ export default function AdminContentPage() {
           <p style={{ color: '#94a3b8' }}>Loading…</p>
         ) : (
           <>
+            <ChecklistAdmin />
+
             {/* Tags */}
             <section style={card}>
               <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 4px', color: '#0f172a' }}>Tags</h2>

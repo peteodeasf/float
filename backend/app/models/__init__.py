@@ -13,4 +13,5 @@ from app.models.action_plan import ActionPlan
 from app.models.waitlist import WaitlistEntry
 from app.models.formulation import ClinicalFormulation
 from app.models.checklist import ConsultationChecklist
+from app.models.checklist_item import OrganizationChecklistItem
 from app.models.jit_content import Tag, JitTip, JitTipTag, TriggerSituationTag

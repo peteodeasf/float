@@ -20,6 +20,7 @@ import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonito
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../../lib/checklists'
+import { getChecklistItems } from '../../api/checklist'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
 import { fetchFormulation, createFormulation, updateFormulation } from '../../api/formulation'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -1192,10 +1193,9 @@ const STAGE1_PARENT_KEYS = [
   'parent_feared_outcome',
 ]
 
-function ConsultationChecklist({ patientId, title, items, collapsed, onToggleCollapse, onNavigate }: {
+function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, onNavigate }: {
   patientId: string
   title: string
-  items: ChecklistItemDef[]
   collapsed: boolean
   onToggleCollapse: () => void
   onNavigate: (action: ChecklistNav['action']) => void
@@ -1208,6 +1208,21 @@ function ConsultationChecklist({ patientId, title, items, collapsed, onToggleCol
     queryFn: () => getChecklist(patientId),
     enabled: !!patientId,
   })
+
+  // The organization's configured list. Falls back to the bundled default if the request fails,
+  // so a network blip leaves the clinician with a working checklist rather than an empty panel.
+  const { data: orgItems } = useQuery({
+    queryKey: ['checklist-items'],
+    queryFn: getChecklistItems,
+  })
+  const items: ChecklistItemDef[] = (orgItems && orgItems.length > 0)
+    ? orgItems.map(i => ({
+        key: i.key,
+        text: i.text,
+        link: i.link_icon && i.link_label ? { icon: i.link_icon, label: i.link_label } : undefined,
+        nav: i.nav_label && i.nav_action ? { label: i.nav_label, action: i.nav_action as ChecklistNav['action'] } : undefined,
+      }))
+    : PROCESS_CHECKLIST
 
   const toggleMut = useMutation({
     mutationFn: ({ key, value }: { key: string; value: boolean }) => updateChecklist(patientId, { [key]: value }),
@@ -3551,7 +3566,7 @@ export default function PatientPage() {
 
               {processTab === 'checklist' && patientId && (
                 <>
-                  <ConsultationChecklist patientId={patientId} title="Checklist" items={PROCESS_CHECKLIST} collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
+                  <ConsultationChecklist patientId={patientId} title="Checklist" collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
                 </>
               )}
 

@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.models.checklist import ConsultationChecklist
+from app.models.checklist_item import OrganizationChecklistItem
 from app.api.routers.patients import get_practitioner_context
 from app.services.patient_service import get_patient_by_id
+from app.services.checklist_item_service import list_items
 
 
 router = APIRouter(tags=["checklist"])
@@ -84,3 +86,43 @@ async def update_checklist(
     await db.commit()
     await db.refresh(checklist)
     return ChecklistResponse(checked_items=checklist.checked_items or {})
+
+
+# ── The organization's process checklist definition ──────────────────────────
+# Read-only for clinicians. Editing lives on the admin router: the Float team
+# manages these, organizations don't edit their own.
+class ChecklistItemOut(BaseModel):
+    id: uuid.UUID
+    key: str
+    text: str
+    link_icon: str | None = None
+    link_label: str | None = None
+    nav_label: str | None = None
+    nav_action: str | None = None
+    display_order: int
+    is_active: bool
+
+
+def checklist_item_out(row: OrganizationChecklistItem) -> ChecklistItemOut:
+    return ChecklistItemOut(
+        id=row.id,
+        key=row.key,
+        text=row.text_,
+        link_icon=row.link_icon,
+        link_label=row.link_label,
+        nav_label=row.nav_label,
+        nav_action=row.nav_action,
+        display_order=row.display_order,
+        is_active=row.is_active,
+    )
+
+
+@router.get("/checklist-items", response_model=list[ChecklistItemOut])
+async def get_org_checklist_items(
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The process checklist for the signed-in clinician's organization."""
+    _, practitioner = context
+    rows = await list_items(db, practitioner.organization_id)
+    return [checklist_item_out(r) for r in rows]

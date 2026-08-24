@@ -1,6 +1,7 @@
 import secrets
 import string
 import uuid
+from typing import Optional
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -16,6 +17,8 @@ from app.models.organization import Organization
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
 from app.models.jit_content import Tag, JitTip, JitTipTag
+from app.services import checklist_item_service as checklist_items
+from app.api.routers.checklist import checklist_item_out
 from app.services.email_service import (
     send_clinician_invitation_email,
     send_password_reset_email,
@@ -455,6 +458,9 @@ async def create_organization(
     db.add(org)
     await db.flush()
     org_id = org.id
+    # Every organization starts with the default process checklist — the same list the seed
+    # migration gave the organizations that already existed.
+    await checklist_items.seed_defaults(db, org_id)
     await db.commit()
     return {
         "id": str(org_id),
@@ -702,6 +708,83 @@ class JitTipPayload(BaseModel):
 
 def _tag_out(t: Tag) -> dict:
     return {"id": str(t.id), "slug": t.slug, "label": t.label, "is_active": t.is_active}
+
+
+# ── Process checklist, per organization ──────────────────────────────────────
+# Float-team managed (owner call, 2026-08-24): platform admin can do everything —
+# add, edit, reorder, delete — and organizations cannot edit their own list.
+class ChecklistItemIn(BaseModel):
+    text: str
+    link_icon: Optional[str] = None
+    link_label: Optional[str] = None
+    nav_label: Optional[str] = None
+    nav_action: Optional[str] = None
+
+
+class ChecklistItemPatch(BaseModel):
+    text: Optional[str] = None
+    link_icon: Optional[str] = None
+    link_label: Optional[str] = None
+    nav_label: Optional[str] = None
+    nav_action: Optional[str] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+class ChecklistReorder(BaseModel):
+    ordered_ids: list[uuid.UUID]
+
+
+@router.get("/organizations/{org_id}/checklist-items")
+async def admin_list_checklist_items(
+    org_id: uuid.UUID,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await checklist_items.list_items(db, org_id, include_inactive=True)
+    return [checklist_item_out(r) for r in rows]
+
+
+@router.post("/organizations/{org_id}/checklist-items", status_code=status.HTTP_201_CREATED)
+async def admin_create_checklist_item(
+    org_id: uuid.UUID,
+    body: ChecklistItemIn,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await checklist_items.create_item(db, org_id, body.model_dump())
+    return checklist_item_out(row)
+
+
+@router.put("/checklist-items/{item_id}")
+async def admin_update_checklist_item(
+    item_id: uuid.UUID,
+    body: ChecklistItemPatch,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await checklist_items.update_item(db, item_id, body.model_dump(exclude_unset=True))
+    return checklist_item_out(row)
+
+
+@router.delete("/checklist-items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def admin_delete_checklist_item(
+    item_id: uuid.UUID,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    await checklist_items.delete_item(db, item_id)
+
+
+@router.put("/organizations/{org_id}/checklist-items/reorder")
+async def admin_reorder_checklist_items(
+    org_id: uuid.UUID,
+    body: ChecklistReorder,
+    _: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await checklist_items.reorder_items(db, org_id, body.ordered_ids)
+    return [checklist_item_out(r) for r in rows]
 
 
 @router.get("/tags")
