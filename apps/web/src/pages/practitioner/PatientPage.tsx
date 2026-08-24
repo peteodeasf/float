@@ -791,6 +791,18 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '8px 2px' }}>No behaviors on the ladder yet — use “+ Add behavior” to add the first rung.</div>
           )}
 
+          {/* What every rung above is there to test. From the downward arrow; read-only here. */}
+          {situationArrow?.feared_outcome && (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #dbe6e3' }}>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#9fb5b0', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
+                &#9825; Feared outcome
+              </span>
+              <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#3f8a78', lineHeight: 1.4, minWidth: 0 }}>
+                &ldquo;{situationArrow.feared_outcome}&rdquo;
+              </span>
+            </div>
+          )}
+
           {/* Plan an experiment — the single action, taken from the ladder */}
           {planActive && topRungs.length > 0 && (
             planningBehaviorId == null ? (
@@ -868,19 +880,6 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
           )}
         </div>
       </div>
-
-      {/* What the ladder is for: every rung above is an exposure that tests this prediction.
-          Captured in the downward arrow, read-only here. */}
-      {situationArrow?.feared_outcome && (
-        <div style={{ background: '#0d3d3a', borderRadius: '12px', padding: '12px 14px', marginBottom: '12px' }}>
-          <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: '4px' }}>
-            &#9825; Feared outcome
-          </div>
-          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
-            &ldquo;{situationArrow.feared_outcome}&rdquo;
-          </div>
-        </div>
-      )}
 
       {/* Below the list it adds to, not up in the section header. */}
       {!showAdd && (
