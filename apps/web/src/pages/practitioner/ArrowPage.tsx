@@ -37,7 +37,9 @@ import {
 
 type Phase = 'intro' | 'pick' | 'chain'
 
-const FALLBACK_PROBE = 'If that were true, what would that say about you?'
+// Used only when the probe call fails. Must stay in the consequence family — the old fallback
+// ("what would that say about you?") was a meaning probe, the thing this chain is not.
+const FALLBACK_PROBE = 'And then what will happen?'
 
 export default function ArrowPage() {
   const { patientId } = useParams<{ patientId: string }>()

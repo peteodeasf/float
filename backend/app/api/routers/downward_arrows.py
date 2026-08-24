@@ -29,16 +29,39 @@ router = APIRouter(tags=["downward-arrows"])
 # warm "if that were true…" follow-up at each step. This only *phrases* the next question —
 # the clinician reads it and can reword before saying it aloud (confirm-first), and the
 # clinician (not the model) decides when the chain has reached bottom.
+# This is a FEARED-CONSEQUENCE chain. The earlier version of this prompt asked the model for the
+# meaning/core-belief move ("what would that say about you?"), which is a different technique
+# entirely — and it was writing that content into `downward_arrows.feared_outcome`. A feared
+# outcome is a concrete predicted event, which is what an exposure can disconfirm; "I'm a loser"
+# is not. Built to Dr. Walker's worksheet (see docs/plans/session-situation-screen-focus.md).
+#
+# The model's job here is deliberately narrow: restate the child's last answer inside a fixed
+# template. It does not choose the question and it does not invent content.
 NEXT_PROBE_SYSTEM_PROMPT = """You help a child therapist run a "downward arrow" with a young person (ages ~10-17).
 
-You are given the child's starting thought and the chain of question/answer steps so far. Write ONE short follow-up question that gently drills one level deeper — the classic downward-arrow move: given what the child just said, ask what that would mean, why that would be so bad, or what it would say about them.
+This is a FEARED-CONSEQUENCE chain. Every question asks what happens NEXT. Never ask what something
+would mean about the child, what it says about them, or why it would be so bad — that is a
+different technique and it is not what this tool does.
+
+You are given the situation, the child's first answer, and the chain so far. Write ONE short
+follow-up question in this form:
+
+    What will happen if... <the child's last answer, restated in the second person>?
+
+The restating is the whole job — take the feared part of their last answer and put it back to them
+in their own words:
+  "I would feel yucky."                                   -> What will happen if... you feel yucky?
+  "I'd be all stressed until I could get clean again."    -> What will happen if... you can't get clean again?
+  "I won't be able to play soccer or do my schoolwork."   -> What will happen if... you can't do all those things?
 
 Rules:
 - Return ONLY the question. No preamble, no quotes, no explanation.
-- One sentence. Warm, plain, age-appropriate — talk to the child, not about them.
-- Build on the child's own words from their last answer.
-- Do not decide the chain is finished or offer a summary — always ask the next question.
-- Never diagnose, reassure, or give advice; just ask the next downward-arrow question."""
+- Keep the "What will happen if..." opening. Only if that would be ungrammatical, use the closest
+  natural consequence question instead ("And then what will happen?").
+- Use the child's own words. Never introduce a fear, detail, or outcome they have not said.
+- Talk to the child, not about them.
+- Do not decide the chain is finished, summarise, reassure, diagnose, or advise. Always ask the
+  next question."""
 
 
 def _chain_text(req: NextProbeRequest) -> str:

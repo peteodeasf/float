@@ -196,6 +196,42 @@ conclusion: show what the conversation needs and nothing else.
 question — a borderless field styled exactly like the heading — so the clinician clicks and rewords
 it before saying it aloud. No panel explaining that they may.
 
+### The probe is a feared-CONSEQUENCE chain (2026-08-24)
+
+The AI probe was asking *"what would that mean about you?"* — the **meaning / core-belief** move,
+which is a different technique. The system prompt literally instructed it
+(`downward_arrows.py`: *"ask what that would mean … or what it would say about them"*), so the model
+was doing as told. It was writing core-belief content into `downward_arrows.feared_outcome`.
+
+That matters beyond wording: **a feared outcome is a concrete predicted event, which is what an
+exposure can disconfirm.** "Everyone will laugh and I'll have to leave practice" is testable;
+"I'm a loser" is not. Round 6 of the design record had already rejected a patient-level core belief
+in favour of a per-situation feared outcome — the prompt was simply inconsistent with the model it
+writes into.
+
+**Built to Dr. Walker's worksheet.** Every question after the opener follows one template:
+
+```
+Situation: Touching a public bathroom door handle.
+  What will happen in this situation?      → Other people's germs are all over the handle.
+  What will happen if… you get those germs on you?   → I would feel yucky.
+  What will happen if… you feel yucky?     → I'd be all stressed until I could get clean again.
+  What will happen if… you can't get clean again?    → I won't be able to play soccer or do my
+                                                        school work or anything.
+```
+
+So **the model does not choose the question** — it restates the child's last answer inside a fixed
+frame, in the second person, using their words. That restating is a real judgment (*"I'd be all
+stressed until I could get clean again"* → *"you can't get clean again"*: it extracts the feared
+element), and it is the entire job. Narrower than before, and squarely the "scribe, not
+interviewer" role the design record asks for.
+
+The fallback probe changed too — it was `"If that were true, what would that say about you?"`, the
+same meaning move, and it fires exactly when the AI call fails.
+
+**Not doing:** the meaning probe, in any form, for now. *"What's the worst part of that?"* was my
+suggestion and is withdrawn — it is an affect/meaning move, not a consequence one.
+
 ### `sessionKit.tsx`
 
 Both flows now import their register from one module: `Ask`, `Context`, `Exchange`, `SayIt`,
