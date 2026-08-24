@@ -41,6 +41,33 @@ type Phase = 'intro' | 'pick' | 'chain'
 // ("what would that say about you?") was a meaning probe, the thing this chain is not.
 const FALLBACK_PROBE = 'And then what will happen?'
 
+// Placeholder hints for the opening question, chosen off the situation name.
+//
+// Keyword-matched, NOT interpolated. Situation names are noun phrases of every possible shape —
+// "Attending school in morning", "Cafeteria Lunch", "Raising my hand in class" — so dropping one
+// into a sentence ("...at Attending school in morning") reliably produces something ungrammatical.
+// Matching a family instead always reads properly, and the words a child sees are ones a person
+// wrote rather than ones generated on the spot.
+//
+// Order matters: specific families come before general ones, so "Raising my hand in class" gets
+// the speaking-up hint rather than the schoolwork one, and "door handle" gets germs rather than
+// hands.
+const WORRY_HINTS: { match: RegExp; hint: string }[] = [
+  { match: /germ|bathroom|dirty|wash|touch|sick|contaminat/i, hint: 'e.g. I’ll get germs on me and won’t be able to get clean' },
+  { match: /sleepover|overnight|stay over|away from home|camp/i, hint: 'e.g. I’ll get scared in the night and want to go home' },
+  { match: /nurse|doctor|dentist|shot|blood|hospital|needle/i, hint: 'e.g. they’ll find out something is really wrong with me' },
+  { match: /\bhand\b|raising|answer|present|speak|talk|read aloud|order|ask for/i, hint: 'e.g. I’ll say the wrong thing and everyone will laugh' },
+  { match: /party|birthday|social|peer|friend|hang ?out|meet|new people|stranger/i, hint: 'e.g. nobody will talk to me and I’ll be standing on my own' },
+  { match: /lunch|cafeteria|eat|food|restaurant|caf(e|é)/i, hint: 'e.g. I’ll spill something and everyone will look' },
+  { match: /practice|soccer|baseball|team|sport|game|coach|tryout/i, hint: 'e.g. I’ll mess up and let the team down' },
+  { match: /dog|spider|bug|animal|snake|bee/i, hint: 'e.g. it’ll come at me and I won’t be able to get away' },
+  { match: /homework|test|exam|report|grade|project/i, hint: 'e.g. I’ll get it wrong and everyone will know' },
+  { match: /school|class|teacher/i, hint: 'e.g. the teacher will call on me and I’ll get it wrong' },
+]
+const worryHint = (name: string) =>
+  WORRY_HINTS.find(h => h.match.test(name))?.hint
+  ?? 'e.g. something bad will happen and I won’t be able to handle it'
+
 export default function ArrowPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
@@ -279,9 +306,9 @@ export function ChainPhase({ trigger, onBack, onDone }: { trigger: TriggerSituat
         </div>
       ) : !startingThought ? (
         <div>
-          <div style={{ ...bigQ, marginBottom: 12 }}>In this situation, what are you worried is going to happen?</div>
+          <div style={{ ...bigQ, marginBottom: 12 }}>What are you worried will happen in this situation?</div>
           <SayIt value={answer} onChange={setAnswer} onSend={() => { const a = answer.trim(); setAnswer(''); void begin(a) }}
-            placeholder="e.g. everyone will laugh if I get it wrong" pending={busy} />
+            placeholder={worryHint(trigger.name)} pending={busy} />
         </div>
       ) : (
         <div>

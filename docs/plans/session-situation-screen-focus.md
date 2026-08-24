@@ -232,6 +232,25 @@ same meaning move, and it fires exactly when the AI call fails.
 **Not doing:** the meaning probe, in any form, for now. *"What's the worst part of that?"* was my
 suggestion and is withdrawn — it is an affect/meaning move, not a consequence one.
 
+### Placeholder hints (owner picked the cheap option, 2026-08-24)
+
+The opening question's placeholder is chosen off the situation name. Owner's call among four
+options (library-authored examples, AI-generated, derived from captured data, or a template) —
+template, for speed.
+
+**Keyword-matched, not interpolated.** Situation names are noun phrases of every shape — *Attending
+school in morning*, *Cafeteria Lunch*, *Raising my hand in class* — so dropping one into a sentence
+(*"…at Attending school in morning"*) reliably produces something ungrammatical. Matching a family
+instead always reads properly. Order is specific-before-general: *Raising my hand in class* must hit
+speaking-up rather than schoolwork, and *door handle* must hit germs rather than hands.
+
+Checked against every situation name in the fixtures and the library; 14 of 15 land sensibly, the
+15th falls back. `WORRY_HINTS` in `ArrowPage.tsx`.
+
+> ⚠️ These are **suggested fears shown to an anxious child**. Deterministic and human-written, which
+> is why this beats generating them live — but suggestibility is a clinical property, not a UI one,
+> and the list should have Dr. Walker's eyes before it counts as settled.
+
 ### `sessionKit.tsx`
 
 Both flows now import their register from one module: `Ask`, `Context`, `Exchange`, `SayIt`,
