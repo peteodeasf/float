@@ -45,6 +45,7 @@ export default function SessionPreview() {
       { id: 'g3', slug: 'perfectionism', label: 'Perfectionism' },
     ])
     qc.setQueryData(['situation-tags', 't1'], ['g1', 'g2'])
+    qc.setQueryData(['situation-da', 't1'], { id: 'a1', arrow_steps: [], feared_outcome: 'Everyone will laugh and I’ll have to leave', is_approved: true })
     // Downward-arrow fixtures
     qc.setQueryData(['situation-da', 't2'], { id: 'a2', arrow_steps: [], feared_outcome: 'People will think I’m weird', is_approved: true })
     qc.setQueryData(['situation-da', 't3'], null)

@@ -19,7 +19,7 @@ import {
 import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport, type ExtractedBehaviorType, type ExtractedSituation, type ExtractedBehavior } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
-import { PARENT_CHECKLIST, PATIENT_CHECKLIST, type ChecklistGroup, type ChecklistNav } from '../../lib/checklists'
+import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../../lib/checklists'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
 import { fetchFormulation, createFormulation, updateFormulation } from '../../api/formulation'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -455,6 +455,12 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 
   // Content tags: which JIT tips are relevant to this situation.
   const { data: allTags } = useQuery({ queryKey: ['content-tags'], queryFn: getActiveTags })
+  // The feared outcome the downward arrow landed on for this situation. Same query key the arrow
+  // mode uses, so finishing a chain there refreshes it here.
+  const { data: situationArrow } = useQuery({
+    queryKey: ['situation-da', trigger.id],
+    queryFn: () => getSituationDownwardArrow(trigger.id),
+  })
   const { data: situationTagIds } = useQuery({
     queryKey: ['situation-tags', trigger.id],
     queryFn: () => getSituationTags(trigger.id),
@@ -862,6 +868,19 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
         </div>
       </div>
 
+      {/* What the ladder is for: every rung above is an exposure that tests this prediction.
+          Captured in the downward arrow, read-only here. */}
+      {situationArrow?.feared_outcome && (
+        <div style={{ background: '#0d3d3a', borderRadius: '12px', padding: '12px 14px', marginBottom: '12px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: '4px' }}>
+            &#9825; Feared outcome
+          </div>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
+            &ldquo;{situationArrow.feared_outcome}&rdquo;
+          </div>
+        </div>
+      )}
+
       {/* Below the list it adds to, not up in the section header. */}
       {!showAdd && (
         <button onClick={() => setShowAdd(true)} className="cursor-pointer"
@@ -1173,10 +1192,10 @@ const STAGE1_PARENT_KEYS = [
   'parent_feared_outcome',
 ]
 
-function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCollapse, onNavigate }: {
+function ConsultationChecklist({ patientId, title, items, collapsed, onToggleCollapse, onNavigate }: {
   patientId: string
   title: string
-  groups: ChecklistGroup[]
+  items: ChecklistItemDef[]
   collapsed: boolean
   onToggleCollapse: () => void
   onNavigate: (action: ChecklistNav['action']) => void
@@ -1203,7 +1222,7 @@ function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCo
   })
 
   const checkedItems = checked ?? {}
-  const allKeys = groups.flatMap(g => g.items.map(i => i.key))
+  const allKeys = items.map(i => i.key)
   const total = allKeys.length
   const checkedCount = allKeys.filter(k => !!checkedItems[k]).length
   const progress = `${checkedCount}/${total}`
@@ -1238,58 +1257,49 @@ function ConsultationChecklist({ patientId, title, groups, collapsed, onToggleCo
         </div>
       </div>
 
-      {groups.map((group, gi) => (
-        <div key={group.header || `group-${gi}`}>
-          {group.header && (
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: gi === 0 ? '4px 0 8px' : '16px 0 8px' }}>
-              {group.header}
-            </div>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-            {group.items.map(item => {
-              const isChecked = !!checkedItems[item.key]
-              return (
-                <div key={item.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleMut.mutate({ key: item.key, value: !isChecked })}
-                    style={{ accentColor: '#135450', width: '15px', height: '15px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: '12.5px', lineHeight: 1.4, color: isChecked ? '#94a3b8' : '#334155' }}>{item.text}</span>
-                    {item.link && (
-                      <div style={{ position: 'relative', marginTop: '3px' }}>
-                        <button
-                          onClick={() => setPopoverKey(popoverKey === item.key ? null : item.key)}
-                          className="bg-transparent border-none cursor-pointer"
-                          style={{ fontSize: '11.5px', color: '#94a3b8', padding: 0, whiteSpace: 'nowrap' }}
-                        >
-                          {item.link.icon} {item.link.label}
-                        </button>
-                        {popoverKey === item.key && (
-                          <div style={{ position: 'absolute', left: 0, top: '22px', background: '#1e293b', color: '#fff', fontSize: '11px', padding: '6px 10px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                            Education content coming soon
-                          </div>
-                        )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+        {items.map(item => {
+          const isChecked = !!checkedItems[item.key]
+          return (
+            <div key={item.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => toggleMut.mutate({ key: item.key, value: !isChecked })}
+                style={{ accentColor: '#135450', width: '15px', height: '15px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: '12.5px', lineHeight: 1.4, color: isChecked ? '#94a3b8' : '#334155' }}>{item.text}</span>
+                {item.link && (
+                  <div style={{ position: 'relative', marginTop: '3px' }}>
+                    <button
+                      onClick={() => setPopoverKey(popoverKey === item.key ? null : item.key)}
+                      className="bg-transparent border-none cursor-pointer"
+                      style={{ fontSize: '11.5px', color: '#94a3b8', padding: 0, whiteSpace: 'nowrap' }}
+                    >
+                      {item.link.icon} {item.link.label}
+                    </button>
+                    {popoverKey === item.key && (
+                      <div style={{ position: 'absolute', left: 0, top: '22px', background: '#1e293b', color: '#fff', fontSize: '11px', padding: '6px 10px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                        Education content coming soon
                       </div>
                     )}
-                    {item.nav && (
-                      <button
-                        onClick={() => onNavigate(item.nav!.action)}
-                        className="bg-transparent border-none cursor-pointer"
-                        style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: 'var(--float-primary)', padding: 0, marginTop: '3px', textAlign: 'left' }}
-                      >
-                        {item.nav.label}
-                      </button>
-                    )}
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+                )}
+                {item.nav && (
+                  <button
+                    onClick={() => onNavigate(item.nav!.action)}
+                    className="bg-transparent border-none cursor-pointer"
+                    style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: 'var(--float-primary)', padding: 0, marginTop: '3px', textAlign: 'left' }}
+                  >
+                    {item.nav.label}
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -1934,7 +1944,7 @@ export default function PatientPage() {
   const draftPlanCount = (actionPlans ?? []).filter(ap => !ap.visible_to_patient).length
 
   // Process-panel checklist progress (setup groups: parent + patient consults)
-  const processChecklistKeys = [...PARENT_CHECKLIST, ...PATIENT_CHECKLIST].flatMap(g => g.items.map(i => i.key))
+  const processChecklistKeys = PROCESS_CHECKLIST.map(i => i.key)
   const processChecklistDone = processChecklistKeys.filter(k => !!(checklistItems ?? {})[k]).length
   const processChecklistTotal = processChecklistKeys.length
 
@@ -3541,8 +3551,7 @@ export default function PatientPage() {
 
               {processTab === 'checklist' && patientId && (
                 <>
-                  <ConsultationChecklist patientId={patientId} title="Parent consultation" groups={PARENT_CHECKLIST} collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
-                  <ConsultationChecklist patientId={patientId} title="Patient consultation" groups={PATIENT_CHECKLIST} collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
+                  <ConsultationChecklist patientId={patientId} title="Checklist" items={PROCESS_CHECKLIST} collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
                 </>
               )}
 
