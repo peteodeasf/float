@@ -80,16 +80,7 @@ export default function ArrowPage() {
 
   return (
     <Chrome onExit={exit}>
-      {phase === 'intro' && (
-        <div style={screenSurface}>
-          <div style={bigQ}>Let&rsquo;s find the worry underneath.</div>
-          <p style={lead}>
-            We&rsquo;ll take one thing that feels hard and follow the worry down, step by step,
-            until we get to what it&rsquo;s really about.
-          </p>
-          <button onClick={() => setPhase('pick')} style={primaryBtn}>Let&rsquo;s start →</button>
-        </div>
-      )}
+      {phase === 'intro' && <ArrowIntro onStart={() => setPhase('pick')} />}
 
       {phase === 'pick' && (
         <PickPhase
@@ -110,14 +101,36 @@ export default function ArrowPage() {
   )
 }
 
-// ── Which one are we digging into ──────────────────────────────
-export function PickPhase({ situations, onOpen }: { situations: TriggerSituation[]; onOpen: (id: string) => void }) {
+// ── Opening ───────────────────────────────────────────────────
+export function ArrowIntro({ onStart }: { onStart: () => void }) {
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Which one should we look at?</div>
-      <p style={lead}>Pick something that feels hard — we&rsquo;ll follow the worry under it.</p>
+      <div style={bigQ}>Downward Arrow</div>
+      <p style={lead}>
+        Let&rsquo;s dig into what you&rsquo;re afraid will happen when you can&rsquo;t avoid a situation.
+      </p>
+      <button onClick={onStart} style={primaryBtn}>Let&rsquo;s start →</button>
+    </div>
+  )
+}
+
+// ── Which one are we digging into ──────────────────────────────
+export function PickPhase({ situations, onOpen }: { situations: TriggerSituation[]; onOpen: (id: string) => void }) {
+  // Lowest distress at the top, same as the ladder. Unrated situations sit at the end rather than
+  // being treated as a zero.
+  const ordered = [...situations].sort((a, b) => {
+    const x = dtOf(a.distress_thermometer_rating)
+    const y = dtOf(b.distress_thermometer_rating)
+    if (x == null && y == null) return 0
+    if (x == null) return 1
+    if (y == null) return -1
+    return x - y
+  })
+  return (
+    <div style={screenSurface}>
+      <div style={bigQ}>Which situation should we look at?</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 16 }}>
-        {situations.map(t => <PickRow key={t.id} trigger={t} onOpen={onOpen} />)}
+        {ordered.map(t => <PickRow key={t.id} trigger={t} onOpen={onOpen} />)}
         {situations.length === 0 && (
           <div style={{ fontSize: 13, color: '#94a3b8' }}>No situations yet — add some in session mode first.</div>
         )}
@@ -264,7 +277,7 @@ export function ChainPhase({ trigger, onBack, onDone }: { trigger: TriggerSituat
         </div>
       ) : !startingThought ? (
         <div>
-          <div style={{ ...bigQ, marginBottom: 12 }}>When you think about this, what&rsquo;s the worry?</div>
+          <div style={{ ...bigQ, marginBottom: 12 }}>In this situation, what are you worried is going to happen?</div>
           <SayIt value={answer} onChange={setAnswer} onSend={() => { const a = answer.trim(); setAnswer(''); void begin(a) }}
             placeholder="e.g. everyone will laugh if I get it wrong" pending={busy} />
         </div>

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ListPhase, RatePhase, SituationPhase, IntroPhase, ReviewPhase } from './SessionPage'
 import { BehaviorPanel } from './PatientPage'
-import { PickPhase, ChainPhase } from './ArrowPage'
+import { ArrowIntro, PickPhase, ChainPhase } from './ArrowPage'
 
 const TRIGGERS = [
   { id: 't1', name: 'Raising my hand in class', distress_thermometer_rating: 7, display_order: 0 },
@@ -23,7 +23,7 @@ const BEHAVIORS = [
 export default function SessionPreview() {
   const qc = useQueryClient()
   const [ready, setReady] = useState(false)
-  const [view, setView] = useState<'intro' | 'list' | 'rate' | 'sit-start' | 'sit-mid' | 'ladder' | 'builder' | 'arrow-pick' | 'arrow-chain'>('list')
+  const [view, setView] = useState<'intro' | 'list' | 'rate' | 'sit-start' | 'sit-mid' | 'ladder' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain'>('list')
 
   useEffect(() => {
     qc.setQueryData(['situation-library', ''], [
@@ -57,7 +57,7 @@ export default function SessionPreview() {
     <div style={{ minHeight: '100vh', background: '#eef4f3', padding: 20 }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-          {(['intro', 'list', 'rate', 'sit-start', 'sit-mid', 'ladder', 'builder', 'arrow-pick', 'arrow-chain'] as const).map(v => (
+          {(['intro', 'list', 'rate', 'sit-start', 'sit-mid', 'ladder', 'builder', 'arrow-intro', 'arrow-pick', 'arrow-chain'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
                 background: view === v ? '#135450' : '#fff', color: view === v ? '#fff' : '#475569', border: '1px solid #cbd5e1' }}>{v}</button>
@@ -69,6 +69,7 @@ export default function SessionPreview() {
         {view === 'sit-start' && <SituationPhase key="t3" trigger={TRIGGERS[2]} isLast={true} onOpenArrow={noop} onSeeAll={noop} onFinished={noop} />}
         {view === 'sit-mid' && <SituationPhase key="t1" trigger={TRIGGERS[0]} isLast={false} onOpenArrow={noop} onSeeAll={noop} onFinished={noop} />}
         {view === 'ladder' && <ReviewPhase triggers={TRIGGERS} onBack={noop} onOpenBuilder={noop} />}
+        {view === 'arrow-intro' && <ArrowIntro onStart={noop} />}
         {view === 'arrow-pick' && <PickPhase situations={TRIGGERS} onOpen={noop} />}
         {view === 'arrow-chain' && <ChainPhase trigger={TRIGGERS[0]} onBack={noop} onDone={noop} />}
         {view === 'builder' && (
