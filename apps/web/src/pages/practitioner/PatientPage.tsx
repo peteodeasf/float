@@ -31,6 +31,12 @@ import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 
 // Flat tabs, in bar order. Also the `?tab=` vocabulary other surfaces navigate with.
+// Sub-behaviours ("+ step" under a ladder rung) are hidden pending a decision on sub-SITUATIONS,
+// which is what Dr. Walker's method actually calls for — a sub-situation is a smaller trigger
+// situation with its own distress rating, not a smaller behaviour. Existing sub-behaviour rows
+// still render; only creating new ones is switched off. Flip to true to restore.
+const SUB_BEHAVIOR_ADD_ENABLED = false
+
 const TAB_IDS = ['monitoring', 'sessions', 'plan', 'experiments', 'chat'] as const
 type TabId = typeof TAB_IDS[number]
 
@@ -737,7 +743,6 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                     <DTBadge value={b.distress_thermometer_when_refraining} />
                   </div>
                   <div style={{ width: '126px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
-                    <button onClick={() => { resetSub(); setSubParentId(b.id) }} className="text-[12px] font-medium bg-transparent border-none cursor-pointer" style={{ color: '#3f8a78', whiteSpace: 'nowrap' }}>&#65291; step</button>
                     <button onClick={() => startEdit(b)} className="text-[12px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
                     <button onClick={() => setDeletingBehaviorId(b.id)} className="text-[12px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
                   </div>
@@ -760,8 +765,8 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   </div>
                 ))}
 
-                {/* Sub-step add form */}
-                {subParentId === b.id && (
+                {/* Sub-step add form — unreachable while SUB_BEHAVIOR_ADD_ENABLED is false. */}
+                {SUB_BEHAVIOR_ADD_ENABLED && subParentId === b.id && (
                   <div style={{ position: 'relative', marginTop: '5px' }}>
                     <div style={{ position: 'absolute', left: '-25px', top: '15px', width: '12px', height: '12px', borderRadius: '50%', background: '#fff', border: '2px solid #cbd5e1', zIndex: 2 }} />
                     <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e2e8f0' }}>
