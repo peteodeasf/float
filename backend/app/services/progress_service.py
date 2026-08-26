@@ -1,5 +1,6 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, status
 from sqlalchemy import select, func
 from datetime import datetime, timezone, timedelta
 
@@ -147,10 +148,19 @@ async def get_pre_session_brief(
     organization_id: uuid.UUID
 ) -> PreSessionBrief:
 
+    # Scope the patient to the caller's institution. This lookup used to filter on id alone, so a
+    # clinician from ANY institution could read any patient's name through this route — the
+    # experiment queries below were scoped correctly, this one was not. Found by the route sweep,
+    # 2026-08-26.
     patient_result = await db.execute(
-        select(PatientProfile).where(PatientProfile.id == patient_id)
+        select(PatientProfile).where(
+            PatientProfile.id == patient_id,
+            PatientProfile.organization_id == organization_id,
+        )
     )
     patient = patient_result.scalar_one_or_none()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
     two_weeks_ago = datetime.now(timezone.utc) - timedelta(weeks=2)
     recent_result = await db.execute(
