@@ -78,15 +78,23 @@ async def plan_experiment_for_behavior(
 async def get_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    organization_id: uuid.UUID
+    organization_id: uuid.UUID,
+    patient_id: uuid.UUID | None = None,
 ) -> Experiment:
-    result = await db.execute(
-        select(Experiment)
-        .where(
-            Experiment.id == experiment_id,
-            Experiment.organization_id == organization_id
-        )
-    )
+    """Fetch an experiment the caller is allowed to see.
+
+    `patient_id` MUST be passed whenever the caller is a patient. Filtering on organisation alone
+    let any signed-in child read and modify any other child's experiments in the same clinic —
+    found by tests/test_api_patient_scoping.py, 2026-08-26. A clinician passes no patient_id and
+    still sees the whole institution.
+    """
+    conditions = [
+        Experiment.id == experiment_id,
+        Experiment.organization_id == organization_id,
+    ]
+    if patient_id is not None:
+        conditions.append(Experiment.patient_id == patient_id)
+    result = await db.execute(select(Experiment).where(*conditions))
     experiment = result.scalar_one_or_none()
     if not experiment:
         raise HTTPException(
@@ -167,9 +175,10 @@ async def save_before_state(
     db: AsyncSession,
     experiment_id: uuid.UUID,
     organization_id: uuid.UUID,
-    data: ExperimentBeforeState
+    data: ExperimentBeforeState,
+    patient_id: uuid.UUID | None = None,
 ) -> Experiment:
-    experiment = await get_experiment(db, experiment_id, organization_id)
+    experiment = await get_experiment(db, experiment_id, organization_id, patient_id)
 
     if experiment.status not in ("planned", "in_progress"):
         raise HTTPException(
@@ -199,9 +208,10 @@ async def save_after_state(
     db: AsyncSession,
     experiment_id: uuid.UUID,
     organization_id: uuid.UUID,
-    data: ExperimentAfterState
+    data: ExperimentAfterState,
+    patient_id: uuid.UUID | None = None,
 ) -> Experiment:
-    experiment = await get_experiment(db, experiment_id, organization_id)
+    experiment = await get_experiment(db, experiment_id, organization_id, patient_id)
 
     if experiment.status == "completed":
         raise HTTPException(
@@ -226,9 +236,10 @@ async def save_after_state(
 async def skip_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    organization_id: uuid.UUID
+    organization_id: uuid.UUID,
+    patient_id: uuid.UUID | None = None,
 ) -> Experiment:
-    experiment = await get_experiment(db, experiment_id, organization_id)
+    experiment = await get_experiment(db, experiment_id, organization_id, patient_id)
     experiment.status = "skipped"
     experiment.updated_at = datetime.now(timezone.utc)
     await db.commit()

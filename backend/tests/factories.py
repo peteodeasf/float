@@ -31,6 +31,16 @@ async def _make_user(db, org, role: str) -> User:
     return u
 
 
+async def make_patient(db, org, name="Test Child") -> PatientProfile:
+    """A child who can sign in. `.user` is the signing-in identity."""
+    user = await _make_user(db, org, "patient")
+    prof = PatientProfile(user_id=user.id, organization_id=org.id, name=name)
+    db.add(prof)
+    await db.flush()
+    prof.user = user  # convenience for tests; not a mapped relationship
+    return prof
+
+
 async def make_practitioner(db, org) -> PractitionerProfile:
     """A clinician who can sign in. Returns the profile; `.user` is the signing-in identity."""
     user = await _make_user(db, org, "practitioner")

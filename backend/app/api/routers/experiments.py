@@ -151,6 +151,8 @@ async def get_single_experiment(
     )
     patient = result.scalar_one_or_none()
 
+    # A patient may read only their own experiment; a clinician reads any in their institution.
+    caller_patient_id = patient.id if patient else None
     if patient:
         org_id = patient.organization_id
     else:
@@ -163,7 +165,7 @@ async def get_single_experiment(
             raise Exception("Profile not found")
         org_id = practitioner.organization_id
 
-    return await get_experiment(db, experiment_id, org_id)
+    return await get_experiment(db, experiment_id, org_id, patient_id=caller_patient_id)
 
 
 @router.put("/experiments/{experiment_id}/before",
@@ -183,7 +185,7 @@ async def update_before_state(
         raise Exception("Patient profile not found")
 
     return await save_before_state(
-        db, experiment_id, patient.organization_id, data
+        db, experiment_id, patient.organization_id, data, patient_id=patient.id
     )
 
 
@@ -204,7 +206,7 @@ async def update_after_state(
         raise Exception("Patient profile not found")
 
     return await save_after_state(
-        db, experiment_id, patient.organization_id, data
+        db, experiment_id, patient.organization_id, data, patient_id=patient.id
     )
 
 
@@ -224,5 +226,5 @@ async def skip_single_experiment(
         raise Exception("Patient profile not found")
 
     return await skip_experiment(
-        db, experiment_id, patient.organization_id
+        db, experiment_id, patient.organization_id, patient_id=patient.id
     )

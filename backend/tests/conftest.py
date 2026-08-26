@@ -162,3 +162,42 @@ async def api(db):
         yield client
 
     app.dependency_overrides.clear()
+
+
+# ── Nothing leaves the machine during tests ───────────────────────────────────
+# `.env` carries live Twilio and Resend credentials, so a route that sends a text or an email
+# would really send one. Autouse, so it applies to every test whether or not it asks for it.
+@pytest.fixture(autouse=True)
+def no_outbound(monkeypatch):
+    """Block real SMS and email, and record what would have been sent."""
+    sent = {"sms": [], "email": []}
+
+    class _BlockedTwilio:
+        def __init__(self, *a, **kw):
+            pass
+
+        class messages:  # noqa: N801 - mirrors the Twilio client shape
+            @staticmethod
+            def create(**kw):
+                sent["sms"].append(kw)
+                raise AssertionError("a test tried to send a real SMS")
+
+    class _BlockedResend:
+        @staticmethod
+        def send(payload):
+            sent["email"].append(payload)
+            raise AssertionError("a test tried to send a real email")
+
+    try:
+        import twilio.rest
+        monkeypatch.setattr(twilio.rest, "Client", _BlockedTwilio, raising=False)
+    except ImportError:
+        pass
+    try:
+        import resend
+        monkeypatch.setattr(resend, "Emails", _BlockedResend, raising=False)
+        monkeypatch.setattr(resend, "api_key", "blocked-in-tests", raising=False)
+    except ImportError:
+        pass
+
+    return sent
