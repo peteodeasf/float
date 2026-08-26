@@ -43,21 +43,61 @@ A situation with two behaviors yields a two-rung ladder, both scored the same. T
 express "three posts, home alone" — it is not a behavior, and it is not a sibling of "Attend
 school".
 
-## Three shapes
+## What the code actually does (grounded 2026-08-25 — this changes the answer)
 
-### A. Rung gets its own sentence *(recommended)*
+`ladder_rungs` is **dead scaffolding**. Counts from prod:
 
-`ladder_rungs` already exists with an order, a score, and an optional behavior link — it is missing
-only its own text. Add it. A rung becomes a sentence + a number, with optional links back to the
-situation and behavior it came from.
+```
+exposure_ladders       55
+ladder_rungs            0      ← never written
+avoidance_behaviors   135
+experiments            68      (68 link to a behavior, 0 to a rung)
+```
 
-Situations and behaviors stop being the ladder's structure and become what they already are in
-practice: **the interview that generates the sentences.**
+Nothing creates a rung. The clinician builder derives the ladder from behaviors; the teen app reads
+`/patient/behaviors/{id}` throughout (home, exposure, experiment, record); every experiment links via
+`experiments.avoidance_behavior_id`.
 
-- Expresses Quinn's ladder exactly as written.
-- Nothing captured today is lost; existing rungs keep their behavior link.
-- Cost: the ladder builder and the teen ladder read rung text instead of behavior name. Session
-  mode's "score each behavior" step becomes "write the rungs", which is a real UI change.
+**So "add text to `ladder_rungs`" is the biggest change available, not the smallest.** It means
+populating a table nothing uses and moving the teen app and all experiment history onto it. My
+earlier recommendation was wrong on cost — it assumed the table was wired up.
+
+**Live bug found while checking:** `run_ladder_review` selects rungs by `ladder_id` and reviews the
+result. With zero rungs it reviews an empty list, so "Run AI review" reports no flags no matter
+what is on the ladder. It has never done anything.
+
+## The actual shape of a rung today
+
+A ladder line is **already a free-text sentence with a score**:
+
+- `avoidance_behaviors.name` — free text, no constraint on what it says
+- `avoidance_behaviors.distress_thermometer_when_refraining` — the number, already meaning
+  "in this situation, without doing this"
+- `experiments.avoidance_behavior_id` — what an exposure attaches to
+
+That is a sentence, a number, and a hook for the experiment. Nothing in the schema requires the
+sentence to describe a behavior. **What constrains us is the question we ask** — "what do you do so
+it feels safer?" only ever produces behavior-shaped sentences.
+
+## Shapes
+
+### D. Change the question, not the structure *(recommended)*
+
+Let a ladder line be any sentence the pair writes — a thing they do *or* a version of the situation
+— stored in the same row it is stored in now. Quinn's ladder becomes six rows under her situation,
+each with its sentence and its number.
+
+- **No schema change at all.** `behavior_type` is a free string column, so scenario lines can carry
+  a distinct value without a migration.
+- Teen app, experiments, and all 68 rows of history keep working untouched.
+- Nothing is destroyed and nothing is disabled — existing behavior rows are already valid lines.
+- Cost: `avoidance_behaviors` becomes a misnomer for some rows. Cosmetic; renaming can wait.
+- To check before building: whether the teen app branches on `behavior_type` anywhere.
+
+### A. Rung gets its own text on `ladder_rungs`
+
+The clean model on paper: rungs are their own thing, with optional provenance links. **Rejected on
+cost** — see above. Revisit only if `ladder_rungs` ever earns its keep.
 
 ### B. Sub-situations
 
@@ -77,16 +117,16 @@ their own text.
 
 ## Recommendation
 
-**A.** It is the smaller change *and* the closer fit — B needs a situation row plus a behavior row
-per rung to say what one sentence says. The thing to weigh against it is that round 6 chose
-behavior-scored rungs deliberately, and the teen app reads that shape today.
+**D.** The structure already supports what the book does; the interview is what needed to change.
+Owner (2026-08-25): implement the flexible approach *without permanently destroying the old
+structure* — D does that by construction, since it adds no schema and disables nothing.
 
 ## Open
 
-1. A, B, or C.
-2. If A: does session mode still elicit behaviors per situation (they are clinically needed for
-   experiment design — *"what behavior would you want to do in this situation?"*) even though they
-   are no longer the rungs? Assume yes unless told otherwise.
+1. Confirm **D**.
+2. Does session mode keep asking "what do you do so it feels safer?" as its own step? It is
+   clinically needed for experiment design (*"what behavior would you want to do in this
+   situation?"*). Assume yes — it just stops being the only way to make a rung.
 3. Ordering: the book puts the **highest** rating at the top of the trigger list and calls the most
    feared situation "the top rung". Our ladder currently reads lowest-at-top per owner instruction
    (2026-08-23). Worth a second look now the source is in hand.
