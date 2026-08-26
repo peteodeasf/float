@@ -60,6 +60,34 @@ assert r.status_code == 200
 
 Use API tests for anything about permissions, routing or response shape; service tests for logic.
 
+## The route sweep
+
+`test_route_sweep.py` walks **every registered route** and calls it as a clinician from another
+institution and as a child from another family. The victim's patient data carries a unique marker;
+any response containing it is a leak, whatever the status code.
+
+It found the cross-institution leak in `GET /patients/{patient_id}/summary` that hand-picked tests
+had missed. Coverage is reported every run:
+
+```
+[foreign_clinician]   called 132, uncoverable 0, leaks 0
+[other_family_child]  called 47,  uncoverable 0, leaks 0
+```
+
+A route it cannot reach is reported as NOT COVERED and must be fixed by teaching `_param_values`
+the missing path parameter — it never passes silently. The child reaches fewer routes because most
+refuse a patient outright, which is correct.
+
+Two lists live in that file because they exist nowhere else:
+
+- **`PUBLIC`** — routes with no authentication at all, deliberately: health, the four auth routes,
+  waitlist, and the monitoring form a parent opens from an emailed link (guarded by an unguessable
+  token in the URL rather than a login).
+- **`SELF_ONLY`** — routes that act on the caller rather than on anything named in the path.
+
+Shared vocabulary (tags, tips) deliberately carries no marker: returning it to any clinician is
+correct, and marking it would report a working route as a leak.
+
 ## What is covered
 
 `test_api_org_scoping.py` — the parent/child/clinician boundary (non-negotiable #2), through the

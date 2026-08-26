@@ -4,7 +4,11 @@ The experiments hole (fixed in c1295c3) existed because nobody had checked those
 routes to test by hand does not scale to 152 and did not catch it. So this walks every registered
 route instead, and a route added tomorrow is checked automatically.
 
-**The property.** Every piece of the victim's text data carries a unique marker. If that marker
+**The property.** Every piece of the victim's PATIENT data carries a unique marker. Content that
+is deliberately shared across institutions — the tag vocabulary, the tip library — carries none,
+because returning it to any clinician is correct.
+
+Every piece of the victim's text data carries a unique marker. If that marker
 ever appears in a response to someone who should not see it, that is a leak — whatever the status
 code, whatever the route. It is a blunt instrument and it is exactly what the experiments bug
 violated.
@@ -18,9 +22,15 @@ silently — a sweep that quietly skips half the surface is worse than no sweep.
 import pytest
 from fastapi.routing import APIRoute
 
+from datetime import date
+
+from app.models.checklist_item import OrganizationChecklistItem
 from app.models.downward_arrow import DownwardArrow
-from app.models.experiment import Experiment
+from app.models.experiment import Experiment, AccommodationBehavior
+from app.models.jit_content import JitTip, Tag
+from app.models.ladder import ExposureLadder
 from app.models.message import Message
+from app.models.session_note import SessionNote
 from tests.factories import (
     make_org, make_patient, make_plan, make_practitioner, make_rung, make_situation,
 )
@@ -64,12 +74,29 @@ async def _victim_world(db):
     msg = Message(organization_id=org.id, sender_user_id=patient.user.id,
                   recipient_user_id=patient.user.id, patient_id=patient.id,
                   content=f"{CANARY} message", message_type="general")
-    db.add_all([exp, arrow, msg])
+    ladder = ExposureLadder(trigger_situation_id=situation.id, organization_id=org.id,
+                            status="not_started")
+    accommodation = AccommodationBehavior(
+        treatment_plan_id=plan.id, organization_id=org.id, name=f"{CANARY} accommodation")
+    note = SessionNote(patient_id=patient.id, organization_id=org.id,
+                       practitioner_id=plan.practitioner_id, session_date=date.today(),
+                       content=f"{CANARY} session note", tags=[])
+    item = OrganizationChecklistItem(organization_id=org.id, key=f"{CANARY}_item",
+                                     text_=f"{CANARY} checklist item")
+    # Tags and tips are SHARED vocabulary across institutions — the clinician-facing /tags route
+    # is meant to return them to everyone. They carry no marker: the marker means "this belongs to
+    # the victim", and marking shared content would report a correct route as a leak. They exist
+    # here only so the admin routes that take a tag or tip id can be reached at all.
+    tag = Tag(slug="sweep-shared-tag", label="Shared tag")
+    tip = JitTip(title="Shared tip", body="Shared tip body")
+    db.add_all([exp, arrow, msg, ladder, accommodation, note, item, tag, tip])
     await db.flush()
 
     return {
         "org": org, "patient": patient, "plan": plan, "situation": situation,
         "rung": rung, "experiment": exp, "arrow": arrow, "message": msg,
+        "ladder": ladder, "accommodation": accommodation, "note": note,
+        "item": item, "tag": tag, "tip": tip,
     }
 
 
@@ -90,6 +117,12 @@ def _param_values(w):
         "org_id": w["org"].id,
         "organization_id": w["org"].id,
         "user_id": w["patient"].user.id,
+        "ladder_id": w["ladder"].id,
+        "accommodation_id": w["accommodation"].id,
+        "note_id": w["note"].id,
+        "item_id": w["item"].id,
+        "tag_id": w["tag"].id,
+        "tip_id": w["tip"].id,
     }
 
 
