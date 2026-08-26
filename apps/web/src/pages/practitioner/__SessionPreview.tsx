@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ListPhase, RatePhase, SituationPhase, IntroPhase, ReviewPhase } from './SessionPage'
-import { BehaviorPanel } from './PatientPage'
+import { BehaviorPanel, FlatLadder } from './PatientPage'
 import { ArrowIntro, PickPhase, ChainPhase } from './ArrowPage'
 
 const TRIGGERS = [
@@ -25,7 +25,7 @@ const BEHAVIORS = [
 export default function SessionPreview() {
   const qc = useQueryClient()
   const [ready, setReady] = useState(false)
-  const [view, setView] = useState<'intro' | 'list' | 'rate' | 'sit-start' | 'sit-mid' | 'ladder' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain'>('list')
+  const [view, setView] = useState<'intro' | 'list' | 'rate' | 'sit-start' | 'sit-mid' | 'ladder' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain' | 'flat-ladder'>('list')
 
   useEffect(() => {
     qc.setQueryData(['situation-library', ''], [
@@ -47,6 +47,14 @@ export default function SessionPreview() {
       { id: 'g3', slug: 'perfectionism', label: 'Perfectionism' },
     ])
     qc.setQueryData(['situation-tags', 't1'], ['g1', 'g2'])
+    qc.setQueryData(['plan-rungs', 'p1'], [
+      { id: 'r1', trigger_situation_id: 't1', name: 'answering one question the teacher asks me directly', behavior_type: 'scenario', distress_thermometer_when_refraining: 3, parent_behavior_id: null },
+      { id: 'r2', trigger_situation_id: 't2', name: 'ordering for myself when the queue is short', behavior_type: 'scenario', distress_thermometer_when_refraining: 4, parent_behavior_id: null },
+      { id: 'r3', trigger_situation_id: 't1', name: 'putting my hand up once when I know the answer', behavior_type: 'scenario', distress_thermometer_when_refraining: 5, parent_behavior_id: null },
+      { id: 'r4', trigger_situation_id: null, name: 'staying at the sleepover until lights out', behavior_type: 'scenario', distress_thermometer_when_refraining: 6, parent_behavior_id: null },
+      { id: 'r5', trigger_situation_id: 't1', name: 'ask a friend to answer for me', behavior_type: 'safety', distress_thermometer_when_refraining: 7, parent_behavior_id: null },
+      { id: 'r6', trigger_situation_id: null, name: 'something we have not scored yet', behavior_type: 'scenario', distress_thermometer_when_refraining: null, parent_behavior_id: null },
+    ])
     qc.setQueryData(['situation-da', 't1'], { id: 'a1', arrow_steps: [], feared_outcome: 'Everyone will laugh and I’ll have to leave', is_approved: true })
     // Downward-arrow fixtures
     qc.setQueryData(['situation-da', 't2'], { id: 'a2', arrow_steps: [], feared_outcome: 'People will think I’m weird', is_approved: true })
@@ -60,7 +68,7 @@ export default function SessionPreview() {
     <div style={{ minHeight: '100vh', background: '#eef4f3', padding: 20 }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-          {(['intro', 'list', 'rate', 'sit-start', 'sit-mid', 'ladder', 'builder', 'arrow-intro', 'arrow-pick', 'arrow-chain'] as const).map(v => (
+          {(['intro', 'list', 'rate', 'sit-start', 'sit-mid', 'ladder', 'builder', 'flat-ladder', 'arrow-intro', 'arrow-pick', 'arrow-chain'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
                 background: view === v ? '#135450' : '#fff', color: view === v ? '#fff' : '#475569', border: '1px solid #cbd5e1' }}>{v}</button>
@@ -75,6 +83,11 @@ export default function SessionPreview() {
         {view === 'arrow-intro' && <ArrowIntro onStart={noop} />}
         {view === 'arrow-pick' && <PickPhase situations={TRIGGERS} onOpen={noop} />}
         {view === 'arrow-chain' && <ChainPhase trigger={TRIGGERS[0]} onBack={noop} onDone={noop} />}
+        {view === 'flat-ladder' && (
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12 }}>
+            <FlatLadder planId="p1" triggers={TRIGGERS} />
+          </div>
+        )}
         {view === 'builder' && (
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12 }}>
             <BehaviorPanel trigger={TRIGGERS[0]} planId="p1" patientId="p-1" planStatus="setup" />

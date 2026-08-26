@@ -1,6 +1,6 @@
 # Flat ladder, situations as grouping
 
-> **STATUS: plan, 2026-08-25. Nothing built.** Supersedes the shape question in
+> **STATUS: phases 1 + 2 built 2026-08-25.** Phases 3 (session mode) and 4 (AI) not started. Supersedes the shape question in
 > [`ladder-rung-shape.md`](ladder-rung-shape.md). Owner decisions recorded below.
 
 ## The inversion
@@ -52,12 +52,12 @@ many-to-many and stays as it is.
 
 Each ships alone.
 
-### 1. Flat ladder view
+### 1. Flat ladder view — BUILT
 All rungs for the patient, one list, ordered by score, situation as a quiet label. Add a rung
 without choosing a situation first. Smallest change, and it tells us fast whether a flat ladder
 actually works in a session.
 
-### 2. Situations view
+### 2. Situations view — BUILT (the existing two-pane, now behind a tab)
 *"Just needs to see what that looks like."* A situation with its name, DT range, tags, arrow, and
 its rungs. Where grouping is managed and where a rung's situation is set or changed.
 

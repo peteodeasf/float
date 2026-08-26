@@ -1,9 +1,9 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, or_
 from fastapi import HTTPException, status
 
-from app.models.treatment import AvoidanceBehavior
+from app.models.treatment import AvoidanceBehavior, TriggerSituation
 from app.models.ladder import LadderRung
 from app.models.experiment import Experiment
 from app.schemas.avoidance_behavior import AvoidanceBehaviorCreate, AvoidanceBehaviorUpdate
@@ -28,17 +28,26 @@ async def get_behaviors_for_trigger(
 
 async def create_behavior(
     db: AsyncSession,
-    trigger_id: uuid.UUID,
+    trigger_id: uuid.UUID | None,
     organization_id: uuid.UUID,
-    data: AvoidanceBehaviorCreate
+    data: AvoidanceBehaviorCreate,
+    plan_id: uuid.UUID | None = None,
 ) -> AvoidanceBehavior:
     # Reuse the picked library entry, or find-or-create one from the name + type.
     library_id = data.behavior_library_id or await upsert_behavior_library(
         db, data.name, data.behavior_type
     )
 
+    # A rung always belongs to a plan; the situation is optional grouping. If the caller gave a
+    # situation but no plan, take the plan from the situation so the link is never missing.
+    if plan_id is None and trigger_id is not None:
+        plan_id = (await db.execute(
+            select(TriggerSituation.treatment_plan_id).where(TriggerSituation.id == trigger_id)
+        )).scalar_one_or_none()
+
     behavior = AvoidanceBehavior(
         trigger_situation_id=trigger_id,
+        treatment_plan_id=plan_id,
         organization_id=organization_id,
         name=data.name,
         description=data.description,
@@ -78,6 +87,10 @@ async def update_behavior(
         behavior.behavior_type = data.behavior_type
     if data.distress_thermometer_when_refraining is not None:
         behavior.distress_thermometer_when_refraining = data.distress_thermometer_when_refraining
+    # Regrouping. None is meaningful (ungroup), so this keys off "was the field sent at all".
+    fields_sent = data.model_dump(exclude_unset=True)
+    if "trigger_situation_id" in fields_sent:
+        behavior.trigger_situation_id = fields_sent["trigger_situation_id"]
 
     await db.commit()
     await db.refresh(behavior)
@@ -155,3 +168,31 @@ async def delete_behavior(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Behavior not found")
     await cascade_delete_behaviors(db, [behavior.id])
     await db.commit()
+
+
+async def get_rungs_for_plan(
+    db: AsyncSession,
+    plan_id: uuid.UUID,
+    organization_id: uuid.UUID,
+) -> list[AvoidanceBehavior]:
+    """Every rung on a plan's ladder, grouped or not.
+
+    Covers rows written before `treatment_plan_id` existed by also matching through the situation,
+    so the flat ladder never silently omits older rungs.
+    """
+    situation_ids = select(TriggerSituation.id).where(
+        TriggerSituation.treatment_plan_id == plan_id
+    )
+    result = await db.execute(
+        select(AvoidanceBehavior)
+        .where(
+            AvoidanceBehavior.organization_id == organization_id,
+            or_(
+                AvoidanceBehavior.treatment_plan_id == plan_id,
+                AvoidanceBehavior.trigger_situation_id.in_(situation_ids),
+            ),
+        )
+        .order_by(AvoidanceBehavior.distress_thermometer_when_refraining.nulls_last(),
+                  AvoidanceBehavior.created_at)
+    )
+    return list(result.scalars().all())

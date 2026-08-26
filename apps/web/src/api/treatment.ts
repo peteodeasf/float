@@ -69,7 +69,9 @@ export const setSituationTags = async (situationId: string, tagIds: string[]): P
 
 export interface AvoidanceBehavior {
   id: string
-  trigger_situation_id: string
+  // Optional: the situation is a grouping applied to a rung, possibly after it was written.
+  trigger_situation_id: string | null
+  treatment_plan_id?: string | null
   name: string
   description: string | null
   behavior_type: string
@@ -332,4 +334,33 @@ export const planExperimentForBehavior = async (
 ): Promise<PlannedExperiment> => {
   const response = await apiClient.post(`/behaviors/${behaviorId}/experiments`, data)
   return response.data
+}
+
+// ── The ladder, flat ──
+// Every rung on a plan, grouped or not, ordered by score. `trigger_situation_id` is the grouping
+// and may be null — a rung can be captured now and grouped later.
+export const getPlanRungs = async (planId: string): Promise<AvoidanceBehavior[]> => {
+  const response = await apiClient.get(`/plans/${planId}/rungs`)
+  return response.data
+}
+
+export const createPlanRung = async (
+  planId: string,
+  data: { name: string; behavior_type: string; distress_thermometer_when_refraining?: number; trigger_situation_id?: string | null },
+): Promise<AvoidanceBehavior> => {
+  const response = await apiClient.post(`/plans/${planId}/rungs`, data)
+  return response.data
+}
+
+export const updatePlanRung = async (
+  planId: string,
+  rungId: string,
+  data: Partial<{ name: string; behavior_type: string; distress_thermometer_when_refraining: number; trigger_situation_id: string | null }>,
+): Promise<AvoidanceBehavior> => {
+  const response = await apiClient.put(`/plans/${planId}/rungs/${rungId}`, data)
+  return response.data
+}
+
+export const deletePlanRung = async (planId: string, rungId: string): Promise<void> => {
+  await apiClient.delete(`/plans/${planId}/rungs/${rungId}`)
 }

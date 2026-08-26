@@ -82,8 +82,14 @@ class AvoidanceBehavior(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()")
     )
-    trigger_situation_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("trigger_situations.id"), nullable=False
+    # A rung is a sentence with a score. The situation is a GROUPING applied to it — possibly
+    # later, possibly by AI — so it is optional. `treatment_plan_id` is what an ungrouped rung
+    # belongs to.
+    trigger_situation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("trigger_situations.id"), nullable=True
+    )
+    treatment_plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("treatment_plans.id"), nullable=True, index=True
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False
