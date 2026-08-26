@@ -125,3 +125,40 @@ async def db(engine) -> AsyncSession:
         finally:
             await session.close()
             await trans.rollback()
+
+
+# ── The API, called in memory ─────────────────────────────────────────────────
+# The app is a Python object; tests call it directly through an in-process transport. No server
+# starts, nothing is deployed, and it runs at the same speed as the service tests.
+#
+# Only TWO dependencies are swapped: the database session (so it uses the test database) and the
+# signed-in user. `get_practitioner_context` is deliberately NOT overridden — it does a real lookup
+# and raises 403 when a user has no practitioner profile, and that is behaviour worth exercising.
+@pytest_asyncio.fixture
+async def api(db):
+    import httpx
+    from app.main import app
+    from app.core.database import get_db
+    from app.core.dependencies import get_current_user
+
+    state = {"user": None}
+
+    async def _db_override():
+        yield db
+
+    async def _user_override():
+        from fastapi import HTTPException, status as http_status
+        if state["user"] is None:
+            raise HTTPException(status_code=http_status.HTTP_401_UNAUTHORIZED, detail="Not signed in")
+        return state["user"]
+
+    app.dependency_overrides[get_db] = _db_override
+    app.dependency_overrides[get_current_user] = _user_override
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        # `client.sign_in_as(user)` decides who the request is from; leave it unset for anonymous.
+        client.sign_in_as = lambda user: state.__setitem__("user", user)  # type: ignore[attr-defined]
+        yield client
+
+    app.dependency_overrides.clear()

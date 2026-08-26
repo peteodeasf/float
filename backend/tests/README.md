@@ -42,7 +42,29 @@ Related: `migrations/env.py` used to overwrite `sqlalchemy.url` from settings un
 *any* attempt to point Alembic at another database silently targeted production instead. It now
 honours `ALEMBIC_DATABASE_URL` first.
 
+## Two levels
+
+**Service tests** call a service function directly with a test session. Cheapest, and where the
+logic bugs have been.
+
+**API tests** use the `api` fixture: the FastAPI app called in memory, no server, no deploy. Only
+two dependencies are swapped — the database session, and the signed-in user via
+`api.sign_in_as(user)`. `get_practitioner_context` is deliberately NOT stubbed, so its real lookup
+(and its 403 for a user with no practitioner profile) is exercised.
+
+```python
+api.sign_in_as(clinician.user)
+r = await api.get(f"/plans/{plan.id}/triggers")
+assert r.status_code == 200
+```
+
+Use API tests for anything about permissions, routing or response shape; service tests for logic.
+
 ## What is covered
+
+`test_api_org_scoping.py` — the parent/child/clinician boundary (non-negotiable #2), through the
+real routes. Anonymous requests, a clinician reading their own organisation, and four ways a
+clinician from another organisation must fail to read, delete or edit.
 
 `test_situation_delete.py` — deleting a situation. This is where two live bugs were found:
 the original IntegrityError (nothing cascades in the schema), and an AttributeError introduced by
