@@ -51,10 +51,15 @@ async def make_practitioner(db, org) -> PractitionerProfile:
     return prof
 
 
-async def make_plan(db, org) -> TreatmentPlan:
-    """A plan, with the patient and practitioner rows it cannot exist without."""
-    pat_user = await _make_user(db, org, "patient")
-    patient = PatientProfile(user_id=pat_user.id, organization_id=org.id, name="Test Patient")
+async def make_plan(db, org, patient=None) -> TreatmentPlan:
+    """A plan, with the patient and practitioner rows it cannot exist without.
+
+    Pass `patient` to attach the plan to a specific child — needed when a test has to know whose
+    data it is.
+    """
+    if patient is None:
+        pat_user = await _make_user(db, org, "patient")
+        patient = PatientProfile(user_id=pat_user.id, organization_id=org.id, name="Test Patient")
     prac_user = await _make_user(db, org, "practitioner")
     practitioner = PractitionerProfile(
         user_id=prac_user.id, organization_id=org.id, name="Test Clinician"
