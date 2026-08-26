@@ -81,6 +81,80 @@ unsupervised. "Add Plan an experiment to the flat ladder" is a file, not a memor
 parallelism, not tidiness. `BehaviorPanel` and `FlatLadder` are already exported and could move
 out today.
 
+## The AI features — where more agents genuinely speed things up
+
+These are the only parts of the product where "is it any good?" can be answered without the owner
+looking. There is a score. Runs don't interfere with each other, so they can happen at once. And
+trying twenty versions of a prompt and keeping the best is exactly what parallel work is for.
+Everywhere else in this codebase, more agents means more for one person to review.
+
+### What already exists
+
+`AI-dev/Extraction Loop/float_harness` is a working test setup for monitoring extraction, built
+June 2026:
+
+- **17 real cases with labels confirmed by a clinician**
+- **Four automatic checks** — behaviour types are from the allowed list; no fear rating appears that
+  wasn't in the source note; the same situation isn't emitted twice; the output is clean JSON
+- **A separate AI scorer** that sees the note, the output and a rubric, but *never* the extraction
+  prompt — enforced in the function signature so it can't be passed by accident
+- **A loop** that reads the failures, rewrites the prompt, and runs again until it passes or stops
+  improving — and **pauses for a human** whenever a proposed edit would change clinical meaning
+- Recorded runs, and its own tests
+
+This is the right shape. Two things stop it paying off:
+
+1. **It is still wired to a fake.** `extractor_adapter.extract()` hands back the answer it was
+   given, so every check passes trivially. It has never run against the real extractor.
+2. **It sits outside the product,** so it can't run against the prompt that actually ships.
+
+### The three features that need this
+
+**1. Monitoring extraction** — has the harness. Needs the fake replaced with a real call, and a way
+to run against the shipped prompt.
+
+**2. The downward arrow question — live in production, never tested.** On 2026-08-24 its prompt was
+replaced wholesale: it used to ask *"what would that mean about you?"*, it now asks *"what will
+happen if…?"* The only check performed was that the new words were in the deployed code. Whether
+the AI does the job well is unknown — the job being to take *"I'd be all stressed until I could get
+clean again"* and come back with *"What will happen if… you can't get clean again?"* rather than
+something vaguer.
+
+Small to build, because the shape exists. Cases are short question-and-answer chains. Automatic
+checks: is it a question; does it reuse the child's own words; does it avoid asking what something
+means about them. The scorer judges whether it picked the right thing to ask about.
+
+**3. Exposure ladder generation — not built yet, and the test set should come first.**
+Phases 3 and 4 of [`flat-ladder-grouped-situations.md`](flat-ladder-grouped-situations.md):
+
+- **Breaking a situation down** — given "Baseball practice, 6–8", propose narrower versions along
+  the dimensions the book uses (who's there, how many, how long, with or without the behaviour),
+  aiming for at least one low enough that the child will attempt it.
+- **Grouping loose rungs** — given rungs written without a situation, propose clusters and name
+  them.
+
+Build the test set **before** the feature, for two reasons. This is the highest-risk AI surface in
+the product — it suggests fears to an anxious child, and a suggestion that lands badly is a clinical
+problem, not a UI one. And "is this a good breakdown?" cannot be judged by eye at volume; twenty
+suggestions across five situations is already more than anyone will read carefully.
+
+What good looks like, and how much of it is checkable:
+
+| Property | How to check |
+|---|---|
+| Each suggestion is a *narrower version* of the situation, not a different situation | scorer |
+| The suggestions span a usable range of ratings, with a low entry point | automatic |
+| No two suggestions are the same thing reworded | automatic |
+| It never introduces a fear the child hasn't mentioned | scorer, and this is the safety one |
+| It varies real dimensions rather than rewording | scorer |
+
+### The limit worth being honest about
+
+**Agents cannot make the labelled cases.** The 17 confirmed examples are the expensive part of the
+extraction harness, and confirming them took clinical judgment. Agents can draft candidates for
+Dr. Walker to approve — a real saving — but the approving stays human. Any plan that assumes
+otherwise will produce a test set that scores well and means nothing.
+
 ## Where parallel agents actually help here
 
 **They do:** writing tests against existing behaviour; applying one pattern across many files;
