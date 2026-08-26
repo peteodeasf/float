@@ -1,0 +1,22 @@
+# Postgres for tests. Local, disposable, and matching the production server version.
+#
+#   docker compose -f docker-compose.test.yml up -d
+#   docker compose -f docker-compose.test.yml down -v      # -v also drops the data
+#
+# No volume is declared on purpose: the database lives in the container, so `down` genuinely
+# resets it. Tests roll back their own transactions, so this is only for starting clean.
+services:
+  test-db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: float
+      POSTGRES_PASSWORD: float
+      POSTGRES_DB: float_test
+    ports:
+      # 55432, not 5432, so it cannot collide with anything already listening locally.
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U float -d float_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

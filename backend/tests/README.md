@@ -1,0 +1,50 @@
+# Backend tests
+
+## Running them
+
+```bash
+# once per machine boot — starts Postgres 18 on port 55432
+docker compose -f docker-compose.test.yml up -d
+
+./.venv/bin/python -m pytest
+```
+
+`docker compose -f docker-compose.test.yml down -v` stops it and throws the data away.
+
+**If `docker` is not found:** Docker Desktop on Apple Silicon puts its CLI inside the app bundle and
+does not always symlink it. Add this to your shell profile:
+
+```bash
+export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+```
+
+## How it is wired
+
+- **A local Postgres 18 in Docker**, matching the production server version. Port 55432 rather than
+  5432 so it cannot collide with anything else listening.
+- **The schema is built by running the real migrations**, not `create_all` from the models. Railway
+  runs `alembic upgrade head` on every deploy, so a migration broken in a way the models don't
+  capture would otherwise pass every test and fail in production. Building from migrations means
+  every test run also proves the migrations apply cleanly from empty.
+- **Each test runs inside a transaction that is rolled back.** Tests can't see each other's rows,
+  nothing accumulates, no cleanup code.
+- **The engine fixture is function-scoped.** asyncpg binds connections to the event loop that
+  created them and pytest-asyncio gives each test its own loop; a session-scoped engine hands the
+  second test a connection from the first test's loop and fails.
+
+## The guard
+
+`conftest.py` refuses to run if the target host is the production host. It matters: `.env` points
+at production, so a careless change to how the URL resolves would send a whole test run at real
+patient data. The failure mode is "tests refuse to start", never "tests wrote to production".
+
+Related: `migrations/env.py` used to overwrite `sqlalchemy.url` from settings unconditionally, so
+*any* attempt to point Alembic at another database silently targeted production instead. It now
+honours `ALEMBIC_DATABASE_URL` first.
+
+## What is covered
+
+`test_situation_delete.py` — deleting a situation. This is where two live bugs were found:
+the original IntegrityError (nothing cascades in the schema), and an AttributeError introduced by
+the fix for it (`Experiment.trigger_situation_id` does not exist). Both shipped to production; the
+second was caught by the first test written.

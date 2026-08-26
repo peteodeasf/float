@@ -1,4 +1,5 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -16,7 +17,13 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# An explicit ALEMBIC_DATABASE_URL wins — that is how tests and CI point migrations at a
+# throwaway database. Without this, env.py overrode whatever the caller passed and every
+# `alembic upgrade` ran against PRODUCTION, silently, no matter what URL was configured.
+config.set_main_option(
+    "sqlalchemy.url",
+    os.environ.get("ALEMBIC_DATABASE_URL") or settings.DATABASE_URL,
+)
 
 target_metadata = Base.metadata
 

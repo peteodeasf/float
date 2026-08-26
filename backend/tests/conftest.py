@@ -2,17 +2,19 @@
 
 **Read this before changing the database wiring.**
 
-Tests run against a real Postgres: Railway project `float`, environment `test`, a separate
-instance from production. The connection string lives in `backend/.env.test`, which is gitignored.
+Tests run against a local Postgres in Docker — see `docker-compose.test.yml`:
 
-Railway names every database it creates `railway`, so the test database has the SAME NAME as the
-production one. A name check is therefore worthless here — the guard below compares HOSTS, and
-refuses to run if the target host is the production host or if TEST_DATABASE_URL is missing
-entirely. There is no fallback that derives a test URL from the production one: if the file is
-absent, tests fail to start rather than quietly reaching for something.
+    docker compose -f docker-compose.test.yml up -d
 
-The failure mode is "tests refuse to start", never "tests wrote to production". Do not weaken this
-to make something pass.
+The schema is built by running the real Alembic migrations, not by `create_all` from the models.
+That is deliberate: Railway runs `alembic upgrade head` on every deploy, so a migration that is
+broken in a way the models do not capture would otherwise pass every test and fail in production.
+Building from migrations means the migrations are tested too.
+
+The guard below compares HOSTS and refuses to run against the production host. It matters even
+with a local database: `.env` points at production, so a careless change to the URL resolution
+would send a test run straight at real data. The failure mode is "tests refuse to start", never
+"tests wrote to production". Do not weaken it to make something pass.
 """
 import os
 from pathlib import Path
@@ -24,7 +26,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
-ENV_FILE = Path(__file__).resolve().parents[1] / ".env.test"
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+ENV_FILE = BACKEND_DIR / ".env.test"
+
+# The local container from docker-compose.test.yml. Overridable by TEST_DATABASE_URL or
+# backend/.env.test — CI will set the environment variable.
+DEFAULT_TEST_URL = "postgresql+asyncpg://float:float@localhost:55432/float_test"
 
 
 def _load_test_url() -> str:
@@ -35,12 +42,7 @@ def _load_test_url() -> str:
             if line.startswith("TEST_DATABASE_URL="):
                 url = line.split("=", 1)[1].strip()
                 break
-    if not url:
-        raise RuntimeError(
-            "TEST_DATABASE_URL is not set and backend/.env.test is missing. "
-            "Tests will not guess a database. See the Railway `test` environment."
-        )
-    return url
+    return url or DEFAULT_TEST_URL
 
 
 def _host(url: str) -> str:
@@ -63,8 +65,40 @@ TEST_URL = _load_test_url()
 _assert_not_production(TEST_URL)
 
 
+def _sync_url(url: str) -> str:
+    return url.replace("+asyncpg", "")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def migrated_schema():
+    """Bring the test database to the current migration head, once per run.
+
+    Uses the real migrations rather than `create_all`, so a broken migration fails here instead
+    of on deploy.
+    """
+    from alembic import command
+    from alembic.config import Config
+
+    _assert_not_production(TEST_URL)
+    # migrations/env.py reads ALEMBIC_DATABASE_URL first; setting it on the Config alone is not
+    # enough, because env.py rewrites sqlalchemy.url when it loads.
+    previous = os.environ.get("ALEMBIC_DATABASE_URL")
+    os.environ["ALEMBIC_DATABASE_URL"] = TEST_URL
+    try:
+        cfg = Config(str(BACKEND_DIR / "alembic.ini"))
+        cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
+        cfg.set_main_option("sqlalchemy.url", TEST_URL)
+        command.upgrade(cfg, "head")
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("ALEMBIC_DATABASE_URL", None)
+        else:
+            os.environ["ALEMBIC_DATABASE_URL"] = previous
+
+
 @pytest_asyncio.fixture
-async def engine():
+async def engine(migrated_schema):
     # Function-scoped deliberately. asyncpg binds connections to the event loop that created
     # them, and pytest-asyncio gives each test its own loop — a session-scoped engine hands the
     # second test a connection from the first test's loop and fails with "attached to a
