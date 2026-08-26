@@ -87,10 +87,20 @@ Two distinct jobs, and they want real rungs to exist first:
 Both confirm-first, as with the arrow probe: the clinician sees the suggestion and edits before it
 counts.
 
-## Open
+## Settled (owner, 2026-08-26)
 
-1. Does a rung need a situation before an **exposure** can be planned against it? (Arrow and tags
-   live on the situation, so an ungrouped rung has no feared outcome to test.) Leaning: allow it,
-   flag it as incomplete.
-2. Does the **teen** app go flat too, or keep grouping by situation on the home screen?
-3. Does the situation's own DT range still show on the ladder, or only in the situations view?
+1. **An exposure can be planned against an ungrouped rung** — *"keep it flex for now."* No guard.
+   Note that such a rung has no feared outcome to test, since the arrow lives on the situation; that
+   is accepted rather than prevented.
+2. **No DT ranges on the ladder.** The ladder shows the rung's own single score only. The range
+   belongs to the situation and stays in the situations view.
+3. **The teen app is TBD** — it needs its own redesign, so the question of whether its home screen
+   goes flat is deferred rather than answered. Until then it keeps reading situations → behaviours
+   through the existing per-trigger routes, which are untouched.
+
+## Still to do
+
+- **The flat ladder has no "Plan an experiment" action yet.** It exists only in the situations view
+  (`BehaviorPanel`). Given (1), it should be available from the ladder — that is where the rungs
+  now live.
+- Phase 3 (session mode) and phase 4 (AI).
