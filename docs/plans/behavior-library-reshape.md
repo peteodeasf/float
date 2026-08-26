@@ -1,5 +1,9 @@
 # Tier C — Behavior/situation library + reuse + sub-behaviors (#6 + #7)
 
+> **STATUS: shipped 2026-08-10.** C1 (foundation + migration `a7b8c9d0e1f2`, backfill) and C2–C5
+> (pick-or-new typeaheads, dedup, library linking, sub-behaviors) are live on prod. C4's bulk
+> "attach to N situations at once" UI deferred (reuse works via the shared `behavior_library_id`).
+
 Sub-plan for the two coupled testing-feedback items. Parent plan:
 [`testing-feedback-features.md`](testing-feedback-features.md). Decisions already made:
 **global cross-org library**, behaviors **reusable across many situations**, sub-behaviors

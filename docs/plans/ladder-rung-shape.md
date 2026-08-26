@@ -1,7 +1,9 @@
 # What is a rung?
 
-> **STATUS: D built and shipped 2026-08-25** (clinician builder). Session mode still asks only the
-> behaviour question — see Open. Re-opens round 6 of
+> **STATUS: D built and shipped 2026-08-25** (clinician builder). **Superseded 2026-08-25** by
+> [`flat-ladder-grouped-situations.md`](flat-ladder-grouped-situations.md) — the owner's call is a
+> flat ladder with situations kept purely as grouping, which subsumes this. The scenario rung type
+> shipped here is a step toward it and stays. Re-opens round 6 of
 > [`interactive-capture-session-mode.md`](interactive-capture-session-mode.md) (rungs = behaviors).
 > Prompted by Dr. Walker's chapter 8 and by the Baseball practice ladder coming out as two rungs
 > both scored 7.
