@@ -1,6 +1,7 @@
 # What is a rung?
 
-> **STATUS: open question, 2026-08-25.** Nothing built. Re-opens round 6 of
+> **STATUS: D built and shipped 2026-08-25** (clinician builder). Session mode still asks only the
+> behaviour question — see Open. Re-opens round 6 of
 > [`interactive-capture-session-mode.md`](interactive-capture-session-mode.md) (rungs = behaviors).
 > Prompted by Dr. Walker's chapter 8 and by the Baseball practice ladder coming out as two rungs
 > both scored 7.
@@ -121,9 +122,21 @@ their own text.
 Owner (2026-08-25): implement the flexible approach *without permanently destroying the old
 structure* — D does that by construction, since it adds no schema and disables nothing.
 
+## Built
+
+`BEHAVIOR_TYPE_SCENARIO = 'scenario'` in `PatientPage.tsx`. The add-rung form leads with **"A
+version of this situation"**, then Avoidance / Safety / Ritual. A scenario rung asks *"How hard is
+this version?"* instead of *"Fear level when refraining"*, and carries a teal `SIT` chip. Ladder
+copy is now "What to face, and what to resist"; the button is "+ Add rung".
+
+No migration, nothing disabled, all 135 behaviour rows and 68 experiments untouched.
+
 ## Open
 
-1. Confirm **D**.
+1. **Session mode still only asks "what do you do so it feels safer?"** — the sub-situation
+   brainstorm in the book happens *with the child* ("Let's brainstorm and see how many other
+   sub-situations we can come up with"), so the walk should be able to add a version-of-this rung
+   too. Not built.
 2. Does session mode keep asking "what do you do so it feels safer?" as its own step? It is
    clinically needed for experiment design (*"what behavior would you want to do in this
    situation?"*). Assume yes — it just stops being the only way to make a rung.

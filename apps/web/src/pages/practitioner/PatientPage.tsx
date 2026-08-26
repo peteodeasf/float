@@ -37,6 +37,17 @@ import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 // still render; only creating new ones is switched off. Flip to true to restore.
 const SUB_BEHAVIOR_ADD_ENABLED = false
 
+// A ladder rung is a sentence and a number. It has always been stored that way — a row with a free
+// text name and a "how hard without this" score — but the only question we asked ("what do you do
+// so it feels safer?") could only produce behaviour-shaped sentences, so a situation with two
+// behaviours gave a two-rung ladder with both scores the same.
+//
+// Dr. Walker's ladders vary the SITUATION instead, holding the behaviour constant: "one post, home
+// alone" (2) … "a post + comments, with Diane and friends" (7). This type lets a rung say that.
+// `behavior_type` is a free string column, so it needs no migration, and nothing branches on the
+// value except the chip below — the teen app carries it but never reads it.
+const BEHAVIOR_TYPE_SCENARIO = 'scenario'
+
 const TAB_IDS = ['monitoring', 'sessions', 'plan', 'experiments', 'chat'] as const
 type TabId = typeof TAB_IDS[number]
 
@@ -586,7 +597,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' }}>
         <div>
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Exposure ladder</div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Avoidance &amp; safety behaviors</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>What to face, and what to resist</div>
         </div>
         {behaviors && behaviors.length > 0 && ladder && (
           <button onClick={() => reviewMut.mutate()} disabled={reviewMut.isPending}
@@ -730,8 +741,8 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 <div style={{ position: 'absolute', left: '-30px', top: '12px', width: '22px', height: '22px', borderRadius: '50%', background: planningBehaviorId === b.id ? '#135450' : '#fff', border: `2px solid ${planningBehaviorId === b.id ? '#135450' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, color: planningBehaviorId === b.id ? '#fff' : '#64748b', zIndex: 2 }}>{i + 1}</div>
                 {/* Rung card */}
                 <div className="group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '11px 14px' }}>
-                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`} style={{ flexShrink: 0 }}>
-                    {b.behavior_type.slice(0, 3)}
+                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === BEHAVIOR_TYPE_SCENARIO ? 'bg-teal-50 text-teal-700' : b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`} style={{ flexShrink: 0 }}>
+                    {b.behavior_type === BEHAVIOR_TYPE_SCENARIO ? 'SIT' : b.behavior_type.slice(0, 3)}
                   </span>
                   <span className="text-sm text-slate-700 truncate" style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>{b.name}</span>
                   {scheduledByBehavior.has(b.id) && (
@@ -793,7 +804,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
           </div>
         ))}
           {topRungs.length === 0 && (
-            <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '8px 2px' }}>No behaviors on the ladder yet — use “+ Add behavior” to add the first rung.</div>
+            <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '8px 2px' }}>Nothing on the ladder yet — use “+ Add rung” to add the first one.</div>
           )}
 
           {/* What every rung above is there to test. From the downward arrow; read-only here. */}
@@ -889,7 +900,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
       {/* Below the list it adds to, not up in the section header. */}
       {!showAdd && (
         <button onClick={() => setShowAdd(true)} className="cursor-pointer"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px', marginBottom: '12px' }}>+ Add behavior</button>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px', marginBottom: '12px' }}>+ Add rung</button>
       )}
 
       {/* Add behavior inline */}
@@ -897,7 +908,11 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
         <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
           <div style={{ position: 'relative', marginBottom: type === 'avoidance' ? '4px' : '8px' }}>
             <input value={name} onChange={e => { setName(e.target.value); setBehaviorLibraryId(null); setShowBehSuggest(true) }}
-              placeholder={type === 'avoidance' ? `Optional — type to search, or leave blank for “Avoids ${trigger.name}”` : 'Behavior name — type to search or add new'}
+              placeholder={
+                type === BEHAVIOR_TYPE_SCENARIO ? 'e.g. three of Diane’s posts when I’m home by myself'
+                : type === 'avoidance' ? `Optional — type to search, or leave blank for “Avoids ${trigger.name}”`
+                : 'Behavior name — type to search or add new'
+              }
               className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" autoFocus
               onKeyDown={e => e.key === 'Enter' && (name.trim() || type === 'avoidance') && addMut.mutate()} />
             {showBehSuggest && (behSuggestions?.length ?? 0) > 0 && (
@@ -914,23 +929,35 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
           {type === 'avoidance' && (
             <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px' }}>Leave blank to name it “Avoids {trigger.name}”.</p>
           )}
+          {type === BEHAVIOR_TYPE_SCENARIO && (
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px' }}>
+              A narrower version of “{trigger.name}” — vary who’s there, how much, how long. Its rating can be
+              higher or lower than the situation’s.
+            </p>
+          )}
           <div style={{ marginBottom: '8px' }}>
             <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Type</div>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {['avoidance', 'safety', 'ritual'].map(opt => (
-                <button key={opt} onClick={() => setType(opt)} type="button"
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {[
+                { key: BEHAVIOR_TYPE_SCENARIO, label: 'A version of this situation' },
+                { key: 'avoidance', label: 'Avoidance' },
+                { key: 'safety', label: 'Safety' },
+                { key: 'ritual', label: 'Ritual' },
+              ].map(opt => (
+                <button key={opt.key} onClick={() => setType(opt.key)} type="button"
                   style={{
                     fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '999px', cursor: 'pointer',
-                    background: type === opt ? 'var(--float-primary)' : '#fff',
-                    color: type === opt ? '#fff' : '#475569',
-                    border: type === opt ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                    textTransform: 'capitalize'
-                  }}>{opt}</button>
+                    background: type === opt.key ? 'var(--float-primary)' : '#fff',
+                    color: type === opt.key ? '#fff' : '#475569',
+                    border: type === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
+                  }}>{opt.label}</button>
               ))}
             </div>
           </div>
           <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
+            <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>
+              {type === BEHAVIOR_TYPE_SCENARIO ? 'How hard is this version? (1-10)' : 'Fear level when refraining (1-10)'}
+            </label>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <button type="button" onClick={() => setDt(String(Math.max(1, (Number(dt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
               <input value={dt} onChange={e => setDt(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
