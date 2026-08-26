@@ -23,13 +23,14 @@ This was a deliberate simplification. The owner now considers it a gap: a clinic
 - `get_patient_by_id` and everything reading patient data filter by that grant as well as by
   organisation.
 - A way to grant and revoke, presumably from the patient page.
-- Decide what happens to the ~35 existing patients: most likely backfill a grant for
-  `primary_practitioner_id`, and for patients with none, every clinician in the institution so
-  nobody is locked out of their own caseload.
+- Existing rows need no care. Every patient on the platform is test data (owner, 2026-08-26), so
+  backfill crudely or not at all. This becomes a real migration concern only after the first real
+  patient onboards.
 
 **Open questions:**
 - Should an institution admin keep blanket access? Clinics usually need someone who can cover.
 - What happens when a clinician leaves — does their caseload need reassigning before they go?
+  (Not urgent pre-launch, but it is the kind of rule that is painful to retrofit.)
 - Is there a "cover for me" case (holiday, sickness) that needs to be time-limited rather than
   permanent?
 
