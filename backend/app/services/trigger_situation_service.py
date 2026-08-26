@@ -173,12 +173,12 @@ async def delete_trigger(
         delete(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
     )
 
-    # History that merely references the situation keeps its own record; only the link goes.
-    await db.execute(
-        update(Experiment)
-        .where(Experiment.trigger_situation_id == trigger.id)
-        .values(trigger_situation_id=None)
-    )
+    # Experiments do NOT reference a situation directly — they hang off a behaviour or a ladder
+    # rung, both of which are unlinked above. (An earlier version of this function updated
+    # `Experiment.trigger_situation_id`, a column that does not exist, which raised AttributeError
+    # and made situation delete fail for a second time. Caught by tests/test_situation_delete.py.)
+    #
+    # Accommodations DO reference the situation, and keep their record; only the link goes.
     await db.execute(
         update(AccommodationBehavior)
         .where(AccommodationBehavior.trigger_situation_id == trigger.id)
