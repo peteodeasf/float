@@ -67,6 +67,18 @@ profile; `get_parent_context` joins through `parent_patient_links`). They are ba
 
 ---
 
+## Product review and backlog generation
+
+**Owner: Peter. Not for Claude to generate.** Raised 2026-08-27.
+
+The open-items list needs to come from Peter reviewing the product. Claude reading the source code
+produces only the mechanical half — disabled buttons, TODOs, a table nothing writes to. It cannot
+find a screen that works but confuses, a flow with too many steps, or something missing that was
+expected. Those came from Peter looking at it all day ("it's a mess", "this is still loading up the
+screen"), and nothing in the code would have surfaced them.
+
+Any list Claude produces on its own will be partial and will read as more complete than it is.
+
 ## Smaller, already agreed
 
 - **"Plan an experiment" is missing from the flat ladder.** It exists only in the situations view
