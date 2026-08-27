@@ -74,7 +74,9 @@ jobs:
 
       - name: Typecheck
         working-directory: apps/web
-        run: npx tsc --noEmit -p tsconfig.json
+        # `tsc -p tsconfig.json` checks NOTHING here: that file is a project-references stub with
+        # "files": []. It exits 0 on a codebase full of errors. `tsc -b` follows the references.
+        run: npx tsc -b --force
 
       - name: Build
         working-directory: apps/web

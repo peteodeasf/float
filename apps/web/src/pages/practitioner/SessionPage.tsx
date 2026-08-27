@@ -39,7 +39,6 @@ import {
   updateTrigger,
   createBehavior,
   updateBehavior,
-  deleteBehavior,
   searchSituationLibrary,
   type TriggerSituation,
 } from '../../api/treatment'
