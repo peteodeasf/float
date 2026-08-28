@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.api.routers.patients import get_practitioner_context
+from app.models.patient import PatientProfile
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient, get_permitted_arrow, get_permitted_situation
 from app.services.downward_arrow_service import (
     get_or_create_downward_arrow,
     get_or_create_patient_downward_arrow,
@@ -151,7 +152,8 @@ async def get_arrow(
     situation_id: uuid.UUID,
     facilitated_by: Optional[str] = None,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_situation),
 ):
     _, practitioner = context
     return await get_downward_arrow(
@@ -166,7 +168,8 @@ async def create_arrow(
     situation_id: uuid.UUID,
     data: DownwardArrowCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_situation),
 ):
     _, practitioner = context
     return await get_or_create_downward_arrow(
@@ -180,7 +183,8 @@ async def list_patient_arrows(
     patient_id: uuid.UUID,
     facilitated_by: Optional[str] = None,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     # Validates the patient belongs to the practitioner's organization.
@@ -197,7 +201,8 @@ async def create_patient_arrow(
     patient_id: uuid.UUID,
     data: DownwardArrowCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     # Validates the patient belongs to the practitioner's organization.
@@ -213,7 +218,8 @@ async def update_arrow(
     arrow_id: uuid.UUID,
     data: DownwardArrowUpdate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_arrow),
 ):
     _, practitioner = context
     return await update_downward_arrow(

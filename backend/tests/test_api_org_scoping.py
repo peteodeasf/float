@@ -15,7 +15,9 @@ assertions are strict, and those are what actually catch a leak.
 from sqlalchemy import select
 
 from app.models.treatment import TriggerSituation, AvoidanceBehavior
-from tests.factories import make_org, make_plan, make_practitioner, make_situation, make_rung
+from tests.factories import (
+    make_org, make_plan, make_practitioner, make_situation, make_rung, grant_patient_to,
+)
 
 
 async def test_anonymous_request_is_rejected(api, db):
@@ -32,6 +34,9 @@ async def test_clinician_sees_their_own_organisations_situations(api, db):
     plan = await make_plan(db, org)
     await make_situation(db, plan, name="Attending school")
     clinician = await make_practitioner(db, org)
+    # Being in the institution is no longer enough on its own — see
+    # docs/plans/clinician-patient-access-grants.md. The grant is what makes this 200.
+    await grant_patient_to(db, plan.patient, clinician)
 
     api.sign_in_as(clinician.user)
     r = await api.get(f"/plans/{plan.id}/triggers")

@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.routers.patients import get_practitioner_context
+from app.models.treatment import TreatmentPlan
+from app.api.routers.patients import get_practitioner_context, get_permitted_plan
 from app.services.accommodation_service import (
     get_accommodations_for_plan,
     create_accommodation,
@@ -30,6 +31,7 @@ async def list_accommodations(
     plan_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     return await get_accommodations_for_plan(db, plan_id, practitioner.organization_id)
@@ -40,6 +42,7 @@ async def list_accommodation_moments(
     plan_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     """The parent's logged moments for this plan (clinician coaching view)."""
     _, practitioner = context
@@ -52,6 +55,7 @@ async def create_accommodation_behavior(
     data: AccommodationCreate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     return await create_accommodation(db, plan_id, practitioner.organization_id, data)
@@ -63,6 +67,7 @@ async def reorder_accommodation_behaviors(
     data: ReorderRequest,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     return await reorder_accommodations(
@@ -75,6 +80,7 @@ async def reseed_accommodation_order(
     plan_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     return await reseed_by_distress(db, plan_id, practitioner.organization_id)
@@ -87,6 +93,7 @@ async def update_accommodation_behavior(
     data: AccommodationUpdate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     return await update_accommodation(
@@ -100,6 +107,7 @@ async def delete_accommodation_behavior(
     accommodation_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     await delete_accommodation(db, accommodation_id, practitioner.organization_id)

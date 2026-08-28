@@ -13,8 +13,10 @@ ever appears in a response to someone who should not see it, that is a leak — 
 code, whatever the route. It is a blunt instrument and it is exactly what the experiments bug
 violated.
 
-**Who does the asking:** a clinician from another institution, and a child from another family in
-the same institution.
+**Who does the asking:** a clinician from another institution, a child from another family in the
+same institution, and — since `patient_access_grants` — a clinician in the RIGHT institution who
+has not been granted access to this patient. That third one is the case that used to be allowed:
+organisation membership alone was enough to open anyone.
 
 Routes whose path parameters cannot be filled are reported as NOT COVERED rather than passing
 silently — a sweep that quietly skips half the surface is worse than no sweep.
@@ -36,6 +38,13 @@ from tests.factories import (
 )
 
 CANARY = "ZZCANARYZZ"
+
+# Content that belongs to the INSTITUTION rather than to one child — the process checklist a
+# clinic writes for itself. A colleague in the same institution is supposed to see it, so it
+# cannot carry the ordinary marker: a grant is about one child's record, not about the clinic's
+# own vocabulary. It still must not cross an institution boundary, which is what this second
+# marker checks.
+ORG_CANARY = "ZZORGSHAREDZZ"
 
 # Routes with no auth dependency at all. Each is deliberately public; this list is the record of
 # that decision, which did not exist anywhere before.
@@ -81,8 +90,8 @@ async def _victim_world(db):
     note = SessionNote(patient_id=patient.id, organization_id=org.id,
                        practitioner_id=plan.practitioner_id, session_date=date.today(),
                        content=f"{CANARY} session note", tags=[])
-    item = OrganizationChecklistItem(organization_id=org.id, key=f"{CANARY}_item",
-                                     text_=f"{CANARY} checklist item")
+    item = OrganizationChecklistItem(organization_id=org.id, key=f"{ORG_CANARY}_item",
+                                     text_=f"{ORG_CANARY} checklist item")
     # Tags and tips are SHARED vocabulary across institutions — the clinician-facing /tags route
     # is meant to return them to everyone. They carry no marker: the marker means "this belongs to
     # the victim", and marking shared content would report a correct route as a leak. They exist
@@ -140,7 +149,10 @@ def _routes():
     return out
 
 
-@pytest.mark.parametrize("intruder_kind", ["foreign_clinician", "other_family_child"])
+@pytest.mark.parametrize(
+    "intruder_kind",
+    ["foreign_clinician", "other_family_child", "ungranted_clinician"],
+)
 async def test_no_route_leaks_the_victims_data(api, db, intruder_kind, capsys):
     w = await _victim_world(db)
     params = _param_values(w)
@@ -148,6 +160,10 @@ async def test_no_route_leaks_the_victims_data(api, db, intruder_kind, capsys):
     if intruder_kind == "foreign_clinician":
         other_org = await make_org(db)
         intruder = (await make_practitioner(db, other_org)).user
+    elif intruder_kind == "ungranted_clinician":
+        # Same institution, no grant, not an admin. Before patient_access_grants this clinician
+        # could open every route below.
+        intruder = (await make_practitioner(db, w["org"])).user
     else:
         # Same institution, different family — the case the experiments hole exposed.
         intruder = (await make_patient(db, w["org"], name="Other Family Child")).user

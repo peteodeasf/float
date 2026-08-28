@@ -25,7 +25,13 @@ from app.schemas.experiment import (
     ExperimentResponse,
     ExperimentListResponse
 )
-from app.api.routers.patients import get_practitioner_context
+from app.api.routers.patients import (
+    get_practitioner_context,
+    get_permitted_patient,
+    get_permitted_behavior,
+    _require,
+)
+from app.services.patient_access_service import patient_of_record
 from sqlalchemy import select
 
 router = APIRouter(tags=["experiments"])
@@ -51,7 +57,8 @@ async def get_patient_context(
 async def list_patient_experiments(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     return await get_experiments_for_patient(
@@ -64,7 +71,8 @@ async def list_patient_experiments(
 async def list_rung_experiments(
     rung_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_behavior),
 ):
     _, practitioner = context
     return await get_experiments_for_rung(
@@ -80,7 +88,8 @@ async def practitioner_plan_behavior_experiment(
     behavior_id: uuid.UUID,
     data: ExperimentPlanCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_behavior),
 ):
     _, practitioner = context
 
@@ -164,6 +173,11 @@ async def get_single_experiment(
         if not practitioner:
             raise Exception("Profile not found")
         org_id = practitioner.organization_id
+        # A clinician reads an experiment only for a patient they have been granted. This is
+        # checked here rather than by a dependency because the same route serves the child, who
+        # has no practitioner profile at all.
+        await _require(db, (current_user, practitioner),
+                       await patient_of_record(db, Experiment, experiment_id))
 
     return await get_experiment(db, experiment_id, org_id, patient_id=caller_patient_id)
 

@@ -75,6 +75,8 @@ async def make_plan(db, org, patient=None) -> TreatmentPlan:
     )
     db.add(plan)
     await db.flush()
+    plan.patient = patient          # convenience for tests; not a mapped relationship
+    plan.practitioner = practitioner
     return plan
 
 
@@ -106,3 +108,32 @@ async def make_rung(db, situation=None, plan=None, name="a rung", dt=4,
     db.add(b)
     await db.flush()
     return b
+
+
+async def grant_patient_to(db, patient, practitioner, granted_by=None):
+    """Give a clinician access to a patient. Without this a clinician sees nothing but their own
+    patients, which is the point of `patient_access_grants`."""
+    from app.models.patient import PatientAccessGrant
+    grant = PatientAccessGrant(
+        patient_id=patient.id,
+        practitioner_id=practitioner.id,
+        organization_id=patient.organization_id,
+        granted_by_practitioner_id=granted_by.id if granted_by else None,
+    )
+    db.add(grant)
+    await db.flush()
+    return grant
+
+
+async def make_org_admin(db, org):
+    """A clinician who is an admin of this institution, and so sees every patient in it."""
+    from app.models.user import UserRole
+    from sqlalchemy import select
+    prof = await make_practitioner(db, org)
+    result = await db.execute(
+        select(UserRole).where(UserRole.user_id == prof.user.id)
+    )
+    for role in result.scalars().all():
+        role.is_org_admin = True
+    await db.flush()
+    return prof

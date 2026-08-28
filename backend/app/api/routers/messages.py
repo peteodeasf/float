@@ -9,7 +9,12 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.message import Message
 from app.models.patient import PatientProfile, ParentPatientLink
-from app.api.routers.patients import get_practitioner_context
+from app.api.routers.patients import (
+    get_practitioner_context,
+    get_permitted_patient,
+    _require,
+)
+from app.services.patient_access_service import patient_of_record
 from app.services.message_service import (
     get_messages_for_patient,
     send_message,
@@ -25,7 +30,8 @@ router = APIRouter(tags=["messages"])
 async def list_messages(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     patient_result = await db.execute(
@@ -58,7 +64,8 @@ async def create_message(
     patient_id: uuid.UUID,
     data: MessageCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     return await send_message(
@@ -87,6 +94,10 @@ async def read_message(
     if not practitioner:
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Not authorized")
+    # Only for a patient this clinician has been granted. In the handler rather than a dependency
+    # because the message id, not a patient id, is what the route is keyed on.
+    await _require(db, (current_user, practitioner),
+                   await patient_of_record(db, Message, message_id))
     return await mark_read(db, message_id, practitioner.organization_id)
 
 
@@ -114,6 +125,7 @@ async def list_parent_messages(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     patient = await _load_patient(db, patient_id, practitioner.organization_id)
@@ -139,6 +151,7 @@ async def create_parent_message(
     data: ParentThreadMessageCreate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     patient = await _load_patient(db, patient_id, practitioner.organization_id)

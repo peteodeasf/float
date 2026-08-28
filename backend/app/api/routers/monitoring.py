@@ -11,7 +11,7 @@ from sqlalchemy import select, func
 from app.core.database import get_db
 from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.models.patient import PatientProfile, PractitionerProfile
-from app.api.routers.patients import get_practitioner_context
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
@@ -50,7 +50,8 @@ async def send_monitoring_form(
     patient_id: uuid.UUID,
     data: SendMonitoringFormRequest = SendMonitoringFormRequest(),
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     from app.core.config import settings
     from app.services.email_service import send_monitoring_form_email
@@ -142,7 +143,8 @@ async def send_monitoring_form(
 async def get_monitoring_form(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
 
@@ -192,7 +194,8 @@ async def get_monitoring_form(
 async def get_monitoring_situations(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
 
@@ -235,7 +238,8 @@ async def get_monitoring_situations(
 async def get_monitoring_report(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
 

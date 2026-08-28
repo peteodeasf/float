@@ -4,7 +4,8 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.routers.patients import get_practitioner_context
+from app.models.patient import PatientProfile
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.services.patient_service import get_patient_by_id
 from app.services.treatment_plan_service import (
@@ -25,7 +26,8 @@ router = APIRouter(prefix="/patients/{patient_id}/plan", tags=["treatment-plans"
 async def get_plan(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
@@ -55,7 +57,8 @@ async def create_plan(
     patient_id: uuid.UUID,
     data: TreatmentPlanCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
@@ -70,7 +73,8 @@ async def update_plan(
     plan_id: uuid.UUID,
     data: TreatmentPlanUpdate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)

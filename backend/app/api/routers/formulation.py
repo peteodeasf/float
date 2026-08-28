@@ -7,8 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.models.patient import PatientProfile
 from app.models.formulation import ClinicalFormulation
-from app.api.routers.patients import get_practitioner_context
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 
 
 # --- Schemas ---
@@ -71,7 +72,8 @@ router = APIRouter(tags=["formulation"])
 async def get_formulation(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     result = await db.execute(
@@ -98,7 +100,8 @@ async def create_formulation(
     patient_id: uuid.UUID,
     data: FormulationCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     # Idempotent: one formulation per (patient, org). If one already exists
@@ -145,7 +148,8 @@ async def update_formulation(
     patient_id: uuid.UUID,
     data: FormulationUpdate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     result = await db.execute(

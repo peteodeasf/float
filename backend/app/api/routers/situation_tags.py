@@ -5,7 +5,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.routers.patients import get_practitioner_context
+from app.api.routers.patients import get_practitioner_context, get_permitted_situation
 from app.models.treatment import TriggerSituation
 from app.models.jit_content import Tag, TriggerSituationTag
 
@@ -49,6 +49,7 @@ async def get_situation_tags(
     situation_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_situation),
 ):
     _, practitioner = context
     await _owned_situation(situation_id, practitioner, db)
@@ -68,6 +69,7 @@ async def set_situation_tags(
     data: SituationTagsUpdate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_situation),
 ):
     _, practitioner = context
     await _owned_situation(situation_id, practitioner, db)

@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, false
 from fastapi import HTTPException, status
 
 from app.models.patient import PatientProfile
@@ -64,14 +64,25 @@ async def create_patient(
 async def get_patients_for_practitioner(
     db: AsyncSession,
     practitioner_id: uuid.UUID,
-    organization_id: uuid.UUID
+    organization_id: uuid.UUID,
+    permitted_ids: list[uuid.UUID] | None = None,
 ) -> list[PatientProfile]:
+    """The caller's roster.
+
+    permitted_ids is the list of patients they hold a grant for; None means an institution admin,
+    who sees everyone. It used to filter on primary_practitioner_id alone, which meant a clinician
+    granted access to someone else's patient could open that patient but never find them in a list.
+    """
+    conditions = [PatientProfile.organization_id == organization_id]
+    if permitted_ids is not None:
+        # Grants only. primary_practitioner_id is deliberately NOT consulted here: a clinician
+        # whose grant was revoked is still marked primary, and treating that as access would make
+        # revoking do nothing. The migration gives every primary practitioner a grant, so nobody
+        # loses a patient they already had.
+        conditions.append(PatientProfile.id.in_(permitted_ids) if permitted_ids else false())
     result = await db.execute(
         select(PatientProfile)
-        .where(
-            PatientProfile.primary_practitioner_id == practitioner_id,
-            PatientProfile.organization_id == organization_id
-        )
+        .where(*conditions)
         .order_by(PatientProfile.created_at.desc())
     )
     return result.scalars().all()

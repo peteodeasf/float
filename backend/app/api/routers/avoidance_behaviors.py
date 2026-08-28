@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.routers.patients import get_practitioner_context
+from app.models.treatment import TreatmentPlan
+from app.api.routers.patients import get_practitioner_context, get_permitted_plan, get_permitted_trigger
 from app.services.avoidance_behavior_service import (
     get_behaviors_for_trigger,
     get_rungs_for_plan,
@@ -24,7 +25,8 @@ router = APIRouter(prefix="/triggers/{trigger_id}/behaviors", tags=["avoidance-b
 async def list_behaviors(
     trigger_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_trigger),
 ):
     _, practitioner = context
     return await get_behaviors_for_trigger(db, trigger_id, practitioner.organization_id)
@@ -35,7 +37,8 @@ async def create_avoidance_behavior(
     trigger_id: uuid.UUID,
     data: AvoidanceBehaviorCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_trigger),
 ):
     _, practitioner = context
     return await create_behavior(db, trigger_id, practitioner.organization_id, data)
@@ -47,7 +50,8 @@ async def update_avoidance_behavior(
     behavior_id: uuid.UUID,
     data: AvoidanceBehaviorUpdate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_trigger),
 ):
     _, practitioner = context
     return await update_behavior(db, behavior_id, practitioner.organization_id, data)
@@ -58,7 +62,8 @@ async def delete_avoidance_behavior(
     trigger_id: uuid.UUID,
     behavior_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_trigger),
 ):
     _, practitioner = context
     await delete_behavior(db, behavior_id, practitioner.organization_id)
@@ -75,6 +80,7 @@ async def list_plan_rungs(
     plan_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     return await get_rungs_for_plan(db, plan_id, practitioner.organization_id)
@@ -86,6 +92,7 @@ async def create_plan_rung(
     data: AvoidanceBehaviorCreate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     """Add a rung to the ladder. `trigger_situation_id` is optional — group it now or later."""
     _, practitioner = context
@@ -101,6 +108,7 @@ async def update_plan_rung(
     data: AvoidanceBehaviorUpdate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     """Edit a rung, including regrouping it. An ungrouped rung has no trigger to route through."""
     _, practitioner = context
@@ -113,6 +121,7 @@ async def delete_plan_rung(
     rung_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
     await delete_behavior(db, rung_id, practitioner.organization_id)

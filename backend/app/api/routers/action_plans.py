@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.action_plan import ActionPlan
 from app.models.user import User
-from app.models.patient import PractitionerProfile
-from app.api.routers.patients import get_practitioner_context
+from app.models.patient import PractitionerProfile, PatientProfile
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient, get_permitted_action_plan
 
 
 # --- Schemas ---
@@ -78,7 +78,8 @@ router = APIRouter(tags=["action-plans"])
 async def list_action_plans(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     result = await db.execute(
@@ -101,7 +102,8 @@ async def create_action_plan(
     patient_id: uuid.UUID,
     data: ActionPlanCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
 
@@ -145,7 +147,8 @@ async def update_action_plan(
     plan_id: uuid.UUID,
     data: ActionPlanUpdate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: ActionPlan = Depends(get_permitted_action_plan),
 ):
     _, practitioner = context
     result = await db.execute(
@@ -194,7 +197,8 @@ async def update_action_plan(
 async def publish_action_plan(
     plan_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: ActionPlan = Depends(get_permitted_action_plan),
 ):
     _, practitioner = context
     result = await db.execute(
@@ -224,7 +228,8 @@ async def publish_action_plan(
 async def delete_action_plan(
     plan_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: ActionPlan = Depends(get_permitted_action_plan),
 ):
     _, practitioner = context
     result = await db.execute(

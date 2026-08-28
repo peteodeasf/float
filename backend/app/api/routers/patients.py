@@ -27,6 +27,23 @@ from app.models.checklist import ConsultationChecklist
 from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse
 from app.services.email_service import send_teen_invitation_email, send_parent_invitation_email
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
+from app.models.action_plan import ActionPlan
+from app.models.session_note import SessionNote
+from app.models.message import Message
+from app.models.experiment import Experiment
+from app.services.patient_access_service import (
+    accessible_patient_ids,
+    patient_id_of_arrow,
+    patient_id_of_behavior,
+    patient_id_of_ladder,
+    patient_id_of_rung,
+    patient_id_of_situation,
+    patient_of_record,
+    get_patient_for_practitioner,
+    grant_access,
+    list_grants,
+    revoke_access,
+)
 from app.services.patient_service import (
     create_patient,
     get_patients_for_practitioner,
@@ -78,6 +95,126 @@ async def get_practitioner_context(
             detail="Practitioner profile not found"
         )
     return current_user, practitioner
+
+
+async def get_permitted_patient(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> PatientProfile:
+    """The patient named in the path, if this clinician is allowed to see them. Otherwise 404.
+
+    Declared as a dependency rather than called inside each handler on purpose. The gap this fixes
+    was that a check buried in a handler is easy to leave out — 21 of the 37 clinician endpoints
+    taking a patient_id never called the patient lookup at all, and scoped their own tables by
+    organization instead. A missing Depends() is visible in the signature during review; a missing
+    function call is not.
+    """
+    user, practitioner = context
+    return await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+
+
+async def get_permitted_plan(
+    plan_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> TreatmentPlan:
+    """A treatment plan the caller may see, resolved through the patient it belongs to."""
+    user, practitioner = context
+    patient_id = await patient_of_record(db, TreatmentPlan, plan_id)
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+    result = await db.execute(select(TreatmentPlan).where(TreatmentPlan.id == plan_id))
+    return result.scalar_one()
+
+
+async def get_permitted_action_plan(
+    plan_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> ActionPlan:
+    """Same, for /action-plans/{plan_id} — a different table that happens to share the name."""
+    user, practitioner = context
+    patient_id = await patient_of_record(db, ActionPlan, plan_id)
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+    result = await db.execute(select(ActionPlan).where(ActionPlan.id == plan_id))
+    return result.scalar_one()
+
+
+async def _require(db, context, patient_id: uuid.UUID) -> None:
+    user, practitioner = context
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+
+
+async def get_permitted_situation(
+    situation_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_id_of_situation(db, situation_id))
+
+
+async def get_permitted_trigger(
+    trigger_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_id_of_situation(db, trigger_id))
+
+
+async def get_permitted_behavior(
+    behavior_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_id_of_behavior(db, behavior_id))
+
+
+async def get_permitted_ladder(
+    ladder_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_id_of_ladder(db, ladder_id))
+
+
+async def get_permitted_rung(
+    rung_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_id_of_rung(db, rung_id))
+
+
+async def get_permitted_arrow(
+    arrow_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_id_of_arrow(db, arrow_id))
+
+
+async def get_permitted_note(
+    note_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_of_record(db, SessionNote, note_id))
+
+
+async def get_permitted_experiment_access(
+    experiment_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_of_record(db, Experiment, experiment_id))
+
+
+async def get_permitted_message_access(
+    message_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _require(db, context, await patient_of_record(db, Message, message_id))
 
 
 async def get_patient_context(
@@ -258,9 +395,10 @@ async def list_patients(
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db)
 ):
-    _, practitioner = context
+    user, practitioner = context
+    permitted_ids = await accessible_patient_ids(db, user.id, practitioner)
     patients = await get_patients_for_practitioner(
-        db, practitioner.id, practitioner.organization_id
+        db, practitioner.id, practitioner.organization_id, permitted_ids
     )
     result = []
     for patient in patients:
@@ -313,7 +451,8 @@ async def create_new_patient(
 async def get_patient(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     patient = await get_patient_by_id(
@@ -347,7 +486,8 @@ async def update_patient(
     patient_id: uuid.UUID,
     data: PatientUpdate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     patient = await get_patient_by_id(
@@ -386,7 +526,8 @@ async def invite_teen(
     patient_id: uuid.UUID,
     data: InviteTeenRequest,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     patient = await get_patient_by_id(
@@ -506,6 +647,7 @@ async def set_child_connect_consent(
     data: ChildConnectConsentRequest,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     """Clinician-recorded parental consent to connect the child (offline override).
     Consent is also captured via the parent monitoring form."""
@@ -529,7 +671,8 @@ async def invite_parent(
     patient_id: uuid.UUID,
     data: InviteParentRequest,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     """Invite a parent to a case. Mirrors invite-teen, but links via
     parent_patient_links (so a case can have any number of parents) rather than
@@ -770,7 +913,8 @@ practitioner is alerted. Do not attempt to assess or act on the risk yourself.
 async def extract_monitoring_data(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     print("EXTRACTION ENDPOINT CALLED", flush=True)
     import json
@@ -970,7 +1114,8 @@ EXAMPLE — Kemp (OCD-style presentation):
 async def generate_preliminary_report(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     import json
     import anthropic
@@ -1649,3 +1794,72 @@ async def mark_my_message_read(
         message.read_at = datetime.now(timezone.utc)
         await db.commit()
     return {"success": True}
+
+
+class AccessGrantResponse(BaseModel):
+    practitioner_id: uuid.UUID
+    practitioner_name: str
+    granted_at: datetime
+    granted_by_backfill: bool
+
+
+class GrantAccessRequest(BaseModel):
+    practitioner_id: uuid.UUID
+
+
+@router.get("/{patient_id}/access", response_model=list[AccessGrantResponse])
+async def list_patient_access(
+    patient: PatientProfile = Depends(get_permitted_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    """Which clinicians can open this patient. Institution admins are not listed - they are not
+    grants, and showing them here would suggest they can be revoked from this screen."""
+    grants = await list_grants(db, patient.id)
+    out = []
+    for grant in grants:
+        result = await db.execute(
+            select(PractitionerProfile).where(PractitionerProfile.id == grant.practitioner_id)
+        )
+        who = result.scalar_one_or_none()
+        out.append(AccessGrantResponse(
+            practitioner_id=grant.practitioner_id,
+            practitioner_name=who.name if who else "Unknown",
+            granted_at=grant.created_at,
+            granted_by_backfill=grant.granted_by_practitioner_id is None,
+        ))
+    return out
+
+
+@router.post("/{patient_id}/access", response_model=AccessGrantResponse,
+             status_code=status.HTTP_201_CREATED)
+async def grant_patient_access(
+    data: GrantAccessRequest,
+    patient: PatientProfile = Depends(get_permitted_patient),
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Give another clinician in this institution access. Reaching here means the caller can see
+    the patient themselves - that is what the dependency checked."""
+    _, practitioner = context
+    grant = await grant_access(db, patient, data.practitioner_id, practitioner)
+    result = await db.execute(
+        select(PractitionerProfile).where(PractitionerProfile.id == grant.practitioner_id)
+    )
+    who = result.scalar_one_or_none()
+    return AccessGrantResponse(
+        practitioner_id=grant.practitioner_id,
+        practitioner_name=who.name if who else "Unknown",
+        granted_at=grant.created_at,
+        granted_by_backfill=False,
+    )
+
+
+@router.delete("/{patient_id}/access/{practitioner_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_patient_access(
+    practitioner_id: uuid.UUID,
+    patient: PatientProfile = Depends(get_permitted_patient),
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    _, practitioner = context
+    await revoke_access(db, patient, practitioner_id, practitioner)

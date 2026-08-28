@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, date
-from sqlalchemy import String, DateTime, Date, Integer, ForeignKey, ARRAY, text
+from sqlalchemy import String, DateTime, Date, Integer, ForeignKey, ARRAY, Index, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -89,4 +89,58 @@ class ParentPatientLink(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
+    )
+
+
+class PatientAccessGrant(Base):
+    """Which clinicians may open which patient.
+
+    Before this existed, any clinician could open any patient in their institution: the lookup
+    filtered on organization_id and nothing else. Access is now explicit - a clinician sees a
+    patient because someone granted it, or because they are an admin of the institution.
+
+    Revoking sets revoked_at rather than deleting the row, so who had access when stays answerable.
+    A partial unique index keeps one live grant per (patient, practitioner) while still allowing a
+    grant to be given again after it was revoked.
+    """
+
+    __tablename__ = "patient_access_grants"
+    __table_args__ = (
+        Index(
+            "uq_patient_access_grants_live",
+            "patient_id",
+            "practitioner_id",
+            unique=True,
+            postgresql_where=text("revoked_at IS NULL"),
+        ),
+        Index("ix_patient_access_grants_practitioner", "practitioner_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("patient_profiles.id"), nullable=False
+    )
+    practitioner_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=False
+    )
+    # Carried here so a grant can be scoped without joining back to the patient.
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False
+    )
+    # Null means the migration created it from primary_practitioner_id.
+    granted_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=True
+    )
+    revoked_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )

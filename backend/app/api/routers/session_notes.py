@@ -10,8 +10,8 @@ from datetime import datetime
 from app.core.database import get_db
 from app.models.session_note import SessionNote
 from app.models.user import User
-from app.models.patient import PractitionerProfile
-from app.api.routers.patients import get_practitioner_context
+from app.models.patient import PractitionerProfile, PatientProfile
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient, get_permitted_note
 
 
 # --- Schemas ---
@@ -62,7 +62,8 @@ router = APIRouter(tags=["session-notes"])
 async def list_session_notes(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     result = await db.execute(
@@ -85,7 +86,8 @@ async def create_session_note(
     patient_id: uuid.UUID,
     data: SessionNoteCreate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     note = SessionNote(
@@ -112,7 +114,8 @@ async def update_session_note(
     note_id: uuid.UUID,
     data: SessionNoteUpdate,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_note),
 ):
     _, practitioner = context
     result = await db.execute(
@@ -151,7 +154,8 @@ async def update_session_note(
 async def delete_session_note(
     note_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_note),
 ):
     _, practitioner = context
     result = await db.execute(

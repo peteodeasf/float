@@ -7,9 +7,10 @@ from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.models.patient import PatientProfile
 from app.models.checklist import ConsultationChecklist
 from app.models.checklist_item import OrganizationChecklistItem
-from app.api.routers.patients import get_practitioner_context
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 from app.services.patient_service import get_patient_by_id
 from app.services.checklist_item_service import list_items
 
@@ -57,6 +58,7 @@ async def get_checklist(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
@@ -73,6 +75,7 @@ async def update_checklist(
     data: ChecklistUpdate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
