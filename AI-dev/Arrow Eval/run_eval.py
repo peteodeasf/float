@@ -1,7 +1,8 @@
 """Evaluate the downward-arrow probe against real chains.
 
     export ANTHROPIC_API_KEY=...        # not in backend/.env; the key lives in Railway
-    python "AI-dev/Arrow Eval/run_eval.py"
+    python "AI-dev/Arrow Eval/run_eval.py"                    # the five real cases
+    python "AI-dev/Arrow Eval/run_eval.py" cases_draft.json   # the synthetic set
 
 **It imports the SHIPPED prompt** from `app.api.routers.downward_arrows` rather than keeping a
 copy. The extraction harness's mistake was testing a stand-in: a harness that scores its own copy
@@ -50,7 +51,9 @@ def main() -> int:
 
     import anthropic
 
-    cases = json.loads((HERE / "cases.json").read_text())
+    case_file = HERE / (sys.argv[1] if len(sys.argv) > 1 else "cases.json")
+    cases = json.loads(case_file.read_text())
+    print(f"{len(cases)} cases from {case_file.name}\n")
     prompt = load_prompt()
     client = anthropic.Anthropic(api_key=key)
 

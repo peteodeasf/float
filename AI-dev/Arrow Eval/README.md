@@ -26,6 +26,32 @@ regresses into obvious bad behaviour — echoing verbatim, drifting off what the
 what something means about them. It **cannot** tell you the prompt generalises. Widening it needs
 either more real sessions or cases written by a clinician.
 
+## The synthetic set — `cases_draft.json`, awaiting review
+
+Fifteen cases drafted by Claude on 2026-08-27. **Every child sentence in it is invented.** Each
+carries `provenance` saying so, and lives in its own file, so it can never be mistaken for observed
+data.
+
+They are built around what each one *tests*, not around sounding realistic — a one-word answer, a
+feeling rather than an event, rambling speech with filler, two fears in one sentence, a physical
+symptom, a global belief, contamination and separation fears rather than only social ones, "I don't
+know", a chain that has stalled, and an answer that describes avoiding rather than the outcome.
+
+**Nine of the fifteen can be settled by the checks below. Six cannot** — they are marked
+`needs_scorer`, because what they test is a judgement rather than a form:
+
+| Case | Why the checks cannot settle it |
+|---|---|
+| two fears in one answer | which one it picked is a judgement |
+| already at a global belief | whether to keep going or stop is clinical |
+| "I don't know" | "did not invent a fear" cannot be checked by word overlap |
+| stalled chain | may need a different move, not another question |
+| catastrophic jump | whether it skipped ahead needs someone to read the chain |
+| a plan instead of a fear | redirecting back to the outcome is a judgement |
+
+So the draft set is partly aspirational. It is worth having now because the inputs are the hard
+ones, and because a scorer written later needs cases to score.
+
 ## What is checked
 
 `checks.py`, no model and no judgement:

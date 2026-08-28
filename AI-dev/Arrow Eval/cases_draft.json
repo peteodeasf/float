@@ -1,0 +1,192 @@
+[
+  {
+    "tests": "plain event — the easy baseline, should never fail",
+    "situation": "Putting my hand up in class",
+    "starting_thought": "I'll get the answer wrong",
+    "steps_so_far": [],
+    "child_last_said": "I'll get the answer wrong",
+    "id": "draft-01",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "a FEELING, not an event — the question has to follow a feeling forward",
+    "situation": "Putting my hand up in class",
+    "starting_thought": "I'll get the answer wrong",
+    "steps_so_far": [
+      {
+        "question": "What will happen if you get the answer wrong?",
+        "response": "I'll get the answer wrong"
+      }
+    ],
+    "child_last_said": "I'd feel really embarrassed",
+    "id": "draft-02",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "one word — almost nothing to restate",
+    "situation": "Sleeping at a friend's house",
+    "starting_thought": "I'll want to come home",
+    "steps_so_far": [],
+    "child_last_said": "Scared",
+    "id": "draft-03",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "rambling speech with filler — must find the fear inside the noise",
+    "situation": "Ordering my own food",
+    "starting_thought": "I'll mess up the order",
+    "steps_so_far": [],
+    "child_last_said": "like I dunno, I'd probably just say it wrong or something and then they'd have to ask me again and it's just, ugh",
+    "id": "draft-04",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "two fears in one answer — must pick one, not both",
+    "situation": "School assembly",
+    "starting_thought": "Everyone will stare at me",
+    "steps_so_far": [],
+    "child_last_said": "I'd go bright red and I'd probably have to leave and then everyone would know",
+    "id": "draft-05",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": true,
+    "needs_scorer_because": "which of the two fears it picked is a judgement, not a form"
+  },
+  {
+    "tests": "third person — the child talks about themselves as 'you'",
+    "situation": "Answering the door",
+    "starting_thought": "It might be someone I don't know",
+    "steps_so_far": [],
+    "child_last_said": "You just don't know who it is, and then you're stuck talking to them",
+    "id": "draft-06",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "physical symptom — following a body sensation forward, not sideways into feelings",
+    "situation": "PE lesson",
+    "starting_thought": "I'll be picked last",
+    "steps_so_far": [
+      {
+        "question": "What will happen if you're picked last?",
+        "response": "I'll be picked last"
+      }
+    ],
+    "child_last_said": "My heart goes really fast and I feel sick",
+    "id": "draft-07",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "already near bedrock — a global belief; the question should still ask what happens",
+    "situation": "Group project",
+    "starting_thought": "They won't want me in their group",
+    "steps_so_far": [
+      {
+        "question": "What will happen if they don't want you in their group?",
+        "response": "They won't want me in their group"
+      }
+    ],
+    "child_last_said": "Nobody likes me",
+    "id": "draft-08",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": true,
+    "needs_scorer_because": "whether to keep going at a global belief, or stop, is clinical"
+  },
+  {
+    "tests": "contamination, not social — a different fear family entirely",
+    "situation": "Using the toilet at school",
+    "starting_thought": "There'll be germs on everything",
+    "steps_so_far": [],
+    "child_last_said": "I'd get the germs on my hands",
+    "id": "draft-09",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "contamination, a step down — an endless-loop fear",
+    "situation": "Using the toilet at school",
+    "starting_thought": "There'll be germs on everything",
+    "steps_so_far": [
+      {
+        "question": "What will happen if you get the germs on your hands?",
+        "response": "I'd get the germs on my hands"
+      }
+    ],
+    "child_last_said": "I'd have to wash them and I couldn't stop until they felt right",
+    "id": "draft-10",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "separation — the feared outcome is about someone else, not the child",
+    "situation": "Mum going out in the evening",
+    "starting_thought": "Something will happen to her",
+    "steps_so_far": [],
+    "child_last_said": "She might crash the car",
+    "id": "draft-11",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false
+  },
+  {
+    "tests": "\"I don't know\" — the model must not invent a fear the child never said",
+    "situation": "Talking to a teacher",
+    "starting_thought": "I'll say something stupid",
+    "steps_so_far": [
+      {
+        "question": "What will happen if you say something stupid?",
+        "response": "I'll say something stupid"
+      }
+    ],
+    "child_last_said": "I don't know. It just feels bad",
+    "id": "draft-12",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": true,
+    "needs_scorer_because": "'don't invent a fear' cannot be checked by word overlap"
+  },
+  {
+    "tests": "answer repeats the previous one — the chain has stalled",
+    "situation": "Birthday party",
+    "starting_thought": "I won't know anyone there",
+    "steps_so_far": [
+      {
+        "question": "What will happen if you don't know anyone there?",
+        "response": "I'll be on my own"
+      },
+      {
+        "question": "What will happen if you're on your own?",
+        "response": "I'll just be standing on my own"
+      }
+    ],
+    "child_last_said": "I'll just be on my own again",
+    "id": "draft-13",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": true,
+    "needs_scorer_because": "a stalled chain may need a different move, not another question"
+  },
+  {
+    "tests": "catastrophic jump — the child leaps several steps; must not skip further ahead",
+    "situation": "Handing in homework late",
+    "starting_thought": "The teacher will be annoyed",
+    "steps_so_far": [],
+    "child_last_said": "I'd get in trouble and then they'd ring my parents and I'd probably get kicked out",
+    "id": "draft-14",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": true,
+    "needs_scorer_because": "whether it skipped ahead needs someone to read the chain"
+  },
+  {
+    "tests": "answer is a plan, not a fear — the child describes avoiding instead of the outcome",
+    "situation": "Eating in the canteen",
+    "starting_thought": "There won't be anywhere to sit",
+    "steps_so_far": [],
+    "child_last_said": "I'd just go and eat in the library instead",
+    "id": "draft-15",
+    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": true,
+    "needs_scorer_because": "redirecting from a plan back to the outcome is a judgement"
+  }
+]
