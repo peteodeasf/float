@@ -5,65 +5,70 @@ produced it — file paths, current behaviour, what changes, how to tell it work
 
 ---
 
-## Clinician access to a patient must be granted, not assumed
+## Granting and revoking a patient's clinicians — no UI
 
-**Priority: high — access control, PHI.** Raised 2026-08-26.
+**Priority: high — the access change is deployed without it.** Raised 2026-08-28.
 
-**Today:** any clinician can open any patient in their institution. `get_patient_by_id`
-(`app/services/patient_service.py`) filters on `organization_id` only. `PatientProfile` has a
-`primary_practitioner_id`, but it is never used to restrict access — only read to *display* who the
-clinician is (`patients.py:307, 340, 379, 1333, 1473`).
+The grants themselves shipped on 2026-08-28 (`8aa62c4`, live in production). A clinician now sees a
+patient because they hold a live grant, or because they are an institution admin. What did not ship
+is any way to change that from the app.
 
-This was a deliberate simplification. The owner now considers it a gap: a clinician should have to
-**enable another clinician's access** to their patient.
+**Today:** the API works and is tested —
 
-**What changes:**
-- A patient's clinician(s) become an explicit grant, not "everyone in the institution". Probably a
-  link table — one patient, many clinicians, with who granted it and when.
-- `get_patient_by_id` and everything reading patient data filter by that grant as well as by
-  organisation.
-- A way to grant and revoke, presumably from the patient page.
-- Existing rows need no care. Every patient on the platform is test data (owner, 2026-08-26), so
-  backfill crudely or not at all. This becomes a real migration concern only after the first real
-  patient onboards.
+- `GET /patients/{patient_id}/access` — who can open this patient
+- `POST /patients/{patient_id}/access` — grant a colleague in the same institution
+- `DELETE /patients/{patient_id}/access/{practitioner_id}` — revoke
 
-**Open questions:**
-- Should an institution admin keep blanket access? Clinics usually need someone who can cover.
-- What happens when a clinician leaves — does their caseload need reassigning before they go?
-  (Not urgent pre-launch, but it is the kind of rule that is painful to retrofit.)
-- Is there a "cover for me" case (holiday, sickness) that needs to be time-limited rather than
-  permanent?
+— but nothing in `apps/web/` calls any of them. So access can only be changed with a direct API call
+or by editing the database. **Nobody can hand a patient over from inside the product.** The backfill
+gave every patient's primary practitioner a grant, so nothing is stuck today; it becomes a real
+problem the first time a clinician needs cover, leaves, or transfers a case.
 
-**How to tell it worked:** a clinician who has not been granted access gets nothing back for a
-patient in their own institution, and the existing organisation-scoping tests still pass.
-`tests/test_api_org_scoping.py` is the place to extend.
+**What changes:** a section on the patient page listing who has access, with add and remove. The
+clinician being added has to be picked from the same institution — there is no endpoint listing
+colleagues yet, so that probably needs one.
 
-**Gate:** this is authentication and data access, so `/security-review` before it ships
-(non-negotiable #2, which is explicitly *not* relaxed pre-launch).
+**Rules already enforced by the backend, which the UI should reflect rather than re-implement:**
+- You can only grant to a clinician in the patient's own institution (404 otherwise).
+- You cannot revoke the last live grant — it would leave a patient nobody can open. The API returns
+  409 with a message; the UI should not offer the action rather than surfacing the error.
+- Institution admins are deliberately not listed as grants. They see everyone, and showing them here
+  would imply they can be revoked from this screen.
+- A revoked grant is kept, not deleted (`revoked_at`), so who had access when stays answerable.
+
+**How to tell it worked:** a clinician can grant a colleague from the patient page, the colleague
+sees that patient in their roster, and revoking removes it again. Backend behaviour is already
+covered by `tests/test_patient_access_grants.py` — this is a frontend piece.
+
+**Worth knowing:** two of the three clinicians in production are institution admins
+(`user_roles.is_org_admin`), so grants restrict only one of them today. The boundary is only as tight
+as who holds admin. That is a settings question, not a code one.
+
+Plan and decisions: [`clinician-patient-access-grants.md`](plans/clinician-patient-access-grants.md).
+Deferred from that work, still not urgent: expiring grants (`expires_at` plus one condition) for
+time-limited cover, and reassigning a caseload when a clinician leaves.
 
 ---
 
-## Route-wide access-control test
+## Reorder is silently broken — two routes are shadowed
 
-**Priority: high — depends on nothing.** Raised 2026-08-26.
+**Priority: medium — user-visible, live now.** Raised 2026-08-28.
 
-152 API routes exist; 4 have an access-control test. One test should walk every registered route
-and call it as each wrong identity — a clinician from another institution, a parent, a teen — and
-fail if any route returns data it shouldn't. New routes then get checked automatically instead of
-relying on someone remembering.
+FastAPI matches routes in declaration order, and a UUID route sits above each of these:
 
-Needs an explicit allowlist of routes that are *meant* to be public (login, password reset, the
-monitoring form a parent opens from a link). That list is worth writing down regardless — it does
-not exist anywhere today.
+- `PUT /ladders/{ladder_id}/rungs/reorder` (`backend/app/api/routers/ladders.py:72`) is shadowed by
+  `PUT /ladders/{ladder_id}/rungs/{rung_id}` (line 55).
+- `PUT /plans/{plan_id}/triggers/reorder` (`trigger_situations.py:82`) is shadowed by
+  `PUT /{trigger_id}` (line 49).
 
-The three rules it should encode, from the owner:
-1. A clinician sees only what their institution — and, once the item above ships, their patient
-   list — allows.
-2. A parent or child never gets clinician-level access within their institution.
-3. A parent sees only their own family's data, and a child only their own.
+So `"reorder"` is parsed as a rung or situation id, fails UUID validation, and returns 422.
+Drag-to-reorder does nothing in the ladder and the plan builder. `accommodations.py` has the same
+pair in the right order and works — use it as the model.
 
-Rules 2 and 3 are already enforced in code (`get_practitioner_context` requires a clinician
-profile; `get_parent_context` joins through `parent_patient_links`). They are barely tested.
+Found while verifying the security review; unrelated to it and pre-existing.
+
+**Fix:** move each reorder declaration above the UUID route. Then add a test asserting each reorder
+URL routes to its own handler, so a route added above them re-breaks visibly rather than silently.
 
 ---
 
