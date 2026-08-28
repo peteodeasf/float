@@ -1,6 +1,6 @@
 """Evaluate the downward-arrow probe against real chains.
 
-    export ANTHROPIC_API_KEY=...        # not in backend/.env; the key lives in Railway
+    ANTHROPIC_API_KEY goes in backend/.env (gitignored) or the shell environment.
     python "AI-dev/Arrow Eval/run_eval.py"                    # the five real cases
     python "AI-dev/Arrow Eval/run_eval.py" cases_draft.json   # the synthetic set
 
@@ -20,12 +20,29 @@ import json
 import os
 import pathlib
 import sys
+import time
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent.parent / "backend"))
 
 import checks  # noqa: E402
+
+ENV_FILE = HERE.parent.parent / "backend" / ".env"
+
+
+def read_key() -> str | None:
+    """Environment first, then backend/.env. That file is gitignored."""
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if key:
+        return key.strip()
+    if not ENV_FILE.exists():
+        return None
+    for line in ENV_FILE.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("ANTHROPIC_API_KEY="):
+            return line.split("=", 1)[1].strip().strip('"').strip("'") or None
+    return None
 
 
 def load_prompt() -> str:
@@ -42,11 +59,35 @@ def build_user_message(case: dict) -> str:
     return "\n".join(lines)
 
 
+def ask(client, prompt: str, case: dict, attempts: int = 4) -> str:
+    """One probe, retrying transient network failures. A dropped connection partway
+    through a run should not cost the whole run."""
+    import anthropic
+    for attempt in range(1, attempts + 1):
+        try:
+            msg = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=256,
+                system=prompt,
+                messages=[{"role": "user", "content": build_user_message(case)}],
+                timeout=60.0,
+            )
+            return msg.content[0].text.strip()
+        except (anthropic.APITimeoutError, anthropic.APIConnectionError, anthropic.RateLimitError) as e:
+            if attempt == attempts:
+                raise
+            wait = 2 ** attempt
+            print(f"          .. {type(e).__name__}, retrying in {wait}s ({attempt}/{attempts - 1})")
+            time.sleep(wait)
+    raise RuntimeError("unreachable")
+
+
 def main() -> int:
-    key = os.environ.get("ANTHROPIC_API_KEY")
+    key = read_key()
     if not key:
-        print("ANTHROPIC_API_KEY is not set. The key lives in Railway, not backend/.env.")
-        print("Set it in this shell and re-run; nothing else is needed.")
+        print("No ANTHROPIC_API_KEY found.")
+        print(f"Add a line to {ENV_FILE} (gitignored):  ANTHROPIC_API_KEY=sk-ant-...")
+        print("Or export it in this shell. Nothing else is needed.")
         return 2
 
     import anthropic
@@ -59,13 +100,7 @@ def main() -> int:
 
     results, failures = [], []
     for i, case in enumerate(cases, 1):
-        msg = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=256,
-            system=prompt,
-            messages=[{"role": "user", "content": build_user_message(case)}],
-        )
-        probe = msg.content[0].text.strip()
+        probe = ask(client, prompt, case)
         outcome = checks.run_all(probe, case["child_last_said"])
         failed = [c for c in outcome if not c["passed"]]
         results.append({"case": case, "probe": probe, "checks": outcome})

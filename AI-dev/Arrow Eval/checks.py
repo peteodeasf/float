@@ -52,7 +52,17 @@ def no_meaning_probe(probe: str) -> tuple[bool, str]:
     return (hit is None, f"asks what it MEANS ('{hit}') — this chain asks what HAPPENS" if hit else "")
 
 
+# The stalled-chain move ("And what then - what else are you afraid of?") deliberately shares no
+# words with the child's answer: the point is to stop chasing a thread that is going nowhere and
+# ask for a different fear. Peter wrote that question himself as the target for draft-13, where the
+# first version of this check failed it. Word overlap is the wrong test for these.
+OPENS_A_NEW_THREAD = ("what else", "anything else", "what other")
+
+
 def uses_their_words(probe: str, child_last_said: str) -> tuple[bool, str]:
+    low = (probe or "").lower()
+    if any(phrase in low for phrase in OPENS_A_NEW_THREAD):
+        return (True, "")
     theirs, mine = _words(child_last_said), _words(probe)
     if not theirs:
         return (True, "")

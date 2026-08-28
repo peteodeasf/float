@@ -1,16 +1,16 @@
 [
   {
-    "tests": "plain event — the easy baseline, should never fail",
+    "tests": "plain event \u2014 the easy baseline, should never fail",
     "situation": "Putting my hand up in class",
     "starting_thought": "I'll get the answer wrong",
     "steps_so_far": [],
     "child_last_said": "I'll get the answer wrong",
     "id": "draft-01",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": false
   },
   {
-    "tests": "a FEELING, not an event — the question has to follow a feeling forward",
+    "tests": "a FEELING, not an event \u2014 the question has to follow a feeling forward",
     "situation": "Putting my hand up in class",
     "starting_thought": "I'll get the answer wrong",
     "steps_so_far": [
@@ -21,52 +21,63 @@
     ],
     "child_last_said": "I'd feel really embarrassed",
     "id": "draft-02",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": false
   },
   {
-    "tests": "one word — almost nothing to restate",
+    "tests": "one word \u2014 almost nothing to restate",
     "situation": "Sleeping at a friend's house",
     "starting_thought": "Scared",
     "steps_so_far": [],
     "child_last_said": "Scared",
     "id": "draft-03",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": false
   },
   {
-    "tests": "rambling speech with filler — must find the fear inside the noise",
+    "tests": "rambling speech with filler \u2014 must find the fear inside the noise",
     "situation": "Ordering my own food",
     "starting_thought": "like I dunno, I'd probably just say it wrong or something and then they'd have to ask me again and it's just, ugh",
     "steps_so_far": [],
     "child_last_said": "like I dunno, I'd probably just say it wrong or something and then they'd have to ask me again and it's just, ugh",
     "id": "draft-04",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
-    "needs_scorer": false
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false,
+    "target_question": "What will happen if they have to ask you again?",
+    "target_source": "Peter, 2026-08-28",
+    "review_note": "Peter accepted the model's version over his own earlier target (\"if you say it wrong and they ask you again?\"). Dropping \"say it wrong\" loses nothing here - being asked again is what saying it wrong leads to. Contrast draft-05, where the parts are separate fears."
   },
   {
-    "tests": "two fears in one answer — must pick one, not both",
+    "tests": "two fears in one answer \u2014 must pick one, not both",
     "situation": "School assembly",
     "starting_thought": "I'd go bright red and I'd probably have to leave and then everyone would know",
     "steps_so_far": [],
     "child_last_said": "I'd go bright red and I'd probably have to leave and then everyone would know",
     "id": "draft-05",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": true,
-    "needs_scorer_because": "which of the two fears it picked is a judgement, not a form"
+    "needs_scorer_because": "which of the two fears it picked is a judgement, not a form",
+    "target_question": "What will happen if you have to leave and everyone knows?",
+    "target_source": "Peter, 2026-08-28",
+    "review_note": "Two acceptable forms (Peter, 2026-08-28). The failure to avoid is \"What will happen if everyone knows?\" - \"knows\" has no object, so the child cannot answer it. Either carry the earlier clause in front, or spell out what everyone knows. Both stand on their own.",
+    "acceptable_alternatives": [
+      "What will happen if everyone knows you went bright red and had to leave?"
+    ]
   },
   {
-    "tests": "third person — the child talks about themselves as 'you'",
+    "tests": "third person \u2014 the child talks about themselves as 'you'",
     "situation": "Answering the door",
     "starting_thought": "You just don't know who it is, and then you're stuck talking to them",
     "steps_so_far": [],
     "child_last_said": "You just don't know who it is, and then you're stuck talking to them",
     "id": "draft-06",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
-    "needs_scorer": false
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false,
+    "target_question": "What will happen if you get stuck talking to them?",
+    "target_source": "Peter, 2026-08-27"
   },
   {
-    "tests": "physical symptom — following a body sensation forward, not sideways into feelings",
+    "tests": "physical symptom \u2014 following a body sensation forward, not sideways into feelings",
     "situation": "PE lesson",
     "starting_thought": "I'll be picked last",
     "steps_so_far": [
@@ -77,11 +88,13 @@
     ],
     "child_last_said": "My heart goes really fast and I feel sick",
     "id": "draft-07",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
-    "needs_scorer": false
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false,
+    "target_question": "What will happen if your heart goes fast and you feel sick?",
+    "target_source": "Peter, 2026-08-27"
   },
   {
-    "tests": "already near bedrock — a global belief; the question should still ask what happens",
+    "tests": "already near bedrock \u2014 a global belief; the question should still ask what happens",
     "situation": "Group project",
     "starting_thought": "They won't want me in their group",
     "steps_so_far": [
@@ -92,22 +105,25 @@
     ],
     "child_last_said": "Nobody likes me",
     "id": "draft-08",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": true,
-    "needs_scorer_because": "whether to keep going at a global belief, or stop, is clinical"
+    "needs_scorer_because": "whether to keep going at a global belief, or stop, is clinical",
+    "target_question": "What will happen if nobody likes you?",
+    "target_source": "Peter, 2026-08-27",
+    "review_note": "Peter: 'Nobody likes me' is an unlikely answer to 'What will happen if they don't want you in their group?' \u2014 the case needs a more plausible response."
   },
   {
-    "tests": "contamination, not social — a different fear family entirely",
+    "tests": "contamination, not social \u2014 a different fear family entirely",
     "situation": "Using the toilet at school",
     "starting_thought": "I'd get the germs on my hands",
     "steps_so_far": [],
     "child_last_said": "I'd get the germs on my hands",
     "id": "draft-09",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": false
   },
   {
-    "tests": "contamination, a step down — an endless-loop fear",
+    "tests": "contamination, a step down \u2014 an endless-loop fear",
     "situation": "Using the toilet at school",
     "starting_thought": "There'll be germs on everything",
     "steps_so_far": [
@@ -122,21 +138,23 @@
     ],
     "child_last_said": "I'd have to wash them and I couldn't stop until they felt right",
     "id": "draft-10",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": false
   },
   {
-    "tests": "separation — the feared outcome is about someone else, not the child",
+    "tests": "separation \u2014 the feared outcome is about someone else, not the child",
     "situation": "Mum going out in the evening",
     "starting_thought": "She might crash the car",
     "steps_so_far": [],
     "child_last_said": "She might crash the car",
     "id": "draft-11",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
-    "needs_scorer": false
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
+    "needs_scorer": false,
+    "target_question": "What will happen if she crashes the car?",
+    "target_source": "Peter, 2026-08-27"
   },
   {
-    "tests": "\"I don't know\" — the model must not invent a fear the child never said",
+    "tests": "\"I don't know\" \u2014 the model must not invent a fear the child never said",
     "situation": "Talking to a teacher",
     "starting_thought": "I'll say something stupid",
     "steps_so_far": [
@@ -147,12 +165,14 @@
     ],
     "child_last_said": "I don't know. It just feels bad",
     "id": "draft-12",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": true,
-    "needs_scorer_because": "'don't invent a fear' cannot be checked by word overlap"
+    "needs_scorer_because": "'don't invent a fear' cannot be checked by word overlap",
+    "target_question": "So you'll feel bad \u2014 what will happen then?",
+    "target_source": "Peter, 2026-08-27"
   },
   {
-    "tests": "answer repeats the previous one — the chain has stalled",
+    "tests": "answer repeats the previous one \u2014 the chain has stalled",
     "situation": "Birthday party",
     "starting_thought": "I won't know anyone there",
     "steps_so_far": [
@@ -167,30 +187,34 @@
     ],
     "child_last_said": "I'll just be on my own again",
     "id": "draft-13",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": true,
-    "needs_scorer_because": "a stalled chain may need a different move, not another question"
+    "needs_scorer_because": "a stalled chain may need a different move, not another question",
+    "target_question": "And what then \u2014 what else are you afraid of?",
+    "target_source": "Peter, 2026-08-27"
   },
   {
-    "tests": "catastrophic jump — the child leaps several steps; must not skip further ahead",
+    "tests": "catastrophic jump \u2014 the child leaps several steps; must not skip further ahead",
     "situation": "Handing in homework late",
     "starting_thought": "I'd get in trouble and then they'd ring my parents and I'd probably get kicked out",
     "steps_so_far": [],
     "child_last_said": "I'd get in trouble and then they'd ring my parents and I'd probably get kicked out",
     "id": "draft-14",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": true,
     "needs_scorer_because": "whether it skipped ahead needs someone to read the chain"
   },
   {
-    "tests": "answer is a plan, not a fear — the child describes avoiding instead of the outcome",
+    "tests": "answer is a plan, not a fear \u2014 the child describes avoiding instead of the outcome",
     "situation": "Eating in the canteen",
     "starting_thought": "I'd just go and eat in the library instead",
     "steps_so_far": [],
     "child_last_said": "I'd just go and eat in the library instead",
     "id": "draft-15",
-    "provenance": "SYNTHETIC — drafted by Claude 2026-08-27, not observed, pending review",
+    "provenance": "SYNTHETIC \u2014 drafted by Claude 2026-08-27, not observed, pending review",
     "needs_scorer": true,
-    "needs_scorer_because": "redirecting from a plan back to the outcome is a judgement"
+    "needs_scorer_because": "redirecting from a plan back to the outcome is a judgement",
+    "target_question": "So you'd eat at the library. What are you afraid will happen if you don't do that?",
+    "target_source": "Peter, 2026-08-27"
   }
 ]

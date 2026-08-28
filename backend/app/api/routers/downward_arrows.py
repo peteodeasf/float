@@ -29,6 +29,12 @@ router = APIRouter(tags=["downward-arrows"])
 # warm "if that were true…" follow-up at each step. This only *phrases* the next question —
 # the clinician reads it and can reword before saying it aloud (confirm-first), and the
 # clinician (not the model) decides when the chain has reached bottom.
+# Updated 2026-08-27 from nine target questions Peter wrote against the evaluation cases. Six kept
+# the "What will happen if..." template; three deliberately broke it, and all three were hard cases
+# - a feeling or "I don't know", a stalled chain, and a child naming what they would DO to avoid
+# rather than what they fear. The prompt allowed deviation only for grammar, so it would have
+# produced a template question in exactly the places he wanted a different move.
+#
 # This is a FEARED-CONSEQUENCE chain. The earlier version of this prompt asked the model for the
 # meaning/core-belief move ("what would that say about you?"), which is a different technique
 # entirely — and it was writing that content into `downward_arrows.feared_outcome`. A feared
@@ -46,19 +52,57 @@ different technique and it is not what this tool does.
 You are given the situation, the child's first answer, and the chain so far. Write ONE short
 follow-up question in this form:
 
-    What will happen if... <the child's last answer, restated in the second person>?
+    What will happen if <the child's last answer, restated in the second person>?
 
 The restating is the whole job — take the feared part of their last answer and put it back to them
 in their own words:
-  "I would feel yucky."                                   -> What will happen if... you feel yucky?
-  "I'd be all stressed until I could get clean again."    -> What will happen if... you can't get clean again?
-  "I won't be able to play soccer or do my schoolwork."   -> What will happen if... you can't do all those things?
+  "I would feel yucky."                                   -> What will happen if you feel yucky?
+  "I'd be all stressed until I could get clean again."    -> What will happen if you can't get clean again?
+  "I won't be able to play soccer or do my schoolwork."   -> What will happen if you can't do all those things?
+
+That form fits most turns. THREE situations call for a different move instead:
+
+1. The child's answer has nothing concrete to restate - "I don't know", or a vague bad feeling with
+   no content. Reflect back the little they gave, then ask what happens next.
+     "I don't know. It just feels bad."
+       -> So you'll feel bad - what will happen then?
+   A NAMED feeling or thought IS concrete. Use the normal form for those - do not reflect it back:
+     "My heart goes really fast and I feel sick."
+       -> What will happen if your heart goes fast and you feel sick?
+     "Nobody likes me."
+       -> What will happen if nobody likes you?
+
+2. The chain has stalled - their answer repeats what they already said. Do NOT ask the same
+   question again. Ask what else they are afraid of.
+     "I'll just be on my own again." (they had already said "I'll be on my own")
+       -> And what then - what else are you afraid of?
+
+3. The child describes what they would DO to avoid it, rather than what they fear. Acknowledge it,
+   then ask what they are afraid of if they don't do that.
+     "I'd just go and eat in the library instead."
+       -> So you'd eat at the library. What are you afraid will happen if you don't do that?
+
+Reflecting their words back before the question ("So you'd eat at the library.") is good - it shows
+you heard them, and does not count as preamble.
+
+A child often names several things in one answer, and you restate the last one. Before you do,
+check that it STANDS ON ITS OWN. The child hears only your question, so anything it points at has
+to be in it. Watch for parts that dangle - "everyone would know" (knows WHAT?), "they'd find out",
+"they'd all see", "it would happen", "then that's it". Restating those alone leaves a question the
+child cannot answer. Carry back just enough of what they said to make it clear, and no more.
+
+Keep the question to the feared part. Do not pile every step of their answer into a list, and
+never swap a noun they used for a bare pronoun - "if THEY don't want to hang out with you" dangles
+in the same way. This is about the thing you are restating; it does not apply to the three
+situations above, where the question stays short.
 
 Rules:
-- Return ONLY the question. No preamble, no quotes, no explanation.
-- Keep the "What will happen if..." opening. Only if that would be ungrammatical, use the closest
-  natural consequence question instead ("And then what will happen?").
-- Use the child's own words. Never introduce a fear, detail, or outcome they have not said.
+- Return ONLY the question. No explanation, no quotes around it.
+- Prefer the "What will happen if" opening, except in the three situations above.
+- Do not write a literal "..." in the question.
+- Use the child's own words. NEVER introduce a fear, detail or outcome they have not said. If they
+  said "there'll be germs on everything", do not ask about germs on their HANDS - they never
+  mentioned hands.
 - Talk to the child, not about them.
 - Do not decide the chain is finished, summarise, reassure, diagnose, or advise. Always ask the
   next question."""
