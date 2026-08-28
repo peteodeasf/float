@@ -1,0 +1,86 @@
+[
+  {
+    "situation": "Baseball practice",
+    "starting_thought": "I'll drop the ball and everybody will laugh at me.",
+    "steps_so_far": [],
+    "child_last_said": "I'll drop the ball and everybody will laugh at me.",
+    "question_actually_asked": "What will happen if everybody laughs at you?",
+    "source_date": "2026-08-24"
+  },
+  {
+    "situation": "Baseball practice",
+    "starting_thought": "I'll drop the ball and everybody will laugh at me.",
+    "steps_so_far": [
+      {
+        "question": "What will happen if everybody laughs at you?",
+        "response": "I will feel like an idiot."
+      }
+    ],
+    "child_last_said": "I will feel like an idiot.",
+    "question_actually_asked": "What will happen if you feel like an idiot?",
+    "source_date": "2026-08-24"
+  },
+  {
+    "situation": "Baseball practice",
+    "starting_thought": "I'll drop the ball and everybody will laugh at me.",
+    "steps_so_far": [
+      {
+        "question": "What will happen if everybody laughs at you?",
+        "response": "I will feel like an idiot."
+      },
+      {
+        "question": "What will happen if you feel like an idiot?",
+        "response": "I'll go all red, I guess"
+      }
+    ],
+    "child_last_said": "I'll go all red, I guess",
+    "question_actually_asked": "What will happen if you go all red?",
+    "source_date": "2026-08-24"
+  },
+  {
+    "situation": "Baseball practice",
+    "starting_thought": "I'll drop the ball and everybody will laugh at me.",
+    "steps_so_far": [
+      {
+        "question": "What will happen if everybody laughs at you?",
+        "response": "I will feel like an idiot."
+      },
+      {
+        "question": "What will happen if you feel like an idiot?",
+        "response": "I'll go all red, I guess"
+      },
+      {
+        "question": "What will happen if you go all red?",
+        "response": "People will think I'm an idiot again, and they won't want to hang out with me."
+      }
+    ],
+    "child_last_said": "People will think I'm an idiot again, and they won't want to hang out with me.",
+    "question_actually_asked": "What will happen if people don't want to hang out with you?",
+    "source_date": "2026-08-24"
+  },
+  {
+    "situation": "Baseball practice",
+    "starting_thought": "I'll drop the ball and everybody will laugh at me.",
+    "steps_so_far": [
+      {
+        "question": "What will happen if everybody laughs at you?",
+        "response": "I will feel like an idiot."
+      },
+      {
+        "question": "What will happen if you feel like an idiot?",
+        "response": "I'll go all red, I guess"
+      },
+      {
+        "question": "What will happen if you go all red?",
+        "response": "People will think I'm an idiot again, and they won't want to hang out with me."
+      },
+      {
+        "question": "What will happen if people don't want to hang out with you?",
+        "response": "I never had any friends, and so all my only friends are at baseball. I won't have any friends at school."
+      }
+    ],
+    "child_last_said": "I never had any friends, and so all my only friends are at baseball. I won't have any friends at school.",
+    "question_actually_asked": "What will happen if you don't have any friends at school?",
+    "source_date": "2026-08-24"
+  }
+]
