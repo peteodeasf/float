@@ -33,8 +33,10 @@ from app.models.jit_content import JitTip, Tag
 from app.models.ladder import ExposureLadder
 from app.models.message import Message
 from app.models.session_note import SessionNote
+from app.models.treatment import AvoidanceBehavior, TriggerSituation
 from tests.factories import (
-    make_org, make_patient, make_plan, make_practitioner, make_rung, make_situation,
+    grant_patient_to, make_org, make_patient, make_plan, make_practitioner, make_rung,
+    make_situation,
 )
 
 CANARY = "ZZCANARYZZ"
@@ -205,3 +207,89 @@ async def test_no_route_leaks_the_victims_data(api, db, intruder_kind, capsys):
 def _path_params(path):
     import re
     return re.findall(r"\{([^}]+)\}", path)
+
+
+async def test_a_nested_route_cannot_pair_my_own_parent_with_someone_elses_child(api, db):
+    """The mixed pair the sweep above structurally cannot build.
+
+    Every route in that sweep gets ALL its path parameters from one victim, so on a nested route
+    like /plans/{plan_id}/triggers/{trigger_id} the parent guard fires and the route correctly
+    404s. What it never tries is the parent id being legitimately MINE and the child id being
+    someone else's — which is how a clinician whose grant was revoked keeps reading and writing a
+    record they no longer hold. The security review found nine routes open this way; each is
+    checked here.
+    """
+    org = await make_org(db)
+
+    mine = await make_plan(db, org)
+    my_situation = await make_situation(db, mine, name="My situation")
+    my_rung = await make_rung(db, situation=my_situation, name="My rung")
+    clinician = await make_practitioner(db, org)
+    await grant_patient_to(db, mine.patient, clinician)
+
+    theirs = await make_plan(db, org)
+    their_situation = await make_situation(db, theirs, name=f"{CANARY} their situation")
+    their_rung = await make_rung(db, situation=their_situation, name=f"{CANARY} their rung")
+    their_accommodation = AccommodationBehavior(
+        treatment_plan_id=theirs.id, organization_id=org.id, name=f"{CANARY} their accommodation")
+    their_ladder = ExposureLadder(trigger_situation_id=their_situation.id,
+                                  organization_id=org.id, status="not_started")
+    db.add_all([their_accommodation, their_ladder])
+    await db.flush()
+
+    my_ladder = ExposureLadder(trigger_situation_id=my_situation.id,
+                               organization_id=org.id, status="not_started")
+    db.add(my_ladder)
+    await db.flush()
+
+    api.sign_in_as(clinician.user)
+
+    # (method, url) — my parent id, their child id. Every one must refuse.
+    attempts = [
+        ("PUT",    f"/plans/{mine.id}/triggers/{their_situation.id}"),
+        ("DELETE", f"/plans/{mine.id}/triggers/{their_situation.id}"),
+        ("PUT",    f"/triggers/{my_situation.id}/behaviors/{their_rung.id}"),
+        ("DELETE", f"/triggers/{my_situation.id}/behaviors/{their_rung.id}"),
+        ("PUT",    f"/plans/{mine.id}/rungs/{their_rung.id}"),
+        ("DELETE", f"/plans/{mine.id}/rungs/{their_rung.id}"),
+        ("PUT",    f"/plans/{mine.id}/accommodations/{their_accommodation.id}"),
+        ("DELETE", f"/plans/{mine.id}/accommodations/{their_accommodation.id}"),
+        ("PUT",    f"/patients/{mine.patient.id}/plan/{theirs.id}"),
+    ]
+
+    got_through = []
+    for method, url in attempts:
+        r = await api.request(method, url, json={} if method == "PUT" else None)
+        if r.status_code < 400 or CANARY in r.text:
+            got_through.append(f"{method} {url}  ->  {r.status_code}")
+    assert not got_through, (
+        "my own parent id paired with another patient's child id was accepted:\n  "
+        + "\n  ".join(got_through)
+    )
+
+    # Nothing of theirs was destroyed on the way through.
+    assert (await db.get(TriggerSituation, their_situation.id)) is not None
+    assert (await db.get(AvoidanceBehavior, their_rung.id)) is not None
+    assert (await db.get(AccommodationBehavior, their_accommodation.id)) is not None
+
+
+async def test_the_same_nested_routes_still_work_for_my_own_patient(api, db):
+    """The other half — the guards must not have shut the legitimate path."""
+    org = await make_org(db)
+    mine = await make_plan(db, org)
+    situation = await make_situation(db, mine, name="My situation")
+    rung = await make_rung(db, situation=situation, name="My rung")
+    clinician = await make_practitioner(db, org)
+    await grant_patient_to(db, mine.patient, clinician)
+
+    api.sign_in_as(clinician.user)
+
+    r = await api.put(f"/plans/{mine.id}/triggers/{situation.id}", json={"name": "Renamed"})
+    assert r.status_code == 200, r.text
+    assert r.json()["name"] == "Renamed"
+
+    r = await api.put(f"/triggers/{situation.id}/behaviors/{rung.id}", json={"name": "Renamed rung"})
+    assert r.status_code == 200, r.text
+
+    r = await api.put(f"/patients/{mine.patient.id}/plan/{mine.id}", json={"status": "active"})
+    assert r.status_code == 200, r.text

@@ -51,14 +51,24 @@ async def update_treatment_plan(
     db: AsyncSession,
     plan_id: uuid.UUID,
     organization_id: uuid.UUID,
-    data: TreatmentPlanUpdate
+    data: TreatmentPlanUpdate,
+    patient_id: uuid.UUID | None = None,
 ) -> TreatmentPlan:
+    """patient_id is required by the route that has one - PUT /patients/{patient_id}/plan/{plan_id}.
+
+    Without it the plan was matched on organization alone, so a clinician granted patient A could
+    pass A's id with B's plan id and mutate B's plan. Flipping another child's plan status to
+    "complete" takes the accommodations view away from that child's parent. Found by the security
+    review; the route's identity is the (patient, plan) pair, so both belong in the query.
+    """
+    conditions = [
+        TreatmentPlan.id == plan_id,
+        TreatmentPlan.organization_id == organization_id,
+    ]
+    if patient_id is not None:
+        conditions.append(TreatmentPlan.patient_id == patient_id)
     result = await db.execute(
-        select(TreatmentPlan)
-        .where(
-            TreatmentPlan.id == plan_id,
-            TreatmentPlan.organization_id == organization_id
-        )
+        select(TreatmentPlan).where(*conditions)
     )
     plan = result.scalar_one_or_none()
     if not plan:

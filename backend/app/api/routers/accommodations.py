@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.models.experiment import AccommodationBehavior
+from app.services.patient_access_service import assert_belongs_to
 from app.models.treatment import TreatmentPlan
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan
 from app.services.accommodation_service import (
@@ -96,6 +98,10 @@ async def update_accommodation_behavior(
     _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, AccommodationBehavior, accommodation_id, treatment_plan_id=plan_id)
     return await update_accommodation(
         db, accommodation_id, practitioner.organization_id, data
     )
@@ -110,4 +116,8 @@ async def delete_accommodation_behavior(
     _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, AccommodationBehavior, accommodation_id, treatment_plan_id=plan_id)
     await delete_accommodation(db, accommodation_id, practitioner.organization_id)

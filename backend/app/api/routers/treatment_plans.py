@@ -78,4 +78,6 @@ async def update_plan(
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
-    return await update_treatment_plan(db, plan_id, practitioner.organization_id, data)
+    return await update_treatment_plan(
+        db, plan_id, practitioner.organization_id, data, patient_id=patient_id
+    )

@@ -280,3 +280,24 @@ async def patient_id_of_arrow(db: AsyncSession, arrow_id: uuid.UUID) -> uuid.UUI
     if situation_id is not None:
         return await patient_id_of_situation(db, situation_id)
     raise NOT_FOUND
+
+
+async def assert_belongs_to(db: AsyncSession, model, record_id: uuid.UUID, **must_match) -> None:
+    """404 unless the row's columns match what the caller named in the path.
+
+    Nested routes look like /plans/{plan_id}/triggers/{trigger_id}. The access dependency checks
+    the PARENT id, and the handler then acts on the CHILD id. Nothing tied the two together, so a
+    clinician could pair a plan they legitimately hold with any situation, behaviour, rung or
+    accommodation in the institution - which is the organisation-only scoping this whole change
+    set out to remove, still reachable one level down. Worse, it defeats revocation: a clinician
+    whose grant was removed keeps every row id they saw.
+
+    Found by the security review, not by the route sweep, which fills every path parameter from
+    the same victim and so never builds the mixed pair.
+    """
+    conditions = [model.id == record_id]
+    for column, value in must_match.items():
+        conditions.append(getattr(model, column) == value)
+    result = await db.execute(select(model.id).where(*conditions))
+    if result.scalar_one_or_none() is None:
+        raise NOT_FOUND

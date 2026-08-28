@@ -3,9 +3,11 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.treatment import TreatmentPlan
+from app.services.patient_access_service import assert_belongs_to
+from app.models.treatment import TreatmentPlan, AvoidanceBehavior
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan, get_permitted_trigger
 from app.services.avoidance_behavior_service import (
+    assert_rung_in_plan,
     get_behaviors_for_trigger,
     get_rungs_for_plan,
     create_behavior,
@@ -54,6 +56,10 @@ async def update_avoidance_behavior(
     _access: None = Depends(get_permitted_trigger),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, AvoidanceBehavior, behavior_id, trigger_situation_id=trigger_id)
     return await update_behavior(db, behavior_id, practitioner.organization_id, data)
 
 
@@ -66,6 +72,10 @@ async def delete_avoidance_behavior(
     _access: None = Depends(get_permitted_trigger),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, AvoidanceBehavior, behavior_id, trigger_situation_id=trigger_id)
     await delete_behavior(db, behavior_id, practitioner.organization_id)
 
 
@@ -112,6 +122,10 @@ async def update_plan_rung(
 ):
     """Edit a rung, including regrouping it. An ungrouped rung has no trigger to route through."""
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_rung_in_plan(db, rung_id, plan_id)
     return await update_behavior(db, rung_id, practitioner.organization_id, data)
 
 
@@ -124,4 +138,8 @@ async def delete_plan_rung(
     _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_rung_in_plan(db, rung_id, plan_id)
     await delete_behavior(db, rung_id, practitioner.organization_id)

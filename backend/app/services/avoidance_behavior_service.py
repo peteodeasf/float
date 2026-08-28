@@ -196,3 +196,27 @@ async def get_rungs_for_plan(
                   AvoidanceBehavior.created_at)
     )
     return list(result.scalars().all())
+
+
+async def assert_rung_in_plan(db: AsyncSession, behavior_id: uuid.UUID, plan_id: uuid.UUID) -> None:
+    """404 unless this rung is on this plan's ladder.
+
+    Matches the same way `get_rungs_for_plan` does - through the plan directly, or through a
+    situation on that plan for rows written before `treatment_plan_id` existed. A stricter check
+    would 404 on legitimate older rungs.
+    """
+    from fastapi import HTTPException, status as http_status
+    situation_ids = select(TriggerSituation.id).where(
+        TriggerSituation.treatment_plan_id == plan_id
+    )
+    result = await db.execute(
+        select(AvoidanceBehavior.id).where(
+            AvoidanceBehavior.id == behavior_id,
+            or_(
+                AvoidanceBehavior.treatment_plan_id == plan_id,
+                AvoidanceBehavior.trigger_situation_id.in_(situation_ids),
+            ),
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Rung not found")

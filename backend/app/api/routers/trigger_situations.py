@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.treatment import TreatmentPlan
+from app.services.patient_access_service import assert_belongs_to
+from app.models.treatment import TreatmentPlan, TriggerSituation
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan
 from app.services.trigger_situation_service import (
     get_triggers_for_plan,
@@ -55,6 +56,10 @@ async def update_trigger_situation(
     _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, TriggerSituation, trigger_id, treatment_plan_id=plan_id)
     return await update_trigger(db, trigger_id, practitioner.organization_id, data)
 
 
@@ -67,6 +72,10 @@ async def delete_trigger_situation(
     _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, TriggerSituation, trigger_id, treatment_plan_id=plan_id)
     await delete_trigger(db, trigger_id, practitioner.organization_id)
 
 

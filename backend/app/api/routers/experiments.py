@@ -29,6 +29,7 @@ from app.api.routers.patients import (
     get_practitioner_context,
     get_permitted_patient,
     get_permitted_behavior,
+    get_permitted_rung,
     _require,
 )
 from app.services.patient_access_service import patient_of_record
@@ -72,7 +73,12 @@ async def list_rung_experiments(
     rung_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
-    _access: None = Depends(get_permitted_behavior),
+    # get_permitted_rung, NOT get_permitted_behavior. get_permitted_behavior takes a parameter
+    # named behavior_id, which this path does not have - FastAPI turned it into a required QUERY
+    # parameter, so the caller was naming the record their own access was checked against while
+    # the handler read the record named by rung_id. The security review caught it in the app's own
+    # OpenAPI schema. The dependency's parameter name has to match the path parameter.
+    _access: None = Depends(get_permitted_rung),
 ):
     _, practitioner = context
     return await get_experiments_for_rung(

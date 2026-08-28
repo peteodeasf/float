@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.ladder_review_service import run_ladder_review
 
 from app.core.database import get_db
+from app.models.ladder import LadderRung
+from app.services.patient_access_service import assert_belongs_to
 from app.api.routers.patients import get_practitioner_context, get_permitted_ladder, get_permitted_trigger
 from app.services.ladder_service import (
     get_or_create_ladder,
@@ -60,6 +62,10 @@ async def update_ladder_rung(
     _access: None = Depends(get_permitted_ladder),
 ):
     _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, LadderRung, rung_id, ladder_id=ladder_id)
     return await update_rung(db, rung_id, practitioner.organization_id, data)
 
 
