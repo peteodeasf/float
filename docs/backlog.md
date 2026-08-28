@@ -67,6 +67,37 @@ profile; `get_parent_context` joins through `parent_patient_links`). They are ba
 
 ---
 
+## Arrow evaluation — nothing triggers the harvest
+
+**Raised 2026-08-28. Blocked on real usage, not on work.**
+
+`AI-dev/Arrow Eval/harvest.py` turns real downward-arrow chains into evaluation cases. Nothing runs
+it. There is no schedule, no hook, no trigger — someone types the command or it does not happen.
+
+That is deliberate for now: it reads only arrows created on or after 2026-08-28, and there are none.
+It will keep finding nothing until the arrow is used in a real session. Automating a collector with
+nothing to collect cannot be checked.
+
+**The trigger to watch for:** the first real session that uses the downward arrow. Run the harvest
+straight afterwards, while the session is fresh enough for Peter to say what the right question
+would have been. His review is the part that makes a case worth anything; the script only gathers.
+
+**When it earns automation:** once the queue has a backlog and the manual run is being missed. The
+version that works unattended is a scheduled job on Railway, which sits next to the database
+already. A local scheduled job only fires when Peter's laptop is on and will skip weeks in silence.
+Do not put case collection into the app's own code — it is eval plumbing on a live clinician path.
+
+**Also unfinished on the same tooling:**
+- Six synthetic cases have no target question from Peter (draft-01, 02, 03, 09, 10, 14).
+- draft-08's response ("Nobody likes me") is one he flagged as an unlikely thing for a child to say;
+  it needs rewriting or dropping.
+- Cases are compared to targets by exact string match, so "you're stuck" vs "get stuck" counts as a
+  miss. Scoring against a rubric is the fix, and the rubric needs Dr. Walker.
+- draft-12, 13 and 15 appear as examples inside the shipped prompt, so their matches prove nothing.
+  See [`eval-cases-burned-by-putting-them-in-the-prompt.md`](solutions/eval-cases-burned-by-putting-them-in-the-prompt.md).
+
+---
+
 ## Product review and backlog generation
 
 **Owner: Peter. Not for Claude to generate.** Raised 2026-08-27.
