@@ -77,3 +77,27 @@ evaluation is worthless, so they are tested even though the evaluation itself is
 Whether the question followed the **right** thread. Two questions can both be well-formed and only
 one of them chase the actual fear. That needs a scorer with a rubric, and the rubric is a clinical
 judgement — Dr. Walker's, not ours.
+
+
+## Harvesting real chains
+
+    python "AI-dev/Arrow Eval/harvest.py"
+
+Reads the arrows in the database and turns each question/answer pair into a candidate case: what
+the child had said up to that point, plus the question that was actually asked next. Candidates go
+to `cases_review.json` marked `"status": "needs_review"`. Nothing is promoted automatically — a
+case is worth something only once a human has said what the right question was. Read them, add a
+`target_question` where the asked question was wrong, and move the keepers into `cases.json`.
+
+Anything asked before 2026-08-24 carries `"asked_by": "the old prompt…"`. The prompt asked the
+meaning question then ("what would that mean about you?"), so those questions show what the tool
+used to do, not what it does now. They are still useful — as examples of what not to produce.
+
+## Samples
+
+    python "AI-dev/Arrow Eval/run_eval.py" cases_draft.json --samples=5
+
+Each case is asked several times, because the model does not give the same answer twice. A single
+sample cannot tell a rule the prompt reliably follows from a question it happened to produce that
+once — the first multi-sample run showed 5 of 15 cases giving different questions across samples,
+all of which had looked settled when asked once.

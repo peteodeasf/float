@@ -1,0 +1,251 @@
+[
+  {
+    "id": "real-848c67d6-1",
+    "situation": null,
+    "starting_thought": "People will laugh at me.",
+    "steps_so_far": [],
+    "child_last_said": "People will laugh at me.",
+    "question_actually_asked": "And if people did laugh at you, what would that mean about you?",
+    "source_date": "2026-08-19",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite"
+  },
+  {
+    "id": "real-848c67d6-2",
+    "situation": null,
+    "starting_thought": "People will laugh at me.",
+    "steps_so_far": [
+      {
+        "question": "And if people did laugh at you, what would that mean about you?",
+        "response": "It would mean that nobody liked me."
+      }
+    ],
+    "child_last_said": "It would mean that nobody liked me.",
+    "question_actually_asked": "And if nobody liked you, what would that mean about you as a person?",
+    "source_date": "2026-08-19",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite"
+  },
+  {
+    "id": "real-b64e75d6-1",
+    "situation": "Attending school in morning",
+    "starting_thought": "Being publicly embarrassed",
+    "steps_so_far": [],
+    "child_last_said": "Being publicly embarrassed",
+    "question_actually_asked": "What will happen if... Being publicly embarrassed?",
+    "source_date": "2026-06-05",
+    "facilitated_by": "parent",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-4edb6e98-1",
+    "situation": "sit in student center with other people",
+    "starting_thought": "might not have someone to sit with",
+    "steps_so_far": [],
+    "child_last_said": "might not have someone to sit with",
+    "question_actually_asked": "What will happen if... might not have someone to sit with?",
+    "source_date": "2026-05-22",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-4edb6e98-2",
+    "situation": "sit in student center with other people",
+    "starting_thought": "might not have someone to sit with",
+    "steps_so_far": [
+      {
+        "question": "What will happen if... might not have someone to sit with?",
+        "response": "no one likes me"
+      }
+    ],
+    "child_last_said": "no one likes me",
+    "question_actually_asked": "What will happen if... no one likes me?",
+    "source_date": "2026-05-22",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-e6ed4fc0-1",
+    "situation": "sit in cafeteria during lunch hour",
+    "starting_thought": "everyone will laugh at her",
+    "steps_so_far": [],
+    "child_last_said": "everyone will laugh at her",
+    "question_actually_asked": "What will happen if... everyone will laugh at her?",
+    "source_date": "2026-05-22",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-c5fbe364-1",
+    "situation": "Eating lunch in the cafeteria",
+    "starting_thought": "People will notice me sitting alone and stare at me.",
+    "steps_so_far": [],
+    "child_last_said": "People will notice me sitting alone and stare at me.",
+    "question_actually_asked": "What will happen if people stare at you?",
+    "source_date": "2026-05-21",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen if you sit in the cafeteria without headphones?"
+  },
+  {
+    "id": "real-c5fbe364-2",
+    "situation": "Eating lunch in the cafeteria",
+    "starting_thought": "People will notice me sitting alone and stare at me.",
+    "steps_so_far": [
+      {
+        "question": "What will happen if people stare at you?",
+        "response": "They'll think I'm a loser with no friends."
+      }
+    ],
+    "child_last_said": "They'll think I'm a loser with no friends.",
+    "question_actually_asked": "What will happen if they think you have no friends?",
+    "source_date": "2026-05-21",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen if you sit in the cafeteria without headphones?"
+  },
+  {
+    "id": "real-c5fbe364-3",
+    "situation": "Eating lunch in the cafeteria",
+    "starting_thought": "People will notice me sitting alone and stare at me.",
+    "steps_so_far": [
+      {
+        "question": "What will happen if people stare at you?",
+        "response": "They'll think I'm a loser with no friends."
+      },
+      {
+        "question": "What will happen if they think you have no friends?",
+        "response": "They'll start talking about me and laughing behind my back."
+      }
+    ],
+    "child_last_said": "They'll start talking about me and laughing behind my back.",
+    "question_actually_asked": "What will happen if they laugh behind your back?",
+    "source_date": "2026-05-21",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen if you sit in the cafeteria without headphones?"
+  },
+  {
+    "id": "real-eb7a1402-1",
+    "situation": "Talk to someone",
+    "starting_thought": "I will get ignored",
+    "steps_so_far": [],
+    "child_last_said": "I will get ignored",
+    "question_actually_asked": "What will happen if... I will get ignored?",
+    "source_date": "2026-05-14",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-3d1dc908-1",
+    "situation": "Sitting Alone in Cafeteria",
+    "starting_thought": "No one will want to sit with me because they don't like me",
+    "steps_so_far": [],
+    "child_last_said": "No one will want to sit with me because they don't like me",
+    "question_actually_asked": "What will happen if... No one will want to sit with me because they don't like me?",
+    "source_date": "2026-05-14",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-3d1dc908-2",
+    "situation": "Sitting Alone in Cafeteria",
+    "starting_thought": "No one will want to sit with me because they don't like me",
+    "steps_so_far": [
+      {
+        "question": "What will happen if... No one will want to sit with me because they don't like me?",
+        "response": "I won't have any friends at school"
+      }
+    ],
+    "child_last_said": "I won't have any friends at school",
+    "question_actually_asked": "What will happen if... I won't have any friends at school?",
+    "source_date": "2026-05-14",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-3d1dc908-3",
+    "situation": "Sitting Alone in Cafeteria",
+    "starting_thought": "No one will want to sit with me because they don't like me",
+    "steps_so_far": [
+      {
+        "question": "What will happen if... No one will want to sit with me because they don't like me?",
+        "response": "I won't have any friends at school"
+      },
+      {
+        "question": "What will happen if... I won't have any friends at school?",
+        "response": "I won't have friends ever"
+      }
+    ],
+    "child_last_said": "I won't have friends ever",
+    "question_actually_asked": "What will happen if... I won't have friends ever?",
+    "source_date": "2026-05-14",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-4417c4a1-1",
+    "situation": "Cafeteria Lunch",
+    "starting_thought": "No one will want to talk to me or sit with me",
+    "steps_so_far": [],
+    "child_last_said": "No one will want to talk to me or sit with me",
+    "question_actually_asked": "What will happen if... No one will want to talk to me or sit with me?",
+    "source_date": "2026-05-14",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-19933188-1",
+    "situation": "Eating in the cafeteria",
+    "starting_thought": "Everyone will look at me and think it's weird that I'm there.",
+    "steps_so_far": [],
+    "child_last_said": "Everyone will look at me and think it's weird that I'm there.",
+    "question_actually_asked": "What will happen if... Everyone will look at me and think it's weird that I'm there. ?",
+    "source_date": "2026-05-06",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  },
+  {
+    "id": "real-19933188-2",
+    "situation": "Eating in the cafeteria",
+    "starting_thought": "Everyone will look at me and think it's weird that I'm there.",
+    "steps_so_far": [
+      {
+        "question": "What will happen if... Everyone will look at me and think it's weird that I'm there. ?",
+        "response": "I mean, I'm gonna feel really awkward and I'm gonna not like that."
+      }
+    ],
+    "child_last_said": "I mean, I'm gonna feel really awkward and I'm gonna not like that.",
+    "question_actually_asked": "What will happen if... I mean, I'm gonna feel really awkward and I'm gonna not like that.?",
+    "source_date": "2026-05-06",
+    "facilitated_by": "practitioner",
+    "status": "needs_review",
+    "asked_by": "the old prompt, before the 2026-08-24 consequence rewrite",
+    "opening_question": "What will happen in this situation?"
+  }
+]

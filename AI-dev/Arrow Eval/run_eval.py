@@ -1,8 +1,12 @@
 """Evaluate the downward-arrow probe against real chains.
 
     ANTHROPIC_API_KEY goes in backend/.env (gitignored) or the shell environment.
-    python "AI-dev/Arrow Eval/run_eval.py"                    # the five real cases
-    python "AI-dev/Arrow Eval/run_eval.py" cases_draft.json   # the synthetic set
+    python "AI-dev/Arrow Eval/run_eval.py"                               # real cases, 3 samples each
+    python "AI-dev/Arrow Eval/run_eval.py" cases_draft.json --samples=5
+
+Each case is asked several times. The model is not deterministic, so one sample cannot tell a rule
+the prompt reliably follows from a question it happened to produce that once. A case whose samples
+disagree is marked VARIES.
 
 **It imports the SHIPPED prompt** from `app.api.routers.downward_arrows` rather than keeping a
 copy. The extraction harness's mistake was testing a stand-in: a harness that scores its own copy
@@ -18,7 +22,9 @@ Dr. Walker to agree the rubric is right first.
 """
 import json
 import os
+import concurrent.futures as cf
 import pathlib
+import re
 import sys
 import time
 
@@ -82,6 +88,20 @@ def ask(client, prompt: str, case: dict, attempts: int = 4) -> str:
     raise RuntimeError("unreachable")
 
 
+def normalise(q: str) -> str:
+    """For deciding whether two samples are the same question. Punctuation and case are noise."""
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", q.lower()).split())
+
+
+def matches_target(probe: str, case: dict) -> bool | None:
+    """None when the case has no target yet - most of them don't."""
+    target = case.get("target_question")
+    if not target:
+        return None
+    accepted = [target] + case.get("acceptable_alternatives", [])
+    return normalise(probe) in {normalise(a) for a in accepted}
+
+
 def main() -> int:
     key = read_key()
     if not key:
@@ -92,28 +112,73 @@ def main() -> int:
 
     import anthropic
 
-    case_file = HERE / (sys.argv[1] if len(sys.argv) > 1 else "cases.json")
+    argv = [a for a in sys.argv[1:] if not a.startswith("-")]
+    samples = 3
+    for a in sys.argv[1:]:
+        if a.startswith("--samples="):
+            samples = int(a.split("=", 1)[1])
+
+    case_file = HERE / (argv[0] if argv else "cases.json")
     cases = json.loads(case_file.read_text())
-    print(f"{len(cases)} cases from {case_file.name}\n")
     prompt = load_prompt()
     client = anthropic.Anthropic(api_key=key)
+    print(f"{len(cases)} cases from {case_file.name}, {samples} samples each "
+          f"({len(cases) * samples} calls)\n")
 
-    results, failures = [], []
+    # The model is not deterministic. Asking once cannot tell a rule the prompt reliably
+    # follows from a question it happened to produce that time.
+    with cf.ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {
+            pool.submit(ask, client, prompt, case): (i, case, n)
+            for i, case in enumerate(cases, 1)
+            for n in range(samples)
+        }
+        got: dict[int, list[str]] = {}
+        for fut in cf.as_completed(futures):
+            i, _, _ = futures[fut]
+            got.setdefault(i, []).append(fut.result())
+
+    results, failures, unstable, off_target = [], [], [], []
     for i, case in enumerate(cases, 1):
-        probe = ask(client, prompt, case)
-        outcome = checks.run_all(probe, case["child_last_said"])
-        failed = [c for c in outcome if not c["passed"]]
-        results.append({"case": case, "probe": probe, "checks": outcome})
-        mark = "ok  " if not failed else "FAIL"
-        print(f"{mark} [{i:>2}/{len(cases)}] {case['child_last_said'][:52]!r}")
-        print(f"          -> {probe}")
-        for f in failed:
-            print(f"          !! {f['check']}: {f['reason']}")
-            failures.append((i, f["check"]))
+        probes = got[i]
+        variants: dict[str, list[str]] = {}
+        for probe in probes:
+            variants.setdefault(normalise(probe), []).append(probe)
+        ordered = sorted(variants.values(), key=len, reverse=True)
 
-    total_checks = len(cases) * 6
-    failed_checks = len(failures)
-    print(f"\n{len(cases)} cases, {total_checks - failed_checks}/{total_checks} checks passed")
+        case_failures = []
+        for probe in probes:
+            for c in checks.run_all(probe, case["child_last_said"]):
+                if not c["passed"]:
+                    case_failures.append(c)
+                    failures.append((i, c["check"]))
+
+        on_target = [matches_target(p, case) for p in probes]
+        hits = sum(1 for t in on_target if t)
+        has_target = any(t is not None for t in on_target)
+
+        results.append({
+            "case": case, "probes": probes,
+            "distinct": len(ordered),
+            "target_hits": hits if has_target else None,
+        })
+
+        mark = "FAIL" if case_failures else ("VARIES" if len(ordered) > 1 else "ok  ")
+        label = case.get("id") or f"{i}"
+        print(f"{mark} [{label}] {case['child_last_said'][:50]!r}")
+        for group in ordered:
+            count = f"{len(group)}/{samples}" if len(ordered) > 1 else ""
+            print(f"          -> {group[0]}   {count}".rstrip())
+        for c in {f["check"]: f for f in case_failures}.values():
+            print(f"          !! {c['check']}: {c['reason']}")
+        if has_target and hits < samples:
+            print(f"          ?? matches your target {hits}/{samples}: {case['target_question']}")
+            off_target.append(label)
+        if len(ordered) > 1:
+            unstable.append(label)
+
+    total = len(cases) * samples * 6
+    print(f"\n{len(cases)} cases x {samples} samples, {total - len(failures)}/{total} checks passed")
     if failures:
         by_check: dict[str, int] = {}
         for _, name in failures:
@@ -121,6 +186,15 @@ def main() -> int:
         print("failures by check:")
         for name, n in sorted(by_check.items(), key=lambda x: -x[1]):
             print(f"   {name}: {n}")
+    print(f"{len(cases) - len(unstable)}/{len(cases)} cases gave the same question every time")
+    if unstable:
+        print(f"   varied: {', '.join(unstable)}")
+    scored = [r for r in results if r["target_hits"] is not None]
+    if scored:
+        clean = sum(1 for r in scored if r["target_hits"] == samples)
+        print(f"{clean}/{len(scored)} cases with a target matched it on every sample")
+        if off_target:
+            print(f"   missed or partial: {', '.join(off_target)}")
 
     (HERE / "last_run.json").write_text(json.dumps(results, indent=2, ensure_ascii=False))
     print(f"\nfull output -> {HERE / 'last_run.json'}")
