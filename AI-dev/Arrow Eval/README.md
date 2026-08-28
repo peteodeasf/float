@@ -89,9 +89,15 @@ to `cases_review.json` marked `"status": "needs_review"`. Nothing is promoted au
 case is worth something only once a human has said what the right question was. Read them, add a
 `target_question` where the asked question was wrong, and move the keepers into `cases.json`.
 
-Anything asked before 2026-08-24 carries `"asked_by": "the old prompt…"`. The prompt asked the
-meaning question then ("what would that mean about you?"), so those questions show what the tool
-used to do, not what it does now. They are still useful — as examples of what not to produce.
+Only arrows recorded on or after `HARVEST_FROM` (2026-08-28) are read. Peter's call: the back
+catalogue is ignored, and cases are collected from here on. Everything before that date was asked by
+an earlier prompt — most of it by the meaning question ("what would that mean about you?") that was
+replaced on 24 August — so it says nothing about the prompt as it stands.
+
+This means the script finds nothing today, and will keep finding nothing until new chains are
+recorded. That is the expected output, not a failure.
+
+`--since=` overrides the date for a one-off look, but the default is the one that matters.
 
 ## Samples
 

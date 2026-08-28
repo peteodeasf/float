@@ -1,6 +1,7 @@
 """Pull real downward-arrow chains out of the database and turn them into review candidates.
 
     python "AI-dev/Arrow Eval/harvest.py"
+    python "AI-dev/Arrow Eval/harvest.py" --since=2026-09-01
 
 Reads DATABASE_URL from backend/.env. READ ONLY - it runs one SELECT and writes a local file.
 
@@ -11,21 +12,24 @@ writes a `target_question` where he disagrees with what was asked, and moves the
 `cases.json`. Nothing is promoted automatically - a case is only worth something once a human has
 said what the right question was.
 
-Cases already in `cases.json` are skipped, matched on the situation and the child's last words.
+Only arrows recorded on or after HARVEST_FROM are read. The chains before that were produced by
+earlier versions of the prompt and are deliberately ignored. Cases already in `cases.json` are
+skipped, matched on the situation and the child's last words.
 """
 import asyncio
 import json
 import pathlib
 import sys
+from datetime import date
 
 HERE = pathlib.Path(__file__).resolve().parent
 ENV_FILE = HERE.parent.parent / "backend" / ".env"
 OUT = HERE / "cases_review.json"
 
-# The prompt was rewritten from the meaning question ("what would that mean about you?") to the
-# consequence question on 2026-08-24. Anything asked before that date shows the OLD behaviour, so it
-# is not evidence about the prompt as it stands - but it is useful as an example of what not to do.
-CONSEQUENCE_REWRITE = "2026-08-24"
+# Only arrows created on or after this date are harvested. Everything before it was asked by an
+# earlier version of the prompt, so it says nothing about the prompt as it stands. Peter's call
+# (2026-08-28): ignore the back catalogue, collect from here on.
+HARVEST_FROM = "2026-08-28"
 
 # Situations that are obviously someone testing the form rather than a real chain.
 JUNK_SITUATIONS = {"test situation", "test", "asdf"}
@@ -76,8 +80,6 @@ def candidates_from(row) -> list[dict]:
             "facilitated_by": row["facilitated_by"],
             "status": "needs_review",
         }
-        if case["source_date"] < CONSEQUENCE_REWRITE:
-            case["asked_by"] = "the old prompt, before the 2026-08-24 consequence rewrite"
         if opening and opening.lower() != "starting thought":
             case["opening_question"] = opening
         cases.append(case)
@@ -93,6 +95,9 @@ async def main() -> int:
         for c in json.loads(live.read_text()):
             existing.add(key(c.get("situation", ""), c["child_last_said"]))
 
+    since = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--since=")), HARVEST_FROM)
+    since_date = date.fromisoformat(since)   # asyncpg wants a real date, not a string
+
     conn = await asyncpg.connect(database_url())
     try:
         rows = await conn.fetch("""
@@ -100,8 +105,9 @@ async def main() -> int:
             from downward_arrows a
             left join trigger_situations ts on ts.id = a.trigger_situation_id
             where jsonb_array_length(a.arrow_steps) > 1
+              and a.created_at >= $1
             order by a.created_at desc
-        """)
+        """, since_date)
     finally:
         await conn.close()
 
@@ -117,9 +123,13 @@ async def main() -> int:
                 fresh.append(case)
 
     OUT.write_text(json.dumps(fresh, indent=2) + "\n")
-    print(f"{len(rows)} arrows with more than one step ({junk} skipped as test rows)")
+    print(f"arrows created on or after {since}: {len(rows)} with more than one step "
+          f"({junk} skipped as test rows)")
     print(f"{already} candidates already in cases.json")
     print(f"{len(fresh)} new candidates -> {OUT.name}")
+    if not fresh:
+        print("\nNothing new. Arrows before " + since + " are deliberately ignored - they were asked")
+        print("by an earlier prompt. Run this again once more chains have been recorded.")
     if fresh:
         print("\nReview them, add a target_question where the asked question was wrong,")
         print("then move the ones worth keeping into cases.json.")
