@@ -16,7 +16,7 @@
     "steps_so_far": [
       {
         "question": "What will happen if you get the answer wrong?",
-        "response": "I'll get the answer wrong"
+        "response": "I'd feel really embarrassed"
       }
     ],
     "child_last_said": "I'd feel really embarrassed",
@@ -27,7 +27,7 @@
   {
     "tests": "one word — almost nothing to restate",
     "situation": "Sleeping at a friend's house",
-    "starting_thought": "I'll want to come home",
+    "starting_thought": "Scared",
     "steps_so_far": [],
     "child_last_said": "Scared",
     "id": "draft-03",
@@ -37,7 +37,7 @@
   {
     "tests": "rambling speech with filler — must find the fear inside the noise",
     "situation": "Ordering my own food",
-    "starting_thought": "I'll mess up the order",
+    "starting_thought": "like I dunno, I'd probably just say it wrong or something and then they'd have to ask me again and it's just, ugh",
     "steps_so_far": [],
     "child_last_said": "like I dunno, I'd probably just say it wrong or something and then they'd have to ask me again and it's just, ugh",
     "id": "draft-04",
@@ -47,7 +47,7 @@
   {
     "tests": "two fears in one answer — must pick one, not both",
     "situation": "School assembly",
-    "starting_thought": "Everyone will stare at me",
+    "starting_thought": "I'd go bright red and I'd probably have to leave and then everyone would know",
     "steps_so_far": [],
     "child_last_said": "I'd go bright red and I'd probably have to leave and then everyone would know",
     "id": "draft-05",
@@ -58,7 +58,7 @@
   {
     "tests": "third person — the child talks about themselves as 'you'",
     "situation": "Answering the door",
-    "starting_thought": "It might be someone I don't know",
+    "starting_thought": "You just don't know who it is, and then you're stuck talking to them",
     "steps_so_far": [],
     "child_last_said": "You just don't know who it is, and then you're stuck talking to them",
     "id": "draft-06",
@@ -72,7 +72,7 @@
     "steps_so_far": [
       {
         "question": "What will happen if you're picked last?",
-        "response": "I'll be picked last"
+        "response": "My heart goes really fast and I feel sick"
       }
     ],
     "child_last_said": "My heart goes really fast and I feel sick",
@@ -87,7 +87,7 @@
     "steps_so_far": [
       {
         "question": "What will happen if they don't want you in their group?",
-        "response": "They won't want me in their group"
+        "response": "Nobody likes me"
       }
     ],
     "child_last_said": "Nobody likes me",
@@ -99,7 +99,7 @@
   {
     "tests": "contamination, not social — a different fear family entirely",
     "situation": "Using the toilet at school",
-    "starting_thought": "There'll be germs on everything",
+    "starting_thought": "I'd get the germs on my hands",
     "steps_so_far": [],
     "child_last_said": "I'd get the germs on my hands",
     "id": "draft-09",
@@ -113,7 +113,7 @@
     "steps_so_far": [
       {
         "question": "What will happen if you get the germs on your hands?",
-        "response": "I'd get the germs on my hands"
+        "response": "I'd have to wash them and I couldn't stop until they felt right"
       }
     ],
     "child_last_said": "I'd have to wash them and I couldn't stop until they felt right",
@@ -124,7 +124,7 @@
   {
     "tests": "separation — the feared outcome is about someone else, not the child",
     "situation": "Mum going out in the evening",
-    "starting_thought": "Something will happen to her",
+    "starting_thought": "She might crash the car",
     "steps_so_far": [],
     "child_last_said": "She might crash the car",
     "id": "draft-11",
@@ -138,7 +138,7 @@
     "steps_so_far": [
       {
         "question": "What will happen if you say something stupid?",
-        "response": "I'll say something stupid"
+        "response": "I don't know. It just feels bad"
       }
     ],
     "child_last_said": "I don't know. It just feels bad",
@@ -158,7 +158,7 @@
       },
       {
         "question": "What will happen if you're on your own?",
-        "response": "I'll just be standing on my own"
+        "response": "I'll just be on my own again"
       }
     ],
     "child_last_said": "I'll just be on my own again",
@@ -170,7 +170,7 @@
   {
     "tests": "catastrophic jump — the child leaps several steps; must not skip further ahead",
     "situation": "Handing in homework late",
-    "starting_thought": "The teacher will be annoyed",
+    "starting_thought": "I'd get in trouble and then they'd ring my parents and I'd probably get kicked out",
     "steps_so_far": [],
     "child_last_said": "I'd get in trouble and then they'd ring my parents and I'd probably get kicked out",
     "id": "draft-14",
@@ -181,7 +181,7 @@
   {
     "tests": "answer is a plan, not a fear — the child describes avoiding instead of the outcome",
     "situation": "Eating in the canteen",
-    "starting_thought": "There won't be anywhere to sit",
+    "starting_thought": "I'd just go and eat in the library instead",
     "steps_so_far": [],
     "child_last_said": "I'd just go and eat in the library instead",
     "id": "draft-15",

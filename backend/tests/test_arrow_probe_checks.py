@@ -50,3 +50,50 @@ def test_catches_a_statement_and_a_speech():
         "What will happen if " + "you feel like an idiot and then " * 8 + "?",
         "I will feel like an idiot",
     )
+
+
+# ── The case files themselves ────────────────────────────────────────────────
+# 14 of the 15 synthetic cases shipped malformed: an earlier answer sat in the chain while the
+# new one appeared only in `child_last_said`, so the conversation did not connect. Caught by Peter
+# reading the JSON, not by anything automatic. These make that impossible to repeat.
+import json  # noqa: E402
+
+CASE_DIR = pathlib.Path(__file__).resolve().parents[2] / "AI-dev" / "Arrow Eval"
+
+
+def _case_files():
+    return sorted(CASE_DIR.glob("cases*.json"))
+
+
+def test_case_files_exist():
+    assert _case_files(), "no case files found"
+
+
+def test_every_chain_ends_with_what_the_child_last_said():
+    """`child_last_said` is what the model must answer, so it has to be the end of the chain."""
+    for f in _case_files():
+        for c in json.loads(f.read_text()):
+            steps = c["steps_so_far"]
+            end = steps[-1]["response"] if steps else c["starting_thought"]
+            assert end == c["child_last_said"], (
+                f"{f.name} {c.get('id', c['situation'])}: chain ends with {end!r} "
+                f"but child_last_said is {c['child_last_said']!r}"
+            )
+
+
+def test_every_case_has_the_fields_the_model_is_given():
+    for f in _case_files():
+        for c in json.loads(f.read_text()):
+            for field in ("situation", "starting_thought", "steps_so_far", "child_last_said"):
+                assert field in c, f"{f.name}: case missing {field}"
+            assert c["starting_thought"].strip(), f"{f.name}: empty starting_thought"
+            assert c["child_last_said"].strip(), f"{f.name}: empty child_last_said"
+            for s in c["steps_so_far"]:
+                assert s.get("question", "").strip(), f"{f.name}: step with no question"
+                assert s.get("response", "").strip(), f"{f.name}: step with no response"
+
+
+def test_synthetic_cases_are_labelled_as_such():
+    """Invented cases must never be mistaken for observed ones."""
+    for c in json.loads((CASE_DIR / "cases_draft.json").read_text()):
+        assert "SYNTHETIC" in c["provenance"]

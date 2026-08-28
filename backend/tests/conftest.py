@@ -69,7 +69,10 @@ def _sync_url(url: str) -> str:
     return url.replace("+asyncpg", "")
 
 
-@pytest.fixture(scope="session", autouse=True)
+# NOT autouse: the `engine` fixture below depends on it, so anything that touches the database
+# gets it, while pure tests (the arrow-probe checks, the case-file validators) run with no Docker
+# container at all.
+@pytest.fixture(scope="session")
 def migrated_schema():
     """Bring the test database to the current migration head, once per run.
 
