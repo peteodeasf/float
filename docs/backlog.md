@@ -72,6 +72,53 @@ URL routes to its own handler, so a route added above them re-breaks visibly rat
 
 ---
 
+## Monitoring extraction discards the clinician's corrections
+
+**Priority: high — it is what unblocks improving extraction at all.** Raised 2026-08-28.
+
+**Today:** `POST /patients/{patient_id}/monitoring/extract`
+(`backend/app/api/routers/patients.py:912`) sends the parent's monitoring notes to the model and
+returns a proposed list of situations, scores and behaviours. The clinician reviews it, keeps some,
+rewrites some, changes scores, deletes what is wrong, adds what was missed, and commits the result
+into the treatment plan. `apps/web/src/api/monitoring.ts:83` says as much in its own comment:
+*"The clinician reviews/edits/overwrites this before committing it into the treatment plan."*
+
+The backend then stores **only `plan.last_extracted_at`**. The proposal itself is never saved.
+
+So every extraction produces a trained clinician marking the model's work item by item — right,
+wrong, close but the score is off, missed this entirely — and the product throws it away.
+
+**Why it matters:** improving extraction needs examples of "this input, this correct output". The
+harness has **18**, and they exist because Dr. Walker reviewed a batch in June 2026. Her review time
+is the bottleneck, which is why the set has not grown since. Without new cases the tuning loop in
+`AI-dev/Extraction Loop/float_harness` (`reviser.py` + `loop_driver.py`) will just overfit those 18.
+
+**What changes:** persist what the model proposed alongside what was committed. The difference is
+the correction. Probably a table keyed on patient and extraction time, holding the raw proposal and
+a reference to the plan it fed.
+
+**What it is NOT:** confirmed answers. A clinician rewriting wording may simply prefer their own
+phrasing, and a deletion may mean "not relevant now" rather than "wrong". These are candidates.
+The value is that Dr. Walker's job changes from *authoring* cases to *confirming* a pre-filtered
+pile — and only where the clinician actually changed something.
+
+**PHI:** the proposal is clinical text about a child, so it lives under the same access rules as
+everything else, which since 2026-08-28 means grants. `/security-review` before it ships.
+
+**Related, and worth doing first:** the harness is still wired to a stub. `extractor_adapter.py:33`
+returns the expected fixture as the answer, so every check passes trivially and it has never run
+against the real extractor. It also reads its own copy of the prompt
+(`Float-Extractor-Prompt.md`) while the shipped prompt is inline at
+`backend/app/api/routers/patients.py:751`. Point it at the shipped prompt, the way
+`AI-dev/Arrow Eval/run_eval.py` does — a harness testing its own copy proves nothing. **Expect the
+first real score to be well below the 0.926 on record; that number came from the stub returning the
+right answer to itself.**
+
+Also split the cases into a tuning half and a held-out half. Whatever the loop optimises against
+stops being a measurement.
+
+---
+
 ## Arrow evaluation — nothing triggers the harvest
 
 **Raised 2026-08-28. Blocked on real usage, not on work.**
