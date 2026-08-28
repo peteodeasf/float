@@ -112,7 +112,11 @@
     "starting_thought": "There'll be germs on everything",
     "steps_so_far": [
       {
-        "question": "What will happen if you get the germs on your hands?",
+        "question": "What will happen if there are germs on everything?",
+        "response": "I'd get them on my hands"
+      },
+      {
+        "question": "What will happen if you get them on your hands?",
         "response": "I'd have to wash them and I couldn't stop until they felt right"
       }
     ],
