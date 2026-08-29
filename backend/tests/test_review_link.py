@@ -199,3 +199,20 @@ async def test_an_addition_is_escaped_on_the_page(api, db):
     page = (await api.get(f"/review/{reviewer.token}")).text
     assert "<img src=x" not in page
     assert "&lt;img src=x onerror=alert(1)&gt;" in page
+
+
+async def test_she_can_add_several_to_one_situation(api, db):
+    from app.models.review import ReviewAddition
+
+    _, reviewer = await _round(db)
+    for body in ["Sit near the door", "Eat with one friend at the end table", "Ten minutes only"]:
+        r = await api.post(f"/review/{reviewer.token}/add",
+                           json={"item_key": "sit-1", "body": body})
+        assert r.status_code == 201
+
+    saved = (await db.execute(select(ReviewAddition))).scalars().all()
+    assert len(saved) == 3
+
+    page = (await api.get(f"/review/{reviewer.token}")).text
+    for body in ["Sit near the door", "Eat with one friend at the end table", "Ten minutes only"]:
+        assert body in page
