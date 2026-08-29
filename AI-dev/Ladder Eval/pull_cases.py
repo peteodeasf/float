@@ -18,6 +18,12 @@ A model that confuses "a narrower version of this situation" with "a thing you d
 on one shape and fail on the other, which is exactly what the set has to be able to show.
 
 Plan: docs/plans/ladder-generation.md
+
+
+WRITES A FILE OF PATIENTS' OWN WORDS. That file is gitignored on purpose: once a real child's
+situation is committed it is in the repository permanently. Today every patient in the database is
+fake, so this is safe. Before the first REAL PATIENT, this script needs a decision about whether it
+should run at all, and where its output is allowed to live. See docs/backlog.md, HIPAA item 6.
 """
 import asyncio
 import json

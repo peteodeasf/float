@@ -15,6 +15,12 @@ said what the right question was.
 Only arrows recorded on or after HARVEST_FROM are read. The chains before that were produced by
 earlier versions of the prompt and are deliberately ignored. Cases already in `cases.json` are
 skipped, matched on the situation and the child's last words.
+
+
+WRITES A FILE OF PATIENTS' OWN WORDS. That file is gitignored on purpose: once a real child's
+situation is committed it is in the repository permanently. Today every patient in the database is
+fake, so this is safe. Before the first REAL PATIENT, this script needs a decision about whether it
+should run at all, and where its output is allowed to live. See docs/backlog.md, HIPAA item 6.
 """
 import asyncio
 import json

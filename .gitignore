@@ -13,3 +13,14 @@ __pycache__/
 .netlify
 backend/.venv/
 backend/scripts/
+
+# Anything pulled out of the patient database. Today every patient is fake, so the case files
+# already committed are harmless. The first time a real child's words land in one of these, they
+# are in the repository permanently and cannot be taken back out — so the rule exists before the
+# first real patient does, not after.
+#
+# If you need to share a case set, share the LINK to a review round (see AI-dev/scripts/), not the
+# file. See docs/backlog.md, HIPAA item 6.
+AI-dev/**/cases_review.json
+AI-dev/**/review_sheet_source.json
+AI-dev/**/harvested_*.json
