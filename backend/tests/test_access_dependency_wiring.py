@@ -72,3 +72,35 @@ def test_every_access_dependency_binds_to_a_path_parameter():
                     )
             stack.extend(d.dependencies)
     assert not problems, "access dependencies bound to the wrong parameter:\n  " + "\n  ".join(problems)
+
+
+# --- route ordering -------------------------------------------------------------------------
+#
+# FastAPI matches routes in declaration order. A literal path segment declared AFTER a UUID
+# parameter on the same prefix is unreachable: "reorder" gets parsed as a uuid, fails, and the
+# request 422s. Both ladder-rung and trigger reorder were broken this way and nothing noticed,
+# because a 422 on drag-to-reorder looks like nothing happening.
+
+LITERAL_ROUTES = [
+    ("PUT", "/ladders/{}/rungs/reorder", "reorder_ladder_rungs"),
+    ("PUT", "/plans/{}/triggers/reorder", "reorder_trigger_situations"),
+    ("PUT", "/plans/{}/accommodations/reorder", "reorder_accommodation_behaviors"),
+]
+
+
+def test_literal_paths_are_not_shadowed_by_uuid_routes():
+    """Each of these must reach its own handler, not a {some_id} route declared above it."""
+    fake = "00000000-0000-0000-0000-000000000001"
+    wrong = []
+    for method, template, expected in LITERAL_ROUTES:
+        url = template.format(fake)
+        hit = None
+        for route in _routes():
+            if method in route.methods and route.path_regex.match(url):
+                hit = route.endpoint.__name__
+                break
+        if hit != expected:
+            wrong.append(f"{method} {url} -> {hit or 'no route'} (wanted {expected})")
+    assert not wrong, (
+        "a literal path is shadowed by a uuid route declared above it:\n  " + "\n  ".join(wrong)
+    )

@@ -46,6 +46,18 @@ async def create_trigger_situation(
     return await create_trigger(db, plan_id, practitioner.organization_id, data)
 
 
+@router.put("/reorder", response_model=list[TriggerSituationResponse])
+async def reorder_trigger_situations(
+    plan_id: uuid.UUID,
+    data: ReorderRequest,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    _, practitioner = context
+    return await reorder_triggers(db, plan_id, practitioner.organization_id, data.ordered_ids)
+
+
 @router.put("/{trigger_id}", response_model=TriggerSituationResponse)
 async def update_trigger_situation(
     plan_id: uuid.UUID,
@@ -79,13 +91,3 @@ async def delete_trigger_situation(
     await delete_trigger(db, trigger_id, practitioner.organization_id)
 
 
-@router.put("/reorder", response_model=list[TriggerSituationResponse])
-async def reorder_trigger_situations(
-    plan_id: uuid.UUID,
-    data: ReorderRequest,
-    context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db),
-    _access: TreatmentPlan = Depends(get_permitted_plan),
-):
-    _, practitioner = context
-    return await reorder_triggers(db, plan_id, practitioner.organization_id, data.ordered_ids)

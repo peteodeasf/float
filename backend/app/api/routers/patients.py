@@ -5,7 +5,7 @@ import traceback
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
@@ -1898,7 +1898,7 @@ async def read_access_log(
     patient: PatientProfile = Depends(get_permitted_patient),
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
-    limit: int = 200,
+    limit: int = Query(200, ge=1, le=1000),
 ):
     """Who opened this patient's record. Institution admins only.
 
@@ -1915,7 +1915,7 @@ async def read_access_log(
         .outerjoin(PractitionerProfile, PractitionerProfile.id == PatientAccessLog.practitioner_id)
         .where(PatientAccessLog.patient_id == patient.id)
         .order_by(PatientAccessLog.occurred_at.desc())
-        .limit(min(limit, 1000))
+        .limit(limit)
     )
     return [
         AccessLogEntry(

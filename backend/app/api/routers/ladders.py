@@ -52,23 +52,6 @@ async def create_rung(
     return await add_rung(db, ladder_id, practitioner.organization_id, data)
 
 
-@router.put("/ladders/{ladder_id}/rungs/{rung_id}", response_model=LadderRungResponse)
-async def update_ladder_rung(
-    ladder_id: uuid.UUID,
-    rung_id: uuid.UUID,
-    data: LadderRungUpdate,
-    context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db),
-    _access: None = Depends(get_permitted_ladder),
-):
-    _, practitioner = context
-    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
-    # clinician could pair a parent they hold with any child row in the institution -
-    # including one whose grant was revoked. See docs/solutions/.
-    await assert_belongs_to(db, LadderRung, rung_id, ladder_id=ladder_id)
-    return await update_rung(db, rung_id, practitioner.organization_id, data)
-
-
 @router.put("/ladders/{ladder_id}/rungs/reorder", response_model=list[LadderRungResponse])
 async def reorder_ladder_rungs(
     ladder_id: uuid.UUID,
@@ -89,3 +72,22 @@ async def review_ladder(
 ):
     _, practitioner = context
     return await run_ladder_review(db, ladder_id, practitioner.organization_id)
+
+
+@router.put("/ladders/{ladder_id}/rungs/{rung_id}", response_model=LadderRungResponse)
+async def update_ladder_rung(
+    ladder_id: uuid.UUID,
+    rung_id: uuid.UUID,
+    data: LadderRungUpdate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_ladder),
+):
+    _, practitioner = context
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, LadderRung, rung_id, ladder_id=ladder_id)
+    return await update_rung(db, rung_id, practitioner.organization_id, data)
+
+

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routers.patients import router as patients_router, patient_router
+from app.api.routers.patients import patient_router
 from app.api.routers.parent import parent_router
 
 from app.core.config import settings
@@ -43,7 +43,8 @@ app.include_router(experiments.router)
 app.include_router(progress.router)
 app.include_router(downward_arrows.router)
 app.include_router(messages.router)
-app.include_router(patients_router)
+# NOTE: patients.router is already registered above — patients_router was the same
+# object under a second name, so every patients route was registered twice.
 app.include_router(patient_router)
 app.include_router(parent_router)
 app.include_router(monitoring.practitioner_router)

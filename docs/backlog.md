@@ -125,22 +125,6 @@ wrong, and who owes them a copy of their record.
 
 # Defects
 
-## Reorder is silently broken — two routes are shadowed
-
-**Priority: user-visible, live now.** Raised 2026-08-28. `S`
-
-**Today:** `PUT /ladders/{ladder_id}/rungs/reorder` (`backend/app/api/routers/ladders.py:72`) is
-declared *after* `PUT /ladders/{ladder_id}/rungs/{rung_id}` (`ladders.py:55`), and
-`PUT /plans/{plan_id}/triggers/reorder` (`trigger_situations.py:82`) after `PUT /{trigger_id}`
-(`trigger_situations.py:49`). FastAPI matches in declaration order, so `"reorder"` is parsed as a
-UUID, fails, and returns 422. **Drag-to-reorder silently does nothing** in the ladder and the plan
-builder. `accommodations.py` gets the order right and is the model.
-
-**What changes:** move each reorder declaration above the UUID route.
-
-**How to tell it worked:** each reorder URL matches its own endpoint. Add a test so a route added
-above them re-breaks visibly.
-
 ---
 
 # Clinician
@@ -247,8 +231,6 @@ already there.
 
 ## Smaller, already agreed
 
-- **`patients` router is included twice** in `backend/app/main.py:31` and `:44`, so every patients
-  route registers twice. Harmless, but it inflates the route count and confuses the sweep. `S`
 - **`behavior_type` holds 11 distinct values across 136 rows** — `safety` / `safety_behavior` /
   `safety_seeking`, `cognitive` / `anxious_cognition`. Anything reading a child's rungs reads that
   mess, including the ladder-generation feature. `S`
