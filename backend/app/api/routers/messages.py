@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
@@ -81,6 +81,7 @@ async def create_message(
             response_model=MessageResponse)
 async def read_message(
     message_id: uuid.UUID,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -97,7 +98,7 @@ async def read_message(
     # Only for a patient this clinician has been granted. In the handler rather than a dependency
     # because the message id, not a patient id, is what the route is keyed on.
     await _require(db, (current_user, practitioner),
-                   await patient_of_record(db, Message, message_id))
+                   await patient_of_record(db, Message, message_id), request)
     return await mark_read(db, message_id, practitioner.organization_id)
 
 

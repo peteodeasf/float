@@ -1,6 +1,6 @@
 from app.models.organization import Organization
 from app.models.user import User, UserRole
-from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink, PatientAccessGrant
+from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink, PatientAccessGrant, PatientAccessLog
 from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior, SituationLibrary, BehaviorLibrary
 from app.models.ladder import ExposureLadder, LadderRung
 from app.models.experiment import Experiment, AccommodationBehavior

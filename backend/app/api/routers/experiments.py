@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -156,6 +156,7 @@ async def create_new_experiment(
             response_model=ExperimentResponse)
 async def get_single_experiment(
     experiment_id: uuid.UUID,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -183,7 +184,7 @@ async def get_single_experiment(
         # checked here rather than by a dependency because the same route serves the child, who
         # has no practitioner profile at all.
         await _require(db, (current_user, practitioner),
-                       await patient_of_record(db, Experiment, experiment_id))
+                       await patient_of_record(db, Experiment, experiment_id), request)
 
     return await get_experiment(db, experiment_id, org_id, patient_id=caller_patient_id)
 

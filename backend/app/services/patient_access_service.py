@@ -9,6 +9,7 @@ another colleague's caseload by probing ids.
 
 Plan: docs/plans/clinician-patient-access-grants.md
 """
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -16,9 +17,16 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.patient import PatientAccessGrant, PatientProfile, PractitionerProfile
+from app.models.patient import (
+    PatientAccessGrant,
+    PatientAccessLog,
+    PatientProfile,
+    PractitionerProfile,
+)
 from app.models.user import UserRole
 
+
+logger = logging.getLogger(__name__)
 
 NOT_FOUND = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
@@ -55,12 +63,20 @@ async def may_access(
     patient: PatientProfile,
     user_id: uuid.UUID,
     practitioner: PractitionerProfile,
-) -> bool:
+) -> str | None:
+    """How this caller is allowed in - "grant", "admin", or None for not allowed.
+
+    Returns the reason rather than a bool so the access log can record it. Institution admins
+    bypass grants entirely, and without that distinction the log cannot tell ordinary access from
+    an admin opening a record nobody granted them.
+    """
     if patient.organization_id != practitioner.organization_id:
-        return False
+        return None
     if await is_institution_admin(db, user_id, practitioner.organization_id):
-        return True
-    return await has_live_grant(db, patient.id, practitioner.id)
+        return "admin"
+    if await has_live_grant(db, patient.id, practitioner.id):
+        return "grant"
+    return None
 
 
 async def get_patient_for_practitioner(
@@ -68,17 +84,62 @@ async def get_patient_for_practitioner(
     patient_id: uuid.UUID,
     user_id: uuid.UUID,
     practitioner: PractitionerProfile,
+    request=None,
 ) -> PatientProfile:
-    """Resolve a patient the caller is allowed to see, or 404."""
+    """Resolve a patient the caller is allowed to see, or 404. Records the access.
+
+    Every clinician read of a patient comes through here - all thirteen get_permitted_*
+    dependencies call it, directly or through _require - so this is where the access log is
+    written. A route added later is covered without anyone remembering.
+    """
     result = await db.execute(
         select(PatientProfile).where(PatientProfile.id == patient_id)
     )
     patient = result.scalar_one_or_none()
     if patient is None:
         raise NOT_FOUND
-    if not await may_access(db, patient, user_id, practitioner):
+
+    via = await may_access(db, patient, user_id, practitioner)
+    if via is None:
         raise NOT_FOUND
+
+    await record_access(db, patient, user_id, practitioner, via, request)
     return patient
+
+
+async def record_access(
+    db: AsyncSession,
+    patient: PatientProfile,
+    user_id: uuid.UUID,
+    practitioner: PractitionerProfile,
+    via: str,
+    request=None,
+) -> None:
+    """Write one row saying this person opened this record.
+
+    Only successful access is recorded - this answers "who saw this file", not "who tried".
+
+    If the write fails the request still goes through. The stricter reading is that access without
+    an audit trail should be refused, but that turns a broken logging table into clinicians unable
+    to open patient records. The failure goes to the application log instead. Peter's to overrule;
+    see docs/plans/patient-access-log.md.
+    """
+    try:
+        db.add(PatientAccessLog(
+            patient_id=patient.id,
+            user_id=user_id,
+            practitioner_id=practitioner.id,
+            organization_id=patient.organization_id,
+            method=getattr(request, "method", None) if request is not None else None,
+            path=str(request.url.path) if request is not None else None,
+            via=via,
+        ))
+        await db.commit()
+    except Exception:
+        logger.exception(
+            "Failed to record patient access: patient=%s user=%s", patient.id, user_id
+        )
+        await db.rollback()
 
 
 async def accessible_patient_ids(

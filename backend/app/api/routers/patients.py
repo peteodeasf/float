@@ -5,7 +5,7 @@ import traceback
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
@@ -15,7 +15,12 @@ from app.core.dependencies import get_current_user
 from app.core.security import hash_password
 from app.core.config import settings
 from app.models.user import User, UserRole
-from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink
+from app.models.patient import (
+    PractitionerProfile,
+    PatientProfile,
+    ParentPatientLink,
+    PatientAccessLog,
+)
 from app.models.experiment import Experiment
 from app.models.message import Message
 from app.models.session_note import SessionNote
@@ -33,6 +38,7 @@ from app.models.message import Message
 from app.models.experiment import Experiment
 from app.services.patient_access_service import (
     accessible_patient_ids,
+    is_institution_admin,
     patient_id_of_arrow,
     patient_id_of_behavior,
     patient_id_of_ladder,
@@ -99,6 +105,7 @@ async def get_practitioner_context(
 
 async def get_permitted_patient(
     patient_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> PatientProfile:
@@ -111,110 +118,121 @@ async def get_permitted_patient(
     function call is not.
     """
     user, practitioner = context
-    return await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+    return await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
 
 
 async def get_permitted_plan(
     plan_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> TreatmentPlan:
     """A treatment plan the caller may see, resolved through the patient it belongs to."""
     user, practitioner = context
     patient_id = await patient_of_record(db, TreatmentPlan, plan_id)
-    await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
     result = await db.execute(select(TreatmentPlan).where(TreatmentPlan.id == plan_id))
     return result.scalar_one()
 
 
 async def get_permitted_action_plan(
     plan_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> ActionPlan:
     """Same, for /action-plans/{plan_id} — a different table that happens to share the name."""
     user, practitioner = context
     patient_id = await patient_of_record(db, ActionPlan, plan_id)
-    await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
     result = await db.execute(select(ActionPlan).where(ActionPlan.id == plan_id))
     return result.scalar_one()
 
 
-async def _require(db, context, patient_id: uuid.UUID) -> None:
+async def _require(db, context, patient_id: uuid.UUID, request=None) -> None:
     user, practitioner = context
-    await get_patient_for_practitioner(db, patient_id, user.id, practitioner)
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
 
 
 async def get_permitted_situation(
     situation_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_id_of_situation(db, situation_id))
+    await _require(db, context, await patient_id_of_situation(db, situation_id), request)
 
 
 async def get_permitted_trigger(
     trigger_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_id_of_situation(db, trigger_id))
+    await _require(db, context, await patient_id_of_situation(db, trigger_id), request)
 
 
 async def get_permitted_behavior(
     behavior_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_id_of_behavior(db, behavior_id))
+    await _require(db, context, await patient_id_of_behavior(db, behavior_id), request)
 
 
 async def get_permitted_ladder(
     ladder_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_id_of_ladder(db, ladder_id))
+    await _require(db, context, await patient_id_of_ladder(db, ladder_id), request)
 
 
 async def get_permitted_rung(
     rung_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_id_of_rung(db, rung_id))
+    await _require(db, context, await patient_id_of_rung(db, rung_id), request)
 
 
 async def get_permitted_arrow(
     arrow_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_id_of_arrow(db, arrow_id))
+    await _require(db, context, await patient_id_of_arrow(db, arrow_id), request)
 
 
 async def get_permitted_note(
     note_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_of_record(db, SessionNote, note_id))
+    await _require(db, context, await patient_of_record(db, SessionNote, note_id), request)
 
 
 async def get_permitted_experiment_access(
     experiment_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_of_record(db, Experiment, experiment_id))
+    await _require(db, context, await patient_of_record(db, Experiment, experiment_id), request)
 
 
 async def get_permitted_message_access(
     message_id: uuid.UUID,
+    request: Request,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    await _require(db, context, await patient_of_record(db, Message, message_id))
+    await _require(db, context, await patient_of_record(db, Message, message_id), request)
 
 
 async def get_patient_context(
@@ -1863,3 +1881,50 @@ async def revoke_patient_access(
 ):
     _, practitioner = context
     await revoke_access(db, patient, practitioner_id, practitioner)
+
+
+class AccessLogEntry(BaseModel):
+    user_name: str
+    user_email: str
+    method: str | None
+    path: str | None
+    via: str
+    occurred_at: datetime
+
+
+@router.get("/{patient_id}/access-log", response_model=list[AccessLogEntry])
+async def read_access_log(
+    patient_id: uuid.UUID,
+    patient: PatientProfile = Depends(get_permitted_patient),
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 200,
+):
+    """Who opened this patient's record. Institution admins only.
+
+    Deliberately not every clinician with a grant: this log records the people who read the file,
+    and letting them decide what it says is the wrong shape.
+    """
+    user, practitioner = context
+    if not await is_institution_admin(db, user.id, practitioner.organization_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    result = await db.execute(
+        select(PatientAccessLog, PractitionerProfile.name, User.email)
+        .join(User, User.id == PatientAccessLog.user_id)
+        .outerjoin(PractitionerProfile, PractitionerProfile.id == PatientAccessLog.practitioner_id)
+        .where(PatientAccessLog.patient_id == patient.id)
+        .order_by(PatientAccessLog.occurred_at.desc())
+        .limit(min(limit, 1000))
+    )
+    return [
+        AccessLogEntry(
+            user_name=name or "Unknown",
+            user_email=email,
+            method=entry.method,
+            path=entry.path,
+            via=entry.via,
+            occurred_at=entry.occurred_at,
+        )
+        for entry, name, email in result.all()
+    ]

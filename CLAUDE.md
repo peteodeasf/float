@@ -50,6 +50,29 @@ defined in the global process. Grounded in this repo's artifacts:
    before pushing. What this does *not* currently mean is data preciousness: see
    "Current stage" above.
 
+## How to write to Peter — and this applies to agents too
+
+Plain English, short sentences, one idea per sentence. He is making product and clinical calls, not
+reading code.
+
+**Never invent a word for something that already has a name.** Say "the parent app" or "the parent
+experience", not "the parent surface". Say "the clinician app", not "the clinician surface". If a
+term is not one he already uses, it costs him a decode before he can read the sentence.
+
+Banned in practice, because each has been flagged:
+- Invented nouns and noun-pairs — "surface", "meaning-chain", "consequence-chain".
+- Metaphors and figures of speech — "the long pole", "stays theatre", "load-bearing". Say the
+  literal thing. He has said outright: *"CI is not a robot. explain in concrete simple terms."*
+- Citing a rule instead of saying what it means. Not "§164.312(b) requires audit controls" but
+  "a patient can ask for a list of everyone who saw their file".
+- Stacking three clauses into one sentence, even when every word is ordinary.
+
+Domain vocabulary he already uses is fine and correct: distress thermometer, downward arrow,
+exposure ladder, accommodation, safety behavior.
+
+Answer first, detail only if asked. *"It's so slow to have to read a paragraph for a simple
+question."*
+
 ## Where things live
 
 - `backend/` — FastAPI app (`backend/app/api/routers/`, models, services, `migrations/`).

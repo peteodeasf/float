@@ -144,3 +144,45 @@ class PatientAccessGrant(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class PatientAccessLog(Base):
+    """Who opened which patient record, and when.
+
+    PatientAccessGrant controls who MAY. This records who DID. HIPAA requires the second, and a
+    patient asking for a list of everyone who saw their file cannot be answered without it.
+
+    Written from get_patient_for_practitioner, which every clinician read of a patient goes through
+    — so a route added later is covered without anyone remembering.
+
+    Plan: docs/plans/patient-access-log.md
+    """
+
+    __tablename__ = "patient_access_log"
+    __table_args__ = (
+        Index("ix_patient_access_log_patient", "patient_id", "occurred_at"),
+        Index("ix_patient_access_log_user", "user_id", "occurred_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("patient_profiles.id"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=True
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False
+    )
+    # What they were doing: the request method and path.
+    method: Mapped[str | None] = mapped_column(String, nullable=True)
+    path: Mapped[str | None] = mapped_column(String, nullable=True)
+    # 'grant' or 'admin'. Institution admins bypass grants, so without this you cannot tell
+    # ordinary access from an admin opening a record they were never granted.
+    via: Mapped[str] = mapped_column(String, nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
