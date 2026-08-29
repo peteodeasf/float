@@ -70,3 +70,29 @@ class ReviewMark(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()")
     )
+
+
+class ReviewAddition(Base):
+    """A suggestion the reviewer wrote herself.
+
+    The most valuable thing on the page: marking ours tells us what is wrong, writing her own tells
+    us what right looks like. Kept separate from ReviewMark because it answers a different question
+    and should never be counted as a judgement of our output.
+    """
+
+    __tablename__ = "review_additions"
+    __table_args__ = (
+        Index("ix_review_additions_reviewer", "reviewer_id", "item_key"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
+    reviewer_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("review_reviewers.id"), nullable=False
+    )
+    item_key: Mapped[str] = mapped_column(String, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )

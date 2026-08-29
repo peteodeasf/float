@@ -92,13 +92,6 @@ button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,
   font-family:Newsreader,Georgia,serif;font-size:1.4rem;font-weight:500;line-height:1.25;
   margin:0;text-wrap:balance;letter-spacing:-.008em
 }
-.rating{
-  display:inline-flex;align-items:baseline;gap:.35rem;margin-top:.6rem;
-  font-size:.82rem;color:var(--ink-faint)
-}
-.rating b{
-  font-size:.95rem;font-weight:600;color:var(--brand);font-variant-numeric:tabular-nums
-}
 .rungs{margin:.95rem 0 0;display:flex;flex-wrap:wrap;gap:.4rem;align-items:baseline}
 .rungs-label{
   font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
@@ -135,16 +128,28 @@ button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,
   padding:.85rem 1.5rem 1.1rem;background:var(--sunk);font-size:.9rem;color:var(--ink-soft);
   border-top:1px solid var(--line)
 }
+.own{padding:.9rem 1.5rem 1.2rem;border-top:1px solid var(--line)}
+.mine{list-style:none;margin:0 0 .7rem;padding:0;display:flex;flex-direction:column;gap:.4rem}
+.mine:empty{display:none}
+.mine li{
+  display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;font-size:.97rem;
+  background:var(--yes-bg);border:1px solid var(--line);border-radius:3px
+}
+.drop{
+  margin-left:auto;padding:0 .35rem;font-size:1.1rem;line-height:1;background:none;
+  border:0;color:var(--ink-faint)
+}
+.drop:hover{color:#B4442A}
+.add{display:flex;gap:.5rem}
+.add input{
+  flex:1;min-width:0;padding:.5rem .7rem;font:inherit;font-size:.95rem;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line-strong);border-radius:3px
+}
+.add input::placeholder{color:var(--ink-faint)}
+.add input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand)}
 .variations b{
   font-weight:600;color:var(--ink-faint);font-size:.7rem;letter-spacing:.1em;
   text-transform:uppercase;display:block;margin-bottom:.3rem
-}
-footer{margin-top:3rem;padding-top:1.6rem;border-top:1px solid var(--line)}
-footer p{font-size:.9rem;color:var(--ink-soft);margin:0 0 1rem;max-width:38rem}
-.out{
-  width:100%;margin-top:1rem;padding:1rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:.8rem;line-height:1.6;background:var(--sunk);color:var(--ink);
-  border:1px solid var(--line);border-radius:3px;white-space:pre;overflow-x:auto;min-height:6rem
 }
 @media (max-width:34rem){
   .sug{grid-template-columns:1fr;gap:.7rem}
@@ -154,8 +159,9 @@ footer p{font-size:.9rem;color:var(--ink-soft);margin:0 0 1rem;max-width:38rem}
 </style>"""
 
 
-def render_page(round_, reviewer, marks: dict, token: str) -> str:
-    """`round_.items` is a list of {key, situation, rating, existing, suggestions, note}."""
+def render_page(round_, reviewer, marks: dict, token: str, additions=None) -> str:
+    """`round_.items` is a list of {key, situation, existing, suggestions, note}."""
+    additions = additions or {}
     body = []
     total = 0
 
@@ -163,11 +169,6 @@ def render_page(round_, reviewer, marks: dict, token: str) -> str:
         rungs = item.get("existing") or []
         chips = "".join(f'<span class="rung">{_esc(r)}</span>' for r in rungs) \
             or '<span class="rung">nothing yet</span>'
-        rating = item.get("rating")
-        rating_html = (
-            f'<div class="rating">the child rates this <b>{_esc(rating)}</b> out of 10</div>'
-            if rating is not None else ""
-        )
         rows = []
         for i, suggestion in enumerate(item["suggestions"]):
             total += 1
@@ -186,12 +187,23 @@ def render_page(round_, reviewer, marks: dict, token: str) -> str:
         note_html = (
             f'<div class="variations"><b>Other variations</b>{_esc(note)}</div>' if note else ""
         )
+        mine = "".join(
+            '<li>' + _esc(a["body"]) +
+            '<button class="drop" data-id="' + _esc(a["id"]) + '" aria-label="Remove">&times;</button></li>'
+            for a in additions.get(item["key"], [])
+        )
+        add_html = (
+            '<div class="own"><ul class="mine" data-for="' + _esc(item["key"]) + '">' + mine + '</ul>'
+            '<div class="add"><input type="text" data-key="' + _esc(item["key"]) + '" '
+            'placeholder="Add one of your own" aria-label="Add your own suggestion">'
+            '<button class="ghost addbtn" data-key="' + _esc(item["key"]) + '">Add</button></div></div>'
+        )
         body.append(
             f'<section class="case"><div class="case-head">'
-            f'<h2 class="sit">{_esc(item["situation"])}</h2>{rating_html}'
+            f'<h2 class="sit">{_esc(item["situation"])}</h2>'
             f'<div class="rungs{"" if rungs else " empty"}">'
             f'<span class="rungs-label">already on the ladder</span>{chips}</div>'
-            f'</div>{"".join(rows)}{note_html}</section>'
+            f'</div>{"".join(rows)}{note_html}{add_html}</section>'
         )
 
     instructions = round_.instructions or "Mark every one <b>Show</b> or <b>Don\u2019t show</b>."
@@ -221,11 +233,13 @@ def render_page(round_, reviewer, marks: dict, token: str) -> str:
 </div>
 
 <main id="list">{"".join(body)}</main>
+
 </div>
 
 <script>
 const TOTAL = {total};
-const URL = "/review/" + {json.dumps(token)} + "/mark";
+const TOKEN = {json.dumps(token)};
+const URL = "/review/" + TOKEN + "/mark";
 const sync = document.getElementById("sync");
 const list = document.getElementById("list");
 let pending = 0;
@@ -257,6 +271,58 @@ list.addEventListener("click", async (e) => {{
     state("not saved \u2014 check your connection", true);
   }}
 }});
+
+list.addEventListener("click", async (e) => {{
+  const add = e.target.closest(".addbtn");
+  if (add) return submit(add.dataset.key);
+  const drop = e.target.closest(".drop");
+  if (drop) {{
+    const li = drop.closest("li");
+    li.remove();
+    state("saving\u2026");
+    try {{
+      const r = await fetch("/review/" + TOKEN + "/add/" + drop.dataset.id, {{method: "DELETE"}});
+      if (!r.ok) throw new Error(r.status);
+          state("saved");
+    }} catch (err) {{ state("not saved \u2014 check your connection", true); }}
+  }}
+}});
+
+list.addEventListener("keydown", (e) => {{
+  if (e.key === "Enter" && e.target.matches(".add input")) {{
+    e.preventDefault();
+    submit(e.target.dataset.key);
+  }}
+}});
+
+async function submit(key){{
+  const input = list.querySelector('.add input[data-key="' + CSS.escape(key) + '"]');
+  const body = (input.value || "").trim();
+  if (!body) return;
+  input.value = "";
+  state("saving\u2026");
+  try {{
+    const r = await fetch("/review/" + TOKEN + "/add", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify({{item_key: key, body: body}})
+    }});
+    if (!r.ok) throw new Error(r.status);
+    const saved = await r.json();
+    const ul = list.querySelector('.mine[data-for="' + CSS.escape(key) + '"]');
+    const li = document.createElement("li");
+    li.textContent = body;
+    const x = document.createElement("button");
+    x.className = "drop"; x.dataset.id = saved.id; x.setAttribute("aria-label", "Remove");
+    x.innerHTML = "&times;";
+    li.appendChild(x);
+    ul.appendChild(li);
+      state("saved");
+  }} catch (err) {{
+    input.value = body;
+    state("not saved \u2014 check your connection", true);
+  }}
+}}
 
 function count(){{
   const done = list.querySelectorAll(".sug[data-choice]").length;

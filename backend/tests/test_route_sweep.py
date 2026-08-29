@@ -71,6 +71,8 @@ PUBLIC = {
     # else. Do NOT add a route under this prefix that reads patient data.
     "GET /review/{token}",
     "POST /review/{token}/mark",
+    "POST /review/{token}/add",
+    "DELETE /review/{token}/add/{addition_id}",
 }
 
 # Acts on the caller, not on data named in the path.

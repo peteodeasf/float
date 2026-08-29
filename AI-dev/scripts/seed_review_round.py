@@ -52,9 +52,9 @@ async def main() -> int:
                 """insert into review_rounds (slug, title, instructions, items)
                    values ($1, $2, $3, $4::jsonb) returning id""",
                 slug,
-                "Would you show this suggestion to a child?",
-                "Mark every one <b>Show</b> or <b>Don&rsquo;t show</b>. Saved as you go — "
-                "close the tab whenever you like and come back to the same link.",
+                "Would you show these suggestions to a therapist / child?",
+                "Review the situations below and the suggested sub-situations for each. Mark "
+                "every one <b>Show</b> or <b>Don&rsquo;t show</b>.",
                 json.dumps(items),
             )
             print(f"created round {slug} with {len(items)} situations, "

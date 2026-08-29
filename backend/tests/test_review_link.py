@@ -131,3 +131,71 @@ async def test_the_page_escapes_the_text_it_was_given(api, db):
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
     assert "<img src=x" not in page
     assert "&lt;img src=x onerror=alert(2)&gt;" in page
+
+
+# --- her own suggestions ---------------------------------------------------------------
+
+async def test_she_can_add_her_own(api, db):
+    from app.models.review import ReviewAddition
+
+    _, reviewer = await _round(db)
+    r = await api.post(f"/review/{reviewer.token}/add",
+                       json={"item_key": "sit-1", "body": "Eat with your friend in the library"})
+    assert r.status_code == 201
+    assert r.json()["body"] == "Eat with your friend in the library"
+
+    saved = (await db.execute(select(ReviewAddition))).scalars().all()
+    assert [a.body for a in saved] == ["Eat with your friend in the library"]
+
+
+async def test_her_additions_come_back(api, db):
+    _, reviewer = await _round(db)
+    await api.post(f"/review/{reviewer.token}/add",
+                   json={"item_key": "sit-1", "body": "Sit near the door"})
+
+    page = (await api.get(f"/review/{reviewer.token}")).text
+    assert "Sit near the door" in page
+
+
+async def test_an_empty_addition_is_refused(api, db):
+    _, reviewer = await _round(db)
+    r = await api.post(f"/review/{reviewer.token}/add", json={"item_key": "sit-1", "body": "   "})
+    assert r.status_code == 400
+
+
+async def test_she_can_remove_her_own(api, db):
+    from app.models.review import ReviewAddition
+
+    _, reviewer = await _round(db)
+    made = await api.post(f"/review/{reviewer.token}/add",
+                          json={"item_key": "sit-1", "body": "Sit near the door"})
+    addition_id = made.json()["id"]
+
+    r = await api.request("DELETE", f"/review/{reviewer.token}/add/{addition_id}")
+    assert r.status_code == 204
+    assert (await db.execute(select(ReviewAddition))).scalars().all() == []
+
+
+async def test_she_cannot_remove_someone_elses(api, db):
+    from app.models.review import ReviewAddition
+
+    round_, walker = await _round(db, name="Dr. Walker", token="tok-w2")
+    peter = ReviewReviewer(round_id=round_.id, name="Peter", token="tok-p2")
+    db.add(peter)
+    await db.flush()
+
+    made = await api.post("/review/tok-w2/add", json={"item_key": "sit-1", "body": "Hers"})
+    r = await api.request("DELETE", f"/review/tok-p2/add/{made.json()['id']}")
+
+    assert r.status_code == 404
+    assert len((await db.execute(select(ReviewAddition))).scalars().all()) == 1
+
+
+async def test_an_addition_is_escaped_on_the_page(api, db):
+    _, reviewer = await _round(db)
+    await api.post(f"/review/{reviewer.token}/add",
+                   json={"item_key": "sit-1", "body": "<img src=x onerror=alert(1)>"})
+
+    page = (await api.get(f"/review/{reviewer.token}")).text
+    assert "<img src=x" not in page
+    assert "&lt;img src=x onerror=alert(1)&gt;" in page
