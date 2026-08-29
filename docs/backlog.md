@@ -45,40 +45,51 @@ patients hardest.
 
 ### Code — and the first one is the big gap
 
-**1. There is no audit log of PHI access.** `L`
-Nothing records who opened which patient record, when. The access-grant work controls *who may*;
-this is *who did*. Two reasons it matters: §164.312(b) requires audit controls, and a patient's
-right to an accounting of disclosures cannot be answered without one.
+**1. Nobody can see who opened which patient record.** `L`
 
-The natural place is the same dependency that now guards access — `get_permitted_patient` in
-`backend/app/api/routers/patients.py` sees every clinician read of a patient. Writing a row there
-covers the 39 clinician routes in one edit.
-**How to tell it worked:** open a patient as a clinician, and the access shows up in the log with
-who, what and when. **Gate:** `/security-review`. **Plan first.**
+We control who is *allowed* in. We do not record who actually went in.
 
-**2. No automatic logoff.** `S`
-§164.312(a)(2)(iii). Check the JWT lifetime in `backend/app/core/security.py` and whether the
-frontends idle out. A shared clinic machine left open is the case this exists for.
+HIPAA requires that record. And a patient can ask for a list of everyone who saw their file. We
+could not produce one.
 
-**3. Encryption at rest — confirm, do not assume.** `S`
-Railway Postgres. Confirm it is on and write down where that was confirmed. In transit is TLS and
-already true.
+The fix is small. Every clinician already goes through one function to open a patient —
+`get_permitted_patient` in `backend/app/api/routers/patients.py`. Log it there and all 39 routes are
+covered.
 
-**4. Backups, and a restore that has actually been run.** `M`
-§164.308(a)(7). An untested backup is not a backup. Includes deciding how far back.
+**How to tell it worked:** open a patient as a clinician, then find that visit in the log — who,
+which patient, when. **Gate:** `/security-review`. **Plan it first.**
 
-**5. Data retention and deletion.** `M`
-What happens when a patient leaves, a clinician leaves, an institution closes. Admin can already
-delete a patient (`DELETE /admin/patients/{patient_id}`) — check what that leaves behind, since
-nothing in this schema cascades (see
-[`delete-fails-silently-no-fk-cascade.md`](solutions/delete-fails-silently-no-fk-cascade.md)).
+**2. The app never logs you out on its own.** `S`
 
-**6. Clinical text sits in the repo, in plain files.** `S` — **do this before real patients**
-`AI-dev/Ladder Eval/cases_review.json`, `review_sheet_source.json` and the arrow case files hold
-situation text pulled from the database and committed to git. Today that is fine: it is all test
-data. The moment a real child's situation is in one, it is PHI in a public-ish repo with no way to
-recall it. The harvesters and `pull_cases.py` need a rule about this **before** real patients exist,
-not after.
+A clinic computer left open stays logged in. Check how long a login lasts
+(`backend/app/core/security.py`) and whether the screens time out.
+
+**3. Is the database encrypted? We assume so. Nobody has checked.** `S`
+
+Railway Postgres. Confirm it, and write down where you confirmed it. Traffic to and from the app is
+already encrypted.
+
+**4. Backups nobody has ever restored from.** `M`
+
+A backup you have never restored is not a backup. Also decide how far back they go.
+
+**5. No rule for what happens to data when someone leaves.** `M`
+
+A patient leaves. A clinician leaves. A clinic closes. What gets kept, what gets deleted, when.
+
+An admin can already delete a patient (`DELETE /admin/patients/{patient_id}`). Check what that
+actually leaves behind — nothing in this database deletes automatically, which has bitten us before
+([why](solutions/delete-fails-silently-no-fk-cascade.md)).
+
+**6. We commit patients' words into the code repository.** `S` — **fix before real patients**
+
+`AI-dev/Ladder Eval/cases_review.json`, `review_sheet_source.json` and the arrow case files all
+contain situation text copied straight out of the database, saved into git.
+
+Fine today, because every patient is fake. The first time a real child's words land in one of those
+files, they are in the repository permanently and cannot be taken back out.
+
+So the rule has to exist before the first real patient does, not after.
 
 ### Paperwork — blocking, and none of it is code
 
@@ -96,20 +107,19 @@ patient data exists. From the code, that is at least:
 Anthropic offers a BAA for API use on request. **Anthropic is the one to do first** — clinical text
 already flows there on every extraction and every arrow question.
 
-**8. Risk analysis.** §164.308(a)(1)(ii)(A). A written one. It is also what an enterprise clinic
-customer will ask for.
+**8. A written risk assessment.** HIPAA requires one. A big clinic will ask to see it anyway.
 
-**9. Breach notification procedure.** Who is told, in what order, within 60 days. Write it before
-it is needed.
+**9. What we do if data leaks.** Who gets told, in what order, within 60 days. Write it now, not on
+the day.
 
 **10. Workforce training and sanctions policy.** Small team, still required.
 
-**11. Minimum necessary.** Review what each surface actually returns. Worth doing after the audit
-log exists, because that is what shows which fields are really read.
+**11. Each screen should only get the data it needs.** Review what each one actually returns. Easier
+once the access log exists, because that shows what is really being read.
 
-**Peter's call, and it changes the shape of all of the above:** whether Float is a covered entity
-or a business associate of the clinics. It decides who notifies whom on breach and who owns the
-patient-rights obligations.
+**One decision of yours changes all of the above:** is Float the clinic's supplier, or does Float
+hold the patient relationship itself? That decides who has to tell patients when something goes
+wrong, and who owes them a copy of their record.
 
 ---
 
