@@ -30,7 +30,11 @@ Plan: docs/plans/ladder-generation.md
 """
 import re
 
-MIN_SUGGESTIONS = 3
+# Two, not three. Peter reviewed drafts where a situation with nothing on its ladder got only two
+# suggestions I would stand behind, and judged them fine. A minimum of three would push the model
+# to invent a context to fill the slot — which is the one failure this feature cannot afford, and
+# the one no mechanical check catches. Fewer suggestions is the correct answer to a thin situation.
+MIN_SUGGESTIONS = 2
 MAX_SUGGESTIONS = 5
 # A child reads these aloud in session. Long ones stop being a thing you can say yes or no to.
 MAX_WORDS_PER_SUGGESTION = 18

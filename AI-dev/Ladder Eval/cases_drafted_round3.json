@@ -1,0 +1,147 @@
+[
+  {
+    "id": "sit-d6e82a24",
+    "situation": "Sitting Alone in Cafeteria",
+    "description": null,
+    "distress_rating": 10.0,
+    "existing_rungs": [
+      {
+        "name": "Not going to cafeteria",
+        "behavior_type": "avoidance",
+        "distress_rating": 10.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-05-14",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Sit at the end of a table with people at the other end, for five minutes",
+      "Sit at a table with one person you know, for five minutes",
+      "Sit alone at a table for five minutes",
+      "Sit alone at a table for a whole lunch"
+    ],
+    "target_note": "which table · how busy the room is · whether a friend knows where you are",
+    "form": "A + note",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-8bdd63f6",
+    "situation": "Completing school report assignment",
+    "description": null,
+    "distress_rating": 9.0,
+    "existing_rungs": [
+      {
+        "name": "Catastrophized about inability to complete task",
+        "behavior_type": "anxiety_response",
+        "distress_rating": 9.0
+      },
+      {
+        "name": "Sought parental help to manage distress",
+        "behavior_type": "safety_seeking",
+        "distress_rating": 9.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Write the first sentence with a parent in the room",
+      "Write for ten minutes on your own, then stop",
+      "Write a whole section without asking for help",
+      "Finish the report on your own"
+    ],
+    "target_note": "how long you work for · which part you start with · whether you can ask for help afterwards",
+    "form": "A + note",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-5254cf39",
+    "situation": "School drop-off",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Refuses to get out of the car, kicks the back of the seat, cries, and yells that mom is the worst mother ever",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-07-02",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Get out of the car at the gate with a parent walking you in",
+      "Get out at the gate and walk in with a friend",
+      "Get out at the gate and walk in on your own",
+      "Get dropped at the usual spot and walk in on your own"
+    ],
+    "target_note": "what time you arrive · who drops you · how far from the door",
+    "form": "A + note",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-c56cd219",
+    "situation": "Talking to someone new at school",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [],
+    "shape": "bare",
+    "source_date": "2026-05-21",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Say hi to someone new as you pass them",
+      "Ask someone new one question you already know the answer to"
+    ],
+    "target_note": "who — a new person in your class, or someone in another year · how long the conversation is · whether a friend is with you",
+    "form": "A + note",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-82f50a2f",
+    "situation": "Playing soccer on Saturday",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Reporting vague injury to avoid participation",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-02",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Go to the game and watch from the side",
+      "Play the first ten minutes, then come off",
+      "Play the first half",
+      "Play the whole game"
+    ],
+    "target_note": "home or away · whether family are watching · which position",
+    "form": "A + note",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-5a5e05b7",
+    "situation": "Seeing my friened on Instagram",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [],
+    "shape": "bare",
+    "source_date": "2026-08-26",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Look at their profile without commenting",
+      "Like one of their posts"
+    ],
+    "target_note": "whether they can tell you looked · how long you spend · whether you message afterwards",
+    "form": "A + note",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  }
+]

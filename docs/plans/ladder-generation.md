@@ -78,8 +78,11 @@ Eating lunch in the cafeteria   (the child rates it 6)
    ▢  Eat in the cafeteria with your friend, with no headphones
    ▢  Eat a whole lunch in the cafeteria with your friend
    ▢  Eat lunch in the cafeteria when your friend is away
-      Other ways to make it smaller: where you sit · how busy it is · whether you buy lunch or bring it
+      Other variations: where you sit, how busy it is, whether you buy lunch or bring it
 ```
+
+The label is **"Other variations"** and the items are separated by commas. Not "other ways to make
+it smaller", and not middots — those made three plain phrases look like a menu of commands.
 
 The note names dimensions the four suggestions did NOT already use. Its job is to open options the
 clinician and child fill in themselves, not to summarise what is already on screen.
@@ -97,6 +100,27 @@ vague ("Talk to someone", rated 10), the suggestions invented a context the chil
 a shop assistant, a parent standing nearby. That is the failure mode, it has no mechanical check,
 and it is worth telling the model that an empty ladder means fewer and safer suggestions rather than
 inventing detail to fill four slots.
+
+### 5. How many suggestions: as many as the child has actually told you
+
+Two to five, and the number follows from what is known rather than from a target. The check permits
+two; permitting is not causing, and a model left alone will fill to the maximum because more looks
+more helpful. So the prompt has to say it:
+
+- **The situation has behaviours under it** — "parents stay and watch", "stays in the car". Those
+  ARE the dimensions to vary. Four comes easily and honestly.
+- **The situation is clear, the ladder is empty** — "Talking to someone new at school". You know the
+  situation and nothing about how this child avoids it. Two, because the third would be invented.
+- **The situation is vague and the ladder is empty** — "Talk to someone", rated 10. Arguably none;
+  show the variations instead.
+
+Stated for the prompt: *if you cannot write a fourth without inventing a detail the child never
+mentioned, write three. Or two.*
+
+Checkable after the fact — count suggestions against how many rungs the situation had. A model
+writing four every time is ignoring the rule. **And the same measurement read the other way catches
+the opposite failure:** told to be careful, a model can go quiet and give two for everything, which
+makes the feature useless.
 
 ### 3. We draft the cases; Peter reviews, and brings in Dr. Walker as needed
 
