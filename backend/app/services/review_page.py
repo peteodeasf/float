@@ -202,7 +202,7 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None) -> st
             f'<section class="case"><div class="case-head">'
             f'<h2 class="sit">{_esc(item["situation"])}</h2>'
             f'<div class="rungs{"" if rungs else " empty"}">'
-            f'<span class="rungs-label">already on the ladder</span>{chips}</div>'
+            f'<span class="rungs-label">Safety Behaviors</span>{chips}</div>'
             f'</div>{"".join(rows)}{note_html}{add_html}</section>'
         )
 
@@ -221,7 +221,7 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None) -> st
 </head><body>
 <div class="wrap">
 <header>
-  <p class="eyebrow">Float &middot; {_esc(reviewer.name)}</p>
+  <p class="eyebrow">Test Data &middot; Clinical Review</p>
   <h1>{_esc(round_.title)}</h1>
   <p class="lede">{instructions}</p>
 </header>

@@ -49,7 +49,10 @@ async def test_the_page_shows_the_suggestions(api, db):
     assert "Eating lunch in the cafeteria" in r.text
     assert "Eat in the cafeteria with your friend, with no headphones" in r.text
     assert "Wears headphones so nobody talks to her" in r.text
-    assert "Dr. Walker" in r.text
+    # The reviewer's name is deliberately NOT on the page — it says "Test Data · Clinical Review"
+    # instead, so the header does not read as addressed to one person.
+    assert "Dr. Walker" not in r.text
+    assert "Test Data" in r.text
 
 
 async def test_a_mark_is_saved(api, db):

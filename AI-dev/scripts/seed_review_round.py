@@ -16,6 +16,7 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ENV = HERE.parent.parent / "backend" / ".env"
+DEPLOYED = "https://floatcbt-production.up.railway.app"
 
 
 def setting(key: str, default: str = "") -> str:
@@ -26,10 +27,11 @@ def setting(key: str, default: str = "") -> str:
 
 
 async def main() -> int:
-    if len(sys.argv) < 4:
+    if len([a for a in sys.argv[1:] if not a.startswith("--")]) < 3:
         print(__doc__)
         return 2
-    slug, source, names = sys.argv[1], pathlib.Path(sys.argv[2]), sys.argv[3:]
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    slug, source, names = args[0], pathlib.Path(args[1]), args[2:]
 
     import asyncpg
     cases = json.loads(source.read_text())
@@ -43,7 +45,9 @@ async def main() -> int:
     } for c in cases]
 
     url = setting("DATABASE_URL").replace("postgresql+asyncpg://", "postgresql://")
-    base = setting("PUBLIC_BASE_URL") or setting("BASE_URL", "http://localhost:8000")
+    # NOT read from backend/.env: app.core.config.Settings rejects unknown keys, so an extra line
+    # in that file stops the whole app booting. Pass --base= to override.
+    base = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--base=")), DEPLOYED)
     conn = await asyncpg.connect(url)
     try:
         row = await conn.fetchrow("select id from review_rounds where slug=$1", slug)
@@ -52,7 +56,7 @@ async def main() -> int:
                 """insert into review_rounds (slug, title, instructions, items)
                    values ($1, $2, $3, $4::jsonb) returning id""",
                 slug,
-                "Would you show these suggestions to a therapist / child?",
+                "Would you show these sub-situation suggestions to a therapist / child?",
                 "Review the situations below and the suggested sub-situations for each. Mark "
                 "every one <b>Show</b> or <b>Don&rsquo;t show</b>.",
                 json.dumps(items),
