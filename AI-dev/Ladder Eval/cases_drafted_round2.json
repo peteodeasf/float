@@ -1,0 +1,300 @@
+[
+  {
+    "id": "sit-1950d674",
+    "situation": "Raising hand to answer a question in class",
+    "description": null,
+    "distress_rating": 7.0,
+    "existing_rungs": [
+      {
+        "name": "Pretends to look at notes to avoid eye contact with teacher",
+        "behavior_type": "safety",
+        "distress_rating": 5.0
+      },
+      {
+        "name": "Doesn't raise hand even when she knows the answer",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-05-21",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Raise your hand once in the class where you like the teacher most",
+      "Raise your hand for a question you already know the answer to",
+      "Raise your hand without checking your notes first",
+      "Raise your hand in your hardest class"
+    ],
+    "form": "target_suggestions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-e08ad9be",
+    "situation": "Eating lunch in the cafeteria",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Wears headphones so nobody talks to her",
+        "behavior_type": "safety",
+        "distress_rating": 5.0
+      },
+      {
+        "name": "Only goes to cafeteria if a close friend is with her",
+        "behavior_type": "safety",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Eats in the bathroom or library to avoid cafeteria",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-05-21",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Eat lunch in the cafeteria for ten minutes with your close friend",
+      "Eat in the cafeteria with your friend, with no headphones",
+      "Eat a whole lunch in the cafeteria with your friend",
+      "Eat lunch in the cafeteria when your friend is away"
+    ],
+    "form": "target_suggestions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-53432335",
+    "situation": "Attending peer birthday party",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Requests parent remain present throughout",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Maintains physical proximity to parent",
+        "behavior_type": "safety_behavior",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Expresses doubt about peer acceptance",
+        "behavior_type": "cognitive",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Refuses to join peer activities",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Go to the party for half an hour with your parent in the room",
+      "Go for half an hour with your parent waiting outside",
+      "Stay for an hour and join one game",
+      "Stay for the whole party with your parent not there"
+    ],
+    "form": "target_suggestions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-9df60c1e",
+    "situation": "Taekwondo class",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Insists parents stay to watch the whole class; scans the room for them and runs over or gives them a look if they step away even briefly",
+        "behavior_type": "safety",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-07-02",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Go to class with your parents watching the whole time",
+      "Go with your parents watching the first half, then waiting outside",
+      "Go with your parents waiting in the car park",
+      "Go to class and get picked up at the end"
+    ],
+    "form": "target_suggestions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-e76a0847",
+    "situation": "Attending soccer practice",
+    "description": null,
+    "distress_rating": 7.0,
+    "existing_rungs": [
+      {
+        "name": "Reports somatic complaints when arriving",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Symptom resolution upon leaving",
+        "behavior_type": "safety_behavior",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Refuses to enter facility, remains in car",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Somatic complaints at arrival, refusing entry",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Remaining in car, immediate relief upon leaving",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Get out of the car and stand at the edge of the pitch for five minutes",
+      "Go in, do the warm-up, then leave",
+      "Stay for half of practice",
+      "Stay for the whole practice"
+    ],
+    "form": "target_suggestions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-e598fe19",
+    "situation": "Invite someone I don't know well to hang out",
+    "description": null,
+    "distress_rating": 7.0,
+    "existing_rungs": [
+      {
+        "name": "Smile at someone you don't know well in the ahll",
+        "behavior_type": "safety",
+        "distress_rating": 4.0
+      },
+      {
+        "name": "Pick someone I know who's nice to everyone",
+        "behavior_type": "safety",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Don't do it",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-08-10",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_dimensions": [
+      "who you ask — someone you know a bit, or someone you barely know",
+      "how you ask — a text, or in person",
+      "what you ask for — walking home together, or a whole afternoon",
+      "whether anyone else is there when you ask"
+    ],
+    "form": "target_dimensions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-78819a04",
+    "situation": "Baseball practice",
+    "description": null,
+    "distress_rating": 3.0,
+    "existing_rungs": [
+      {
+        "name": "Avoids Baseball practice",
+        "behavior_type": "avoidance",
+        "distress_rating": null
+      }
+    ],
+    "shape": "bare",
+    "source_date": "2026-08-19",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_dimensions": [
+      "how long you stay",
+      "which part you join — warm-up only, drills, or the game",
+      "whether a parent stays to watch",
+      "how many people are there"
+    ],
+    "form": "target_dimensions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-32a2dee8",
+    "situation": "babysitting night",
+    "description": null,
+    "distress_rating": 7.0,
+    "existing_rungs": [
+      {
+        "name": "hang out of my mum all night",
+        "behavior_type": "safety",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-07-25",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_dimensions": [
+      "how long your mum is out",
+      "whether you can call her",
+      "whether someone else is in the house",
+      "how far away she goes"
+    ],
+    "form": "target_dimensions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-3fbdd1ed",
+    "situation": "Participate in class",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [],
+    "shape": "bare",
+    "source_date": "2026-08-10",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_dimensions": [
+      "which class",
+      "what kind of answer — one word, a sentence, or reading aloud",
+      "whether the teacher calls on you, or you volunteer",
+      "how many people are listening"
+    ],
+    "form": "target_dimensions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-d9472693",
+    "situation": "Going to school in the morning",
+    "description": null,
+    "distress_rating": 7.0,
+    "existing_rungs": [],
+    "shape": "bare",
+    "source_date": "2026-05-16",
+    "status": "drafted",
+    "target_breakdown": null,
+    "target_dimensions": [
+      "which part — getting dressed, leaving the house, the gate, the classroom",
+      "who takes you",
+      "what time you get there",
+      "how long you stay"
+    ],
+    "form": "target_dimensions",
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  }
+]

@@ -1,0 +1,136 @@
+[
+  {
+    "id": "sit-80c45b30",
+    "situation": "Hang with friends at \"bee bench\" during spring (lots of bees)",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Carry a fan",
+        "behavior_type": "avoidance",
+        "distress_rating": 5.0
+      },
+      {
+        "name": "gkjkhkhk",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "I wear a hat and sunglasses.",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-08-19",
+    "status": "drafted",
+    "target_suggestions": [
+      "Sit at the bee bench with friends for five minutes, keeping the fan",
+      "Sit at the bee bench for five minutes without the fan",
+      "Sit at the bee bench for a whole lunch break, keeping the fan",
+      "Sit at the bee bench for a whole lunch break with no fan and no hat"
+    ],
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-f1fdea33",
+    "situation": "Give an oral report",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Avoids Give an oral report",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "bare",
+    "source_date": "2026-08-10",
+    "status": "drafted",
+    "target_suggestions": [
+      "Read one paragraph of it aloud to the teacher after class",
+      "Read the report to two friends",
+      "Give the report to a small group instead of the whole class",
+      "Give the full report to the whole class"
+    ],
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-b2a0b25a",
+    "situation": "Group sleepover with classmates",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Ambivalence about attending; scattered presentation",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-02",
+    "status": "drafted",
+    "target_suggestions": [
+      "Stay at a friend's house until 9pm, then come home",
+      "Sleep over at one friend's house, just the two of them",
+      "Stay at the group sleepover until bedtime, then get picked up",
+      "Stay the whole night at the group sleepover"
+    ],
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-d22d1416",
+    "situation": "Getting ready for school mornings",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Physically immobilizes (sits on floor, won't move)",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      },
+      {
+        "name": "Escalates to crying",
+        "behavior_type": "safety_behavior",
+        "distress_rating": 8.0
+      },
+      {
+        "name": "Refuses to get dressed, reports somatic complaints",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      },
+      {
+        "name": "Expresses fear of peer ridicule",
+        "behavior_type": "cognitive",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "drafted",
+    "target_suggestions": [
+      "Get dressed for the day on a Saturday, with no school after",
+      "Get dressed on a school morning, but stay home",
+      "Get dressed and get in the car, without going in",
+      "Do the whole morning routine and go to school"
+    ],
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  },
+  {
+    "id": "sit-8d16dc48",
+    "situation": "Talk to someone",
+    "description": null,
+    "distress_rating": 10.0,
+    "existing_rungs": [],
+    "shape": "bare",
+    "source_date": "2026-05-14",
+    "status": "drafted",
+    "target_suggestions": [
+      "Say hi to one person you already know well",
+      "Ask a shop assistant one question with a parent standing nearby",
+      "Start a conversation with a classmate you know",
+      "Start a conversation with someone you have never met"
+    ],
+    "target_source": "Claude draft, 2026-08-28 — awaiting Peter's review"
+  }
+]
