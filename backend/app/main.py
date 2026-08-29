@@ -5,6 +5,7 @@ from app.api.routers.parent import parent_router
 
 from app.core.config import settings
 from app.api.routers import (
+    review,
     auth, patients, treatment_plans,
     trigger_situations, avoidance_behaviors,
     ladders, experiments, progress,
@@ -27,6 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(review.router)
 app.include_router(auth.router)
 app.include_router(patients.router)
 app.include_router(treatment_plans.router)

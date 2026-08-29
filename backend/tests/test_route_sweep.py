@@ -64,6 +64,13 @@ PUBLIC = {
     "POST /monitor/{access_token}/entries",
     "PUT /monitor/{access_token}/entries/{entry_id}",
     "POST /monitor/{access_token}/submit",
+    # The review link a clinician opens to mark generated suggestions. Same bargain as the
+    # monitoring form: an unguessable token instead of a login, because the people whose judgement
+    # we need will not manage one. Safe only because the review tables hold their own copy of the
+    # text and reference no patient rows — a forwarded link reaches the review items and nothing
+    # else. Do NOT add a route under this prefix that reads patient data.
+    "GET /review/{token}",
+    "POST /review/{token}/mark",
 }
 
 # Acts on the caller, not on data named in the path.

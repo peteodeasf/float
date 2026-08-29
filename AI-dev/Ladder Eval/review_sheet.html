@@ -1,0 +1,259 @@
+<title>Ladder Suggestion Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#FBFAF8; --surface:#FFFFFF; --sunk:#F2F5F3;
+  --ink:#12201E; --ink-soft:#4A5A57; --ink-faint:#7C8B88;
+  --line:#E1E8E5; --line-strong:#CBD6D3;
+  --brand:#135450; --brand-soft:#9AF6E4; --brand-ink:#0D3D3A;
+  --yes:#135450; --yes-bg:#E4F5F1;
+  --no:#8A5A3C; --no-bg:#F6EDE6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1614; --surface:#14201E; --sunk:#101A18;
+    --ink:#E8EFED; --ink-soft:#A8B8B4; --ink-faint:#7B8C88;
+    --line:#243330; --line-strong:#31433F;
+    --brand:#9AF6E4; --brand-soft:#1B4F49; --brand-ink:#C8FBEF;
+    --yes:#9AF6E4; --yes-bg:#12332F;
+    --no:#E0A87E; --no-bg:#31241B;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1614; --surface:#14201E; --sunk:#101A18;
+  --ink:#E8EFED; --ink-soft:#A8B8B4; --ink-faint:#7B8C88;
+  --line:#243330; --line-strong:#31433F;
+  --brand:#9AF6E4; --brand-soft:#1B4F49; --brand-ink:#C8FBEF;
+  --yes:#9AF6E4; --yes-bg:#12332F;
+  --no:#E0A87E; --no-bg:#31241B;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:53rem;margin:0 auto;padding:3rem 1.5rem 6rem}
+header{margin-bottom:2.5rem}
+.eyebrow{
+  font-size:.72rem;font-weight:600;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-faint);margin:0 0 .9rem
+}
+h1{
+  font-family:Newsreader,Georgia,serif;font-weight:500;font-size:clamp(2rem,4.4vw,2.9rem);
+  line-height:1.12;margin:0 0 1rem;text-wrap:balance;letter-spacing:-.012em
+}
+.lede{font-size:1.06rem;color:var(--ink-soft);margin:0;max-width:38rem}
+.lede + .lede{margin-top:.85rem}
+.lede b{color:var(--ink);font-weight:600}
+
+
+.bar{
+  position:sticky;top:0;z-index:5;margin:2.5rem 0 0;padding:.85rem 1.1rem;
+  background:var(--surface);border:1px solid var(--line);border-radius:3px;
+  display:flex;align-items:center;gap:1rem;flex-wrap:wrap
+}
+.count{font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count span{color:var(--ink-faint);font-weight:400}
+.track{flex:1;min-width:7rem;height:5px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.fill{height:100%;width:0;background:var(--brand);transition:width .28s ease}
+
+button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,border-color .12s,color .12s}
+.ghost{
+  padding:.42rem .85rem;font-size:.85rem;font-weight:500;
+  background:transparent;border:1px solid var(--line-strong);color:var(--ink-soft)
+}
+.ghost:hover{border-color:var(--brand);color:var(--brand)}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+.case{
+  margin-top:1.6rem;background:var(--surface);border:1px solid var(--line);
+  border-radius:3px;overflow:hidden
+}
+.case-head{padding:1.4rem 1.5rem 1.15rem;border-bottom:1px solid var(--line)}
+.sit{
+  font-family:Newsreader,Georgia,serif;font-size:1.4rem;font-weight:500;line-height:1.25;
+  margin:0;text-wrap:balance;letter-spacing:-.008em
+}
+.rating{
+  display:inline-flex;align-items:baseline;gap:.35rem;margin-top:.6rem;
+  font-size:.82rem;color:var(--ink-faint)
+}
+.rating b{
+  font-size:.95rem;font-weight:600;color:var(--brand);font-variant-numeric:tabular-nums
+}
+.rungs{margin:.95rem 0 0;display:flex;flex-wrap:wrap;gap:.4rem;align-items:baseline}
+.rungs-label{
+  font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-faint);margin-right:.2rem;width:100%
+}
+.rung{
+  font-size:.83rem;padding:.22rem .6rem;background:var(--sunk);
+  border:1px solid var(--line);border-radius:99px;color:var(--ink-soft)
+}
+.rungs.empty .rung{font-style:italic;color:var(--ink-faint)}
+
+.sug{
+  display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center;
+  padding:.9rem 1.5rem;border-bottom:1px solid var(--line)
+}
+.sug:last-of-type{border-bottom:0}
+.sug-text{font-size:1rem;line-height:1.45}
+.sug[data-choice="show"]{background:var(--yes-bg)}
+.sug[data-choice="hide"]{background:var(--no-bg)}
+.sug[data-choice="hide"] .sug-text{color:var(--ink-soft)}
+.choices{display:flex;gap:.4rem}
+.choice{
+  padding:.38rem .8rem;font-size:.85rem;font-weight:500;white-space:nowrap;
+  background:transparent;border:1px solid var(--line-strong);color:var(--ink-soft)
+}
+.choice:hover{border-color:var(--ink-faint);color:var(--ink)}
+.sug[data-choice="show"] .choice[data-v="show"]{
+  background:var(--yes);border-color:var(--yes);color:var(--ground);font-weight:600
+}
+.sug[data-choice="hide"] .choice[data-v="hide"]{
+  background:var(--no);border-color:var(--no);color:var(--ground);font-weight:600
+}
+.variations{
+  padding:.85rem 1.5rem 1.1rem;background:var(--sunk);font-size:.9rem;color:var(--ink-soft);
+  border-top:1px solid var(--line)
+}
+.variations b{
+  font-weight:600;color:var(--ink-faint);font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;display:block;margin-bottom:.3rem
+}
+footer{margin-top:3rem;padding-top:1.6rem;border-top:1px solid var(--line)}
+footer p{font-size:.9rem;color:var(--ink-soft);margin:0 0 1rem;max-width:38rem}
+.out{
+  width:100%;margin-top:1rem;padding:1rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:.8rem;line-height:1.6;background:var(--sunk);color:var(--ink);
+  border:1px solid var(--line);border-radius:3px;white-space:pre;overflow-x:auto;min-height:6rem
+}
+@media (max-width:34rem){
+  .sug{grid-template-columns:1fr;gap:.7rem}
+  .choices{justify-content:flex-start}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">Exposure ladder &middot; suggestion review</p>
+  <h1>Would you show this suggestion to a child?</h1>
+  <p class="lede">Mark every one <b>Show</b> or <b>Don&rsquo;t show</b>, then copy the results at the bottom and send them back.</p>
+</header>
+
+<div class="bar">
+  <div class="count"><span id="done">0</span> <span>of</span> <span id="total">0</span> <span>reviewed</span></div>
+  <div class="track"><div class="fill" id="fill"></div></div>
+  <button class="ghost" id="clear">Start over</button>
+</div>
+
+<main id="list"></main>
+
+<footer>
+  <button class="ghost" id="copy">Copy results</button>
+  <div class="out" id="out">Nothing marked yet.</div>
+</footer>
+</div>
+
+<script>
+const CASES = [{"id": "sit-80c45b30", "situation": "Hang with friends at \"bee bench\" during spring (lots of bees)", "distress_rating": 8.0, "existing_rungs": ["Carry a fan", "I wear a hat and sunglasses."], "suggestions": ["Sit at the bee bench with friends for five minutes, keeping the fan", "Sit at the bee bench for five minutes without the fan", "Sit at the bee bench for a whole lunch break, keeping the fan", "Sit at the bee bench for a whole lunch break with no fan and no hat"], "note": null}, {"id": "sit-f1fdea33", "situation": "Give an oral report", "distress_rating": 8.0, "existing_rungs": ["Avoids Give an oral report"], "suggestions": ["Read one paragraph of it aloud to the teacher after class", "Read the report to two friends", "Give the report to a small group instead of the whole class", "Give the full report to the whole class"], "note": null}, {"id": "sit-b2a0b25a", "situation": "Group sleepover with classmates", "distress_rating": 8.0, "existing_rungs": ["Ambivalence about attending; scattered presentation"], "suggestions": ["Stay at a friend's house until 9pm, then come home", "Sleep over at one friend's house, just the two of them", "Stay at the group sleepover until bedtime, then get picked up", "Stay the whole night at the group sleepover"], "note": null}, {"id": "sit-d22d1416", "situation": "Getting ready for school mornings", "distress_rating": 8.0, "existing_rungs": ["Physically immobilizes (sits on floor, won't move)", "Escalates to crying", "Refuses to get dressed, reports somatic complaints", "Expresses fear of peer ridicule"], "suggestions": ["Get dressed for the day on a Saturday, with no school after", "Get dressed on a school morning, but stay home", "Get dressed and get in the car, without going in", "Do the whole morning routine and go to school"], "note": null}, {"id": "sit-8d16dc48", "situation": "Talk to someone", "distress_rating": 10.0, "existing_rungs": [], "suggestions": ["Say hi to one person you already know well", "Ask a shop assistant one question with a parent standing nearby", "Start a conversation with a classmate you know", "Start a conversation with someone you have never met"], "note": null}, {"id": "sit-1950d674", "situation": "Raising hand to answer a question in class", "distress_rating": 7.0, "existing_rungs": ["Pretends to look at notes to avoid eye contact with teacher", "Doesn't raise hand even when she knows the answer"], "suggestions": ["Raise your hand once in the class where you like the teacher most", "Raise your hand for a question you already know the answer to", "Raise your hand without checking your notes first", "Raise your hand in your hardest class"], "note": null}, {"id": "sit-e08ad9be", "situation": "Eating lunch in the cafeteria", "distress_rating": 6.0, "existing_rungs": ["Wears headphones so nobody talks to her", "Only goes to cafeteria if a close friend is with her", "Eats in the bathroom or library to avoid cafeteria"], "suggestions": ["Eat lunch in the cafeteria for ten minutes with your close friend", "Eat in the cafeteria with your friend, with no headphones", "Eat a whole lunch in the cafeteria with your friend", "Eat lunch in the cafeteria when your friend is away"], "note": null}, {"id": "sit-53432335", "situation": "Attending peer birthday party", "distress_rating": 6.0, "existing_rungs": ["Requests parent remain present throughout", "Maintains physical proximity to parent", "Expresses doubt about peer acceptance", "Refuses to join peer activities"], "suggestions": ["Go to the party for half an hour with your parent in the room", "Go for half an hour with your parent waiting outside", "Stay for an hour and join one game", "Stay for the whole party with your parent not there"], "note": null}, {"id": "sit-9df60c1e", "situation": "Taekwondo class", "distress_rating": 6.0, "existing_rungs": ["Insists parents stay to watch the whole class; scans the room for them and runs over or gives them a look if they step away even briefly"], "suggestions": ["Go to class with your parents watching the whole time", "Go with your parents watching the first half, then waiting outside", "Go with your parents waiting in the car park", "Go to class and get picked up at the end"], "note": null}, {"id": "sit-e76a0847", "situation": "Attending soccer practice", "distress_rating": 7.0, "existing_rungs": ["Reports somatic complaints when arriving", "Symptom resolution upon leaving", "Refuses to enter facility, remains in car", "Somatic complaints at arrival, refusing entry", "Remaining in car, immediate relief upon leaving"], "suggestions": ["Get out of the car and stand at the edge of the pitch for five minutes", "Go in, do the warm-up, then leave", "Stay for half of practice", "Stay for the whole practice"], "note": null}, {"id": "sit-d6e82a24", "situation": "Sitting Alone in Cafeteria", "distress_rating": 10.0, "existing_rungs": ["Not going to cafeteria"], "suggestions": ["Sit at the end of a table with people at the other end, for five minutes", "Sit at a table with one person you know, for five minutes", "Sit alone at a table for five minutes", "Sit alone at a table for a whole lunch"], "note": "which table · how busy the room is · whether a friend knows where you are"}, {"id": "sit-8bdd63f6", "situation": "Completing school report assignment", "distress_rating": 9.0, "existing_rungs": ["Catastrophized about inability to complete task", "Sought parental help to manage distress"], "suggestions": ["Write the first sentence with a parent in the room", "Write for ten minutes on your own, then stop", "Write a whole section without asking for help", "Finish the report on your own"], "note": "how long you work for · which part you start with · whether you can ask for help afterwards"}, {"id": "sit-5254cf39", "situation": "School drop-off", "distress_rating": 8.0, "existing_rungs": ["Refuses to get out of the car, kicks the back of the seat, cries, and yells that mom is the worst mother ever"], "suggestions": ["Get out of the car at the gate with a parent walking you in", "Get out at the gate and walk in with a friend", "Get out at the gate and walk in on your own", "Get dropped at the usual spot and walk in on your own"], "note": "what time you arrive · who drops you · how far from the door"}, {"id": "sit-c56cd219", "situation": "Talking to someone new at school", "distress_rating": 8.0, "existing_rungs": [], "suggestions": ["Say hi to someone new as you pass them", "Ask someone new one question you already know the answer to"], "note": "who — a new person in your class, or someone in another year · how long the conversation is · whether a friend is with you"}, {"id": "sit-82f50a2f", "situation": "Playing soccer on Saturday", "distress_rating": 6.0, "existing_rungs": ["Reporting vague injury to avoid participation"], "suggestions": ["Go to the game and watch from the side", "Play the first ten minutes, then come off", "Play the first half", "Play the whole game"], "note": "home or away · whether family are watching · which position"}, {"id": "sit-5a5e05b7", "situation": "Seeing my friend on Instagram", "distress_rating": 6.0, "existing_rungs": [], "suggestions": ["Look at their profile without commenting", "Like one of their posts"], "note": "whether they can tell you looked · how long you spend · whether you message afterwards"}];
+const KEY = "float-ladder-review-v1";
+let marks = {};
+try { marks = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { marks = {}; }
+
+const list = document.getElementById("list");
+let total = 0;
+
+CASES.forEach((c, ci) => {
+  const el = document.createElement("section");
+  el.className = "case";
+  const rungs = c.existing_rungs.length
+    ? c.existing_rungs.map(r => `<span class="rung">${esc(r)}</span>`).join("")
+    : `<span class="rung">nothing yet</span>`;
+  let html = `<div class="case-head">
+      <h2 class="sit">${esc(c.situation)}</h2>
+      <div class="rating">the child rates this <b>${c.distress_rating}</b> out of 10</div>
+      <div class="rungs${c.existing_rungs.length ? "" : " empty"}">
+        <span class="rungs-label">already on the ladder</span>${rungs}
+      </div>
+    </div>`;
+  c.suggestions.forEach((s, si) => {
+    total++;
+    const id = c.id + ":" + si;
+    html += `<div class="sug" data-id="${id}"${marks[id] ? ` data-choice="${marks[id]}"` : ""}>
+        <div class="sug-text">${esc(s)}</div>
+        <div class="choices">
+          <button class="choice" data-v="show" data-id="${id}">Show</button>
+          <button class="choice" data-v="hide" data-id="${id}">Don&rsquo;t show</button>
+        </div>
+      </div>`;
+  });
+  if (c.note) {
+    html += `<div class="variations"><b>Other variations</b>${esc(c.note)}</div>`;
+  }
+  el.innerHTML = html;
+  list.appendChild(el);
+});
+
+document.getElementById("total").textContent = total;
+
+list.addEventListener("click", e => {
+  const b = e.target.closest(".choice");
+  if (!b) return;
+  const id = b.dataset.id;
+  marks[id] = marks[id] === b.dataset.v ? undefined : b.dataset.v;
+  if (!marks[id]) delete marks[id];
+  const row = list.querySelector(`.sug[data-id="${CSS.escape(id)}"]`);
+  if (marks[id]) row.dataset.choice = marks[id]; else delete row.dataset.choice;
+  save();
+});
+
+document.getElementById("clear").addEventListener("click", () => {
+  marks = {};
+  list.querySelectorAll(".sug").forEach(r => delete r.dataset.choice);
+  save();
+});
+
+document.getElementById("copy").addEventListener("click", async () => {
+  const btn = document.getElementById("copy");
+  try {
+    await navigator.clipboard.writeText(document.getElementById("out").textContent);
+    btn.textContent = "Copied";
+    setTimeout(() => { btn.textContent = "Copy results"; }, 1800);
+  } catch (e) {
+    btn.textContent = "Select the text below and copy";
+    setTimeout(() => { btn.textContent = "Copy results"; }, 2600);
+  }
+});
+
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch (e) {}
+  render();
+}
+
+function render(){
+  const done = Object.keys(marks).length;
+  document.getElementById("done").textContent = done;
+  document.getElementById("fill").style.width = (total ? (done / total) * 100 : 0) + "%";
+  const lines = [];
+  CASES.forEach(c => {
+    const rows = c.suggestions.map((s, si) => {
+      const m = marks[c.id + ":" + si];
+      return m ? `  [${m === "show" ? "SHOW" : "DON'T"}] ${s}` : null;
+    }).filter(Boolean);
+    if (rows.length) lines.push(c.situation, ...rows, "");
+  });
+  document.getElementById("out").textContent =
+    lines.length ? lines.join("\n") : "Nothing marked yet.";
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+}
+
+render();
+</script>
