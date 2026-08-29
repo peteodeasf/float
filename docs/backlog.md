@@ -1,123 +1,357 @@
 # Backlog
 
-Work that is agreed but not started. Each item should be actionable without the conversation that
-produced it — file paths, current behaviour, what changes, how to tell it worked.
+Work that is agreed but not started.
+
+## How to use this
+
+**Every item must be actionable without the conversation that produced it.** File paths, what is
+true today, what changes, and how to tell it worked. An item an agent cannot pick up cold is not
+finished being written.
+
+Each item carries:
+
+- **Today** — what the code actually does now, with file paths.
+- **What changes** — the work.
+- **How to tell it worked** — the check, ideally a test.
+- **Gate** — `/security-review` for anything touching auth, data access or role scoping;
+  clinical sign-off for anything touching what counts as avoidance, safety, escape, fear ratings,
+  accommodation rules or plan-commit behaviour. Pre-launch the clinical gate is Peter's discretion
+  and goes in the Dr. Walker log rather than blocking.
+- **Depends on** — where order matters.
+
+**Sizing.** `S` under a day, `M` a few days, `L` more than a week or needs a plan first. `L` items
+should get a `docs/plans/<slug>.md` before code.
+
+**Status of this file.** The infrastructure and AI items below are written to that standard. The
+per-surface product items are **transcribed from Peter's July plan and the build-status table** and
+are not yet at that standard — they name the work, not how to do it. Peter's app review turns them
+into items an agent can take. That review is the thing this file is waiting on, and it is his: a
+list generated from reading the source finds disabled buttons and stub tabs, not a flow with too
+many steps or a screen that confuses.
 
 ---
 
-## Granting and revoking a patient's clinicians — no UI
+# Compliance
 
-**Priority: high — the access change is deployed without it.** Raised 2026-08-28.
+## HIPAA — what is actually missing
 
-The grants themselves shipped on 2026-08-28 (`8aa62c4`, live in production). A clinician now sees a
-patient because they hold a live grant, or because they are an institution admin. What did not ship
-is any way to change that from the app.
+**Priority: highest that is not already a defect.** Raised 2026-08-29.
+Non-negotiable #2, and #3 in `STRATEGY.md`. Not relaxed pre-launch.
 
-**Today:** the API works and is tested —
+The boundary work landed on 2026-08-28 (`patient_access_grants`), which covers one of the technical
+safeguards. Most of the rest does not exist. Split below by what is code and what is paperwork,
+because the paperwork is the part most likely to be forgotten and the part that blocks first real
+patients hardest.
 
-- `GET /patients/{patient_id}/access` — who can open this patient
-- `POST /patients/{patient_id}/access` — grant a colleague in the same institution
-- `DELETE /patients/{patient_id}/access/{practitioner_id}` — revoke
+### Code — and the first one is the big gap
 
-— but nothing in `apps/web/` calls any of them. So access can only be changed with a direct API call
-or by editing the database. **Nobody can hand a patient over from inside the product.** The backfill
-gave every patient's primary practitioner a grant, so nothing is stuck today; it becomes a real
-problem the first time a clinician needs cover, leaves, or transfers a case.
+**1. There is no audit log of PHI access.** `L`
+Nothing records who opened which patient record, when. The access-grant work controls *who may*;
+this is *who did*. Two reasons it matters: §164.312(b) requires audit controls, and a patient's
+right to an accounting of disclosures cannot be answered without one.
 
-**What changes:** a section on the patient page listing who has access, with add and remove. The
-clinician being added has to be picked from the same institution — there is no endpoint listing
-colleagues yet, so that probably needs one.
+The natural place is the same dependency that now guards access — `get_permitted_patient` in
+`backend/app/api/routers/patients.py` sees every clinician read of a patient. Writing a row there
+covers the 39 clinician routes in one edit.
+**How to tell it worked:** open a patient as a clinician, and the access shows up in the log with
+who, what and when. **Gate:** `/security-review`. **Plan first.**
 
-**Rules already enforced by the backend, which the UI should reflect rather than re-implement:**
-- You can only grant to a clinician in the patient's own institution (404 otherwise).
-- You cannot revoke the last live grant — it would leave a patient nobody can open. The API returns
-  409 with a message; the UI should not offer the action rather than surfacing the error.
-- Institution admins are deliberately not listed as grants. They see everyone, and showing them here
-  would imply they can be revoked from this screen.
-- A revoked grant is kept, not deleted (`revoked_at`), so who had access when stays answerable.
+**2. No automatic logoff.** `S`
+§164.312(a)(2)(iii). Check the JWT lifetime in `backend/app/core/security.py` and whether the
+frontends idle out. A shared clinic machine left open is the case this exists for.
 
-**How to tell it worked:** a clinician can grant a colleague from the patient page, the colleague
-sees that patient in their roster, and revoking removes it again. Backend behaviour is already
-covered by `tests/test_patient_access_grants.py` — this is a frontend piece.
+**3. Encryption at rest — confirm, do not assume.** `S`
+Railway Postgres. Confirm it is on and write down where that was confirmed. In transit is TLS and
+already true.
 
-**Worth knowing:** two of the three clinicians in production are institution admins
-(`user_roles.is_org_admin`), so grants restrict only one of them today. The boundary is only as tight
-as who holds admin. That is a settings question, not a code one.
+**4. Backups, and a restore that has actually been run.** `M`
+§164.308(a)(7). An untested backup is not a backup. Includes deciding how far back.
 
-Plan and decisions: [`clinician-patient-access-grants.md`](plans/clinician-patient-access-grants.md).
-Deferred from that work, still not urgent: expiring grants (`expires_at` plus one condition) for
-time-limited cover, and reassigning a caseload when a clinician leaves.
+**5. Data retention and deletion.** `M`
+What happens when a patient leaves, a clinician leaves, an institution closes. Admin can already
+delete a patient (`DELETE /admin/patients/{patient_id}`) — check what that leaves behind, since
+nothing in this schema cascades (see
+[`delete-fails-silently-no-fk-cascade.md`](solutions/delete-fails-silently-no-fk-cascade.md)).
+
+**6. Clinical text sits in the repo, in plain files.** `S` — **do this before real patients**
+`AI-dev/Ladder Eval/cases_review.json`, `review_sheet_source.json` and the arrow case files hold
+situation text pulled from the database and committed to git. Today that is fine: it is all test
+data. The moment a real child's situation is in one, it is PHI in a public-ish repo with no way to
+recall it. The harvesters and `pull_cases.py` need a rule about this **before** real patients exist,
+not after.
+
+### Paperwork — blocking, and none of it is code
+
+**7. Business Associate Agreements.** Every vendor that touches PHI needs one, signed, before real
+patient data exists. From the code, that is at least:
+
+| Vendor | What reaches it |
+|---|---|
+| **Anthropic** | The extraction and downward-arrow prompts send a child's clinical text to the API |
+| **Railway** | The application and the Postgres database |
+| **Netlify** | The frontends |
+| **Twilio** | Phone numbers and message content |
+| **Resend** | Email addresses and invite content |
+
+Anthropic offers a BAA for API use on request. **Anthropic is the one to do first** — clinical text
+already flows there on every extraction and every arrow question.
+
+**8. Risk analysis.** §164.308(a)(1)(ii)(A). A written one. It is also what an enterprise clinic
+customer will ask for.
+
+**9. Breach notification procedure.** Who is told, in what order, within 60 days. Write it before
+it is needed.
+
+**10. Workforce training and sanctions policy.** Small team, still required.
+
+**11. Minimum necessary.** Review what each surface actually returns. Worth doing after the audit
+log exists, because that is what shows which fields are really read.
+
+**Peter's call, and it changes the shape of all of the above:** whether Float is a covered entity
+or a business associate of the clinics. It decides who notifies whom on breach and who owns the
+patient-rights obligations.
 
 ---
+
+# Defects
 
 ## Reorder is silently broken — two routes are shadowed
 
-**Priority: medium — user-visible, live now.** Raised 2026-08-28.
+**Priority: user-visible, live now.** Raised 2026-08-28. `S`
 
-FastAPI matches routes in declaration order, and a UUID route sits above each of these:
+**Today:** `PUT /ladders/{ladder_id}/rungs/reorder` (`backend/app/api/routers/ladders.py:72`) is
+declared *after* `PUT /ladders/{ladder_id}/rungs/{rung_id}` (`ladders.py:55`), and
+`PUT /plans/{plan_id}/triggers/reorder` (`trigger_situations.py:82`) after `PUT /{trigger_id}`
+(`trigger_situations.py:49`). FastAPI matches in declaration order, so `"reorder"` is parsed as a
+UUID, fails, and returns 422. **Drag-to-reorder silently does nothing** in the ladder and the plan
+builder. `accommodations.py` gets the order right and is the model.
 
-- `PUT /ladders/{ladder_id}/rungs/reorder` (`backend/app/api/routers/ladders.py:72`) is shadowed by
-  `PUT /ladders/{ladder_id}/rungs/{rung_id}` (line 55).
-- `PUT /plans/{plan_id}/triggers/reorder` (`trigger_situations.py:82`) is shadowed by
-  `PUT /{trigger_id}` (line 49).
+**What changes:** move each reorder declaration above the UUID route.
 
-So `"reorder"` is parsed as a rung or situation id, fails UUID validation, and returns 422.
-Drag-to-reorder does nothing in the ladder and the plan builder. `accommodations.py` has the same
-pair in the right order and works — use it as the model.
-
-Found while verifying the security review; unrelated to it and pre-existing.
-
-**Fix:** move each reorder declaration above the UUID route. Then add a test asserting each reorder
-URL routes to its own handler, so a route added above them re-breaks visibly rather than silently.
+**How to tell it worked:** each reorder URL matches its own endpoint. Add a test so a route added
+above them re-breaks visibly.
 
 ---
 
+# Clinician
+
+Transcribed from the build-status table and Peter's July plan. **Needs his app review** before an
+agent can take any of them.
+
+| | Item | Today | Size |
+|---|---|---|---|
+| C1 | **Granting and revoking a clinician's access — no UI** | Endpoints exist and are tested; no screen. See the full entry below. | M |
+| C2 | **Close / relapse-prevention tab** | Tab exists, body is the literal string "Placeholder". | M |
+| C3 | **Global Reports page** | Nav item disabled. Per-patient reports exist. | M |
+| C4 | **Settings / profile** | Nav item disabled, no page. | M |
+| C5 | **Scheduling / appointments** | Free-text next-appointment field only. No calendar or booking. | L |
+| C6 | **Clinician education modules** | Content is real; progress is `localStorage` only, so it is lost on another device. Some in-checklist links say "coming soon". | M |
+| C7 | **"Run AI review" has never done anything** | `run_ladder_review` reads `ladder_rungs`, which has zero rows in production. Decide what it should read now rungs are behaviour rows. | M |
+| C8 | **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
+| C9 | **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
+| C10 | **Treatment journey restructure** | Setup / Run the plan / Close. Peter's item 22 — confirm what was built. | L |
+
+## Granting and revoking a patient's clinicians — no UI
+
+**Priority: high — I shipped access control that cannot be administered.** Raised 2026-08-28. `M`
+
+**Today:** access is enforced (`patient_access_grants`, live 2026-08-28) and the three endpoints
+exist and are tested — `GET/POST /patients/{patient_id}/access` and
+`DELETE /patients/{patient_id}/access/{practitioner_id}`. There is no screen. Access can only be
+changed through the API or the database, so nobody can hand a patient over from the app.
+
+Note: two of the three clinicians at Test School are institution admins, who bypass grants
+entirely. The boundary is only as tight as who holds admin.
+
+**What changes:** a panel on the patient page listing who has access, with add and remove. Adding
+needs a list of colleagues in the institution — **no endpoint returns that today**, so it is part of
+the work.
+
+**How to tell it worked:** grant a colleague from the UI and they can open the patient; revoke and
+they cannot. Revoking the last one is refused (409, already enforced).
+
+**Gate:** `/security-review`.
+
+---
+
+# Teen
+
+| | Item | Today | Size |
+|---|---|---|---|
+| T1 | **Reminders / notifications** | Schedule data is written; nothing delivers it. No scheduler exists. Twilio/A2P 10DLC is the long pole. Tabled 2026-07-28. | L |
+| T2 | **"Hi Patient" personalisation edge** | Falls back to the literal word. | S |
+| T3 | **Teen app and the flat ladder** | Deferred: the teen app still reads situations → behaviours through the per-trigger routes. Its own redesign comes first. | L |
+| T4 | **Milestone rewards** | Peter's item 21. Needs a defined milestone set. | M |
+
+Most of the teen surface is built. The July plan's items 13–19 (approved-experiment screen,
+before-state, in-the-moment, after-state, hard paths, progress, chat) all shipped in the reorg on
+2026-07-28.
+
+---
+
+# Parent
+
+**The least built surface, and the one the July plan leaned on most.** An MVP exists on branch
+`parent-experience` — parent home, chat, tips, log-a-moment, plus the clinician focus toggle and
+admin parent tips — **not merged, and its migration has never run.**
+
+| | Item | Today | Size |
+|---|---|---|---|
+| P1 | **Decide the fate of `parent-experience`** | Branch exists, unmerged, migration unrun. Merge, rebuild or drop — first question, blocks the rest. | S |
+| P2 | **Parent home** | Placeholder: "ladder will appear here soon". | M |
+| P3 | **Accommodation ladder / tracking** | Not started. Backend and clinician side are ready to build on. | L |
+| P4 | **Two-parent account model** | Peter's items 2 and 3, marked blocking. Does a case support two parent accounts today? May be a schema change, not a feature. Several parent items assume it. | L |
+| P5 | **Parent accommodation experiments** | commit → before → after → too_hard, same lifecycle as the child's. Peter's item 7. | L |
+| P6 | **Parent weekly consistency check-in** | Held every time / mostly / caved. Not per-instance logging. Lapses surface to the clinician. | M |
+| P7 | **Parent exposure reminders** | Parent told an exposure is happening and what they should and should not do. Fires on the scheduled date and on the child's commit. Depends on a scheduler existing. | L |
+| P8 | **Parent ↔ clinician chat** | Adult-to-adult, lighter safety burden than the teen channel. | M |
+| P9 | **Child rates parent accommodations** | In-app, supports ranges, parent can see the ratings. **The child must be told the parent will see them** — that is a clinical and a trust decision, not a UI one. | M |
+| P10 | **Progress / charts, multi-screen nav** | Not started. Single route only. | M |
+
+---
+
+# Admin
+
+| | Item | Today | Size |
+|---|---|---|---|
+| A1 | **Patient management** | List and delete only; no edit or detail. | M |
+| A2 | **Waitlist** | Read-only; no approve, convert or export. | M |
+| A3 | **Data / exports** | Not started. Overlaps the HIPAA patient-rights work. | M |
+| A4 | **Feature flags / config** | Not started. | M |
+
+---
+
+# Backend and infrastructure
+
+## No scheduler exists
+
+**Priority: blocks three separate features.** `L`
+
+**Today:** reminders and missed-experiment detection fire only from a manual admin POST. Teen
+reminders (T1), parent exposure reminders (P7) and the arrow harvest all want one.
+
+**What changes:** a scheduled runner. Railway cron is the obvious first answer since the service is
+already there.
+
+**How to tell it worked:** something fires on its own, and a failure is visible rather than silent.
+
+## Smaller, already agreed
+
+- **`patients` router is included twice** in `backend/app/main.py:31` and `:44`, so every patients
+  route registers twice. Harmless, but it inflates the route count and confuses the sweep. `S`
+- **`behavior_type` holds 11 distinct values across 136 rows** — `safety` / `safety_behavior` /
+  `safety_seeking`, `cognitive` / `anxious_cognition`. Anything reading a child's rungs reads that
+  mess, including the ladder-generation feature. `S`
+- **A stale migration reference**: `2408a7d29380` names a `down_revision` no file defines. It is why
+  a hand-picked revision id silently created a cycle on 2026-08-28. `S`
+- **`.claude/settings.local.json` has 279 allow entries** — worth pruning to patterns. `S`
+
+## Development setup — what is left
+
+From [`dev-setup.md`](plans/dev-setup.md). Items 1, 3 and 4 are done (test database and 64 backend
+tests; CI on push; this file).
+
+- **`vitest` + component tests.** `M` **The frontend has zero tests.** Every backend defect this
+  month was caught by a test; every frontend one was caught by `tsc -b` or by Peter looking at it.
+  `apps/web/src/pages/practitioner/__SessionPreview.tsx` already seeds fixtures and renders the
+  session phases — it is a component test with the assertions missing, and the phases are already
+  exported for it.
+- **CI does not gate deploys.** `S` It runs on push to `main`; Railway builds from the same push. CI
+  tells you a build was broken, it does not stop it reaching production.
+- **`PatientPage.tsx` is 3,150 lines.** `M` Down from 3,931. Matters when two agents edit it at once.
+
+---
+
+# AI features
+
 ## Monitoring extraction discards the clinician's corrections
 
-**Priority: high — it is what unblocks improving extraction at all.** Raised 2026-08-28.
+**Priority: high — it is what unblocks improving extraction at all.** Raised 2026-08-28. `M`
 
 **Today:** `POST /patients/{patient_id}/monitoring/extract`
-(`backend/app/api/routers/patients.py:912`) sends the parent's monitoring notes to the model and
-returns a proposed list of situations, scores and behaviours. The clinician reviews it, keeps some,
-rewrites some, changes scores, deletes what is wrong, adds what was missed, and commits the result
-into the treatment plan. `apps/web/src/api/monitoring.ts:83` says as much in its own comment:
-*"The clinician reviews/edits/overwrites this before committing it into the treatment plan."*
+(`backend/app/api/routers/patients.py:912`) returns a proposed list of situations, scores and
+behaviours. The clinician keeps some, rewrites some, deletes what is wrong, adds what was missed,
+and commits the result. `apps/web/src/api/monitoring.ts:83` says exactly this in its own comment.
+The backend then stores **only `plan.last_extracted_at`**. The proposal is never saved.
 
-The backend then stores **only `plan.last_extracted_at`**. The proposal itself is never saved.
-
-So every extraction produces a trained clinician marking the model's work item by item — right,
-wrong, close but the score is off, missed this entirely — and the product throws it away.
+So every extraction has a trained clinician marking the model's work item by item, and the product
+throws it away.
 
 **Why it matters:** improving extraction needs examples of "this input, this correct output". The
-harness has **18**, and they exist because Dr. Walker reviewed a batch in June 2026. Her review time
-is the bottleneck, which is why the set has not grown since. Without new cases the tuning loop in
-`AI-dev/Extraction Loop/float_harness` (`reviser.py` + `loop_driver.py`) will just overfit those 18.
+harness has **18**, because Dr. Walker reviewed a batch in June 2026 and her time is the bottleneck.
+Without new cases the tuning loop in `AI-dev/Extraction Loop/float_harness` just overfits those 18.
 
 **What changes:** persist what the model proposed alongside what was committed. The difference is
-the correction. Probably a table keyed on patient and extraction time, holding the raw proposal and
-a reference to the plan it fed.
+the correction.
 
-**What it is NOT:** confirmed answers. A clinician rewriting wording may simply prefer their own
-phrasing, and a deletion may mean "not relevant now" rather than "wrong". These are candidates.
-The value is that Dr. Walker's job changes from *authoring* cases to *confirming* a pre-filtered
-pile — and only where the clinician actually changed something.
+**What it is NOT:** confirmed answers. A rewrite may be preference; a deletion may mean "not now".
+These are candidates — the value is that Dr. Walker confirms a filtered pile instead of authoring
+from a blank page.
 
-**PHI:** the proposal is clinical text about a child, so it lives under the same access rules as
-everything else, which since 2026-08-28 means grants. `/security-review` before it ships.
-
-**Related, and worth doing first:** the harness is still wired to a stub. `extractor_adapter.py:33`
-returns the expected fixture as the answer, so every check passes trivially and it has never run
-against the real extractor. It also reads its own copy of the prompt
-(`Float-Extractor-Prompt.md`) while the shipped prompt is inline at
-`backend/app/api/routers/patients.py:751`. Point it at the shipped prompt, the way
-`AI-dev/Arrow Eval/run_eval.py` does — a harness testing its own copy proves nothing. **Expect the
-first real score to be well below the 0.926 on record; that number came from the stub returning the
-right answer to itself.**
+**Do first, and smaller:** the harness is wired to a stub. `extractor_adapter.py:33` returns the
+expected fixture as the answer, so every check passes trivially and it has **never run against the
+real extractor**. It also reads its own copy of the prompt (`Float-Extractor-Prompt.md`) while the
+shipped prompt is inline at `backend/app/api/routers/patients.py:751`. Point it at the shipped
+prompt, as `AI-dev/Arrow Eval/run_eval.py` does. **Expect the first real score to be well below the
+0.926 on record — that number came from the stub answering itself.**
 
 Also split the cases into a tuning half and a held-out half. Whatever the loop optimises against
 stops being a measurement.
 
+**Gate:** `/security-review` — the proposal is clinical text about a child.
+
+## Ladder generation — build it
+
+`L`. Planned in [`ladder-generation.md`](plans/ladder-generation.md); decisions settled 2026-08-28.
+61 real situations are pulled as candidate cases and six mechanical checks are written.
+
+**Waiting on:** Dr. Walker's review (link live at `/review/<token>`), then the scorer, then the
+feature. The scorer is not optional here — narrowing a situation *means* adding specifics, so there
+is no word-level safety check the way there was for the arrow.
+
 ---
+
+# Peter's — not for Claude to generate
+
+## Product review and backlog generation
+
+**Owner: Peter.** Raised 2026-08-27, restated 2026-08-29.
+
+The per-surface items above are transcribed, not reviewed. Turning them into items an agent can
+take needs Peter going through the clinician, teen and parent experiences.
+
+Claude reading the source produces only the mechanical half — disabled buttons, TODOs, a table
+nothing writes to. It cannot find a screen that works but confuses, a flow with too many steps, or
+something missing that was expected. Those came from Peter using it ("it's a mess", "we're still
+loading up the screen", "the situation is too small to read"), and nothing in the code would have
+surfaced them.
+
+## Decisions that block work below
+
+- **Covered entity or business associate?** Shapes every HIPAA item.
+- **The fate of branch `parent-experience`** (P1) — blocks the whole parent surface.
+- **Two-parent account model** (P4) — Peter's own note says several parent items assume it.
+
+---
+
+# What changed since the July status table
+
+Peter's build-status table is dated 2026-07-29; there have been 93 commits since. Corrections:
+
+- **"Automated tests: Not started"** — the backend now has 64 across 8 files, including a sweep of
+  every route as three wrong identities. The frontend still has none.
+- **"Hosting: web build has no tsc gate"** — CI now runs `tsc -b --force` and the backend tests on
+  every push. It still does not block the deploy.
+- **Parent accommodation plan (clinician side)** — built, and the parent-side MVP exists unmerged on
+  a branch.
+- **Access control** — a clinician could open any patient in their institution. Fixed 2026-08-28;
+  access is now an explicit grant.
+- **Downward arrow** — was live and never measured. Now has 20 cases, six checks, and four rules in
+  the shipped prompt derived from Peter's own target questions.
+
+---
+
+# Blocked on real usage
 
 ## Arrow evaluation — nothing triggers the harvest
 
@@ -149,26 +383,3 @@ Do not put case collection into the app's own code — it is eval plumbing on a 
   See [`eval-cases-burned-by-putting-them-in-the-prompt.md`](solutions/eval-cases-burned-by-putting-them-in-the-prompt.md).
 
 ---
-
-## Product review and backlog generation
-
-**Owner: Peter. Not for Claude to generate.** Raised 2026-08-27.
-
-The open-items list needs to come from Peter reviewing the product. Claude reading the source code
-produces only the mechanical half — disabled buttons, TODOs, a table nothing writes to. It cannot
-find a screen that works but confuses, a flow with too many steps, or something missing that was
-expected. Those came from Peter looking at it all day ("it's a mess", "this is still loading up the
-screen"), and nothing in the code would have surfaced them.
-
-Any list Claude produces on its own will be partial and will read as more complete than it is.
-
-## Smaller, already agreed
-
-- **"Plan an experiment" is missing from the flat ladder.** It exists only in the situations view
-  (`BehaviorPanel`), so an ungrouped rung cannot be reached. See
-  [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md).
-- **"Run AI review" has never done anything.** `run_ladder_review` reads `ladder_rungs`, which has
-  zero rows in production. Decide what it should read now that rungs are behaviour rows.
-- **Session mode still only asks "what do you do so it feels safer?"** — it should also be able to
-  add a version-of-this-situation rung. Phase 3 of the flat-ladder plan.
-- **`.claude/settings.local.json` has 279 allow entries** — worth pruning to patterns.
