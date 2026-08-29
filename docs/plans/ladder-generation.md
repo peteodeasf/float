@@ -154,6 +154,17 @@ lessons already applied:
 | No two suggestions are the same thing reworded | word overlap, as `uses_their_words` does |
 | Nothing introduced that the child never said | word-level, and it is only the crude half — see below |
 
+### 6. Judgement is per suggestion: show / don't show
+
+Peter, 2026-08-28. No score, no written reason.
+
+- **show** — worth offering as a suggestion
+- **don't show** — not a good suggestion
+
+Deliberately NOT "would you put this on the ladder". The cases are test data, so nobody can say
+whether a suggestion would end up on a real child's ladder. What a reviewer CAN say is whether the
+app should have offered it.
+
 ### What only a scorer can settle
 
 - Is each suggestion a **narrower version of this situation**, or a different situation?
