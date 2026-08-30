@@ -2,8 +2,8 @@
 
     python "AI-dev/scripts/seed_review_round.py" ladder-v1 "AI-dev/Ladder Eval/review_sheet_source.json" "Dr. Walker" "Peter"
 
-Writes to whatever DATABASE_URL points at — which is PRODUCTION unless you say otherwise. That is
-the point here: the link has to work for someone who is not on this machine.
+Writes to PRODUCTION, which since 2026-08-29 needs a tunnel — see AI-dev/scripts/db.py. That is the
+point here: the link has to work for someone who is not on this machine.
 
 Prints one link per reviewer. Re-running with the same slug reuses the round and adds any reviewer
 that is missing, so it is safe to run twice.
@@ -19,11 +19,8 @@ ENV = HERE.parent.parent / "backend" / ".env"
 DEPLOYED = "https://floatcbt-production.up.railway.app"
 
 
-def setting(key: str, default: str = "") -> str:
-    for line in ENV.read_text().splitlines():
-        if line.startswith(key + "="):
-            return line.split("=", 1)[1].strip()
-    return default
+sys.path.insert(0, str(HERE))
+from db import connect  # noqa: E402
 
 
 async def main() -> int:
@@ -33,7 +30,6 @@ async def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     slug, source, names = args[0], pathlib.Path(args[1]), args[2:]
 
-    import asyncpg
     cases = json.loads(source.read_text())
     items = [{
         "key": c["id"],

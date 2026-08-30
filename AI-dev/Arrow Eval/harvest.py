@@ -41,11 +41,8 @@ HARVEST_FROM = "2026-08-28"
 JUNK_SITUATIONS = {"test situation", "test", "asdf"}
 
 
-def database_url() -> str:
-    for line in ENV_FILE.read_text().splitlines():
-        if line.startswith("DATABASE_URL="):
-            return line.split("=", 1)[1].strip().replace("postgresql+asyncpg://", "postgresql://")
-    raise SystemExit(f"No DATABASE_URL in {ENV_FILE}")
+sys.path.insert(0, str(HERE.parent / "scripts"))
+from db import connect  # noqa: E402
 
 
 def pairs_of(arrow_steps) -> list[dict]:
@@ -93,8 +90,6 @@ def candidates_from(row) -> list[dict]:
 
 
 async def main() -> int:
-    import asyncpg
-
     existing = set()
     live = HERE / "cases.json"
     if live.exists():
@@ -104,7 +99,7 @@ async def main() -> int:
     since = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--since=")), HARVEST_FROM)
     since_date = date.fromisoformat(since)   # asyncpg wants a real date, not a string
 
-    conn = await asyncpg.connect(database_url())
+    conn = await connect()
     try:
         rows = await conn.fetch("""
             select a.id, a.created_at, a.facilitated_by, a.arrow_steps, ts.name as situation

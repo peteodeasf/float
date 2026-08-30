@@ -37,11 +37,8 @@ OUT = HERE / "cases_review.json"
 MIN_RATING, MAX_RATING = 1, 10
 
 
-def database_url() -> str:
-    for line in ENV_FILE.read_text().splitlines():
-        if line.startswith("DATABASE_URL="):
-            return line.split("=", 1)[1].strip().replace("postgresql+asyncpg://", "postgresql://")
-    raise SystemExit(f"No DATABASE_URL in {ENV_FILE}")
+sys.path.insert(0, str(HERE.parent / "scripts"))
+from db import connect  # noqa: E402
 
 
 def shape_of(rungs: list[dict], situation_name: str) -> str:
@@ -53,9 +50,7 @@ def shape_of(rungs: list[dict], situation_name: str) -> str:
 
 
 async def main() -> int:
-    import asyncpg
-
-    conn = await asyncpg.connect(database_url())
+    conn = await connect()
     try:
         rows = await conn.fetch("""
             select ts.id, ts.name, ts.description, ts.distress_thermometer_rating as dt,
