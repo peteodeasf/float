@@ -94,10 +94,16 @@ database over `postgres.railway.internal`.
 Cost: `backend/.env` and the scripts that query production (the review-round seeder, both case
 harvesters) no longer work as written. They need to go through `railway connect`.
 
-**3. Is the database encrypted at rest? We assume so. Nobody has checked.** `S`
+**3. Is the database encrypted at rest? Railway does not say.** `S`
 
-Railway Postgres. Confirm it, and write down where you confirmed it. Traffic to and from the app is
-already encrypted.
+Checked 2026-08-29. Railway documents encryption at rest for registry credentials and for private
+networking. The volumes page says nothing. So it cannot be confirmed from outside — it is a support
+question.
+
+**This turned out to be the smaller half of a bigger problem.** See item 7 below and
+[`hosting-for-real-patient-data.md`](plans/hosting-for-real-patient-data.md). On Cloud SQL,
+encryption at rest is on by default and documented, so the hosting decision answers this on its
+own.
 
 **4. There are no backups at all.** `M` — **needs a Railway plan upgrade, no work to do**
 
@@ -136,8 +142,19 @@ So the rule has to exist before the first real patient does, not after.
 
 ### Paperwork — blocking, and none of it is code
 
-**7. Business Associate Agreements.** Every vendor that touches PHI needs one, signed, before real
-patient data exists. From the code, that is at least:
+**7. Business Associate Agreements — and Railway wants $12,000 a year for theirs.** `L`
+
+**Railway only signs a HIPAA BAA at their $1,000/month committed spend tier, on a one-year
+commitment.** Found 2026-08-29. Without it, real patient data cannot legally live on Railway.
+
+That is the largest single item on this list, it has a lead time, and Peter's plan opens the
+patient study around December. Written up with the options, the costs, and pieces that can be done
+one at a time in [`hosting-for-real-patient-data.md`](plans/hosting-for-real-patient-data.md).
+Short version: Google Cloud's BAA is free and self-serve; the recommendation is Cloud Run plus
+Cloud SQL; paying Railway is still a legitimate answer because it buys back simplicity.
+
+Every vendor that touches patient data needs one, signed, before real patient data exists. From the
+code, that is at least:
 
 | Vendor | What reaches it |
 |---|---|
