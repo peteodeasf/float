@@ -89,9 +89,17 @@ harvesters) no longer work as written. They need to go through `railway connect`
 Railway Postgres. Confirm it, and write down where you confirmed it. Traffic to and from the app is
 already encrypted.
 
-**4. Backups nobody has ever restored from.** `M`
+**4. There are no backups at all.** `M` — **blocked on money, not work**
 
-A backup you have never restored is not a backup. Also decide how far back they go.
+Checked 2026-08-29: backups are **off**. Railway only offers them on the Pro plan, so turning them
+on is a plan upgrade, not a piece of engineering.
+
+Nothing to build. Two things to do when the plan changes: turn them on, and then actually restore
+one. A backup nobody has restored is not a backup. Also decide how far back they go.
+
+**Not needed before real patients, but before full launch.** Peter's call, 2026-08-29. Worth being
+straight about the exposure in the meantime: if the volume is lost today, everything is lost. That
+is fine while every patient is fake and stops being fine the day one is not.
 
 **5. No rule for what happens to data when someone leaves.** `M`
 
