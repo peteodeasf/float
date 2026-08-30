@@ -147,7 +147,7 @@ is a safety behaviour, and an exposure that keeps it is not an exposure. The rig
 
 This is the single biggest correction and it applies to most of the set.
 
-### 2. A smaller version has to still contain the feared thing.
+### 2. A built-in way out is an escape, and an escape is not a smaller version.
 
 > *"Leaving early, etc. does not work ever because the kid will know she doesn't have to sleep
 > there and all will be fine because she knows that."*
@@ -155,8 +155,18 @@ This is the single biggest correction and it applies to most of the set.
 "Stay at the group sleepover until bedtime, then get picked up" is not a smaller sleepover. It
 removes the sleeping, which is the whole fear, and the child knows it.
 
+**Peter's sharpening, 2026-08-29, and it merges this rule with the one above:** leaving early is
+not a weaker exposure, it *is* an escape — one of the ways the child avoids facing the thing. So
+proposing it as a rung is proposing an avoidance behaviour as treatment. The same mistake as
+keeping the fan, wearing a different costume.
+
+**The two rules are one rule.** A suggestion must not contain any of the ways the child avoids
+facing it: a safety behaviour they keep, an avoidance they perform, or an escape written into the
+plan.
+
 Note this is NOT a ban on short exposures. "Play the first ten minutes" is fine, because ten
-minutes of the game contains the feared thing. The test is whether the feared element survives.
+minutes of the game contains the feared thing and nothing about it is an escape. The test is not
+length — it is whether a way out has been built in.
 
 ### 3. You cannot write sub-situations without the feared outcome.
 
