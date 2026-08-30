@@ -45,7 +45,12 @@ patients hardest.
 
 ### Code — and the first one is the big gap
 
-**1. Nobody can see who opened which patient record.** `L`
+**1. Nobody can see who opened which patient record.** `L` — **DONE 2026-08-29.**
+Every clinician read now writes a row saying who, which patient, what and when, and whether they
+got in by a grant or as an institution admin. Readable by institution admins at
+`GET /patients/{patient_id}/access-log`. Plan: [`patient-access-log.md`](plans/patient-access-log.md).
+
+How it was done:
 
 We control who is *allowed* in. We do not record who actually went in.
 
@@ -59,12 +64,27 @@ covered.
 **How to tell it worked:** open a patient as a clinician, then find that visit in the log — who,
 which patient, when. **Gate:** `/security-review`. **Plan it first.**
 
-**2. The app never logs you out on its own.** `S`
+**2. The app logs you out after 30 minutes, whether or not you are using it.** `S`
 
-A clinic computer left open stays logged in. Check how long a login lasts
-(`backend/app/core/security.py`) and whether the screens time out.
+Checked 2026-08-29. A login lasts 30 minutes (`ACCESS_TOKEN_EXPIRE_MINUTES`). A refresh token is
+stored but **nothing ever uses it** — no code anywhere calls the refresh endpoint. So the session
+ends 30 minutes after signing in, even mid-note.
 
-**3. Is the database encrypted? We assume so. Nobody has checked.** `S`
+That satisfies the requirement by accident, and it is bad for clinicians.
+
+**What changes:** stay signed in while working, log out after a period of no activity. Better on
+both counts. **Needs a number from Peter** — 15 minutes is typical in healthcare.
+
+**3a. The database was reachable from the public internet.** — **CLOSED 2026-08-29.**
+Railway keeps databases private by default; Public Access had been turned on. The TCP proxy
+(`junction.proxy.rlwy.net:51458`) and the public domain (`postgres-production-d4e3.up.railway.app`)
+are both removed. Verified: a connection from outside is refused, and the app still reaches the
+database over `postgres.railway.internal`.
+
+Cost: `backend/.env` and the scripts that query production (the review-round seeder, both case
+harvesters) no longer work as written. They need to go through `railway connect`.
+
+**3. Is the database encrypted at rest? We assume so. Nobody has checked.** `S`
 
 Railway Postgres. Confirm it, and write down where you confirmed it. Traffic to and from the app is
 already encrypted.
@@ -81,7 +101,12 @@ An admin can already delete a patient (`DELETE /admin/patients/{patient_id}`). C
 actually leaves behind — nothing in this database deletes automatically, which has bitten us before
 ([why](solutions/delete-fails-silently-no-fk-cascade.md)).
 
-**6. We commit patients' words into the code repository.** `S` — **fix before real patients**
+**6. We commit patients' words into the code repository.** `S` — **DONE 2026-08-29.**
+The two harvested files are gitignored and untracked, and both harvesters carry a warning saying a
+decision is needed before they run against real patients. History deliberately not rewritten: what
+is already committed is test data.
+
+How it was done:
 
 `AI-dev/Ladder Eval/cases_review.json`, `review_sheet_source.json` and the arrow case files all
 contain situation text copied straight out of the database, saved into git.
@@ -255,6 +280,37 @@ tests; CI on push; this file).
 ---
 
 # AI features
+
+## Rotate the production database password
+
+**Raised 2026-08-29. Deferred by Peter the same day — not urgent, but do it.** `S`
+
+The password was pasted into a chat transcript on 2026-08-29, so treat it as known.
+
+**Why it is not urgent:** the database came off the public internet the same day. Its TCP proxy and
+its public domain are both gone, so the only route in is `postgres.railway.internal`. Using the
+password now means already being inside Railway's network.
+
+**Why it still matters:** it is a credential that is written down somewhere it should not be.
+
+**Do it in this order. The obvious order breaks the app.**
+
+`POSTGRES_PASSWORD` is only read when the database is first created. The data volume already
+exists, so changing that variable does NOT change the password inside Postgres — but `DATABASE_URL`
+is built from it, so the app would immediately be using a new password against a database that
+still has the old one. Nothing connects.
+
+1. Generate the new value.
+2. Change the real password first, over the private network:
+   `railway connect --project 6f7aa50b-3962-4784-af1d-9419f40ccecb --environment production`
+   then `ALTER USER postgres WITH PASSWORD '<the new one>';`
+3. Then set `POSTGRES_PASSWORD` to that same value in Railway and let it redeploy.
+4. Update `backend/.env`.
+
+**How to tell it worked:** a login attempt against the live API returns 401, not 500. A 500 means
+the app cannot reach the database.
+
+---
 
 ## Monitoring extraction discards the clinician's corrections
 
