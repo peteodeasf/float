@@ -40,11 +40,10 @@ async def main() -> int:
         "note": c.get("note"),
     } for c in cases]
 
-    url = setting("DATABASE_URL").replace("postgresql+asyncpg://", "postgresql://")
-    # NOT read from backend/.env: app.core.config.Settings rejects unknown keys, so an extra line
-    # in that file stops the whole app booting. Pass --base= to override.
+    # The deployed URL is NOT read from backend/.env: app.core.config.Settings rejects unknown
+    # keys, so an extra line in that file stops the whole app booting. Pass --base= to override.
     base = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--base=")), DEPLOYED)
-    conn = await asyncpg.connect(url)
+    conn = await connect()
     try:
         row = await conn.fetchrow("select id from review_rounds where slug=$1", slug)
         if row is None:

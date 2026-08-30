@@ -1,0 +1,155 @@
+[
+  {
+    "id": "sit-80c45b30",
+    "situation": "Hang with friends at \"bee bench\" during spring (lots of bees)",
+    "existing_rungs": [
+      "Carry a fan",
+      "I wear a hat and sunglasses."
+    ],
+    "suggestions": [
+      "Sit by a flowering tree in the garden for five minutes",
+      "Sit on a park bench where you can see bees around",
+      "Sit at the bee bench when it is quiet, for five minutes",
+      "Sit at the bee bench at lunchtime when the flowers are out",
+      "Sit at the bee bench for a whole lunch break with friends"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-f1fdea33",
+    "situation": "Give an oral report",
+    "existing_rungs": [
+      "Avoids Give an oral report"
+    ],
+    "suggestions": [
+      "Imagine giving the report, in your head",
+      "Say it out loud in front of a mirror, imagining the class",
+      "Watch videos of other kids giving reports in class",
+      "Give the report to one parent",
+      "Give it to the whole family",
+      "Give it to one friend",
+      "Give it to a few friends",
+      "Give it to a small group in class",
+      "Give the report to the whole class"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-e08ad9be",
+    "situation": "Eating lunch in the cafeteria",
+    "existing_rungs": [
+      "Wears headphones so nobody talks to her",
+      "Only goes to cafeteria if a close friend is with her",
+      "Eats in the bathroom or library to avoid cafeteria"
+    ],
+    "suggestions": [
+      "Eat lunch at a quiet end of the cafeteria for ten minutes",
+      "Eat at a table with people at the other end",
+      "Eat at a table with people next to you",
+      "Eat at a busy table at the busiest time"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-53432335",
+    "situation": "Attending peer birthday party",
+    "existing_rungs": [
+      "Requests parent remain present throughout",
+      "Maintains physical proximity to parent",
+      "Expresses doubt about peer acceptance",
+      "Refuses to join peer activities"
+    ],
+    "suggestions": [
+      "Go to a friend's house to play, without your parent",
+      "Go to a small get-together at a friend's house without your parent",
+      "Go to the party and join one game",
+      "Stay at the party and join the games with everyone"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-9df60c1e",
+    "situation": "Taekwondo class",
+    "existing_rungs": [
+      "Insists parents stay to watch the whole class; scans the room for them and runs over or gives them a look if they step away even briefly"
+    ],
+    "suggestions": [
+      "Go to a class where your parents drop you off and leave",
+      "Go to a class where you cannot see the door",
+      "Go to a full class where your parents come back at the end"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-e76a0847",
+    "situation": "Attending soccer practice",
+    "existing_rungs": [
+      "Reports somatic complaints when arriving",
+      "Symptom resolution upon leaving",
+      "Refuses to enter facility, remains in car",
+      "Somatic complaints at arrival, refusing entry",
+      "Remaining in car, immediate relief upon leaving"
+    ],
+    "suggestions": [
+      "Walk in and stay at the edge of the pitch for the first drill",
+      "Join the warm-up and stay for the first half",
+      "Stay for the whole practice"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-82f50a2f",
+    "situation": "Playing soccer on Saturday",
+    "existing_rungs": [
+      "Reporting vague injury to avoid participation"
+    ],
+    "suggestions": [
+      "Go to the game and warm up with the team",
+      "Play the first ten minutes",
+      "Play the first half",
+      "Play the whole game"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-d6e82a24",
+    "situation": "Sitting Alone in Cafeteria",
+    "existing_rungs": [
+      "Not going to cafeteria"
+    ],
+    "suggestions": [
+      "Sit at a table on your own for five minutes",
+      "Sit on your own at a table with people at the other end",
+      "Sit on your own for a whole lunch"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-8bdd63f6",
+    "situation": "Completing school report assignment",
+    "existing_rungs": [
+      "Catastrophized about inability to complete task",
+      "Sought parental help to manage distress"
+    ],
+    "suggestions": [
+      "Write the first sentence on your own",
+      "Write for ten minutes on your own",
+      "Write a whole section on your own",
+      "Finish the report on your own"
+    ],
+    "note": null
+  },
+  {
+    "id": "sit-5254cf39",
+    "situation": "School drop-off",
+    "existing_rungs": [
+      "Refuses to get out of the car, kicks the back of the seat, cries, and yells that mom is the worst mother ever"
+    ],
+    "suggestions": [
+      "Get out of the car at the gate and walk in on your own",
+      "Get out at the usual spot and walk in on your own",
+      "Get out and walk in on your own when the yard is busy"
+    ],
+    "note": null
+  }
+]
