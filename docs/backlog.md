@@ -394,6 +394,54 @@ is no word-level safety check the way there was for the arrow.
 
 ---
 
+# Education content
+
+## Video content — production
+
+**Owner: not engineering.** Raised 2026-08-30. Outside this workstream.
+
+Recorded here so the app-side item below has something to point at, and so it is visible that the
+app work is blocked on content existing rather than on code.
+
+There is already one place in the product that assumes video exists and has none: the consultation
+checklist item `patient_worry_hill_video` — *"Teach the Worry Hill — watch video together"* — in
+`backend/app/data/default_checklist.py:31` and `apps/web/src/lib/checklists.ts:29`. It carries a 🎬
+icon and a "Worry Hill video" label pointing at nothing.
+
+## Put video into each app
+
+**Priority: after there is content to put in.** Raised 2026-08-30. `L`
+
+**Today:** there is no video anywhere. Every piece of education in the product is text.
+
+Three places already exist and would each take video differently:
+
+| Where | What it is today |
+|---|---|
+| **Clinician education modules** | `apps/web/src/data/education.ts`, rendered by `EducationIndexPage` / `EducationModulePage`. Text modules; progress is `localStorage` only, so it is lost on another device (see C6). |
+| **Just-in-time tips for the teen** | `JitTip` in `backend/app/models/jit_content.py` — a title and a body, matched to a situation by tags. Shown on the exposure screen. Admin has full CRUD. |
+| **Consultation checklist** | Items can carry a link with an icon and label. `patient_worry_hill_video` already does, and points nowhere. |
+
+**What changes:** each of those needs somewhere to put a video, and the three are not the same
+problem. A tip shown to a child in the moment before an exposure is not a five-minute module a
+clinician watches once.
+
+**Questions that shape it, and they are Peter's:**
+
+- **Where do the files live?** There is no file storage of any kind in Float today — no uploads, no
+  bucket. Either that gets built, or video is hosted elsewhere and embedded.
+- **Does a child watch video in the moment, or only outside an exposure?** A tip is read in seconds
+  while anxious. That may be exactly the wrong moment for a video, or exactly the right one — a
+  clinical question worth asking Dr. Walker rather than assuming.
+- **Does watching get recorded?** "Did they watch it" is a different feature from "here is a
+  video", and it is the one that needs a database change.
+
+**Worth knowing:** if video is hosted by a third party and a child's viewing is identifiable, that
+vendor is handling patient data and needs an agreement like everyone else. See the BAA item. A
+plain embedded player on a public video is not that; a per-child playlist is.
+
+---
+
 # Peter's — not for Claude to generate
 
 ## Product review and backlog generation
