@@ -127,6 +127,100 @@ makes the feature useless.
 Confirms the extraction split — cheap to generate, human to confirm. Her authoring from scratch is
 the bottleneck that has kept the extraction set at 18 since June 2026.
 
+## Dr. Walker's review, 2026-08-29 — read this before writing any prompt
+
+She marked 26 of 60 and wrote on six situations. Her comments change the feature, not just the
+wording. Her rules, and what each one costs us:
+
+### 1. Vary the situation. Never keep a safety behaviour.
+
+> *"Select other locations that are a bit less scary — like a flowering tree, the more locations
+> without any SABs the better. We ditch the hats sunglasses, fans and make the exposures about
+> locations."*
+
+Our bee-bench suggestions varied **how long** and **whether the fan is there**. Both wrong: the fan
+is a safety behaviour, and an exposure that keeps it is not an exposure. The right axis was
+**where** — a flowering tree, then somewhere with more bees.
+
+**15 of our 60 suggestions keep a safety behaviour**: "keeping the fan", "with your close friend",
+"with your parent in the room", "with your parents watching", "with a parent walking you in".
+
+This is the single biggest correction and it applies to most of the set.
+
+### 2. A smaller version has to still contain the feared thing.
+
+> *"Leaving early, etc. does not work ever because the kid will know she doesn't have to sleep
+> there and all will be fine because she knows that."*
+
+"Stay at the group sleepover until bedtime, then get picked up" is not a smaller sleepover. It
+removes the sleeping, which is the whole fear, and the child knows it.
+
+Note this is NOT a ban on short exposures. "Play the first ten minutes" is fine, because ten
+minutes of the game contains the feared thing. The test is whether the feared element survives.
+
+### 3. You cannot write sub-situations without the feared outcome.
+
+Said twice, on the oral report and on raising a hand:
+
+> *"I can see that we need to downward arrow here to help us conceptualize the case and feared
+> outcomes."*
+> *"What is feared outcome of raising hand? That will determine sub situations."*
+
+So the downward arrow is a **prerequisite**, not extra context. This settles Peter's earlier
+decision that the model sees the whole plan including the arrow — she is saying it cannot work
+without it.
+
+**Implication for the product:** a situation with no arrow should probably not get suggestions at
+all. Offering them anyway is guessing at the fear.
+
+### 4. Start far lower than we did.
+
+Her ladder for the oral report, in her order:
+
+> imagine giving the report in your mind · stand in front of a mirror imagining you are in class ·
+> give it to a parent · both parents · a sibling · all siblings · the entire family · a friend ·
+> two friends · several friends · watch videos of kids giving oral reports in class
+
+Our lowest was "read one paragraph to the teacher after class". Hers starts with imagining it.
+
+**Two rung kinds we do not have:** imagining the situation, and watching someone else do it.
+
+### 5. Find out what they already do before proposing anything.
+
+> *"First, it needs to be determined if kid goes to homes of other kids at all. If not, we start
+> there."* … *"Does kid tolerate others sleeping over at her house? Is it just that she won't sleep
+> at another house?"*
+
+The ladder starts from what the child can already do. We do not record that, and the model cannot
+infer it.
+
+### 6. The recorded situation is sometimes a symptom, not the target.
+
+> On getting ready for school: *"the obvious issue that needs to be targeted first is what is this
+> kid worried will happen at school… The delay in getting ready is a symptom of that."*
+
+We flagged this shape earlier as "routine-shaped situations do not break down". The real reason is
+worse: breaking it down at all is treating the wrong thing.
+
+### 7. Sometimes the fear is of the body, and needs its own exposures.
+
+> *"he/she probably has fears they will show signs of physical anxiety that others will notice and
+> then judge them for. Here it might be appropriate to treat the fears of the sensations too."*
+
+A whole kind of exposure the app has no concept of.
+
+## What this does to the plan
+
+- **The case set is not a set of right answers.** Most of our 60 are wrong, and now usefully so —
+  they are examples of the mistake in rule 1.
+- **The arrow becomes a precondition**, which is a product decision as much as a prompt one.
+- **`behavior_type` cleanup is now a dependency.** The check rule 1 implies — does this suggestion
+  keep a safety behaviour — cannot be written while "Carry a fan" is stored as `avoidance`. See
+  `checks.py` for why word overlap alone cannot do it.
+- **She has not yet told us what a good set looks like**, only what is wrong with ours. Her oral
+  report ladder is the one worked example, and it is worth building the next round around asking
+  her to do that for two or three more.
+
 ## The harness
 
 Same shape as [`AI-dev/Arrow Eval`](../../AI-dev/Arrow%20Eval/README.md), which now works, with its

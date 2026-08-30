@@ -15,7 +15,25 @@ situation, whether it varies something real, and whether it puts a fear in front
 they never raised — none of that is mechanical. It needs a scorer, and the scorer's rubric needs
 Dr. Walker.
 
-Two checks were written and REMOVED after drafting answers by hand and watching them fail on
+THE MOST IMPORTANT RULE CANNOT BE CHECKED HERE YET. Dr. Walker, 2026-08-29, on the bee bench case:
+*"We ditch the hats sunglasses, fans and make the exposures about locations."* An exposure that
+keeps the thing the child does to feel safe is not an exposure — and 15 of our 60 drafted
+suggestions kept one.
+
+It looks mechanical, because the app records each child's behaviours. It is not, for two reasons
+found by trying it:
+
+  - An AVOIDANCE is usually worded as the opposite of the target. "Get out of the car at the gate"
+    overlaps with "Refuses to get out of the car" — and doing the opposite of an avoidance is
+    exactly right. Word overlap cannot tell that from keeping a safety behaviour.
+  - The type field that would separate them is wrong. "Carry a fan" is stored as `avoidance`. It is
+    a safety behaviour. See the `behavior_type` item in docs/backlog.md — 11 distinct values across
+    136 rows.
+
+So this stays with the scorer until behaviour types are trustworthy, and the cleanup of that column
+is now a dependency of this feature rather than tidying.
+
+Two other checks were written and REMOVED after drafting answers by hand and watching them fail on
 answers that were right:
 
   - `stays_in_the_situation` (shares a word with the situation name) rejected "Say hi to one person
