@@ -219,3 +219,66 @@ async def test_she_can_add_several_to_one_situation(api, db):
     page = (await api.get(f"/review/{reviewer.token}")).text
     for body in ["Sit near the door", "Eat with one friend at the end table", "Ten minutes only"]:
         assert body in page
+
+
+# --- her comments ----------------------------------------------------------------------
+
+async def test_a_comment_is_saved_and_comes_back(api, db):
+    from app.models.review import ReviewComment
+
+    _, reviewer = await _round(db)
+    r = await api.post(f"/review/{reviewer.token}/comment",
+                       json={"item_key": "sit-1",
+                             "body": "We ditch the fan and make the exposures about locations."})
+    assert r.status_code == 204
+
+    saved = (await db.execute(select(ReviewComment))).scalars().all()
+    assert len(saved) == 1
+    assert "ditch the fan" in saved[0].body
+
+    page = (await api.get(f"/review/{reviewer.token}")).text
+    assert "ditch the fan" in page
+
+
+async def test_saving_again_replaces_rather_than_adds(api, db):
+    from app.models.review import ReviewComment
+
+    _, reviewer = await _round(db)
+    await api.post(f"/review/{reviewer.token}/comment", json={"item_key": "sit-1", "body": "first"})
+    await api.post(f"/review/{reviewer.token}/comment", json={"item_key": "sit-1", "body": "second"})
+
+    saved = (await db.execute(select(ReviewComment))).scalars().all()
+    assert len(saved) == 1
+    assert saved[0].body == "second"
+
+
+async def test_clearing_a_comment_removes_it(api, db):
+    from app.models.review import ReviewComment
+
+    _, reviewer = await _round(db)
+    await api.post(f"/review/{reviewer.token}/comment", json={"item_key": "sit-1", "body": "typed"})
+    await api.post(f"/review/{reviewer.token}/comment", json={"item_key": "sit-1", "body": "   "})
+
+    assert (await db.execute(select(ReviewComment))).scalars().all() == []
+
+
+async def test_one_reviewer_cannot_see_anothers_comment(api, db):
+    round_, walker = await _round(db, name="Dr. Walker", token="tok-w3")
+    peter = ReviewReviewer(round_id=round_.id, name="Peter", token="tok-p3")
+    db.add(peter)
+    await db.flush()
+
+    await api.post("/review/tok-w3/comment", json={"item_key": "sit-1", "body": "her private note"})
+
+    page = (await api.get("/review/tok-p3")).text
+    assert "her private note" not in page
+
+
+async def test_a_comment_is_escaped_on_the_page(api, db):
+    _, reviewer = await _round(db)
+    await api.post(f"/review/{reviewer.token}/comment",
+                   json={"item_key": "sit-1", "body": "<script>alert(1)</script>"})
+
+    page = (await api.get(f"/review/{reviewer.token}")).text
+    assert "<script>alert(1)</script>" not in page
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page

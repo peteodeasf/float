@@ -147,6 +147,17 @@ button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,
 }
 .add input::placeholder{color:var(--ink-faint)}
 .add input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand)}
+.comment{padding:.2rem 1.5rem 1.3rem}
+.comment label{
+  display:block;margin-bottom:.4rem;font-size:.7rem;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-faint)
+}
+.comment textarea{
+  width:100%;padding:.6rem .75rem;font:inherit;font-size:.95rem;line-height:1.5;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line-strong);border-radius:3px;resize:vertical
+}
+.comment textarea::placeholder{color:var(--ink-faint)}
+.comment textarea:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand)}
 .variations b{
   font-weight:600;color:var(--ink-faint);font-size:.7rem;letter-spacing:.1em;
   text-transform:uppercase;display:block;margin-bottom:.3rem
@@ -159,9 +170,10 @@ button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,
 </style>"""
 
 
-def render_page(round_, reviewer, marks: dict, token: str, additions=None) -> str:
+def render_page(round_, reviewer, marks: dict, token: str, additions=None, comments=None) -> str:
     """`round_.items` is a list of {key, situation, existing, suggestions, note}."""
     additions = additions or {}
+    comments = comments or {}
     body = []
     total = 0
 
@@ -192,6 +204,12 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None) -> st
             '<button class="drop" data-id="' + _esc(a["id"]) + '" aria-label="Remove">&times;</button></li>'
             for a in additions.get(item["key"], [])
         )
+        comment_html = (
+            '<div class="comment"><label for="c-' + _esc(item["key"]) + '">Comments</label>'
+            '<textarea id="c-' + _esc(item["key"]) + '" data-key="' + _esc(item["key"]) + '" '
+            'rows="3" placeholder="Anything worth saying about this one">'
+            + _esc(comments.get(item["key"], "")) + '</textarea></div>'
+        )
         add_html = (
             '<div class="own"><ul class="mine" data-for="' + _esc(item["key"]) + '">' + mine + '</ul>'
             '<div class="add"><input type="text" data-key="' + _esc(item["key"]) + '" '
@@ -203,7 +221,7 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None) -> st
             f'<h2 class="sit">{_esc(item["situation"])}</h2>'
             f'<div class="rungs{"" if rungs else " empty"}">'
             f'<span class="rungs-label">Safety Behaviors</span>{chips}</div>'
-            f'</div>{"".join(rows)}{note_html}{add_html}</section>'
+            f'</div>{"".join(rows)}{note_html}{add_html}{comment_html}</section>'
         )
 
     instructions = round_.instructions or "Mark every one <b>Show</b> or <b>Don\u2019t show</b>."
@@ -320,6 +338,38 @@ async function submit(key){{
       state("saved");
   }} catch (err) {{
     input.value = body;
+    state("not saved \u2014 check your connection", true);
+  }}
+}}
+
+// Saved when she clicks away, and again a moment after she stops typing, so nothing is lost if
+// she closes the tab mid-thought.
+let commentTimer;
+list.addEventListener("input", (e) => {{
+  if (!e.target.matches(".comment textarea")) return;
+  clearTimeout(commentTimer);
+  const el = e.target;
+  commentTimer = setTimeout(() => saveComment(el), 1200);
+}});
+
+list.addEventListener("focusout", (e) => {{
+  if (e.target.matches(".comment textarea")) saveComment(e.target);
+}}, true);
+
+async function saveComment(el){{
+  if (el.dataset.saved === el.value) return;
+  const body = el.value;
+  state("saving\u2026");
+  try {{
+    const r = await fetch("/review/" + TOKEN + "/comment", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify({{item_key: el.dataset.key, body: body}})
+    }});
+    if (!r.ok) throw new Error(r.status);
+    el.dataset.saved = body;
+    state("saved");
+  }} catch (err) {{
     state("not saved \u2014 check your connection", true);
   }}
 }}

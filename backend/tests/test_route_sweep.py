@@ -73,6 +73,7 @@ PUBLIC = {
     "POST /review/{token}/mark",
     "POST /review/{token}/add",
     "DELETE /review/{token}/add/{addition_id}",
+    "POST /review/{token}/comment",
 }
 
 # Acts on the caller, not on data named in the path.

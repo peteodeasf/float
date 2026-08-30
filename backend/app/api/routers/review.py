@@ -21,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.review import ReviewRound, ReviewReviewer, ReviewMark, ReviewAddition
+from app.models.review import ReviewRound, ReviewReviewer, ReviewMark, ReviewAddition, ReviewComment
 from app.services.review_page import render_page
 
 router = APIRouter(tags=["review-public"])
@@ -35,6 +35,11 @@ class MarkIn(BaseModel):
 
 
 class AdditionIn(BaseModel):
+    item_key: str
+    body: str
+
+
+class CommentIn(BaseModel):
     item_key: str
     body: str
 
@@ -66,10 +71,15 @@ async def review_page(token: str, db: AsyncSession = Depends(get_db)):
     for a in result.scalars().all():
         additions.setdefault(a.item_key, []).append({"id": str(a.id), "body": a.body})
 
+    result = await db.execute(
+        select(ReviewComment).where(ReviewComment.reviewer_id == reviewer.id)
+    )
+    comments = {c.item_key: c.body for c in result.scalars().all()}
+
     reviewer.last_seen_at = datetime.now(timezone.utc)
     await db.commit()
 
-    return HTMLResponse(render_page(round_, reviewer, marks, token, additions))
+    return HTMLResponse(render_page(round_, reviewer, marks, token, additions, comments))
 
 
 @router.post("/review/{token}/mark", status_code=status.HTTP_204_NO_CONTENT)
@@ -142,4 +152,39 @@ async def remove_suggestion(
     if addition is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     await db.delete(addition)
+    await db.commit()
+
+
+MAX_COMMENT = 5000
+
+
+@router.post("/review/{token}/comment", status_code=status.HTTP_204_NO_CONTENT)
+async def save_comment(token: str, data: CommentIn, db: AsyncSession = Depends(get_db)):
+    """What she wrote about this situation. One per reviewer per item; saving replaces it.
+
+    Generous length limit: her first round of feedback ran to a paragraph per situation, and the
+    prose is the part that changed the feature.
+    """
+    reviewer, _ = await _reviewer(db, token)
+    body = (data.body or "").strip()
+    if len(body) > MAX_COMMENT:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Too long")
+
+    result = await db.execute(
+        select(ReviewComment).where(
+            ReviewComment.reviewer_id == reviewer.id,
+            ReviewComment.item_key == data.item_key,
+        )
+    )
+    existing = result.scalar_one_or_none()
+
+    if not body:
+        if existing is not None:
+            await db.delete(existing)
+    elif existing is not None:
+        existing.body = body
+        existing.updated_at = datetime.now(timezone.utc)
+    else:
+        db.add(ReviewComment(reviewer_id=reviewer.id, item_key=data.item_key, body=body))
+
     await db.commit()

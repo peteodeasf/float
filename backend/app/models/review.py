@@ -96,3 +96,30 @@ class ReviewAddition(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()")
     )
+
+
+class ReviewComment(Base):
+    """What the reviewer wrote about a situation, in her own words.
+
+    Show / don't show says which suggestions are wrong. This says WHY, and why is the part that
+    changes the feature — Dr. Walker's first round of prose taught us more than the marks did.
+
+    One per reviewer per item, overwritten as she edits.
+    """
+
+    __tablename__ = "review_comments"
+    __table_args__ = (
+        Index("uq_review_comments_item", "reviewer_id", "item_key", unique=True),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
+    reviewer_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("review_reviewers.id"), nullable=False
+    )
+    item_key: Mapped[str] = mapped_column(String, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
