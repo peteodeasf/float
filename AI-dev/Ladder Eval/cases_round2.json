@@ -1,0 +1,422 @@
+[
+  {
+    "id": "sit-80c45b30",
+    "situation": "Hang with friends at \"bee bench\" during spring (lots of bees)",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Carry a fan",
+        "behavior_type": "avoidance",
+        "distress_rating": 5.0
+      },
+      {
+        "name": "gkjkhkhk",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "I wear a hat and sunglasses.",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-08-19",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Sit by a flowering tree in the garden for five minutes",
+      "Sit on a park bench where you can see bees around",
+      "Sit at the bee bench when it is quiet, for five minutes",
+      "Sit at the bee bench at lunchtime when the flowers are out",
+      "Sit at the bee bench for a whole lunch break with friends"
+    ],
+    "reasoning": "Varies WHERE, per her note. No fan, no hat, no sunglasses in any rung.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-f1fdea33",
+    "situation": "Give an oral report",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Avoids Give an oral report",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "bare",
+    "source_date": "2026-08-10",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Imagine giving the report, in your head",
+      "Say it out loud in front of a mirror, imagining the class",
+      "Watch videos of other kids giving reports in class",
+      "Give the report to one parent",
+      "Give it to the whole family",
+      "Give it to one friend",
+      "Give it to a few friends",
+      "Give it to a small group in class",
+      "Give the report to the whole class"
+    ],
+    "reasoning": "Her own ladder, in her order. NOTE: nine rungs. Our cap of five is wrong.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-e08ad9be",
+    "situation": "Eating lunch in the cafeteria",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Wears headphones so nobody talks to her",
+        "behavior_type": "safety",
+        "distress_rating": 5.0
+      },
+      {
+        "name": "Only goes to cafeteria if a close friend is with her",
+        "behavior_type": "safety",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Eats in the bathroom or library to avoid cafeteria",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-05-21",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Eat lunch at a quiet end of the cafeteria for ten minutes",
+      "Eat at a table with people at the other end",
+      "Eat at a table with people next to you",
+      "Eat at a busy table at the busiest time"
+    ],
+    "reasoning": "Headphones and the close friend are both safety behaviours, so neither appears. Varies where she sits and how busy it is.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-53432335",
+    "situation": "Attending peer birthday party",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Requests parent remain present throughout",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Maintains physical proximity to parent",
+        "behavior_type": "safety_behavior",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Expresses doubt about peer acceptance",
+        "behavior_type": "cognitive",
+        "distress_rating": 6.0
+      },
+      {
+        "name": "Refuses to join peer activities",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Go to a friend's house to play, without your parent",
+      "Go to a small get-together at a friend's house without your parent",
+      "Go to the party and join one game",
+      "Stay at the party and join the games with everyone"
+    ],
+    "reasoning": "The parent being present is the safety behaviour, so no rung includes it. Varies how big the gathering is.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-9df60c1e",
+    "situation": "Taekwondo class",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Insists parents stay to watch the whole class; scans the room for them and runs over or gives them a look if they step away even briefly",
+        "behavior_type": "safety",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-07-02",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Go to a class where your parents drop you off and leave",
+      "Go to a class where you cannot see the door",
+      "Go to a full class where your parents come back at the end"
+    ],
+    "reasoning": "Parents watching is the safety behaviour, so it is gone from every rung. Thin, and honestly a guess — see the note below about the arrow.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-e76a0847",
+    "situation": "Attending soccer practice",
+    "description": null,
+    "distress_rating": 7.0,
+    "existing_rungs": [
+      {
+        "name": "Reports somatic complaints when arriving",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Symptom resolution upon leaving",
+        "behavior_type": "safety_behavior",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Refuses to enter facility, remains in car",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Somatic complaints at arrival, refusing entry",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      },
+      {
+        "name": "Remaining in car, immediate relief upon leaving",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Walk in and stay at the edge of the pitch for the first drill",
+      "Join the warm-up and stay for the first half",
+      "Stay for the whole practice"
+    ],
+    "reasoning": "Staying in the car is the avoidance, so no rung includes it, and no rung leaves early. 'Do the warm-up then leave' is gone: leaving IS the escape.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-82f50a2f",
+    "situation": "Playing soccer on Saturday",
+    "description": null,
+    "distress_rating": 6.0,
+    "existing_rungs": [
+      {
+        "name": "Reporting vague injury to avoid participation",
+        "behavior_type": "avoidance",
+        "distress_rating": 6.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-02",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Go to the game and warm up with the team",
+      "Play the first ten minutes",
+      "Play the first half",
+      "Play the whole game"
+    ],
+    "reasoning": "Ten minutes of the game still contains the game, so a short rung is fine here. The vague injury is the avoidance and appears nowhere.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-d6e82a24",
+    "situation": "Sitting Alone in Cafeteria",
+    "description": null,
+    "distress_rating": 10.0,
+    "existing_rungs": [
+      {
+        "name": "Not going to cafeteria",
+        "behavior_type": "avoidance",
+        "distress_rating": 10.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-05-14",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Sit at a table on your own for five minutes",
+      "Sit on your own at a table with people at the other end",
+      "Sit on your own for a whole lunch"
+    ],
+    "reasoning": "Not going is the avoidance. Varies how long and how close others are.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-8bdd63f6",
+    "situation": "Completing school report assignment",
+    "description": null,
+    "distress_rating": 9.0,
+    "existing_rungs": [
+      {
+        "name": "Catastrophized about inability to complete task",
+        "behavior_type": "anxiety_response",
+        "distress_rating": 9.0
+      },
+      {
+        "name": "Sought parental help to manage distress",
+        "behavior_type": "safety_seeking",
+        "distress_rating": 9.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Write the first sentence on your own",
+      "Write for ten minutes on your own",
+      "Write a whole section on your own",
+      "Finish the report on your own"
+    ],
+    "reasoning": "Asking a parent for help is the safety behaviour, so no rung includes a parent. 'Write for ten minutes then stop' is now 'write for ten minutes' — stopping was the way out.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-5254cf39",
+    "situation": "School drop-off",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Refuses to get out of the car, kicks the back of the seat, cries, and yells that mom is the worst mother ever",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-07-02",
+    "status": "drafted-round2",
+    "target_breakdown": null,
+    "target_suggestions": [
+      "Get out of the car at the gate and walk in on your own",
+      "Get out at the usual spot and walk in on your own",
+      "Get out and walk in on your own when the yard is busy"
+    ],
+    "reasoning": "A parent walking her in, and a friend walking her in, are both ways of not doing it alone. Gone.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-d22d1416",
+    "situation": "Getting ready for school mornings",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Physically immobilizes (sits on floor, won't move)",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      },
+      {
+        "name": "Escalates to crying",
+        "behavior_type": "safety_behavior",
+        "distress_rating": 8.0
+      },
+      {
+        "name": "Refuses to get dressed, reports somatic complaints",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      },
+      {
+        "name": "Expresses fear of peer ridicule",
+        "behavior_type": "cognitive",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-07",
+    "status": "not-suitable",
+    "target_breakdown": null,
+    "target_suggestions": [],
+    "not_suitable_because": "Her rule 6. This is a symptom of fearing school, not the thing to face. Breaking it down treats the wrong problem. What is needed first is what she thinks will happen at school.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-b2a0b25a",
+    "situation": "Group sleepover with classmates",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [
+      {
+        "name": "Ambivalence about attending; scattered presentation",
+        "behavior_type": "avoidance",
+        "distress_rating": 8.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-06-02",
+    "status": "not-suitable",
+    "target_breakdown": null,
+    "target_suggestions": [],
+    "not_suitable_because": "Her rule 5. She asked first: does this child go to other kids' houses at all? Does she tolerate others sleeping at hers? Or is it only sleeping elsewhere? The ladder starts from the answer, and we do not record it. Every rung we wrote last time either left early — an escape — or guessed at the answer.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-1950d674",
+    "situation": "Raising hand to answer a question in class",
+    "description": null,
+    "distress_rating": 7.0,
+    "existing_rungs": [
+      {
+        "name": "Pretends to look at notes to avoid eye contact with teacher",
+        "behavior_type": "safety",
+        "distress_rating": 5.0
+      },
+      {
+        "name": "Doesn't raise hand even when she knows the answer",
+        "behavior_type": "avoidance",
+        "distress_rating": 7.0
+      }
+    ],
+    "shape": "behaviour rungs",
+    "source_date": "2026-05-21",
+    "status": "not-suitable",
+    "target_breakdown": null,
+    "target_suggestions": [],
+    "not_suitable_because": "Her rule 3, said about this exact situation: 'What is feared outcome of raising hand? That will determine sub situations.' There is no downward arrow on this situation, so anything we write is a guess at the fear.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-8d16dc48",
+    "situation": "Talk to someone",
+    "description": null,
+    "distress_rating": 10.0,
+    "existing_rungs": [],
+    "shape": "bare",
+    "source_date": "2026-05-14",
+    "status": "not-suitable",
+    "target_breakdown": null,
+    "target_suggestions": [],
+    "not_suitable_because": "Too vague to break down, and nothing recorded about how she avoids it. Last time we invented a shop assistant and a parent standing nearby — a context the child never mentioned.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  },
+  {
+    "id": "sit-c56cd219",
+    "situation": "Talking to someone new at school",
+    "description": null,
+    "distress_rating": 8.0,
+    "existing_rungs": [],
+    "shape": "bare",
+    "source_date": "2026-05-21",
+    "status": "not-suitable",
+    "target_breakdown": null,
+    "target_suggestions": [],
+    "not_suitable_because": "Nothing recorded about how she avoids it, and no arrow. Same problem.",
+    "target_source": "Claude, 2026-08-30, under Dr. Walker's rules"
+  }
+]

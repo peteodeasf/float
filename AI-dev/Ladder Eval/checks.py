@@ -53,7 +53,10 @@ import re
 # to invent a context to fill the slot — which is the one failure this feature cannot afford, and
 # the one no mechanical check catches. Fewer suggestions is the correct answer to a thin situation.
 MIN_SUGGESTIONS = 2
-MAX_SUGGESTIONS = 5
+# Twelve, not five. Dr. Walker's own ladder for one oral report has ELEVEN steps — imagine it,
+# a mirror, one parent, both parents, a sibling, all siblings, the family, a friend, two friends,
+# several friends, watching videos of other kids. A cap of five would have cut her answer in half.
+MAX_SUGGESTIONS = 12
 # A child reads these aloud in session. Long ones stop being a thing you can say yes or no to.
 MAX_WORDS_PER_SUGGESTION = 18
 # Two suggestions sharing this much of their wording are probably one idea written twice.
