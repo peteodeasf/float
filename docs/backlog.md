@@ -89,7 +89,7 @@ harvesters) no longer work as written. They need to go through `railway connect`
 Railway Postgres. Confirm it, and write down where you confirmed it. Traffic to and from the app is
 already encrypted.
 
-**4. There are no backups at all.** `M` — **blocked on money, not work**
+**4. There are no backups at all.** `M` — **needs a Railway plan upgrade, no work to do**
 
 Checked 2026-08-29: backups are **off**. Railway only offers them on the Pro plan, so turning them
 on is a plan upgrade, not a piece of engineering.
