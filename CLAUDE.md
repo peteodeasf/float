@@ -66,6 +66,8 @@ Banned in practice, because each has been flagged:
 - Citing a rule instead of saying what it means. Not "§164.312(b) requires audit controls" but
   "a patient can ask for a list of everyone who saw their file".
 - Stacking three clauses into one sentence, even when every word is ordinary.
+- Quoting `STRATEGY.md` back as a slogan. Its lines are shorthand for ideas Peter already holds;
+  repeating them makes him decode a phrase instead of reading a fact. Say the concrete thing.
 
 Domain vocabulary he already uses is fine and correct: distress thermometer, downward arrow,
 exposure ladder, accommodation, safety behavior.

@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import axios from 'axios'
 
+import { ADMIN_KEYS } from '../api/client'
+import { attachSession } from '../api/session'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 interface AdminAuthContextType {
@@ -43,11 +46,15 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.setItem('admin_token', token)
+    if (loginRes.data.refresh_token) {
+      localStorage.setItem('admin_refresh_token', loginRes.data.refresh_token)
+    }
     setIsAuthenticated(true)
   }
 
   const logout = () => {
     localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_refresh_token')
     setIsAuthenticated(false)
   }
 
@@ -69,22 +76,9 @@ export const adminApiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-adminApiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('admin_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-adminApiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('admin_token')
-      window.location.href = '/admin/login'
-    }
-    return Promise.reject(error)
-  }
-)
+// Same renew-while-working, sign-out-when-idle as the clinician app. Admins see every patient in
+// an institution, so the idle limit matters here at least as much.
+attachSession(adminApiClient, 'admin', ADMIN_KEYS, '/admin/login')
 
 export const createClinician = async (data: { name: string, email: string, organization_id: string }) => {
   const res = await adminApiClient.post('/admin/clinicians', data)

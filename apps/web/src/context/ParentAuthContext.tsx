@@ -37,6 +37,10 @@ export function ParentAuthProvider({ children }: { children: ReactNode }) {
     const response = await parentApiClient.post('/auth/login', { email, password })
     const { access_token } = response.data
     localStorage.setItem('parent_access_token', access_token)
+    // See TeenAuthContext: this used to be discarded, so a parent was signed out mid-log.
+    if (response.data.refresh_token) {
+      localStorage.setItem('parent_refresh_token', response.data.refresh_token)
+    }
 
     const profileResponse = await parentApiClient.get('/auth/me', {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -60,6 +64,7 @@ export function ParentAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('parent_access_token')
+    localStorage.removeItem('parent_refresh_token')
     localStorage.removeItem('parent_patient_id')
     localStorage.removeItem('parent_must_change_password')
     delete parentApiClient.defaults.headers.common['Authorization']

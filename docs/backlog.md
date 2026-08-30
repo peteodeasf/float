@@ -64,16 +64,26 @@ covered.
 **How to tell it worked:** open a patient as a clinician, then find that visit in the log — who,
 which patient, when. **Gate:** `/security-review`. **Plan it first.**
 
-**2. The app logs you out after 30 minutes, whether or not you are using it.** `S`
+**2. The app logs you out after 30 minutes, whether or not you are using it.** `S` — **DONE 2026-08-29.**
 
-Checked 2026-08-29. A login lasts 30 minutes (`ACCESS_TOKEN_EXPIRE_MINUTES`). A refresh token is
-stored but **nothing ever uses it** — no code anywhere calls the refresh endpoint. So the session
-ends 30 minutes after signing in, even mid-note.
+Was: a login lasted 30 minutes and nothing ever called the refresh endpoint, so everyone was signed
+out 30 minutes after signing in — a clinician mid-note, a teen mid-exposure. It met the requirement
+by accident, in the way most likely to annoy. Only the clinician app even kept its refresh token;
+the other three discarded theirs.
 
-That satisfies the requirement by accident, and it is bad for clinicians.
+Now: the token is renewed silently while you work. The clinician and admin apps sign out after
+**15 minutes of no activity** — no clicks, no typing, no scrolling, no requests — including when
+nothing is being requested, because what is on the screen is the thing that matters. The teen and
+parent apps have no idle limit: their own phone, their own data, and signing a child out in the
+middle of an exposure makes them less likely to come back. Their refresh token still expires after
+seven days.
 
-**What changes:** stay signed in while working, log out after a period of no activity. Better on
-both counts. **Needs a number from Peter** — 15 minutes is typical in healthcare.
+Limits are in one place, `IDLE_LIMIT_MS` in `apps/web/src/api/session.ts`.
+
+Verified in a browser against a local backend, since there are no frontend tests: logging in stores
+both tokens; a tampered access token produces `POST /auth/refresh 200` and the request retries
+rather than bouncing to the login screen; and sitting still with the limit temporarily set to five
+seconds signs out and clears both tokens.
 
 **3a. The database was reachable from the public internet.** — **CLOSED 2026-08-29.**
 Railway keeps databases private by default; Public Access had been turned on. The TCP proxy

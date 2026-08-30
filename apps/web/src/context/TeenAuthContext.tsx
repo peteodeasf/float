@@ -36,8 +36,11 @@ export function TeenAuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await teenApiClient.post('/auth/login', { email, password })
-    const { access_token } = response.data
+    const { access_token, refresh_token } = response.data
     localStorage.setItem('teen_access_token', access_token)
+    // Kept so the session can renew while the child is working. It used to be thrown away, which
+    // signed them out 30 minutes after logging in, sometimes mid-exposure.
+    if (refresh_token) localStorage.setItem('teen_refresh_token', refresh_token)
 
     // Get patient profile to extract patient ID
     const profileResponse = await teenApiClient.get('/auth/me', {
@@ -63,6 +66,7 @@ export function TeenAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('teen_access_token')
+    localStorage.removeItem('teen_refresh_token')
     localStorage.removeItem('teen_patient_id')
     localStorage.removeItem('teen_must_change_password')
     delete teenApiClient.defaults.headers.common['Authorization']
