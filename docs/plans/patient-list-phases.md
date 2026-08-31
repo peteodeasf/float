@@ -58,15 +58,18 @@ over time, and closing is about the person's care ending.
 So closing is not only a label on the clinician's list — it ends the family's access. Self-help use
 after treatment is a separate thing and not part of this.
 
-**Still open, and it changes what gets built:** what does a child see when they open the app after
-their patient is closed? Locked out at the login screen, or able to get in and shown that treatment
-has finished, with nothing left to do?
+**They can still sign in.** They are not locked out at the login screen — they get in and find
+nothing to do, with a message instead of their tasks.
 
-Peter's word was "silently", which suggests the worry is unsupervised use rather than access to
-their own record. If that is right, the second reads better — being shut out with no explanation is
-a poor last experience for an anxious child, and their progress is a good thing to leave them with.
+**The message is "All done for now."** (Peter, 2026-08-31.) Not "your treatment is over" or "your
+treatment has finished" — both read like being discharged. *For now* leaves the door open, which is
+truthful, since a closed patient can be reopened.
 
-**Also open: can a closed patient be reopened?** Treatment restarting is ordinary in this field.
+**Put their progress on that screen**, not just the message: what they did, the fears that did not
+come true. Ending on what they achieved beats ending on a notice.
+
+**A closed patient can be reopened** (Peter, 2026-08-31). Treatment restarting is ordinary, so
+closing is not a one-way door and nothing should be written as though it is.
 
 **And a small one worth catching in the build:** a child may have an experiment scheduled for
 tomorrow when their patient is closed. Something has to happen to it.
@@ -76,9 +79,8 @@ tomorrow when their patient is closed. Something has to happen to it.
 A control at the top of the list, filtering by phase. The roster is already scoped to the patients
 a clinician has been granted, so this filters within that.
 
-Worth deciding: **does the list hide closed patients by default?** A clinician with two years of
-finished cases does not want them in the way, and "closed" is the one phase people will want out of
-sight — which is an argument for the filter defaulting to everything except closed.
+**Closed patients are hidden by default** (Peter, 2026-08-31) and appear when that filter is
+selected. A clinician with two years of finished cases does not want them in the way.
 
 ## Order of work
 
