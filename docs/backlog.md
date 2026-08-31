@@ -234,18 +234,23 @@ they cannot. Revoking the last one is refused (409, already enforced).
 
 # Teen
 
+Ten screens, about 3,800 lines. A child can sign in, see their ladder, set up an experiment, do it,
+record what happened, see progress, and message their clinician. The July reorg shipped most of it.
+
+**Finishing the child's app depends on the clinician ladder work** (Peter, 2026-08-31). The shape
+of what the child sees follows from what the clinician builds, so the ladder work lands first.
+
 | Item | Today | Size |
 |---|---|---|
-| **Reminders / notifications** | Schedule data is written; nothing delivers it. No scheduler exists. Twilio/A2P 10DLC is the long pole. Tabled 2026-07-28. | L |
+| **The child's ladder does not match the clinician's, and steps go missing** | **A live defect.** `GET /patient/ladder` (`backend/app/api/routers/patients.py:1227`) returns situations with steps nested under each, and finds those steps by `trigger_situation_id`. The flat ladder lets a clinician create a step with **no situation** — those steps are invisible to the child. The clinician adds a rung, sees it on their ladder, and the child never gets it. Beyond the defect, the two views have diverged in shape: the clinician's ladder is flat with situations as grouping, the child's is still situations-first. Peter, 2026-08-31: the clinician's ladder setup must be mirrored in the child's app. | M |
+| **Video content and tips in the child's app** | Tips exist and are matched to a situation by tags. Video does not exist anywhere. See the education items. | M |
+| **Reminders** | The app records when a child plans to do something and never tells them. No scheduler exists anywhere in Float, which also blocks the parent reminders. Twilio and A2P 10DLC registration is the long part. Tabled 2026-07-28. | L |
+| **A debug print in the child's ladder endpoint** | `print(f"DEBUG ladder: plan_id=...")` at `patients.py:1256`, running in production on every load. | S |
 | **"Hi Patient" personalisation edge** | Falls back to the literal word. | S |
-| **Teen app and the flat ladder** | Deferred: the teen app still reads situations → behaviours through the per-trigger routes. Its own redesign comes first. | L |
-| **Milestone rewards** | Peter's item 21. Needs a defined milestone set. | M |
+| **Milestone rewards** | Not built. Needs a defined set of milestones. | M |
 
-Most of the teen surface is built. The July plan's items 13–19 (approved-experiment screen,
-before-state, in-the-moment, after-state, hard paths, progress, chat) all shipped in the reorg on
-2026-07-28.
-
----
+Waiting on Dr. Walker, from the July reorg: how "do it now" works on a future scheduled slot, word
+buttons instead of faces, equal-weight answers on "did it happen", and the too-hard path.
 
 # Parent
 
