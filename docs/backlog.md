@@ -249,24 +249,57 @@ before-state, in-the-moment, after-state, hard paths, progress, chat) all shippe
 
 # Parent
 
-**The least built surface, and the one the July plan leaned on most.** An MVP exists on branch
-`parent-experience` — parent home, chat, tips, log-a-moment, plus the clinician focus toggle and
-admin parent tips — **not merged, and its migration has never run.**
+**Corrected 2026-08-31.** The note that said the parent MVP was unmerged with a migration never run
+was **stale, and wrong**. `parent-experience` is fully merged into main — its tip is an ancestor —
+and the work is live.
+
+## What is already built
+
+Five screens under `/parent/*`, routed and behind a token check
+(`apps/web/src/main.tsx:129-137`), about 970 lines:
+`ParentLoginPage`, `ParentSetPasswordPage`, `ParentResetPasswordPage`, `ParentHomePage`,
+`ParentMessagesPage`.
+
+Ten endpoints: `/parent/accommodations`, `/parent/moments` (read and write),
+`/parent/child/experiments/upcoming`, `/parent/situations/{id}/tips`, `/parent/messages` (read,
+write, mark read), and the clinician side of the chat at `/patients/{id}/parent-messages`.
+
+`ParentHomePage` is not a placeholder. It loads the child's accommodations, picks out the weekly
+focus one, shows parent-audience tips for that situation, and logs whether the parent held it.
+
+So from Peter's July plan, these are done: the accommodation list, log-a-moment, tips, and
+parent↔clinician chat.
+
+## What is missing
 
 | | Item | Today | Size |
 |---|---|---|---|
-| P1 | **Decide the fate of `parent-experience`** | Branch exists, unmerged, migration unrun. Merge, rebuild or drop — first question, blocks the rest. | S |
-| P2 | **Parent home** | Placeholder: "ladder will appear here soon". | M |
-| P3 | **Accommodation ladder / tracking** | Not started. Backend and clinician side are ready to build on. | L |
-| P4 | **Two-parent account model** | Peter's items 2 and 3, marked blocking. Does a case support two parent accounts today? May be a schema change, not a feature. Several parent items assume it. | L |
-| P5 | **Parent accommodation experiments** | commit → before → after → too_hard, same lifecycle as the child's. Peter's item 7. | L |
-| P6 | **Parent weekly consistency check-in** | Held every time / mostly / caved. Not per-instance logging. Lapses surface to the clinician. | M |
-| P7 | **Parent exposure reminders** | Parent told an exposure is happening and what they should and should not do. Fires on the scheduled date and on the child's commit. Depends on a scheduler existing. | L |
-| P8 | **Parent ↔ clinician chat** | Adult-to-adult, lighter safety burden than the teen channel. | M |
-| P9 | **Child rates parent accommodations** | In-app, supports ranges, parent can see the ratings. **The child must be told the parent will see them** — that is a clinical and a trust decision, not a UI one. | M |
-| P10 | **Progress / charts, multi-screen nav** | Not started. Single route only. | M |
+| P1 | **Two-parent accounts** | Not built. Peter's July items 2 and 3, marked blocking, and several items below assume it. First question is whether a case supports two parent accounts at all today — it may be a schema change rather than a feature. | L |
+| P2 | **Parent accommodation experiments** | Not built. commit → before → after → too_hard, the same lifecycle the child's experiments have. | L |
+| P3 | **Weekly consistency check-in** | Not built. Once a week the parent answers one question about their focus accommodation: **held every time / mostly / caved**. Deliberately not per-instance logging — recording every moment is more than most parents will sustain, and consistency is what the clinician needs to see. Lapses surface to the clinician. | M |
+| P4 | **Parent exposure reminders** | Not built, and blocked: needs a scheduler, which does not exist. Fires on the scheduled date and on the child's commit, telling the parent what to do and what not to do. | L |
+| P5 | **Child rates parent accommodations** | Not built. In-app, supports ranges, parent can see the ratings. **The child must be told the parent will see them** — a clinical and trust decision, not a UI one. | M |
+| P6 | **Progress and charts** | Not built. | M |
+| P7 | **Navigation between parent screens** | Home and messages exist with nothing tying them together. | S |
 
----
+## The question P3 raises, and it is not a build detail
+
+`ParentHomePage` already logs moments one at a time — held yes/no against the focus accommodation.
+So either:
+
+- **Both stay.** Logging a moment is in-the-moment support for the parent; the weekly check-in is
+  the summary a clinician reads.
+- **Or the weekly one replaces it,** because per-instance logging is the part parents will not keep
+  up.
+
+Worth putting to Dr. Walker with the parent app open, rather than deciding it in a backlog entry.
+
+## What to do first
+
+**Not "decide the fate of the branch"** — that was the wrong question, from the stale note. It is
+the same review Peter is doing for the clinician and teen apps: open the parent app, use it, and
+say what is wrong with it. Several things on the July plan turn out to exist, so the list above is
+a starting point, not a survey.
 
 # Admin
 
