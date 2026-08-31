@@ -1,5 +1,15 @@
 # Ladder generation — breaking a situation down, and grouping loose rungs
 
+> **PAUSED 2026-08-31 — waiting on seed data from Dr. Walker.** She judged our case set poor
+> quality and a bad place to start. The situations were real but typed by whoever was testing, with
+> junk among them. She is writing her own — situations and suggested sub-situations, same shape —
+> and we start from those. **Our set is probably being thrown out. Do not build on it, and do not
+> delete it yet.**
+>
+> Her round-two comments are still on the review link and hold method worth keeping when we come
+> back to this — they are about how to break a situation down, not about those particular
+> situations. Left unread and uncaptured at Peter's request until the seed data arrives.
+
 **Planned 2026-08-28.** Phase 4 of [`flat-ladder-grouped-situations.md`](flat-ladder-grouped-situations.md).
 
 **The test set is built before the feature.** Two reasons, both from that plan and both stronger

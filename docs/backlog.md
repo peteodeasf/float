@@ -430,6 +430,8 @@ they wrote.
 
 ## Ladder generation — build it
 
+**PAUSED 2026-08-31.** Waiting on seed data from Dr. Walker; she judged our case set a bad place to start and is writing her own. Nothing to do until it arrives.
+
 `L`. Planned in [`ladder-generation.md`](plans/ladder-generation.md); decisions settled 2026-08-28.
 61 real situations are pulled as candidate cases and six mechanical checks are written.
 
