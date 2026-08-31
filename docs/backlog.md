@@ -183,10 +183,6 @@ wrong, and who owes them a copy of their record.
 
 ---
 
-# Defects
-
----
-
 # Clinician
 
 From Peter's review of the clinician portal, 2026-08-30. Sizes are his read plus what the code
@@ -289,7 +285,7 @@ parent↔clinician chat.
 | **The accommodation conversation** | **The big one.** A guided tool in the parent app that finds the accommodations with the parent, then rates them with the child — and the ratings order the plan. One switch, parents only or parents and child; the clinician being in the room does not change the flow. Planned in [`accommodation-conversation.md`](plans/accommodation-conversation.md). | L |
 | **An accommodation needs a state the clinician can see and change** | Not built. `status` on `AccommodationBehavior` is set to "active" when it is created and then never read or written again. Three states: **not started, started, stopped.** Shown to the clinician on the parent plan panel, and theirs to change. **The app does not detect drift and should not try.** When the weekly focus moves on, nothing asks the parent about the old accommodation again — the clinician finds out it has come back by asking in session, and moves it back to the focus. The book is why the state matters: *"Make sure you do not go back... you will set the stage for relapse."* | M |
 
-## The question P3 raises, and it is not a build detail
+## The question the weekly check-in raises, and it is not a build detail
 
 `ParentHomePage` already logs moments one at a time — held yes/no against the focus accommodation.
 So either:
@@ -326,7 +322,7 @@ a starting point, not a survey.
 **Priority: blocks three separate features.** `L`
 
 **Today:** reminders and missed-experiment detection fire only from a manual admin POST. Teen
-reminders (T1), parent exposure reminders (P7) and the arrow harvest all want one.
+reminders, parent exposure reminders and the arrow harvest all want one.
 
 **What changes:** a scheduled runner. Railway cron is the obvious first answer since the service is
 already there.
@@ -505,8 +501,7 @@ surfaced them.
 ## Decisions that block work below
 
 - **Covered entity or business associate?** Shapes every HIPAA item.
-- **The fate of branch `parent-experience`** (P1) — blocks the whole parent surface.
-- **Two-parent account model** (P4) — Peter's own note says several parent items assume it.
+- **Two-parent accounts** — Peter's own note says several parent items assume it.
 
 ---
 
