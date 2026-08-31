@@ -276,11 +276,13 @@ parent↔clinician chat.
 |---|---|---|---|
 | P1 | **Two-parent accounts** | Not built. Peter's July items 2 and 3, marked blocking, and several items below assume it. First question is whether a case supports two parent accounts at all today — it may be a schema change rather than a feature. | L |
 | P2 | **Parent accommodation experiments** | Not built. commit → before → after → too_hard, the same lifecycle the child's experiments have. | L |
-| P3 | **Weekly consistency check-in** | Not built. Once a week the parent answers one question about their focus accommodation: **held every time / mostly / caved**. Deliberately not per-instance logging — recording every moment is more than most parents will sustain, and consistency is what the clinician needs to see. Lapses surface to the clinician. | M |
+| P3 | **Weekly consistency check-in — it is a GATE, not a report** | Not built. Once a week the parent answers one question about their focus accommodation: **held every time / mostly / caved**. Deliberately not per-instance logging — recording every moment is more than most parents sustain. Re-read of the book, 2026-08-31: step 4 moves to the next accommodation once the parent and child are comfortable without the first, so this answer is **what decides whether they advance**, not a status update. Lapses surface to the clinician. | M |
 | P4 | **Parent exposure reminders** | Not built, and blocked: needs a scheduler, which does not exist. Fires on the scheduled date and on the child's commit, telling the parent what to do and what not to do. | L |
-| P5 | **Child rates parent accommodations** | Not built. In-app, supports ranges, parent can see the ratings. **The child must be told the parent will see them** — a clinical and trust decision, not a UI one. | M |
+| P5 | **Child rates parent accommodations** | Not built, and it is what the plan's ORDER depends on — today the clinician guesses it. Now part of the accommodation conversation below rather than a feature on its own. | M |
 | P6 | **Progress and charts** | Not built. | M |
 | P7 | **Navigation between parent screens** | Home and messages exist with nothing tying them together. | S |
+| P8 | **The accommodation conversation** | **The big one.** A guided tool in the parent app that finds the accommodations with the parent, then rates them with the child — and the ratings order the plan. One switch, parents only or parents and child; the clinician being in the room does not change the flow. Planned in [`accommodation-conversation.md`](plans/accommodation-conversation.md). | L |
+| P9 | **Stopping is not the end — staying stopped is** | Not built. The book: *"Make sure you do not go back... you will set the stage for relapse."* An accommodation needs a third state — held — and the ones already stopped need to keep being watched. Today the parent only logs against the current focus, and nothing tracks whether an earlier one has quietly come back. | M |
 
 ## The question P3 raises, and it is not a build detail
 
