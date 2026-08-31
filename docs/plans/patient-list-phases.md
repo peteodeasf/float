@@ -50,14 +50,26 @@ deleting anyone.
 **Where it lives:** a field on the patient, not on the plan. A patient can have more than one plan
 over time, and closing is about the person's care ending.
 
-Two things to decide, and both are Peter's:
+**Closing switches off the child's app and the parent's app** (Peter, 2026-08-31):
 
-- **Can a closed patient be reopened?** Treatment restarting is ordinary in this field.
-- **Does closing change what the child and parent see?** Their apps read a plan by status. Closing
-  the patient without deciding this could silently empty a child's app, or leave it running for
-  someone no longer in treatment.
+> *"As long as it's clinician-driven, then they shouldn't continue to silently use the apps. We can
+> add in self-help use of the app later, but that would be separate."*
 
-The second one matters more than it looks and should be settled before this ships.
+So closing is not only a label on the clinician's list — it ends the family's access. Self-help use
+after treatment is a separate thing and not part of this.
+
+**Still open, and it changes what gets built:** what does a child see when they open the app after
+their patient is closed? Locked out at the login screen, or able to get in and shown that treatment
+has finished, with nothing left to do?
+
+Peter's word was "silently", which suggests the worry is unsupervised use rather than access to
+their own record. If that is right, the second reads better — being shut out with no explanation is
+a poor last experience for an anxious child, and their progress is a good thing to leave them with.
+
+**Also open: can a closed patient be reopened?** Treatment restarting is ordinary in this field.
+
+**And a small one worth catching in the build:** a child may have an experiment scheduled for
+tomorrow when their patient is closed. Something has to happen to it.
 
 ## The filter
 
