@@ -13,8 +13,17 @@ from tests.factories import (
 )
 
 
-async def _log(db):
-    return (await db.execute(select(PatientAccessLog))).scalars().all()
+async def _log(db, patient_id=None):
+    """Rows for one patient.
+
+    Deliberately not "all rows": the access log commits inside the request, which escapes the
+    per-test rollback, so the table carries rows from other tests. Asserting on a global count made
+    these tests pass or fail depending on what ran before them.
+    """
+    q = select(PatientAccessLog)
+    if patient_id is not None:
+        q = q.where(PatientAccessLog.patient_id == patient_id)
+    return (await db.execute(q)).scalars().all()
 
 
 async def test_opening_a_patient_is_recorded(api, db):
@@ -26,7 +35,7 @@ async def test_opening_a_patient_is_recorded(api, db):
     api.sign_in_as(clinician.user)
     assert (await api.get(f"/patients/{plan.patient.id}")).status_code == 200
 
-    rows = await _log(db)
+    rows = await _log(db, plan.patient.id)
     assert len(rows) == 1
     assert rows[0].patient_id == plan.patient.id
     assert rows[0].user_id == clinician.user.id
@@ -46,7 +55,7 @@ async def test_an_admin_is_recorded_as_an_admin(api, db):
     api.sign_in_as(admin.user)
     assert (await api.get(f"/patients/{plan.patient.id}")).status_code == 200
 
-    rows = await _log(db)
+    rows = await _log(db, plan.patient.id)
     assert len(rows) == 1
     assert rows[0].via == "admin"
 
@@ -60,7 +69,7 @@ async def test_a_refused_read_records_nothing(api, db):
     api.sign_in_as(stranger.user)
     assert (await api.get(f"/patients/{plan.patient.id}")).status_code == 404
 
-    assert await _log(db) == []
+    assert await _log(db, plan.patient.id) == []
 
 
 async def test_reaching_a_patient_through_a_plan_is_recorded_too(api, db):
@@ -73,7 +82,7 @@ async def test_reaching_a_patient_through_a_plan_is_recorded_too(api, db):
     api.sign_in_as(clinician.user)
     assert (await api.get(f"/plans/{plan.id}/triggers")).status_code == 200
 
-    rows = await _log(db)
+    rows = await _log(db, plan.patient.id)
     assert len(rows) == 1
     assert rows[0].patient_id == plan.patient.id
     assert rows[0].path == f"/plans/{plan.id}/triggers"

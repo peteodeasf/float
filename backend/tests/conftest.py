@@ -128,6 +128,12 @@ async def db(engine) -> AsyncSession:
         finally:
             await session.close()
             await trans.rollback()
+            # Anything an endpoint COMMITTED escapes the rollback above — create_patient always
+            # did, and the access log now does on every clinician read. Those rows would otherwise
+            # accumulate in the test database run after run. Cleared here so a test never sees
+            # another test's rows and the database stays disposable.
+            async with conn.begin():
+                await conn.exec_driver_sql("DELETE FROM patient_access_log")
 
 
 # ── The API, called in memory ─────────────────────────────────────────────────
