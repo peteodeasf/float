@@ -297,13 +297,6 @@ So either:
 
 Worth putting to Dr. Walker with the parent app open, rather than deciding it in a backlog entry.
 
-## What to do first
-
-**Not "decide the fate of the branch"** — that was the wrong question, from the stale note. It is
-the same review Peter is doing for the clinician and teen apps: open the parent app, use it, and
-say what is wrong with it. Several things on the July plan turn out to exist, so the list above is
-a starting point, not a survey.
-
 # Admin
 
 | Item | Today | Size |
@@ -494,6 +487,29 @@ vendor is handling patient data and needs an agreement like everyone else. See t
 plain embedded player on a public video is not that; a per-child playlist is.
 
 ---
+
+# Testing
+
+## V1 testing of the parent app and the child's app
+
+**Blocked, deliberately. Do not start.** Raised 2026-08-31. `L`
+
+A full test pass on either app is not worth doing until they are feature complete. Both have
+missing features and dependencies on work still in flight, so testing now would find gaps we
+already know about and would have to be redone.
+
+**What has to land first:**
+
+- **The child's app** waits on the clinician ladder work — the shape of what a child sees follows
+  from what the clinician builds. Its ladder also does not match the clinician's today, and drops
+  steps that have no situation.
+- **The parent app** is missing two-parent accounts, the accommodation experiments, the weekly
+  check-in, reminders, progress, and navigation between its two screens. The accommodation
+  conversation is planned and unbuilt.
+- **Reminders in both** wait on a scheduler, which does not exist anywhere in Float.
+
+**When it does happen** it is a real test pass, not a look around: every screen, on a phone, with a
+real plan behind it, by someone who did not build it.
 
 # Peter's — not for Claude to generate
 
