@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, false
 from fastapi import HTTPException, status
 
-from app.models.patient import PatientProfile
+from app.models.patient import PatientProfile, PatientAccessGrant
 from app.models.user import User, UserRole
 from app.core.security import hash_password
 from app.schemas.patient import PatientCreate
@@ -55,6 +55,19 @@ async def create_patient(
         role="patient"
     )
     db.add(role)
+
+    # The clinician adding a patient gets access to them.
+    #
+    # Without this, adding a patient and then opening them returns 404 for anyone who is not an
+    # institution admin — access became an explicit grant on 2026-08-28 and nothing granted it
+    # here. primary_practitioner_id is set above but is deliberately NOT consulted when checking
+    # access, so it does not stand in for a grant.
+    await db.flush()
+    db.add(PatientAccessGrant(
+        patient_id=patient.id,
+        practitioner_id=practitioner_id,
+        organization_id=organization_id,
+    ))
 
     await db.commit()
     await db.refresh(patient)

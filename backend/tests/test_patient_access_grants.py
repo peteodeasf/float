@@ -196,3 +196,44 @@ async def test_plan_routes_are_reachable_through_the_plan_id_too(api, db):
 
     assert r.status_code == 200
     assert [t["name"] for t in r.json()] == ["Attending school"]
+
+
+async def test_adding_a_patient_gives_the_clinician_access_to_them(api, db):
+    """The gap the grants change opened, found by using the app rather than by a test.
+
+    Access became an explicit grant, and nothing granted it at creation — so a clinician could add
+    a patient and then get 404 opening them. Only institution admins were unaffected, which is why
+    it was not obvious.
+    """
+    org = await make_org(db)
+    clinician = await make_practitioner(db, org)
+    api.sign_in_as(clinician.user)
+
+    created = await api.post("/patients", json={
+        "name": "Newly Added", "age": 12, "email": "newly-added@example.com",
+    })
+    assert created.status_code == 201, created.text
+    patient_id = created.json()["id"]
+
+    # The thing that was broken: open the patient you just added.
+    assert (await api.get(f"/patients/{patient_id}")).status_code == 200
+
+    # And they appear on the roster, which filters on grants.
+    roster = await api.get("/patients")
+    assert patient_id in {p["id"] for p in roster.json()}
+
+
+async def test_a_colleague_still_cannot_open_a_patient_you_added(api, db):
+    """The grant is for the clinician who added them, not for the institution."""
+    org = await make_org(db)
+    clinician = await make_practitioner(db, org)
+    colleague = await make_practitioner(db, org)
+
+    api.sign_in_as(clinician.user)
+    created = await api.post("/patients", json={
+        "name": "Mine Only", "age": 13, "email": "mine-only@example.com",
+    })
+    patient_id = created.json()["id"]
+
+    api.sign_in_as(colleague.user)
+    assert (await api.get(f"/patients/{patient_id}")).status_code == 404

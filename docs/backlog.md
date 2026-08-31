@@ -189,21 +189,25 @@ wrong, and who owes them a copy of their record.
 
 # Clinician
 
-Transcribed from the build-status table and Peter's July plan. **Needs his app review** before an
-agent can take any of them.
+From Peter's review of the clinician portal, 2026-08-30. Sizes are his read plus what the code
+says; the ones marked "needs design" are not ready for an agent until he has drawn them.
 
 | | Item | Today | Size |
 |---|---|---|---|
-| C1 | **Granting and revoking a clinician's access — no UI** | Endpoints exist and are tested; no screen. See the full entry below. | M |
-| C2 | **Close / relapse-prevention tab** | Tab exists, body is the literal string "Placeholder". | M |
-| C3 | **Global Reports page** | Nav item disabled. Per-patient reports exist. | M |
-| C4 | **Settings / profile** | Nav item disabled, no page. | M |
-| C5 | **Scheduling / appointments** | Free-text next-appointment field only. No calendar or booking. | L |
-| C6 | **Clinician education modules** | Content is real; progress is `localStorage` only, so it is lost on another device. Some in-checklist links say "coming soon". | M |
-| C7 | **"Run AI review" has never done anything** | `run_ladder_review` reads `ladder_rungs`, which has zero rows in production. Decide what it should read now rungs are behaviour rows. | M |
-| C8 | **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
-| C9 | **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
-| C10 | **Treatment journey restructure** | Setup / Run the plan / Close. Peter's item 22 — confirm what was built. | L |
+| C1 | **Granting and revoking a clinician's access — no UI** | Endpoints exist and are tested; no screen. Full entry below. | M |
+| C2 | **Enhanced patient list — needs design first** | `DashboardPage.tsx:197` maps patients into a simple list with needs-attention badges. Peter wants more from it; what "more" is has to be drawn before it is built. | M |
+| C3 | **Clinician settings — v1, not touched** | Nav item exists and is disabled: `PractitionerNav.tsx:25`, tooltip "Coming soon". No page, no route. Nothing decided about what belongs in it. | M |
+| C4 | **Reports — v1, not touched** | Same: `PractitionerNav.tsx:24`, disabled, "Coming soon". Per-patient reports exist (`MonitoringReportPage`); this is the global one. | M |
+| C5 | **Session notes — needs review and design** | Built and working inside `PatientPage` (`getSessionNotes` and friends, line 939). Peter wants to look at it properly before deciding what changes. | M |
+| C6 | **Action plans — needs review and design** | Same shape: working, lives in `PatientPage` (line 941), rich-text editor, free-text next-appointment field. Needs his review first. | M |
+| C7 | **Remove the Patient Downward Arrows section from the Plan tab** | **DONE 2026-08-30.** Removed; the checklist step now opens the arrow mode. Took 238 lines out of PatientPage. | S |
+| C8 | **Close / relapse-prevention tab** | Tab exists, body is the literal string "Placeholder". | M |
+| C9 | **Scheduling / appointments** | Free-text next-appointment field only. No calendar or booking. | L |
+| C10 | **Clinician education modules** | Content is real; progress is `localStorage` only, so it is lost on another device. Some in-checklist links say "coming soon". Video is a separate item. | M |
+| C11 | **"Run AI review" has never done anything** | `run_ladder_review` reads `ladder_rungs`, which has zero rows in production. Decide what it should read now rungs are behaviour rows. | M |
+| C12 | **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
+| C13 | **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
+| C14 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
 
 ## Granting and revoking a patient's clinicians — no UI
 

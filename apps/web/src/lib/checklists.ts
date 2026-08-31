@@ -4,7 +4,7 @@
 // former PARENT_CHECKLIST / PATIENT_CHECKLIST split, because per-patient completion is stored as a
 // key -> bool map — renaming a key would silently un-tick it for every patient.
 
-export type ChecklistNav = { label: string; action: 'treatmentPlan' | 'scrollDA' }
+export type ChecklistNav = { label: string; action: 'treatmentPlan' | 'openArrow' }
 export type ChecklistItemDef = { key: string; text: string; link?: { icon: string; label: string }; nav?: ChecklistNav }
 
 export const PROCESS_CHECKLIST: ChecklistItemDef[] = [
@@ -29,7 +29,7 @@ export const PROCESS_CHECKLIST: ChecklistItemDef[] = [
   { key: 'patient_worry_hill_video', text: 'Teach the Worry Hill — watch video together', link: { icon: '🎬', label: 'Worry Hill video' } },
   { key: 'patient_worry_hill_draw', text: "Draw the Worry Hill with the child's own situation", link: { icon: '📖', label: 'Worry Hill guide' } },
   { key: 'patient_candy_jar', text: 'Teach the Candy Jar analogy', link: { icon: '📖', label: 'Candy Jar guide' } },
-  { key: 'patient_da', text: 'Complete Downward Arrows for primary situations', nav: { label: '→ Patient Downward Arrows below', action: 'scrollDA' } },
+  { key: 'patient_da', text: 'Complete Downward Arrows for primary situations', nav: { label: '→ Open the downward arrow', action: 'openArrow' } },
   { key: 'patient_checkin_3', text: 'Check in — nickname and DT use' },
   { key: 'patient_ladder', text: 'Build the exposure ladder from the trigger list', nav: { label: '→ Go to Build Treatment Plan', action: 'treatmentPlan' } },
   { key: 'patient_first_rung', text: 'Choose the first exposure with the child — lowest DT rung' },
