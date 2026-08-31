@@ -2,7 +2,7 @@
 description: Run everything that has to pass before work is called done — backend tests, typecheck, frontend build.
 ---
 
-Run these three, in order, and report the result of each.
+Run these four, in order, and report the result of each.
 
 **Do not stop at the first failure** — run all three, so the report is complete.
 
@@ -31,7 +31,16 @@ while a page was broken at runtime.
 
 No output means it passed.
 
-## 3. Frontend build
+## 3. Frontend tests
+
+```bash
+cd apps/web && npm test
+```
+
+The first run after installing takes a few minutes while it compiles; after that it is under a
+second.
+
+## 4. Frontend build
 
 ```bash
 cd apps/web && npm run build
@@ -44,6 +53,8 @@ describing it as done with a caveat.
 
 ## What this does NOT prove
 
-- **Nothing about how a screen looks or behaves.** There are no frontend tests. If the change is
-  visible in the browser, open it and look — `preview_start`, then a screenshot.
+- **Nothing about how a screen LOOKS.** The frontend tests know what the text says; they do not
+  know the column is cut off, the colours are wrong, or the control is somewhere nobody will find
+  it. If the change is visible in the browser, open it and look — `preview_start`, then a
+  screenshot.
 - **Nothing about production.** These run locally against a test database.

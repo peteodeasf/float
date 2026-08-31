@@ -78,6 +78,10 @@ jobs:
         # "files": []. It exits 0 on a codebase full of errors. `tsc -b` follows the references.
         run: npx tsc -b --force
 
+      - name: Tests
+        working-directory: apps/web
+        run: npm test
+
       - name: Build
         working-directory: apps/web
         run: npx vite build

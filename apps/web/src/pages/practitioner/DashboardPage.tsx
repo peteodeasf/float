@@ -5,7 +5,7 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import { SETUP_STEPS } from '../../lib/treatmentJourney'
 
 // Relative "last activity" label
-function relativeActivityLabel(iso: string | null | undefined): string {
+export function relativeActivityLabel(iso: string | null | undefined): string {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
@@ -19,7 +19,7 @@ function relativeActivityLabel(iso: string | null | undefined): string {
 
 // Two-mode journey progress: Setup (numbered, worked once) → Treatment (ongoing).
 // Setup completes — and treatment begins — when the plan is built.
-function computeProgress(p: Patient): { label: string } {
+export function computeProgress(p: Patient): { label: string } {
   // Setup is the 4 assessment steps; building the plan happens in the workspace.
   const setupComplete: boolean[] = [
     p.has_monitoring_form,
@@ -39,7 +39,7 @@ function computeProgress(p: Patient): { label: string } {
 }
 
 // Reasons the patient needs attention (empty array = no badge)
-function needsAttentionReasons(p: Patient): string[] {
+export function needsAttentionReasons(p: Patient): string[] {
   const reasons: string[] = []
   if (p.overdue_experiment_count > 0) {
     reasons.push(`Overdue experiment${p.overdue_experiment_count > 1 ? 's' : ''} (${p.overdue_experiment_count})`)
@@ -53,7 +53,7 @@ function needsAttentionReasons(p: Patient): string[] {
   return reasons
 }
 
-function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
+export function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   const reasons = needsAttentionReasons(patient)
   const progress = computeProgress(patient)
   return (

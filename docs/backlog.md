@@ -336,7 +336,11 @@ already there.
 From [`dev-setup.md`](plans/dev-setup.md). Items 1, 3 and 4 are done (test database and 64 backend
 tests; CI on push; this file).
 
-- **`vitest` + component tests.** `M` **The frontend has zero tests.** Every backend defect this
+- **~~`vitest` + component tests~~ — DONE 2026-08-31.** 17 tests, under a second to run, wired into
+  `/verify` and CI. The first two files cover the patient list. What is still true: they know what
+  the text says, not whether a column is cut off or a control is somewhere nobody will find. Looking
+  at the screen is still a separate job.
+- **Old entry, for context:** `M` **The frontend had zero tests.** Every backend defect this
   month was caught by a test; every frontend one was caught by `tsc -b` or by Peter looking at it.
   `apps/web/src/pages/practitioner/__SessionPreview.tsx` already seeds fixtures and renders the
   session phases — it is a component test with the assertions missing, and the phases are already
