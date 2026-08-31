@@ -242,8 +242,8 @@ of what the child sees follows from what the clinician builds, so the ladder wor
 
 | Item | Today | Size |
 |---|---|---|
-| **The child's ladder does not match the clinician's, and steps go missing** | **A live defect.** `GET /patient/ladder` (`backend/app/api/routers/patients.py:1227`) returns situations with steps nested under each, and finds those steps by `trigger_situation_id`. The flat ladder lets a clinician create a step with **no situation** — those steps are invisible to the child. The clinician adds a rung, sees it on their ladder, and the child never gets it. Beyond the defect, the two views have diverged in shape: the clinician's ladder is flat with situations as grouping, the child's is still situations-first. Peter, 2026-08-31: the clinician's ladder setup must be mirrored in the child's app. | M |
-| **Video content and tips in the child's app** | Tips exist and are matched to a situation by tags. Video does not exist anywhere. See the education items. | M |
+| **The child's ladder does not match the clinician's, and steps go missing** | **A live defect.** `GET /patient/ladder` (`backend/app/api/routers/patients.py:1227`) returns situations with steps nested under each, and finds those steps by `trigger_situation_id`. The flat ladder lets a clinician create a step with **no situation** — those steps are invisible to the child. The clinician adds a rung, sees it on their ladder, and the child never gets it. **Confirmed in production, 2026-08-31: one such step exists** — *"view 3 of diana's posts on my own"* — a real exposure step the child cannot see. Beyond the defect, the two views have diverged in shape: the clinician's ladder is flat with situations as grouping, the child's is still situations-first. Peter, 2026-08-31: the clinician's ladder setup must be mirrored in the child's app. | M |
+| **Video content and tips** | Covered by the education items — Peter, 2026-08-31: this applies to the clinician and parent apps too, not just the child's. | M |
 | **Reminders** | The app records when a child plans to do something and never tells them. No scheduler exists anywhere in Float, which also blocks the parent reminders. Twilio and A2P 10DLC registration is the long part. Tabled 2026-07-28. | L |
 | **A debug print in the child's ladder endpoint** | `print(f"DEBUG ladder: plan_id=...")` at `patients.py:1256`, running in production on every load. | S |
 | **"Hi Patient" personalisation edge** | Falls back to the literal word. | S |
@@ -452,9 +452,10 @@ checklist item `patient_worry_hill_video` — *"Teach the Worry Hill — watch v
 `backend/app/data/default_checklist.py:31` and `apps/web/src/lib/checklists.ts:29`. It carries a 🎬
 icon and a "Worry Hill video" label pointing at nothing.
 
-## Put video into each app
+## Put video into each app — clinician, child and parent
 
-**Priority: after there is content to put in.** Raised 2026-08-30. `L`
+**Priority: after there is content to put in.** Raised 2026-08-30. Peter, 2026-08-31: all three
+apps, not just the child's. `L`
 
 **Today:** there is no video anywhere. Every piece of education in the product is text.
 
