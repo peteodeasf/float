@@ -8,7 +8,7 @@ ladder, and the child never got it. One existed in production.
 import uuid
 
 from app.models.treatment import AvoidanceBehavior
-from tests.factories import grant_patient_to, make_org, make_plan, make_practitioner, make_situation
+from tests.factories import make_org, make_patient, make_plan, make_situation
 
 
 async def _ladder(api, patient):
@@ -20,7 +20,8 @@ async def _ladder(api, patient):
 
 async def test_a_step_with_no_situation_reaches_the_child(api, db):
     org = await make_org(db)
-    plan = await make_plan(db, org)
+    patient = await make_patient(db, org)
+    plan = await make_plan(db, org, patient=patient)
     db.add(AvoidanceBehavior(
         treatment_plan_id=plan.id, organization_id=org.id, behavior_type="scenario",
         name="View 3 of Diana's posts on my own",
@@ -28,7 +29,7 @@ async def test_a_step_with_no_situation_reaches_the_child(api, db):
     ))
     await db.flush()
 
-    data = await _ladder(api, plan.patient)
+    data = await _ladder(api, patient)
 
     names = [b["name"] for s in data["situations"] for b in s["behaviors"]]
     assert "View 3 of Diana's posts on my own" in names
@@ -38,13 +39,14 @@ async def test_it_arrives_in_its_own_group_and_is_visible(api, db):
     """The child's screen picks a group then shows its steps, so an ungrouped step needs a group.
     And it must be switched on, or it is invisible again for a different reason."""
     org = await make_org(db)
-    plan = await make_plan(db, org)
+    patient = await make_patient(db, org)
+    plan = await make_plan(db, org, patient=patient)
     db.add(AvoidanceBehavior(
         treatment_plan_id=plan.id, organization_id=org.id, behavior_type="scenario", name="On its own",
     ))
     await db.flush()
 
-    data = await _ladder(api, plan.patient)
+    data = await _ladder(api, patient)
     group = next(s for s in data["situations"] if s["id"] == "ungrouped")
 
     assert group["is_active"] is True
@@ -53,7 +55,8 @@ async def test_it_arrives_in_its_own_group_and_is_visible(api, db):
 
 async def test_no_empty_group_when_every_step_has_a_situation(api, db):
     org = await make_org(db)
-    plan = await make_plan(db, org)
+    patient = await make_patient(db, org)
+    plan = await make_plan(db, org, patient=patient)
     situation = await make_situation(db, plan, name="Eating in the cafeteria")
     db.add(AvoidanceBehavior(
         treatment_plan_id=plan.id, trigger_situation_id=situation.id,
@@ -61,7 +64,7 @@ async def test_no_empty_group_when_every_step_has_a_situation(api, db):
     ))
     await db.flush()
 
-    data = await _ladder(api, plan.patient)
+    data = await _ladder(api, patient)
 
     assert [s["id"] for s in data["situations"]] != []
     assert not any(s["id"] == "ungrouped" for s in data["situations"])
@@ -71,7 +74,8 @@ async def test_grouped_steps_still_arrive_under_their_situation(api, db):
     """The refactor moved the per-step building into a helper. This is the half that already
     worked, and must keep working."""
     org = await make_org(db)
-    plan = await make_plan(db, org)
+    patient = await make_patient(db, org)
+    plan = await make_plan(db, org, patient=patient)
     situation = await make_situation(db, plan, name="Raising my hand")
     db.add(AvoidanceBehavior(
         treatment_plan_id=plan.id, trigger_situation_id=situation.id,
@@ -80,7 +84,7 @@ async def test_grouped_steps_still_arrive_under_their_situation(api, db):
     ))
     await db.flush()
 
-    data = await _ladder(api, plan.patient)
+    data = await _ladder(api, patient)
     group = next(s for s in data["situations"] if s["name"] == "Raising my hand")
 
     assert [b["name"] for b in group["behaviors"]] == ["Raise it once"]
@@ -90,14 +94,15 @@ async def test_grouped_steps_still_arrive_under_their_situation(api, db):
 
 async def test_a_child_never_sees_another_child_s_steps(api, db):
     org = await make_org(db)
-    mine = await make_plan(db, org)
-    theirs = await make_plan(db, org)
+    mine_patient = await make_patient(db, org)
+    mine = await make_plan(db, org, patient=mine_patient)
+    theirs = await make_plan(db, org, patient=await make_patient(db, org))
     db.add(AvoidanceBehavior(
         treatment_plan_id=theirs.id, organization_id=org.id, behavior_type="scenario", name="Not yours",
     ))
     await db.flush()
 
-    data = await _ladder(api, mine.patient)
+    data = await _ladder(api, mine_patient)
 
     names = [b["name"] for s in data["situations"] for b in s["behaviors"]]
     assert "Not yours" not in names
