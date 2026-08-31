@@ -1253,7 +1253,56 @@ async def get_my_ladder(
         ).order_by(TriggerSituation.display_order)
     )
     all_triggers = triggers_result.scalars().all()
-    print(f"DEBUG ladder: plan_id={plan.id}, situations count={len(all_triggers)}")
+
+    async def build_step(b):
+        """One step as the child's app wants it — its experiments and where it has got to.
+
+        A helper because the same shape is needed for steps that hang off a situation and for
+        steps that hang off the plan with no situation at all. Those used to be dropped entirely:
+        this endpoint found steps by situation, and the flat ladder lets a clinician create one
+        without a situation, so the clinician saw a step on their ladder that the child never got.
+        """
+        exp_result = await db.execute(
+            select(Experiment).where(
+                Experiment.avoidance_behavior_id == b.id,
+                Experiment.patient_id == patient.id
+            ).order_by(Experiment.created_at)
+        )
+        experiments = exp_result.scalars().all()
+        completed_experiments = [e for e in experiments if e.status == "completed"]
+
+        latest_dt_actual = None
+        if completed_experiments:
+            latest = completed_experiments[-1]
+            latest_dt_actual = float(latest.distress_thermometer_actual) if latest.distress_thermometer_actual is not None else None
+
+        if len(completed_experiments) >= 2 and latest_dt_actual is not None and latest_dt_actual <= 2:
+            b_status = "mastered"
+        elif len(completed_experiments) >= 1:
+            b_status = "in_progress"
+        else:
+            b_status = "not_started"
+
+        return {
+            "id": str(b.id),
+            "name": b.name,
+            "behavior_type": b.behavior_type,
+            "dt": float(b.distress_thermometer_when_refraining) if b.distress_thermometer_when_refraining is not None else None,
+            "experiment_count": len(experiments),
+            "latest_dt_actual": latest_dt_actual,
+            "status": b_status,
+            "experiments": [{
+                "id": str(e.id),
+                "status": e.status,
+                "scheduled_date": e.scheduled_date.isoformat() if e.scheduled_date else None,
+                "dt_actual": float(e.distress_thermometer_actual) if e.distress_thermometer_actual is not None else None,
+                "bip_before": float(e.bip_before) if e.bip_before is not None else None,
+                "bip_after": float(e.bip_after) if e.bip_after is not None else None,
+                "feared_outcome_occurred": e.feared_outcome_occurred,
+                "what_learned": e.what_learned,
+                "times_per_day": e.times_per_day,
+            } for e in experiments],
+        }
 
     situations = []
     for trigger in all_triggers:
@@ -1275,56 +1324,7 @@ async def get_my_ladder(
         )
         behaviors = behaviors_result.scalars().all()
 
-        behaviors_data = []
-        for b in behaviors:
-            # Experiments for this behavior
-            exp_result = await db.execute(
-                select(Experiment).where(
-                    Experiment.avoidance_behavior_id == b.id,
-                    Experiment.patient_id == patient.id
-                ).order_by(Experiment.created_at)
-            )
-            experiments = exp_result.scalars().all()
-            completed_experiments = [e for e in experiments if e.status == "completed"]
-            experiment_count = len(experiments)
-
-            # Status logic
-            latest_dt_actual = None
-            if completed_experiments:
-                latest = completed_experiments[-1]
-                latest_dt_actual = float(latest.distress_thermometer_actual) if latest.distress_thermometer_actual is not None else None
-
-            if len(completed_experiments) >= 2 and latest_dt_actual is not None and latest_dt_actual <= 2:
-                b_status = "mastered"
-            elif len(completed_experiments) >= 1:
-                b_status = "in_progress"
-            else:
-                b_status = "not_started"
-
-            experiments_data = []
-            for e in experiments:
-                experiments_data.append({
-                    "id": str(e.id),
-                    "status": e.status,
-                    "scheduled_date": e.scheduled_date.isoformat() if e.scheduled_date else None,
-                    "dt_actual": float(e.distress_thermometer_actual) if e.distress_thermometer_actual is not None else None,
-                    "bip_before": float(e.bip_before) if e.bip_before is not None else None,
-                    "bip_after": float(e.bip_after) if e.bip_after is not None else None,
-                    "feared_outcome_occurred": e.feared_outcome_occurred,
-                    "what_learned": e.what_learned,
-                    "times_per_day": e.times_per_day,
-                })
-
-            behaviors_data.append({
-                "id": str(b.id),
-                "name": b.name,
-                "behavior_type": b.behavior_type,
-                "dt": float(b.distress_thermometer_when_refraining) if b.distress_thermometer_when_refraining is not None else None,
-                "experiment_count": experiment_count,
-                "latest_dt_actual": latest_dt_actual,
-                "status": b_status,
-                "experiments": experiments_data,
-            })
+        behaviors_data = [await build_step(b) for b in behaviors]
 
         # Skip situations without any behaviors
         if not behaviors_data:
@@ -1337,6 +1337,35 @@ async def get_my_ladder(
             "feared_outcome": feared_outcome,
             "da_approved": bool(da and da.feared_outcome_approved),
             "behaviors": behaviors_data,
+        })
+
+    # Steps that hang off the plan with no situation. The flat ladder lets a clinician create
+    # these, and until 2026-08-31 the child never saw them — this endpoint only looked for steps
+    # under a situation. Shown as their own group so the child's screen, which picks a group then
+    # shows its steps, does not have to change shape.
+    ungrouped_result = await db.execute(
+        select(AvoidanceBehavior).where(
+            AvoidanceBehavior.treatment_plan_id == plan.id,
+            AvoidanceBehavior.trigger_situation_id.is_(None),
+        ).order_by(
+            AvoidanceBehavior.distress_thermometer_when_refraining.is_(None),
+            AvoidanceBehavior.distress_thermometer_when_refraining
+        )
+    )
+    ungrouped = ungrouped_result.scalars().all()
+    if ungrouped:
+        situations.append({
+            # Not a real situation, so not a real id. The child's app uses this only to know which
+            # group is selected; nothing is fetched by it.
+            "id": "ungrouped",
+            "name": "Other steps",
+            # A situation can be built and left switched off. An ungrouped step has no such
+            # switch, so it is visible as soon as it exists. Worth revisiting if clinicians want
+            # to draft these before a child sees them.
+            "is_active": True,
+            "feared_outcome": None,
+            "da_approved": False,
+            "behaviors": [await build_step(b) for b in ungrouped],
         })
 
     return {

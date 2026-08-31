@@ -423,6 +423,18 @@ stops being a measurement.
 
 **Gate:** `/security-review` — the proposal is clinical text about a child.
 
+## No way to read a review's results
+
+**Raised 2026-08-31. Peter: querying the database is fine for now.** `S`
+
+Each reviewer's link shows only their own marks and comments — enforced, and tested. There is no
+screen showing what everyone said, so reading Dr. Walker's answers means opening the tunnel and
+querying `review_marks`, `review_additions` and `review_comments` by hand.
+
+Fine for one round. Worth an hour when there is a second, since the same tool is meant to carry the
+extraction and arrow reviews too: one page, every suggestion, how each reviewer marked it and what
+they wrote.
+
 ## Ladder generation — build it
 
 `L`. Planned in [`ladder-generation.md`](plans/ladder-generation.md); decisions settled 2026-08-28.
