@@ -67,7 +67,6 @@
       "Bash(git ls-files:*)",
       "Bash(git merge-base:*)",
       "Bash(git merge:*)",
-      "Bash(git push *)",
       "Bash(git remote:*)",
       "Bash(git rev-list *)",
       "Bash(git rev-parse:*)",
@@ -161,6 +160,9 @@
       "mcp__railway__list_services",
       "mcp__visualize__read_me",
       "mcp__visualize__show_widget"
+    ],
+    "ask": [
+      "Bash(git push:*)"
     ]
   }
 }
