@@ -106,9 +106,25 @@ export function attachSession(
     async (error) => {
       const original = error.config
       const hadToken = !!localStorage.getItem(keys.access)
+      const status = error.response?.status
 
-      if (error.response?.status !== 401 || !hadToken || original?._retried) {
-        if (error.response?.status === 401 && hadToken) signOut(keys, loginPath)
+      // 401 means the token was rejected. 403 with "Not authenticated" means no token was sent at
+      // all — which is what the backend says when the Authorization header is missing.
+      //
+      // The second one is reachable because the idle watchdog clears the tokens while the page is
+      // still open. A request firing in that window arrives bare, and before this it was ignored
+      // here: no refresh, no sign-out, just the backend's own words on screen. Peter hit exactly
+      // that adding a patient.
+      const missingToken =
+        status === 403 && error.response?.data?.detail === 'Not authenticated'
+
+      if (missingToken && !hadToken) {
+        signOut(keys, loginPath)
+        return Promise.reject(error)
+      }
+
+      if ((status !== 401 && !missingToken) || !hadToken || original?._retried) {
+        if ((status === 401 || missingToken) && hadToken) signOut(keys, loginPath)
         return Promise.reject(error)
       }
 
