@@ -11,22 +11,6 @@ One guided tool in the parent app that does two jobs:
 2. **Rate them.** For each one, the child says how bad it would be if the parent stopped. That
    rating is what orders the plan.
 
-## Scope — what we are NOT building
-
-The book is a self-help guide, written for a parent working alone. Float has a clinician. Several
-of its steps are the book teaching a parent to do a clinician's job, and do not need to be
-features. Peter, 2026-08-31: *"Not all steps in that process need to be features."*
-
-Left out on purpose:
-
-- **The rehearsal / trial run.** The book has the parent and child act out the trigger situation
-  before changing anything. Valuable, and a clinician can run it in session without software.
-- **The five troubleshooting questions** as a worksheet. Same reason.
-- **Step 4's "decide the next behaviour together".** The clinician sets the focus; that already
-  exists.
-
-These are recorded so it is clear they were considered and dropped, not missed.
-
 ## The one dimension: parents only, or parents and child
 
 Peter, 2026-08-31: the clinician being present does **not** change the flow.

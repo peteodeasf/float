@@ -192,22 +192,22 @@ wrong, and who owes them a copy of their record.
 From Peter's review of the clinician portal, 2026-08-30. Sizes are his read plus what the code
 says; the ones marked "needs design" are not ready for an agent until he has drawn them.
 
-| | Item | Today | Size |
-|---|---|---|---|
-| C1 | **Granting and revoking a clinician's access — no UI** | Endpoints exist and are tested; no screen. Full entry below. | M |
-| C2 | **Enhanced patient list — needs design first** | `DashboardPage.tsx:197` maps patients into a simple list with needs-attention badges. Peter wants more from it; what "more" is has to be drawn before it is built. | M |
-| C3 | **Clinician settings — v1, not touched** | Nav item exists and is disabled: `PractitionerNav.tsx:25`, tooltip "Coming soon". No page, no route. Nothing decided about what belongs in it. | M |
-| C4 | **Reports — v1, not touched** | Same: `PractitionerNav.tsx:24`, disabled, "Coming soon". Per-patient reports exist (`MonitoringReportPage`); this is the global one. | M |
-| C5 | **Session notes — needs review and design** | Built and working inside `PatientPage` (`getSessionNotes` and friends, line 939). Peter wants to look at it properly before deciding what changes. | M |
-| C6 | **Action plans — needs review and design** | Same shape: working, lives in `PatientPage` (line 941), rich-text editor, free-text next-appointment field. Needs his review first. | M |
-| C7 | **Remove the Patient Downward Arrows section from the Plan tab** | **DONE 2026-08-30.** Removed; the checklist step now opens the arrow mode. Took 238 lines out of PatientPage. | S |
-| C8 | **Close / relapse-prevention tab** | Tab exists, body is the literal string "Placeholder". | M |
-| C9 | **Scheduling / appointments** | Free-text next-appointment field only. No calendar or booking. | L |
-| C10 | **Clinician education modules** | Content is real; progress is `localStorage` only, so it is lost on another device. Some in-checklist links say "coming soon". Video is a separate item. | M |
-| C11 | **"Run AI review" has never done anything** | `run_ladder_review` reads `ladder_rungs`, which has zero rows in production. Decide what it should read now rungs are behaviour rows. | M |
-| C12 | **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
-| C13 | **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
-| C14 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
+| Item | Today | Size |
+|---|---|---|
+| **Granting and revoking a clinician's access — no UI** | Endpoints exist and are tested; no screen. Full entry below. | M |
+| **Enhanced patient list — needs design first** | `DashboardPage.tsx:197` maps patients into a simple list with needs-attention badges. Peter wants more from it; what "more" is has to be drawn before it is built. | M |
+| **Clinician settings — v1, not touched** | Nav item exists and is disabled: `PractitionerNav.tsx:25`, tooltip "Coming soon". No page, no route. Nothing decided about what belongs in it. | M |
+| **Reports — v1, not touched** | Same: `PractitionerNav.tsx:24`, disabled, "Coming soon". Per-patient reports exist (`MonitoringReportPage`); this is the global one. | M |
+| **Session notes — needs review and design** | Built and working inside `PatientPage` (`getSessionNotes` and friends, line 939). Peter wants to look at it properly before deciding what changes. | M |
+| **Action plans — needs review and design** | Same shape: working, lives in `PatientPage` (line 941), rich-text editor, free-text next-appointment field. Needs his review first. | M |
+| **Remove the Patient Downward Arrows section from the Plan tab** | **DONE 2026-08-30.** Removed; the checklist step now opens the arrow mode. Took 238 lines out of PatientPage. | S |
+| **Close / relapse-prevention tab** | Tab exists, body is the literal string "Placeholder". | M |
+| **Scheduling / appointments** | Free-text next-appointment field only. No calendar or booking. | L |
+| **Clinician education modules** | Content is real; progress is `localStorage` only, so it is lost on another device. Some in-checklist links say "coming soon". Video is a separate item. | M |
+| **"Run AI review" has never done anything** | `run_ladder_review` reads `ladder_rungs`, which has zero rows in production. Decide what it should read now rungs are behaviour rows. | M |
+| **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
+| **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
+| **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
 
 ## Granting and revoking a patient's clinicians — no UI
 
@@ -234,12 +234,12 @@ they cannot. Revoking the last one is refused (409, already enforced).
 
 # Teen
 
-| | Item | Today | Size |
-|---|---|---|---|
-| T1 | **Reminders / notifications** | Schedule data is written; nothing delivers it. No scheduler exists. Twilio/A2P 10DLC is the long pole. Tabled 2026-07-28. | L |
-| T2 | **"Hi Patient" personalisation edge** | Falls back to the literal word. | S |
-| T3 | **Teen app and the flat ladder** | Deferred: the teen app still reads situations → behaviours through the per-trigger routes. Its own redesign comes first. | L |
-| T4 | **Milestone rewards** | Peter's item 21. Needs a defined milestone set. | M |
+| Item | Today | Size |
+|---|---|---|
+| **Reminders / notifications** | Schedule data is written; nothing delivers it. No scheduler exists. Twilio/A2P 10DLC is the long pole. Tabled 2026-07-28. | L |
+| **"Hi Patient" personalisation edge** | Falls back to the literal word. | S |
+| **Teen app and the flat ladder** | Deferred: the teen app still reads situations → behaviours through the per-trigger routes. Its own redesign comes first. | L |
+| **Milestone rewards** | Peter's item 21. Needs a defined milestone set. | M |
 
 Most of the teen surface is built. The July plan's items 13–19 (approved-experiment screen,
 before-state, in-the-moment, after-state, hard paths, progress, chat) all shipped in the reorg on
@@ -272,17 +272,17 @@ parent↔clinician chat.
 
 ## What is missing
 
-| | Item | Today | Size |
-|---|---|---|---|
-| P1 | **Two-parent accounts** | Not built. Peter's July items 2 and 3, marked blocking, and several items below assume it. First question is whether a case supports two parent accounts at all today — it may be a schema change rather than a feature. | L |
-| P2 | **Parent accommodation experiments** | Not built. commit → before → after → too_hard, the same lifecycle the child's experiments have. | L |
-| P3 | **Weekly consistency check-in — it is a GATE, not a report** | Not built. Once a week the parent answers one question about their focus accommodation: **held every time / mostly / caved**. Deliberately not per-instance logging — recording every moment is more than most parents sustain. Re-read of the book, 2026-08-31: step 4 moves to the next accommodation once the parent and child are comfortable without the first, so this answer is **what decides whether they advance**, not a status update. Lapses surface to the clinician. | M |
-| P4 | **Parent exposure reminders** | Not built, and blocked: needs a scheduler, which does not exist. Fires on the scheduled date and on the child's commit, telling the parent what to do and what not to do. | L |
-| P5 | **Child rates parent accommodations** | Not built, and it is what the plan's ORDER depends on — today the clinician guesses it. Now part of the accommodation conversation below rather than a feature on its own. | M |
-| P6 | **Progress and charts** | Not built. | M |
-| P7 | **Navigation between parent screens** | Home and messages exist with nothing tying them together. | S |
-| P8 | **The accommodation conversation** | **The big one.** A guided tool in the parent app that finds the accommodations with the parent, then rates them with the child — and the ratings order the plan. One switch, parents only or parents and child; the clinician being in the room does not change the flow. Planned in [`accommodation-conversation.md`](plans/accommodation-conversation.md). | L |
-| P9 | **Stopping is not the end — staying stopped is** | Not built. The book: *"Make sure you do not go back... you will set the stage for relapse."* An accommodation needs a third state — held — and the ones already stopped need to keep being watched. Today the parent only logs against the current focus, and nothing tracks whether an earlier one has quietly come back. | M |
+| Item | Today | Size |
+|---|---|---|
+| **Two-parent accounts** | Not built. Peter's July plan marked this blocking, and several items below assume it. First question is whether a case supports two parent accounts at all today — it may be a schema change rather than a feature. | L |
+| **Parent accommodation experiments** | Not built. commit → before → after → too_hard, the same lifecycle the child's experiments have. | L |
+| **Weekly consistency check-in — it is a GATE, not a report** | Not built. Once a week the parent answers one question about their focus accommodation: **held every time / mostly / caved**. Deliberately not per-instance logging — recording every moment is more than most parents sustain. Re-read of the book, 2026-08-31: step 4 moves to the next accommodation once the parent and child are comfortable without the first, so this answer is **what decides whether they advance**, not a status update. Lapses surface to the clinician. | M |
+| **Parent exposure reminders** | Not built, and blocked: needs a scheduler, which does not exist. Fires on the scheduled date and on the child's commit, telling the parent what to do and what not to do. | L |
+| **Child rates parent accommodations** | Not built, and it is what the plan's ORDER depends on — today the clinician guesses it. Now part of the accommodation conversation below rather than a feature on its own. | M |
+| **Progress and charts** | Not built. | M |
+| **Navigation between parent screens** | Home and messages exist with nothing tying them together. | S |
+| **The accommodation conversation** | **The big one.** A guided tool in the parent app that finds the accommodations with the parent, then rates them with the child — and the ratings order the plan. One switch, parents only or parents and child; the clinician being in the room does not change the flow. Planned in [`accommodation-conversation.md`](plans/accommodation-conversation.md). | L |
+| **Stopping is not the end — staying stopped is** | Not built. The book: *"Make sure you do not go back... you will set the stage for relapse."* An accommodation needs a third state — held — and the ones already stopped need to keep being watched. Today the parent only logs against the current focus, and nothing tracks whether an earlier one has quietly come back. | M |
 
 ## The question P3 raises, and it is not a build detail
 
@@ -305,12 +305,12 @@ a starting point, not a survey.
 
 # Admin
 
-| | Item | Today | Size |
-|---|---|---|---|
-| A1 | **Patient management** | List and delete only; no edit or detail. | M |
-| A2 | **Waitlist** | Read-only; no approve, convert or export. | M |
-| A3 | **Data / exports** | Not started. Overlaps the HIPAA patient-rights work. | M |
-| A4 | **Feature flags / config** | Not started. | M |
+| Item | Today | Size |
+|---|---|---|
+| **Patient management** | List and delete only; no edit or detail. | M |
+| **Waitlist** | Read-only; no approve, convert or export. | M |
+| **Data / exports** | Not started. Overlaps the HIPAA patient-rights work. | M |
+| **Feature flags / config** | Not started. | M |
 
 ---
 
@@ -457,7 +457,7 @@ Three places already exist and would each take video differently:
 
 | Where | What it is today |
 |---|---|
-| **Clinician education modules** | `apps/web/src/data/education.ts`, rendered by `EducationIndexPage` / `EducationModulePage`. Text modules; progress is `localStorage` only, so it is lost on another device (see C6). |
+| **Clinician education modules** | `apps/web/src/data/education.ts`, rendered by `EducationIndexPage` / `EducationModulePage`. Text modules; progress is `localStorage` only, so it is lost on another device. |
 | **Just-in-time tips for the teen** | `JitTip` in `backend/app/models/jit_content.py` — a title and a body, matched to a situation by tags. Shown on the exposure screen. Admin has full CRUD. |
 | **Consultation checklist** | Items can carry a link with an icon and label. `patient_worry_hill_video` already does, and points nowhere. |
 
