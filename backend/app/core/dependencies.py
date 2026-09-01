@@ -6,7 +6,7 @@ from jose import JWTError
 import uuid
 
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.security import decode_token, token_predates_password_change
 from app.models.user import User, UserRole
 
 bearer_scheme = HTTPBearer()
@@ -35,6 +35,8 @@ async def get_current_user(
     )
     user = result.scalar_one_or_none()
     if user is None:
+        raise credentials_exception
+    if token_predates_password_change(payload, user.password_changed_at):
         raise credentials_exception
     return user
 

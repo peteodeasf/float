@@ -1,7 +1,7 @@
 # Clinician settings
 
-**Planned 2026-09-01** from Peter's review. Not started. The Settings nav item exists and is
-disabled.
+**Planned 2026-09-01** from Peter's review. **"Your account" built 2026-09-01** — the nav item is
+live and the page exists. The clinic half is still to come.
 
 ## What this mostly is
 
@@ -22,9 +22,9 @@ and two of the three clinicians at Test School have it.
 
 | | Today |
 |---|---|
-| Name, credentials, phone | On `PractitionerProfile`. No way to edit any of them. |
-| Email | On `User`. |
-| Change password | Reset-by-email exists. Changing it while signed in does not. |
+| Name, credentials, phone | **Done.** `GET`/`PUT /practitioners/me` — no id in the path, so the route can only ever act on the caller. The name cannot be blanked; it appears on the patient page and on a plan. |
+| Email | Read-only on the page, with a line saying to ask Float. Changing it changes how someone signs in, and there is no verification step to make that safe. |
+| Change password | **Done.** `PUT /auth/change-password`, which needs the password you have now — a live session on its own is not enough, or a borrowed unlocked laptop locks the real clinician out. |
 | Notifications | **Nothing to control yet.** All five emails Float sends go to patients, parents or new clinicians — a clinician receives nothing. Peter, 2026-09-01: build clinician notifications, and scaffold the control for later. See [`clinician-notifications.md`](clinician-notifications.md). This section of the settings page comes AFTER there is something for it to switch off. |
 
 ## Your clinic — for institution admins
@@ -88,10 +88,27 @@ setting. Email if that is not enough.
 **How the clinic is told.** Float has no clinician-facing notification channel — see above. A line
 on the settings page, an email, or both.
 
+## Changing a password now ends every other session
+
+Found while building the password field, and fixed with it. Refresh tokens are stateless JWTs
+lasting seven days, so changing a password did nothing to a session someone else already had —
+which is the one situation people change a password for.
+
+Tokens now carry when they were issued (`iat`), `users.password_changed_at` records the change, and
+anything issued at or before that second is refused, in `get_current_user` and on `/auth/refresh`.
+A token with no issue time at all predates the check and is refused once the user has changed their
+password: failing closed costs them one sign-in, failing open leaves the stolen session alive for
+the rest of the week.
+
+The browser doing the changing is handed a fresh pair, stamped a second later, so the person
+changing their own password is not the one who gets signed out. Same for the first-login "set your
+password" screen in the child's and parent's apps — the temporary password Float emails out is
+exactly the kind that should stop working everywhere once a real one is chosen.
+
 ## Order of work
 
 1. **Your account** — name, credentials, phone, email, password. Stands alone, no permissions to get
-   wrong, and gives the page a reason to exist.
+   wrong, and gives the page a reason to exist. **Done 2026-09-01.**
 2. **The Float admin capability switches**, because both clinic settings depend on them.
 3. **The consultation checklist** for institution admins.
 4. **The sign-out timer.**

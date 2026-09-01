@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { teenApiClient } from '../../api/client'
+import { teenApiClient, TEEN_KEYS } from '../../api/client'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
 
@@ -25,7 +25,14 @@ export default function TeenSetPasswordPage() {
     }
     setIsLoading(true)
     try {
-      await teenApiClient.put('/auth/set-password', { password })
+      // Setting a password ends every older session, including this browser's token,
+      // so the server hands back a fresh pair and they are stored here.
+      const { data } = await teenApiClient.put('/auth/set-password', { password })
+      if (data?.access_token) {
+        localStorage.setItem(TEEN_KEYS.access, data.access_token)
+        teenApiClient.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`
+      }
+      if (data?.refresh_token) localStorage.setItem(TEEN_KEYS.refresh, data.refresh_token)
       setMustChangePassword(false)
       navigate('/teen/home')
     } catch {

@@ -18,6 +18,11 @@ class User(Base):
     must_change_password: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    # Set when the password changes. Every token issued before this is refused — see
+    # token_predates_password_change.
+    password_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     password_reset_token: Mapped[str | None] = mapped_column(String, nullable=True)
     password_reset_expires: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

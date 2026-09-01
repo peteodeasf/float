@@ -38,6 +38,7 @@ import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
 import EducationIndexPage from './pages/practitioner/EducationIndexPage'
+import SettingsPage from './pages/practitioner/SettingsPage'
 import EducationModulePage from './pages/practitioner/EducationModulePage'
 import TeenClosedPage from './pages/teen/TeenClosedPage'
 import ParentClosedPage from './pages/parent/ParentClosedPage'
@@ -115,6 +116,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/education" element={
                 <ProtectedRoute><EducationIndexPage /></ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute><SettingsPage /></ProtectedRoute>
               } />
               <Route path="/education/:moduleId" element={
                 <ProtectedRoute><EducationModulePage /></ProtectedRoute>

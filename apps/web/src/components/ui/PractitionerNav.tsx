@@ -24,7 +24,7 @@ const navLinks: { label: string; page: ActivePage; path: string; enabled: boolea
   // No Reports item. Peter, 2026-09-01: pilot data comes straight out of the database, and
   // clinicians get charts on the patient's Experiments tab rather than a reports section. A
   // permanently greyed-out nav item promises something that is not coming.
-  { label: 'Settings', page: 'settings', path: '/settings', enabled: false, tooltip: 'Coming soon' },
+  { label: 'Settings', page: 'settings', path: '/settings', enabled: true },
 ]
 
 export default function PractitionerNav({ activePage, subHeader }: PractitionerNavProps) {

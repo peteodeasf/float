@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { parentApiClient } from '../../api/client'
+import { parentApiClient, PARENT_KEYS } from '../../api/client'
 import { useParentAuth } from '../../context/ParentAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
 
@@ -25,7 +25,14 @@ export default function ParentSetPasswordPage() {
     }
     setIsLoading(true)
     try {
-      await parentApiClient.put('/auth/set-password', { password })
+      // Setting a password ends every older session, including this browser's token,
+      // so the server hands back a fresh pair and they are stored here.
+      const { data } = await parentApiClient.put('/auth/set-password', { password })
+      if (data?.access_token) {
+        localStorage.setItem(PARENT_KEYS.access, data.access_token)
+        parentApiClient.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`
+      }
+      if (data?.refresh_token) localStorage.setItem(PARENT_KEYS.refresh, data.refresh_token)
       setMustChangePassword(false)
       navigate('/parent/home')
     } catch {

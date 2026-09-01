@@ -2143,3 +2143,78 @@ async def list_my_colleagues(
         )
         for prof, role in result.all()
     ]
+
+
+class MyProfileResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    credentials: str | None
+    phone_number: str | None
+    email: str
+    is_org_admin: bool
+
+
+class MyProfileUpdate(BaseModel):
+    name: str
+    credentials: str | None = None
+    phone_number: str | None = None
+
+
+def _my_profile(profile: PractitionerProfile, user: User, is_admin: bool) -> MyProfileResponse:
+    return MyProfileResponse(
+        id=profile.id,
+        name=profile.name,
+        credentials=profile.credentials,
+        phone_number=profile.phone_number,
+        email=user.email,
+        is_org_admin=is_admin,
+    )
+
+
+@practitioners_router.get("/me", response_model=MyProfileResponse)
+async def read_my_profile(
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """My own details.
+
+    There is no practitioner id in the path on purpose: this route can only ever return the caller,
+    so there is no id to get wrong. `/auth/me` does not carry the name, credentials or phone —
+    those live on the practitioner profile and had nowhere to be read or written.
+    """
+    current_user, practitioner = context
+    return _my_profile(
+        practitioner,
+        current_user,
+        await is_institution_admin(db, current_user.id, practitioner.organization_id),
+    )
+
+
+@practitioners_router.put("/me", response_model=MyProfileResponse)
+async def update_my_profile(
+    data: MyProfileUpdate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change my own name, credentials or phone. Same reasoning as above — no id, no target but me.
+
+    The name shows on the patient page and on a plan, so it cannot be blanked.
+    """
+    current_user, practitioner = context
+    name = data.name.strip()
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your name cannot be empty — it appears on your patients' records.",
+        )
+
+    practitioner.name = name
+    practitioner.credentials = (data.credentials or "").strip() or None
+    practitioner.phone_number = (data.phone_number or "").strip() or None
+    await db.commit()
+    await db.refresh(practitioner)
+    return _my_profile(
+        practitioner,
+        current_user,
+        await is_institution_admin(db, current_user.id, practitioner.organization_id),
+    )

@@ -166,8 +166,25 @@ async def api(db):
 
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        # `client.sign_in_as(user)` decides who the request is from; leave it unset for anonymous.
-        client.sign_in_as = lambda user: state.__setitem__("user", user)  # type: ignore[attr-defined]
+        def sign_in_as(user):
+            """Who the request is from. Leave it unset for anonymous."""
+            state["user"] = user
+            app.dependency_overrides[get_current_user] = _user_override
+            client.headers.pop("Authorization", None)
+
+        def sign_in_with_token(token: str):
+            """Send a real bearer token and let the REAL get_current_user read it.
+
+            Needed for anything about the token itself rather than about who holds it — a token
+            issued before the user changed their password, for instance. The override above hands
+            back a user object and never looks at a token, so it cannot see any of that.
+            """
+            state["user"] = None
+            app.dependency_overrides.pop(get_current_user, None)
+            client.headers["Authorization"] = f"Bearer {token}"
+
+        client.sign_in_as = sign_in_as  # type: ignore[attr-defined]
+        client.sign_in_with_token = sign_in_with_token  # type: ignore[attr-defined]
         yield client
 
     app.dependency_overrides.clear()
