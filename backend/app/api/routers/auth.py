@@ -134,7 +134,11 @@ async def get_me(
             .where(ParentPatientLink.parent_user_id == current_user.id)
         )
         for _link, child in link_result.all():
-            children.append({"patient_id": str(child.id), "patient_name": child.name})
+            children.append({
+                "patient_id": str(child.id),
+                "patient_name": child.name,
+                "closed_at": child.closed_at,
+            })
 
     # Convenience: first child surfaces as patient_id/patient_name for the
     # single-child MVP, mirroring how the teen client reads its own profile.
@@ -152,6 +156,12 @@ async def get_me(
         "is_parent": role == "parent",
         "children": children,
         "must_change_password": current_user.must_change_password,
+        # Treatment has been closed by a clinician. The child and parent apps still let them sign
+        # in and read; this is what tells them to show "All done for now" rather than tasks.
+        "treatment_closed": bool(
+            (patient and patient.closed_at is not None)
+            or (primary_child and primary_child.get("closed_at") is not None)
+        ),
     }
 
 

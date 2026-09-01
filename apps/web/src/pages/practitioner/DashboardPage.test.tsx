@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { computeProgress, needsAttentionReasons, relativeActivityLabel } from './DashboardPage'
+import { filterByPhase, needsAttentionReasons, phaseLabel, relativeActivityLabel } from './DashboardPage'
 import type { Patient } from '../../api/patients'
 
 /** A patient with nothing done. Each test turns on only what it is about. */
@@ -35,51 +35,59 @@ function patient(over: Partial<Patient> = {}): Patient {
     monitoring_entries_count: 0,
     monitoring_form_sent: false,
     checklist_checked_items: {},
+    phase: 'new',
+    phase_label: 'New',
+    closed_at: null,
     ...over,
   } as Patient
 }
 
-describe('the progress column', () => {
-  it('starts at the first setup step', () => {
-    expect(computeProgress(patient()).label).toContain('Step 1')
+describe('the phase column', () => {
+  it('shows what the server said', () => {
+    expect(phaseLabel(patient({ phase: 'monitoring', phase_label: 'Monitoring' }))).toBe('Monitoring')
   })
 
-  it('moves on once a monitoring form has been sent', () => {
-    expect(computeProgress(patient({ has_monitoring_form: true })).label).toContain('Step 2')
-  })
-
-  it('IS STUCK at step 3, which is the bug Peter reported', () => {
-    // Step 3 is `has_consultation_1_note && has_parent_da`. has_parent_da needs a downward arrow
-    // recorded as facilitated by a PARENT — and nothing in the app ever creates one. Every path
-    // writes 'practitioner'. So a clinician can do everything and the column never moves past here.
-    const doneEverythingPossible = patient({
-      has_monitoring_form: true,
-      situation_count: 3,
-      has_consultation_1_note: true,
-      has_consultation_2_note: true,
-      has_patient_da: true,
-      has_active_situation_with_behaviors: true,
-      plan_status: 'active',
-      completed_experiment_count: 12,
-      has_parent_da: false, // the flag nothing sets
-    })
-
-    expect(computeProgress(doneEverythingPossible).label).toContain('Step 3')
-    expect(computeProgress(doneEverythingPossible).label).not.toContain('In treatment')
-  })
-
-  it('would reach treatment if that flag were ever set', () => {
+  it('does not recompute the phase in the browser', () => {
+    // The old column was four conditions chained with `and` in this file, and one of them could
+    // never become true — every patient sat at "Setup · Step 3 of 4" and nothing complained. The
+    // phase is worked out on the server now, in one place, so the two cannot drift apart. This
+    // test exists to stop anyone reintroducing the logic here: a patient whose facts look early
+    // still reads whatever the server said.
     const p = patient({
-      has_monitoring_form: true,
-      situation_count: 1,
-      has_consultation_1_note: true,
-      has_parent_da: true,
-      has_consultation_2_note: true,
-      has_patient_da: true,
-      has_active_situation_with_behaviors: true,
-      plan_status: 'active',
+      phase: 'in_treatment',
+      phase_label: 'In treatment',
+      has_monitoring_form: false,
+      situation_count: 0,
     })
-    expect(computeProgress(p).label).toBe('In treatment')
+    expect(phaseLabel(p)).toBe('In treatment')
+  })
+
+  it('falls back to New rather than showing nothing', () => {
+    expect(phaseLabel({ ...patient(), phase_label: undefined } as unknown as Patient)).toBe('New')
+  })
+})
+
+describe('the phase filter', () => {
+  const people = [
+    patient({ id: 'a', phase: 'monitoring' }),
+    patient({ id: 'b', phase: 'in_treatment' }),
+    patient({ id: 'c', phase: 'closed' }),
+  ]
+
+  it('hides closed patients by default', () => {
+    expect(filterByPhase(people, 'all').map(p => p.id)).toEqual(['a', 'b'])
+  })
+
+  it('shows closed patients when they are asked for', () => {
+    expect(filterByPhase(people, 'closed').map(p => p.id)).toEqual(['c'])
+  })
+
+  it('shows one phase at a time', () => {
+    expect(filterByPhase(people, 'in_treatment').map(p => p.id)).toEqual(['b'])
+  })
+
+  it('returns nothing rather than everything when a phase is empty', () => {
+    expect(filterByPhase(people, 'planning')).toEqual([])
   })
 })
 

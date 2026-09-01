@@ -35,6 +35,9 @@ function patient(over: Partial<Patient> = {}): Patient {
     monitoring_entries_count: 0,
     monitoring_form_sent: false,
     checklist_checked_items: {},
+    phase: 'new',
+    phase_label: 'New',
+    closed_at: null,
     ...over,
   } as Patient
 }
@@ -53,8 +56,15 @@ describe('a row on the patient list', () => {
   })
 
   it('shows where they are up to', () => {
-    renderRow(patient({ has_monitoring_form: true }))
-    expect(screen.getByText(/Step 2/)).toBeInTheDocument()
+    renderRow(patient({ phase: 'in_treatment', phase_label: 'In treatment' }))
+    expect(screen.getByText('In treatment')).toBeInTheDocument()
+  })
+
+  it('reads a finished case differently from a live one', () => {
+    const { container } = renderRow(patient({ phase: 'closed', phase_label: 'Closed' }))
+    const cell = [...container.querySelectorAll('td')].find(td => td.textContent === 'Closed')
+    expect(cell).toBeDefined()
+    expect(cell).toHaveStyle({ fontStyle: 'italic' })
   })
 
   it('marks a child who needs attention', () => {

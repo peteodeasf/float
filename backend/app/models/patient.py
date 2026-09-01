@@ -62,6 +62,13 @@ class PatientProfile(Base):
     primary_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )
+    # Treatment finished. Set by a clinician, and reversible — treatment restarting is ordinary.
+    # A closed patient keeps everything; the clinician can still read all of it. What closing does
+    # stop is the child's and the parent's apps.
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

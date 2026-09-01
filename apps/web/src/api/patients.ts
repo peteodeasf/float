@@ -1,5 +1,17 @@
 import { apiClient } from './client'
 
+export type Phase = 'new' | 'monitoring' | 'assessment' | 'planning' | 'in_treatment' | 'closed'
+
+/** In the order treatment happens. Used for the filter. */
+export const PHASES: { value: Phase; label: string }[] = [
+  { value: 'new', label: 'New' },
+  { value: 'monitoring', label: 'Monitoring' },
+  { value: 'assessment', label: 'Assessment' },
+  { value: 'planning', label: 'Planning' },
+  { value: 'in_treatment', label: 'In treatment' },
+  { value: 'closed', label: 'Closed' },
+]
+
 export type Patient = {
   id: string
   name: string
@@ -25,6 +37,11 @@ export type Patient = {
   monitoring_entries_count: number
   monitoring_form_sent: boolean
   checklist_checked_items: Record<string, boolean>
+  // Where the patient is up to. Worked out on the server so every screen agrees, and so the
+  // column cannot silently freeze the way the old step counter did.
+  phase: Phase
+  phase_label: string
+  closed_at?: string | null
 }
 
 export interface PatientDetail {
@@ -223,5 +240,17 @@ export const sendParentMessage = async (
     content,
     message_type: messageType,
   })
+  return response.data
+}
+
+/** Treatment finished. Reversible, and the patient keeps everything. */
+export const closePatient = async (patientId: string) => {
+  const response = await apiClient.post(`/patients/${patientId}/close`)
+  return response.data
+}
+
+/** Treatment starting again. Gives the family their apps back. */
+export const reopenPatient = async (patientId: string) => {
+  const response = await apiClient.post(`/patients/${patientId}/reopen`)
   return response.data
 }

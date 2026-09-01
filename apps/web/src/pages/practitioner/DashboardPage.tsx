@@ -1,8 +1,8 @@
+import { useMemo, useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { getPatients, Patient } from '../../api/patients'
+import { getPatients, PHASES, type Patient, type Phase } from '../../api/patients'
 import PractitionerNav from '../../components/ui/PractitionerNav'
-import { SETUP_STEPS } from '../../lib/treatmentJourney'
 
 // Relative "last activity" label
 export function relativeActivityLabel(iso: string | null | undefined): string {
@@ -17,25 +17,31 @@ export function relativeActivityLabel(iso: string | null | undefined): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-// Two-mode journey progress: Setup (numbered, worked once) → Treatment (ongoing).
-// Setup completes — and treatment begins — when the plan is built.
-export function computeProgress(p: Patient): { label: string } {
-  // Setup is the 4 assessment steps; building the plan happens in the workspace.
-  const setupComplete: boolean[] = [
-    p.has_monitoring_form,
-    p.situation_count >= 1,
-    p.has_consultation_1_note && p.has_parent_da,
-    p.has_consultation_2_note && p.has_patient_da,
-  ]
-  if (setupComplete.every(Boolean)) {
-    if (!p.has_active_situation_with_behaviors) {
-      return { label: 'Building treatment plan' }
-    }
-    return { label: p.plan_status === 'active' ? 'In treatment' : 'In treatment · activate plan' }
-  }
-  const firstIncomplete = setupComplete.findIndex(c => !c)
-  const idx = firstIncomplete === -1 ? SETUP_STEPS.length - 1 : firstIncomplete
-  return { label: `Setup · Step ${idx + 1} of ${SETUP_STEPS.length} · ${SETUP_STEPS[idx]}` }
+// Where the patient is up to. The server works this out — see backend/app/services/patient_phase.py
+// — so every screen agrees and the column cannot freeze the way the old step counter did. That one
+// was four conditions chained with `and`, one of them could never become true, and every patient
+// sat at "Setup · Step 3 of 4" while nothing complained.
+export function phaseLabel(p: Patient): string {
+  return p.phase_label ?? 'New'
+}
+
+/**
+ * Which patients the list shows.
+ *
+ * "all" means every patient EXCEPT closed ones. Closed is reachable only by choosing it, because a
+ * clinician with years of finished cases does not want them in the way — but hiding them with no
+ * way back would lose them, so the filter has its own entry.
+ */
+export function filterByPhase(patients: Patient[], filter: Phase | 'all'): Patient[] {
+  if (filter === 'all') return patients.filter(p => p.phase !== 'closed')
+  return patients.filter(p => p.phase === filter)
+}
+
+/** Muted for finished cases, ordinary for everyone else. */
+export function phaseStyle(p: Patient): CSSProperties {
+  return p.phase === 'closed'
+    ? { color: 'var(--float-text-hint)', fontStyle: 'italic' }
+    : { color: 'var(--float-text)' }
 }
 
 // Reasons the patient needs attention (empty array = no badge)
@@ -55,7 +61,6 @@ export function needsAttentionReasons(p: Patient): string[] {
 
 export function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   const reasons = needsAttentionReasons(patient)
-  const progress = computeProgress(patient)
   return (
     <tr
       onClick={onClick}
@@ -76,8 +81,8 @@ export function PatientRow({ patient, onClick }: { patient: Patient; onClick: ()
         </div>
         <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>{patient.email}</p>
       </td>
-      <td className="px-6 py-4 text-xs" style={{ color: 'var(--float-text-hint)' }}>
-        {progress.label}
+      <td className="px-6 py-4 text-xs" style={phaseStyle(patient)}>
+        {phaseLabel(patient)}
       </td>
       <td className="px-6 py-4 text-sm" style={{ color: 'var(--float-text-secondary)' }}>
         {relativeActivityLabel(patient.last_activity_at)}
@@ -94,10 +99,17 @@ export function PatientRow({ patient, onClick }: { patient: Patient; onClick: ()
 export default function DashboardPage() {
   const navigate = useNavigate()
 
+  // Closed cases are hidden until asked for. A clinician with two years of finished patients does
+  // not want them in the way — Peter, 2026-08-31.
+  const [phaseFilter, setPhaseFilter] = useState<Phase | 'all'>('all')
+
   const { data: patients, isLoading, error } = useQuery({
     queryKey: ['patients'],
     queryFn: getPatients,
   })
+
+  const shown = useMemo(() => filterByPhase(patients ?? [], phaseFilter), [patients, phaseFilter])
+  const closedCount = (patients ?? []).filter(p => p.phase === 'closed').length
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
@@ -114,10 +126,36 @@ export default function DashboardPage() {
                 className="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
                 style={{ background: 'var(--float-primary-light)', color: 'var(--float-primary-text)' }}
               >
-                {patients?.length ?? 0} patient{patients?.length !== 1 ? 's' : ''}
+                {shown.length} patient{shown.length !== 1 ? 's' : ''}
               </span>
+              {phaseFilter === 'all' && closedCount > 0 && (
+                <span className="ml-2 text-xs" style={{ color: 'var(--float-text-hint)' }}>
+                  {closedCount} closed, hidden
+                </span>
+              )}
             </p>
           </div>
+
+          <label className="flex items-center gap-2 text-sm ml-auto mr-3">
+            <span style={{ color: 'var(--float-text-hint)' }}>Phase</span>
+            <select
+              value={phaseFilter}
+              onChange={e => setPhaseFilter(e.target.value as Phase | 'all')}
+              aria-label="Filter by phase"
+              className="px-3 py-2 text-sm cursor-pointer"
+              style={{
+                borderRadius: 'var(--float-radius-sm)',
+                border: '1px solid var(--float-border)',
+                background: '#fff',
+                color: 'var(--float-text)',
+              }}
+            >
+              <option value="all">All open</option>
+              {PHASES.map(p => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+          </label>
           <button
             onClick={() => navigate('/patients/new')}
             className="text-white px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
@@ -185,7 +223,7 @@ export default function DashboardPage() {
                     Patient
                   </th>
                   <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--float-text-hint)' }}>
-                    Progress
+                    Phase
                   </th>
                   <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--float-text-hint)' }}>
                     Last activity
@@ -194,7 +232,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {patients.map((patient) => (
+                {shown.map((patient) => (
                   <PatientRow
                     key={patient.id}
                     patient={patient}

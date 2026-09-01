@@ -36,6 +36,7 @@ from app.models.action_plan import ActionPlan
 from app.models.session_note import SessionNote
 from app.models.message import Message
 from app.models.experiment import Experiment
+from app.services.patient_phase import LABELS, Phase, phase_of
 from app.services.patient_access_service import (
     accessible_patient_ids,
     is_institution_admin,
@@ -235,7 +236,29 @@ async def get_permitted_message_access(
     await _require(db, context, await patient_of_record(db, Message, message_id), request)
 
 
+CLOSED_DETAIL = "Treatment is closed"
+
+
+def _refuse_writes_when_closed(patient: PatientProfile, request: Request | None) -> None:
+    """A closed patient can still read; they cannot change anything.
+
+    Closing switches off the child's and the parent's apps (Peter, 2026-08-31) — they should not
+    carry on using them unsupervised once a clinician has ended the case. But they are NOT locked
+    out at the login screen: they sign in, and find nothing to do, with "All done for now" instead
+    of their tasks. That needs reads to keep working, so only writes are refused.
+
+    Reads and writes are split on the HTTP method rather than route by route, so a route added
+    later is covered without anyone remembering.
+    """
+    if patient.closed_at is None or request is None:
+        return
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=CLOSED_DETAIL)
+
+
 async def get_patient_context(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> tuple[User, PatientProfile]:
@@ -248,10 +271,12 @@ async def get_patient_context(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Patient profile not found"
         )
+    _refuse_writes_when_closed(patient, request)
     return current_user, patient
 
 
 async def get_parent_context(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> tuple[User, list[PatientProfile]]:
@@ -270,6 +295,8 @@ async def get_parent_context(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No linked patient found for this parent"
         )
+    for child in children:
+        _refuse_writes_when_closed(child, request)
     return current_user, children
 
 
@@ -382,10 +409,20 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
     candidates = [c for c in [last_exp_at, last_note_at, last_msg_at, last_entry_at, patient.created_at] if c is not None]
     last_activity_at = max(candidates) if candidates else patient.created_at
 
+    has_any_session_note = bool(note_types)
+
     # --- Consultation checklist state ---
     checklist_checked_items = (await db.execute(
         select(ConsultationChecklist.checked_items).where(ConsultationChecklist.patient_id == pid)
     )).scalars().first() or {}
+
+    phase = phase_of(
+        is_closed=patient.closed_at is not None,
+        plan_status=plan_status,
+        monitoring_entries_count=monitoring_entries_count,
+        has_any_session_note=has_any_session_note,
+        monitoring_form_sent=monitoring_form_sent,
+    )
 
     return {
         'last_activity_at': last_activity_at,
@@ -405,6 +442,9 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
         'monitoring_entries_count': monitoring_entries_count,
         'monitoring_form_sent': monitoring_form_sent,
         'checklist_checked_items': checklist_checked_items,
+        'phase': phase.value,
+        'phase_label': LABELS[phase],
+        'closed_at': patient.closed_at,
     }
 
 
@@ -1957,3 +1997,60 @@ async def read_access_log(
         )
         for entry, name, email in result.all()
     ]
+
+
+def _closed_state(patient: PatientProfile) -> dict:
+    """Just enough for the caller to update the row it is looking at."""
+    phase = Phase.CLOSED if patient.closed_at else Phase.NEW
+    return {
+        "id": patient.id,
+        "closed_at": patient.closed_at,
+        # Only meaningful for CLOSED. When reopening, the list refetches to get the real phase,
+        # which depends on plan and monitoring state this endpoint does not load.
+        "phase": phase.value,
+        "phase_label": LABELS[phase],
+    }
+
+
+class ClosedState(BaseModel):
+    id: uuid.UUID
+    closed_at: datetime | None
+    phase: str
+    phase_label: str
+
+
+@router.post("/{patient_id}/close", response_model=ClosedState)
+async def close_patient(
+    patient: PatientProfile = Depends(get_permitted_patient),
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Treatment finished.
+
+    The patient keeps everything and the clinician can still read all of it. What this stops is the
+    child's app and the parent's app — Peter, 2026-08-31: they should not carry on using them
+    unsupervised once a clinician has closed the case.
+
+    Reversible. Treatment restarting is ordinary.
+    """
+    _, practitioner = context
+    if patient.closed_at is None:
+        patient.closed_at = datetime.now(timezone.utc)
+        patient.closed_by_practitioner_id = practitioner.id
+        await db.commit()
+        await db.refresh(patient)
+    return _closed_state(patient)
+
+
+@router.post("/{patient_id}/reopen", response_model=ClosedState)
+async def reopen_patient(
+    patient: PatientProfile = Depends(get_permitted_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    """Treatment starting again. Gives the family their apps back."""
+    if patient.closed_at is not None:
+        patient.closed_at = None
+        patient.closed_by_practitioner_id = None
+        await db.commit()
+        await db.refresh(patient)
+    return _closed_state(patient)

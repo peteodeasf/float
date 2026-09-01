@@ -73,6 +73,10 @@ class PatientListResponse(BaseModel):
     active_plan_with_no_recent_activity: bool = False
     monitoring_entries_count: int = 0
     monitoring_form_sent: bool = False
+    # Where the patient is up to, worked out on the server so every screen agrees.
+    phase: str = "new"
+    phase_label: str = "New"
+    closed_at: Optional[datetime] = None
     # Consultation checklist state (for surfacing the next action on the list)
     checklist_checked_items: dict = {}
 
