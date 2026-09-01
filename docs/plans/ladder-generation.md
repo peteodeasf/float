@@ -6,9 +6,16 @@
 >
 > **What her own ladders do that ours did not:**
 >
-> - **Duration is the main axis.** Almost every rung is 30 seconds, 1 minute, 2 minutes, 5 minutes.
->   We had read her sleepover comment as being against time-based steps; she is emphatically for
->   them, and they are how she breaks most things down.
+> - **The axis depends on the situation, and that is the finding.** Counting her six situations
+>   that have rungs: three use duration and nothing else — parent in another room, child alone in a
+>   room, sleeping in own room. All three are simple physical separation at home, where there is
+>   nothing else to vary. Two use no duration at all: school drop-off (six rungs) and first day of
+>   school (three rungs). One is mixed. **Her two richest ladders contain no time-based step
+>   whatsoever**, because you cannot do a first day of school for thirty seconds.
+>
+>   A complex event is broken down instead by imagining it, watching others do it, rehearsing it,
+>   and changing who is involved. Reaching for duration everywhere is exactly what our own
+>   suggestions did.
 > - **Imagining it is a rung, and a detailed one.** *"Play it repeatedly in your head like a movie
 >   made for you."* Not a warm-up — an exposure with its own instructions.
 > - **Watching other people do it is a rung** — and deliberately not comforting footage:
