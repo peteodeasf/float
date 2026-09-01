@@ -304,7 +304,7 @@ Worth putting to Dr. Walker with the parent app open, rather than deciding it in
 | **Patient management** | List and delete only; no edit or detail. | M |
 | **Waitlist** | Read-only; no approve, convert or export. | M |
 | **Data / exports** | Not started. Overlaps the HIPAA patient-rights work. | M |
-| **Feature flags / config** | Not started. | M |
+| **Feature flags / config** | Not started, and now has a first real use: Float admin deciding which settings each clinic may change — the consultation checklist and the sign-out timer. Needs a screen listing clinics and what each is allowed to control. `organizations.settings` is the column, and nothing reads it today. See [`clinician-settings.md`](plans/clinician-settings.md). | M |
 
 ---
 
