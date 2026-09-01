@@ -73,12 +73,15 @@ and more surprising. Peter's call.
 
 - **Clinic-specific tips.** Peter, 2026-09-01: not for now. Tips stay global.
 - **Billing.** No paying clinicians yet.
+- **How long a parent monitors.** Peter, 2026-09-01: they monitor until the appointment. No control
+  needed. Worth knowing that three parent-facing places still say "about a week" — the monitoring
+  SMS, the monitoring email, and the clinician's own screen — which tells a parent the wrong
+  commitment when the appointment is three weeks out.
 
 ## Open
 
-**How long a parent monitors before the first appointment** — "about a week" is written into the
-screen. Not covered in Peter's review; unclear whether it is a clinic setting, a Float default, or
-left alone.
+**When Float turns a capability off for a clinic that had already changed the value** — does the
+clinic's value stay in force, or revert to Float's? Reverting is safer and more surprising.
 
 ## Order of work
 
