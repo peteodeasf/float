@@ -77,6 +77,27 @@ exposure ladder, accommodation, safety behavior.
 Answer first, detail only if asked. *"It's so slow to have to read a paragraph for a simple
 question."*
 
+## Do not draw rules from small samples
+
+**This is a repeated failure, not an occasional one.** Peter, 2026-08-31: *"hard inferences from
+small data sets is a really bad habit that YOU do all the time."*
+
+What it looks like: nine target questions become four prompt rules. Sixteen drafted suggestions
+become "suggestions get better when the situation has behaviours under it". Six situations from one
+disorder become "the axis depends on the situation" — and the correction to *that* was another
+confident rule from the same six.
+
+Worth noting the shape: the second version usually sounds MORE rigorous, because it comes with a
+count. It is the same mistake wearing arithmetic.
+
+**Instead:** write down what is present in the data and what is absent. Say the sample size and
+that it is partial. Say explicitly what is not known. A rule needs enough cases that it could have
+been wrong and was not — and when the data is a partial file from one person about one disorder, it
+could not have been.
+
+This applies to clinical judgement most of all, where a confident-sounding rule from four examples
+gets built into a prompt and then into what a child reads.
+
 ## Where things live
 
 - `backend/` — FastAPI app (`backend/app/api/routers/`, models, services, `migrations/`).

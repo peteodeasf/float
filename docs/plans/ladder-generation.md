@@ -1,40 +1,30 @@
 # Ladder generation — breaking a situation down, and grouping loose rungs
 
 > **PARTIAL SEED DATA ARRIVED 2026-08-31** — separation anxiety, in
-> `AI-dev/Ladder Eval/seed/separation-anxiety.md`. One disorder, some situations with rungs and
-> eleven with none yet. Not enough to restart on, but it settles several things we had wrong.
+> `AI-dev/Ladder Eval/seed/separation-anxiety.md`. **One disorder. Six situations with rungs, eleven
+> with none. Explicitly partial, and more is coming.**
 >
-> **What her own ladders do that ours did not:**
+> **Nothing here is a conclusion.** These are things present in her file that were absent from ours,
+> written down so they are not lost — not rules, not patterns, and not a basis for building. A set
+> this small cannot support either.
 >
-> - **The axis depends on the situation, and that is the finding.** Counting her six situations
->   that have rungs: three use duration and nothing else — parent in another room, child alone in a
->   room, sleeping in own room. All three are simple physical separation at home, where there is
->   nothing else to vary. Two use no duration at all: school drop-off (six rungs) and first day of
->   school (three rungs). One is mixed. **Her two richest ladders contain no time-based step
->   whatsoever**, because you cannot do a first day of school for thirty seconds.
+> Present in her rungs and not in ours:
 >
->   A complex event is broken down instead by imagining it, watching others do it, rehearsing it,
->   and changing who is involved. Reaching for duration everywhere is exactly what our own
->   suggestions did.
-> - **Imagining it is a rung, and a detailed one.** *"Play it repeatedly in your head like a movie
->   made for you."* Not a warm-up — an exposure with its own instructions.
-> - **Watching other people do it is a rung** — and deliberately not comforting footage:
->   *"not ones that attempt to provide comfort, just ones showing kids having first day of school."*
-> - **Rehearsal is a rung.** Practise drop-offs on non-school days, with the parent actually
->   driving away. Role-play the first day with someone acting the teacher. We had dropped rehearsal
->   as something a clinician does without software; she puts it on the ladder.
-> - **Uncertainty is the thing being faced, not just the separation.** *"They don't tell you where,
->   how far away it is, exactly when they will be back."* The rung is built by removing information.
-> - **Safety behaviours are stopped BEFORE the ladder starts, not faded along it.**
->   *"All SAB's need to be stopped before doing these exposures."*
-> - **Rungs can be about who, not what** — allow the father to drive if the mother is the preferred
->   safety provider.
-> - **A rung can have a prerequisite.** *"Make sure kid can be apart from parent at home first."*
-> - **Situations come in families.** Eleven of hers are separation anxiety wearing different
->   clothes. A ladder for one probably informs the next.
+> - Imagining the situation, in detail, as a rung of its own.
+> - Watching other people do it — and specifically not comforting footage.
+> - Rehearsing it: practising drop-offs on non-school days, role-playing a first day.
+> - Changing who is involved rather than what happens — the father drives instead of the mother.
+> - Removing information as the thing being faced: not being told where the parents are or when
+>   they will be back.
+> - A rung with a prerequisite: be apart at home before being apart at school.
+> - Safety behaviours stopped before the ladder starts, rather than faded along it.
+> - Duration steps — 30 seconds, 1 minute, 2 minutes — on some situations and not others.
 >
-> **Still waiting** on the rest before rebuilding the case set. Our own set stays untouched and
-> unused.
+> **What we do not know**, and should not guess at from six situations: when each of these applies,
+> which come first, whether any of it generalises past separation anxiety, or whether the ones
+> without duration steps would have them in a fuller version of her file.
+>
+> Our own case set stays untouched and unused. Wait for the rest.
 
 > **PAUSED 2026-08-31 — was waiting on seed data from Dr. Walker.** She judged our case set poor
 > quality and a bad place to start. The situations were real but typed by whoever was testing, with
