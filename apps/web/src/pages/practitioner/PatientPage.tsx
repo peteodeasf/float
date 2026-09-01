@@ -489,6 +489,29 @@ function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, 
 const SESSION_NOTE_TAGS = ['Initial', 'Consult', 'Weekly', 'Review']
 
 // ── Main Page ──
+/** One number on the experiments summary. */
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div>
+      <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase', color: '#94a3b8', margin: '0 0 4px' }}>
+        {label}
+      </p>
+      <p style={{ fontSize: '22px', fontWeight: 700, color: 'var(--float-text)', margin: 0, lineHeight: 1.1 }}>
+        {value}
+      </p>
+      {hint && <p style={{ fontSize: '11px', color: '#94a3b8', margin: '3px 0 0' }}>{hint}</p>}
+    </div>
+  )
+}
+
+/** An average reduction. Null before anything has been recorded, and a rise is worth seeing too. */
+function fmtDrop(v: number | null | undefined): string {
+  if (v == null) return '—'
+  const rounded = Math.round(v * 10) / 10
+  if (rounded === 0) return 'no change'
+  return rounded > 0 ? `${rounded} lower` : `${Math.abs(rounded)} higher`
+}
+
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
@@ -1143,6 +1166,7 @@ export default function PatientPage() {
   }, [showPlanEditor, editingPlan, editor])
 
 
+  const legendNote = { fontSize: '11px', color: '#94a3b8', margin: '0 0 10px' }
   const cardStyle = { background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
   // Tab badge counts
@@ -1253,6 +1277,10 @@ export default function PatientPage() {
       date: e.completed_date ? new Date(e.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
       bip_before: e.bip_before,
       bip_after: e.bip_after,
+      // Both lines, the same as Belief in Prediction. What they expected against what happened is
+      // the disconfirmation — the chart showing only the actual was hiding half the point, and the
+      // backend has been sending the expected value all along.
+      dt_expected: e.distress_thermometer_expected,
       dt_actual: e.distress_thermometer_actual,
     })) ?? []
 
@@ -2010,11 +2038,48 @@ export default function PatientPage() {
         </div>
       )}
 
+      {/* What the numbers say. Every one of these was already computed by the backend and shown
+          nowhere — including how often the feared outcome actually happened, which is the strongest
+          number in the app. */}
+      {progress?.summary && progress.summary.total_experiments_completed > 0 && (
+        <div style={{ ...cardStyle, marginBottom: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '18px' }}>
+            {/* total_experiments_planned counts the ones STILL open, not the total — so it is a
+                second number, not a denominator. */}
+            <Stat
+              label="Exposures done"
+              value={`${progress.summary.total_experiments_completed}`}
+              hint={
+                progress.summary.total_experiments_planned > 0
+                  ? `${progress.summary.total_experiments_planned} still to do`
+                  : 'None outstanding'
+              }
+            />
+            <Stat
+              label="Fear drop, on average"
+              value={fmtDrop(progress.summary.average_distress_thermometer_reduction)}
+              hint="How much lower the fear was than expected"
+            />
+            <Stat
+              label="Belief drop, on average"
+              value={fmtDrop(progress.summary.average_bip_reduction)}
+              hint="How much less they believed it afterwards"
+            />
+            <Stat
+              label="Feared outcome happened"
+              value={`${progress.summary.experiments_where_feared_outcome_occurred} of ${progress.summary.total_experiments_completed}`}
+              hint="The number worth showing the child"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Progress charts — side by side (hidden when not enough data) */}
       {progressChartData.length >= 2 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div style={cardStyle}>
-            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Belief in Prediction</h2>
+            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Belief in Prediction</h2>
+            <p style={legendNote}>Dashed: before &middot; Solid: after</p>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
@@ -2027,12 +2092,17 @@ export default function PatientPage() {
             </ResponsiveContainer>
           </div>
           <div style={cardStyle}>
-            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 12px' }}>Fear Level</h2>
+            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Fear Level</h2>
+            <p style={legendNote}>Dashed: expected &middot; Solid: what happened</p>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value) => [value, 'DT']} contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
+                <Tooltip
+                  formatter={(value, name) => [value, name === 'dt_expected' ? 'Expected' : 'Actual']}
+                  contentStyle={{ border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }}
+                />
+                <Line type="monotone" dataKey="dt_expected" stroke="#3f817b" strokeWidth={2} dot={{ r: 3, fill: '#3f817b' }} strokeDasharray="4 4" />
                 <Line type="monotone" dataKey="dt_actual" stroke="#135450" strokeWidth={2} dot={{ r: 3, fill: '#135450' }} />
               </LineChart>
             </ResponsiveContainer>
