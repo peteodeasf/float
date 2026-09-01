@@ -1,6 +1,35 @@
 # Ladder generation — breaking a situation down, and grouping loose rungs
 
-> **PAUSED 2026-08-31 — waiting on seed data from Dr. Walker.** She judged our case set poor
+> **PARTIAL SEED DATA ARRIVED 2026-08-31** — separation anxiety, in
+> `AI-dev/Ladder Eval/seed/separation-anxiety.md`. One disorder, some situations with rungs and
+> eleven with none yet. Not enough to restart on, but it settles several things we had wrong.
+>
+> **What her own ladders do that ours did not:**
+>
+> - **Duration is the main axis.** Almost every rung is 30 seconds, 1 minute, 2 minutes, 5 minutes.
+>   We had read her sleepover comment as being against time-based steps; she is emphatically for
+>   them, and they are how she breaks most things down.
+> - **Imagining it is a rung, and a detailed one.** *"Play it repeatedly in your head like a movie
+>   made for you."* Not a warm-up — an exposure with its own instructions.
+> - **Watching other people do it is a rung** — and deliberately not comforting footage:
+>   *"not ones that attempt to provide comfort, just ones showing kids having first day of school."*
+> - **Rehearsal is a rung.** Practise drop-offs on non-school days, with the parent actually
+>   driving away. Role-play the first day with someone acting the teacher. We had dropped rehearsal
+>   as something a clinician does without software; she puts it on the ladder.
+> - **Uncertainty is the thing being faced, not just the separation.** *"They don't tell you where,
+>   how far away it is, exactly when they will be back."* The rung is built by removing information.
+> - **Safety behaviours are stopped BEFORE the ladder starts, not faded along it.**
+>   *"All SAB's need to be stopped before doing these exposures."*
+> - **Rungs can be about who, not what** — allow the father to drive if the mother is the preferred
+>   safety provider.
+> - **A rung can have a prerequisite.** *"Make sure kid can be apart from parent at home first."*
+> - **Situations come in families.** Eleven of hers are separation anxiety wearing different
+>   clothes. A ladder for one probably informs the next.
+>
+> **Still waiting** on the rest before rebuilding the case set. Our own set stays untouched and
+> unused.
+
+> **PAUSED 2026-08-31 — was waiting on seed data from Dr. Walker.** She judged our case set poor
 > quality and a bad place to start. The situations were real but typed by whoever was testing, with
 > junk among them. She is writing her own — situations and suggested sub-situations, same shape —
 > and we start from those. **Our set is probably being thrown out. Do not build on it, and do not
