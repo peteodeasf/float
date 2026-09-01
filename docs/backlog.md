@@ -190,7 +190,7 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 
 | Item | Today | Size |
 |---|---|---|
-| **Granting and revoking a clinician's access — no UI** | Endpoints exist and are tested; no screen. Full entry below. | M |
+| **Granting and revoking a clinician's access** | **BUILT 2026-09-01** — a panel on the patient page, and the patient now has an owner. See [`clinician-patient-access-grants.md`](plans/clinician-patient-access-grants.md). | M |
 | **The patient list: phases, closing a patient, a filter** | **BUILT 2026-08-31**, [`patient-list-phases.md`](plans/patient-list-phases.md); the family's side finished 2026-09-01, [`all-done-for-now.md`](plans/all-done-for-now.md). The progress column is stuck for every patient: step 3 needs a downward arrow marked as facilitated by a *parent*, and nothing in the app ever creates one, so it can never complete. Replaced by a phase — New, Monitoring, Assessment, Planning, In treatment, Closed — each derived from one observable fact rather than a chain of flags. Plus closing a patient while keeping all their data, and a filter by phase. Both questions answered: a closed patient can be reopened, and closing switches off the child's and parent's apps. | M |
 | **Clinician settings — v1, not touched** | Nav item exists and is disabled: `PractitionerNav.tsx:25`, tooltip "Coming soon". No page, no route. Nothing decided about what belongs in it. | M |
 | **Reports — v1, not touched** | Same: `PractitionerNav.tsx:24`, disabled, "Coming soon". Per-patient reports exist (`MonitoringReportPage`); this is the global one. | M |
@@ -235,26 +235,22 @@ nothing is visible that should not be.
 
 ---
 
-## Granting and revoking a patient's clinicians — no UI
+## Granting and revoking a patient's clinicians
 
-**Priority: high — I shipped access control that cannot be administered.** Raised 2026-08-28. `M`
+**BUILT 2026-09-01.** Raised 2026-08-28. `M`
 
-**Today:** access is enforced (`patient_access_grants`, live 2026-08-28) and the three endpoints
-exist and are tested — `GET/POST /patients/{patient_id}/access` and
-`DELETE /patients/{patient_id}/access/{practitioner_id}`. There is no screen. Access can only be
-changed through the API or the database, so nobody can hand a patient over from the app.
+A "Clinician access" panel on the patient page: who can open this patient, add, remove, and hand
+the patient to another clinician. `GET /practitioners` was added to feed it — the list of
+colleagues did not exist, so nothing could supply an id to grant to.
 
-Note: two of the three clinicians at Test School are institution admins, who bypass grants
-entirely. The boundary is only as tight as who holds admin.
+The patient now has an owner, which is the clinician who added them. Only the owner or an admin at
+the clinic can change who has access, and the owner's own access cannot be removed by anyone —
+hand the patient over first. Peter's decision, 2026-09-01. Rules and the reasoning are in
+[`clinician-patient-access-grants.md`](plans/clinician-patient-access-grants.md).
 
-**What changes:** a panel on the patient page listing who has access, with add and remove. Adding
-needs a list of colleagues in the institution — **no endpoint returns that today**, so it is part of
-the work.
-
-**How to tell it worked:** grant a colleague from the UI and they can open the patient; revoke and
-they cannot. Revoking the last one is refused (409, already enforced).
-
-**Gate:** `/security-review`.
+**Still open:** the access log (`GET /patients/{patient_id}/access-log`, who actually opened this
+record) has no screen either. It is what answers a patient asking for a list of everyone who saw
+their file.
 
 ---
 

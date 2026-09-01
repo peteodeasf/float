@@ -30,6 +30,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
+import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
 // Flat tabs, in bar order. Also the `?tab=` vocabulary other surfaces navigate with.
@@ -639,6 +640,7 @@ export default function PatientPage() {
   }
   const [notesWhoFilter, setNotesWhoFilter] = useState<SessionParticipant | null>(null)
   const [sessionTagFilter, setSessionTagFilter] = useState<string | null>(null)
+  const [showClinicianAccess, setShowClinicianAccess] = useState(false)
   const [processPanelOpen, setProcessPanelOpen] = useState(false)
   const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
   // An explicit ?tab= is the clinician's intent — don't let the default-tab effect override it.
@@ -2497,6 +2499,13 @@ export default function PatientPage() {
               <button onClick={openProfileEdit} className="text-xs font-medium bg-transparent cursor-pointer" style={{ color: 'var(--float-primary)', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}>
                 Edit profile
               </button>
+              <button
+                onClick={() => setShowClinicianAccess(v => !v)}
+                className="text-xs font-medium cursor-pointer"
+                style={{ color: showClinicianAccess ? '#fff' : 'var(--float-primary)', background: showClinicianAccess ? 'var(--float-primary)' : 'transparent', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}
+              >
+                Clinician access
+              </button>
               {patient.closed_at ? (
                 <button
                   onClick={handleReopen}
@@ -2526,6 +2535,16 @@ export default function PatientPage() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* Who else at this clinic can open this patient. Access has been enforced since
+            2026-08-28 with no way to change it outside the database. */}
+        {showClinicianAccess && patient && (
+          <ClinicianAccessPanel
+            patientId={patientId!}
+            patientName={patient.name}
+            onClose={() => setShowClinicianAccess(false)}
+          />
         )}
 
         {/* Teen access — persistent, opened from the patient header, shown in any mode */}

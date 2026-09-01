@@ -49,7 +49,9 @@ from app.services.patient_access_service import (
     get_patient_for_practitioner,
     grant_access,
     list_grants,
+    may_manage_access,
     revoke_access,
+    set_owner,
 )
 from app.services.patient_service import (
     create_patient,
@@ -85,6 +87,9 @@ def _generate_temp_password(length: int = 12) -> str:
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 patient_router = APIRouter(prefix="/patient", tags=["patient"])
+# Its own prefix rather than a path under /patients, so it cannot be shadowed by
+# /patients/{patient_id} — a literal segment declared after a UUID route is unreachable.
+practitioners_router = APIRouter(prefix="/practitioners", tags=["practitioners"])
 
 
 async def get_practitioner_context(
@@ -1891,19 +1896,37 @@ class AccessGrantResponse(BaseModel):
     practitioner_name: str
     granted_at: datetime
     granted_by_backfill: bool
+    #  The therapist this patient belongs to. Their access cannot be revoked.
+    is_owner: bool
+
+
+class PatientAccessResponse(BaseModel):
+    """Everyone who can open the patient, and whether the caller may change that.
+
+    An object rather than a bare list because a covering clinician sees the same names as the
+    owner but can change none of them, and the screen has to know which of the two it is.
+    """
+    can_manage: bool
+    grants: list[AccessGrantResponse]
 
 
 class GrantAccessRequest(BaseModel):
     practitioner_id: uuid.UUID
 
 
-@router.get("/{patient_id}/access", response_model=list[AccessGrantResponse])
+class SetOwnerRequest(BaseModel):
+    practitioner_id: uuid.UUID
+
+
+@router.get("/{patient_id}/access", response_model=PatientAccessResponse)
 async def list_patient_access(
     patient: PatientProfile = Depends(get_permitted_patient),
+    context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ):
     """Which clinicians can open this patient. Institution admins are not listed - they are not
     grants, and showing them here would suggest they can be revoked from this screen."""
+    _, practitioner = context
     grants = await list_grants(db, patient.id)
     out = []
     for grant in grants:
@@ -1916,8 +1939,12 @@ async def list_patient_access(
             practitioner_name=who.name if who else "Unknown",
             granted_at=grant.created_at,
             granted_by_backfill=grant.granted_by_practitioner_id is None,
+            is_owner=grant.practitioner_id == patient.primary_practitioner_id,
         ))
-    return out
+    return PatientAccessResponse(
+        can_manage=await may_manage_access(db, patient, practitioner),
+        grants=out,
+    )
 
 
 @router.post("/{patient_id}/access", response_model=AccessGrantResponse,
@@ -1941,6 +1968,7 @@ async def grant_patient_access(
         practitioner_name=who.name if who else "Unknown",
         granted_at=grant.created_at,
         granted_by_backfill=False,
+        is_owner=grant.practitioner_id == patient.primary_practitioner_id,
     )
 
 
@@ -1953,6 +1981,22 @@ async def revoke_patient_access(
 ):
     _, practitioner = context
     await revoke_access(db, patient, practitioner_id, practitioner)
+
+
+@router.put("/{patient_id}/owner", status_code=status.HTTP_204_NO_CONTENT)
+async def set_patient_owner(
+    data: SetOwnerRequest,
+    patient: PatientProfile = Depends(get_permitted_patient),
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Hand the patient to another clinician.
+
+    The owner's access cannot be revoked, so without this an admin could not take a departing
+    therapist off a patient at all.
+    """
+    _, practitioner = context
+    await set_owner(db, patient, data.practitioner_id, practitioner)
 
 
 class AccessLogEntry(BaseModel):
@@ -2057,3 +2101,45 @@ async def reopen_patient(
         await db.commit()
         await db.refresh(patient)
     return _closed_state(patient)
+
+
+class ColleagueResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    credentials: str | None
+    is_org_admin: bool
+    is_me: bool
+
+
+@practitioners_router.get("", response_model=list[ColleagueResponse])
+async def list_my_colleagues(
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The clinicians in my institution.
+
+    Needed to hand a patient over: the grant endpoints take a practitioner id and nothing returned
+    one. Scoped to the caller's own institution — a clinician elsewhere must not learn who works
+    here. It returns no patient data at all.
+    """
+    current_user, me = context
+    result = await db.execute(
+        select(PractitionerProfile, UserRole)
+        .join(UserRole, UserRole.user_id == PractitionerProfile.user_id)
+        .where(
+            PractitionerProfile.organization_id == me.organization_id,
+            UserRole.organization_id == me.organization_id,
+            UserRole.role == "practitioner",
+        )
+        .order_by(PractitionerProfile.name)
+    )
+    return [
+        ColleagueResponse(
+            id=prof.id,
+            name=prof.name,
+            credentials=prof.credentials,
+            is_org_admin=bool(role.is_org_admin),
+            is_me=prof.id == me.id,
+        )
+        for prof, role in result.all()
+    ]

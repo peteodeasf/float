@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(review.router)
 app.include_router(auth.router)
 app.include_router(patients.router)
+app.include_router(patients.practitioners_router)
 app.include_router(treatment_plans.router)
 app.include_router(trigger_situations.router)
 app.include_router(accommodations.router)

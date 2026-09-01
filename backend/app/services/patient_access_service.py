@@ -173,6 +173,71 @@ async def list_grants(db: AsyncSession, patient_id: uuid.UUID) -> list[PatientAc
     return list(result.scalars().all())
 
 
+async def may_manage_access(
+    db: AsyncSession,
+    patient: PatientProfile,
+    practitioner: PractitionerProfile,
+) -> bool:
+    """Whether this clinician may change WHO can open the patient, as opposed to opening them.
+
+    Peter, 2026-09-01: the patient has an owner, and it is the therapist who started with them.
+    A colleague brought in to cover can do the clinical work and can see who else has access, but
+    cannot hand the patient around or remove the owner. Only the owner, or an admin of the clinic,
+    changes the list.
+    """
+    if await is_institution_admin(db, practitioner.user_id, practitioner.organization_id):
+        return True
+    return patient.primary_practitioner_id == practitioner.id
+
+
+async def assert_may_manage_access(
+    db: AsyncSession,
+    patient: PatientProfile,
+    practitioner: PractitionerProfile,
+) -> None:
+    """403, not 404 — the caller can already open this patient, so refusing tells them nothing
+    they did not know."""
+    if not await may_manage_access(db, patient, practitioner):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Only this patient's own clinician, or an admin at your clinic, can change "
+                "who has access."
+            ),
+        )
+
+
+async def set_owner(
+    db: AsyncSession,
+    patient: PatientProfile,
+    practitioner_id: uuid.UUID,
+    changed_by: PractitionerProfile,
+) -> None:
+    """Hand the patient to another clinician.
+
+    Needed because the owner's access cannot be revoked: without a way to move ownership, an admin
+    could not take a departing therapist off a patient at all.
+    """
+    await assert_may_manage_access(db, patient, changed_by)
+
+    result = await db.execute(
+        select(PractitionerProfile).where(PractitionerProfile.id == practitioner_id)
+    )
+    target = result.scalar_one_or_none()
+    if target is None or target.organization_id != patient.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Clinician not found"
+        )
+    if not await has_live_grant(db, patient.id, practitioner_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Give them access first, then make them this patient's clinician.",
+        )
+
+    patient.primary_practitioner_id = practitioner_id
+    await db.commit()
+
+
 async def grant_access(
     db: AsyncSession,
     patient: PatientProfile,
@@ -182,8 +247,11 @@ async def grant_access(
     """Give a clinician in the same institution access to this patient.
 
     The caller has already been checked by the dependency — reaching here means they can see the
-    patient themselves. What still has to be checked is the clinician being granted to.
+    patient themselves. What still has to be checked is whether they may change the list at all,
+    and the clinician being granted to.
     """
+    await assert_may_manage_access(db, patient, granted_by)
+
     result = await db.execute(
         select(PractitionerProfile).where(PractitionerProfile.id == practitioner_id)
     )
@@ -223,9 +291,26 @@ async def revoke_access(
 ) -> None:
     """Revoking the last live grant is refused — it would leave a patient nobody can open.
 
+    Only the owner or a clinic admin may revoke at all (Peter, 2026-09-01), and the owner's own
+    access can never be revoked.
+
     An institution admin can still reach them, but only in an institution that has one, and
     relying on that would make the patient invisible to the people actually treating them.
     """
+    await assert_may_manage_access(db, patient, revoked_by)
+
+    # The owner's own access is not revocable. Removing it would leave the patient pointing at a
+    # clinician who cannot open them, and it is how a covering colleague could push the actual
+    # therapist off their own patient. Hand the patient over first — set_owner does that.
+    if patient.primary_practitioner_id == practitioner_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This is the patient's own clinician. Make someone else their clinician first, "
+                "then remove this access."
+            ),
+        )
+
     live = await list_grants(db, patient.id)
     if not any(g.practitioner_id == practitioner_id for g in live):
         raise HTTPException(

@@ -83,6 +83,10 @@ SELF_ONLY = {"GET /auth/me", "PUT /auth/set-password", "POST /auth/logout"}
 async def _victim_world(db):
     """One institution with a child whose every text field carries the marker."""
     org = await make_org(db)
+    # A clinician who works at the victim's institution. Their NAME is institution content, not one
+    # child's record: a colleague may see it, an outsider may not. /practitioners returns exactly
+    # this, so it is what makes that route covered by the sweep.
+    house_clinician = await make_practitioner(db, org, name=f"{ORG_CANARY} Clinician")
     patient = await make_patient(db, org, name=f"{CANARY} Child")
     plan = await make_plan(db, org, patient=patient)
     situation = await make_situation(db, plan, name=f"{CANARY} situation")
@@ -118,6 +122,7 @@ async def _victim_world(db):
         "rung": rung, "experiment": exp, "arrow": arrow, "message": msg,
         "ladder": ladder, "accommodation": accommodation, "note": note,
         "item": item, "tag": tag, "tip": tip,
+        "house_clinician": house_clinician,
     }
 
 
@@ -141,6 +146,7 @@ def _param_values(w):
         "ladder_id": w["ladder"].id,
         "accommodation_id": w["accommodation"].id,
         "note_id": w["note"].id,
+        "practitioner_id": w["house_clinician"].id,
         "item_id": w["item"].id,
         "tag_id": w["tag"].id,
         "tip_id": w["tip"].id,
@@ -203,6 +209,11 @@ async def test_no_route_leaks_the_victims_data(api, db, intruder_kind, capsys):
         called += 1
         if CANARY in r.text:
             leaks.append(f"{key}  ->  {r.status_code}")
+        # Institution content — the clinic's checklist, the names of who works there. A colleague
+        # in the same institution is supposed to see it; someone outside it is not. Until now this
+        # marker was planted and never checked.
+        if intruder_kind == "foreign_clinician" and ORG_CANARY in r.text:
+            leaks.append(f"{key}  ->  {r.status_code}  (institution content)")
 
     with capsys.disabled():
         print(f"\n  [{intruder_kind}] called {called}, uncoverable {len(uncoverable)}, leaks {len(leaks)}")

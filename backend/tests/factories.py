@@ -41,10 +41,10 @@ async def make_patient(db, org, name="Test Child") -> PatientProfile:
     return prof
 
 
-async def make_practitioner(db, org) -> PractitionerProfile:
+async def make_practitioner(db, org, name: str = "Test Clinician") -> PractitionerProfile:
     """A clinician who can sign in. Returns the profile; `.user` is the signing-in identity."""
     user = await _make_user(db, org, "practitioner")
-    prof = PractitionerProfile(user_id=user.id, organization_id=org.id, name="Test Clinician")
+    prof = PractitionerProfile(user_id=user.id, organization_id=org.id, name=name)
     db.add(prof)
     await db.flush()
     prof.user = user  # convenience for tests; not a mapped relationship
@@ -110,10 +110,17 @@ async def make_rung(db, situation=None, plan=None, name="a rung", dt=4,
     return b
 
 
-async def grant_patient_to(db, patient, practitioner, granted_by=None):
+async def grant_patient_to(db, patient, practitioner, granted_by=None, owner=False):
     """Give a clinician access to a patient. Without this a clinician sees nothing but their own
-    patients, which is the point of `patient_access_grants`."""
+    patients, which is the point of `patient_access_grants`.
+
+    `owner=True` also makes them the patient's own clinician, which is what production does when a
+    clinician adds a patient. Only the owner or a clinic admin may change who has access, so a test
+    about granting or revoking needs one.
+    """
     from app.models.patient import PatientAccessGrant
+    if owner:
+        patient.primary_practitioner_id = practitioner.id
     grant = PatientAccessGrant(
         patient_id=patient.id,
         practitioner_id=practitioner.id,

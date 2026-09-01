@@ -96,6 +96,25 @@ the list even when the detail pages are locked.
 A clinician who holds a grant can grant to another clinician in the same institution; an admin can
 grant for anyone. You cannot revoke the last live grant on a patient — that would strand them.
 
+**Superseded 2026-09-01 — the patient has an owner.** Peter, on being shown that a covering
+colleague could remove the clinician who brought them in:
+
+> *"you give a colleague access to cover for you, and they can take away yours - i think no. that
+> can't happen by default. if there's an owner of the patient, it is the initial therapist"*
+
+So the rule above was too loose. What is true now:
+
+| | |
+|---|---|
+| **The owner** | `PatientProfile.primary_practitioner_id` — the clinician who added the patient. Set on creation, alongside their grant. |
+| **Who may change the list** | The owner, or an admin of the clinic. Nobody else, including a colleague who holds a grant. `403`. |
+| **The owner's own access** | Cannot be revoked. Not by a colleague, not by an admin. |
+| **Handing over** | `PUT /patients/{patient_id}/owner`. Owner or admin; the new owner must already hold a grant. This is what makes a departing therapist removable — hand over, then revoke. |
+| **A patient with no owner** | Only admins can change the list. Fails closed. Every patient created since 2026-08-28 has one; the column is nullable for older rows. |
+
+A covering colleague still sees the full list of who can open the patient. Knowing who else is on
+the case is part of doing the work; changing it is not.
+
 ## How we will know it worked
 
 The mechanism is the route sweep (`tests/test_route_sweep.py`), not hand-picked tests. It already
@@ -125,6 +144,10 @@ Specific tests:
 Steps 1–5 close the hole. Step 6 makes it usable: until it ships, access can only be changed by the
 backfill's own grants, which is safe but means nobody can hand a patient over. Worth knowing before
 this is deployed to anyone who is actually using it.
+
+**Step 6 built 2026-09-01.** A "Clinician access" panel on the patient page, plus
+`GET /practitioners` — the list of colleagues, which did not exist, so nothing could supply a
+practitioner id to grant to. The ownership rules above came out of the security review of it.
 
 ## Not doing
 
