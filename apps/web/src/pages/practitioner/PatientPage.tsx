@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
+import { closePatient, reopenPatient, getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
 import {
   LineChart, Line, XAxis, YAxis,
   Tooltip, Legend, ResponsiveContainer
@@ -703,6 +703,29 @@ export default function PatientPage() {
 
   // Queries
   const { data: patient } = useQuery({ queryKey: ['patient', patientId], queryFn: () => getPatient(patientId!), enabled: !!patientId })
+
+  // Closing switches off the child's and the parent's apps, so it asks first. Reopening does not —
+  // giving someone their app back is not a decision anyone regrets.
+  const closing = useMutation({
+    mutationFn: (reopen: boolean) =>
+      reopen ? reopenPatient(patientId!) : closePatient(patientId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['patients'] })
+    },
+  })
+
+  const handleClose = () => {
+    const ok = window.confirm(
+      "Close treatment for this patient?\n\n" +
+      "They keep everything and you can still see all of it. What stops is their app and their " +
+      "parent's app — they will be able to sign in and see \"All done for now\".\n\n" +
+      "You can reopen it later."
+    )
+    if (ok) closing.mutate(false)
+  }
+
+  const handleReopen = () => closing.mutate(true)
   const { data: plan } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId!), enabled: !!patientId })
   const { data: rawTriggers } = useQuery({ queryKey: ['triggers', plan?.id], queryFn: () => getTriggers(plan!.id), enabled: !!plan?.id })
   // Placeholder situations (e.g. the parent-DA anchor) are filtered out of every situation list/count
@@ -2497,6 +2520,25 @@ export default function PatientPage() {
               <button onClick={openProfileEdit} className="text-xs font-medium bg-transparent cursor-pointer" style={{ color: 'var(--float-primary)', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}>
                 Edit profile
               </button>
+              {patient.closed_at ? (
+                <button
+                  onClick={handleReopen}
+                  disabled={closing.isPending}
+                  className="text-xs font-medium cursor-pointer"
+                  style={{ color: 'var(--float-primary)', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '8px 14px' }}
+                >
+                  {closing.isPending ? 'Reopening…' : 'Reopen treatment'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleClose}
+                  disabled={closing.isPending}
+                  className="text-xs font-medium bg-transparent cursor-pointer"
+                  style={{ color: '#7c6a58', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}
+                >
+                  {closing.isPending ? 'Closing…' : 'Close treatment'}
+                </button>
+              )}
               <button
                 onClick={() => setProcessPanelOpen(v => !v)}
                 className="text-xs font-medium cursor-pointer"

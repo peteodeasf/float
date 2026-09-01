@@ -110,3 +110,34 @@ async def test_closing_twice_does_not_move_the_date(api, db):
     await api.post(f"/patients/{patient.id}/close")
     await db.refresh(patient)
     assert patient.closed_at == first
+
+
+async def test_reading_the_patient_back_says_they_are_closed(api, db):
+    """The button on the patient page flips on this field, and it was being dropped.
+
+    Three handlers build PatientResponse field by field rather than from the model, so a field
+    added to the schema is silently absent from the response. Closing worked, reading it back said
+    closed_at: None, and the button would never have changed.
+    """
+    org, patient, _, clinician = await _closed_patient(db)
+    api.sign_in_as(clinician.user)
+
+    await api.post(f"/patients/{patient.id}/close")
+
+    r = await api.get(f"/patients/{patient.id}")
+    assert r.status_code == 200
+    assert r.json()["closed_at"] is not None
+
+    await api.post(f"/patients/{patient.id}/reopen")
+    assert (await api.get(f"/patients/{patient.id}")).json()["closed_at"] is None
+
+
+async def test_the_list_says_so_too(api, db):
+    org, patient, _, clinician = await _closed_patient(db)
+    api.sign_in_as(clinician.user)
+    await api.post(f"/patients/{patient.id}/close")
+
+    row = next(p for p in (await api.get("/patients")).json() if p["id"] == str(patient.id))
+    assert row["phase"] == "closed"
+    assert row["phase_label"] == "Closed"
+    assert row["closed_at"] is not None

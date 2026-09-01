@@ -28,6 +28,7 @@ class PatientUpdate(BaseModel):
 
 class PatientResponse(BaseModel):
     id: uuid.UUID
+    closed_at: Optional[datetime] = None
     user_id: uuid.UUID
     name: str
     email: str

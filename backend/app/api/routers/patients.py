@@ -501,7 +501,8 @@ async def create_new_patient(
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
         primary_practitioner_id=patient.primary_practitioner_id,
-        created_at=patient.created_at
+        created_at=patient.created_at,
+        closed_at=patient.closed_at
     )
 
 
@@ -535,7 +536,8 @@ async def get_patient(
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
         primary_practitioner_id=patient.primary_practitioner_id,
-        created_at=patient.created_at
+        created_at=patient.created_at,
+        closed_at=patient.closed_at
     )
 
 
@@ -575,7 +577,8 @@ async def update_patient(
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
         primary_practitioner_id=patient.primary_practitioner_id,
-        created_at=patient.created_at
+        created_at=patient.created_at,
+        closed_at=patient.closed_at
     )
 
 

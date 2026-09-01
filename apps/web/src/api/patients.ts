@@ -62,6 +62,7 @@ export interface PatientDetail {
   consent_source?: string | null
   primary_practitioner_id: string
   created_at: string
+  closed_at?: string | null
 }
 
 export interface InviteTeenResponse {
