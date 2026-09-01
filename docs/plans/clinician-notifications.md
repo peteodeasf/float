@@ -37,9 +37,27 @@ turned something off when nothing changed.
 
 ## The shape
 
-**An event** is a thing worth telling someone about. The three above already exist as computed
-reasons; they are the starting list, not the list. Extending it is Peter's, and it is the sort of
-thing that should come from using the product rather than from reading the code.
+**An event** is a thing worth telling someone about.
+
+**The starting four** (Peter, 2026-09-01). All of them are the *absence* of something — a clinician
+needs to know when nothing is happening, which is the opposite of what an alert usually does:
+
+| Event | What it reads |
+|---|---|
+| **No monitoring entries in the past week** | A form has been sent and nothing has come back for seven days. `MonitoringEntry.created_at`. |
+| **No exposure activity in the past week** | There is a live experiment — `planned` or `in_progress` — and nothing has moved on it for seven days. |
+| **Nothing recorded on a scheduled exposure** | Its date has passed with nothing reported. Closest to what the list already computes as "overdue". |
+| **No parent accommodation activity in the past week** | No `AccommodationMoment` logged in seven days. The column and its timestamp already exist. |
+
+All four are computable from data that is already there. None of them needs new recording.
+
+**Peter, 2026-09-01: these want review with Dr. Walker and feedback from clinicians before they are
+treated as settled.** They are a starting point chosen by the person building the product, not a
+clinical judgement about what a therapist should be interrupted for.
+
+Worth noticing what is absent from the four, and deciding later rather than assuming: a child
+marking an exposure too hard, a parent caving repeatedly on the accommodation they are working on,
+and a message sitting unanswered. All three exist in the data.
 
 **A preference** is one clinician, one event, one channel, on or off. That is the table to build
 early, because everything else reads from it, and it is cheap to get right now and expensive to
