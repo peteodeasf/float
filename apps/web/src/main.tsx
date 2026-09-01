@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { TeenAuthProvider } from './context/TeenAuthContext'
 import { ParentAuthProvider } from './context/ParentAuthContext'
@@ -39,19 +39,42 @@ import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
 import EducationIndexPage from './pages/practitioner/EducationIndexPage'
 import EducationModulePage from './pages/practitioner/EducationModulePage'
+import TeenClosedPage from './pages/teen/TeenClosedPage'
+import ParentClosedPage from './pages/parent/ParentClosedPage'
+import { getTeenMe, getParentMe } from './api/me'
 import './index.css'
 
 const queryClient = new QueryClient()
 
+// Both wrappers ask the server whether treatment has been closed, rather than reading the copy of
+// /auth/me saved at login. A clinician can close a family who is already signed in, and they should
+// find out on their next page load, not their next login. If the call fails we let them through —
+// the backend refuses every write on a closed patient regardless.
 function TeenProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('teen_access_token')
+  const { data: me, isLoading } = useQuery({
+    queryKey: ['teen-me'],
+    queryFn: getTeenMe,
+    enabled: !!token,
+    staleTime: 60_000,
+  })
   if (!token) return <Navigate to="/teen/login" replace />
+  if (isLoading) return null
+  if (me?.treatment_closed) return <TeenClosedPage />
   return <>{children}</>
 }
 
 function ParentProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('parent_access_token')
+  const { data: me, isLoading } = useQuery({
+    queryKey: ['parent-me'],
+    queryFn: getParentMe,
+    enabled: !!token,
+    staleTime: 60_000,
+  })
   if (!token) return <Navigate to="/parent/login" replace />
+  if (isLoading) return null
+  if (me?.treatment_closed) return <ParentClosedPage />
   return <>{children}</>
 }
 

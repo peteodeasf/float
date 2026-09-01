@@ -88,6 +88,35 @@ export function deriveEffort(situations: LadderSituation[]): Effort {
   return { committed, faced, stepsMastered, reflections, situationsWorked, hasReflectionData }
 }
 
+export type FearedOutcomes = {
+  /** Completed experiments where the child recorded whether the feared thing happened. */
+  checked: number
+  /** How many of those it did not happen in. */
+  didNotHappen: number
+}
+
+/**
+ * The strongest number the child has: how often the thing they were afraid of did not happen.
+ *
+ * Only experiments where it was actually recorded are counted — a null is "not answered", not "it
+ * happened", and counting it either way would make the number a lie.
+ */
+export function deriveFearedOutcomes(situations: LadderSituation[]): FearedOutcomes {
+  let checked = 0
+  let didNotHappen = 0
+  for (const situation of situations) {
+    for (const behavior of situation.behaviors ?? []) {
+      for (const experiment of behavior.experiments ?? []) {
+        if (experiment.status !== 'completed') continue
+        if (experiment.feared_outcome_occurred == null) continue
+        checked++
+        if (experiment.feared_outcome_occurred === false) didNotHappen++
+      }
+    }
+  }
+  return { checked, didNotHappen }
+}
+
 export type SituationTag = 'manageable' | 'getting there' | 'still scary' | 'just started'
 
 export type SeriesPoint = {
