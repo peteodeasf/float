@@ -308,6 +308,20 @@ Worth putting to Dr. Walker with the parent app open, rather than deciding it in
 
 ---
 
+## Clinician notifications
+
+**Raised 2026-09-01.** Planned in [`clinician-notifications.md`](plans/clinician-notifications.md). `L`
+
+**Today Float tells a clinician nothing.** All five emails go to patients, parents or new
+clinicians. The patient list already works out three reasons a patient needs attention and hides
+them in a tooltip on a dot.
+
+Three channels — in the portal, email, SMS — and the portal one is first because it needs no
+delivery mechanism and is what a clinician sees daily. The settings screen comes last: toggles that
+control nothing are worse than no page.
+
+---
+
 # Backend and infrastructure
 
 ## No scheduler exists

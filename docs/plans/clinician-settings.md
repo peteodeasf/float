@@ -25,7 +25,7 @@ and two of the three clinicians at Test School have it.
 | Name, credentials, phone | On `PractitionerProfile`. No way to edit any of them. |
 | Email | On `User`. |
 | Change password | Reset-by-email exists. Changing it while signed in does not. |
-| Notifications | Float sends five kinds of email and a clinician can turn none of them off. |
+| Notifications | **Nothing to control yet.** All five emails Float sends go to patients, parents or new clinicians — a clinician receives nothing. Peter, 2026-09-01: build clinician notifications, and scaffold the control for later. See [`clinician-notifications.md`](clinician-notifications.md). This section of the settings page comes AFTER there is something for it to switch off. |
 
 ## Your clinic — for institution admins
 
