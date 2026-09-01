@@ -213,8 +213,9 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 editor, gives it a date and a nickname, and publishes it to the child's app. The endpoints, the
 editor and the child's side all still function.
 
-**They are now hidden from the clinician.** One line does it — `SHOW_ACTION_PLANS` in
-`PatientPage.tsx` — so turning them back on is a one-word change. Nothing was deleted.
+**They are now hidden.** One switch does it — `SHOW_ACTION_PLANS` in
+`apps/web/src/lib/featureFlags.ts` — read by both the clinician's Sessions tab and the child's tab
+bar, so turning them back on is a one-word change. Nothing was deleted.
 
 Peter's reason: he wants to see how the rest of the app flows before deciding whether an action
 plan adds anything on top of the treatment plan, the exposure ladder and the child's own app. It is
@@ -224,8 +225,13 @@ a question about the product, not a defect.
 plan is for. If no, take the code out properly — the model, the endpoints, the editor and the
 child's app reading published plans.
 
-**Worth knowing while it is hidden:** any action plan already published is still visible in the
-child's app, and a clinician can no longer edit or unpublish it from the portal.
+**The child's Plan tab is hidden too** (Peter, 2026-09-01). That tab was action plans and nothing
+else, so with no clinician able to write one it would have sat there permanently empty, telling the
+child their clinician will publish one after each session.
+
+**Worth knowing while it is hidden:** any action plan already published still exists, and a
+clinician can no longer edit or unpublish it from the portal. The child cannot reach it either, so
+nothing is visible that should not be.
 
 ---
 

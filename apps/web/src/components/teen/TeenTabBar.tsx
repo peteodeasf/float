@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import teen from '../../styles/teenTokens'
+import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
 /**
  * The persistent bottom navigation for the teen hub screens (home, chat,
@@ -57,11 +58,13 @@ const ICONS: Record<Tab, ReactNode> = {
   ),
 }
 
+// The Plan tab is action plans and nothing else, and no clinician can write one while
+// SHOW_ACTION_PLANS is off — so the tab would sit there permanently empty.
 const ITEMS: { key: Tab; label: string; path: string }[] = [
   { key: 'home', label: 'Home', path: '/teen/home' },
   { key: 'chat', label: 'Chat', path: '/teen/messages' },
   { key: 'progress', label: 'Progress', path: '/teen/progress' },
-  { key: 'plan', label: 'Plan', path: '/teen/plans' },
+  ...(SHOW_ACTION_PLANS ? [{ key: 'plan' as Tab, label: 'Plan', path: '/teen/plans' }] : []),
 ]
 
 export default function TeenTabBar({ active, unread = 0 }: { active: Tab; unread?: number }) {

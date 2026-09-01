@@ -30,6 +30,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
+import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
 // Flat tabs, in bar order. Also the `?tab=` vocabulary other surfaces navigate with.
 
@@ -488,11 +489,6 @@ function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, 
 // Preset session-note tags (multi-select); custom tags can also be typed.
 const SESSION_NOTE_TAGS = ['Initial', 'Consult', 'Weekly', 'Review']
 
-// Action plans are hidden from the clinician while Peter works out whether they earn their place
-// once the rest of the app has settled (2026-09-01). Everything behind them still works — the
-// endpoints, the editor, and the patient's app reading a published plan — so this flips back to
-// true when the answer is yes. Open item in docs/backlog.md.
-const SHOW_ACTION_PLANS = false
 
 // ── Main Page ──
 /** One number on the experiments summary. */
