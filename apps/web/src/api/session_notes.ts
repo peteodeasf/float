@@ -8,7 +8,7 @@ export interface SessionNote {
   organization_id: string
   practitioner_id: string
   session_type: string | null
-  participant: SessionParticipant | null
+  participants: SessionParticipant[]
   tags: string[]
   session_date: string
   content: string
@@ -17,14 +17,14 @@ export interface SessionNote {
 }
 
 export interface CreateSessionNote {
-  participant: SessionParticipant | null
+  participants: SessionParticipant[]
   tags: string[]
   session_date?: string
   content: string
 }
 
 export interface UpdateSessionNote {
-  participant?: SessionParticipant | null
+  participants?: SessionParticipant[]
   tags?: string[]
   session_date?: string
   content?: string

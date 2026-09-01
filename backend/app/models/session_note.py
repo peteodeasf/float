@@ -25,8 +25,10 @@ class SessionNote(Base):
     # Legacy single categorization; kept nullable for back-compat/rollback.
     # New notes use `participant` + `tags` instead.
     session_type: Mapped[str | None] = mapped_column(String, nullable=True)
-    # Who the session was with: 'parent' | 'patient' (nullable for legacy rows).
-    participant: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Who was in the session: any of 'parent', 'patient'. A joint session has both.
+    participants: Mapped[list[str]] = mapped_column(
+        ARRAY(String), nullable=False, server_default=text("'{}'")
+    )
     # Flexible multi-tags (preset + custom), e.g. ['Initial', 'Consult'].
     tags: Mapped[list[str]] = mapped_column(
         ARRAY(String), nullable=False, server_default=text("'{}'")

@@ -194,8 +194,8 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **The patient list: phases, closing a patient, a filter** | **BUILT 2026-08-31** — [`patient-list-phases.md`](plans/patient-list-phases.md). The progress column is stuck for every patient: step 3 needs a downward arrow marked as facilitated by a *parent*, and nothing in the app ever creates one, so it can never complete. Replaced by a phase — New, Monitoring, Assessment, Planning, In treatment, Closed — each derived from one observable fact rather than a chain of flags. Plus closing a patient while keeping all their data, and a filter by phase. Two questions for Peter in the plan: whether a closed patient can be reopened, and what closing does to the child's and parent's apps. | M |
 | **Clinician settings — v1, not touched** | Nav item exists and is disabled: `PractitionerNav.tsx:25`, tooltip "Coming soon". No page, no route. Nothing decided about what belongs in it. | M |
 | **Reports — v1, not touched** | Same: `PractitionerNav.tsx:24`, disabled, "Coming soon". Per-patient reports exist (`MonitoringReportPage`); this is the global one. | M |
-| **Session notes — needs review and design** | Built and working inside `PatientPage` (`getSessionNotes` and friends, line 939). Peter wants to look at it properly before deciding what changes. | M |
-| **Action plans — needs review and design** | Same shape: working, lives in `PatientPage` (line 941), rich-text editor, free-text next-appointment field. Needs his review first. | M |
+| **Session notes — needs review and design** | **BUILT 2026-09-01.** Peter's review: the pre-session brief is gone, a note can record the parent and the child together, and the two filters are labelled Who and Tag so they no longer read as one list of choices. | M |
+| **Action plans — hidden 2026-09-01, open question** | Full entry below. | M |
 | **Remove the Patient Downward Arrows section from the Plan tab** | **DONE 2026-08-30.** Removed; the checklist step now opens the arrow mode. Took 238 lines out of PatientPage. | S |
 | **Close / relapse-prevention tab** | Tab exists, body is the literal string "Placeholder". | M |
 | **Scheduling / appointments** | Free-text next-appointment field only. No calendar or booking. | L |
@@ -204,6 +204,30 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
 | **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
+
+## Action plans — hidden, and the question is whether they are worth having
+
+**Raised by Peter 2026-09-01.** `M`
+
+**Today:** action plans are built and work. A clinician writes a session summary in a rich-text
+editor, gives it a date and a nickname, and publishes it to the child's app. The endpoints, the
+editor and the child's side all still function.
+
+**They are now hidden from the clinician.** One line does it — `SHOW_ACTION_PLANS` in
+`PatientPage.tsx` — so turning them back on is a one-word change. Nothing was deleted.
+
+Peter's reason: he wants to see how the rest of the app flows before deciding whether an action
+plan adds anything on top of the treatment plan, the exposure ladder and the child's own app. It is
+a question about the product, not a defect.
+
+**What has to happen:** answer that question. If yes, flip the flag back and design what an action
+plan is for. If no, take the code out properly — the model, the endpoints, the editor and the
+child's app reading published plans.
+
+**Worth knowing while it is hidden:** any action plan already published is still visible in the
+child's app, and a clinician can no longer edit or unpublish it from the portal.
+
+---
 
 ## Granting and revoking a patient's clinicians — no UI
 

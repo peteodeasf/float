@@ -488,6 +488,12 @@ function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, 
 // Preset session-note tags (multi-select); custom tags can also be typed.
 const SESSION_NOTE_TAGS = ['Initial', 'Consult', 'Weekly', 'Review']
 
+// Action plans are hidden from the clinician while Peter works out whether they earn their place
+// once the rest of the app has settled (2026-09-01). Everything behind them still works — the
+// endpoints, the editor, and the patient's app reading a published plan — so this flips back to
+// true when the answer is yes. Open item in docs/backlog.md.
+const SHOW_ACTION_PLANS = false
+
 // ── Main Page ──
 /** One number on the experiments summary. */
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -617,7 +623,7 @@ export default function PatientPage() {
   // Session notes
   const [showNoteForm, setShowNoteForm] = useState(false)
   const [editingNote, setEditingNote] = useState<SessionNote | null>(null)
-  const [noteParticipant, setNoteParticipant] = useState<SessionParticipant | ''>('')
+  const [noteParticipants, setNoteParticipants] = useState<SessionParticipant[]>([])
   const [noteTags, setNoteTags] = useState<string[]>([])
   const [noteTagInput, setNoteTagInput] = useState('')
   const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
@@ -635,7 +641,7 @@ export default function PatientPage() {
     next.set('tab', id)
     setSearchParams(next, { replace: true })
   }
-  const [sessionsFilter, setSessionsFilter] = useState<'all' | 'parent' | 'patient' | 'action_plans'>('all')
+  const [notesWhoFilter, setNotesWhoFilter] = useState<SessionParticipant | null>(null)
   const [sessionTagFilter, setSessionTagFilter] = useState<string | null>(null)
   const [processPanelOpen, setProcessPanelOpen] = useState(false)
   const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
@@ -1118,9 +1124,9 @@ export default function PatientPage() {
   }
 
   // Session notes
-  const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteParticipant(''); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
-  const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { participant: noteParticipant || null, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
-  const updateNoteMut = useMutation({ mutationFn: () => updateSessionNote(editingNote!.id, { participant: noteParticipant || null, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
+  const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteParticipants([]); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
+  const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { participants: noteParticipants, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
+  const updateNoteMut = useMutation({ mutationFn: () => updateSessionNote(editingNote!.id, { participants: noteParticipants, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
   const deleteNoteMut = useMutation({ mutationFn: (id: string) => deleteSessionNote(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }) })
 
   // Action plans
@@ -1302,8 +1308,8 @@ export default function PatientPage() {
   const stepComplete: boolean[] = [
     !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
-    notesList.some(n => n.participant === 'parent') || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
-    notesList.some(n => n.participant === 'patient') && hasPatientDA,
+    notesList.some(n => (n.participants ?? []).includes('parent')) || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
+    notesList.some(n => (n.participants ?? []).includes('patient')) && hasPatientDA,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
 
@@ -1331,22 +1337,24 @@ export default function PatientPage() {
   // ── Unified session-notes list (participant + flexible tags) ──
   const noteFieldCap: CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }
   const notePill = (on: boolean): CSSProperties => ({ fontSize: '13px', fontWeight: 600, padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', background: on ? 'var(--float-primary)' : '#fff', color: on ? '#fff' : '#475569', border: on ? '1px solid var(--float-primary)' : '1px solid #cbd5e1' })
+  const noteFilterGroupCap: CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }
   const noteTagFilterChip = (on: boolean): CSSProperties => ({ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '999px', cursor: 'pointer', background: on ? '#eafaf6' : '#fff', color: on ? '#0d3d3a' : '#64748b', border: on ? '1px solid var(--float-primary)' : '1px solid #e2e8f0' })
 
-  const noteParticipantFilter: SessionParticipant | null =
-    sessionsFilter === 'parent' ? 'parent' : sessionsFilter === 'patient' ? 'patient' : null
+  // A joint session records both, so it shows under either filter.
+  const noteParticipantFilter = notesWhoFilter
   const allNoteTags = Array.from(new Set(notesList.flatMap(n => n.tags ?? []))).sort()
   const filteredNotes = notesList.filter(n =>
-    (noteParticipantFilter === null || n.participant === noteParticipantFilter) &&
+    (noteParticipantFilter === null || (n.participants ?? []).includes(noteParticipantFilter)) &&
     (sessionTagFilter === null || (n.tags ?? []).includes(sessionTagFilter))
   )
+  const toggleNoteParticipant = (p: SessionParticipant) => setNoteParticipants(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])
   const toggleNoteTag = (t: string) => setNoteTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   const addCustomNoteTag = () => {
     const t = noteTagInput.trim()
     if (t && !noteTags.includes(t)) setNoteTags(prev => [...prev, t])
     setNoteTagInput('')
   }
-  const startNewNote = () => { setEditingNote(null); setNoteParticipant(noteParticipantFilter ?? ''); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent(''); setShowNoteForm(true) }
+  const startNewNote = () => { setEditingNote(null); setNoteParticipants(noteParticipantFilter ? [noteParticipantFilter] : []); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent(''); setShowNoteForm(true) }
 
   const sessionNotesList = (
     <div style={cardStyle}>
@@ -1358,9 +1366,18 @@ export default function PatientPage() {
         {!showNoteForm && <button onClick={startNewNote} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
       </div>
 
-      {allNoteTags.length > 0 && !showNoteForm && (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-          <button onClick={() => setSessionTagFilter(null)} style={noteTagFilterChip(sessionTagFilter === null)}>All tags</button>
+      {/* Two filters, two dimensions — who was in the room, and how the note is tagged. They sit
+          in one row but are labelled and divided so they don't read as one list of choices. */}
+      {notesList.length > 0 && !showNoteForm && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <span style={noteFilterGroupCap}>Who</span>
+          <button onClick={() => setNotesWhoFilter(null)} style={noteTagFilterChip(notesWhoFilter === null)}>Anyone</button>
+          {(['parent', 'patient'] as SessionParticipant[]).map(pt => (
+            <button key={pt} onClick={() => setNotesWhoFilter(notesWhoFilter === pt ? null : pt)} style={noteTagFilterChip(notesWhoFilter === pt)}>{pt === 'parent' ? 'Parent' : 'Patient'}</button>
+          ))}
+          <span style={{ width: '1px', alignSelf: 'stretch', minHeight: '20px', background: '#cbd5e1', margin: '0 6px' }} />
+          <span style={noteFilterGroupCap}>Tag</span>
+          <button onClick={() => setSessionTagFilter(null)} style={noteTagFilterChip(sessionTagFilter === null)}>Any</button>
           {allNoteTags.map(t => <button key={t} onClick={() => setSessionTagFilter(sessionTagFilter === t ? null : t)} style={noteTagFilterChip(sessionTagFilter === t)}>{t}</button>)}
         </div>
       )}
@@ -1369,9 +1386,10 @@ export default function PatientPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
           <div>
             <div style={noteFieldCap}>Who was the session with?</div>
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: '-4px 0 8px' }}>Pick both if they were in the room together.</p>
             <div style={{ display: 'flex', gap: '8px' }}>
               {(['parent', 'patient'] as SessionParticipant[]).map(p => (
-                <button key={p} type="button" onClick={() => setNoteParticipant(p)} style={notePill(noteParticipant === p)}>{p === 'parent' ? 'Parent' : 'Patient'}</button>
+                <button key={p} type="button" onClick={() => toggleNoteParticipant(p)} style={notePill(noteParticipants.includes(p))}>{p === 'parent' ? 'Parent' : 'Patient'}</button>
               ))}
             </div>
           </div>
@@ -1393,7 +1411,7 @@ export default function PatientPage() {
           </div>
           <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim() || !noteParticipant} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
+            <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim() || noteParticipants.length === 0} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
             <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
           </div>
         </div>
@@ -1405,12 +1423,15 @@ export default function PatientPage() {
             <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  <span className="px-1 py-0.5 rounded font-medium" style={{ background: n.participant === 'parent' ? '#eafaf6' : '#ede9fe', color: n.participant === 'parent' ? '#0d3d3a' : '#5b21b6' }}>{n.participant === 'parent' ? 'Parent' : n.participant === 'patient' ? 'Patient' : '—'}</span>
+                  {(n.participants ?? []).length === 0 && <span className="px-1 py-0.5 rounded font-medium" style={{ background: '#f1f5f9', color: '#94a3b8' }}>&mdash;</span>}
+                  {(n.participants ?? []).map(pt => (
+                    <span key={pt} className="px-1 py-0.5 rounded font-medium" style={{ background: pt === 'parent' ? '#eafaf6' : '#ede9fe', color: pt === 'parent' ? '#0d3d3a' : '#5b21b6' }}>{pt === 'parent' ? 'Parent' : 'Patient'}</span>
+                  ))}
                   {(n.tags ?? []).map(t => <span key={t} className="px-1 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#475569', fontWeight: 500 }}>{t}</span>)}
                   <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                  <button onClick={() => { setEditingNote(n); setNoteParticipant(n.participant ?? ''); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
+                  <button onClick={() => { setEditingNote(n); setNoteParticipants(n.participants ?? []); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
                   <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
                 </div>
               </div>
@@ -2342,6 +2363,8 @@ export default function PatientPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="text-sm font-semibold text-slate-700">Action plans</span>
           {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
+          {/* Was a badge on the old filter chip. A draft is one the patient cannot see yet. */}
+          {draftPlanCount > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: '#135450', color: '#fff' }}>{draftPlanCount} draft</span>}
         </div>
         {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setPlanDate(new Date().toISOString().split('T')[0]); setPlanNickname(plan?.nickname || ''); setPlanNextAppt(''); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
       </div>
@@ -2421,121 +2444,9 @@ export default function PatientPage() {
     </div>
   )
 
-  const preSessionBriefContent = (() => {
-    const sortedExps = [...(patientExperiments ?? [])]
-    const lastPlanned = sortedExps
-      .filter(e => e.confidence_level)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
-    const lastCompleted = sortedExps
-      .filter(e => e.status === 'completed')
-      .sort((a, b) => {
-        const ad = a.completed_date ? new Date(a.completed_date).getTime() : 0
-        const bd = b.completed_date ? new Date(b.completed_date).getTime() : 0
-        return bd - ad
-      })[0]
-    const publishedPlans = (actionPlans ?? []).filter(ap => ap.visible_to_patient)
-    const lastPublishedPlan = publishedPlans.length > 0
-      ? [...publishedPlans].sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())[0]
-      : null
-    const lastConf = confidenceMeta(lastPlanned?.confidence_level)
-    const unreadExperimentCount = (messages ?? []).filter(m => m.message_type === 'experiment_completed' && !m.read_at).length
-    const bipBefore = lastCompleted?.bip_before != null ? Math.round(Number(lastCompleted.bip_before)) : null
-    const bipAfter = lastCompleted?.bip_after != null ? Math.round(Number(lastCompleted.bip_after)) : null
-    const dtActual = lastCompleted?.distress_thermometer_actual != null
-      ? Number(lastCompleted.distress_thermometer_actual)
-      : null
-    const fearedOccurred = lastCompleted?.feared_outcome_occurred
-
-    return (
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pre-session brief</span>
-        </div>
-        {plan?.nickname && (
-          <div style={{ background: '#eafaf6', border: '1px solid #9af6e4', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: '#0d3d3a' }}>
-              Working with: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>&ldquo;{plan.nickname}&rdquo;</span> &#x1F41B;
-            </span>
-          </div>
-        )}
-        {unreadExperimentCount > 0 && (
-          <div style={{ marginBottom: '12px' }}>
-            <a
-              href="#messages-section"
-              onClick={(e) => { e.preventDefault(); setActiveTab('chat'); setTimeout(() => document.getElementById('messages-section')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
-              style={{ fontSize: '13px', color: '#0d3d3a', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
-            >
-              ✓ {unreadExperimentCount} experiment{unreadExperimentCount === 1 ? '' : 's'} recorded since last session
-            </a>
-          </div>
-        )}
-
-        {/* Last action plan */}
-        <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last action plan:</span>
-          {lastPublishedPlan ? (
-            <>
-              <span style={{ fontSize: '12px', color: '#1e293b' }}>
-                #{lastPublishedPlan.session_number}
-                {lastPublishedPlan.nickname ? ` · “${lastPublishedPlan.nickname}”` : ''}
-                {' · '}
-                {new Date(lastPublishedPlan.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </span>
-              <button
-                onClick={() => openEditPlan(lastPublishedPlan)}
-                className="text-xs font-medium bg-transparent border-none cursor-pointer"
-                style={{ color: 'var(--float-primary)' }}
-              >View</button>
-            </>
-          ) : (
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>No action plan from last session.</span>
-          )}
-        </div>
-
-        {/* Last experiment confidence */}
-        <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Last experiment confidence:</span>
-          {lastPlanned ? (
-            <span style={{ fontSize: '12px', color: '#1e293b' }}>
-              {lastConf.emoji} {lastConf.label}
-              <span style={{ color: '#94a3b8' }}>
-                {' · set '}
-                {new Date(lastPlanned.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </span>
-            </span>
-          ) : (
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>No planned experiments yet.</span>
-          )}
-        </div>
-
-        {/* Last experiment results */}
-        {lastCompleted && (
-          <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
-              Last experiment: <span style={{ color: '#1e293b' }}>{lastCompleted.behavior_name || lastCompleted.plan_description || 'Experiment'}</span>
-            </div>
-            <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {bipBefore != null && bipAfter != null && (
-                <span><strong>BIP before:</strong> {bipBefore}% &rarr; <strong>after:</strong> {bipAfter}%</span>
-              )}
-              {dtActual != null && (
-                <>
-                  <span style={{ color: '#94a3b8' }}>&middot;</span>
-                  <span><strong>DT:</strong> {dtActual}/10</span>
-                </>
-              )}
-              {fearedOccurred != null && (
-                <>
-                  <span style={{ color: '#94a3b8' }}>&middot;</span>
-                  <span><strong>Feared outcome:</strong> {fearedOccurred ? 'Yes' : 'No'}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  })()
+  // The pre-session brief lived here. Removed 2026-09-01 at Peter's request — he may bring
+  // it back, so the numbers it read (last action plan, last experiment confidence and
+  // result) are all still on the patient record.
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
@@ -2778,36 +2689,8 @@ export default function PatientPage() {
 
             {activeTab === 'sessions' && (
               <>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {([
-                    { id: 'all', label: 'All' },
-                    { id: 'parent', label: 'Parent' },
-                    { id: 'patient', label: 'Patient' },
-                    { id: 'action_plans', label: 'Action plans', b: draftPlanCount },
-                  ] as const).map(f => {
-                    const on = sessionsFilter === f.id
-                    const b = 'b' in f ? f.b : 0
-                    return (
-                      <button
-                        key={f.id}
-                        onClick={() => { setSessionsFilter(f.id); if (f.id === 'action_plans') resetNoteForm() }}
-                        className="cursor-pointer"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 600, border: on ? '1px solid var(--float-primary)' : '1px solid #cbd5e1', background: on ? 'var(--float-primary)' : '#fff', color: on ? '#fff' : '#475569' }}
-                      >
-                        {f.label}
-                        {b ? <span style={{ fontSize: '10px', fontWeight: 700, color: on ? 'var(--float-primary)' : '#fff', background: on ? '#fff' : '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{b}</span> : null}
-                      </button>
-                    )
-                  })}
-                </div>
-                {sessionsFilter === 'action_plans' ? (
-                  actionPlansContent
-                ) : (
-                  <>
-                    {preSessionBriefContent}
-                    {sessionNotesList}
-                  </>
-                )}
+                {sessionNotesList}
+                {SHOW_ACTION_PLANS && actionPlansContent}
               </>
             )}
 

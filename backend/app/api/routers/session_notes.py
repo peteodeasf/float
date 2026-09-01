@@ -17,9 +17,9 @@ from app.api.routers.patients import get_practitioner_context, get_permitted_pat
 # --- Schemas ---
 
 class SessionNoteCreate(BaseModel):
-    # `session_type` is legacy/optional now; new notes use participant + tags.
+    # `session_type` is legacy/optional now; new notes use participants + tags.
     session_type: Optional[str] = None
-    participant: Optional[str] = None  # 'parent' | 'patient'
+    participants: list[str] = []  # any of 'parent', 'patient'
     tags: list[str] = []
     session_date: Optional[date] = None
     content: str
@@ -27,7 +27,7 @@ class SessionNoteCreate(BaseModel):
 
 class SessionNoteUpdate(BaseModel):
     session_type: Optional[str] = None
-    participant: Optional[str] = None
+    participants: Optional[list[str]] = None
     tags: Optional[list[str]] = None
     session_date: Optional[date] = None
     content: Optional[str] = None
@@ -39,7 +39,7 @@ class SessionNoteResponse(BaseModel):
     organization_id: uuid.UUID
     practitioner_id: uuid.UUID
     session_type: Optional[str] = None
-    participant: Optional[str] = None
+    participants: list[str] = []
     tags: list[str] = []
     session_date: date
     content: str
@@ -95,7 +95,7 @@ async def create_session_note(
         organization_id=practitioner.organization_id,
         practitioner_id=practitioner.id,
         session_type=data.session_type,
-        participant=data.participant,
+        participants=data.participants,
         tags=data.tags or [],
         session_date=data.session_date or date.today(),
         content=data.content
@@ -133,8 +133,8 @@ async def update_session_note(
 
     if data.session_type is not None:
         note.session_type = data.session_type
-    if data.participant is not None:
-        note.participant = data.participant
+    if data.participants is not None:
+        note.participants = data.participants
     if data.tags is not None:
         note.tags = data.tags
     if data.session_date is not None:
