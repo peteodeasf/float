@@ -65,9 +65,14 @@ and it needs a screen in the Float admin app: a list of clinics and what each is
 
 `organizations.settings` is where this lives.
 
-**Worth deciding before building:** when Float turns a capability off for a clinic that had already
-changed the value, does the clinic's value stay in force or revert to Float's? Reverting is safer
-and more surprising. Peter's call.
+**When Float turns a capability off for a clinic that had already changed it: revert and notify**
+(Peter, 2026-09-01). The clinic's value goes back to Float's, and the clinic is told — a setting
+silently changing underneath a clinic is worse than the change itself.
+
+**There is no way to notify a clinician today.** The `notifications` table is patient-scoped and no
+route reads it, so email is the only working channel. The cheapest honest version is a line on the
+settings page the next time an admin opens it, saying Float has changed this back to the standard
+setting. Email if that is not enough.
 
 ## Not in this
 
@@ -80,8 +85,8 @@ and more surprising. Peter's call.
 
 ## Open
 
-**When Float turns a capability off for a clinic that had already changed the value** — does the
-clinic's value stay in force, or revert to Float's? Reverting is safer and more surprising.
+**How the clinic is told.** Float has no clinician-facing notification channel — see above. A line
+on the settings page, an email, or both.
 
 ## Order of work
 
