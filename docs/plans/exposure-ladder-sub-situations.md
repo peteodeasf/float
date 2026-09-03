@@ -69,6 +69,14 @@ produced a two-rung ladder with both rungs scored 7 — nothing to climb.
 11. **A rung normally belongs to a situation, but it is not enforced.** *"I'm still not sure we want
     to enforce that."* Unchanged from 2026-08-26.
 12. **The session flow needs to say where you are.** See below.
+13. **The clinician picks a recommended rung, and the child sees which one it is.** One at a time.
+    Advice, not a lock — the child can still do any rung on the ladder.
+14. **Setting up an exposure is shared work.** The clinician starts it in session with the child;
+    the child can also set one up on their own at home. See below.
+15. **Lowest fear rating at the top, and they pick off the top.** Working assumption, unchanged from
+    2026-08-23. Peter, 2026-09-01: *"Possibly change that in the future, but that's the working
+    assumption."* This closes the open question that was carried in
+    [`ladder-rung-shape.md`](ladder-rung-shape.md).
 
 ## The session flow has no context
 
@@ -103,6 +111,33 @@ situation as a quiet label. From here:
 **Second view — the current builder.** Ladder and Situations as they are. Tags, distress ranges,
 regrouping, activation, planning an experiment.
 
+## Setting up an exposure — started in session, finished at home
+
+Both halves exist today and they do not meet.
+
+| | What it collects |
+|---|---|
+| **Clinician** — "Plan an experiment" in the situations pane | what they'll do, a date, how confident |
+| **Child** — `TeenExperimentPage` | what they'll do, **what they think will happen**, **how anxious they expect to be**, how ready they feel, which days |
+
+**And an experiment the clinician plans never reaches the child.** The clinician's version is
+created with `status="planned"` (`experiment_service.py:67`). The child's home fetches `planned` and
+`committed` from `/patient/experiments/pending` — and then renders only `committed`
+(`TeenHomePage.tsx:156`). So it is fetched and dropped. A clinician planning an exposure in session
+today produces a row the child never sees.
+
+That has to be fixed for any of this to work, and it is small.
+
+**The split that follows from what each side knows:**
+
+- **In session, together** — which rung, when, roughly what they'll do. What the clinician's form
+  already collects.
+- **At home, the child** — what they think will happen, how anxious they expect to be, how ready
+  they feel. These are the child's own answers and a clinician should not be filling them in.
+
+So a clinician-started exposure arrives in the child's app as something waiting for them to finish,
+not as something already decided for them. A child starting from scratch answers both halves.
+
 ## What the child sees
 
 This changes too, and gets simpler.
@@ -112,6 +147,7 @@ This changes too, and gets simpler.
 | Setting up an exposure | Pick a situation (only ones marked active), then pick a behaviour under it | Pick a rung off the ladder |
 | The exposure screen | "School drop off — **without** asking mum to wait" | "Walk to my classroom by myself" |
 | What is available | Whatever is under an active situation | The whole ladder, when the clinician has turned it on |
+| What to do next | Nothing says | The rung the clinician recommended is marked |
 
 Peter, 2026-09-01: the child *"generally focus[es] on one situation at a time, but we shouldn't
 restrict them to that. They can select to do any exposure at any time."*
@@ -138,29 +174,28 @@ sentences with scores. Nothing has to be converted.
 
 ## Order of work
 
+0. **A clinician-planned exposure reaches the child.** Small, standalone, and broken today
+   regardless of everything else here.
 1. **Clean up `behavior_type`.** Small, and everything below reads it.
 2. **The child's exposure setup** — pick a rung, drop the "without" line, all-or-nothing
-   availability. Self-contained, and it is the part a real child would hit first.
+   availability, the recommended rung marked. Self-contained, and it is the part a real child would
+   hit first.
 3. **Editing a rung in the conversation** — rename, rescore, delete, move. The thing most missing.
 4. **"What's a smaller version of this?"** — the new question, replacing behaviour capture as the
    way a rung is made. Safety behaviours still get captured, onto the situation.
 5. **Orientation in the session flow.**
-6. **Make the conversation the Plan tab's primary view**, with the builder one switch away and a
+6. **Starting an exposure in session and finishing it at home** — the split above.
+7. **Make the conversation the Plan tab's primary view**, with the builder one switch away and a
    full-screen button.
-7. **The arrow, inline.**
+8. **The arrow, inline.**
 
-1 through 5 each stand alone. 6 is the rearrangement and wants the rest to be good first.
+0 through 6 each stand alone. 7 is the rearrangement and wants the rest to be good first.
 
 ## Open
 
-**How does a clinician say "do this one next"?** Peter: the child can do any exposure at any time,
-*"it's just not necessarily what the therapist recommends to them."* There is no way to record that
-recommendation in the app, and per-situation activation — the closest thing — is going away. Today
-it would live in the action plan, which is hidden. Not built, and not specified.
-
-**Which end of the ladder is the top.** The book puts the most feared situation at the top and calls
-it the top rung. Ours reads lowest-at-top, per Peter 2026-08-23. Flagged in
-[`ladder-rung-shape.md`](ladder-rung-shape.md) and still not revisited.
+**Where the recommended rung is stored.** It needs somewhere to live and there is nothing today.
+Suggested shape: a nullable `recommended_rung_id` on `treatment_plans`, which gives "one at a time"
+by construction and is a small additive migration. Not yet agreed.
 
 **Does the conversation still ask what the child does to feel safer?** It must, since safety
 behaviours attach to the situation and have to come from somewhere. It just stops being how a rung
@@ -174,3 +209,5 @@ is made.
 - A child opens their app, picks one rung, and does it — with no second choice to make.
 - Someone mid-interview can say which situation they are on and how many are left.
 - A rung said wrong can be fixed without leaving the conversation.
+- A clinician plans an exposure in session and the child opens their app and sees it waiting.
+- The child can tell which rung their clinician recommended, and can still choose a different one.
