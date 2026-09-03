@@ -37,6 +37,7 @@ from app.models.session_note import SessionNote
 from app.models.message import Message
 from app.models.experiment import Experiment
 from app.services.patient_phase import LABELS, Phase, phase_of
+from app.core.behavior_types import OBSERVATION
 from app.services.patient_access_service import (
     accessible_patient_ids,
     is_institution_admin,
@@ -1416,12 +1417,45 @@ async def get_my_ladder(
             "behaviors": [await build_step(b) for b in ungrouped],
         })
 
+    # The ladder, flat — every rung in one list, easiest first, with its situation as a quiet
+    # label. This is what the child's home reads now: they pick a rung, not a situation and then a
+    # behaviour inside it. `situations` above is kept because the progress screens still derive
+    # from it; it goes when they move over.
+    #
+    # An observation is not a rung — see app/core/behavior_types.py.
+    #
+    # A safety behaviour is still shown here, and under the new model it should not be: what the
+    # child faces is a version of the situation, not a thing they give up. Excluding it now would
+    # empty almost every existing ladder — 32 of the 136 rows are safety and exactly one is a
+    # scenario — so it waits for step 4, which is what makes rungs out of sub-situations.
+    flat: list[dict] = []
+    for group in situations:
+        for step in group["behaviors"]:
+            if step["behavior_type"] == OBSERVATION:
+                continue
+            flat.append({
+                **step,
+                "situation_id": group["id"],
+                "situation_name": None if group["id"] == "ungrouped" else group["name"],
+                "feared_outcome": group["feared_outcome"],
+                "is_recommended": str(plan.recommended_rung_id or "") == step["id"],
+            })
+
+    # Easiest first, and they pick off the top (Peter, 2026-09-01). Unscored rungs sit at the end
+    # rather than counting as a zero and jumping the queue.
+    flat.sort(key=lambda r: (r["dt"] is None, r["dt"] if r["dt"] is not None else 0))
+
     return {
         "plan": {
             "id": str(plan.id),
             "status": plan.status,
             "nickname": plan.nickname,
+            # One switch for the whole ladder. Until the clinician turns it on the child has
+            # nothing to do, whatever is on the plan.
+            "ladder_active": plan.ladder_active,
+            "recommended_rung_id": str(plan.recommended_rung_id) if plan.recommended_rung_id else None,
         },
+        "rungs": flat if plan.ladder_active else [],
         "situations": situations
     }
 

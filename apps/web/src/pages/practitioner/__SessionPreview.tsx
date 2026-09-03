@@ -85,7 +85,7 @@ export default function SessionPreview() {
         {view === 'arrow-chain' && <ChainPhase trigger={TRIGGERS[0]} onBack={noop} onDone={noop} />}
         {view === 'flat-ladder' && (
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12 }}>
-            <FlatLadder planId="p1" triggers={TRIGGERS} />
+            <FlatLadder planId="p1" patientId="preview" triggers={TRIGGERS} ladderActive recommendedRungId={null} />
           </div>
         )}
         {view === 'builder' && (

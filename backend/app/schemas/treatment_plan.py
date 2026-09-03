@@ -19,6 +19,10 @@ class TreatmentPlanResponse(BaseModel):
     status: str
     nickname: Optional[str] = None
     activated_at: Optional[datetime] = None
+    #: The whole ladder is on for the child, or it is not.
+    ladder_active: bool = False
+    #: The one rung suggested next, if any.
+    recommended_rung_id: Optional[uuid.UUID] = None
     last_extracted_at: Optional[datetime] = None
     has_new_monitoring_entries: bool = False
     created_at: datetime
@@ -33,3 +37,9 @@ class TreatmentPlanUpdate(BaseModel):
     parent_visibility_level: Optional[str] = None
     status: Optional[str] = None
     nickname: Optional[str] = None
+    #: The whole ladder is on for the child, or it is not (Peter, 2026-09-01).
+    ladder_active: Optional[bool] = None
+    #: The one rung suggested next. `None` in the payload leaves it alone; to clear it, send
+    #: `clear_recommended_rung`.
+    recommended_rung_id: Optional[uuid.UUID] = None
+    clear_recommended_rung: Optional[bool] = None

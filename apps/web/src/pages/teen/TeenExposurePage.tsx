@@ -140,7 +140,7 @@ export default function TeenExposurePage() {
                 textAlign: 'left',
               }}
             >
-              without {planText}
+              {planText}
             </div>
           )}
 
@@ -295,7 +295,7 @@ export default function TeenExposurePage() {
                 marginTop: 6,
               }}
             >
-              without {planText}
+              {planText}
             </div>
           )}
           {whenLabel && (

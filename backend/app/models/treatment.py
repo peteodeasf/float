@@ -27,6 +27,16 @@ class TreatmentPlan(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="setup")
     nickname: Mapped[str | None] = mapped_column(String, nullable=True)
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # The ladder is on for the child, or it is not — all of it. Peter, 2026-09-01. Replaces
+    # per-situation `is_active`, which is still on TriggerSituation and no longer read.
+    ladder_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    # The one rung the clinician suggests doing next. Advice, not a lock — the child can do any
+    # rung on the ladder whenever they like.
+    recommended_rung_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("avoidance_behaviors.id", ondelete="SET NULL"), nullable=True
+    )
     last_extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

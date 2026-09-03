@@ -190,9 +190,26 @@ sentences with scores. Nothing has to be converted.
    Worth knowing: only **one** place in the whole codebase branches on this column — a coloured
    three-letter chip in the situations pane. It now also decides whether a row is on the ladder,
    which is the first thing it has ever gated.
-2. **The child's exposure setup** — pick a rung, drop the "without" line, all-or-nothing
-   availability, the recommended rung marked. Self-contained, and it is the part a real child would
-   hit first.
+2. **The child's exposure setup** — **BUILT 2026-09-01.** `/patient/ladder` now returns a flat
+   `rungs` list, easiest first, each carrying its situation as a label and whether it is the
+   recommended one. The child's home reads that instead of picking a situation and then a behaviour
+   inside it; the situation chips are gone. "without X" is gone from the home, the exposure screen,
+   the setup screen and the record screen. Two new columns on the plan: `ladder_active` (all or
+   nothing) and `recommended_rung_id`. The clinician gets an On/Off switch and a "Set next" per rung
+   on the flat ladder.
+
+   `situations` is still returned because the progress screens derive from it; it goes when they
+   move over. A safety behaviour is still a rung for now — excluding it would empty almost every
+   existing ladder, since 32 of 136 rows are safety and exactly one is a scenario. That waits for
+   step 4.
+
+   **Open, found while building:** turning the ladder off also hides exposures the child has
+   already committed to, and they get the "you're just getting started" empty state. That is what
+   the app already did per-situation, now at ladder scope — but a child who agreed to do something
+   on Friday finds it gone with no explanation. Same shape as the closing screen. Peter's call.
+
+   **Also open:** nothing stops a clinician marking a finished step as the next one. The child's
+   screen no longer shows the suggestion on a finished step, so it just does nothing.
 3. **Editing a rung in the conversation** — rename, rescore, delete, move. The thing most missing.
 4. **"What's a smaller version of this?"** — the new question, replacing behaviour capture as the
    way a rung is made. Safety behaviours still get captured, onto the situation.

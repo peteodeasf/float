@@ -242,7 +242,7 @@ export default function TeenRecordPage() {
                   marginTop: 4,
                 }}
               >
-                without {planText}
+                {planText}
               </div>
             )}
           </div>

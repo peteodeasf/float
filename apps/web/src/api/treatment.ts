@@ -8,6 +8,10 @@ export interface TreatmentPlan {
   parent_visibility_level: string
   status: string
   nickname?: string | null
+  /** The whole ladder is on for the child, or it is not. */
+  ladder_active?: boolean
+  /** The one rung the clinician suggests next. Advice — the child can do any of them. */
+  recommended_rung_id?: string | null
   last_extracted_at?: string | null
   has_new_monitoring_entries?: boolean
   created_at: string
@@ -232,6 +236,31 @@ export const updatePlanStatus = async (
   status: string
 ): Promise<TreatmentPlan> => {
   const response = await apiClient.put(`/patients/${patientId}/plan/${planId}`, { status })
+  return response.data
+}
+
+/** Turn the child's whole ladder on or off. All of it — Peter, 2026-09-01. */
+export const setLadderActive = async (
+  patientId: string,
+  planId: string,
+  active: boolean
+): Promise<TreatmentPlan> => {
+  const response = await apiClient.put(`/patients/${patientId}/plan/${planId}`, {
+    ladder_active: active,
+  })
+  return response.data
+}
+
+/** Say which rung to do next, or clear it. */
+export const setRecommendedRung = async (
+  patientId: string,
+  planId: string,
+  rungId: string | null
+): Promise<TreatmentPlan> => {
+  const response = await apiClient.put(
+    `/patients/${patientId}/plan/${planId}`,
+    rungId ? { recommended_rung_id: rungId } : { clear_recommended_rung: true }
+  )
   return response.data
 }
 

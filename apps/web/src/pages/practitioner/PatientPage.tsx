@@ -1819,7 +1819,15 @@ export default function PatientPage() {
         })}
       </div>
 
-      {planView === 'ladder' && <FlatLadder planId={plan.id} triggers={triggers ?? []} />}
+      {planView === 'ladder' && (
+        <FlatLadder
+          planId={plan.id}
+          patientId={patientId!}
+          triggers={triggers ?? []}
+          ladderActive={!!plan.ladder_active}
+          recommendedRungId={plan.recommended_rung_id ?? null}
+        />
+      )}
 
       <div style={{ display: planView === 'situations' ? 'grid' : 'none', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
         {/* Situations list */}

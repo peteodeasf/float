@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
   getPlanRungs, createPlanRung, updatePlanRung, deletePlanRung,
+  setLadderActive, setRecommendedRung,
   type TriggerSituation,
 } from '../../../api/treatment'
 import { BEHAVIOR_TYPE_SCENARIO, clampDt, clampDtInput } from './shared'
@@ -18,7 +19,19 @@ import { BEHAVIOR_TYPE_SCENARIO, clampDt, clampDtInput } from './shared'
 // Every rung on the plan in one list, easiest first. A rung is a sentence and a score; the
 // situation is a quiet label you can change, not a folder you open first. See
 // docs/plans/flat-ladder-grouped-situations.md.
-export function FlatLadder({ planId, triggers }: { planId: string; triggers: TriggerSituation[] }) {
+export function FlatLadder({
+  planId,
+  patientId,
+  triggers,
+  ladderActive,
+  recommendedRungId,
+}: {
+  planId: string
+  patientId: string
+  triggers: TriggerSituation[]
+  ladderActive: boolean
+  recommendedRungId: string | null
+}) {
   const qc = useQueryClient()
   const [showAdd, setShowAdd] = useState(false)
   const [name, setName] = useState('')
@@ -58,6 +71,19 @@ export function FlatLadder({ planId, triggers }: { planId: string; triggers: Tri
     onSuccess: invalidate,
   })
 
+  const refreshPlan = () => {
+    qc.invalidateQueries({ queryKey: ['plan', patientId] })
+    qc.invalidateQueries({ queryKey: ['patient', patientId] })
+  }
+  const activeMut = useMutation({
+    mutationFn: (on: boolean) => setLadderActive(patientId, planId, on),
+    onSuccess: refreshPlan,
+  })
+  const recommendMut = useMutation({
+    mutationFn: (rungId: string | null) => setRecommendedRung(patientId, planId, rungId),
+    onSuccess: refreshPlan,
+  })
+
   // Easiest first. Unscored rungs sit at the end — they are not a zero, they are unanswered.
   const ordered = [...(rungs ?? [])].sort((a, b) => {
     const x = a.distress_thermometer_when_refraining
@@ -77,10 +103,28 @@ export function FlatLadder({ planId, triggers }: { planId: string; triggers: Tri
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Ladder</div>
           <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Everything, easiest first</div>
         </div>
-        {!showAdd && (
-          <button onClick={() => setShowAdd(true)} className="cursor-pointer"
-            style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px', flexShrink: 0 }}>+ Add rung</button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* One switch for the whole ladder. Peter, 2026-09-01: "the clinician can still
+              activate or deactivate a ladder, but it's all or nothing." */}
+          <button
+            onClick={() => activeMut.mutate(!ladderActive)}
+            disabled={activeMut.isPending || ordered.length === 0}
+            title={ordered.length === 0 ? 'Add a rung first' : undefined}
+            className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              fontSize: '12px', fontWeight: 700, borderRadius: '999px', padding: '5px 12px',
+              color: ladderActive ? '#fff' : '#64748b',
+              background: ladderActive ? 'var(--float-primary)' : '#fff',
+              border: `1px solid ${ladderActive ? 'var(--float-primary)' : '#cbd5e1'}`,
+            }}
+          >
+            {ladderActive ? 'On for the child' : 'Off for the child'}
+          </button>
+          {!showAdd && (
+            <button onClick={() => setShowAdd(true)} className="cursor-pointer"
+              style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>+ Add rung</button>
+          )}
+        </div>
       </div>
 
       {isLoading && <p style={{ fontSize: '12.5px', color: '#94a3b8' }}>Loading…</p>}
@@ -95,6 +139,23 @@ export function FlatLadder({ planId, triggers }: { planId: string; triggers: Tri
             return (
               <div key={r.id} className="group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 13px' }}>
                 <span className="text-sm text-slate-700 truncate" style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>{r.name}</span>
+
+                {/* Which one to do next. Advice the child sees — they can still pick any of them. */}
+                <button
+                  onClick={() => recommendMut.mutate(recommendedRungId === r.id ? null : r.id)}
+                  disabled={recommendMut.isPending}
+                  title={recommendedRungId === r.id ? 'Stop suggesting this one' : 'Suggest this one next'}
+                  className="cursor-pointer"
+                  style={{
+                    fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                    flexShrink: 0, whiteSpace: 'nowrap',
+                    color: recommendedRungId === r.id ? '#0d3d3a' : '#94a3b8',
+                    background: recommendedRungId === r.id ? '#eafaf6' : '#fff',
+                    border: `1px solid ${recommendedRungId === r.id ? 'var(--float-primary)' : '#e2e8f0'}`,
+                  }}
+                >
+                  {recommendedRungId === r.id ? 'Next' : 'Set next'}
+                </button>
 
                 {/* The grouping — changeable in place, and blank is allowed. */}
                 <select

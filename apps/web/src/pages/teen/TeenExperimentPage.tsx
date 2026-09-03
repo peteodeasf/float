@@ -256,7 +256,7 @@ export default function TeenExperimentPage() {
                     marginTop: 6,
                   }}
                 >
-                  without {behaviorData.name}
+                  {behaviorData.name}
                 </div>
               )}
             </div>
@@ -567,7 +567,7 @@ export default function TeenExperimentPage() {
                 marginTop: 4,
               }}
             >
-              without {behaviorData.name}
+              {behaviorData.name}
             </div>
           )}
           <div

@@ -29,6 +29,14 @@ type TeenBehavior = {
   experiments: TeenExperiment[]
 }
 
+/** A rung as the flat ladder returns it: the step itself, plus its situation as a quiet label. */
+type TeenRung = TeenBehavior & {
+  situation_id: string
+  situation_name: string | null
+  feared_outcome: string | null
+  is_recommended: boolean
+}
+
 type TeenSituation = {
   id: string
   name: string
@@ -41,7 +49,6 @@ type TeenSituation = {
 export default function TeenHomePage() {
   const { patientId, logout } = useTeenAuth()
   const navigate = useNavigate()
-  const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null)
   const [selectedBehaviorId, setSelectedBehaviorId] = useState<string | null>(null)
   const [jumpWarning, setJumpWarning] = useState<{
     targetBehaviorId: string
@@ -101,37 +108,25 @@ export default function TeenHomePage() {
   ).length
 
   const situations: TeenSituation[] = ladderData?.situations ?? []
-  // Only situations the clinician has set active are "experiments the teen can
-  // do now". Inactive ones (built but not turned on) don't appear on the home.
-  const activeSituations = situations.filter(s => s.is_active)
   const firstName = me?.patient_name?.split(' ')[0] ?? ''
 
-  useEffect(() => {
-    if (!selectedSituationId && activeSituations.length > 0) {
-      setSelectedSituationId(activeSituations[0].id)
-    }
-  }, [activeSituations, selectedSituationId])
+  // ONE ladder, easiest first, already ordered by the server. The child picks a rung — not a
+  // situation and then a behaviour inside it. The situation is a quiet label on the rung.
+  //
+  // Nothing comes back here until the clinician has turned the ladder on, and that is all or
+  // nothing now (Peter, 2026-09-01) — `is_active` per situation is no longer read.
+  const rungs: TeenRung[] = ladderData?.rungs ?? []
+  const sortedBehaviors: TeenRung[] = rungs
 
-  const selectedSituation = activeSituations.find(s => s.id === selectedSituationId)
+  // What their clinician suggests next, if they have said so. Otherwise the easiest thing not
+  // finished — the same advice, worked out rather than given.
+  const recommended = rungs.find(r => r.is_recommended && r.status !== 'mastered') ?? null
+  const suggestedBehavior = recommended ?? rungs.find(b => b.status !== 'mastered') ?? null
 
-  // Easiest first — lowest distress rating at the top, nulls last.
-  const sortedBehaviors: TeenBehavior[] = selectedSituation
-    ? [...selectedSituation.behaviors].sort((a, b) => {
-        if (a.dt == null && b.dt == null) return 0
-        if (a.dt == null) return 1
-        if (b.dt == null) return -1
-        return a.dt - b.dt
-      })
-    : []
-
-  const suggestedBehavior = sortedBehaviors.find(b => b.status !== 'mastered') ?? null
-
-  // The step previewed in the "set up an experiment" card. Defaults to the
-  // suggested next step; tapping a ladder step selects it (updates the card,
-  // no navigation). Falls back to the suggested step when the current
-  // selection isn't in the active situation.
+  // The step previewed in the "set up an experiment" card. Tapping a ladder step selects it —
+  // updates the card, no navigation.
   const previewBehavior =
-    sortedBehaviors.find(b => b.id === selectedBehaviorId && b.status !== 'mastered') ??
+    rungs.find(b => b.id === selectedBehaviorId && b.status !== 'mastered') ??
     suggestedBehavior
 
   // ── What the home shows ────────────────────────────────────────────
@@ -146,10 +141,7 @@ export default function TeenHomePage() {
   // A committed experiment only counts if its situation is still active. When
   // the clinician deactivates a situation, its experiments drop off the home —
   // deactivate all of them and the teen sees the empty state.
-  const activeBehaviorIds = new Set<string>()
-  for (const s of activeSituations) {
-    for (const b of s.behaviors) activeBehaviorIds.add(b.id)
-  }
+  const activeBehaviorIds = new Set<string>(rungs.map(r => r.id))
   const committedExps = ((pendingExperiments ?? []) as any[])
     .filter(
       e =>
@@ -194,7 +186,7 @@ export default function TeenHomePage() {
 
   const hasCommitted = committedExps.length > 0
   const hasLadder = !!suggestedBehavior
-  const isEmpty = activeSituations.length === 0 && !hasCommitted && fromClinician.length === 0
+  const isEmpty = rungs.length === 0 && !hasCommitted && fromClinician.length === 0
 
   const dismissLadderHint = () => {
     if (patientId) localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
@@ -434,7 +426,7 @@ export default function TeenHomePage() {
                         marginTop: 6,
                       }}
                     >
-                      without {expName(comingUp)}
+                      {expName(comingUp)}
                     </div>
                     <div style={metaRow}>
                       <span aria-hidden="true" style={metaDot} />
@@ -495,7 +487,7 @@ export default function TeenHomePage() {
                             marginTop: 3,
                           }}
                         >
-                          without {expName(exp)}
+                          {expName(exp)}
                         </span>
                         <span
                           style={{
@@ -544,10 +536,10 @@ export default function TeenHomePage() {
                 {hasCommitted ? 'Set up another experiment' : 'Set up an experiment'}
               </div>
               <div className="teen-card" style={{ marginTop: 14, padding: '24px' }}>
-                {selectedSituation && (
-                  <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
-                    {selectedSituation.name}
-                  </h2>
+                {previewBehavior?.situation_name && (
+                  <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginBottom: 6 }}>
+                    {previewBehavior.situation_name}
+                  </div>
                 )}
                 <div
                   style={{
@@ -558,7 +550,7 @@ export default function TeenHomePage() {
                     marginTop: 6,
                   }}
                 >
-                  without {previewBehavior.name}
+                  {previewBehavior.name}
                 </div>
                 {previewBehavior.dt != null && (
                   <div style={metaRow}>
@@ -582,7 +574,7 @@ export default function TeenHomePage() {
         </div>
 
         {/* ── the ladder — pick which step to set up ── */}
-        {hasLadder && activeSituations.length > 0 && (
+        {hasLadder && rungs.length > 0 && (
           <div style={{ padding: `28px ${teen.space.pad} 0` }}>
             <div style={teen.type.eyebrow}>Your ladder</div>
             {showLadderHint && sortedBehaviors.length > 0 && (
@@ -596,44 +588,6 @@ export default function TeenHomePage() {
               >
                 Easiest at the top. Tap a step to pick it.
               </p>
-            )}
-
-            {activeSituations.length > 1 && (
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 7,
-                  overflowX: 'auto',
-                  margin: '12px 0 0',
-                  // Right-edge fade + trailing space so the row reads as
-                  // scrollable and the next chip peeks in rather than clipping.
-                  paddingBottom: 4,
-                  paddingRight: 24,
-                  WebkitMaskImage:
-                    'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
-                  maskImage:
-                    'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
-                }}
-              >
-                {activeSituations.map(s => (
-                  <button
-                    key={s.id}
-                    className="teen-chip"
-                    aria-pressed={s.id === selectedSituationId}
-                    style={{
-                      flex: '0 0 auto',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textAlign: 'left',
-                    }}
-                    onClick={() => setSelectedSituationId(s.id)}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
             )}
 
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -688,11 +642,33 @@ export default function TeenHomePage() {
                       >
                         {behavior.name}
                       </span>
-                      {isSuggested && (
+                      {/* The situation is a quiet label on the rung now, not a folder they opened
+                          to get here — so it has to be visible somewhere. */}
+                      {behavior.situation_name && (
+                        <span
+                          style={{
+                            display: 'block',
+                            fontFamily: teen.font.sans,
+                            fontSize: 12,
+                            color: teen.color.textSecondary,
+                            marginTop: 2,
+                          }}
+                        >
+                          {behavior.situation_name}
+                        </span>
+                      )}
+                      {/* Two different things wearing one pill before now. If the clinician marked
+                          a rung, say so — it came from a person. Otherwise it is the app's own
+                          guess at the easiest thing left, and should not claim more than that. */}
+                      {behavior.is_recommended && !isMastered ? (
+                        <span className="teen-pill teen-pill--progressing" style={{ marginTop: 6 }}>
+                          your clinician suggests this
+                        </span>
+                      ) : isSuggested ? (
                         <span className="teen-pill teen-pill--progressing" style={{ marginTop: 6 }}>
                           suggested
                         </span>
-                      )}
+                      ) : null}
                     </span>
                     {behavior.dt != null && (
                       <span

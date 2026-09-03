@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from app.models.treatment import TreatmentPlan
+from app.models.treatment import TreatmentPlan, AvoidanceBehavior, TriggerSituation
 from app.schemas.treatment_plan import TreatmentPlanCreate, TreatmentPlanUpdate
 
 
@@ -86,6 +86,31 @@ async def update_treatment_plan(
         plan.status = data.status
     if data.nickname is not None:
         plan.nickname = data.nickname
+    if data.ladder_active is not None:
+        plan.ladder_active = data.ladder_active
+    if data.clear_recommended_rung:
+        plan.recommended_rung_id = None
+    elif data.recommended_rung_id is not None:
+        # It has to be a rung on THIS plan. Without the check a clinician could point their
+        # patient's app at another child's row, and the child's ladder would read it out.
+        rung = (await db.execute(
+            select(AvoidanceBehavior).where(AvoidanceBehavior.id == data.recommended_rung_id)
+        )).scalar_one_or_none()
+        situation_plan_id = None
+        if rung is not None and rung.trigger_situation_id is not None:
+            situation_plan_id = (await db.execute(
+                select(TriggerSituation.treatment_plan_id)
+                .where(TriggerSituation.id == rung.trigger_situation_id)
+            )).scalar_one_or_none()
+        belongs = rung is not None and (
+            rung.treatment_plan_id == plan.id or situation_plan_id == plan.id
+        )
+        if not belongs:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="That step is not on this plan.",
+            )
+        plan.recommended_rung_id = data.recommended_rung_id
     await db.commit()
     await db.refresh(plan)
     return plan
