@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
@@ -72,6 +72,10 @@ function Field({
 
 export default function TeenExperimentPage() {
   const { behaviorId } = useParams<{ behaviorId: string }>()
+  // Set when the clinician started this exposure in session. The row already exists with the rung
+  // and the day on it, so this screen finishes it rather than creating new ones.
+  const [searchParams] = useSearchParams()
+  const finishingId = searchParams.get('experiment')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -91,6 +95,18 @@ export default function TeenExperimentPage() {
 
   // ── committed ──
   const [commitPending, setCommitPending] = useState(false)
+
+  // The pending list is the only patient-scoped way to read one experiment, and the home screen
+  // already loads it — so this is usually a cache hit rather than a second request.
+  const { data: pending } = useQuery({
+    queryKey: ['teen-pending', 'experiment-page'],
+    queryFn: async () => (await teenApiClient.get('/patient/experiments/pending')).data,
+    enabled: !!finishingId,
+  })
+  const finishing = ((pending ?? []) as any[]).find(e => e.id === finishingId) ?? null
+  const clinicianDate: Date | null = finishing?.scheduled_date
+    ? new Date(finishing.scheduled_date)
+    : null
 
   const { data: behaviorData } = useQuery({
     queryKey: ['teen-behavior', behaviorId],
@@ -124,14 +140,36 @@ export default function TeenExperimentPage() {
   // Each block contributes its own guard; removing a block means removing its
   // clause here, not restructuring. Schedule (day + bucket) is now required.
   const canLockIn =
-    selectedDates.length > 0 && !!bucket && !!fearText.trim() && !!confidence
+    (finishingId ? true : selectedDates.length > 0) && !!bucket && !!fearText.trim() && !!confidence
 
   const bucketHour = TIME_BUCKETS.find(b => b.key === bucket)?.hour ?? 12
 
   const handleCommit = async () => {
-    if (selectedDates.length === 0 || !bucket) return
+    if (!bucket) return
     setCommitPending(true)
     try {
+      // Finishing what the clinician started: the row and its day already exist, so this fills in
+      // the child's own answers and locks it in. Creating a second row here would leave the
+      // clinician's one sitting unfinished forever.
+      if (finishingId) {
+        const at = clinicianDate ? new Date(clinicianDate) : new Date()
+        at.setHours(bucketHour, 0, 0, 0)
+        await teenApiClient.put(`/patient/experiments/${finishingId}/before`, {
+          plan_description: behaviorData?.name || 'Experiment planned',
+          prediction: fearText,
+          bip_before: bip,
+          distress_thermometer_expected: effectiveDT,
+          confidence_level: confidence ?? 'medium',
+          scheduled_time_bucket: bucket,
+        })
+        await teenApiClient.post(`/patient/experiments/${finishingId}/commit`)
+        queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
+        queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
+        setStep('committed')
+        return
+      }
+
+      if (selectedDates.length === 0) return
       for (const dateIdx of sortedSelectedDates) {
         // Stamp the bucket's representative hour onto the chosen day so the
         // scheduled_date is a real committed moment (and a reminder anchor).
@@ -228,7 +266,29 @@ export default function TeenExperimentPage() {
               specific moment (a commitment) comes before the predictions.
               Independently removable, like each block below. */}
           <div>
-            <div style={{ ...teen.type.label, marginBottom: 9 }}>When will you do it?</div>
+            <div style={{ ...teen.type.label, marginBottom: 9 }}>
+              {finishingId ? 'When you agreed to do it' : 'When will you do it?'}
+            </div>
+            {/* The clinician set the day in session. The child still says what time of day —
+                "Tuesday" from the clinician, "after school" from them. */}
+            {finishingId ? (
+              <div
+                style={{
+                  display: 'inline-block',
+                  padding: '10px 14px',
+                  borderRadius: 14,
+                  background: teen.color.ink,
+                  color: '#fff',
+                  fontFamily: teen.font.sans,
+                  fontSize: 15,
+                  fontWeight: 700,
+                }}
+              >
+                {clinicianDate
+                  ? clinicianDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                  : 'No day set'}
+              </div>
+            ) : (
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
               {next7Days.map((d, i) => {
                 const isSelected = selectedDates.includes(i)
@@ -279,6 +339,7 @@ export default function TeenExperimentPage() {
                 )
               })}
             </div>
+            )}
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               {TIME_BUCKETS.map(b => {
                 const isSel = bucket === b.key
@@ -475,11 +536,13 @@ export default function TeenExperimentPage() {
             margin: '16px 0 0',
           }}
         >
-          {sortedSelectedDates.length === 1
-            ? next7Days[sortedSelectedDates[0]].toLocaleDateString('en-US', {
-                weekday: 'long',
-              })
-            : `${sortedSelectedDates.length} days`}
+          {finishingId
+            ? (clinicianDate
+                ? clinicianDate.toLocaleDateString('en-US', { weekday: 'long' })
+                : 'Locked in')
+            : sortedSelectedDates.length === 1
+              ? next7Days[sortedSelectedDates[0]].toLocaleDateString('en-US', { weekday: 'long' })
+              : `${sortedSelectedDates.length} days`}
           . You believe it {bip}%.
         </h2>
 
@@ -517,7 +580,7 @@ export default function TeenExperimentPage() {
               borderTop: `1px solid ${teen.color.line}`,
             }}
           >
-            {sortedSelectedDates.map(idx => (
+            {(finishingId ? [] : sortedSelectedDates).map(idx => (
               <span
                 key={idx}
                 style={{
@@ -534,6 +597,22 @@ export default function TeenExperimentPage() {
                 {bucket ? ` · ${TIME_BUCKETS.find(b => b.key === bucket)?.label}` : ''}
               </span>
             ))}
+            {finishingId && clinicianDate && (
+              <span
+                style={{
+                  fontFamily: teen.font.sans,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                  borderRadius: teen.radius.pill,
+                  background: teen.color.mintSoft,
+                  color: teen.color.teal,
+                }}
+              >
+                {clinicianDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {bucket ? ` · ${TIME_BUCKETS.find(b => b.key === bucket)?.label}` : ''}
+              </span>
+            )}
           </div>
         </div>
 

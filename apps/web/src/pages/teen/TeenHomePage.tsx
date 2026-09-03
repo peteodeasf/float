@@ -161,6 +161,14 @@ export default function TeenHomePage() {
   const comingUp = committedExps[0] ?? null // soonest — the hero
   const scheduledRest = committedExps.slice(1) // everything after it
 
+  // Exposures the clinician set up in session. They arrive as 'planned' — the row exists with the
+  // step and the day on it, but none of the child's own answers. Until 2026-09-01 the home fetched
+  // these and drew none of them, so a clinician planning an exposure produced something nobody
+  // ever saw. They are not on the schedule yet: they are waiting for the child to finish them.
+  const fromClinician = ((pendingExperiments ?? []) as any[])
+    .filter(e => e.status === 'planned' && activeBehaviorIds.has(e.avoidance_behavior_id))
+    .sort((a, b) => schedTime(a) - schedTime(b))
+
   const behaviorById: Record<string, TeenBehavior> = {}
   const situationNameByBehaviorId: Record<string, string> = {}
   for (const s of situations) {
@@ -186,7 +194,7 @@ export default function TeenHomePage() {
 
   const hasCommitted = committedExps.length > 0
   const hasLadder = !!suggestedBehavior
-  const isEmpty = activeSituations.length === 0 && !hasCommitted
+  const isEmpty = activeSituations.length === 0 && !hasCommitted && fromClinician.length === 0
 
   const dismissLadderHint = () => {
     if (patientId) localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
@@ -346,6 +354,44 @@ export default function TeenHomePage() {
                 </button>
               </div>
             </div>
+          )}
+
+          {/* Set up with the clinician, not finished. Above the schedule on purpose: it is the
+              thing waiting on the child, and everything below is already decided. */}
+          {fromClinician.length > 0 && (
+            <>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
+                From your clinician
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+                {fromClinician.map((exp: any) => (
+                  <button
+                    key={exp.id}
+                    className="teen-card"
+                    onClick={() =>
+                      navigate(`/teen/experiment/${exp.avoidance_behavior_id}?experiment=${exp.id}`)
+                    }
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      border: 0,
+                      cursor: 'pointer',
+                      padding: '20px 22px',
+                    }}
+                  >
+                    <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
+                      {expName(exp)}
+                    </h2>
+                    <div style={metaRow}>
+                      <span aria-hidden="true" style={metaDot} />
+                      {expWhen(exp) ? `${expWhen(exp)} · Tap to get ready` : 'Tap to get ready'}
+                      <span style={{ marginLeft: 'auto', color: teen.color.chevron }}>›</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Coming up — the soonest commitment; tap to open its exposure screen */}

@@ -174,8 +174,12 @@ sentences with scores. Nothing has to be converted.
 
 ## Order of work
 
-0. **A clinician-planned exposure reaches the child.** Small, standalone, and broken today
-   regardless of everything else here.
+0. **A clinician-planned exposure reaches the child.** **BUILT 2026-09-01.** The child's home has a
+   "From your clinician" section above the schedule; tapping one opens the setup screen with the
+   rung and the day already set, and finishing it converts that row rather than creating a second.
+   The clinician sets the day, the child picks the time of day and answers their own four
+   questions. Frontend only — the child's own flow was already create → before → commit, so a
+   clinician-planned row just skips the create.
 1. **Clean up `behavior_type`.** Small, and everything below reads it.
 2. **The child's exposure setup** — pick a rung, drop the "without" line, all-or-nothing
    availability, the recommended rung marked. Self-contained, and it is the part a real child would
