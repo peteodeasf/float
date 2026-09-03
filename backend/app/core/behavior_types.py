@@ -41,8 +41,18 @@ NOT_A_BEHAVIOUR = {
     "rumination",
 }
 
-#: What the ladder shows. An observation is not a step anyone can climb.
-LADDER_TYPES = {SCENARIO, AVOIDANCE, SAFETY, RITUAL}
+#: What the ladder shows.
+#:
+#: A rung is a smaller version of the situation, with its own fear rating — Peter, 2026-09-01, from
+#: Dr. Walker's own ladders. Nothing else belongs on it. A safety behaviour is a thing to stop
+#: before the exposures, and it lives on the situation; an avoidance is what the situation IS; an
+#: observation was never a behaviour at all.
+#:
+#: This empties ladders built under the old model, where a rung was a behaviour the child gave up.
+#: Peter, 2026-09-01: "i really don't care about historical data. i'd rather things be clean than
+#: confusing." Those rows are not deleted — they still show against their situation in the
+#: clinician's Situations view.
+LADDER_TYPES = {SCENARIO}
 
 
 def normalise(value: str | None) -> str:

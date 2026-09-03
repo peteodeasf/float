@@ -198,18 +198,30 @@ sentences with scores. Nothing has to be converted.
    nothing) and `recommended_rung_id`. The clinician gets an On/Off switch and a "Set next" per rung
    on the flat ladder.
 
+   **The ladder is sub-situations only.** Peter, 2026-09-01: *"i really don't care about historical
+   data. i'd rather things be clean than confusing."* So `LADDER_TYPES` is `{scenario}` — a safety
+   behaviour is a thing to stop before the exposures, an avoidance is what the situation IS, and
+   neither is a step to climb. **This empties every ladder built under the old model**: 32 of the
+   136 rows are safety, 94 are avoidance, and exactly one is a scenario. Nothing is deleted, and
+   the clinician still sees those rows against their situation in the Situations view.
+
    `situations` is still returned because the progress screens derive from it; it goes when they
-   move over. A safety behaviour is still a rung for now — excluding it would empty almost every
-   existing ladder, since 32 of 136 rows are safety and exactly one is a scenario. That waits for
-   step 4.
+   move over.
 
-   **Open, found while building:** turning the ladder off also hides exposures the child has
-   already committed to, and they get the "you're just getting started" empty state. That is what
-   the app already did per-situation, now at ladder scope — but a child who agreed to do something
-   on Friday finds it gone with no explanation. Same shape as the closing screen. Peter's call.
+   **Turning the ladder off now says so.** *"Your steps are turned off right now… Anything you had
+   planned is on hold, not gone. Message them if you're not sure why."* The old empty state — "you're
+   just getting started" — was a lie to a child who had agreed to do something on Friday.
 
-   **Also open:** nothing stops a clinician marking a finished step as the next one. The child's
-   screen no longer shows the suggestion on a finished step, so it just does nothing.
+   **And the switch is the only gate on committed work.** It used to be per-situation membership,
+   which broke the moment a rung stopped being a behaviour: work the child had already committed to
+   vanished because its step was not on the new-model ladder. What they agreed to do does not depend
+   on how its step is typed.
+
+   **Open:** nothing stops a clinician marking a finished step as the next one. The child's screen
+   does not show the suggestion on a finished step, so it silently does nothing.
+
+   **Also open:** the Situations view still reads "What to face, and what to resist", which is
+   old-model wording. Steps 4 and 7.
 3. **Editing a rung in the conversation** — rename, rescore, delete, move. The thing most missing.
 4. **"What's a smaller version of this?"** — the new question, replacing behaviour capture as the
    way a rung is made. Safety behaviours still get captured, onto the situation.

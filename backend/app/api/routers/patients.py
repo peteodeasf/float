@@ -37,7 +37,7 @@ from app.models.session_note import SessionNote
 from app.models.message import Message
 from app.models.experiment import Experiment
 from app.services.patient_phase import LABELS, Phase, phase_of
-from app.core.behavior_types import OBSERVATION
+from app.core.behavior_types import LADDER_TYPES
 from app.services.patient_access_service import (
     accessible_patient_ids,
     is_institution_admin,
@@ -1422,16 +1422,13 @@ async def get_my_ladder(
     # behaviour inside it. `situations` above is kept because the progress screens still derive
     # from it; it goes when they move over.
     #
-    # An observation is not a rung — see app/core/behavior_types.py.
-    #
-    # A safety behaviour is still shown here, and under the new model it should not be: what the
-    # child faces is a version of the situation, not a thing they give up. Excluding it now would
-    # empty almost every existing ladder — 32 of the 136 rows are safety and exactly one is a
-    # scenario — so it waits for step 4, which is what makes rungs out of sub-situations.
+    # A rung is a smaller version of the situation and nothing else — see
+    # app/core/behavior_types.py. A safety behaviour is a thing to stop before the exposures, not a
+    # step to climb, and an observation was never a behaviour at all.
     flat: list[dict] = []
     for group in situations:
         for step in group["behaviors"]:
-            if step["behavior_type"] == OBSERVATION:
+            if step["behavior_type"] not in LADDER_TYPES:
                 continue
             flat.append({
                 **step,

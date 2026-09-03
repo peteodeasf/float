@@ -108,8 +108,10 @@ export function FlatLadder({
               activate or deactivate a ladder, but it's all or nothing." */}
           <button
             onClick={() => activeMut.mutate(!ladderActive)}
-            disabled={activeMut.isPending || ordered.length === 0}
-            title={ordered.length === 0 ? 'Add a rung first' : undefined}
+            // Only turning it ON needs rungs. An empty ladder that is already on still has to be
+            // switchable off, or a clinician who clears it is stuck.
+            disabled={activeMut.isPending || (!ladderActive && ordered.length === 0)}
+            title={!ladderActive && ordered.length === 0 ? 'Add a rung first' : undefined}
             className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               fontSize: '12px', fontWeight: 700, borderRadius: '999px', padding: '5px 12px',

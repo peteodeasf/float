@@ -70,7 +70,12 @@ def test_an_unknown_type_is_refused_rather_than_quietly_hidden():
 # ── What the ladder returns ──────────────────────────────────────────────────
 
 
-async def test_an_observation_is_not_a_rung(db):
+async def test_only_a_version_of_the_situation_is_a_rung(db):
+    """Peter, 2026-09-01: a rung is a smaller version of the situation and nothing else.
+
+    A safety behaviour is a thing to stop before the exposures — it belongs to the situation, not
+    to the ladder. An observation was never a behaviour. An avoidance is what the situation IS.
+    """
     org = await make_org(db)
     plan = await make_plan(db, org)
     situation = await make_situation(db, plan, name="School drop off")
@@ -83,14 +88,14 @@ async def test_an_observation_is_not_a_rung(db):
                           treatment_plan_id=plan.id, name="Ask mum to wait",
                           behavior_type="safety"),
         AvoidanceBehavior(trigger_situation_id=situation.id, organization_id=org.id,
+                          treatment_plan_id=plan.id, name="Avoids school drop off",
+                          behavior_type="avoidance"),
+        AvoidanceBehavior(trigger_situation_id=situation.id, organization_id=org.id,
                           treatment_plan_id=plan.id, name="Complained of stomach pain",
                           behavior_type="observation"),
     ])
     await db.flush()
 
-    rungs = await get_rungs_for_plan(db, plan.id, org.id)
-    names = {r.name for r in rungs}
+    names = {r.name for r in await get_rungs_for_plan(db, plan.id, org.id)}
 
-    assert "Walk in by myself" in names
-    assert "Ask mum to wait" in names
-    assert "Complained of stomach pain" not in names
+    assert names == {"Walk in by myself"}

@@ -138,17 +138,13 @@ export default function TeenHomePage() {
   const now = Date.now()
   const schedTime = (e: any) =>
     e.scheduled_date ? new Date(e.scheduled_date).getTime() : 0
-  // A committed experiment only counts if its situation is still active. When
-  // the clinician deactivates a situation, its experiments drop off the home —
-  // deactivate all of them and the teen sees the empty state.
-  const activeBehaviorIds = new Set<string>(rungs.map(r => r.id))
+  // The switch is the only gate. It used to be per-situation membership, which broke the moment a
+  // rung stopped being a behaviour: work the child had already committed to vanished because its
+  // step was not on the new-model ladder. What they agreed to do does not depend on how its step
+  // is typed — it depends on whether their clinician has this switched on.
+  const ladderOn = ladderData?.plan?.ladder_active !== false
   const committedExps = ((pendingExperiments ?? []) as any[])
-    .filter(
-      e =>
-        e.status === 'committed' &&
-        e.scheduled_date &&
-        activeBehaviorIds.has(e.avoidance_behavior_id)
-    )
+    .filter(e => ladderOn && e.status === 'committed' && e.scheduled_date)
     .sort((a, b) => schedTime(a) - schedTime(b))
   const comingUp = committedExps[0] ?? null // soonest — the hero
   const scheduledRest = committedExps.slice(1) // everything after it
@@ -158,7 +154,7 @@ export default function TeenHomePage() {
   // these and drew none of them, so a clinician planning an exposure produced something nobody
   // ever saw. They are not on the schedule yet: they are waiting for the child to finish them.
   const fromClinician = ((pendingExperiments ?? []) as any[])
-    .filter(e => e.status === 'planned' && activeBehaviorIds.has(e.avoidance_behavior_id))
+    .filter(e => ladderOn && e.status === 'planned')
     .sort((a, b) => schedTime(a) - schedTime(b))
 
   const behaviorById: Record<string, TeenBehavior> = {}
@@ -187,6 +183,14 @@ export default function TeenHomePage() {
   const hasCommitted = committedExps.length > 0
   const hasLadder = !!suggestedBehavior
   const isEmpty = rungs.length === 0 && !hasCommitted && fromClinician.length === 0
+
+  // Turned off by the clinician, as opposed to never set up. Turning the ladder off also hides
+  // anything the child had already committed to, so "you're just getting started" would be a lie
+  // to someone who agreed to do something on Friday. Peter, 2026-09-01: say it has been turned off
+  // and to talk to their clinician.
+  //
+  // `situations` is not gated by the switch, so it still says whether a ladder was ever built.
+  const ladderTurnedOff = !ladderOn && situations.length > 0
 
   const dismissLadderHint = () => {
     if (patientId) localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
@@ -326,15 +330,19 @@ export default function TeenHomePage() {
           {/* No active experiments at all */}
           {isEmpty && (
             <div style={{ marginTop: 30 }}>
-              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Ready when you are</div>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
+                {ladderTurnedOff ? 'Paused for now' : 'Ready when you are'}
+              </div>
               <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
                 <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
-                  You're just getting started.
+                  {ladderTurnedOff
+                    ? 'Your steps are turned off right now.'
+                    : "You're just getting started."}
                 </h2>
                 <p style={{ ...teen.type.body, margin: '12px 0 0' }}>
-                  You and your clinician will set up your first steps together — small, doable
-                  challenges that build real confidence. Each one you try makes the next a little
-                  easier. You've got this.
+                  {ladderTurnedOff
+                    ? "Your clinician has switched this off for the moment, so there is nothing to do here. Anything you had planned is on hold, not gone. Message them if you're not sure why."
+                    : "You and your clinician will set up your first steps together — small, doable challenges that build real confidence. Each one you try makes the next a little easier. You've got this."}
                 </p>
               </div>
               <div style={{ marginTop: 20 }}>
