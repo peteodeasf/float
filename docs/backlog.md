@@ -203,6 +203,7 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **"Run AI review" has never done anything** | `run_ladder_review` reads `ladder_rungs`, which has zero rows in production. Decide what it should read now rungs are behaviour rows. | M |
 | **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
 | **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
+| **The exposure ladder is a list of sub-situations** | **Planned 2026-09-01, not started** — [`exposure-ladder-sub-situations.md`](plans/exposure-ladder-sub-situations.md). A rung stops being a safety behaviour the child gives up and becomes a smaller version of the situation with its own fear rating. Safety behaviours attach to the situation instead. The conversation becomes the Plan tab's primary view; the current builder stays one switch away. Changes the child's exposure setup too, and simplifies it. | L |
 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
 
 ## Action plans — hidden, and the question is whether they are worth having
