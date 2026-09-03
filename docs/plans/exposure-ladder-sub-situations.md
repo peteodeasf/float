@@ -180,7 +180,16 @@ sentences with scores. Nothing has to be converted.
    The clinician sets the day, the child picks the time of day and answers their own four
    questions. Frontend only — the child's own flow was already create → before → commit, so a
    clinician-planned row just skips the create.
-1. **Clean up `behavior_type`.** Small, and everything below reads it.
+1. **Clean up `behavior_type`.** **BUILT 2026-09-01.** Production held 11 values across 136 rows.
+   Three were spellings of "safety". Six were not behaviours at all — nine rows out of monitoring
+   extraction ("Complained of stomach pain", "Expressed fear of peer ridicule") that were appearing
+   as rungs on a clinician's ladder. Those become `observation` and the ladder stops returning them;
+   nothing is deleted. New writes are checked against the canonical five and an unknown value is
+   refused rather than quietly hidden. Canonical set in `backend/app/core/behavior_types.py`.
+
+   Worth knowing: only **one** place in the whole codebase branches on this column — a coloured
+   three-letter chip in the situations pane. It now also decides whether a row is on the ladder,
+   which is the first thing it has ever gated.
 2. **The child's exposure setup** — pick a rung, drop the "without" line, all-or-nothing
    availability, the recommended rung marked. Self-contained, and it is the part a real child would
    hit first.

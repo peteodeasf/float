@@ -8,6 +8,7 @@ from app.models.ladder import LadderRung
 from app.models.experiment import Experiment
 from app.schemas.avoidance_behavior import AvoidanceBehaviorCreate, AvoidanceBehaviorUpdate
 from app.services.library_service import upsert_behavior_library
+from app.core.behavior_types import LADDER_TYPES, coerce_for_write
 
 
 async def get_behaviors_for_trigger(
@@ -51,7 +52,7 @@ async def create_behavior(
         organization_id=organization_id,
         name=data.name,
         description=data.description,
-        behavior_type=data.behavior_type,
+        behavior_type=coerce_for_write(data.behavior_type),
         distress_thermometer_when_refraining=data.distress_thermometer_when_refraining,
         behavior_library_id=library_id,
         parent_behavior_id=data.parent_behavior_id,
@@ -84,7 +85,7 @@ async def update_behavior(
     if data.description is not None:
         behavior.description = data.description
     if data.behavior_type is not None:
-        behavior.behavior_type = data.behavior_type
+        behavior.behavior_type = coerce_for_write(data.behavior_type)
     if data.distress_thermometer_when_refraining is not None:
         behavior.distress_thermometer_when_refraining = data.distress_thermometer_when_refraining
     # Regrouping. None is meaningful (ungroup), so this keys off "was the field sent at all".
@@ -186,6 +187,9 @@ async def get_rungs_for_plan(
     result = await db.execute(
         select(AvoidanceBehavior)
         .where(
+            # An observation is not a step anyone can climb. Nine rows arrived in this table from
+            # monitoring extraction — "Complained of stomach pain" — and were showing on ladders.
+            AvoidanceBehavior.behavior_type.in_(LADDER_TYPES),
             AvoidanceBehavior.organization_id == organization_id,
             or_(
                 AvoidanceBehavior.treatment_plan_id == plan_id,

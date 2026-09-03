@@ -16,6 +16,12 @@ export const SUB_BEHAVIOR_ADD_ENABLED = false
 // See docs/plans/ladder-rung-shape.md.
 export const BEHAVIOR_TYPE_SCENARIO = 'scenario'
 
+// Not a behaviour at all — a symptom, a thought, a distress response. Nine such rows arrived in
+// this table from monitoring extraction ("Complained of stomach pain") and were showing as rungs.
+// The backend now keeps them off the ladder; this is here so the chip can label one if it is ever
+// reached another way. See backend/app/core/behavior_types.py.
+export const BEHAVIOR_TYPE_OBSERVATION = 'observation'
+
 // point so an out-of-range value (e.g. a typed "16", or an AI-extracted number)
 // can never be stored. clampDt normalizes a value for sending to the API; DT_MIN/
 // DT_MAX back the number inputs' live clamping.

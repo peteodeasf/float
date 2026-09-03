@@ -389,7 +389,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 {/* Rung card */}
                 <div className="group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '11px 14px' }}>
                   <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${b.behavior_type === BEHAVIOR_TYPE_SCENARIO ? 'bg-teal-50 text-teal-700' : b.behavior_type === 'safety' ? 'bg-amber-50 text-amber-600' : b.behavior_type === 'ritual' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'}`} style={{ flexShrink: 0 }}>
-                    {b.behavior_type === BEHAVIOR_TYPE_SCENARIO ? 'SIT' : b.behavior_type.slice(0, 3)}
+                    {b.behavior_type === BEHAVIOR_TYPE_SCENARIO ? 'SIT' : (b.behavior_type ?? '').slice(0, 3).toUpperCase()}
                   </span>
                   <span className="text-sm text-slate-700 truncate" style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>{b.name}</span>
                   {scheduledByBehavior.has(b.id) && (

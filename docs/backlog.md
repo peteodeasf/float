@@ -365,9 +365,10 @@ already there.
 
 ## Smaller, already agreed
 
-- **`behavior_type` holds 11 distinct values across 136 rows** — `safety` / `safety_behavior` /
-  `safety_seeking`, `cognitive` / `anxious_cognition`. Anything reading a child's rungs reads that
-  mess, including the ladder-generation feature. `S`
+- **~~`behavior_type` holds 11 distinct values across 136 rows~~ — DONE 2026-09-01.** Folded onto
+  five canonical values. The nine rows that were never behaviours — monitoring observations like
+  "Complained of stomach pain" — are typed `observation` and no longer appear on any ladder. See
+  [`exposure-ladder-sub-situations.md`](plans/exposure-ladder-sub-situations.md).
 - **A stale migration reference**: `2408a7d29380` names a `down_revision` no file defines. It is why
   a hand-picked revision id silently created a cycle on 2026-08-28. `S`
 - **`.claude/settings.local.json` has 279 allow entries** — worth pruning to patterns. `S`
