@@ -208,17 +208,19 @@ export function SessionProgress({
   rungCount,
   onSeeLadder,
 }: {
-  stage: 'list' | 'rate' | 'build' | 'ladder'
+  stage: 'list' | 'rate' | 'build'
   situationIndex?: number
   situationCount?: number
   rungCount?: number
   onSeeLadder?: () => void
 }) {
+  // Three stages, not four. The ladder is where the conversation ENDS UP — the Plan tab's own
+  // view — not a step inside it, and showing it here as a stage nobody ever lands on was part of
+  // what made two ladder views read as one confusing thing.
   const stages: { key: typeof stage; label: string }[] = [
     { key: 'list', label: 'Situations' },
     { key: 'rate', label: 'Scores' },
     { key: 'build', label: 'Steps' },
-    { key: 'ladder', label: 'Ladder' },
   ]
   const current = stages.findIndex(s => s.key === stage)
 
@@ -258,7 +260,7 @@ export function SessionProgress({
       )}
 
       {/* The ladder so far, without losing your place. */}
-      {onSeeLadder && stage !== 'ladder' && (
+      {onSeeLadder && (
         <button onClick={onSeeLadder} style={{ ...quietLink, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
           {rungCount ? `Ladder so far (${rungCount}) ›` : 'Ladder so far ›'}
         </button>

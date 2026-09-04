@@ -29,7 +29,7 @@
  * conversation, and was the thing that made the previous version feel like a wall.
  */
 import { useState, useEffect, useRef } from 'react'
-import { BEHAVIOR_TYPE_SCENARIO, getNextSchoolDayISO } from './patient/shared'
+import { BEHAVIOR_TYPE_SCENARIO } from './patient/shared'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -37,9 +37,6 @@ import {
   getTriggers,
   getBehaviors,
   getPlanRungs,
-  updatePlanRung,
-  deletePlanRung,
-  planExperimentForBehavior,
   createTrigger,
   updateTrigger,
   createBehavior,
@@ -47,14 +44,16 @@ import {
   deleteBehavior,
   searchSituationLibrary,
   type TriggerSituation,
-  type AvoidanceBehavior,
 } from '../../api/treatment'
 import {
   clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink,
   Chrome, FearScale, DTBadge, Context, Exchange, Ask, SayIt, SessionProgress,
 } from './sessionKit'
 
-type Phase = 'intro' | 'list' | 'rate' | 'situation' | 'review'
+// No 'review' phase. It showed a second ladder, and there is only one — the Plan tab's. Peter,
+// 2026-09-01: "we now have effectively what looks like 2 'ladder' views." Finishing the
+// conversation hands the pair back to it.
+type Phase = 'intro' | 'list' | 'rate' | 'situation'
 
 /** The full-screen route. A thin wrapper — the interview itself is the component below, so the
  *  Plan tab can render exactly the same thing without the clinician chrome around it. */
@@ -146,20 +145,20 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
   const startWalk = (ids: string[]) => {
     setWalkIds(ids)
     if (ids.length > 0) openSituation(ids[0])
-    else setPhase('review')
+    else onExit()
   }
   const nextSituation = () => {
     const i = walkIds.indexOf(currentTriggerId ?? '')
     const next = i >= 0 ? walkIds[i + 1] : undefined
     if (next) openSituation(next)
-    else setPhase('review')
+    else onExit()
   }
 
   // Leaving the list: rate whatever is unrated, then walk exactly those. With nothing unrated
   // there is no new work, so the ladder is the useful place to land.
   const leaveList = () => {
     if (unrated.length > 0) { setWalkIds(unrated.map(t => t.id)); setRateIdx(0); setPhase('rate') }
-    else setPhase('review')
+    else onExit()
   }
 
   // Full screen for when the child is looking; plain for the Plan tab, which brings its own
@@ -189,7 +188,6 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
   const stage =
     phase === 'rate' ? 'rate' as const
     : phase === 'situation' ? 'build' as const
-    : phase === 'review' ? 'ladder' as const
     : 'list' as const
 
   return (
@@ -200,7 +198,7 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
           situationIndex={currentTriggerId ? walkIds.indexOf(currentTriggerId) : undefined}
           situationCount={walkIds.length}
           rungCount={rungCount}
-          onSeeLadder={() => setPhase('review')}
+          onSeeLadder={onExit}
         />
       )}
 
@@ -235,10 +233,6 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
           onFinished={nextSituation}
           onArrow={() => goToArrow(`/patients/${patientId}/arrow?situation=${currentTrigger.id}`)}
         />
-      )}
-
-      {phase === 'review' && (
-        <ReviewPhase planId={plan.id} triggers={sortedTriggers} onBack={() => setPhase('list')} onOpenBuilder={exit} />
       )}
     </Shell>
   )
@@ -649,224 +643,6 @@ export function SituationPhase({ trigger, isLast, onSeeAll, onFinished, onArrow 
         </button>
         <button onClick={onSeeAll} style={{ ...quietLink, marginLeft: 'auto' }}>← All situations</button>
       </div>
-    </div>
-  )
-}
-
-// ── Phase: ladder review — the last beat of the conversation ──
-// The ladder is the RUNGS, flat, easiest at the top (owner, 2026-08-23): you start at the top with
-// the easiest thing. The colour-graded rail says the same thing without a sentence about ordering.
-//
-// It used to list the SITUATIONS and expand each to the behaviours under it. That was the old
-// model, where a rung was a behaviour given up. A rung is a smaller version of the situation now,
-// so the ladder is those, with the situation as a quiet label.
-export function ReviewPhase({ planId, triggers, onBack, onOpenBuilder }: { planId: string; triggers: TriggerSituation[]; onBack: () => void; onOpenBuilder: () => void }) {
-  const { data: allRungs, isLoading } = useQuery({
-    queryKey: ['plan-rungs', planId],
-    queryFn: () => getPlanRungs(planId),
-  })
-  const rungs = [...(allRungs ?? [])].sort(
-    (a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99)
-  )
-
-  return (
-    <div style={screenSurface}>
-      <div style={bigQ}>Here&rsquo;s your ladder</div>
-      <p style={lead}>Easiest at the top. We&rsquo;ll use this for planning and doing your exposures.</p>
-
-      <div style={{ position: 'relative', paddingLeft: 22, marginTop: 18 }}>
-        {rungs.length > 0 && (
-          <div style={{ position: 'absolute', left: 6, top: 14, bottom: 14, width: 3, borderRadius: 2, background: 'linear-gradient(#4bb98a, #f2a33f 55%, #ef6b53)' }} />
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {isLoading && <div style={{ fontSize: 13, color: '#94a3b8' }}>Loading…</div>}
-          {!isLoading && rungs.map(r => (
-            <ReviewRung key={r.id} planId={planId} rung={r} triggers={triggers} />
-          ))}
-          {!isLoading && rungs.length === 0 && (
-            <div style={{ fontSize: 13, color: '#94a3b8' }}>
-              Nothing on the ladder yet — a rung is a smaller version of a situation.
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-        <button onClick={onBack} style={ghostBtn}>← Back to situations</button>
-        <button onClick={onOpenBuilder} style={primaryBtn}>Open the full builder →</button>
-      </div>
-    </div>
-  )
-}
-
-// One rung on the review ladder, editable in place.
-//
-// This is the moment the pair look at what they built, and until now nothing here could be
-// changed: only a score could be reopened, so a step the child said one way and then said better
-// stayed wrong unless the clinician left the session for the builder. Rename, rescore, regroup and
-// remove all happen without leaving the conversation.
-function ReviewRung({
-  planId,
-  rung,
-  triggers,
-}: {
-  planId: string
-  rung: AvoidanceBehavior
-  triggers: TriggerSituation[]
-}) {
-  const qc = useQueryClient()
-  const [editingName, setEditingName] = useState(false)
-  const [draft, setDraft] = useState(rung.name)
-  const [scoring, setScoring] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
-  const [planning, setPlanning] = useState(false)
-  const [planDate, setPlanDate] = useState(getNextSchoolDayISO())
-  const [planned, setPlanned] = useState(false)
-
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
-    qc.invalidateQueries({ queryKey: ['behaviors'] })
-  }
-  const saveMut = useMutation({
-    mutationFn: (data: Parameters<typeof updatePlanRung>[2]) => updatePlanRung(planId, rung.id, data),
-    onSuccess: () => { invalidate(); setEditingName(false); setScoring(false) },
-  })
-  const removeMut = useMutation({
-    mutationFn: () => deletePlanRung(planId, rung.id),
-    onSuccess: invalidate,
-  })
-
-  // Agree the exposure here, with the child in the room. The clinician sets which rung and which
-  // day; the child answers their own questions at home — what they think will happen, how anxious
-  // they expect to be, how ready they feel — and it becomes committed. See
-  // docs/plans/exposure-ladder-sub-situations.md, "started in session, finished at home".
-  const planMut = useMutation({
-    mutationFn: () => planExperimentForBehavior(rung.id, {
-      confidence_level: 'medium',
-      plan_description: rung.name,
-      scheduled_date: new Date(planDate + 'T12:00:00').toISOString(),
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['experiments'] })
-      setPlanning(false)
-      setPlanned(true)
-    },
-  })
-
-  const dt = dtOf(rung.distress_thermometer_when_refraining)
-
-  const rename = () => {
-    const name = draft.trim()
-    if (!name || name === rung.name) { setEditingName(false); setDraft(rung.name); return }
-    saveMut.mutate({ name })
-  }
-
-  if (planning) {
-    return (
-      <div style={{ ...card, padding: '12px 14px', boxShadow: 'none' }}>
-        <div style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 700 }}>
-          When will you do &ldquo;{rung.name}&rdquo;?
-        </div>
-        <p style={{ fontSize: 12, color: '#6b7a79', margin: '4px 0 10px' }}>
-          They&rsquo;ll fill in what they think will happen when they open their app.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)}
-            style={{ fontSize: 13.5, padding: '7px 10px', border: '1px solid #cfe3de', borderRadius: 8, background: '#fff' }} />
-          <button onClick={() => planMut.mutate()} disabled={planMut.isPending}
-            style={{ ...primaryBtn, marginTop: 0, padding: '8px 16px', fontSize: 13.5 }}>
-            {planMut.isPending ? 'Saving…' : 'Agree it'}
-          </button>
-          <button onClick={() => setPlanning(false)} style={quietLink}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
-
-  if (scoring) {
-    return (
-      <div style={{ ...card, padding: '12px 14px', boxShadow: 'none' }}>
-        <div style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 700, marginBottom: 10 }}>
-          How hard would &ldquo;{rung.name}&rdquo; be?
-        </div>
-        <FearScale
-          value={dt}
-          onPick={n => saveMut.mutate({ distress_thermometer_when_refraining: clampDt(n) })}
-        />
-        <button onClick={() => setScoring(false)} style={{ ...quietLink, marginTop: 12 }}>Cancel</button>
-      </div>
-    )
-  }
-
-  return (
-    <div style={{ ...card, padding: '12px 14px', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 11 }}>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        {editingName ? (
-          <input
-            value={draft}
-            autoFocus
-            onChange={e => setDraft(e.target.value)}
-            onBlur={rename}
-            onKeyDown={e => {
-              if (e.key === 'Enter') rename()
-              if (e.key === 'Escape') { setDraft(rung.name); setEditingName(false) }
-            }}
-            style={{ width: '100%', fontSize: 14.5, fontWeight: 700, color: '#1e293b', padding: '4px 6px', border: '1px solid #cfe3de', borderRadius: 7, background: '#fff' }}
-          />
-        ) : (
-          <button
-            onClick={() => { setDraft(rung.name); setEditingName(true) }}
-            title="Change the wording"
-            style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14.5, color: '#1e293b', fontWeight: 700 }}
-          >
-            {rung.name}
-          </button>
-        )}
-        {/* Which situation it belongs under. Blank is allowed — a rung can be written before it is
-            grouped, and the ladder does not require one. */}
-        <select
-          value={rung.trigger_situation_id ?? ''}
-          onChange={e => saveMut.mutate({ trigger_situation_id: e.target.value || null })}
-          title="Which situation this belongs to"
-          style={{ marginTop: 3, fontSize: 12, color: '#6b7a79', background: 'none', border: 0, padding: 0, cursor: 'pointer', maxWidth: '100%' }}
-        >
-          <option value="">Not grouped</option>
-          {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-      </span>
-
-      <button onClick={() => setScoring(true)} title="Change the score" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }}>
-        {dt != null
-          ? <DTBadge v={dt} size={28} />
-          : <span style={{ fontSize: 11, fontWeight: 700, color: '#c0ccca' }}>not scored</span>}
-      </button>
-
-      {/* Agreeing it now is the natural end of a session; the child finishes it at home. */}
-      {planned ? (
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: '#3f8a78', flexShrink: 0, whiteSpace: 'nowrap' }}>
-          Planned
-        </span>
-      ) : (
-        <button onClick={() => setPlanning(v => !v)} title="Agree to do this one"
-          style={{ fontSize: 11.5, fontWeight: 700, color: '#3f8a78', background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
-          Plan it
-        </button>
-      )}
-
-      {confirmRemove ? (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <button onClick={() => removeMut.mutate()} disabled={removeMut.isPending}
-            style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: '#dc2626', border: 0, borderRadius: 6, padding: '4px 9px', cursor: 'pointer' }}>
-            Remove
-          </button>
-          <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
-        </span>
-      ) : (
-        <button onClick={() => setConfirmRemove(true)} title="Take this off the ladder"
-          style={{ fontSize: 16, lineHeight: 1, color: '#c0ccca', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0 }}>
-          ×
-        </button>
-      )}
     </div>
   )
 }

@@ -265,6 +265,26 @@ sentences with scores. Nothing has to be converted.
    from. The separate button on the Plan tab header is gone: the arrow belongs to a situation, and
    the situation is where you are when you decide you want it.
 
+## Reshaped after Peter tested it, 2026-09-01
+
+> *"it's so confusing as a ui."*
+
+Three tabs — Conversation, Ladder, Situations — put two views of the same ladder side by side and a
+builder nobody wanted behind a third. What it is now:
+
+- **The Plan tab IS the ladder.** No tabs. One list, easiest first.
+- **The conversation hangs off it**, opened with **Build it with them** and closed with **← Back to
+  the ladder**. Not a peer view that is always on screen.
+- **The conversation has no ladder of its own.** Its review screen is gone; finishing hands the
+  pair back to the one ladder. The orientation strip is three stages now — Situations, Scores,
+  Steps — because the ladder is where the conversation ends up, not a step inside it.
+- **Everything the review ladder could do, the ladder does**: rename in place, rescore, regroup,
+  remove, mark as next, and **Plan it**.
+- **The two-pane Situations builder is hidden.** `false &&` on its markup rather than deleted — the
+  arrow, the tags and per-situation editing live there and some of it has no replacement yet.
+- **Full screen** moved out of the tab header and onto the conversation, which is the only thing it
+  applies to.
+
 **All eight built 2026-09-01.** 0 through 6 each stood alone; 7 was the rearrangement and came
 after the rest were good.
 

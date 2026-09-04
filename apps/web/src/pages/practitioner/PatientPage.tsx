@@ -532,7 +532,10 @@ export default function PatientPage() {
   const [deletingTriggerId, setDeletingTriggerId] = useState<string | null>(null)
   // The conversation is what you land on (Peter, 2026-09-01). Ladder and Situations are the
   // technical view, one switch away — kept, not hidden.
-  const [planView, setPlanView] = useState<'conversation' | 'ladder' | 'situations'>('conversation')
+  // One view — the ladder. The conversation is a setup and edit flow that hangs off it, not a
+  // second tab showing the same thing (Peter, 2026-09-01). The two-pane Situations builder is
+  // hidden: its code is still below and rendered by nothing.
+  const [planView, setPlanView] = useState<'ladder' | 'conversation'>('ladder')
   const [deleteTriggerError, setDeleteTriggerError] = useState<string | null>(null)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameVal, setNicknameVal] = useState('')
@@ -1798,57 +1801,53 @@ export default function PatientPage() {
           {/* No separate Downward arrow button. It belongs to a situation, and it is reachable
               from the situation inside the conversation — which is where you are when you decide
               you want it. Peter, 2026-09-01: it folds in rather than being a second button. */}
-          {/* Same interview, no clinician chrome — for when the child is looking at the screen. */}
-          <button onClick={() => navigate(`/patients/${patientId}/session`)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '999px', padding: '7px 14px', cursor: 'pointer' }}>
-            ⛶ Full screen
-          </button>
+          {/* Nothing here. Full screen belongs to the conversation and lives with it — on the
+              ladder it would offer to blow up a screen you are not looking at. */}
         </div>
       </div>
 
-      {/* Two ways in. The LADDER is the work — one flat list, easiest first. SITUATIONS is the
-          grouping behind it: where the downward arrow and the tags live. */}
-      <div style={{ display: 'flex', gap: '2px', borderTop: '1px solid var(--float-border)', padding: '10px 20px 0' }}>
-        {([
-          { id: 'conversation', label: 'Conversation' },
-          { id: 'ladder', label: 'Ladder' },
-          { id: 'situations', label: 'Situations' },
-        ] as const).map(v => {
-          const cur = planView === v.id
-          return (
-            <button key={v.id} onClick={() => setPlanView(v.id)}
-              className="bg-transparent border-none cursor-pointer"
-              style={{ padding: '7px 14px', fontSize: '13px', fontWeight: cur ? 700 : 500, color: cur ? '#1e293b' : '#94a3b8', borderBottom: cur ? '2px solid #135450' : '2px solid transparent' }}>
-              {v.label}
+      {/* The interview, inline. The same component the full-screen route renders, so the Full
+          screen button is a change of presentation rather than a different screen. It hands back
+          to the ladder when it is done. */}
+      {planView === 'conversation' ? (
+        <div style={{ padding: '4px 20px 16px', borderTop: '1px solid var(--float-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '4px 0 8px' }}>
+            <button
+              onClick={() => setPlanView('ladder')}
+              className="text-xs font-medium bg-transparent border-none cursor-pointer"
+              style={{ color: '#64748b' }}
+            >
+              ← Back to the ladder
             </button>
-          )
-        })}
-      </div>
-
-      {/* The interview, inline. The same component the full-screen route renders — the button
-          below is a change of presentation, not a different screen, so nothing is lost switching
-          when the child comes to look. */}
-      {planView === 'conversation' && (
-        <div style={{ padding: '4px 20px 16px' }}>
+            {/* Same interview, no clinician chrome — for when the child is looking at the screen. */}
+            <button onClick={() => navigate(`/patients/${patientId}/session`)}
+              className="cursor-pointer"
+              style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>
+              ⛶ Full screen
+            </button>
+          </div>
           <SessionInterview
             patientId={patientId!}
             embedded
             onExit={() => setPlanView('ladder')}
           />
         </div>
-      )}
-
-      {planView === 'ladder' && (
+      ) : (
         <FlatLadder
           planId={plan.id}
           patientId={patientId!}
           triggers={triggers ?? []}
           ladderActive={!!plan.ladder_active}
           recommendedRungId={plan.recommended_rung_id ?? null}
+          onStartConversation={() => setPlanView('conversation')}
         />
       )}
 
-      <div style={{ display: planView === 'situations' ? 'grid' : 'none', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
+      {/* HIDDEN 2026-09-01. The two-pane Situations builder. Peter: "let's hide the full builder
+          UI completely." Kept rather than deleted — the arrow, tags and per-situation editing live
+          here and there is no replacement for some of it yet. `false &&` rather than deleting the
+          markup so it is one word to bring back. */}
+      <div style={{ display: false ? 'grid' : 'none', gridTemplateColumns: '45% 55%', borderTop: '1px solid var(--float-border)', marginTop: '0', minHeight: '320px' }}>
         {/* Situations list */}
         <div style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
