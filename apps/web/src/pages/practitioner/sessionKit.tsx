@@ -262,7 +262,7 @@ export function SessionProgress({
       {/* The ladder so far, without losing your place. */}
       {onSeeLadder && (
         <button onClick={onSeeLadder} style={{ ...quietLink, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-          {rungCount ? `Ladder so far (${rungCount}) ›` : 'Ladder so far ›'}
+          {rungCount ? `View ladder (${rungCount}) ›` : 'View ladder ›'}
         </button>
       )}
     </div>

@@ -117,7 +117,7 @@ export function FlatLadder({
           {onStartConversation && (
             <button onClick={onStartConversation} className="cursor-pointer"
               style={{ fontSize: '12px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>
-              ▸ Build it with them
+              ▸ Build ladder
             </button>
           )}
         </div>
@@ -142,7 +142,7 @@ export function FlatLadder({
           ))}
           {!isLoading && ordered.length === 0 && (
             <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '8px 2px' }}>
-              Nothing on the ladder yet — {onStartConversation ? 'build it with them, or add a rung yourself.' : 'use “+ Add rung”.'}
+              Nothing on the ladder yet — {onStartConversation ? 'use “Build ladder”, or add a rung yourself.' : 'use “+ Add rung”.'}
             </div>
           )}
         </div>
