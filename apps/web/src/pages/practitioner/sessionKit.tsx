@@ -192,3 +192,77 @@ export function SayIt({ value, onChange, onSend, placeholder, pending }: {
   )
 }
 
+
+/**
+ * Where you are in the interview.
+ *
+ * Peter, 2026-09-01: "the current session flow feels like you have no context at all… it's quite
+ * hard to know where you are in the process." It was deliberate — one question per screen, nothing
+ * else on it — and it went too far. This is orientation, not a form: four stages, the one you are
+ * on, and how far through the situations this pass has got.
+ */
+export function SessionProgress({
+  stage,
+  situationIndex,
+  situationCount,
+  rungCount,
+  onSeeLadder,
+}: {
+  stage: 'list' | 'rate' | 'build' | 'ladder'
+  situationIndex?: number
+  situationCount?: number
+  rungCount?: number
+  onSeeLadder?: () => void
+}) {
+  const stages: { key: typeof stage; label: string }[] = [
+    { key: 'list', label: 'Situations' },
+    { key: 'rate', label: 'Scores' },
+    { key: 'build', label: 'Steps' },
+    { key: 'ladder', label: 'Ladder' },
+  ]
+  const current = stages.findIndex(s => s.key === stage)
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {stages.map((s, i) => {
+          const done = i < current
+          const now = i === current
+          return (
+            <span key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {i > 0 && <span style={{ width: 12, height: 1, background: done ? '#7fb3a7' : '#dbe8e5' }} />}
+              <span
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: now ? 800 : 600,
+                  color: now ? '#0d3d3a' : done ? '#6b9a90' : '#b3c4c1',
+                  padding: '3px 9px',
+                  borderRadius: 999,
+                  background: now ? '#dff3ed' : 'transparent',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {s.label}
+              </span>
+            </span>
+          )
+        })}
+      </div>
+
+      {/* How far through this pass. Only while walking situations — everywhere else it would be
+          a number with nothing to count. */}
+      {stage === 'build' && situationCount != null && situationCount > 0 && situationIndex != null && (
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: '#6b7a79', whiteSpace: 'nowrap' }}>
+          {situationIndex + 1} of {situationCount}
+        </span>
+      )}
+
+      {/* The ladder so far, without losing your place. */}
+      {onSeeLadder && stage !== 'ladder' && (
+        <button onClick={onSeeLadder} style={{ ...quietLink, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+          {rungCount ? `Ladder so far (${rungCount}) ›` : 'Ladder so far ›'}
+        </button>
+      )}
+    </div>
+  )
+}

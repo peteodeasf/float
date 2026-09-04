@@ -29,7 +29,7 @@
  * conversation, and was the thing that made the previous version feel like a wall.
  */
 import { useState, useEffect, useRef } from 'react'
-import { BEHAVIOR_TYPE_SCENARIO } from './patient/shared'
+import { BEHAVIOR_TYPE_SCENARIO, getNextSchoolDayISO } from './patient/shared'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -39,6 +39,7 @@ import {
   getPlanRungs,
   updatePlanRung,
   deletePlanRung,
+  planExperimentForBehavior,
   createTrigger,
   updateTrigger,
   createBehavior,
@@ -50,15 +51,37 @@ import {
 } from '../../api/treatment'
 import {
   clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink,
-  Chrome, FearScale, DTBadge, Context, Exchange, Ask, SayIt,
+  Chrome, FearScale, DTBadge, Context, Exchange, Ask, SayIt, SessionProgress,
 } from './sessionKit'
 
 type Phase = 'intro' | 'list' | 'rate' | 'situation' | 'review'
 
+/** The full-screen route. A thin wrapper — the interview itself is the component below, so the
+ *  Plan tab can render exactly the same thing without the clinician chrome around it. */
 export default function SessionPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
+  return (
+    <SessionInterview
+      patientId={patientId!}
+      onExit={() => navigate(`/patients/${patientId}?tab=plan`)}
+    />
+  )
+}
 
+/**
+ * The interview.
+ *
+ * `embedded` drops the full-screen shell so this can be the Plan tab's primary view (Peter,
+ * 2026-09-01). Same component, same state either way — the full-screen button is a presentation,
+ * not a different screen, so nobody loses their place switching.
+ */
+export function SessionInterview({ patientId, embedded = false, onExit }: {
+  patientId: string
+  embedded?: boolean
+  onExit: () => void
+}) {
+  const goToArrow = useNavigate()
   const [phase, setPhase] = useState<Phase>('intro')
   const [currentTriggerId, setCurrentTriggerId] = useState<string | null>(null)
   const [rateIdx, setRateIdx] = useState(0)
@@ -80,6 +103,15 @@ export default function SessionPage() {
     enabled: !!planId,
   })
 
+  // Just for the count on the orientation strip — "the ladder so far" is a number the pair can
+  // see without leaving the question they are on.
+  const { data: planRungs } = useQuery({
+    queryKey: ['plan-rungs', planId],
+    queryFn: () => getPlanRungs(planId!),
+    enabled: !!planId,
+  })
+  const rungCount = (planRungs ?? []).length
+
   // Lowest distress first, everywhere a situation list appears (the ladder, the arrow's pick
   // list, and here). Unrated situations sit at the end rather than counting as a zero.
   const sortedTriggers = [...(triggers ?? [])]
@@ -93,8 +125,7 @@ export default function SessionPage() {
       return x - y
     })
 
-  // Session mode is launched from the Plan tab, so it hands the clinician back to it.
-  const exit = () => navigate(`/patients/${patientId}?tab=plan`)
+  const exit = onExit
 
   // "Let's walk through the situations that feel hard" is an opening line, not something to say to
   // someone who already has a list. Coming back in, start at the list.
@@ -131,25 +162,48 @@ export default function SessionPage() {
     else setPhase('review')
   }
 
+  // Full screen for when the child is looking; plain for the Plan tab, which brings its own
+  // header and nav.
+  const Shell = ({ children }: { children: React.ReactNode }) =>
+    embedded ? <div style={{ padding: '4px 0 8px' }}>{children}</div> : <Chrome onExit={exit}>{children}</Chrome>
+
   if (planLoading) {
-    return <Chrome onExit={exit}><div style={{ color: '#6b7a79', fontSize: 14, padding: 40, textAlign: 'center' }}>Loading…</div></Chrome>
+    return <Shell><div style={{ color: '#6b7a79', fontSize: 14, padding: 40, textAlign: 'center' }}>Loading…</div></Shell>
   }
   if (!plan) {
     return (
-      <Chrome onExit={exit}>
+      <Shell>
         <div style={{ ...card, textAlign: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a' }}>No treatment plan yet</div>
           <p style={{ fontSize: 13.5, color: '#6b7a79', marginTop: 8 }}>Create the plan from the patient page first, then start a session.</p>
           <button onClick={exit} style={primaryBtn}>Back to patient</button>
         </div>
-      </Chrome>
+      </Shell>
     )
   }
 
   const currentTrigger = sortedTriggers.find(t => t.id === currentTriggerId) ?? null
 
+  // Which stage the orientation strip should show. `intro` has nothing to orient in — it is one
+  // sentence and a button — so the strip stays off until there is a process to be inside.
+  const stage =
+    phase === 'rate' ? 'rate' as const
+    : phase === 'situation' ? 'build' as const
+    : phase === 'review' ? 'ladder' as const
+    : 'list' as const
+
   return (
-    <Chrome onExit={exit}>
+    <Shell>
+      {phase !== 'intro' && (
+        <SessionProgress
+          stage={stage}
+          situationIndex={currentTriggerId ? walkIds.indexOf(currentTriggerId) : undefined}
+          situationCount={walkIds.length}
+          rungCount={rungCount}
+          onSeeLadder={() => setPhase('review')}
+        />
+      )}
+
       {phase === 'intro' && <IntroPhase onStart={() => setPhase('list')} />}
 
       {phase === 'list' && (
@@ -179,13 +233,14 @@ export default function SessionPage() {
           isLast={walkIds.indexOf(currentTrigger.id) === walkIds.length - 1}
           onSeeAll={() => setPhase('list')}
           onFinished={nextSituation}
+          onArrow={() => goToArrow(`/patients/${patientId}/arrow?situation=${currentTrigger.id}`)}
         />
       )}
 
       {phase === 'review' && (
         <ReviewPhase planId={plan.id} triggers={sortedTriggers} onBack={() => setPhase('list')} onOpenBuilder={exit} />
       )}
-    </Chrome>
+    </Shell>
   )
 }
 
@@ -338,11 +393,12 @@ export function RatePhase({ planId, triggers, index, onIndex, onBack, onDone }: 
 //              stopped before doing these exposures".)
 type SitStep = 'avoid' | 'smaller' | 'score' | 'safety'
 
-export function SituationPhase({ trigger, isLast, onSeeAll, onFinished }: {
+export function SituationPhase({ trigger, isLast, onSeeAll, onFinished, onArrow }: {
   trigger: TriggerSituation
   isLast: boolean
   onSeeAll: () => void
   onFinished: () => void
+  onArrow: () => void
 }) {
   const qc = useQueryClient()
   const [step, setStep] = useState<SitStep>('avoid')
@@ -588,6 +644,9 @@ export function SituationPhase({ trigger, isLast, onSeeAll, onFinished }: {
             {showTranscript ? 'Hide what we said' : `${answerCount} answer${answerCount === 1 ? '' : 's'} so far ›`}
           </button>
         )}
+        <button onClick={onArrow} style={quietLink} title="Find the feared outcome behind this one">
+          ↓ Downward arrow
+        </button>
         <button onClick={onSeeAll} style={{ ...quietLink, marginLeft: 'auto' }}>← All situations</button>
       </div>
     </div>
@@ -660,6 +719,9 @@ function ReviewRung({
   const [draft, setDraft] = useState(rung.name)
   const [scoring, setScoring] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [planning, setPlanning] = useState(false)
+  const [planDate, setPlanDate] = useState(getNextSchoolDayISO())
+  const [planned, setPlanned] = useState(false)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
@@ -674,12 +736,51 @@ function ReviewRung({
     onSuccess: invalidate,
   })
 
+  // Agree the exposure here, with the child in the room. The clinician sets which rung and which
+  // day; the child answers their own questions at home — what they think will happen, how anxious
+  // they expect to be, how ready they feel — and it becomes committed. See
+  // docs/plans/exposure-ladder-sub-situations.md, "started in session, finished at home".
+  const planMut = useMutation({
+    mutationFn: () => planExperimentForBehavior(rung.id, {
+      confidence_level: 'medium',
+      plan_description: rung.name,
+      scheduled_date: new Date(planDate + 'T12:00:00').toISOString(),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['experiments'] })
+      setPlanning(false)
+      setPlanned(true)
+    },
+  })
+
   const dt = dtOf(rung.distress_thermometer_when_refraining)
 
   const rename = () => {
     const name = draft.trim()
     if (!name || name === rung.name) { setEditingName(false); setDraft(rung.name); return }
     saveMut.mutate({ name })
+  }
+
+  if (planning) {
+    return (
+      <div style={{ ...card, padding: '12px 14px', boxShadow: 'none' }}>
+        <div style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 700 }}>
+          When will you do &ldquo;{rung.name}&rdquo;?
+        </div>
+        <p style={{ fontSize: 12, color: '#6b7a79', margin: '4px 0 10px' }}>
+          They&rsquo;ll fill in what they think will happen when they open their app.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)}
+            style={{ fontSize: 13.5, padding: '7px 10px', border: '1px solid #cfe3de', borderRadius: 8, background: '#fff' }} />
+          <button onClick={() => planMut.mutate()} disabled={planMut.isPending}
+            style={{ ...primaryBtn, marginTop: 0, padding: '8px 16px', fontSize: 13.5 }}>
+            {planMut.isPending ? 'Saving…' : 'Agree it'}
+          </button>
+          <button onClick={() => setPlanning(false)} style={quietLink}>Cancel</button>
+        </div>
+      </div>
+    )
   }
 
   if (scoring) {
@@ -739,6 +840,18 @@ function ReviewRung({
           ? <DTBadge v={dt} size={28} />
           : <span style={{ fontSize: 11, fontWeight: 700, color: '#c0ccca' }}>not scored</span>}
       </button>
+
+      {/* Agreeing it now is the natural end of a session; the child finishes it at home. */}
+      {planned ? (
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: '#3f8a78', flexShrink: 0, whiteSpace: 'nowrap' }}>
+          Planned
+        </span>
+      ) : (
+        <button onClick={() => setPlanning(v => !v)} title="Agree to do this one"
+          style={{ fontSize: 11.5, fontWeight: 700, color: '#3f8a78', background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+          Plan it
+        </button>
+      )}
 
       {confirmRemove ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>

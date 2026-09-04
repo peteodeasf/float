@@ -247,13 +247,26 @@ sentences with scores. Nothing has to be converted.
 
    The review screen at the end used to list the situations and expand each to its behaviours. It
    shows the actual ladder now — the rungs, flat, easiest first, with the situation as a label.
-5. **Orientation in the session flow.**
-6. **Starting an exposure in session and finishing it at home** — the split above.
-7. **Make the conversation the Plan tab's primary view**, with the builder one switch away and a
-   full-screen button.
-8. **The arrow, inline.**
+5. **Orientation in the session flow.** **BUILT 2026-09-01.** A strip under the exit button:
+   **Situations · Scores · Steps · Ladder** with the current stage marked, "2 of 5" while walking
+   situations, and "Ladder so far (N)" which opens the ladder without losing your place.
+6. **Starting an exposure in session and finishing it at home.** **BUILT 2026-09-01.** Every rung
+   on the review ladder has **Plan it**: pick the day, agree it with the child in front of you, and
+   it lands in their app as something waiting for them to finish. The clinician sets which rung and
+   which day; the child answers their own questions at home.
+7. **The conversation is the Plan tab's primary view.** **BUILT 2026-09-01.** The interview was
+   extracted from the full-screen route into `SessionInterview`, which both the route and the Plan
+   tab render — same component, same state, so the **Full screen** button is a change of
+   presentation rather than a different screen. The tab opens on **Conversation**; **Ladder** and
+   **Situations** are one switch away, kept rather than hidden.
+8. **The arrow, inline.** **BUILT 2026-09-01.** `↓ Downward arrow` now sits on the situation being
+   discussed inside the conversation, and opens straight into that situation's chain —
+   `/arrow?situation=<id>` — instead of asking the pair to pick it again from a list they just came
+   from. The separate button on the Plan tab header is gone: the arrow belongs to a situation, and
+   the situation is where you are when you decide you want it.
 
-0 through 6 each stand alone. 7 is the rearrangement and wants the rest to be good first.
+**All eight built 2026-09-01.** 0 through 6 each stood alone; 7 was the rearrangement and came
+after the rest were good.
 
 ## Open
 

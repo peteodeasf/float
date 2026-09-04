@@ -31,6 +31,7 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
+import { SessionInterview } from './SessionPage'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
 // Flat tabs, in bar order. Also the `?tab=` vocabulary other surfaces navigate with.
@@ -529,8 +530,9 @@ export default function PatientPage() {
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
   const [editTriggerName, setEditTriggerName] = useState('')
   const [deletingTriggerId, setDeletingTriggerId] = useState<string | null>(null)
-  // Ladder = the flat list of rungs. Situations = the grouping behind it.
-  const [planView, setPlanView] = useState<'ladder' | 'situations'>('ladder')
+  // The conversation is what you land on (Peter, 2026-09-01). Ladder and Situations are the
+  // technical view, one switch away — kept, not hidden.
+  const [planView, setPlanView] = useState<'conversation' | 'ladder' | 'situations'>('conversation')
   const [deleteTriggerError, setDeleteTriggerError] = useState<string | null>(null)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameVal, setNicknameVal] = useState('')
@@ -1793,13 +1795,13 @@ export default function PatientPage() {
         {/* The two co-located, child-facing interviews. Both launch from here — the downward
             arrow is its own mode, not a detour inside session mode. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <button onClick={() => navigate(`/patients/${patientId}/arrow`)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '7px 14px', cursor: 'pointer' }}>
-            ↓ Downward arrow
-          </button>
+          {/* No separate Downward arrow button. It belongs to a situation, and it is reachable
+              from the situation inside the conversation — which is where you are when you decide
+              you want it. Peter, 2026-09-01: it folds in rather than being a second button. */}
+          {/* Same interview, no clinician chrome — for when the child is looking at the screen. */}
           <button onClick={() => navigate(`/patients/${patientId}/session`)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '999px', padding: '7px 14px', cursor: 'pointer' }}>
-            ▸ Start session
+            ⛶ Full screen
           </button>
         </div>
       </div>
@@ -1807,7 +1809,11 @@ export default function PatientPage() {
       {/* Two ways in. The LADDER is the work — one flat list, easiest first. SITUATIONS is the
           grouping behind it: where the downward arrow and the tags live. */}
       <div style={{ display: 'flex', gap: '2px', borderTop: '1px solid var(--float-border)', padding: '10px 20px 0' }}>
-        {([{ id: 'ladder', label: 'Ladder' }, { id: 'situations', label: 'Situations' }] as const).map(v => {
+        {([
+          { id: 'conversation', label: 'Conversation' },
+          { id: 'ladder', label: 'Ladder' },
+          { id: 'situations', label: 'Situations' },
+        ] as const).map(v => {
           const cur = planView === v.id
           return (
             <button key={v.id} onClick={() => setPlanView(v.id)}
@@ -1818,6 +1824,19 @@ export default function PatientPage() {
           )
         })}
       </div>
+
+      {/* The interview, inline. The same component the full-screen route renders — the button
+          below is a change of presentation, not a different screen, so nothing is lost switching
+          when the child comes to look. */}
+      {planView === 'conversation' && (
+        <div style={{ padding: '4px 20px 16px' }}>
+          <SessionInterview
+            patientId={patientId!}
+            embedded
+            onExit={() => setPlanView('ladder')}
+          />
+        </div>
+      )}
 
       {planView === 'ladder' && (
         <FlatLadder

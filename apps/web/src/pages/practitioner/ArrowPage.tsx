@@ -18,7 +18,7 @@
  * clinician reads the question and can reword it before saying it aloud.
  */
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getTreatmentPlan,
@@ -72,8 +72,14 @@ const worryHint = (name: string) =>
 export default function ArrowPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
-  const [phase, setPhase] = useState<Phase>('intro')
-  const [currentId, setCurrentId] = useState<string | null>(null)
+  // Opened from a situation inside the conversation — go straight to its chain rather than making
+  // the pair pick it again from a list they just came from. Peter, 2026-09-01: the arrow folds
+  // into the conversation rather than being a second button on the Plan tab.
+  const [searchParams] = useSearchParams()
+  const fromSituation = searchParams.get('situation')
+
+  const [phase, setPhase] = useState<Phase>(fromSituation ? 'chain' : 'intro')
+  const [currentId, setCurrentId] = useState<string | null>(fromSituation)
   const bootRef = useRef(false)
 
   const { data: plan, isLoading: planLoading } = useQuery({
@@ -104,6 +110,8 @@ export default function ArrowPage() {
   useEffect(() => {
     if (bootRef.current || !arrows) return
     bootRef.current = true
+    // A situation was named in the URL; that decision is already made.
+    if (fromSituation) return
     if (anyStarted) setPhase('pick')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrows])
@@ -112,6 +120,8 @@ export default function ArrowPage() {
     .filter(t => !t.is_placeholder)
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
 
+  // Back where they came from. Arriving from the conversation, "exit" means the conversation,
+  // not the tab it lives on.
   const exit = () => navigate(`/patients/${patientId}?tab=plan`)
   const current = situations.find(t => t.id === currentId) ?? null
 
