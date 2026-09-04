@@ -222,7 +222,19 @@ sentences with scores. Nothing has to be converted.
 
    **Also open:** the Situations view still reads "What to face, and what to resist", which is
    old-model wording. Steps 4 and 7.
-3. **Editing a rung in the conversation** — rename, rescore, delete, move. The thing most missing.
+3. **Editing a rung in the conversation** — **BUILT 2026-09-01.** Two places, because there are two
+   moments.
+
+   **In the transcript, mid-walk.** Every answer now carries *reword* and *×*. A child says
+   something and then says it better, and it can be fixed while the question is still on screen.
+   Before this, only a score could be reopened.
+
+   **On the review ladder.** Each rung edits in place: click the wording to change it, the score
+   badge to re-pick it, a dropdown to move it to another situation or none, and × to take it off.
+
+   Also fixed while doing it: monitoring observations were being listed as answers to *"what do you
+   do so it feels safer?"* — "Complained of stomach pain" is not an answer to that, and showing it
+   as one puts words in the child's mouth.
 4. **"What's a smaller version of this?"** — **BUILT 2026-09-01**, and brought forward. Step 1 made
    the ladder `scenario`-only, and session mode only ever created `avoidance` and `safety` — so a
    clinician could run the entire interview and end with an empty ladder. That made this urgent

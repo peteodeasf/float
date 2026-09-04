@@ -12,7 +12,7 @@
  *
  * Design record: docs/plans/session-situation-screen-focus.md
  */
-import { type CSSProperties, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 
 // Fear scores are a fixed 1–10 scale (see docs/solutions — enforced backend + here).
 export const clampDt = (n: number) => Math.min(10, Math.max(1, Math.round(n)))
@@ -108,16 +108,65 @@ export function Context({ text, dt, quiet }: { text: string; dt?: number | null;
 // This is the difference between a conversation and a form. Answers accumulate as spoken lines
 // rather than as rows in a table, and tapping one reopens it — so there are no edit affordances
 // (× buttons, "score it" links) cluttering the child-facing surface.
-export function Exchange({ q, a, onReopen }: { q: string; a: string; onReopen?: () => void }) {
+export function Exchange({ q, a, onReopen, onRename, onRemove }: {
+  q: string; a: string; onReopen?: () => void; onRename?: (next: string) => void; onRemove?: () => void
+}) {
   // One line per exchange, question and answer together — a spoken record, not stacked form rows.
   // Compactness matters: five behaviours is ten exchanges, and the live question has to stay
   // on screen underneath them.
+  //
+  // `onRename` and `onRemove` are what let a child say something and then say it better. Until
+  // 2026-09-01 only a score could be reopened, so the wording stayed wrong unless the clinician
+  // left the session for the builder.
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(a)
+
+  const commit = () => {
+    const next = draft.trim()
+    setEditing(false)
+    if (next && next !== a) onRename?.(next)
+    else setDraft(a)
+  }
+
+  if (editing) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0' }}>
+        <span style={{ fontSize: 12.5, color: '#a8b6b4', flexShrink: 0 }}>{q}</span>
+        <input
+          value={draft}
+          autoFocus
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commit()
+            if (e.key === 'Escape') { setDraft(a); setEditing(false) }
+          }}
+          style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: '#3d5451', padding: '3px 6px', border: '1px solid #cfe3de', borderRadius: 6, background: '#fff' }}
+        />
+      </div>
+    )
+  }
+
   return (
-    <button onClick={onReopen} disabled={!onReopen}
-      style={{ display: 'flex', alignItems: 'baseline', gap: 8, width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '5px 0', cursor: onReopen ? 'pointer' : 'default', flexWrap: 'wrap' }}>
-      <span style={{ fontSize: 12.5, color: '#a8b6b4', flexShrink: 0 }}>{q}</span>
-      <span style={{ fontSize: 13.5, fontWeight: 700, color: '#3d5451' }}>{a}</span>
-    </button>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '5px 0', flexWrap: 'wrap' }}>
+      <button onClick={onReopen} disabled={!onReopen}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 8, flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: onReopen ? 'pointer' : 'default', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12.5, color: '#a8b6b4', flexShrink: 0 }}>{q}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#3d5451' }}>{a}</span>
+      </button>
+      {onRename && (
+        <button onClick={() => { setDraft(a); setEditing(true) }} title="Change the wording"
+          style={{ fontSize: 11.5, color: '#a8b6b4', background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+          reword
+        </button>
+      )}
+      {onRemove && (
+        <button onClick={onRemove} title="Take this out"
+          style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+          ×
+        </button>
+      )}
+    </div>
   )
 }
 

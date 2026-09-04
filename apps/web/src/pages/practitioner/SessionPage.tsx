@@ -37,12 +37,16 @@ import {
   getTriggers,
   getBehaviors,
   getPlanRungs,
+  updatePlanRung,
+  deletePlanRung,
   createTrigger,
   updateTrigger,
   createBehavior,
   updateBehavior,
+  deleteBehavior,
   searchSituationLibrary,
   type TriggerSituation,
+  type AvoidanceBehavior,
 } from '../../api/treatment'
 import {
   clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink,
@@ -361,8 +365,14 @@ export function SituationPhase({ trigger, isLast, onSeeAll, onFinished }: {
   // smaller version of the situation and goes on the ladder. A safety behaviour is something to
   // stop before doing the exposures, and belongs to the situation.
   const rungs = captured.filter(b => b.behavior_type === BEHAVIOR_TYPE_SCENARIO)
+  // Not a rung, and not an observation either. "Complained of stomach pain" came out of monitoring
+  // extraction and is not an answer to "what do you do so it feels safer?" — listing it as one
+  // puts words in the child's mouth.
   const safeties = captured.filter(
-    b => b.id !== avoidBeh?.id && b.behavior_type !== BEHAVIOR_TYPE_SCENARIO
+    b =>
+      b.id !== avoidBeh?.id &&
+      b.behavior_type !== BEHAVIOR_TYPE_SCENARIO &&
+      b.behavior_type !== 'observation'
   )
 
   // Asked once. Nothing persists a "no", so on re-entry the signal is whether anything was
@@ -419,6 +429,17 @@ export function SituationPhase({ trigger, isLast, onSeeAll, onFinished }: {
     onSuccess: () => invalidate(),
   })
 
+  // A child says something, then says it better. Until 2026-09-01 only the score could be
+  // reopened, so the wording stayed wrong unless the clinician left the session.
+  const renameMut = useMutation({
+    mutationFn: (v: { id: string; name: string }) => updateBehavior(trigger.id, v.id, { name: v.name }),
+    onSuccess: () => invalidate(),
+  })
+  const removeMut = useMutation({
+    mutationFn: (id: string) => deleteBehavior(trigger.id, id),
+    onSuccess: () => invalidate(),
+  })
+
   const scoring = captured.find(b => b.id === scoringId) ?? null
   const answerCount = (avoidAnswer ? 1 : 0) + rungs.length + safeties.length
 
@@ -446,6 +467,8 @@ export function SituationPhase({ trigger, isLast, onSeeAll, onFinished }: {
             <Exchange
               q={i === 0 ? 'What’s a smaller version of this you could do?' : 'What else could you try?'}
               a={b.name}
+              onRename={name => renameMut.mutate({ id: b.id, name })}
+              onRemove={() => removeMut.mutate(b.id)}
             />
             {beingAsked ? null : sc != null
               ? <Exchange q="How hard would that one be?" a={`${sc} out of 10`} onReopen={() => { setScoringId(b.id); setStep('score') }} />
@@ -458,6 +481,8 @@ export function SituationPhase({ trigger, isLast, onSeeAll, onFinished }: {
           key={b.id}
           q={i === 0 ? 'What do you do so it feels safer?' : 'What else do you do?'}
           a={b.name}
+          onRename={name => renameMut.mutate({ id: b.id, name })}
+          onRemove={() => removeMut.mutate(b.id)}
         />
       ))}
     </>
@@ -584,7 +609,6 @@ export function ReviewPhase({ planId, triggers, onBack, onOpenBuilder }: { planI
   const rungs = [...(allRungs ?? [])].sort(
     (a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99)
   )
-  const situationName = (id: string | null) => triggers.find(t => t.id === id)?.name ?? null
 
   return (
     <div style={screenSurface}>
@@ -597,20 +621,9 @@ export function ReviewPhase({ planId, triggers, onBack, onOpenBuilder }: { planI
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {isLoading && <div style={{ fontSize: 13, color: '#94a3b8' }}>Loading…</div>}
-          {!isLoading && rungs.map(r => {
-            const sit = situationName(r.trigger_situation_id)
-            return (
-              <div key={r.id} style={{ ...card, padding: '12px 14px', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 11 }}>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 14.5, color: '#1e293b', fontWeight: 700 }}>{r.name}</span>
-                  {sit && <span style={{ display: 'block', fontSize: 12, color: '#6b7a79', marginTop: 2 }}>{sit}</span>}
-                </span>
-                {dtOf(r.distress_thermometer_when_refraining) != null
-                  ? <DTBadge v={dtOf(r.distress_thermometer_when_refraining)} size={28} />
-                  : <span style={{ fontSize: 11, fontWeight: 700, color: '#c0ccca' }}>not scored</span>}
-              </div>
-            )
-          })}
+          {!isLoading && rungs.map(r => (
+            <ReviewRung key={r.id} planId={planId} rung={r} triggers={triggers} />
+          ))}
           {!isLoading && rungs.length === 0 && (
             <div style={{ fontSize: 13, color: '#94a3b8' }}>
               Nothing on the ladder yet — a rung is a smaller version of a situation.
@@ -623,6 +636,124 @@ export function ReviewPhase({ planId, triggers, onBack, onOpenBuilder }: { planI
         <button onClick={onBack} style={ghostBtn}>← Back to situations</button>
         <button onClick={onOpenBuilder} style={primaryBtn}>Open the full builder →</button>
       </div>
+    </div>
+  )
+}
+
+// One rung on the review ladder, editable in place.
+//
+// This is the moment the pair look at what they built, and until now nothing here could be
+// changed: only a score could be reopened, so a step the child said one way and then said better
+// stayed wrong unless the clinician left the session for the builder. Rename, rescore, regroup and
+// remove all happen without leaving the conversation.
+function ReviewRung({
+  planId,
+  rung,
+  triggers,
+}: {
+  planId: string
+  rung: AvoidanceBehavior
+  triggers: TriggerSituation[]
+}) {
+  const qc = useQueryClient()
+  const [editingName, setEditingName] = useState(false)
+  const [draft, setDraft] = useState(rung.name)
+  const [scoring, setScoring] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
+    qc.invalidateQueries({ queryKey: ['behaviors'] })
+  }
+  const saveMut = useMutation({
+    mutationFn: (data: Parameters<typeof updatePlanRung>[2]) => updatePlanRung(planId, rung.id, data),
+    onSuccess: () => { invalidate(); setEditingName(false); setScoring(false) },
+  })
+  const removeMut = useMutation({
+    mutationFn: () => deletePlanRung(planId, rung.id),
+    onSuccess: invalidate,
+  })
+
+  const dt = dtOf(rung.distress_thermometer_when_refraining)
+
+  const rename = () => {
+    const name = draft.trim()
+    if (!name || name === rung.name) { setEditingName(false); setDraft(rung.name); return }
+    saveMut.mutate({ name })
+  }
+
+  if (scoring) {
+    return (
+      <div style={{ ...card, padding: '12px 14px', boxShadow: 'none' }}>
+        <div style={{ fontSize: 13.5, color: '#1e293b', fontWeight: 700, marginBottom: 10 }}>
+          How hard would &ldquo;{rung.name}&rdquo; be?
+        </div>
+        <FearScale
+          value={dt}
+          onPick={n => saveMut.mutate({ distress_thermometer_when_refraining: clampDt(n) })}
+        />
+        <button onClick={() => setScoring(false)} style={{ ...quietLink, marginTop: 12 }}>Cancel</button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ ...card, padding: '12px 14px', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 11 }}>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        {editingName ? (
+          <input
+            value={draft}
+            autoFocus
+            onChange={e => setDraft(e.target.value)}
+            onBlur={rename}
+            onKeyDown={e => {
+              if (e.key === 'Enter') rename()
+              if (e.key === 'Escape') { setDraft(rung.name); setEditingName(false) }
+            }}
+            style={{ width: '100%', fontSize: 14.5, fontWeight: 700, color: '#1e293b', padding: '4px 6px', border: '1px solid #cfe3de', borderRadius: 7, background: '#fff' }}
+          />
+        ) : (
+          <button
+            onClick={() => { setDraft(rung.name); setEditingName(true) }}
+            title="Change the wording"
+            style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14.5, color: '#1e293b', fontWeight: 700 }}
+          >
+            {rung.name}
+          </button>
+        )}
+        {/* Which situation it belongs under. Blank is allowed — a rung can be written before it is
+            grouped, and the ladder does not require one. */}
+        <select
+          value={rung.trigger_situation_id ?? ''}
+          onChange={e => saveMut.mutate({ trigger_situation_id: e.target.value || null })}
+          title="Which situation this belongs to"
+          style={{ marginTop: 3, fontSize: 12, color: '#6b7a79', background: 'none', border: 0, padding: 0, cursor: 'pointer', maxWidth: '100%' }}
+        >
+          <option value="">Not grouped</option>
+          {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+      </span>
+
+      <button onClick={() => setScoring(true)} title="Change the score" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }}>
+        {dt != null
+          ? <DTBadge v={dt} size={28} />
+          : <span style={{ fontSize: 11, fontWeight: 700, color: '#c0ccca' }}>not scored</span>}
+      </button>
+
+      {confirmRemove ? (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button onClick={() => removeMut.mutate()} disabled={removeMut.isPending}
+            style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: '#dc2626', border: 0, borderRadius: 6, padding: '4px 9px', cursor: 'pointer' }}>
+            Remove
+          </button>
+          <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
+        </span>
+      ) : (
+        <button onClick={() => setConfirmRemove(true)} title="Take this off the ladder"
+          style={{ fontSize: 16, lineHeight: 1, color: '#c0ccca', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0 }}>
+          ×
+        </button>
+      )}
     </div>
   )
 }
