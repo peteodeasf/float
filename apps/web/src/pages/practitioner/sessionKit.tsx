@@ -208,18 +208,16 @@ export function SessionProgress({
   rungCount,
   onSeeLadder,
 }: {
-  stage: 'list' | 'rate' | 'build'
+  stage: 'list' | 'build'
   situationIndex?: number
   situationCount?: number
   rungCount?: number
   onSeeLadder?: () => void
 }) {
-  // Three stages, not four. The ladder is where the conversation ENDS UP — the Plan tab's own
-  // view — not a step inside it, and showing it here as a stage nobody ever lands on was part of
-  // what made two ladder views read as one confusing thing.
+  // Two. Scoring happens on the situations screen now, not as its own pass, and the ladder is
+  // where the flow ends up rather than a step inside it.
   const stages: { key: typeof stage; label: string }[] = [
     { key: 'list', label: 'Situations' },
-    { key: 'rate', label: 'Scores' },
     { key: 'build', label: 'Steps' },
   ]
   const current = stages.findIndex(s => s.key === stage)
@@ -266,5 +264,49 @@ export function SessionProgress({
         </button>
       )}
     </div>
+  )
+}
+
+/**
+ * A thermometer score on a row: the number, tap it to change.
+ *
+ * The scale itself is the tappable 1–10 above; this keeps it out of the way until it is wanted, so
+ * a screen can hold a whole list of scored things instead of one question. "Thermometer score" is
+ * the wording throughout — Peter, 2026-09-01: the distress thermometer is a concept they learn
+ * outside the app, so the app can name it rather than inventing "how big does it feel".
+ *
+ * Open, it takes its own line: the scale needs the full width, and sharing a flex row with the
+ * thing being scored squashed the name into the left edge. Rows that use it wrap.
+ */
+export function ScorePicker({ value, onPick, label }: {
+  value: number | null
+  onPick: (n: number) => void
+  label?: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  if (open) {
+    return (
+      <div style={{ width: '100%', flexBasis: '100%', minWidth: 0, marginTop: 4 }}>
+        <div style={{ fontSize: 12.5, color: '#6b7a79', marginBottom: 7 }}>
+          {label ?? 'Thermometer score'}
+        </div>
+        <FearScale value={value} onPick={n => { onPick(n); setOpen(false) }} height={38} />
+        <button onClick={() => setOpen(false)} style={{ ...quietLink, marginTop: 8 }}>Cancel</button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setOpen(true)}
+      title="Set the thermometer score"
+      style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+    >
+      {value == null && (
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: '#b3c4c1', whiteSpace: 'nowrap' }}>score it</span>
+      )}
+      <DTBadge v={value} />
+    </button>
   )
 }

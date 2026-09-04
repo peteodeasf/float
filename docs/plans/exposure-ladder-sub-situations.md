@@ -285,6 +285,32 @@ builder nobody wanted behind a third. What it is now:
 - **Full screen** moved out of the tab header and onto the conversation, which is the only thing it
   applies to.
 
+## The setup flow, rebuilt after Peter tested it again — 2026-09-01
+
+One question per screen was the wrong shape. *"it's conversational but it doesn't have one line per
+screen."*
+
+**Three screens, and a beat:**
+
+1. **Situations** — pick them AND score them, on one screen. Was two screens: add the list, then
+   score them one per screen.
+2. **Steps** — one situation at a time, all of its rungs on one screen, each with its own score,
+   accumulating in front of the pair as they are said.
+3. **The ladder** — *"3 steps from 'Talking to people' are on your ladder"*, with the new ones
+   marked, so it is obvious where the answers went. Then the next situation.
+
+**"Thermometer score", not "how big does this feel."** Peter: the distress thermometer is a concept
+they learn outside the app, so the app can name it.
+
+**The behaviour questions are out of setup for now.** Peter: *"take it out for now. we will decide
+later how to integrate. We do want to associate behaviors with situations, but I want to get the
+ladder creation flow right first before we try to complicate anything."* Existing behaviour rows are
+untouched; the flow simply stops asking.
+
+**Still open from this round:** adding a rung and setting up are the same thing, and there are still
+two ways to do it — **+ Add rung** on the ladder and **Build ladder**. Peter raised it; not yet
+resolved.
+
 **All eight built 2026-09-01.** 0 through 6 each stood alone; 7 was the rearrangement and came
 after the rest were good.
 

@@ -47,13 +47,19 @@ import {
 } from '../../api/treatment'
 import {
   clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink,
-  Chrome, FearScale, DTBadge, Context, Exchange, Ask, SayIt, SessionProgress,
+  Chrome, DTBadge, Context, SayIt, SessionProgress, ScorePicker,
 } from './sessionKit'
 
-// No 'review' phase. It showed a second ladder, and there is only one — the Plan tab's. Peter,
-// 2026-09-01: "we now have effectively what looks like 2 'ladder' views." Finishing the
-// conversation hands the pair back to it.
-type Phase = 'intro' | 'list' | 'rate' | 'situation'
+// Two working screens and a beat between them. Peter, 2026-09-01, after testing the
+// one-question-per-screen version: "the setup flow should be very simple now… it's conversational
+// but it doesn't have one line per screen."
+//
+//   situations  pick them and give each a thermometer score, all on one screen
+//   rungs       one situation at a time: its steps, each scored, all on one screen
+//   added       the ladder with the new steps on it, so it is obvious where they went
+//
+// There is no ladder phase — the ladder is the Plan tab's own view, which this hands back to.
+type Phase = 'intro' | 'situations' | 'rungs' | 'added'
 
 /** The full-screen route. A thin wrapper — the interview itself is the component below, so the
  *  Plan tab can render exactly the same thing without the clinician chrome around it. */
@@ -83,7 +89,6 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
   const goToArrow = useNavigate()
   const [phase, setPhase] = useState<Phase>('intro')
   const [currentTriggerId, setCurrentTriggerId] = useState<string | null>(null)
-  const [rateIdx, setRateIdx] = useState(0)
   // The situations queued for this pass. Re-entering session mode is almost always "I want to add
   // one more", so the walk covers what's new rather than marching through work already done.
   const [walkIds, setWalkIds] = useState<string[]>([])
@@ -111,8 +116,8 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
   })
   const rungCount = (planRungs ?? []).length
 
-  // Lowest distress first, everywhere a situation list appears (the ladder, the arrow's pick
-  // list, and here). Unrated situations sit at the end rather than counting as a zero.
+  // Lowest thermometer score first. Unscored situations sit at the end rather than counting as a
+  // zero and jumping the queue.
   const sortedTriggers = [...(triggers ?? [])]
     .filter(t => !t.is_placeholder)
     .sort((a, b) => {
@@ -126,27 +131,18 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
 
   const exit = onExit
 
-  // "Let's walk through the situations that feel hard" is an opening line, not something to say to
-  // someone who already has a list. Coming back in, start at the list.
+  // The list is the opening screen once there is one. "Let's walk through the situations that feel
+  // hard" is something you say to someone who has nothing yet.
   useEffect(() => {
     if (bootRef.current || !triggers) return
     bootRef.current = true
-    if (sortedTriggers.length > 0) setPhase('list')
+    if (sortedTriggers.length > 0) setPhase('situations')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [triggers])
 
-  // Only situations that have never been rated. Re-asking for a score that is already set — and
-  // showing it pre-selected — leaves the pair staring at a number with nothing to do.
-  const unrated = sortedTriggers.filter(t => dtOf(t.distress_thermometer_rating) == null)
-
-  // Walking in order is the spine of the interview — finishing one moves to the next rather than
-  // dropping back to a menu. The order comes from walkIds, so the walk is over this pass's work.
-  const openSituation = (id: string) => { setCurrentTriggerId(id); setPhase('situation') }
-  const startWalk = (ids: string[]) => {
-    setWalkIds(ids)
-    if (ids.length > 0) openSituation(ids[0])
-    else onExit()
-  }
+  // Working through the situations in order. `walkIds` is this pass's queue, so coming back to add
+  // one more covers what is new rather than marching through work already done.
+  const openSituation = (id: string) => { setCurrentTriggerId(id); setPhase('rungs') }
   const nextSituation = () => {
     const i = walkIds.indexOf(currentTriggerId ?? '')
     const next = i >= 0 ? walkIds[i + 1] : undefined
@@ -154,10 +150,11 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
     else onExit()
   }
 
-  // Leaving the list: rate whatever is unrated, then walk exactly those. With nothing unrated
-  // there is no new work, so the ladder is the useful place to land.
-  const leaveList = () => {
-    if (unrated.length > 0) { setWalkIds(unrated.map(t => t.id)); setRateIdx(0); setPhase('rate') }
+  // Leaving the situations screen: work through everything on it, in order.
+  const startWalk = () => {
+    const ids = sortedTriggers.map(t => t.id)
+    setWalkIds(ids)
+    if (ids.length > 0) openSituation(ids[0])
     else onExit()
   }
 
@@ -186,9 +183,7 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
   // Which stage the orientation strip should show. `intro` has nothing to orient in — it is one
   // sentence and a button — so the strip stays off until there is a process to be inside.
   const stage =
-    phase === 'rate' ? 'rate' as const
-    : phase === 'situation' ? 'build' as const
-    : 'list' as const
+    phase === 'situations' ? 'list' as const : 'build' as const
 
   return (
     <Shell>
@@ -202,36 +197,35 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
         />
       )}
 
-      {phase === 'intro' && <IntroPhase onStart={() => setPhase('list')} />}
+      {phase === 'intro' && <IntroPhase onStart={() => setPhase('situations')} />}
 
-      {phase === 'list' && (
-        <ListPhase
+      {phase === 'situations' && (
+        <SituationsPhase
+          planId={plan.id}
           triggers={sortedTriggers}
-          planId={plan.id}
-          onDone={leaveList}
-          onOpen={(id) => startWalk([id])}
+          onDone={startWalk}
         />
       )}
 
-      {phase === 'rate' && (
-        <RatePhase
-          planId={plan.id}
-          triggers={sortedTriggers.filter(t => walkIds.includes(t.id))}
-          index={rateIdx}
-          onIndex={setRateIdx}
-          onBack={() => setPhase('list')}
-          onDone={() => startWalk(walkIds)}
-        />
-      )}
-
-      {phase === 'situation' && currentTrigger && (
-        <SituationPhase
+      {phase === 'rungs' && currentTrigger && (
+        <RungsPhase
           key={currentTrigger.id}
+          planId={plan.id}
           trigger={currentTrigger}
-          isLast={walkIds.indexOf(currentTrigger.id) === walkIds.length - 1}
-          onSeeAll={() => setPhase('list')}
-          onFinished={nextSituation}
+          onBack={() => setPhase('situations')}
+          onDone={() => setPhase('added')}
           onArrow={() => goToArrow(`/patients/${patientId}/arrow?situation=${currentTrigger.id}`)}
+        />
+      )}
+
+      {phase === 'added' && currentTrigger && (
+        <AddedPhase
+          planId={plan.id}
+          trigger={currentTrigger}
+          triggers={sortedTriggers}
+          isLast={walkIds.indexOf(currentTrigger.id) === walkIds.length - 1}
+          onBack={() => setPhase('rungs')}
+          onNext={nextSituation}
         />
       )}
     </Shell>
@@ -242,23 +236,23 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
 export function IntroPhase({ onStart }: { onStart: () => void }) {
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>Let&rsquo;s walk through the situations that feel hard.</div>
+      <div style={bigQ}>Let&rsquo;s build your ladder.</div>
       <p style={lead}>
-        We&rsquo;ll look at the situations that feel hard and what happens when you&rsquo;re in them.
+        First the situations that feel hard, and a thermometer score for each. Then, for each one,
+        the smaller steps you could actually try.
       </p>
       <button onClick={onStart} style={primaryBtn}>Let&rsquo;s start →</button>
     </div>
   )
 }
 
-// ── Phase: list — "What do you have trouble with?" ─────────────
-// Recognition beats recall for an anxious child, so the shared library is offered as a starter
-// list to react to rather than a blank field. Doubles as the map back into any situation.
-export function ListPhase({ triggers, planId, onDone, onOpen }: {
-  triggers: TriggerSituation[]
+// ── Phase: situations — the list AND the scores, on one screen ──
+// Two screens before: add them, then score them one per screen. Peter, 2026-09-01: "you pick the
+// situations with Distress Thermometer scores." One thing, so it reads as one thing.
+export function SituationsPhase({ planId, triggers, onDone }: {
   planId: string
+  triggers: TriggerSituation[]
   onDone: () => void
-  onOpen: (id: string) => void
 }) {
   const qc = useQueryClient()
   const [newName, setNewName] = useState('')
@@ -268,31 +262,39 @@ export function ListPhase({ triggers, planId, onDone, onOpen }: {
     queryFn: () => searchSituationLibrary(''),
   })
 
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['triggers', planId] })
   const addMut = useMutation({
     mutationFn: (name: string) => createTrigger(planId, { name }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['triggers', planId] }); setNewName('') },
+    onSuccess: () => { invalidate(); setNewName('') },
+  })
+  const scoreMut = useMutation({
+    mutationFn: (v: { id: string; dt: number }) =>
+      updateTrigger(planId, v.id, { distress_thermometer_rating: v.dt }),
+    onSuccess: invalidate,
   })
 
   const taken = new Set(triggers.map(t => t.name.trim().toLowerCase()))
   const suggestions = (starters ?? []).filter(s => !taken.has(s.name.trim().toLowerCase())).slice(0, 8)
+  const unscored = triggers.filter(t => dtOf(t.distress_thermometer_rating) == null).length
 
   return (
     <div style={screenSurface}>
       <div style={bigQ}>What situations do you have trouble with?</div>
-      <p style={lead}>Add your own situations. Or select from common ones.</p>
+      <p style={lead}>Add the ones that fit, and give each a thermometer score.</p>
 
       {triggers.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 12.5, color: '#9aa9a8', marginBottom: 7 }}>Once you add a situation, tap on it to review what happens in that situation.</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {triggers.map(t => (
-              <button key={t.id} onClick={() => onOpen(t.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '11px 13px', cursor: 'pointer' }}>
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: '#1e293b', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
-                <DTBadge v={dtOf(t.distress_thermometer_rating)} />
-              </button>
-            ))}
-          </div>
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {triggers.map(t => (
+            <div key={t.id}
+              style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 11, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '11px 13px' }}>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: '#1e293b', flex: 1, minWidth: 0 }}>{t.name}</span>
+              <ScorePicker
+                value={dtOf(t.distress_thermometer_rating)}
+                onPick={n => scoreMut.mutate({ id: t.id, dt: clampDt(n) })}
+                label={`Thermometer score for “${t.name}”`}
+              />
+            </div>
+          ))}
         </div>
       )}
 
@@ -319,329 +321,227 @@ export function ListPhase({ triggers, planId, onDone, onOpen }: {
           style={{ ...primaryBtn, marginTop: 0, opacity: !newName.trim() ? 0.4 : 1 }}>Add</button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 18, flexWrap: 'wrap' }}>
         <button onClick={onDone} disabled={triggers.length === 0}
           style={{ ...primaryBtn, marginTop: 0, opacity: triggers.length === 0 ? 0.4 : 1 }}>
-          That&rsquo;s my list →
+          Add steps to these →
         </button>
         {triggers.length === 0 && <span style={{ fontSize: 12.5, color: '#94a3b8' }}>Add at least one to keep going.</span>}
+        {/* A score is not required to move on — a situation can be scored later, and stopping the
+            pair to fill in a number they have not decided is how a conversation becomes a form. */}
+        {unscored > 0 && triggers.length > 0 && (
+          <span style={{ fontSize: 12.5, color: '#94a3b8' }}>
+            {unscored} still without a score — you can come back to {unscored === 1 ? 'it' : 'them'}.
+          </span>
+        )}
       </div>
     </div>
   )
 }
 
-// ── Phase: rate — the DT pass over the list, one situation per screen ──
-// Situations often arrive already rated (monitoring extraction, or the builder). Those show their
-// existing score pre-selected: this is a confirm-or-change pass, not a re-interrogation.
-export function RatePhase({ planId, triggers, index, onIndex, onBack, onDone }: {
+// ── Phase: rungs — one situation, all of its steps, one screen ──
+// The steps accumulate in front of the pair as they are said, each with its own thermometer score.
+// Peter, 2026-09-01: "all of the sub-situations/rungs are added on the same screen."
+export function RungsPhase({ planId, trigger, onBack, onDone, onArrow }: {
   planId: string
-  triggers: TriggerSituation[]
-  index: number
-  onIndex: (i: number) => void
+  trigger: TriggerSituation
   onBack: () => void
   onDone: () => void
-}) {
-  const qc = useQueryClient()
-  const dtMut = useMutation({
-    mutationFn: (v: { id: string; dt: number }) => updateTrigger(planId, v.id, { distress_thermometer_rating: v.dt }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['triggers', planId] }),
-  })
-
-  const i = Math.min(index, Math.max(0, triggers.length - 1))
-  const t = triggers[i]
-  if (!t) return null
-  const advance = () => { if (i + 1 >= triggers.length) onDone(); else onIndex(i + 1) }
-
-  const left = triggers.length - i - 1
-  return (
-    <div style={screenSurface}>
-      {i === 0 && <p style={{ ...lead, marginTop: 0, marginBottom: 14 }}>Now let&rsquo;s see how big each one feels.</p>}
-      {/* Same context treatment as the situation screens — this is the thing being rated. No badge:
-          the scale below is the answer. */}
-      <Context text={t.name} />
-      <div style={{ ...bigQ, marginBottom: 14 }}>How big does this one feel?</div>
-      <FearScale value={dtOf(t.distress_thermometer_rating)} onPick={n => { dtMut.mutate({ id: t.id, dt: clampDt(n) }); advance() }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 18 }}>
-        {i > 0
-          ? <button onClick={() => onIndex(i - 1)} style={quietLink}>← Back</button>
-          : <button onClick={onBack} style={quietLink}>← Back to the list</button>}
-        <button onClick={advance} style={quietLink}>Skip this one</button>
-        <span style={{ fontSize: 12, color: '#b6c3c1', marginLeft: 'auto' }}>
-          {left === 0 ? 'last one' : `${left} more after this`}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-// ── Phase: one situation — the interview, one question at a time ──
-// Order is Dr. Walker's: do you avoid it → what do you do → how hard without that → what else.
-// Naming and scoring ALTERNATE, so a thing is finished before the next one starts, and each
-// question is phrased off the back of the last answer rather than read from a script.
-// The interview per situation, in order:
-//   avoid    — do you stay away from it? Context, not a ladder step.
-//   smaller  — "what's a smaller version of this?" THIS is what makes a rung.
-//   score    — how hard would that one be?
-//   safety   — what do you do so it feels safer? A list on the situation, to be stopped before
-//              the exposures. Not a rung. (Dr. Walker: "All safety behaviours … need to be
-//              stopped before doing these exposures".)
-type SitStep = 'avoid' | 'smaller' | 'score' | 'safety'
-
-export function SituationPhase({ trigger, isLast, onSeeAll, onFinished, onArrow }: {
-  trigger: TriggerSituation
-  isLast: boolean
-  onSeeAll: () => void
-  onFinished: () => void
   onArrow: () => void
 }) {
   const qc = useQueryClient()
-  const [step, setStep] = useState<SitStep>('avoid')
-  const [scoringId, setScoringId] = useState<string | null>(null)
-  const [newBeh, setNewBeh] = useState('')
-  const [avoidAnswer, setAvoidAnswer] = useState<'yes' | 'no' | null>(null)
-  const [showTranscript, setShowTranscript] = useState(false)
-  const initRef = useRef(false)
+  const [draft, setDraft] = useState('')
 
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
   })
 
-  const captured = (behaviors ?? []).filter(b => !b.parent_behavior_id)
-  const situationDt = dtOf(trigger.distress_thermometer_rating)
-  const avoidName = `Avoids ${trigger.name}`
-  const avoidBeh = captured.find(b => b.name === avoidName) ?? null
-  // The two kinds of answer this interview produces, and they are not the same thing. A rung is a
-  // smaller version of the situation and goes on the ladder. A safety behaviour is something to
-  // stop before doing the exposures, and belongs to the situation.
-  const rungs = captured.filter(b => b.behavior_type === BEHAVIOR_TYPE_SCENARIO)
-  // Not a rung, and not an observation either. "Complained of stomach pain" came out of monitoring
-  // extraction and is not an answer to "what do you do so it feels safer?" — listing it as one
-  // puts words in the child's mouth.
-  const safeties = captured.filter(
-    b =>
-      b.id !== avoidBeh?.id &&
-      b.behavior_type !== BEHAVIOR_TYPE_SCENARIO &&
-      b.behavior_type !== 'observation'
-  )
-
-  // Asked once. Nothing persists a "no", so on re-entry the signal is whether anything was
-  // captured — a started situation resumes at "what else", it doesn't start the interview again.
-  useEffect(() => {
-    if (initRef.current || !behaviors) return
-    initRef.current = true
-    if (captured.length === 0) { setStep('avoid') }
-    else { setAvoidAnswer(avoidBeh ? 'yes' : null); setStep('smaller') }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [behaviors])
-
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
-
-  // "I stay away from it" IS the avoidance behaviour. Dr. Walker's rule: its score is the
-  // situation's own DT — being in the situation without avoiding it just is the situation. A
-  // clinical rule, sourced from her (see the plan). With no situation DT there is nothing to
-  // infer from, so it falls through to the normal question instead of guessing.
-  //
-  // The inference is NOT explained on screen. The record reads "8 out of 10", not
-  // "8 out of 10 — same as the situation": how the number was arrived at is our internal logic,
-  // and narrating it to a child is the app talking about itself.
-  const avoidYesMut = useMutation({
-    mutationFn: () => createBehavior(trigger.id, {
-      name: avoidName,
-      behavior_type: 'avoidance',
-      ...(situationDt != null ? { distress_thermometer_when_refraining: situationDt } : {}),
-    }),
-    onSuccess: () => {
-      invalidate()
-      setAvoidAnswer('yes')
-      // Straight to the question that builds the ladder. Avoiding the whole thing is not a rung —
-      // it is what the situation IS.
-      setStep('smaller')
-    },
-  })
-
-  /** A smaller version of the situation. This is what a ladder rung is. */
-  const addRungMut = useMutation({
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
+    qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
+  }
+  const addMut = useMutation({
     mutationFn: (name: string) =>
       createBehavior(trigger.id, { name, behavior_type: BEHAVIOR_TYPE_SCENARIO }),
-    onSuccess: (created) => { invalidate(); setNewBeh(''); setScoringId(created.id); setStep('score') },
+    onSuccess: () => { invalidate(); setDraft('') },
   })
-
-  /** Something they do so it feels safer. Belongs to the situation, never to the ladder — it is
-   *  what has to STOP before the exposures, not a step to climb. */
-  const addSafetyMut = useMutation({
-    mutationFn: (name: string) => createBehavior(trigger.id, { name, behavior_type: 'safety' }),
-    onSuccess: () => { invalidate(); setNewBeh('') },
-  })
-
   const scoreMut = useMutation({
-    mutationFn: (v: { id: string; dt: number }) => updateBehavior(trigger.id, v.id, { distress_thermometer_when_refraining: v.dt }),
-    onSuccess: () => invalidate(),
+    mutationFn: (v: { id: string; dt: number }) =>
+      updateBehavior(trigger.id, v.id, { distress_thermometer_when_refraining: v.dt }),
+    onSuccess: invalidate,
   })
-
-  // A child says something, then says it better. Until 2026-09-01 only the score could be
-  // reopened, so the wording stayed wrong unless the clinician left the session.
   const renameMut = useMutation({
     mutationFn: (v: { id: string; name: string }) => updateBehavior(trigger.id, v.id, { name: v.name }),
-    onSuccess: () => invalidate(),
+    onSuccess: invalidate,
   })
-  const removeMut = useMutation({
+  const delMut = useMutation({
     mutationFn: (id: string) => deleteBehavior(trigger.id, id),
-    onSuccess: () => invalidate(),
+    onSuccess: invalidate,
   })
 
-  const scoring = captured.find(b => b.id === scoringId) ?? null
-  const answerCount = (avoidAnswer ? 1 : 0) + rungs.length + safeties.length
-
-  // The conversation so far, in the order it happened.
-  const transcript = (
-    <>
-      {avoidAnswer && (
-        <Exchange
-          q="Do you stay away from this if you can?"
-          a={avoidAnswer === 'yes' ? 'Yes — I skip it when I can' : 'No — I get through it'}
-        />
-      )}
-      {avoidAnswer === 'yes' && avoidBeh && dtOf(avoidBeh.distress_thermometer_when_refraining) != null && (
-        <Exchange
-          q="So how hard is it to be in it at all?"
-          a={`${dtOf(avoidBeh.distress_thermometer_when_refraining)} out of 10`}
-          onReopen={() => { setScoringId(avoidBeh.id); setStep('score') }}
-        />
-      )}
-      {rungs.map((b, i) => {
-        const sc = dtOf(b.distress_thermometer_when_refraining)
-        const beingAsked = step === 'score' && b.id === scoringId
-        return (
-          <div key={b.id}>
-            <Exchange
-              q={i === 0 ? 'What’s a smaller version of this you could do?' : 'What else could you try?'}
-              a={b.name}
-              onRename={name => renameMut.mutate({ id: b.id, name })}
-              onRemove={() => removeMut.mutate(b.id)}
-            />
-            {beingAsked ? null : sc != null
-              ? <Exchange q="How hard would that one be?" a={`${sc} out of 10`} onReopen={() => { setScoringId(b.id); setStep('score') }} />
-              : <Exchange q="How hard would that one be?" a="— we skipped this one" onReopen={() => { setScoringId(b.id); setStep('score') }} />}
-          </div>
-        )
-      })}
-      {safeties.map((b, i) => (
-        <Exchange
-          key={b.id}
-          q={i === 0 ? 'What do you do so it feels safer?' : 'What else do you do?'}
-          a={b.name}
-          onRename={name => renameMut.mutate({ id: b.id, name })}
-          onRemove={() => removeMut.mutate(b.id)}
-        />
-      ))}
-    </>
-  )
-
-  // Each question is phrased off the last answer — that adaptivity is most of what makes this
-  // read as a conversation rather than a form.
-  const smallerQuestion = rungs.length > 0
-    ? 'What else could you try?'
-    : avoidAnswer === 'yes'
-      ? 'What’s a smaller version of this you could actually do?'
-      : 'What’s a smaller version of this you could do?'
-  const safetyQuestion = safeties.length > 0
-    ? 'What else do you do?'
-    : 'What do you do so it feels safer?'
+  // Only the steps. A rung is a smaller version of the situation; anything else on this row was
+  // captured under the old model and is not part of this flow.
+  const rungs = (behaviors ?? [])
+    .filter(b => b.behavior_type === BEHAVIOR_TYPE_SCENARIO && !b.parent_behavior_id)
+    .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
 
   return (
     <div style={screenSurface}>
-      <Context text={trigger.name} dt={situationDt} quiet={step === 'score'} />
+      <Context text={trigger.name} dt={dtOf(trigger.distress_thermometer_rating)} />
 
-      {showTranscript && answerCount > 0 && (
-        <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px dashed #dbe8e5' }}>{transcript}</div>
-      )}
+      <div style={{ ...bigQ, marginTop: 14 }}>What are smaller versions of this you could do?</div>
+      <p style={lead}>
+        Something like it, but easier — shorter, closer to home, with someone you trust. Add as many
+        as you want, and give each one a thermometer score.
+      </p>
 
-      {step === 'avoid' && (
-        <div>
-          <Ask>Do you stay away from this if you can?</Ask>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button onClick={() => avoidYesMut.mutate()} disabled={avoidYesMut.isPending} style={{ ...primaryBtn, marginTop: 0 }}>Yes — I skip it</button>
-            <button onClick={() => { setAvoidAnswer('no'); setStep('smaller') }} style={{ ...ghostBtn, marginTop: 0 }}>No — I get through it</button>
-          </div>
+      {rungs.length > 0 && (
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {rungs.map(r => (
+            <RungRow
+              key={r.id}
+              name={r.name}
+              score={dtOf(r.distress_thermometer_when_refraining)}
+              onRename={name => renameMut.mutate({ id: r.id, name })}
+              onScore={n => scoreMut.mutate({ id: r.id, dt: clampDt(n) })}
+              onRemove={() => delMut.mutate(r.id)}
+            />
+          ))}
         </div>
       )}
 
-      {/* The question that builds the ladder. It replaces "what do you do so it feels safer?" as
-          the way a rung is made — a rung is a smaller version of the situation, not a thing given
-          up. Dr. Walker's own rungs read like this: "watch videos of kids getting dropped off",
-          "send the child in a carpool". */}
-      {step === 'smaller' && (
-        <div>
-          <Ask>{smallerQuestion}</Ask>
-          {rungs.length === 0 && (
-            <p style={{ ...lead, marginTop: -6, marginBottom: 12 }}>
-              Something like it, but easier — shorter, closer to home, with someone you trust.
-            </p>
-          )}
-          <SayIt value={newBeh} onChange={setNewBeh} onSend={() => addRungMut.mutate(newBeh.trim())}
-            placeholder="e.g. walk to the classroom door with mum" pending={addRungMut.isPending} />
-          <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button onClick={() => setStep('safety')} style={{ ...ghostBtn, marginTop: 0 }}>
-              {rungs.length === 0 ? 'Nothing comes to mind' : 'That’s enough for now →'}
-            </button>
-          </div>
-        </div>
-      )}
+      <div style={{ marginTop: 14 }}>
+        <SayIt
+          value={draft}
+          onChange={setDraft}
+          onSend={() => addMut.mutate(draft.trim())}
+          placeholder="e.g. walk to the classroom door with mum"
+          pending={addMut.isPending}
+        />
+      </div>
 
-      {/* Not a rung. A list on the situation, and Dr. Walker's rule is that these have to stop
-          before the exposures happen. Asked last so it does not get mistaken for the ladder. */}
-      {step === 'safety' && (
-        <div>
-          <Ask>{safetyQuestion}</Ask>
-          {safeties.length === 0 && (
-            <p style={{ ...lead, marginTop: -6, marginBottom: 12 }}>
-              Anything that makes it easier to get through. These are the things to stop doing when
-              you start the steps above.
-            </p>
-          )}
-          <SayIt value={newBeh} onChange={setNewBeh} onSend={() => addSafetyMut.mutate(newBeh.trim())}
-            placeholder="e.g. ask a friend to answer for me" pending={addSafetyMut.isPending} />
-          <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button onClick={() => setStep('smaller')} style={{ ...ghostBtn, marginTop: 0 }}>
-              ← Back to steps
-            </button>
-            <button onClick={onFinished} style={{ ...ghostBtn, marginTop: 0 }}>
-              {isLast ? 'That’s everything — see the ladder →' : 'That’s everything →'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {step === 'score' && scoring && (
-        <div>
-          <Ask>
-            {scoring.id === avoidBeh?.id
-              ? 'How hard would it be to be in it at all?'
-              : 'How hard would that one be?'}
-          </Ask>
-          {/* Their own words, given the same context treatment as the situation — this is the
-              thing being scored, and it has to be unmistakable when an earlier answer is
-              reopened. No badge: the scale below already shows the current value. */}
-          {scoring.id !== avoidBeh?.id && <Context text={`“${scoring.name}”`} />}
-          <FearScale value={dtOf(scoring.distress_thermometer_when_refraining)}
-            onPick={n => { scoreMut.mutate({ id: scoring.id, dt: clampDt(n) }); setScoringId(null); setStep('smaller') }} />
-          <div style={{ marginTop: 16 }}>
-            <button onClick={() => { setScoringId(null); setStep('smaller') }} style={quietLink}>Skip this one</button>
-          </div>
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 18, flexWrap: 'wrap' }}>
+        <button onClick={onDone} disabled={rungs.length === 0}
+          style={{ ...primaryBtn, marginTop: 0, opacity: rungs.length === 0 ? 0.4 : 1 }}>
+          See {rungs.length === 1 ? 'it' : 'them'} on the ladder →
+        </button>
+        {rungs.length === 0 && <span style={{ fontSize: 12.5, color: '#94a3b8' }}>Add at least one step.</span>}
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 20, paddingTop: 14, borderTop: '1px solid #eef2f1' }}>
-        {answerCount > 0 && (
-          <button onClick={() => setShowTranscript(v => !v)} style={quietLink}>
-            {showTranscript ? 'Hide what we said' : `${answerCount} answer${answerCount === 1 ? '' : 's'} so far ›`}
-          </button>
-        )}
         <button onClick={onArrow} style={quietLink} title="Find the feared outcome behind this one">
           ↓ Downward arrow
         </button>
-        <button onClick={onSeeAll} style={{ ...quietLink, marginLeft: 'auto' }}>← All situations</button>
+        <button onClick={onBack} style={{ ...quietLink, marginLeft: 'auto' }}>← All situations</button>
+      </div>
+    </div>
+  )
+}
+
+/** One step being written: its wording, its score, and a way to take it back out. */
+function RungRow({ name, score, onRename, onScore, onRemove }: {
+  name: string
+  score: number | null
+  onRename: (next: string) => void
+  onScore: (n: number) => void
+  onRemove: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(name)
+
+  const commit = () => {
+    const next = draft.trim()
+    setEditing(false)
+    if (next && next !== name) onRename(next)
+    else setDraft(name)
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 11, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '11px 13px' }}>
+      {editing ? (
+        <input
+          value={draft}
+          autoFocus
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commit()
+            if (e.key === 'Escape') { setDraft(name); setEditing(false) }
+          }}
+          style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: '#1e293b', padding: '4px 6px', border: '1px solid #cfe3de', borderRadius: 7 }}
+        />
+      ) : (
+        <button onClick={() => { setDraft(name); setEditing(true) }} title="Change the wording"
+          style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13.5, fontWeight: 600, color: '#1e293b' }}>
+          {name}
+        </button>
+      )}
+      <ScorePicker value={score} onPick={onScore} label={`Thermometer score for “${name}”`} />
+      <button onClick={onRemove} title="Take this out"
+        style={{ fontSize: 15, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0 }}>×</button>
+    </div>
+  )
+}
+
+// ── Phase: added — the beat that shows where the steps went ──
+// Peter, 2026-09-01: "after you add rungs to a situation, you see those on the ladder — this
+// prompts understanding of where the data goes."
+export function AddedPhase({ planId, trigger, triggers, isLast, onBack, onNext }: {
+  planId: string
+  trigger: TriggerSituation
+  triggers: TriggerSituation[]
+  isLast: boolean
+  onBack: () => void
+  onNext: () => void
+}) {
+  const { data: allRungs, isLoading } = useQuery({
+    queryKey: ['plan-rungs', planId],
+    queryFn: () => getPlanRungs(planId),
+  })
+  const rungs = [...(allRungs ?? [])].sort(
+    (a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99)
+  )
+  const justAdded = rungs.filter(r => r.trigger_situation_id === trigger.id).length
+  const situationName = (id: string | null) => triggers.find(t => t.id === id)?.name ?? null
+
+  return (
+    <div style={screenSurface}>
+      <div style={bigQ}>
+        {justAdded} step{justAdded === 1 ? '' : 's'} from &ldquo;{trigger.name}&rdquo; {justAdded === 1 ? 'is' : 'are'} on your ladder.
+      </div>
+      <p style={lead}>Easiest at the top. This is what you&rsquo;ll work through.</p>
+
+      <div style={{ position: 'relative', paddingLeft: 22, marginTop: 18 }}>
+        {rungs.length > 0 && (
+          <div style={{ position: 'absolute', left: 6, top: 14, bottom: 14, width: 3, borderRadius: 2, background: 'linear-gradient(#4bb98a, #f2a33f 55%, #ef6b53)' }} />
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {isLoading && <div style={{ fontSize: 13, color: '#94a3b8' }}>Loading…</div>}
+          {!isLoading && rungs.map(r => {
+            const mine = r.trigger_situation_id === trigger.id
+            const sit = situationName(r.trigger_situation_id)
+            return (
+              <div key={r.id}
+                style={{ ...card, padding: '12px 14px', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 11, border: mine ? '1px solid #9af6e4' : undefined, background: mine ? '#f4fdfa' : undefined }}>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 14.5, color: '#1e293b', fontWeight: 700 }}>{r.name}</span>
+                  {sit && <span style={{ display: 'block', fontSize: 12, color: '#6b7a79', marginTop: 2 }}>{sit}</span>}
+                </span>
+                {dtOf(r.distress_thermometer_when_refraining) != null
+                  ? <DTBadge v={dtOf(r.distress_thermometer_when_refraining)} size={28} />
+                  : <span style={{ fontSize: 11, fontWeight: 700, color: '#c0ccca' }}>not scored</span>}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
+        <button onClick={onNext} style={{ ...primaryBtn, marginTop: 0 }}>
+          {isLast ? 'Done →' : 'Next situation →'}
+        </button>
+        <button onClick={onBack} style={{ ...ghostBtn, marginTop: 0 }}>← Add more steps</button>
       </div>
     </div>
   )
