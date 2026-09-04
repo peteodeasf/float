@@ -79,7 +79,7 @@ export default function SessionPreview() {
         {view === 'rate' && <RatePhase planId="p1" triggers={TRIGGERS} index={2} onIndex={noop} onBack={noop} onDone={noop} />}
         {view === 'sit-start' && <SituationPhase key="t3" trigger={TRIGGERS[2]} isLast={true} onSeeAll={noop} onFinished={noop} />}
         {view === 'sit-mid' && <SituationPhase key="t1" trigger={TRIGGERS[0]} isLast={false} onSeeAll={noop} onFinished={noop} />}
-        {view === 'ladder' && <ReviewPhase triggers={TRIGGERS} onBack={noop} onOpenBuilder={noop} />}
+        {view === 'ladder' && <ReviewPhase planId="p1" triggers={TRIGGERS} onBack={noop} onOpenBuilder={noop} />}
         {view === 'arrow-intro' && <ArrowIntro onStart={noop} />}
         {view === 'arrow-pick' && <PickPhase situations={TRIGGERS} onOpen={noop} />}
         {view === 'arrow-chain' && <ChainPhase trigger={TRIGGERS[0]} onBack={noop} onDone={noop} />}

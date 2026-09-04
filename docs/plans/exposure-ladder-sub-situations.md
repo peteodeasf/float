@@ -223,8 +223,18 @@ sentences with scores. Nothing has to be converted.
    **Also open:** the Situations view still reads "What to face, and what to resist", which is
    old-model wording. Steps 4 and 7.
 3. **Editing a rung in the conversation** — rename, rescore, delete, move. The thing most missing.
-4. **"What's a smaller version of this?"** — the new question, replacing behaviour capture as the
-   way a rung is made. Safety behaviours still get captured, onto the situation.
+4. **"What's a smaller version of this?"** — **BUILT 2026-09-01**, and brought forward. Step 1 made
+   the ladder `scenario`-only, and session mode only ever created `avoidance` and `safety` — so a
+   clinician could run the entire interview and end with an empty ladder. That made this urgent
+   rather than fourth.
+
+   The interview per situation is now: **do you stay away from it?** (context, not a step) →
+   **what's a smaller version of this you could do?** (this makes a rung) → **how hard would that
+   one be?** → loop → **what do you do so it feels safer?** (a list on the situation, asked last so
+   it is not mistaken for the ladder).
+
+   The review screen at the end used to list the situations and expand each to its behaviours. It
+   shows the actual ladder now — the rungs, flat, easiest first, with the situation as a label.
 5. **Orientation in the session flow.**
 6. **Starting an exposure in session and finishing it at home** — the split above.
 7. **Make the conversation the Plan tab's primary view**, with the builder one switch away and a
