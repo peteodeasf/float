@@ -144,10 +144,21 @@ async def suggested_steps(
         if b.behavior_type not in (SCENARIO, OBSERVATION)
     ]
 
+    # Most recent, and not scalar_one_or_none: a situation is supposed to have one arrow, and a
+    # query that raises when it has two would take the feature down over a data quirk.
     arrow = (await db.execute(
-        select(DownwardArrow).where(DownwardArrow.trigger_situation_id == situation.id)
+        select(DownwardArrow)
+        .where(DownwardArrow.trigger_situation_id == situation.id)
+        .order_by(DownwardArrow.updated_at.desc().nullslast())
+        .limit(1)
     )).scalar_one_or_none()
-    feared = arrow.feared_outcome if (arrow and arrow.feared_outcome_approved) else None
+
+    # Any recorded feared outcome counts, approved or not. `feared_outcome_approved` is only set
+    # when the clinician presses save on the arrow's last screen — walking the whole chain and
+    # leaving does not set it, so requiring it blocked people who had done the work. The
+    # suggestions are confirm-first anyway: nothing is written until the clinician picks one.
+    feared = (arrow.feared_outcome or "").strip() if arrow else ""
+    started = bool(arrow and (arrow.arrow_steps or feared))
 
     try:
         suggestions, variations = await suggest_steps(
@@ -158,6 +169,13 @@ async def suggested_steps(
             coping=coping,
         )
     except SuggestionUnavailable as e:
+        # Say which of the two it is. "Do the arrow" is wrong advice for someone who has started
+        # one and stopped before naming what they are afraid of.
+        if started and not feared:
+            return SuggestedStepsResponse(blocked=(
+                "The downward arrow on this situation was started but never landed on what they "
+                "are afraid will happen. Finish it and the suggestions can use it."
+            ))
         return SuggestedStepsResponse(blocked=str(e))
     except Exception as e:
         logger.exception("suggested_steps failed for situation %s", situation.id)

@@ -355,3 +355,28 @@ is made.
 - A rung said wrong can be fixed without leaving the conversation.
 - A clinician plans an exposure in session and the child opens their app and sees it waiting.
 - The child can tell which rung their clinician recommended, and can still choose a different one.
+
+## 2026-09-05 — "Do the downward arrow first" showed on situations that had one
+
+Peter hit the block on situations where he had done the arrow.
+
+The cause: the suggestions required `feared_outcome_approved`, and that column is only set when the
+clinician presses save on the **last** screen of the arrow — the one after "we've reached the
+bottom". Walking the whole chain and leaving records the chain and the feared outcome, but not the
+approval. So the arrow looked done and read as not done.
+
+Fixed by taking any recorded feared outcome, approved or not. The suggestions are confirm-first —
+nothing is written until the clinician taps one — so an unconfirmed wording seeds a suggestion the
+clinician is going to read and accept or reject anyway. Dr. Walker's rule was *"what is feared
+outcome of raising hand? That will determine sub situations"* — she asked for the feared outcome to
+exist, not for a second approval click.
+
+Two smaller things fixed alongside:
+
+- The arrow lookup used `scalar_one_or_none`, which raises if a situation ever has two arrow rows.
+  Now takes the most recently updated one.
+- A situation with a started chain but no feared outcome yet gets its own message. Telling someone
+  who is halfway down the arrow to "do the downward arrow" is wrong advice.
+
+**For the Dr. Walker queue:** suggestions can now be generated from a feared outcome the clinician
+walked to but did not explicitly confirm.

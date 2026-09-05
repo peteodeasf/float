@@ -39,8 +39,19 @@ async def test_a_situation_with_no_arrow_is_told_to_do_the_arrow(api, db):
     assert "downward arrow" in (body["blocked"] or "").lower()
 
 
-async def test_an_unapproved_arrow_does_not_count(api, db):
-    """A chain that has been started but not approved is not a feared outcome yet."""
+async def test_an_unapproved_feared_outcome_still_counts(api, db, monkeypatch):
+    """Peter, 2026-09-05: blocked on situations where he HAD done the arrow.
+
+    `feared_outcome_approved` is only set when the clinician presses save on the arrow's last
+    screen. Walking the whole chain and leaving does not set it. Requiring it blocked people who
+    had done the work, so a recorded feared outcome is enough.
+    """
+    async def fake(**kwargs):
+        assert kwargs["feared_outcome"] == "They will laugh at me"
+        return ["A smaller version"], ""
+
+    monkeypatch.setattr("app.api.routers.trigger_situations.suggest_steps", fake)
+
     org = await make_org(db)
     plan = await make_plan(db, org)
     situation = await make_situation(db, plan, name="Talking to people")
@@ -54,7 +65,27 @@ async def test_an_unapproved_arrow_does_not_count(api, db):
     api.sign_in_as(clinician.user)
     body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/suggested-steps")).json()
 
-    assert body["blocked"]
+    assert body["blocked"] is None
+    assert body["suggestions"] == ["A smaller version"]
+
+
+async def test_a_half_finished_arrow_says_so(api, db):
+    """Started the chain, never named the fear. "Do the arrow" is the wrong thing to tell them."""
+    org = await make_org(db)
+    plan = await make_plan(db, org)
+    situation = await make_situation(db, plan, name="Talking to people")
+    db.add(DownwardArrow(
+        trigger_situation_id=situation.id, organization_id=org.id,
+        arrow_steps=[{"question": "What would be bad about that?", "answer": "Everyone stares"}],
+        feared_outcome=None, feared_outcome_approved=False,
+    ))
+    await db.flush()
+    clinician = await _clinician_on(db, org, plan)
+
+    api.sign_in_as(clinician.user)
+    body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/suggested-steps")).json()
+
+    assert "started but never landed" in body["blocked"]
 
 
 async def test_a_situation_on_another_plan_is_refused(api, db):
