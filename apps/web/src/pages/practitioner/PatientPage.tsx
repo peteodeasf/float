@@ -32,6 +32,7 @@ import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
+import { LADDER_MAX_WIDTH, PROCESS_PANEL_WIDTH } from './patient/shared'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
 // Flat tabs, in bar order. Also the `?tab=` vocabulary other surfaces navigate with.
@@ -2479,7 +2480,11 @@ export default function PatientPage() {
         title: patient?.name ?? 'Loading...',
       }} />
 
-      <div style={{ padding: '24px' }}>
+      {/* The page has a width. Without one everything stretched to the browser, so on a wide
+          screen a step's name sat at one end of its row and its thermometer score at the other —
+          the two things that belong together, as far apart as the screen allows. Left-aligned
+          (Peter, 2026-09-05). Content column + the process panel + the gap between them. */}
+      <div style={{ padding: '24px', maxWidth: LADDER_MAX_WIDTH + PROCESS_PANEL_WIDTH + 24 + 48 }}>
 
         {/* Patient header — identity + access + actions */}
         {patient && !editingProfile && (
@@ -2715,7 +2720,9 @@ export default function PatientPage() {
 
         {/* Body: content + optional process panel */}
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Capped, so the column does not stretch when the process panel is closed. One rule
+              for how wide a row gets, rather than each component minding its own. */}
+          <div style={{ flex: 1, minWidth: 0, maxWidth: LADDER_MAX_WIDTH, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {activeTab === 'monitoring' && (
               showInlineReport ? (
                 <InlineMonitoringReport patientId={patientId!} onClose={() => setShowInlineReport(false)} />

@@ -307,15 +307,24 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
           />
         ) : (
           <button onClick={() => { setDraft(trigger.name); setEditing(true) }} title="Change the wording"
-            style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14, fontWeight: 800, color: '#0d3d3a' }}>
+            style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14, fontWeight: 800, color: '#0d3d3a' }}>
             {trigger.name}
           </button>
         )}
+
+        <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #a9cfc4' }} />
 
         <ScoreBox
           value={dtOf(trigger.distress_thermometer_rating)}
           onSet={n => saveMut.mutate({ distress_thermometer_rating: n })}
         />
+
+        {/* The arrow belongs to the situation, so it sits on the situation's row. To the right of
+            the score: nothing comes between a thing and its number. */}
+        <button onClick={onArrow} title="Find the feared outcome behind this one"
+          style={{ fontSize: 12, fontWeight: 700, color: '#4d8478', background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+          ↓ arrow
+        </button>
 
         {confirmRemove ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
@@ -331,16 +340,15 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
         )}
       </div>
 
-      {expanded && <StepList planId={planId} trigger={trigger} onArrow={onArrow} />}
+      {expanded && <StepList planId={planId} trigger={trigger} />}
     </div>
   )
 }
 
 /** The steps under one situation. Added, edited, scored and removed in place. */
-function StepList({ planId, trigger, onArrow }: {
+function StepList({ planId, trigger }: {
   planId: string
   trigger: TriggerSituation
-  onArrow: () => void
 }) {
   const qc = useQueryClient()
   const [draft, setDraft] = useState('')
@@ -376,7 +384,8 @@ function StepList({ planId, trigger, onArrow }: {
     .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
 
   return (
-    <div style={{ background: '#fff', padding: '10px 13px 12px 35px' }}>
+    <div style={{ background: '#fff', padding: '10px 13px 12px 24px' }}>
+      <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
       <div style={{ fontSize: 12, color: '#8fa5a1', marginBottom: 8 }}>
         Smaller versions of this — something like it, but easier.
       </div>
@@ -409,9 +418,7 @@ function StepList({ planId, trigger, onArrow }: {
         </button>
       </div>
 
-      <button onClick={onArrow} style={{ ...quietLink, marginTop: 10 }} title="Find the feared outcome behind this one">
-        ↓ Downward arrow
-      </button>
+      </div>
     </div>
   )
 }
@@ -450,10 +457,11 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
         />
       ) : (
         <button onClick={() => { setDraft(name); setEditing(true) }} title="Change the wording"
-          style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
+          style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
           {name}
         </button>
       )}
+      <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
       <ScoreBox value={score} onSet={onScore} />
       <button onClick={onRemove} title="Take this out"
         style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0 }}>×</button>

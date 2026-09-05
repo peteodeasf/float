@@ -16,6 +16,15 @@ export const SUB_BEHAVIOR_ADD_ENABLED = false
 // See docs/plans/ladder-rung-shape.md.
 export const BEHAVIOR_TYPE_SCENARIO = 'scenario'
 
+// One reading width for the ladder and the editor that builds it. Without it they stretch to the
+// browser, and on a wide screen a step's name sits at one end of the row with its thermometer
+// score at the other — the two things that belong together, as far apart as the screen allows.
+// Left-aligned, not centred (Peter, 2026-09-05).
+export const LADDER_MAX_WIDTH = 860
+
+/** The process checklist that sits beside the content on the patient page. */
+export const PROCESS_PANEL_WIDTH = 340
+
 // Not a behaviour at all — a symptom, a thought, a distress response. Nine such rows arrived in
 // this table from monitoring extraction ("Complained of stomach pain") and were showing as rungs.
 // The backend now keeps them off the ladder; this is here so the chip can label one if it is ever

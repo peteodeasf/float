@@ -280,11 +280,23 @@ function LadderRow({
           onClick={() => { setDraft(rung.name); setEditingName(true) }}
           title="Change the wording"
           className="text-sm text-slate-700 truncate bg-transparent border-none"
-          style={{ flex: 1, minWidth: 0, fontWeight: 600, textAlign: 'left', padding: 0, cursor: 'text' }}
+          style={{ flex: '0 1 auto', minWidth: 0, fontWeight: 600, textAlign: 'left', padding: 0, cursor: 'text' }}
         >
           {rung.name}
         </button>
       )}
+
+      {/* Carries the eye from the step to its score, so the two read as one thing however wide
+          the row is — and the scores still line up in a column you can read down. */}
+      <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 7, borderBottom: '1px dotted #dde8e6' }} />
+
+      <input
+        type="number" min="1" max="10"
+        value={rung.distress_thermometer_when_refraining ?? ''}
+        onChange={e => { const v = clampDt(clampDtInput(e.target.value)); if (v) saveMut.mutate({ distress_thermometer_when_refraining: v }) }}
+        title="Thermometer score, 1–10"
+        className="text-sm border border-slate-200 rounded"
+        style={{ width: '46px', padding: '4px 6px', textAlign: 'center', flexShrink: 0, fontWeight: 700 }} />
 
       {planned ? (
         <span style={{ fontSize: '11px', fontWeight: 700, color: '#3f8a78', flexShrink: 0 }}>Planned</span>
@@ -321,14 +333,6 @@ function LadderRow({
         <option value="">Ungrouped</option>
         {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
       </select>
-
-      <input
-        type="number" min="1" max="10"
-        value={rung.distress_thermometer_when_refraining ?? ''}
-        onChange={e => { const v = clampDt(e.target.value); if (v) saveMut.mutate({ distress_thermometer_when_refraining: v }) }}
-        title="How hard, 1–10"
-        className="text-sm border border-slate-200 rounded"
-        style={{ width: '52px', padding: '4px 6px', textAlign: 'center', flexShrink: 0 }} />
 
       <button onClick={() => delMut.mutate()} title="Remove rung"
         className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"
