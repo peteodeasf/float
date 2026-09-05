@@ -311,6 +311,27 @@ untouched; the flow simply stops asking.
 two ways to do it — **+ Add rung** on the ladder and **Build ladder**. Peter raised it; not yet
 resolved.
 
+## The editor is one screen — 2026-09-05
+
+Peter tested the three-screen version. What it is now:
+
+**One list, expandable.** Situations with a thermometer score typed beside each. Open one and its
+sub-situations are underneath — add, reword, score and remove them in place, score beside each. Close
+the editor and they are on the ladder.
+
+That replaces an add-situations screen, a per-situation steps screen, and a "here is where they
+went" beat — three screens and a walk for something that is one list with things under it.
+
+**Fixed with it:**
+
+- *"Something else that's hard"* → **"Add a situation you find hard"**.
+- *"That's my list →"* → **"Done — see the ladder →"**. The old label described the list; the button
+  closes the editor.
+- **The score is a box you type in**, not a scale on its own screen. Peter: *"enter the fear rating
+  right beside the sub-situation."*
+- **Clicking a situation no longer opens the behaviour questions.** It expands to its steps.
+- **No orientation strip.** With one screen there is nothing to be lost inside.
+
 **All eight built 2026-09-01.** 0 through 6 each stood alone; 7 was the rearrangement and came
 after the rest were good.
 
