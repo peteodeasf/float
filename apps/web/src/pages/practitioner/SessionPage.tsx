@@ -43,11 +43,12 @@ import {
   deleteBehavior,
   deleteTrigger,
   getSuggestedSteps,
+  getLadderReview,
   searchSituationLibrary,
   type TriggerSituation,
 } from '../../api/treatment'
 import {
-  clampDt, dtOf, screenSurface, card, primaryBtn, bigQ, lead, quietLink, Chrome,
+  clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink, Chrome,
 } from './sessionKit'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -151,6 +152,9 @@ export function LadderEditor({ planId, triggers, onDone, onArrow }: {
   const qc = useQueryClient()
   const [newName, setNewName] = useState('')
   const [open, setOpen] = useState<Set<string>>(new Set())
+  // Closing the editor puts these steps in front of a child, so it is the moment to look at the
+  // ladder as a whole rather than one situation at a time.
+  const [reviewing, setReviewing] = useState(false)
   // Collapsed behind a button. Adding situations is the first thing you do and then rarely again,
   // so it should not sit open under the list taking up the room the list needs.
   const [adding, setAdding] = useState(false)
@@ -158,6 +162,14 @@ export function LadderEditor({ planId, triggers, onDone, onArrow }: {
   const { data: starters } = useQuery({
     queryKey: ['situation-library', ''],
     queryFn: () => searchSituationLibrary(''),
+  })
+
+  const review = useQuery({
+    queryKey: ['ladder-review', planId],
+    queryFn: () => getLadderReview(planId),
+    enabled: reviewing,
+    staleTime: 0,
+    retry: false,
   })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['triggers', planId] })
@@ -241,10 +253,55 @@ export function LadderEditor({ planId, triggers, onDone, onArrow }: {
         </button>
       )}
 
-      {/* This closes the editor. It used to say "That's my list", which described the list rather
-          than what the button does — and what it does is put you back on the ladder. */}
+      {/* Closing puts these steps in front of a child, so the ladder gets looked at first. */}
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #eef2f1' }}>
-        <button onClick={onDone} style={{ ...primaryBtn, marginTop: 0 }}>Done — see the ladder →</button>
+        {!reviewing ? (
+          <button onClick={() => setReviewing(true)} style={{ ...primaryBtn, marginTop: 0 }}>
+            Check it and finish →
+          </button>
+        ) : (
+          <div style={{ background: '#fff', border: '1px solid #dbe8e5', borderRadius: 11, padding: '14px 16px' }}>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0d3d3a' }}>Before you finish</div>
+
+            {review.isLoading && (
+              <p style={{ fontSize: 13, color: '#6b7a79', margin: '8px 0 0' }}>Checking the ladder…</p>
+            )}
+            {review.isError && (
+              <p style={{ fontSize: 13, color: '#991b1b', margin: '8px 0 0' }}>Could not check it just now.</p>
+            )}
+
+            {review.data && review.data.findings.length === 0 && (
+              <p style={{ fontSize: 13, color: '#4d8478', margin: '8px 0 0' }}>
+                Nothing to flag — enough steps, a low enough place to start, and no big jumps.
+              </p>
+            )}
+
+            {(review.data?.findings ?? []).length > 0 && (
+              <ul style={{ margin: '10px 0 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {review.data!.findings.map(f => (
+                  <li key={f.code + f.message} style={{ fontSize: 13, color: '#4b5a59', lineHeight: 1.5 }}>
+                    {f.message}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Said plainly. A clean result here means the arithmetic is fine, not that anyone has
+                read whether a step keeps a safety behaviour or has a way out built into it. */}
+            {review.data?.ai_pending && (
+              <p style={{ fontSize: 12, color: '#94a3b8', margin: '12px 0 0', lineHeight: 1.5 }}>
+                This checks the numbers only — how many steps, where it starts, the gaps between
+                them. Nothing yet reads whether a step keeps a safety behaviour or has a way out
+                built into it.
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+              <button onClick={onDone} style={{ ...primaryBtn, marginTop: 0 }}>Finish — see the ladder →</button>
+              <button onClick={() => setReviewing(false)} style={{ ...ghostBtn, marginTop: 0 }}>← Keep editing</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

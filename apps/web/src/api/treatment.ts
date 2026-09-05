@@ -409,3 +409,15 @@ export const getSuggestedSteps = async (
   triggerId: string
 ): Promise<SuggestedSteps> =>
   (await apiClient.post(`/plans/${planId}/triggers/${triggerId}/suggested-steps`)).data
+
+// ── Ladder review ──
+// Checked before the editor closes. `findings` are arithmetic against Dr. Walker's parameters —
+// enough steps, a low enough place to start, no jump too big, nothing unscored. `ai_pending` says
+// the judgement half is not built, so a clean result is not "it has been read".
+export interface LadderReview {
+  findings: { code: string; message: string }[]
+  ai_pending: boolean
+}
+
+export const getLadderReview = async (planId: string): Promise<LadderReview> =>
+  (await apiClient.get(`/plans/${planId}/ladder-review`)).data

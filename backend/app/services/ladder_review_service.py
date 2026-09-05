@@ -208,3 +208,88 @@ async def run_ladder_review(
             for f in flags
         ]
     }
+
+
+# ── Reviewing the ladder a clinician actually built ───────────────────────────
+#
+# The engine above works on `LadderRung`, a table with zero rows in production — nothing has ever
+# written to it (see docs/plans/ladder-rung-shape.md). The ladder a clinician builds is
+# `avoidance_behaviors` rows of type `scenario`. This reads those, and applies the SAME
+# `LADDER_RULES` above so Dr. Walker's numbers stay in one place.
+#
+# These checks are arithmetic, not judgement. The judgement — does this step keep a safety
+# behaviour, is there a way out built into it, is the situation a symptom rather than the target —
+# is what Dr. Walker's review of our suggestions was about, and it is not built. `ai_pending` says
+# so rather than letting a clinician think the ladder has been read.
+
+
+@dataclass
+class ReviewFinding:
+    code: str
+    message: str
+
+
+def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RULES) -> list[ReviewFinding]:
+    """`steps` is (name, thermometer score), in any order.
+
+    Unscored steps are reported and then set aside — a missing score is not a zero, and treating it
+    as one would put a step at the bottom of the ladder and make every gap check wrong.
+    """
+    findings: list[ReviewFinding] = []
+
+    unscored = [name for name, score in steps if score is None]
+    scored = sorted([(name, s) for name, s in steps if s is not None], key=lambda x: x[1])
+
+    if unscored:
+        findings.append(ReviewFinding(
+            code="UNSCORED_STEPS",
+            message=(
+                f"{len(unscored)} step{'s have' if len(unscored) != 1 else ' has'} no thermometer "
+                f"score yet, so {'they are' if len(unscored) != 1 else 'it is'} not placed on the "
+                f"ladder: {', '.join(unscored[:3])}"
+                + ("…" if len(unscored) > 3 else "")
+            ),
+        ))
+
+    if not scored:
+        findings.append(ReviewFinding(
+            code="NO_SCORED_STEPS",
+            message="Nothing on the ladder has a score yet, so there is no order to work through.",
+        ))
+        return findings
+
+    min_rungs = rules["min_rungs"]
+    if len(scored) < min_rungs:
+        findings.append(ReviewFinding(
+            code="INSUFFICIENT_RUNGS",
+            message=FLAG_FALLBACKS["INSUFFICIENT_RUNGS"].format(
+                actual=len(scored), min_required=min_rungs
+            ),
+        ))
+
+    max_start = rules["max_starting_distress_thermometer"]
+    first_name, first_score = scored[0]
+    if first_score > max_start:
+        findings.append(ReviewFinding(
+            code="STARTING_DISTRESS_TOO_HIGH",
+            message=(
+                f"The easiest step — “{first_name}” — is a {first_score:g}. The recommended place "
+                f"to start is {max_start:g} or below. Something smaller usually exists: imagining "
+                f"it, or watching someone else do it."
+            ),
+        ))
+
+    max_gap = rules["max_rung_gap"]
+    for (a_name, a), (b_name, b) in zip(scored, scored[1:]):
+        gap = b - a
+        if gap > max_gap:
+            findings.append(ReviewFinding(
+                code="RUNG_GAP_TOO_LARGE",
+                message=(
+                    f"There is a jump of {gap:g} from “{a_name}” ({a:g}) to “{b_name}” ({b:g}). "
+                    f"The recommended maximum is {max_gap:g}. Something in between would make it "
+                    f"easier to climb."
+                ),
+            ))
+
+    return findings

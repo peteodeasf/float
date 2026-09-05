@@ -1,9 +1,11 @@
 import uuid
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.services.patient_access_service import assert_belongs_to
+from app.services.ladder_review_service import review_steps
 from app.models.treatment import TreatmentPlan, AvoidanceBehavior
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan, get_permitted_trigger
 from app.services.avoidance_behavior_service import (
@@ -83,6 +85,9 @@ async def delete_avoidance_behavior(
 # Every rung on a plan, grouped or not, ordered by score. The per-trigger routes above stay —
 # they are how a situation's own rungs are read, and the teen app and session mode use them.
 plan_rungs_router = APIRouter(prefix="/plans/{plan_id}/rungs", tags=["avoidance-behaviors"])
+# Its own prefix, not a path under /rungs — a literal segment declared after /rungs/{rung_id} is
+# captured as a rung id and 422s. That has bitten this file before.
+ladder_review_router = APIRouter(prefix="/plans/{plan_id}/ladder-review", tags=["avoidance-behaviors"])
 
 
 @plan_rungs_router.get("", response_model=list[AvoidanceBehaviorResponse])
@@ -143,3 +148,39 @@ async def delete_plan_rung(
     # including one whose grant was revoked. See docs/solutions/.
     await assert_rung_in_plan(db, rung_id, plan_id)
     await delete_behavior(db, rung_id, practitioner.organization_id)
+
+
+class LadderReviewFinding(BaseModel):
+    code: str
+    message: str
+
+
+class LadderReviewResponse(BaseModel):
+    findings: list[LadderReviewFinding] = []
+    #: The judgement half — does a step keep a safety behaviour, is there a way out built into it —
+    #: is not built. Said plainly so a clinician does not read a clean result as "it has been read".
+    ai_pending: bool = True
+
+
+@ladder_review_router.get("", response_model=LadderReviewResponse)
+async def review_plan_ladder(
+    plan_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    """Check the ladder before the clinician closes the editor.
+
+    Arithmetic only, against Dr. Walker's parameters in `LADDER_RULES`: is the easiest step low
+    enough to start on, are there enough steps, is any jump between two of them too big, is anything
+    unscored.
+    """
+    _, practitioner = context
+    rungs = await get_rungs_for_plan(db, plan_id, practitioner.organization_id)
+    steps = [
+        (r.name, float(r.distress_thermometer_when_refraining) if r.distress_thermometer_when_refraining is not None else None)
+        for r in rungs
+    ]
+    return LadderReviewResponse(
+        findings=[LadderReviewFinding(code=f.code, message=f.message) for f in review_steps(steps)],
+    )
