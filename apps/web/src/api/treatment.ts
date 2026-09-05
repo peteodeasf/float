@@ -393,3 +393,19 @@ export const updatePlanRung = async (
 export const deletePlanRung = async (planId: string, rungId: string): Promise<void> => {
   await apiClient.delete(`/plans/${planId}/rungs/${rungId}`)
 }
+
+// ── Suggested steps ──
+// Smaller versions of a situation, for the clinician to choose from. Confirm-first: nothing is
+// written until they tap one. `blocked` carries a sentence rather than an error — the usual reason
+// is a real instruction, "do the downward arrow first".
+export interface SuggestedSteps {
+  suggestions: string[]
+  variations: string
+  blocked: string | null
+}
+
+export const getSuggestedSteps = async (
+  planId: string,
+  triggerId: string
+): Promise<SuggestedSteps> =>
+  (await apiClient.post(`/plans/${planId}/triggers/${triggerId}/suggested-steps`)).data

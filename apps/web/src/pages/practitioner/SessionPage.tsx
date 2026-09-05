@@ -42,6 +42,7 @@ import {
   updateBehavior,
   deleteBehavior,
   deleteTrigger,
+  getSuggestedSteps,
   searchSituationLibrary,
   type TriggerSituation,
 } from '../../api/treatment'
@@ -282,7 +283,8 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
   }
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #cfe0db', borderRadius: 11, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+    <div style={{ flex: 1, minWidth: 0, background: '#fff', border: '1px solid #cfe0db', borderRadius: 11, overflow: 'hidden' }}>
       {/* The header carries the mint ground so a situation reads as the heading over its steps
           rather than another row in the same list. */}
       <div style={{
@@ -319,13 +321,6 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
           onSet={n => saveMut.mutate({ distress_thermometer_rating: n })}
         />
 
-        {/* The arrow belongs to the situation, so it sits on the situation's row. To the right of
-            the score: nothing comes between a thing and its number. */}
-        <button onClick={onArrow} title="Find the feared outcome behind this one"
-          style={{ fontSize: 12, fontWeight: 700, color: '#4d8478', background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
-          ↓ arrow
-        </button>
-
         {confirmRemove ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
             <button onClick={() => delMut.mutate()} disabled={delMut.isPending}
@@ -342,6 +337,15 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
 
       {expanded && <StepList planId={planId} trigger={trigger} />}
     </div>
+
+    {/* Its own thing, beside the situation rather than inside its row of controls. It opens
+        straight into THIS situation's chain — there is nothing to pick, because clicking it here
+        is the choice. */}
+    <button onClick={onArrow} title="Find the feared outcome behind this situation"
+      style={{ flexShrink: 0, marginTop: 6, fontSize: 12, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '7px 13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+      ↓ Downward Arrow
+    </button>
+    </div>
   )
 }
 
@@ -352,10 +356,21 @@ function StepList({ planId, trigger }: {
 }) {
   const qc = useQueryClient()
   const [draft, setDraft] = useState('')
+  const [suggesting, setSuggesting] = useState(false)
 
   const { data: behaviors, isLoading } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
+  })
+
+  // Asked for, never automatic. It costs a model call and a clinician's attention, and a screen
+  // that suggests before being asked teaches people to stop reading it.
+  const suggestQuery = useQuery({
+    queryKey: ['suggested-steps', trigger.id],
+    queryFn: () => getSuggestedSteps(planId, trigger.id),
+    enabled: suggesting,
+    staleTime: Infinity,
+    retry: false,
   })
 
   const invalidate = () => {
@@ -387,7 +402,7 @@ function StepList({ planId, trigger }: {
     <div style={{ background: '#fff', padding: '10px 13px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
       <div style={{ fontSize: 12, color: '#8fa5a1', marginBottom: 8 }}>
-        Smaller versions of this — something like it, but easier.
+        What is something you could do in this situation? How hard would it be?
       </div>
 
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
@@ -407,6 +422,45 @@ function StepList({ planId, trigger }: {
         </div>
       )}
 
+      {/* Confirm-first, like the arrow probe: tapping one writes it as a step, and the wording can
+          be changed afterwards like any other. Nothing is written until a clinician chooses it. */}
+      {suggesting && (
+        <div style={{ margin: '0 0 10px', background: '#f4fbf9', border: '1px solid #d7ece5', borderRadius: 10, padding: '10px 12px' }}>
+          {suggestQuery.isLoading && (
+            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>Thinking of smaller versions…</div>
+          )}
+          {suggestQuery.isError && (
+            <div style={{ fontSize: 12.5, color: '#991b1b' }}>Could not get suggestions just now.</div>
+          )}
+          {suggestQuery.data?.blocked && (
+            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>{suggestQuery.data.blocked}</div>
+          )}
+          {(suggestQuery.data?.suggestions ?? []).length > 0 && (
+            <>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 7 }}>
+                Tap one to add it. Change the wording after if it is not quite right.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {suggestQuery.data!.suggestions
+                  .filter(sug => !steps.some(st => st.name.trim().toLowerCase() === sug.trim().toLowerCase()))
+                  .map(sug => (
+                    <button key={sug} onClick={() => addMut.mutate(sug)} disabled={addMut.isPending}
+                      style={{ textAlign: 'left', fontSize: 13, color: '#0d3d3a', background: '#fff', border: '1px solid #d7ece5', borderRadius: 8, padding: '8px 11px', cursor: 'pointer' }}>
+                      + {sug}
+                    </button>
+                  ))}
+              </div>
+              {suggestQuery.data!.variations && (
+                <div style={{ fontSize: 12, color: '#6b7a79', marginTop: 8 }}>
+                  Other variations: {suggestQuery.data!.variations}
+                </div>
+              )}
+            </>
+          )}
+          <button onClick={() => setSuggesting(false)} style={{ ...quietLink, marginTop: 9 }}>Hide</button>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) addMut.mutate(draft.trim()) }}
@@ -417,6 +471,12 @@ function StepList({ planId, trigger }: {
           Add step
         </button>
       </div>
+
+      {!suggesting && (
+        <button onClick={() => setSuggesting(true)} style={{ ...quietLink, marginTop: 9, color: '#4d8478' }}>
+          ✨ Suggest smaller versions
+        </button>
+      )}
 
       </div>
     </div>

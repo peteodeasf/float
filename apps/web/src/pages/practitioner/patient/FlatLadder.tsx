@@ -107,7 +107,7 @@ export function FlatLadder({
               border: `1px solid ${ladderActive ? 'var(--float-primary)' : '#cbd5e1'}`,
             }}
           >
-            {ladderActive ? 'On for the child' : 'Off for the child'}
+            {ladderActive ? 'Patient can view' : 'Patient cannot view'}
           </button>
           {!showAdd && (
             <button onClick={() => setShowAdd(true)} className="cursor-pointer"
@@ -311,7 +311,7 @@ function LadderRow({
       {/* Which one to do next. Advice the child sees — they can still pick any of them. */}
       <button
         onClick={onRecommend}
-        title={isRecommended ? 'Stop suggesting this one' : 'Suggest this one next'}
+        title={isRecommended ? 'Stop suggesting this one to the patient' : 'Tell the patient to do this one next'}
         className="cursor-pointer"
         style={{
           fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
@@ -321,18 +321,16 @@ function LadderRow({
           border: `1px solid ${isRecommended ? 'var(--float-primary)' : '#e2e8f0'}`,
         }}
       >
-        {isRecommended ? 'Next' : 'Set next'}
+        {isRecommended ? 'Suggested to patient' : 'Suggest to patient'}
       </button>
 
-      {/* The grouping — changeable in place, and blank is allowed. */}
-      <select
-        value={rung.trigger_situation_id ?? ''}
-        onChange={e => saveMut.mutate({ trigger_situation_id: e.target.value || null })}
-        title="Which situation this belongs to"
-        style={{ fontSize: '11px', fontWeight: 600, border: '1px solid #e4efeb', borderRadius: '6px', padding: '3px 6px', color: sit ? '#3f8a78' : '#c0ccca', background: '#f8fbfa', cursor: 'pointer', maxWidth: '190px' }}>
-        <option value="">Ungrouped</option>
-        {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-      </select>
+      {/* Which situation it belongs to, read-only. Changing it is the editor's job — a step is
+          added and moved where it was written, and having two places to do it was one too many. */}
+      {sit && (
+        <span style={{ fontSize: '11px', fontWeight: 600, color: '#8fa5a1', flexShrink: 0, whiteSpace: 'nowrap', maxWidth: '190px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {sit}
+        </span>
+      )}
 
       <button onClick={() => delMut.mutate()} title="Remove rung"
         className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"

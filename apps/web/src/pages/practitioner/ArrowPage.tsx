@@ -155,8 +155,12 @@ export default function ArrowPage() {
         <ChainPhase
           key={current.id}
           trigger={current}
-          onBack={() => setPhase('pick')}
-          onDone={() => setPhase('pick')}
+          // Opened from a situation in the ladder editor, the situation is not a choice — clicking
+          // the arrow there WAS the choice. Both ways out go back, not to a list of situations to
+          // pick from again. Peter, 2026-09-05.
+          onBack={fromSituation ? exit : () => setPhase('pick')}
+          onDone={fromSituation ? exit : () => setPhase('pick')}
+          backLabel={fromSituation ? '← Back to the ladder' : '← All situations'}
         />
       )}
     </Chrome>
@@ -225,7 +229,7 @@ function PickRow({ trigger, onOpen }: { trigger: TriggerSituation; onOpen: (id: 
 }
 
 // ── The descent ────────────────────────────────────────────────
-export function ChainPhase({ trigger, onBack, onDone }: { trigger: TriggerSituation; onBack: () => void; onDone: () => void }) {
+export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situations' }: { trigger: TriggerSituation; onBack: () => void; onDone: () => void; backLabel?: string }) {
   const qc = useQueryClient()
   const [arrowId, setArrowId] = useState<string | null>(null)
   const [startingThought, setStartingThought] = useState('')
@@ -361,7 +365,7 @@ export function ChainPhase({ trigger, onBack, onDone }: { trigger: TriggerSituat
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 20, paddingTop: 14, borderTop: '1px solid #eef2f1' }}>
-        <button onClick={onBack} style={quietLink}>← All situations</button>
+        <button onClick={onBack} style={quietLink}>{backLabel}</button>
       </div>
     </div>
   )

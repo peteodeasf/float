@@ -1,10 +1,16 @@
+import logging
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.services.patient_access_service import assert_belongs_to
-from app.models.treatment import TreatmentPlan, TriggerSituation
+from app.models.treatment import AvoidanceBehavior, TreatmentPlan, TriggerSituation
+from app.models.downward_arrow import DownwardArrow
+from app.core.behavior_types import OBSERVATION, SCENARIO
+from app.services.step_suggestion_service import SuggestionUnavailable, suggest_steps
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan
 from app.services.trigger_situation_service import (
     get_triggers_for_plan,
@@ -19,6 +25,8 @@ from app.schemas.trigger_situation import (
     TriggerSituationResponse,
     ReorderRequest
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/plans/{plan_id}/triggers", tags=["trigger-situations"])
 
@@ -91,3 +99,67 @@ async def delete_trigger_situation(
     await delete_trigger(db, trigger_id, practitioner.organization_id)
 
 
+
+
+class SuggestedStepsResponse(BaseModel):
+    """Suggestions, or the reason there are none.
+
+    `blocked` carries a sentence for the clinician rather than an error, because the usual reason is
+    a real instruction: do the downward arrow first.
+    """
+    suggestions: list[str] = []
+    variations: str = ""
+    blocked: str | None = None
+
+
+@router.post("/{trigger_id}/suggested-steps", response_model=SuggestedStepsResponse)
+async def suggested_steps(
+    plan_id: uuid.UUID,
+    trigger_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    """Smaller versions of this situation, for the clinician to choose from.
+
+    Confirm-first, like the arrow probe: nothing is written. The clinician taps a suggestion to add
+    it as a step, and can edit the wording before or after.
+    """
+    _, practitioner = context
+    situation = await assert_belongs_to(db, TriggerSituation, trigger_id, plan_id)
+
+    # What the child already does in this situation. The steps are what has been written; the
+    # coping behaviours are what a suggestion must never contain — and are usually the dimension
+    # worth varying instead.
+    behaviors = (await db.execute(
+        select(AvoidanceBehavior).where(AvoidanceBehavior.trigger_situation_id == situation.id)
+    )).scalars().all()
+    steps = [b.name for b in behaviors if b.behavior_type == SCENARIO]
+    coping = [
+        b.name for b in behaviors
+        if b.behavior_type not in (SCENARIO, OBSERVATION)
+    ]
+
+    arrow = (await db.execute(
+        select(DownwardArrow).where(DownwardArrow.trigger_situation_id == situation.id)
+    )).scalar_one_or_none()
+    feared = arrow.feared_outcome if (arrow and arrow.feared_outcome_approved) else None
+
+    try:
+        suggestions, variations = await suggest_steps(
+            situation=situation.name,
+            score=float(situation.distress_thermometer_rating) if situation.distress_thermometer_rating is not None else None,
+            feared_outcome=feared,
+            steps=steps,
+            coping=coping,
+        )
+    except SuggestionUnavailable as e:
+        return SuggestedStepsResponse(blocked=str(e))
+    except Exception as e:
+        logger.exception("suggested_steps failed for situation %s", situation.id)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Could not get suggestions: {type(e).__name__}",
+        ) from e
+
+    return SuggestedStepsResponse(suggestions=suggestions, variations=variations)
