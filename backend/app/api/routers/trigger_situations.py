@@ -126,7 +126,11 @@ async def suggested_steps(
     it as a step, and can edit the wording before or after.
     """
     _, practitioner = context
-    situation = await assert_belongs_to(db, TriggerSituation, trigger_id, plan_id)
+    # Keyword, and it returns nothing — it asserts the situation is on THIS plan and 404s if not.
+    await assert_belongs_to(db, TriggerSituation, trigger_id, treatment_plan_id=plan_id)
+    situation = (await db.execute(
+        select(TriggerSituation).where(TriggerSituation.id == trigger_id)
+    )).scalar_one()
 
     # What the child already does in this situation. The steps are what has been written; the
     # coping behaviours are what a suggestion must never contain — and are usually the dimension
