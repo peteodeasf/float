@@ -536,7 +536,13 @@ export default function PatientPage() {
   // One view — the ladder. The conversation is a setup and edit flow that hangs off it, not a
   // second tab showing the same thing (Peter, 2026-09-01). The two-pane Situations builder is
   // hidden: its code is still below and rendered by nothing.
-  const [planView, setPlanView] = useState<'ladder' | 'conversation'>('ladder')
+  //
+  // `?edit=1` lands straight in the editor: the downward arrow uses it to come back to the screen
+  // it was opened from, with `?situation=` saying which one to reopen. Read off the URL directly
+  // because this runs above the useSearchParams call below.
+  const [planView, setPlanView] = useState<'ladder' | 'conversation'>(
+    new URLSearchParams(window.location.search).get('edit') === '1' ? 'conversation' : 'ladder'
+  )
   const [deleteTriggerError, setDeleteTriggerError] = useState<string | null>(null)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameVal, setNicknameVal] = useState('')
@@ -1830,6 +1836,7 @@ export default function PatientPage() {
           <SessionInterview
             patientId={patientId!}
             embedded
+            openSituationId={searchParams.get('situation')}
             onExit={() => setPlanView('ladder')}
           />
         </div>

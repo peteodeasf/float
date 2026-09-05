@@ -77,9 +77,12 @@ export default function SessionPage() {
  * `embedded` drops the full-screen shell so this can live inside the Plan tab. Same component
  * either way, so the Full screen button is a change of presentation rather than a different screen.
  */
-export function SessionInterview({ patientId, embedded = false, onExit }: {
+export function SessionInterview({ patientId, embedded = false, openSituationId, onExit }: {
   patientId: string
   embedded?: boolean
+  /** Open with this situation already expanded — how the downward arrow comes back to the screen
+   *  it was opened from. */
+  openSituationId?: string | null
   onExit: () => void
 }) {
   const goToArrow = useNavigate()
@@ -135,6 +138,7 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
       <LadderEditor
         planId={plan.id}
         triggers={sortedTriggers}
+        openSituationId={openSituationId}
         onDone={onExit}
         onArrow={id => goToArrow(`/patients/${patientId}/arrow?situation=${id}`)}
       />
@@ -143,15 +147,16 @@ export function SessionInterview({ patientId, embedded = false, onExit }: {
 }
 
 // ── The editor ────────────────────────────────────────────────────────────────
-export function LadderEditor({ planId, triggers, onDone, onArrow }: {
+export function LadderEditor({ planId, triggers, openSituationId, onDone, onArrow }: {
   planId: string
   triggers: TriggerSituation[]
+  openSituationId?: string | null
   onDone: () => void
   onArrow: (situationId: string) => void
 }) {
   const qc = useQueryClient()
   const [newName, setNewName] = useState('')
-  const [open, setOpen] = useState<Set<string>>(new Set())
+  const [open, setOpen] = useState<Set<string>>(() => new Set(openSituationId ? [openSituationId] : []))
   // Closing the editor puts these steps in front of a child, so it is the moment to look at the
   // ladder as a whole rather than one situation at a time.
   const [reviewing, setReviewing] = useState(false)
@@ -257,7 +262,7 @@ export function LadderEditor({ planId, triggers, onDone, onArrow }: {
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #eef2f1' }}>
         {!reviewing ? (
           <button onClick={() => setReviewing(true)} style={{ ...primaryBtn, marginTop: 0 }}>
-            Check it and finish →
+            Save ladder →
           </button>
         ) : (
           <div style={{ background: '#fff', border: '1px solid #dbe8e5', borderRadius: 11, padding: '14px 16px' }}>

@@ -120,9 +120,15 @@ export default function ArrowPage() {
     .filter(t => !t.is_placeholder)
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
 
-  // Back where they came from. Arriving from the conversation, "exit" means the conversation,
-  // not the tab it lives on.
-  const exit = () => navigate(`/patients/${patientId}?tab=plan`)
+  // Back where they came from. Opened from a situation in the ladder editor, that is the editor
+  // with the situation still open — not the ladder, and not a list of situations to pick from.
+  // Peter, 2026-09-05: "you should go back to whence you came".
+  const exit = () =>
+    navigate(
+      fromSituation
+        ? `/patients/${patientId}?tab=plan&edit=1&situation=${fromSituation}`
+        : `/patients/${patientId}?tab=plan`
+    )
   const current = situations.find(t => t.id === currentId) ?? null
 
   if (planLoading) {
@@ -160,7 +166,7 @@ export default function ArrowPage() {
           // pick from again. Peter, 2026-09-05.
           onBack={fromSituation ? exit : () => setPhase('pick')}
           onDone={fromSituation ? exit : () => setPhase('pick')}
-          backLabel={fromSituation ? '← Back to the ladder' : '← All situations'}
+          backLabel={fromSituation ? '← Back to the steps' : '← All situations'}
         />
       )}
     </Chrome>
