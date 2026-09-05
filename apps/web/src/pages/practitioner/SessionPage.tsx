@@ -150,6 +150,9 @@ export function LadderEditor({ planId, triggers, onDone, onArrow }: {
   const qc = useQueryClient()
   const [newName, setNewName] = useState('')
   const [open, setOpen] = useState<Set<string>>(new Set())
+  // Collapsed behind a button. Adding situations is the first thing you do and then rarely again,
+  // so it should not sit open under the list taking up the room the list needs.
+  const [adding, setAdding] = useState(false)
 
   const { data: starters } = useQuery({
     queryKey: ['situation-library', ''],
@@ -201,28 +204,41 @@ export function LadderEditor({ planId, triggers, onDone, onArrow }: {
         </div>
       )}
 
-      {suggestions.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 12.5, color: '#9aa9a8', marginBottom: 7 }}>Other kids often say these — tap any that fit</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-            {suggestions.map(s => (
-              <button key={s.id} onClick={() => addMut.mutate(s.name)} disabled={addMut.isPending}
-                style={{ fontSize: 13, fontWeight: 600, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '8px 14px', cursor: 'pointer' }}>
-                + {s.name}
-              </button>
-            ))}
+      {adding ? (
+        <div style={{ marginTop: 14, background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: 11, padding: '13px' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={newName} onChange={e => setNewName(e.target.value)} autoFocus
+              onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) addMut.mutate(newName.trim()) }}
+              placeholder="Add a situation you find hard"
+              style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 11, padding: '11px 13px', fontSize: 14, minWidth: 0, background: '#fff' }} />
+            <button onClick={() => addMut.mutate(newName.trim())} disabled={!newName.trim() || addMut.isPending}
+              style={{ ...primaryBtn, marginTop: 0, opacity: !newName.trim() ? 0.4 : 1 }}>Add</button>
           </div>
-        </div>
-      )}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-        <input value={newName} onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) addMut.mutate(newName.trim()) }}
-          placeholder="Add a situation you find hard"
-          style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 11, padding: '11px 13px', fontSize: 14, minWidth: 0 }} />
-        <button onClick={() => addMut.mutate(newName.trim())} disabled={!newName.trim() || addMut.isPending}
-          style={{ ...primaryBtn, marginTop: 0, opacity: !newName.trim() ? 0.4 : 1 }}>Add</button>
-      </div>
+          {suggestions.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 12.5, color: '#9aa9a8', marginBottom: 7 }}>Other kids often say these — tap any that fit</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {suggestions.map(sug => (
+                  <button key={sug.id} onClick={() => addMut.mutate(sug.name)} disabled={addMut.isPending}
+                    style={{ fontSize: 13, fontWeight: 600, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '8px 14px', cursor: 'pointer' }}>
+                    + {sug.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => { setAdding(false); setNewName('') }} style={{ ...quietLink, marginTop: 12 }}>
+            Done adding
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)}
+          style={{ marginTop: 14, fontSize: 13, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '9px 16px', cursor: 'pointer' }}>
+          + Add situation
+        </button>
+      )}
 
       {/* This closes the editor. It used to say "That's my list", which described the list rather
           than what the button does — and what it does is put you back on the ladder. */}
