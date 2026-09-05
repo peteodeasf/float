@@ -266,10 +266,16 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
   }
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px' }}>
+    <div style={{ background: '#fff', border: '1px solid #cfe0db', borderRadius: 11, overflow: 'hidden' }}>
+      {/* The header carries the mint ground so a situation reads as the heading over its steps
+          rather than another row in the same list. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px',
+        background: '#eafaf6',
+        borderBottom: expanded ? '1px solid #cfe0db' : undefined,
+      }}>
         <button onClick={onToggle} aria-expanded={expanded} title={expanded ? 'Collapse' : 'Show its steps'}
-          style={{ fontSize: 11, color: '#a9c0bb', width: 12, flexShrink: 0, background: 'none', border: 0, cursor: 'pointer', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</button>
+          style={{ fontSize: 11, color: '#4d8478', width: 12, flexShrink: 0, background: 'none', border: 0, cursor: 'pointer', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</button>
 
         {editing ? (
           <input
@@ -285,7 +291,7 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
           />
         ) : (
           <button onClick={() => { setDraft(trigger.name); setEditing(true) }} title="Change the wording"
-            style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13.5, fontWeight: 700, color: '#1e293b' }}>
+            style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14, fontWeight: 800, color: '#0d3d3a' }}>
             {trigger.name}
           </button>
         )}
@@ -354,7 +360,7 @@ function StepList({ planId, trigger, onArrow }: {
     .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
 
   return (
-    <div style={{ borderTop: '1px solid #eef2f1', background: '#fbfdfc', padding: '10px 13px 12px 35px' }}>
+    <div style={{ background: '#fff', padding: '10px 13px 12px 35px' }}>
       <div style={{ fontSize: 12, color: '#8fa5a1', marginBottom: 8 }}>
         Smaller versions of this — something like it, but easier.
       </div>
