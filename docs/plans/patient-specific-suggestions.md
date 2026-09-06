@@ -166,12 +166,47 @@ Same rule, same list. The raw material is already there — `parent_response` on
 entry is an accommodation in the parent's own words, with a date and a fear rating beside it, and
 the existing extraction already returns accommodations.
 
-**Blocked on clinical input, not on code.** We have Dr. Walker's rules for what makes a good
-exposure step. We have nothing from her on what makes a good accommodation-reduction step — not one
-worked example. Writing that prompt from our own guesses is the exact failure she flagged on the
-ladder suggestions.
+We have Dr. Walker's rules for what makes a good exposure step. We have nothing from her on what
+makes a good accommodation-reduction step — not one worked example.
 
-**Open question for Peter:** wait for her rules, or put a draft in front of her to mark up?
+**Peter's call, 2026-09-05: build it anyway and show her.** *"Let's put a working feature in front
+of her and have her respond to it. I think the initial version is based largely upon the monitoring
+data."* Reacting to something real gets a better answer than an open question does.
+
+So the first version:
+
+- is built from the monitoring log, chiefly `parent_response` — what the parent actually did, in
+  their own words, with a date and a fear rating beside it
+- names accommodations back rather than inventing them, and says which entries each came from
+- proposes nothing when the log contains nothing, the same as the exposure suggestions
+- carries the same traceability rule in the prompt: every suggestion must come from something
+  recorded
+
+**What it must not do until she has ruled on it:** propose the order to stop things in, or a
+distress rating for stopping one. Naming an accommodation the parent already described is
+repeating them back. Deciding which one a family should give up first is a clinical judgement we
+have nothing to base on.
+
+**Then show her the real screen**, with a real ladder on it, and ask what is wrong. Log the round
+in the Dr. Walker review queue.
+
+## Make "Analyze with AI" look like a button
+
+Peter, 2026-09-05: *"The 'Analyze with AI' button should actually look like a button, like the
+other buttons in the portal. We need to be more consistent in terms of how we represent them."*
+
+Today it is grey text with no border. So are 47 other controls on the patient page — every one
+written inline, none sharing a definition. There is no shared button in the clinician app, so each
+screen re-invents one and they drift.
+
+Two things, and the second is the one that lasts:
+
+1. Give this button the same treatment as the other real buttons in the portal.
+2. Write one shared button and use it. Three kinds is enough: the main action, a second action
+   beside it, and a quiet text link for things like Cancel. Once it exists, replace the inline ones
+   as each screen is touched rather than in one sweep.
+
+This is not part of the list work and does not block it.
 
 ## Order of work
 
@@ -180,7 +215,8 @@ ladder suggestions.
    buttons.
 3. The Add situation panel offers items from the list; picking one records the link.
 4. Sub-situation suggestions read the linked evidence; the gate closes when there is none.
-5. Accommodation suggestions — after Dr. Walker.
+5. Accommodation suggestions, built from monitoring, then shown to Dr. Walker for her
+   reaction.
 6. Session notes feed the list — after note extraction exists.
 
 Nothing before step 3 changes what a clinician is shown.
