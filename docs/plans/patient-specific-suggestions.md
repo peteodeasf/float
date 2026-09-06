@@ -1,81 +1,113 @@
-# Suggestions built from the patient's own record
+# One saved list per patient, and everything is written from it
 
-**Status:** planned, not built. Written 2026-09-05 from Peter's direction.
+**Status:** planned, not built. Agreed with Peter 2026-09-05.
 
-## The rule
+## The idea in one sentence
+
+One saved list per patient, built from the patient's own data, that both the report and every
+suggestion are written from.
+
+## Why
 
 > We shouldn't suggest anything unless they're based upon the context for the patient.
 > — Peter, 2026-09-05
 
-A suggestion may only be written from something this patient's own record actually says. If we
-don't have that, we show nothing and say why. We do not fill the gap with what children in general
-do.
+A suggestion may only be written from something this patient's record actually says. If we don't
+have that, we show nothing and say why. We do not fill the gap with what children in general do.
 
 This is a change to what a child gets asked to face, so it is clinical. Pre-launch it is Peter's
-call and it is logged in the Dr. Walker review queue.
+call, and it is logged in the Dr. Walker review queue.
 
-## What counts as the record
+## The list
 
-**Monitoring data.** In. Already in the database, already sent to the model by the extraction and
-preliminary-report endpoints.
+One per patient. It holds:
 
-**Session notes.** Out for now. A note is one free-text field; nothing reads it and nothing pulls
-facts out of it. Peter, 2026-09-05: *"excluded for now until we implement that extraction, but plan
-to add later."* The design below keeps a place for them.
+- situations
+- child behaviours
+- accommodations
+- sub-situations (the AI suggestions, once generated)
 
-## The model: a situation is only real once it is picked
+Each item carries:
 
-Peter, 2026-09-05: *"the situations of record are the ones that are selected in the ladder builder.
-Until then they are just context and suggestions."*
+- its wording, in the family's own words
+- **where it came from** — which monitoring entries, which session notes, or both
+- whether a clinician has added it to the treatment plan, and which plan row that is
+- whether a clinician has removed it
 
-That splits what is currently one thing into two:
+**Nothing on the list is on the treatment plan.** Peter, 2026-09-05: *"it's not part of the plan
+until explicitly added. That's true of situations, behaviors, sub-situations, accommodations, etc."*
+A clinician adds an item where that kind of thing lives — a situation in the ladder builder, an
+accommodation in the parent panel — and that act records the link back to the evidence.
 
-- **A situation the extractor found in the monitoring log.** Context. It has a name and the entries
-  it came from. It is not on the plan and the child never sees it.
-- **A situation on the ladder.** Of record. A clinician picked it in the ladder builder.
+### Recording the source is not optional
 
-Today the extraction's "Add to plan" button creates plan situations directly, which makes situations
-of record without anyone picking them in the builder. **Open question for Peter:** should that
-button now write candidates only, leaving the ladder builder as the single place a situation
-becomes real? Recommended yes — two paths to the same thing is what we just finished removing from
-the ladder.
+Each item says which monitoring entries and which session notes it came from. Two reasons, both
+from Peter, 2026-09-05:
 
-## The link
+1. The clinician needs to know. "He hides in his room at family gatherings" reads differently
+   depending on whether the parent logged it or the clinician wrote it in session.
+2. A suggestion has to be traceable to something real. An item that can come from two places has to
+   say which.
 
-Nothing today records which monitoring entries a situation came from. The extraction matched names
-in the browser and threw the match away. That link is the whole feature, so it gets stored.
+## What feeds it
 
-New table, `monitoring_situations` — one row per situation the extractor found in a patient's log:
+**Monitoring data.** Now. Already in the database, already sent to the model by the existing
+endpoints.
 
-| column | what it holds |
-| --- | --- |
-| `patient_id`, `organization_id` | scoping, as everywhere else |
-| `name` | the situation in the family's own words |
-| `entry_ids` | the monitoring entries it was drawn from |
-| `trigger_situation_id` | null until a clinician picks it in the ladder builder. **This is the link.** |
-| `dismissed_at` | the clinician said it is not relevant |
-| `created_at` | |
+**Session notes.** Later. A note is one free-text field today; nothing reads it. Peter, 2026-09-05:
+*"excluded for now until we implement that extraction, but plan to add later."* When note
+extraction exists it updates the same list.
 
-Picking a candidate in the builder creates the plan situation and sets `trigger_situation_id`. From
-then on, "the monitoring entries for this situation" is one join.
+## What reads it
 
-A situation somebody typed by hand has no row here, so it has no entries, so it gets no
-sub-situation suggestions. That is the rule working, not a gap to patch.
+**Analyze with AI →** builds or updates the list, then writes the Preliminary Report & Treatment
+Targets from the list — not from the raw log again.
+
+Today the report and the removed trigger-list button were two separate model calls over the same
+data, so they could disagree and nobody would see it. After this, Treatment Targets in the report
+and the situations offered in the ladder builder are the same list in the same words.
+
+The report stays what it is: prose the clinician reads before the first session, saved on the
+patient, editable. It just stops being generated independently. Press the button again as the
+parent logs more, and the list updates and the report is rewritten from it — always a picture of
+the current list, not a snapshot of one day's log.
+
+**The suggestions** — situations in the ladder builder, sub-situations under a situation,
+accommodations in the parent panel — are all written from the list.
+
+## What goes away
+
+**Build trigger list from data →**, and **Extract with AI →** on the Parent monitoring form card,
+which is the same thing under a different name. Peter, 2026-09-05: *"Not adding anything at this
+point to the plan."*
+
+The code behind it is not deleted — reading the monitoring log and pulling out situations,
+behaviours and accommodations is exactly what builds the list. It writes somewhere else.
+
+The line **"Last analyzed … Add new monitoring observations to re-analyze"** is driven by that
+button's run and needs rethinking once the list exists.
+
+**Consequence while this is in flight:** until the ladder builder offers situations from the list,
+a clinician types every situation by hand. Acceptable pre-launch; it is a real gap for that window.
 
 ## What the clinician sees
 
-**The Add situation panel in the ladder editor** gets a first section, above the free-text box:
+**The Monitoring tab** holds the list. Peter, 2026-09-05: *"monitoring tab is fine. the function is
+initially more about holding the data than it being shown to the clinician, but we will want to
+show it."* So: store it properly first, show it well second.
+
+**The Add situation panel in the ladder editor** gets a section above the free-text box:
 
 > **From the monitoring log** — Ordering lunch in the cafeteria (4 entries) · Assembly (2 entries)
 
 Tapping one adds it to the ladder and records the link.
 
-The generic common-situations list stays underneath, clearly separated. Peter, 2026-09-05:
-*"It's not clear yet if it's okay to suggest more general situations there as well. I think it's
-probably less of an issue than in sub-situation screen."* Keeping it costs nothing under this
-design — a generic situation still gets no sub-situation suggestions unless entries match it.
+The common-situations list stays underneath. Peter, 2026-09-05: *"It's not clear yet if it's okay
+to suggest more general situations there as well. I think it's probably less of an issue than in
+sub-situation screen."* Keeping it costs nothing here — a situation picked from that list has no
+monitoring entries behind it, so it gets no sub-situation suggestions.
 
-**The sub-situation suggestions** get the entries in the block:
+**Sub-situation suggestions** get the entries in the prompt:
 
 ```
 Situation: Ordering lunch in the cafeteria
@@ -93,7 +125,7 @@ What has actually happened, from the parent's monitoring log:
 > No monitoring entries mention this situation yet. Suggestions are written from what has actually
 > happened, so there is nothing to write from.
 
-Expect this often at first.
+Expect this often at first. That is the rule working.
 
 ## The prompt rule
 
@@ -103,13 +135,36 @@ One rule added to `step_suggestion_service.SYSTEM_PROMPT`, and it outranks the c
 > another one without inventing a detail nobody recorded, stop. Two suggestions grounded in the
 > record are better than four with two invented.
 
-The existing rule about writing two to five stays, but the floor wins over the target.
+## Updating the list
+
+The whole log is analysed every time — that does not change. What changes is that the answer is
+folded into the list rather than thrown away, so a clinician's decisions survive: an item they
+removed stays removed, an item on the plan keeps its link and gains the new evidence, and genuinely
+new items appear.
+
+Matching is on the item's wording, normalised, the way the situation library already works. This
+will sometimes miss — with more entries the model may name the same thing differently, and you get
+two near-identical items side by side. The blunt answer is to show both and let the clinician remove
+one. Worth seeing how often that actually happens on real logs before building anything smarter.
+
+## Sub-situation suggestions: when to generate
+
+Not when a situation is added — a suggestion needs the feared outcome from the downward arrow, which
+usually does not exist yet, so the call would be spent hitting the gate.
+
+Generate when the clinician asks, as now, then save the result on the list. Next time the panel
+opens, show what is saved rather than calling again. Regenerate when the inputs actually changed:
+new evidence linked to that situation, a changed feared outcome, or steps added or removed. Plus a
+"suggest again" link.
+
+Three things that buys: no paying to regenerate the same four, suggestions become something you can
+look back at, and there is a real corpus to send Dr. Walker instead of one-off screenshots.
 
 ## Parent accommodations
 
-Same rule, same shape, and the raw material is already there: `parent_response` on every monitoring
-entry is an accommodation in the parent's own words, with a date and a fear rating beside it. The
-extractor already returns accommodations — the "Add to plan" flow extracts them and drops them.
+Same rule, same list. The raw material is already there — `parent_response` on every monitoring
+entry is an accommodation in the parent's own words, with a date and a fear rating beside it, and
+the existing extraction already returns accommodations.
 
 **Blocked on clinical input, not on code.** We have Dr. Walker's rules for what makes a good
 exposure step. We have nothing from her on what makes a good accommodation-reduction step — not one
@@ -120,19 +175,20 @@ ladder suggestions.
 
 ## Order of work
 
-1. `monitoring_situations` table, written when an extraction runs.
-2. The Add situation panel shows candidates; picking one records the link.
-3. Sub-situation suggestions read the linked entries, and the gate closes when there are none.
-4. Accommodation suggestions — after Dr. Walker.
-5. Session notes — after note extraction exists.
+1. The list: table, and the code that builds it from monitoring.
+2. **Analyze with AI →** builds the list, then writes the report from it. Remove the trigger-list
+   buttons.
+3. The Add situation panel offers items from the list; picking one records the link.
+4. Sub-situation suggestions read the linked evidence; the gate closes when there is none.
+5. Accommodation suggestions — after Dr. Walker.
+6. Session notes feed the list — after note extraction exists.
 
-Steps 1–3 are the feature. Nothing before step 3 changes what anyone is shown, so it can be built
-and checked in order.
+Nothing before step 3 changes what a clinician is shown.
 
 ## What has to be verified before this ships
 
 - `/security-review`. It touches patient data going to the model and adds a table holding a
   patient's own words.
 - Every new query scoped by organization, and the route sweep run.
-- A test that a situation with no linked entries returns the blocked message and never calls the
+- A test that a situation with no linked evidence returns the blocked message and never calls the
   model.
