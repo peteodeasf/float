@@ -103,6 +103,23 @@ export default function ParentPlanPanel({
     onSuccess: invalidate,
   })
 
+  // Drag to reorder. HTML5 drag and drop rather than a library: one list, short rows, and the
+  // whole interaction is pick up, move, drop.
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
+
+  const dropOn = (targetId: string) => {
+    if (!dragId || dragId === targetId) { setDragId(null); setOverId(null); return }
+    const ids = accommodations.map(a => a.id)
+    const from = ids.indexOf(dragId)
+    const to = ids.indexOf(targetId)
+    if (from < 0 || to < 0) { setDragId(null); setOverId(null); return }
+    ids.splice(to, 0, ids.splice(from, 1)[0])
+    reorderMut.mutate(ids)
+    setDragId(null)
+    setOverId(null)
+  }
+
   const move = (index: number, dir: -1 | 1) => {
     const next = index + dir
     if (next < 0 || next >= accommodations.length) return
@@ -199,6 +216,12 @@ export default function ParentPlanPanel({
               total={accommodations.length}
               triggers={triggers}
               onMove={move}
+              dragging={dragId === a.id}
+              dropTarget={overId === a.id && dragId !== null && dragId !== a.id}
+              onDragStart={() => setDragId(a.id)}
+              onDragOver={() => setOverId(a.id)}
+              onDragEnd={() => { setDragId(null); setOverId(null) }}
+              onDrop={() => dropOn(a.id)}
               onDelete={() => deleteMut.mutate(a.id)}
               onSave={(data) => updateAccommodation(planId, a.id, data).then(invalidate)}
             />
@@ -374,6 +397,12 @@ function AccommodationRow({
   total,
   triggers,
   onMove,
+  dragging,
+  dropTarget,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onDrop,
   onDelete,
   onSave,
 }: {
@@ -381,11 +410,21 @@ function AccommodationRow({
   index: number
   total: number
   triggers: TriggerLite[]
+  /** Kept for the keyboard: dragging is a mouse gesture and cannot be the only way to reorder. */
   onMove: (index: number, dir: -1 | 1) => void
+  dragging: boolean
+  dropTarget: boolean
+  onDragStart: () => void
+  onDragOver: () => void
+  onDragEnd: () => void
+  onDrop: () => void
   onDelete: () => void
   onSave: (data: { name?: string; trigger_situation_id?: string | null; distress_min?: number | null; distress_max?: number | null; is_weekly_focus?: boolean }) => Promise<unknown>
 }) {
   const [editing, setEditing] = useState(false)
+  const [planning, setPlanning] = useState(false)
+  const [wantFocus, setWantFocus] = useState(a.is_weekly_focus)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const [name, setName] = useState(a.name)
   const [situationId, setSituationId] = useState(a.trigger_situation_id ?? '')
   const [dmin, setDmin] = useState(a.distress_min?.toString() ?? '')
@@ -415,6 +454,35 @@ function AccommodationRow({
     }
   }
 
+  if (planning) {
+    return (
+      <div style={{ background: 'var(--float-surface)', border: '1px solid var(--float-primary)', borderRadius: 'var(--float-radius)', padding: '14px 16px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--float-text)' }}>
+          Plan &ldquo;{a.name}&rdquo;
+        </div>
+        <p style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', margin: '4px 0 10px' }}>
+          Only one accommodation is the parent&rsquo;s focus at a time. Choosing this one takes it
+          off whichever has it now.
+        </p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: 'var(--float-text-secondary)', cursor: 'pointer', marginBottom: '12px' }}>
+          <input type="checkbox" checked={wantFocus} onChange={e => setWantFocus(e.target.checked)} style={{ cursor: 'pointer' }} />
+          Make this the parent&rsquo;s focus this week
+        </label>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={async () => {
+              if (wantFocus !== a.is_weekly_focus) await onSave({ is_weekly_focus: wantFocus })
+              setPlanning(false)
+            }}
+            style={{ fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: 'var(--float-radius-sm)', padding: '7px 14px', cursor: 'pointer' }}
+          >Save</button>
+          <button onClick={() => { setWantFocus(a.is_weekly_focus); setPlanning(false) }}
+            style={{ fontSize: '13px', color: 'var(--float-text-hint)', background: 'none', border: 'none', cursor: 'pointer', padding: '7px 8px' }}>Cancel</button>
+        </div>
+      </div>
+    )
+  }
+
   if (editing) {
     return (
       <div style={{ background: 'var(--float-surface)', border: '1px solid var(--float-primary-mid)', borderRadius: 'var(--float-radius)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -440,12 +508,30 @@ function AccommodationRow({
   }
 
   return (
-    <div style={{ background: 'var(--float-surface)', border: `1px solid ${a.is_weekly_focus ? 'var(--float-primary)' : 'var(--float-border)'}`, borderRadius: 'var(--float-radius)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div
+      draggable
+      onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart() }}
+      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver() }}
+      onDragEnd={onDragEnd}
+      onDrop={e => { e.preventDefault(); onDrop() }}
+      style={{
+        background: 'var(--float-surface)',
+        border: `1px solid ${dropTarget ? 'var(--float-primary)' : a.is_weekly_focus ? 'var(--float-primary)' : 'var(--float-border)'}`,
+        borderRadius: 'var(--float-radius)', padding: '12px 14px',
+        display: 'flex', alignItems: 'center', gap: '12px',
+        opacity: dragging ? 0.4 : 1,
+      }}
+    >
+      {/* Drag to reorder. The arrows stay behind it for the keyboard — a mouse gesture cannot be
+          the only way to change the order. */}
+      <span
+        title="Drag to reorder"
+        style={{ flex: 'none', cursor: 'grab', color: 'var(--float-border-strong)', fontSize: '14px', lineHeight: 1, letterSpacing: '1px', userSelect: 'none' }}
+      >⠿</span>
       <div style={{ display: 'flex', flexDirection: 'column', flex: 'none' }}>
-        <button onClick={() => onMove(index, -1)} disabled={index === 0} style={{ background: 'none', border: 'none', cursor: index === 0 ? 'default' : 'pointer', color: index === 0 ? 'var(--float-border-strong)' : 'var(--float-text-secondary)', fontSize: '11px', lineHeight: 1, padding: '1px' }} aria-label="Move up">▲</button>
-        <button onClick={() => onMove(index, 1)} disabled={index === total - 1} style={{ background: 'none', border: 'none', cursor: index === total - 1 ? 'default' : 'pointer', color: index === total - 1 ? 'var(--float-border-strong)' : 'var(--float-text-secondary)', fontSize: '11px', lineHeight: 1, padding: '1px' }} aria-label="Move down">▼</button>
+        <button onClick={() => onMove(index, -1)} disabled={index === 0} style={{ background: 'none', border: 'none', cursor: index === 0 ? 'default' : 'pointer', color: index === 0 ? 'var(--float-border-strong)' : 'var(--float-text-secondary)', fontSize: '9px', lineHeight: 1, padding: 0 }} aria-label="Move up">▲</button>
+        <button onClick={() => onMove(index, 1)} disabled={index === total - 1} style={{ background: 'none', border: 'none', cursor: index === total - 1 ? 'default' : 'pointer', color: index === total - 1 ? 'var(--float-border-strong)' : 'var(--float-text-secondary)', fontSize: '9px', lineHeight: 1, padding: 0 }} aria-label="Move down">▼</button>
       </div>
-      <span style={{ flex: 'none', width: 20, fontSize: '13px', fontWeight: 600, color: 'var(--float-text-hint)' }}>{index + 1}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--float-text)' }}>{a.name}</div>
         {situationName && (
@@ -455,21 +541,32 @@ function AccommodationRow({
       <span style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', borderRadius: '999px', padding: '2px 10px' }} title="Child's distress if stopped">
         {distressLabel(a)}
       </span>
+      {a.is_weekly_focus && (
+        <span style={{ flex: 'none', fontSize: '11px', fontWeight: 800, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '1px 8px' }}>
+          ★ Focus
+        </span>
+      )}
       <button
-        onClick={() => onSave({ is_weekly_focus: !a.is_weekly_focus })}
-        title={a.is_weekly_focus ? "This week's focus for the parent" : "Set as this week's focus"}
+        onClick={() => { setWantFocus(a.is_weekly_focus); setPlanning(true) }}
+        title="Plan what the parents work on"
         style={{
-          flex: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-          borderRadius: '999px', padding: '2px 10px',
-          border: `1px solid ${a.is_weekly_focus ? 'var(--float-primary)' : 'var(--float-border)'}`,
-          background: a.is_weekly_focus ? 'var(--float-primary-light)' : 'transparent',
-          color: a.is_weekly_focus ? 'var(--float-primary)' : 'var(--float-text-secondary)',
+          flex: 'none', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'pointer',
+          borderRadius: '999px', padding: '3px 9px', color: '#3f8a78',
+          background: '#fff', border: '1px solid var(--float-border)',
         }}
-      >
-        {a.is_weekly_focus ? '★ Focus' : 'Set focus'}
-      </button>
+      >Plan it</button>
       <button onClick={() => setEditing(true)} style={{ flex: 'none', fontSize: '12px', color: 'var(--float-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
-      <button onClick={onDelete} style={{ flex: 'none', fontSize: '12px', color: 'var(--float-danger)', background: 'none', border: 'none', cursor: 'pointer' }}>Delete</button>
+      {/* Asks first, the same as a ladder rung. */}
+      {confirmRemove ? (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 'none', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>Remove?</span>
+          <button onClick={onDelete} style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Yes, remove</button>
+          <button onClick={() => setConfirmRemove(false)} style={{ fontSize: '11px', color: 'var(--float-text-hint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Cancel</button>
+        </span>
+      ) : (
+        <button onClick={() => setConfirmRemove(true)} title="Remove"
+          style={{ flex: 'none', fontSize: '14px', color: 'var(--float-text-hint)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>×</button>
+      )}
     </div>
   )
 }
