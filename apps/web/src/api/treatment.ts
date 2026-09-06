@@ -421,3 +421,38 @@ export interface LadderReview {
 
 export const getLadderReview = async (planId: string): Promise<LadderReview> =>
   (await apiClient.get(`/plans/${planId}/ladder-review`)).data
+
+// ── The one saved list per patient ────────────────────────────────────────────
+// What we know about this patient, from the monitoring log. Nothing here is on the treatment plan
+// until a clinician adds it. See docs/plans/patient-specific-suggestions.md.
+
+export interface PatientInsight {
+  id: string
+  kind: 'situation' | 'behavior' | 'accommodation' | 'sub_situation'
+  name: string
+  fear_rating?: number | null
+  /** How many monitoring entries mention it. */
+  evidence_count: number
+  sources: string[]
+  added: boolean
+  parent_name?: string | null
+}
+
+export const getPatientInsights = async (
+  patientId: string,
+  kind?: PatientInsight['kind'],
+): Promise<PatientInsight[]> => {
+  const q = kind ? `?kind=${kind}` : ''
+  const { data } = await apiClient.get(`/patients/${patientId}/insights${q}`)
+  return data
+}
+
+export const addInsightToPlan = async (patientId: string, insightId: string): Promise<PatientInsight> => {
+  const { data } = await apiClient.post(`/patients/${patientId}/insights/${insightId}/add`)
+  return data
+}
+
+export const removeInsight = async (patientId: string, insightId: string): Promise<PatientInsight> => {
+  const { data } = await apiClient.post(`/patients/${patientId}/insights/${insightId}/remove`)
+  return data
+}

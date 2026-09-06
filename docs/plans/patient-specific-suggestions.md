@@ -213,14 +213,24 @@ This is not part of the list work and does not block it.
 
 ## Order of work
 
-1. The list: table, and the code that builds it from monitoring.
-2. **Analyze with AI →** builds the list, then writes the report from it. Remove the trigger-list
-   buttons.
-3. The Add situation panel offers items from the list; picking one records the link.
+1. ~~The list: table, and the code that builds it from monitoring.~~ **Done 2026-09-05.**
+2. ~~**Analyze with AI →** builds the list, then writes the report from it. Remove the trigger-list
+   buttons.~~ **Done 2026-09-05.**
+3. ~~The Add situation panel offers items from the list; picking one records the link.~~
+   **Done 2026-09-05.**
 4. Sub-situation suggestions read the linked evidence; the gate closes when there is none.
-5. Accommodation suggestions, built from monitoring, then shown to Dr. Walker for her
-   reaction.
+5. ~~Accommodation suggestions, built from monitoring~~ **done 2026-09-05** — then shown to Dr.
+   Walker for her reaction.
 6. Session notes feed the list — after note extraction exists.
+
+### What the accommodation suggestions turned out to be
+
+No model call. The list already holds accommodations in the parent's own words, each with the dated
+entries behind it — the extractor produced those and they used to be dropped. Offering them back is
+naming what the parent described, which invents nothing and needs no rules we do not have.
+
+A model call would have had to reword them into reduction steps, and we have no rules from Dr.
+Walker for that. This is the version to show her.
 
 Nothing before step 3 changes what a clinician is shown.
 

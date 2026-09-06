@@ -10,6 +10,7 @@ import {
   listAccommodationMoments,
   type Accommodation,
 } from '../../api/accommodations'
+import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/treatment'
 
 type TriggerLite = { id: string; name: string }
 
@@ -36,9 +37,11 @@ function distressLabel(a: Accommodation): string {
  */
 export default function ParentPlanPanel({
   planId,
+  patientId,
   triggers,
 }: {
   planId: string
+  patientId: string
   triggers: TriggerLite[]
 }) {
   const qc = useQueryClient()
@@ -103,6 +106,21 @@ export default function ParentPlanPanel({
     ;[ids[index], ids[next]] = [ids[next], ids[index]]
     reorderMut.mutate(ids)
   }
+
+  const insightsKey = ['insights', patientId, 'accommodation']
+  const { data: fromMonitoring = [] } = useQuery({
+    queryKey: insightsKey,
+    queryFn: () => getPatientInsights(patientId, 'accommodation'),
+    enabled: !!patientId,
+  })
+  const takeMut = useMutation({
+    mutationFn: (insightId: string) => addInsightToPlan(patientId, insightId),
+    onSuccess: () => { invalidate(); qc.invalidateQueries({ queryKey: insightsKey }) },
+  })
+  const dropMut = useMutation({
+    mutationFn: (insightId: string) => removeInsight(patientId, insightId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: insightsKey }),
+  })
 
   // The panel is one white card, matching Treatment Plan. So the add form is a sunken block inside
   // it rather than a second white card on top of a white card.
@@ -169,6 +187,45 @@ export default function ParentPlanPanel({
       </div>
 
       <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* What the parent actually did, from the monitoring log — their own words, with the dated
+          entries behind them. Nothing is reworded and nothing is invented. The clinician decides
+          the order, so nothing here proposes one. */}
+      {fromMonitoring.length > 0 && (
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', marginBottom: '7px' }}>
+            From the monitoring log
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {fromMonitoring.map(item => (
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => takeMut.mutate(item.id)}
+                  disabled={takeMut.isPending}
+                  style={{
+                    flex: 1, minWidth: 0, textAlign: 'left', fontSize: '13px', fontWeight: 600,
+                    color: '#0d3d3a', background: '#eafaf6',
+                    border: '1px solid var(--float-primary)',
+                    borderRadius: 'var(--float-radius-sm)', padding: '9px 13px', cursor: 'pointer',
+                  }}
+                >
+                  + {item.name}
+                  <span style={{ fontWeight: 500, color: '#4d8478' }}>
+                    {' '}&middot; {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
+                    {item.parent_name ? ` \u00b7 ${item.parent_name}` : ''}
+                  </span>
+                </button>
+                <button
+                  onClick={() => dropMut.mutate(item.id)}
+                  disabled={dropMut.isPending}
+                  title="Not relevant — take it off the list"
+                  style={{ fontSize: '15px', color: '#cbd5e1', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 4px' }}
+                >&times;</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Add form */}
       <div style={formStyle}>
         <label style={labelStyle}>New accommodation</label>

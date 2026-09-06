@@ -261,3 +261,156 @@ async def test_an_entry_number_the_model_invented_is_dropped(db):
         {1: real},
     )
     assert got == {"lunch": [real]}
+
+
+# ── Putting an item on the plan ───────────────────────────────────────────────
+
+async def _clinician_for(db, org, patient):
+    from tests.factories import grant_patient_to, make_practitioner
+    clinician = await make_practitioner(db, org)
+    await grant_patient_to(db, patient, clinician, owner=True)
+    return clinician
+
+
+async def test_adding_a_situation_creates_the_ladder_row_and_records_the_link(api, db):
+    from sqlalchemy import select
+    from app.models.treatment import TriggerSituation
+    from tests.factories import make_plan
+
+    org = await make_org(db)
+    plan = await make_plan(db, org)
+    patient = plan.patient
+    await _build(db, patient, org)
+    clinician = await _clinician_for(db, org, patient)
+
+    rows = await get_insights(db, patient_id=patient.id, organization_id=org.id)
+    item = next(r for r in rows if r.kind == KIND_SITUATION)
+
+    api.sign_in_as(clinician.user)
+    r = await api.post(f"/patients/{patient.id}/insights/{item.id}/add")
+    assert r.status_code == 200, r.text
+    assert r.json()["added"] is True
+
+    created = (await db.execute(
+        select(TriggerSituation).where(TriggerSituation.treatment_plan_id == plan.id)
+    )).scalars().all()
+    assert [c.name for c in created] == ["Ordering lunch in the cafeteria"]
+    assert float(created[0].distress_thermometer_rating) == 7
+
+    await db.refresh(item)
+    assert item.trigger_situation_id == created[0].id
+    assert item.added_at is not None
+
+
+async def test_adding_twice_does_not_make_two(api, db):
+    """A double click should not put two of anything on a ladder."""
+    from sqlalchemy import select
+    from app.models.treatment import TriggerSituation
+    from tests.factories import make_plan
+
+    org = await make_org(db)
+    plan = await make_plan(db, org)
+    patient = plan.patient
+    await _build(db, patient, org)
+    clinician = await _clinician_for(db, org, patient)
+    item = next(
+        r for r in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+        if r.kind == KIND_SITUATION
+    )
+
+    api.sign_in_as(clinician.user)
+    await api.post(f"/patients/{patient.id}/insights/{item.id}/add")
+    await api.post(f"/patients/{patient.id}/insights/{item.id}/add")
+
+    created = (await db.execute(
+        select(TriggerSituation).where(TriggerSituation.treatment_plan_id == plan.id)
+    )).scalars().all()
+    assert len(created) == 1
+
+
+async def test_adding_an_accommodation_creates_the_parent_ladder_row(api, db):
+    from sqlalchemy import select
+    from app.models.experiment import AccommodationBehavior
+    from tests.factories import make_plan
+
+    org = await make_org(db)
+    plan = await make_plan(db, org)
+    patient = plan.patient
+    await _build(db, patient, org)
+    clinician = await _clinician_for(db, org, patient)
+    item = next(
+        r for r in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+        if r.kind == KIND_ACCOMMODATION
+    )
+
+    api.sign_in_as(clinician.user)
+    r = await api.post(f"/patients/{patient.id}/insights/{item.id}/add")
+    assert r.status_code == 200, r.text
+
+    created = (await db.execute(
+        select(AccommodationBehavior).where(AccommodationBehavior.treatment_plan_id == plan.id)
+    )).scalars().all()
+    assert [c.name for c in created] == ["Mum orders for him"]
+
+
+async def test_the_list_offers_what_you_have_not_taken(api, db):
+    from tests.factories import make_plan
+
+    org = await make_org(db)
+    plan = await make_plan(db, org)
+    patient = plan.patient
+    await _build(db, patient, org)
+    clinician = await _clinician_for(db, org, patient)
+    item = next(
+        r for r in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+        if r.kind == KIND_SITUATION
+    )
+
+    api.sign_in_as(clinician.user)
+    before = (await api.get(f"/patients/{patient.id}/insights?kind=situation")).json()
+    assert [i["name"] for i in before] == ["Ordering lunch in the cafeteria"]
+    assert before[0]["evidence_count"] == 2
+
+    await api.post(f"/patients/{patient.id}/insights/{item.id}/add")
+
+    after = (await api.get(f"/patients/{patient.id}/insights?kind=situation")).json()
+    assert after == []
+    both = (await api.get(
+        f"/patients/{patient.id}/insights?kind=situation&include_added=true"
+    )).json()
+    assert len(both) == 1 and both[0]["added"] is True
+
+
+async def test_removing_takes_it_off_the_list(api, db):
+    org = await make_org(db)
+    patient = await make_patient(db, org)
+    await _build(db, patient, org)
+    clinician = await _clinician_for(db, org, patient)
+    item = next(
+        r for r in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+        if r.kind == KIND_SITUATION
+    )
+
+    api.sign_in_as(clinician.user)
+    assert (await api.post(f"/patients/{patient.id}/insights/{item.id}/remove")).status_code == 200
+
+    assert (await api.get(f"/patients/{patient.id}/insights?kind=situation")).json() == []
+
+
+async def test_another_clinicians_patient_is_refused(api, db):
+    """The boundary that matters. An insight row carries a patient's own words."""
+    org = await make_org(db)
+    mine = await make_patient(db, org, name="Mine")
+    theirs = await make_patient(db, org, name="Theirs")
+    await _build(db, theirs, org)
+    clinician = await _clinician_for(db, org, mine)
+    item = next(
+        r for r in await get_insights(db, patient_id=theirs.id, organization_id=org.id)
+        if r.kind == KIND_SITUATION
+    )
+
+    api.sign_in_as(clinician.user)
+    assert (await api.get(f"/patients/{theirs.id}/insights")).status_code in (403, 404)
+    assert (await api.post(
+        f"/patients/{theirs.id}/insights/{item.id}/add"
+    )).status_code in (403, 404)

@@ -2486,7 +2486,7 @@ export default function PatientPage() {
                 {treatmentPlanBuilder}
                 {plan && (
                   <div style={{ marginTop: '16px' }}>
-                    <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
+                    <ParentPlanPanel planId={plan.id} patientId={patientId!} triggers={triggers ?? []} />
                   </div>
                 )}
               </>

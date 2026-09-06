@@ -74,7 +74,7 @@ export default function SessionPreview() {
                 background: view === v ? '#135450' : '#fff', color: view === v ? '#fff' : '#475569', border: '1px solid #cbd5e1' }}>{v}</button>
           ))}
         </div>
-        {view === 'editor' && <LadderEditor planId="p1" triggers={TRIGGERS} onDone={noop} onArrow={noop} />}
+        {view === 'editor' && <LadderEditor planId="p1" patientId="pt1" triggers={TRIGGERS} onDone={noop} onArrow={noop} />}
         {view === 'arrow-intro' && <ArrowIntro onStart={noop} />}
         {view === 'arrow-pick' && <PickPhase situations={TRIGGERS} onOpen={noop} />}
         {view === 'arrow-chain' && <ChainPhase trigger={TRIGGERS[0]} onBack={noop} onDone={noop} />}
