@@ -259,11 +259,15 @@ export default function ParentPlanPanel({
           {/* What the parent actually did, in their own words, with the dated entries behind it.
               Nothing is reworded and nothing is invented. White until added — once added it is a
               row above, and that is what the mint means. */}
-          {fromMonitoring.length > 0 && (
-            <div style={{ marginTop: '16px', borderTop: '1px solid #e6efec', paddingTop: '14px' }}>
+          {/* Always shown, empty or not. An absent section reads as broken; "No suggestions" reads
+              as an answer. */}
+          <div style={{ marginTop: '16px', borderTop: '1px solid #e6efec', paddingTop: '14px' }}>
               <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '2px' }}>
                 From the monitoring log
               </div>
+              {fromMonitoring.length === 0 ? (
+                <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)' }}>No suggestions.</div>
+              ) : (<>
               <div style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', marginBottom: '8px' }}>
                 Tap to add it above. Delete it there and it comes back here.
               </div>
@@ -290,8 +294,8 @@ export default function ParentPlanPanel({
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+              </>)}
+          </div>
 
           <button
             onClick={() => { setAdding(false); setName(''); setSituationId(''); setDmin(''); setDmax('') }}

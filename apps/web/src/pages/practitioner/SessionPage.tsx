@@ -290,9 +290,13 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               style={{ ...primaryBtn, marginTop: 0, opacity: !newName.trim() ? 0.4 : 1 }}>Add</button>
           </div>
 
-          {(fromMonitoring ?? []).length > 0 && (
-            <div style={{ marginTop: 14 }}>
+          {/* Always shown, empty or not. An absent section reads as broken; "No suggestions" reads
+              as an answer. */}
+          <div style={{ marginTop: 14 }}>
               <div style={{ ...sectionLabel, marginBottom: 2 }}>From the monitoring log</div>
+              {(fromMonitoring ?? []).length === 0 ? (
+                <div style={{ fontSize: 12.5, color: '#9aa9a8' }}>No suggestions.</div>
+              ) : (<>
               <div style={{ fontSize: 11.5, color: '#9aa9a8', marginBottom: 7 }}>
                 Tap to add it to the ladder. Delete it there and it comes back here.
               </div>
@@ -317,8 +321,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+              </>)}
+          </div>
 
           {suggestions.length > 0 && (
             <div style={{ marginTop: 14 }}>
