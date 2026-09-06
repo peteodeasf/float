@@ -94,7 +94,7 @@ export function FlatLadder({
         <div>
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Ladder</div>
           <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-            Everything, easiest first
+            Start with the easiest
             {' · '}
             <button
               onClick={() => { const next = !showSituations; setShowSituations(next); writeShowSituations(next) }}
