@@ -16,3 +16,4 @@ from app.models.checklist import ConsultationChecklist
 from app.models.checklist_item import OrganizationChecklistItem
 from app.models.jit_content import Tag, JitTip, JitTipTag, TriggerSituationTag
 from app.models.review import ReviewRound, ReviewReviewer, ReviewMark, ReviewAddition, ReviewComment
+from app.models.insight import PatientInsight

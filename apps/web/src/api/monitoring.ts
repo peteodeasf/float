@@ -107,10 +107,6 @@ export interface MonitoringExtraction {
   review_flag?: boolean
 }
 
-export const extractMonitoringData = async (patientId: string): Promise<MonitoringExtraction> => {
-  const response = await apiClient.post(`/patients/${patientId}/monitoring/extract`)
-  return response.data
-}
 
 export interface ReportSituation {
   name: string

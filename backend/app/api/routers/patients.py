@@ -925,10 +925,15 @@ Return ONLY valid JSON in exactly this shape. No markdown, no code fences, no co
       ],
       "accommodations": [
         { "description": "string" }
-      ]
+      ],
+      "entries": [1, 4, 7]
     }
   ]
 }
+
+`entries` is the list of numbers of the dated entries this situation was drawn from — every
+entry that describes it, not just the first. The entries are numbered for you in the input.
+If you cannot tell, use an empty list rather than guessing.
 
 (IDs are assigned downstream — do not generate them. Omit fear_rating_max unless a
 genuine same-trigger range.)
@@ -974,101 +979,6 @@ anything suggesting risk of harm to the child or others (beyond ordinary anxiety
 still return the structured data, and add a top-level `"review_flag": true` so a
 practitioner is alerted. Do not attempt to assess or act on the risk yourself.
 """
-
-
-@router.post("/{patient_id}/monitoring/extract")
-async def extract_monitoring_data(
-    patient_id: uuid.UUID,
-    context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db),
-    _access: PatientProfile = Depends(get_permitted_patient),
-):
-    print("EXTRACTION ENDPOINT CALLED", flush=True)
-    import json
-    import anthropic
-    from app.models.monitoring import MonitoringForm, MonitoringEntry
-
-    _, practitioner = context
-
-    # Fetch all monitoring entries for this patient, joined with the monitoring form
-    result = await db.execute(
-        select(MonitoringEntry)
-        .join(MonitoringForm, MonitoringEntry.monitoring_form_id == MonitoringForm.id)
-        .where(
-            MonitoringForm.patient_id == patient_id,
-            MonitoringForm.organization_id == practitioner.organization_id,
-            MonitoringEntry.is_draft == False,  # noqa: E712
-        )
-        .order_by(MonitoringEntry.entry_date.asc())
-    )
-    entries = result.scalars().all()
-
-    if not entries:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No monitoring entries found for this patient"
-        )
-
-    # Format the entries as a readable text block
-    blocks = []
-    for e in entries:
-        distress = e.fear_thermometer if e.fear_thermometer is not None else "unknown"
-        blocks.append(
-            f"Date: {e.entry_date.isoformat()}\n"
-            f"Situation: {e.situation or 'N/A'}\n"
-            f"Child behavior observed: {e.child_behavior_observed or 'N/A'}\n"
-            f"Parent response: {e.parent_response or 'N/A'}\n"
-            f"Distress level: {distress}/10"
-        )
-    entries_text = "\n\n".join(blocks)
-
-    try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            system=EXTRACTION_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": entries_text}],
-        )
-        print(f"ANTHROPIC RESPONSE: {message}", flush=True)
-        raw_text = message.content[0].text
-        print(f"Raw Anthropic response: {raw_text}", flush=True)
-        print(f"RAW TEXT: {raw_text}", flush=True)
-        # Strip any markdown fences before parsing
-        clean = raw_text.strip()
-        if clean.startswith("```"):
-            lines = clean.split("\n")
-            clean = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
-        extraction = json.loads(clean)
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"AI extraction failed: {type(e).__name__}: {str(e)}")
-    except Exception as e:
-        print(f"Extraction error: {type(e).__name__}: {str(e)}", flush=True)
-        print(traceback.format_exc(), flush=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI extraction failed: {type(e).__name__}: {str(e)}"
-        )
-
-    extraction.pop("suggested_presentations", None)
-    extraction.pop("summary", None)
-
-    # Record that monitoring data was extracted for this patient's active plan (if any)
-    plan_result = await db.execute(
-        select(TreatmentPlan)
-        .where(
-            TreatmentPlan.patient_id == patient_id,
-            TreatmentPlan.organization_id == practitioner.organization_id,
-            TreatmentPlan.status != "complete",
-        )
-        .order_by(TreatmentPlan.created_at.desc())
-    )
-    plan = plan_result.scalar_one_or_none()
-    if plan is not None:
-        plan.last_extracted_at = datetime.now(timezone.utc)
-        await db.commit()
-
-    return extraction
 
 
 PRELIMINARY_REPORT_SYSTEM_PROMPT = """
@@ -1184,9 +1094,19 @@ async def generate_preliminary_report(
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
+    """Build the patient's saved list from the monitoring log, then write the report from it.
+
+    Two model calls, in order. The first pulls situations, behaviours and accommodations out of the
+    log and folds them into `patient_insights`, keeping the clinician's decisions. The second
+    writes the report from that list rather than going back to the raw log — so the Treatment
+    Targets in the report and the situations offered in the ladder builder are the same list in the
+    same words. See docs/plans/patient-specific-suggestions.md.
+    """
     import json
     import anthropic
     from app.models.monitoring import MonitoringForm, MonitoringEntry
+    from app.services import insight_service
+    from app.services.treatment_plan_service import get_active_plan
 
     _, practitioner = context
 
@@ -1209,41 +1129,60 @@ async def generate_preliminary_report(
             detail="No monitoring entries found for this patient"
         )
 
-    blocks = []
-    for e in entries:
-        distress = e.fear_thermometer if e.fear_thermometer is not None else "unknown"
-        blocks.append(
-            f"Date: {e.entry_date.isoformat()}\n"
-            f"Situation: {e.situation or 'N/A'}\n"
-            f"Child behavior observed: {e.child_behavior_observed or 'N/A'}\n"
-            f"Parent response: {e.parent_response or 'N/A'}\n"
-            f"Distress level: {distress}/10"
-        )
-    entries_text = "\n\n".join(blocks)
+    entries_text, by_number = insight_service.format_entries(entries)
+    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
+    # ── 1. The list ───────────────────────────────────────────────────────────
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        extract_message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            system=EXTRACTION_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": entries_text}],
+        )
+        extraction = insight_service.parse_model_json(extract_message.content[0].text)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI analysis failed: {type(e).__name__}: {str(e)}")
+    except Exception as e:
+        logger.exception("insight build failed for patient %s", patient_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI analysis failed: {type(e).__name__}: {str(e)}"
+        ) from e
+
+    await insight_service.rebuild_from_monitoring(
+        db,
+        patient_id=patient_id,
+        organization_id=practitioner.organization_id,
+        extraction=extraction,
+        entry_ids_by_situation=insight_service.entry_ids_by_situation(extraction, by_number),
+    )
+    insights = await insight_service.get_insights(
+        db, patient_id=patient_id, organization_id=practitioner.organization_id
+    )
+
+    # ── 2. The report, written from the list ──────────────────────────────────
+    try:
         message = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=3000,
             system=PRELIMINARY_REPORT_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": entries_text}],
+            messages=[{"role": "user", "content": (
+                "What is known about this child, from the parent's monitoring log:\n\n"
+                + insight_service.summarise_for_report(insights)
+                + "\n\nThe log itself, for detail and wording:\n\n"
+                + entries_text
+            )}],
         )
-        raw_text = message.content[0].text
-        clean = raw_text.strip()
-        if clean.startswith("```"):
-            lines = clean.split("\n")
-            clean = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
-        report = json.loads(clean)
+        report = insight_service.parse_model_json(message.content[0].text)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI report generation failed: {type(e).__name__}: {str(e)}")
     except Exception as e:
-        print(f"Preliminary report error: {type(e).__name__}: {str(e)}", flush=True)
-        print(traceback.format_exc(), flush=True)
+        logger.exception("preliminary report failed for patient %s", patient_id)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI report generation failed: {type(e).__name__}: {str(e)}"
-        )
+        ) from e
 
     report["generated_at"] = datetime.now(timezone.utc).isoformat()
 
@@ -1266,6 +1205,13 @@ async def generate_preliminary_report(
         db.add(formulation)
     else:
         formulation.preliminary_report = report
+
+    # This run IS the analysis now, so it is what "Last analyzed" means. Without this the page
+    # would keep offering to re-analyze immediately after analysing.
+    plan = await get_active_plan(db, patient_id, practitioner.organization_id)
+    if plan is not None:
+        plan.last_extracted_at = datetime.now(timezone.utc)
+
     await db.commit()
 
     return report

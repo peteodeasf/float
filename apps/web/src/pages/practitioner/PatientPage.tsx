@@ -8,11 +8,11 @@ import {
 } from 'recharts'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
-  updatePlanNickname, getBehaviors, createBehavior, updateTrigger, deleteTrigger,
+  updatePlanNickname, updateTrigger, deleteTrigger,
   getSituationDownwardArrow,
-  getPatientExperiments, searchSituationLibrary, type TriggerSituation, type AvoidanceBehavior, type DownwardArrow
+  getPatientExperiments, searchSituationLibrary, type DownwardArrow
 } from '../../api/treatment'
-import { getMonitoringForm, sendMonitoringForm, extractMonitoringData, getMonitoringReport, generatePreliminaryReport, type MonitoringExtraction, type PreliminaryReport, type ExtractedBehaviorType, type ExtractedSituation, type ExtractedBehavior } from '../../api/monitoring'
+import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, type PreliminaryReport } from '../../api/monitoring'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../../lib/checklists'
@@ -100,18 +100,6 @@ const ANXIETY_PRESENTATIONS: { value: string; label: string }[] = [
   { value: 'other', label: 'Other' },
 ]
 
-function isSimilar(a: string, b: string): boolean {
-  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
-  const na = normalize(a)
-  const nb = normalize(b)
-  // Exact match after normalization
-  if (na === nb) return true
-  // One contains the other
-  if (na.includes(nb) || nb.includes(na)) return true
-  // First 15 characters match (same stem)
-  if (na.slice(0, 15) === nb.slice(0, 15)) return true
-  return false
-}
 
 // Distress-thermometer / fear scores are a 1–10 scale. These guard every entry
 // point so an out-of-range value (e.g. a typed "16", or an AI-extracted number)
@@ -560,56 +548,6 @@ export default function PatientPage() {
   // Inline monitoring report (Step 1)
   const [showInlineReport, setShowInlineReport] = useState(false)
 
-  // AI monitoring extraction
-  const [extractOpen, setExtractOpen] = useState(false)
-  const [extractLoading, setExtractLoading] = useState(false)
-  const [extractError, setExtractError] = useState<string | null>(null)
-  const [extraction, setExtraction] = useState<MonitoringExtraction | null>(null)
-  const [extractApplying, setExtractApplying] = useState(false)
-  const [extractProgress, setExtractProgress] = useState<string | null>(null)
-  const [extractFailed, setExtractFailed] = useState<string[]>([])
-  const [extractSuccess, setExtractSuccess] = useState(false)
-  const [extractSuccessMessage, setExtractSuccessMessage] = useState('Treatment plan populated from monitoring data')
-  const [extractPreview, setExtractPreview] = useState<{ name: string; isNew: boolean }[] | null>(null)
-  // Behaviors that couldn't be committed to the plan (escape/unclear — see PLAN_COMMIT_TYPE)
-  const [extractUnresolved, setExtractUnresolved] = useState<string[]>([])
-
-  // --- Editable preliminary extraction ---------------------------------------
-  // The extraction is preliminary content: the clinician edits, reclassifies,
-  // removes, or overwrites it (re-run) before committing into the plan.
-  const BEHAVIOR_TYPE_META: Record<ExtractedBehaviorType, { bg: string; color: string }> = {
-    avoidance: { bg: '#fee2e2', color: '#b91c1c' },
-    safety:    { bg: '#fef3c7', color: '#b45309' },
-    escape:    { bg: '#e0e7ff', color: '#4338ca' },
-    unclear:   { bg: '#f1f5f9', color: '#475569' },
-  }
-
-  const updateExtraction = (mut: (draft: MonitoringExtraction) => void) => {
-    setExtraction(prev => {
-      if (!prev) return prev
-      const next: MonitoringExtraction = JSON.parse(JSON.stringify(prev))
-      mut(next)
-      return next
-    })
-  }
-  const editSituation = (si: number, patch: Partial<ExtractedSituation>) =>
-    updateExtraction(d => { d.situations[si] = { ...d.situations[si], ...patch } })
-  const removeSituation = (si: number) =>
-    updateExtraction(d => { d.situations.splice(si, 1) })
-  const addSituation = () =>
-    updateExtraction(d => { d.situations.push({ name: '', fear_rating: null, behaviors: [], accommodations: [] }) })
-  const editBehavior = (si: number, bi: number, patch: Partial<ExtractedBehavior>) =>
-    updateExtraction(d => { d.situations[si].behaviors[bi] = { ...d.situations[si].behaviors[bi], ...patch } })
-  const removeBehavior = (si: number, bi: number) =>
-    updateExtraction(d => { d.situations[si].behaviors.splice(bi, 1) })
-  const addBehavior = (si: number) =>
-    updateExtraction(d => { d.situations[si].behaviors.push({ type: 'avoidance', description: '' }) })
-  const editAccommodation = (si: number, ai: number, description: string) =>
-    updateExtraction(d => { d.situations[si].accommodations[ai] = { description } })
-  const removeAccommodation = (si: number, ai: number) =>
-    updateExtraction(d => { d.situations[si].accommodations.splice(ai, 1) })
-  const addAccommodation = (si: number) =>
-    updateExtraction(d => { d.situations[si].accommodations.push({ description: '' }) })
 
   // Persistent access panel, opened from the patient header (any mode).
   // `accessFocus` scopes it to the card that opened it (Teen vs Parent).
@@ -882,24 +820,6 @@ export default function PatientPage() {
     sendFormMutation.mutate({})
   }
 
-  const handleExtract = async () => {
-    setExtractOpen(true)
-    setExtractLoading(true)
-    setExtractError(null)
-    setExtraction(null)
-    setExtractFailed([])
-    setExtractUnresolved([])
-    setExtractSuccess(false)
-    setExtractPreview(null)
-    try {
-      const data = await extractMonitoringData(patientId!)
-      setExtraction(data)
-    } catch (err: any) {
-      setExtractError(err?.response?.data?.detail || 'Extraction failed. Please try again.')
-    } finally {
-      setExtractLoading(false)
-    }
-  }
 
   // Preliminary Report (Step 2) — AI clinical summary, persisted on the formulation
   const [reportLoading, setReportLoading] = useState(false)
@@ -927,176 +847,11 @@ export default function PatientPage() {
     }
   }
 
-  const closeExtract = () => {
-    setExtractOpen(false)
-    setExtraction(null)
-    setExtractError(null)
-    setExtractProgress(null)
-    setExtractFailed([])
-    setExtractApplying(false)
-    setExtractPreview(null)
-    setExtractUnresolved([])
-  }
-
-  const handleShowPreview = async () => {
-    if (!extraction) return
-    setExtractError(null)
-    setExtractFailed([])
-    let existingTriggers: TriggerSituation[] = []
-    try {
-      existingTriggers = plan?.id ? await getTriggers(plan.id) : []
-    } catch {
-      existingTriggers = []
-    }
-    const preview = extraction.situations.map(sit => ({
-      name: sit.name,
-      isNew: !existingTriggers.some(t => isSimilar(t.name, sit.name)),
-    }))
-    setExtractPreview(preview)
-  }
-
-  const handleAddToPlan = async () => {
-    if (!extraction) return
-    setExtractApplying(true)
-    setExtractError(null)
-    setExtractFailed([])
-    setExtractUnresolved([])
-    const failed: string[] = []
-    const unresolved: string[] = []
-    // SEAM — how each extracted behavior type maps when committing into the plan.
-    // null = not committed; the behavior stays in the preliminary draft for the
-    // clinician to reclassify. escape is null PENDING Dr. Walker's ruling (escape as
-    // its own plan type vs map to avoidance) — change this one line when she decides.
-    const PLAN_COMMIT_TYPE: Record<ExtractedBehaviorType, string | null> = {
-      avoidance: 'avoidance', safety: 'safety', escape: null, unclear: null,
-    }
-
-    let planId = plan?.id
-    if (!planId) {
-      setExtractProgress('Creating treatment plan...')
-      try {
-        const newPlan = await createTreatmentPlan(patientId!, { clinical_track: 'exposure', parent_visibility_level: 'summary' })
-        planId = newPlan.id
-      } catch {
-        setExtractProgress(null)
-        setExtractApplying(false)
-        setExtractError('Could not create a treatment plan. Please try again.')
-        return
-      }
-    }
-
-    // Fetch existing situations so we can skip duplicates (fuzzy match)
-    let existingTriggers: TriggerSituation[] = []
-    try {
-      existingTriggers = await getTriggers(planId!)
-    } catch {
-      existingTriggers = []
-    }
-    // Cache of existing behavior names per trigger id (for fuzzy duplicate checks)
-    const behaviorNamesByTrigger: Record<string, string[]> = {}
-
-    let anyCreated = false
-    let anySkipped = false
-
-    for (const sit of extraction.situations) {
-      try {
-        // Match an existing situation by fuzzy similarity
-        let trigger: TriggerSituation | null =
-          existingTriggers.find(t => isSimilar(t.name, sit.name)) ?? null
-
-        if (trigger) {
-          anySkipped = true
-        } else {
-          // Situation DT comes from the per-situation fear rating (high end of a range if given)
-          const situationDT = sit.fear_rating_max ?? sit.fear_rating ?? undefined
-          setExtractProgress(`Creating situations... ${sit.name}`)
-          trigger = await createTrigger(planId!, {
-            name: sit.name,
-            distress_thermometer_rating: clampDt(situationDT),
-          })
-          existingTriggers.push(trigger)
-          anyCreated = true
-        }
-
-        // Load existing behavior names for this situation
-        if (!behaviorNamesByTrigger[trigger.id]) {
-          let existingBehaviors: AvoidanceBehavior[] = []
-          try {
-            existingBehaviors = await getBehaviors(trigger.id)
-          } catch {
-            existingBehaviors = []
-          }
-          behaviorNamesByTrigger[trigger.id] = existingBehaviors.map(b => b.name)
-        }
-        const behaviorNames = behaviorNamesByTrigger[trigger.id]
-
-        for (const beh of sit.behaviors) {
-          const planType = PLAN_COMMIT_TYPE[beh.type]
-          if (planType == null) {
-            // escape/unclear are not committed — clinician must reclassify them first
-            unresolved.push(`${sit.name}: "${beh.description}" (${beh.type})`)
-            continue
-          }
-          // Match an existing behavior by fuzzy similarity
-          if (behaviorNames.some(n => isSimilar(n, beh.description))) {
-            anySkipped = true
-            continue
-          }
-          setExtractProgress(`Creating behaviors... ${beh.description}`)
-          try {
-            await createBehavior(trigger.id, {
-              name: beh.description,
-              behavior_type: planType,
-              distress_thermometer_when_refraining: clampDt(sit.fear_rating),
-            })
-            behaviorNames.push(beh.description)
-            anyCreated = true
-          } catch {
-            failed.push(`Behavior: ${beh.description}`)
-          }
-        }
-      } catch {
-        failed.push(`Situation: ${sit.name}`)
-      }
-    }
-
-    await queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
-    await queryClient.invalidateQueries({ queryKey: ['triggers', planId] })
-
-    // Seed the living case conceptualization draft from the (edited) extraction
-    setExtractUnresolved(unresolved)
-    setConceptualizationDraft(prev => ({
-      ...prev,
-      situations: extraction.situations.map(s => s.name),
-      behaviors: extraction.situations.flatMap(s => s.behaviors.map(b => `${b.description} — ${b.type}`)),
-      accommodationPatterns: extraction.situations.flatMap(s => s.accommodations.map(a => a.description)),
-      lastUpdatedStep: 2,
-    }))
-
-    setExtractProgress(null)
-    setExtractApplying(false)
-
-    if (failed.length > 0) {
-      setExtractFailed(failed)
-    } else {
-      const message = !anyCreated
-        ? 'No new items to add — all situations and behaviors already exist.'
-        : anySkipped
-          ? 'Added new situations and behaviors. Duplicates were skipped.'
-          : 'Treatment plan populated from monitoring data'
-      setExtractSuccessMessage(message)
-      closeExtract()
-      setExtractSuccess(true)
-      setTimeout(() => setExtractSuccess(false), 4000)
-    }
-  }
 
   const daysSinceSent = monitoringForm?.sent_at
     ? Math.floor((Date.now() - new Date(monitoringForm.sent_at).getTime()) / (1000 * 60 * 60 * 24))
     : null
 
-  // AI extraction is offered once there's enough monitoring data and the plan has no situations yet
-  const canExtract = (monitoringForm?.entries_count ?? 0) >= 3 && (triggers?.length ?? 0) === 0
   const sendMsgMut = useMutation({
     mutationFn: () => msgThread === 'parent'
       ? sendParentMessage(patientId!, msgContent, 'general')
@@ -1467,24 +1222,18 @@ export default function PatientPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Analyze Monitoring Data</h2>
         {(monitoringForm?.entries_count ?? 0) >= 3 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
-            <button
-              onClick={handleExtract}
-              disabled={extractLoading}
-              className="bg-transparent border-none disabled:opacity-50"
-              style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', whiteSpace: 'nowrap', padding: 0, cursor: 'pointer' }}
-            >
-              {extractLoading ? 'Building…' : 'Build trigger list from data →'}
-            </button>
-            <button
-              onClick={handleGenerateReport}
-              disabled={reportLoading}
-              className="bg-transparent border-none disabled:opacity-50"
-              style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', whiteSpace: 'nowrap', padding: 0, cursor: 'pointer' }}
-            >
-              {reportLoading ? 'Analyzing…' : (preliminaryReport ? 'Re-analyze with AI →' : 'Analyze with AI →')}
-            </button>
-          </div>
+          <button
+            onClick={handleGenerateReport}
+            disabled={reportLoading}
+            className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0,
+              color: '#fff', background: 'var(--float-primary)',
+              border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '6px 14px',
+            }}
+          >
+            {reportLoading ? 'Analyzing…' : (preliminaryReport ? 'Re-analyze with AI' : 'Analyze with AI')}
+          </button>
         )}
       </div>
       {situationsExist && (
@@ -1505,14 +1254,11 @@ export default function PatientPage() {
       ) : (
         <div>
           <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: '0 0 12px' }}>
-            AI extracts trigger situations, avoidance and safety behaviors, and accommodation patterns from the monitoring data. This creates a draft case conceptualization that develops through subsequent steps.
+            Reads the whole monitoring log and writes the report below. Nothing is added to the
+            treatment plan — you add situations yourself in the ladder builder.
           </p>
-          {(triggers?.length ?? 0) > 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px' }}>
-              <span>&#10003;</span> {triggers?.length} situation{(triggers?.length ?? 0) === 1 ? '' : 's'} added to the treatment plan from monitoring data.
-            </div>
-          ) : (
-            !canExtract && <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>Add more entries before extracting.</p>
+          {(monitoringForm.entries_count ?? 0) < 3 && (
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>Add more entries first.</p>
           )}
         </div>
       )}
@@ -1573,22 +1319,8 @@ export default function PatientPage() {
     <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', margin: '0 0 12px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
-        {canExtract && (
-          <button
-            onClick={handleExtract}
-            disabled={extractLoading}
-            className="bg-transparent border-none cursor-pointer disabled:opacity-50"
-            style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
-          >
-            {extractLoading ? 'Analyzing…' : 'Extract with AI →'}
-          </button>
-        )}
+
       </div>
-      {extractSuccess && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px', marginBottom: '12px' }}>
-          <span>&#10003;</span> {extractSuccessMessage}
-        </div>
-      )}
 
       {!monitoringForm ? (
         <div>
@@ -2810,149 +2542,6 @@ export default function PatientPage() {
       </div>
 
       {/* AI extraction modal */}
-      {extractOpen && (
-        <div
-          onClick={extractApplying ? undefined : closeExtract}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '560px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}
-          >
-            {extractLoading && (
-              <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-                <div className="animate-spin" style={{ width: '28px', height: '28px', border: '3px solid #e2e8f0', borderTopColor: 'var(--float-primary)', borderRadius: '50%' }} />
-                <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>Analyzing monitoring data...</p>
-              </div>
-            )}
-
-            {!extractLoading && extractError && !extraction && (
-              <div style={{ padding: '24px' }}>
-                <p style={{ fontSize: '14px', color: '#dc2626', margin: '0 0 16px' }}>{extractError}</p>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={handleExtract} className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer" style={{ padding: '8px 16px' }}>Retry</button>
-                  <button onClick={closeExtract} className="text-sm text-slate-500 bg-transparent border-none cursor-pointer" style={{ padding: '8px 12px' }}>Close</button>
-                </div>
-              </div>
-            )}
-
-            {!extractLoading && extraction && (
-              <div style={{ padding: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#135450', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Extraction Results</div>
-                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 18px' }}>Based on {monitoringForm?.entries_count ?? 0} monitoring entries</p>
-
-                <div style={{ marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Preliminary situations — editable</div>
-                    {extraction.review_flag && (
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#b91c1c', background: '#fee2e2', borderRadius: '6px', padding: '2px 8px' }}>⚠ Review flag</span>
-                    )}
-                  </div>
-                  <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-                    Preliminary AI output — edit, reclassify, or remove anything before adding to the plan.
-                    <strong> unclear</strong> and <strong>escape</strong> behaviors are not added to the plan until you reclassify them.
-                  </p>
-
-                  {extraction.situations.map((sit, si) => (
-                    <div key={si} style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px' }}>
-                        <input value={sit.name} onChange={e => editSituation(si, { name: e.target.value })} placeholder="Situation name" className="text-sm border border-slate-200 rounded" style={{ flex: 1, padding: '6px 8px', fontWeight: 500, minWidth: 0, boxSizing: 'border-box' }} />
-                        <input type="number" min={1} max={10} value={sit.fear_rating ?? ''} onChange={e => editSituation(si, { fear_rating: e.target.value === '' ? null : (clampDt(e.target.value) ?? null) })} title="Fear rating (1–10)" placeholder="DT" className="text-sm border border-slate-200 rounded" style={{ width: '54px', padding: '6px 6px', textAlign: 'center', flexShrink: 0 }} />
-                        <button onClick={() => removeSituation(si)} title="Remove situation" className="bg-transparent border-none cursor-pointer text-slate-400 hover:text-red-500" style={{ fontSize: '16px', padding: '0 4px', flexShrink: 0 }}>×</button>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {sit.behaviors.map((b, bi) => (
-                          <div key={bi} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <select value={b.type} onChange={e => editBehavior(si, bi, { type: e.target.value as ExtractedBehaviorType })} className="text-xs border border-slate-200 rounded" style={{ padding: '5px 4px', flexShrink: 0, background: BEHAVIOR_TYPE_META[b.type].bg, color: BEHAVIOR_TYPE_META[b.type].color, fontWeight: 600 }}>
-                              {(['avoidance', 'safety', 'escape', 'unclear'] as ExtractedBehaviorType[]).map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                            <input value={b.description} onChange={e => editBehavior(si, bi, { description: e.target.value })} placeholder="Behavior description" className="text-sm border border-slate-200 rounded" style={{ flex: 1, padding: '5px 8px', minWidth: 0, boxSizing: 'border-box' }} />
-                            <button onClick={() => removeBehavior(si, bi)} title="Remove behavior" className="bg-transparent border-none cursor-pointer text-slate-400 hover:text-red-500" style={{ fontSize: '14px', padding: '0 2px', flexShrink: 0 }}>×</button>
-                          </div>
-                        ))}
-                        <button onClick={() => addBehavior(si)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ padding: '2px 0', textAlign: 'left' }}>+ Add behavior</button>
-                      </div>
-
-                      <div style={{ marginTop: '10px', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Accommodations</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {sit.accommodations.map((a, ai) => (
-                            <div key={ai} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                              <input value={a.description} onChange={e => editAccommodation(si, ai, e.target.value)} placeholder="Accommodation" className="text-sm border border-slate-200 rounded" style={{ flex: 1, padding: '5px 8px', minWidth: 0, boxSizing: 'border-box' }} />
-                              <button onClick={() => removeAccommodation(si, ai)} title="Remove accommodation" className="bg-transparent border-none cursor-pointer text-slate-400 hover:text-red-500" style={{ fontSize: '14px', padding: '0 2px', flexShrink: 0 }}>×</button>
-                            </div>
-                          ))}
-                          <button onClick={() => addAccommodation(si)} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ padding: '2px 0', textAlign: 'left' }}>+ Add accommodation</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  <button onClick={addSituation} className="text-xs text-teal-600 font-semibold bg-transparent border-none cursor-pointer" style={{ padding: '4px 0', textAlign: 'left' }}>+ Add situation</button>
-                </div>
-
-                {extractApplying && extractProgress && (
-                  <p style={{ fontSize: '12px', color: 'var(--float-primary)', margin: '0 0 12px' }}>{extractProgress}</p>
-                )}
-
-                {extractError && (
-                  <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 12px' }}>{extractError}</p>
-                )}
-
-                {extractFailed.length > 0 && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px' }}>
-                    <p style={{ fontSize: '12px', fontWeight: 600, color: '#991b1b', margin: '0 0 6px' }}>Some items could not be created:</p>
-                    <ul style={{ margin: 0, padding: '0 0 0 16px' }}>
-                      {extractFailed.map((f, i) => <li key={i} style={{ fontSize: '12px', color: '#b91c1c' }}>{f}</li>)}
-                    </ul>
-                  </div>
-                )}
-
-                {extractUnresolved.length > 0 && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px' }}>
-                    <p style={{ fontSize: '12px', fontWeight: 600, color: '#92400e', margin: '0 0 6px' }}>Not added to the plan — reclassify these (escape/unclear), then re-add:</p>
-                    <ul style={{ margin: 0, padding: '0 0 0 16px' }}>
-                      {extractUnresolved.map((u, i) => <li key={i} style={{ fontSize: '12px', color: '#b45309' }}>{u}</li>)}
-                    </ul>
-                  </div>
-                )}
-
-                {extractPreview ? (
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Ready to add:</div>
-                    <ul style={{ listStyle: 'none', margin: '0 0 14px', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {extractPreview.map((p, i) => (
-                        <li key={i} style={{ fontSize: '13px', color: p.isNew ? '#16a34a' : '#94a3b8', display: 'flex', gap: '6px' }}>
-                          <span>{p.isNew ? '✓' : '✗'}</span>
-                          <span>{p.name} {p.isNew ? '(new)' : '(already exists — skipping)'}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      <button onClick={handleAddToPlan} disabled={extractApplying}
-                        className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px' }}>
-                        {extractApplying ? 'Adding…' : 'Confirm'}
-                      </button>
-                      <button onClick={() => setExtractPreview(null)} disabled={extractApplying}
-                        className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 12px' }}>Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    <button onClick={handleShowPreview} disabled={extractApplying}
-                      className="bg-teal-600 text-white rounded text-sm font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 18px' }}>
-                      {extractApplying ? 'Adding…' : extractFailed.length > 0 ? 'Retry' : 'Add situations to treatment plan'}
-                    </button>
-                    <button onClick={closeExtract} disabled={extractApplying}
-                      className="text-sm text-slate-500 bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ padding: '9px 12px' }}>Dismiss</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
