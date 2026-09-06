@@ -159,7 +159,8 @@
       "mcp__railway__list_projects",
       "mcp__railway__list_services",
       "mcp__visualize__read_me",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(python3 -)"
     ],
     "ask": [
       "Bash(git push:*)"

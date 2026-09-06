@@ -182,10 +182,13 @@ So the first version:
 - carries the same traceability rule in the prompt: every suggestion must come from something
   recorded
 
-**What it must not do until she has ruled on it:** propose the order to stop things in, or a
-distress rating for stopping one. Naming an accommodation the parent already described is
-repeating them back. Deciding which one a family should give up first is a clinical judgement we
-have nothing to base on.
+**The order is the clinician's, and that is settled.** Peter, 2026-09-05: *"the clinician should
+decide the order."* So the suggestions name accommodations and nothing more — no ordering, and no
+distress rating for stopping one. Repeating back what a parent described is safe. Deciding which
+one a family gives up first is a clinical judgement, and it stays with the clinician.
+
+The ladder already works this way: the clinician drags the order, and can reseed it by the distress
+rating they entered.
 
 **Then show her the real screen**, with a real ladder on it, and ask what is wrong. Log the round
 in the Dr. Walker review queue.
