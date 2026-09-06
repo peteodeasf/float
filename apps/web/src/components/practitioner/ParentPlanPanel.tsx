@@ -421,37 +421,30 @@ function AccommodationRow({
   onDelete: () => void
   onSave: (data: { name?: string; trigger_situation_id?: string | null; distress_min?: number | null; distress_max?: number | null; is_weekly_focus?: boolean }) => Promise<unknown>
 }) {
-  const [editing, setEditing] = useState(false)
   const [planning, setPlanning] = useState(false)
   const [wantFocus, setWantFocus] = useState(a.is_weekly_focus)
   const [confirmRemove, setConfirmRemove] = useState(false)
-  const [name, setName] = useState(a.name)
-  const [situationId, setSituationId] = useState(a.trigger_situation_id ?? '')
-  const [dmin, setDmin] = useState(a.distress_min?.toString() ?? '')
-  const [dmax, setDmax] = useState(a.distress_max?.toString() ?? '')
-  const [saving, setSaving] = useState(false)
+  const [editingScore, setEditingScore] = useState(false)
+  const [scoreDraft, setScoreDraft] = useState('')
 
   const situationName = triggers.find(t => t.id === a.trigger_situation_id)?.name ?? null
 
-  const inputStyle: React.CSSProperties = {
-    padding: '7px 9px', fontSize: '13px', color: 'var(--float-text)',
-    border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-sm)',
-    boxSizing: 'border-box',
-  }
-
-  const save = async () => {
-    setSaving(true)
-    try {
-      await onSave({
-        name: name.trim(),
-        trigger_situation_id: situationId || null,
-        distress_min: num(dmin),
-        distress_max: num(dmax) ?? num(dmin),
-      })
-      setEditing(false)
-    } finally {
-      setSaving(false)
+  /** "6" sets a single rating; "6-8" sets a range. The same two shapes the add form describes.
+   *  Anything unreadable is left alone rather than guessed at. */
+  const saveScore = () => {
+    setEditingScore(false)
+    const raw = scoreDraft.trim()
+    if (raw === '') {
+      if (a.distress_min != null || a.distress_max != null) onSave({ distress_min: null, distress_max: null })
+      return
     }
+    const parts = raw.split(/[-–—]/).map(x => x.trim()).filter(x => x !== '')
+    const nums = parts.map(Number).filter(n => Number.isFinite(n) && n >= 0 && n <= 10)
+    if (nums.length === 0) return
+    const lo = Math.min(...nums)
+    const hi = Math.max(...nums)
+    if (lo === a.distress_min && hi === a.distress_max) return
+    onSave({ distress_min: lo, distress_max: hi })
   }
 
   if (planning) {
@@ -478,30 +471,6 @@ function AccommodationRow({
           >Save</button>
           <button onClick={() => { setWantFocus(a.is_weekly_focus); setPlanning(false) }}
             style={{ fontSize: '13px', color: 'var(--float-text-hint)', background: 'none', border: 'none', cursor: 'pointer', padding: '7px 8px' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
-
-  if (editing) {
-    return (
-      <div style={{ background: 'var(--float-surface)', border: '1px solid var(--float-primary-mid)', borderRadius: 'var(--float-radius)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <input value={name} onChange={e => setName(e.target.value)} style={{ ...inputStyle, width: '100%' }} />
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <select value={situationId} onChange={e => setSituationId(e.target.value)} style={{ ...inputStyle, flex: '2 1 160px' }}>
-            <option value="">No situation</option>
-            {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-          <input type="number" min={0} max={10} value={dmin} onChange={e => setDmin(e.target.value)} placeholder="min" style={{ ...inputStyle, flex: '1 1 70px', width: 70 }} />
-          <input type="number" min={0} max={10} value={dmax} onChange={e => setDmax(e.target.value)} placeholder="max" style={{ ...inputStyle, flex: '1 1 70px', width: 70 }} />
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={save} disabled={saving || !name.trim()} style={{ fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: 'var(--float-radius-sm)', padding: '7px 14px', cursor: 'pointer', opacity: saving || !name.trim() ? 0.5 : 1 }}>
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-          <button onClick={() => setEditing(false)} style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-sm)', padding: '7px 14px', cursor: 'pointer' }}>
-            Cancel
-          </button>
         </div>
       </div>
     )
@@ -538,9 +507,28 @@ function AccommodationRow({
           <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>{situationName}</span>
         )}
       </div>
-      <span style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', borderRadius: '999px', padding: '2px 10px' }} title="Child's distress if stopped">
-        {distressLabel(a)}
-      </span>
+      {editingScore ? (
+        <input
+          value={scoreDraft}
+          autoFocus
+          onChange={e => setScoreDraft(e.target.value)}
+          onBlur={saveScore}
+          onKeyDown={e => {
+            if (e.key === 'Enter') saveScore()
+            if (e.key === 'Escape') setEditingScore(false)
+          }}
+          title="Type 6, or 6-8 for a range"
+          style={{ flex: 'none', width: '58px', textAlign: 'center', fontSize: '13px', fontWeight: 600, padding: '3px 6px', border: '1px solid var(--float-primary)', borderRadius: '999px' }}
+        />
+      ) : (
+        <button
+          onClick={() => { setScoreDraft(distressLabel(a) === '—' ? '' : distressLabel(a)); setEditingScore(true) }}
+          title="Child's distress if the parent stops. Click to change."
+          style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', border: 'none', borderRadius: '999px', padding: '3px 10px', cursor: 'text' }}
+        >
+          {distressLabel(a)}
+        </button>
+      )}
       {a.is_weekly_focus && (
         <span style={{ flex: 'none', fontSize: '11px', fontWeight: 800, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '1px 8px' }}>
           ★ Focus
@@ -555,7 +543,6 @@ function AccommodationRow({
           background: '#fff', border: '1px solid var(--float-border)',
         }}
       >Plan it</button>
-      <button onClick={() => setEditing(true)} style={{ flex: 'none', fontSize: '12px', color: 'var(--float-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
       {/* Asks first, the same as a ladder rung. */}
       {confirmRemove ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 'none', whiteSpace: 'nowrap' }}>
