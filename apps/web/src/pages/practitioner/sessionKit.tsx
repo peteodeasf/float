@@ -33,14 +33,20 @@ export const quietLink: CSSProperties = { fontSize: 12.5, fontWeight: 600, color
 
 // Module scope, deliberately: defined inside the page it would get a new identity every render,
 // and React would remount the whole tree — losing step state and input focus mid-session.
-export function Chrome({ onExit, children }: { onExit: () => void; children: ReactNode }) {
+export function Chrome({ onExit, exitLabel = '← Exit session', children }: {
+  onExit: () => void
+  /** What the way out says. A screen you reached by pressing Full screen needs to offer to leave
+   *  full screen, not to end the session. */
+  exitLabel?: string
+  children: ReactNode
+}) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--teen-canvas, #eef4f3)' }}>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '20px 20px 48px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <button onClick={onExit}
             style={{ fontSize: 13, fontWeight: 700, color: '#6b7a79', background: '#fff', border: '1px solid #dbe8e5', borderRadius: 999, padding: '7px 14px', cursor: 'pointer' }}>
-            ← Exit session
+            {exitLabel}
           </button>
         </div>
         {children}

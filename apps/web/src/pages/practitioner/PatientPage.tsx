@@ -1827,7 +1827,7 @@ export default function PatientPage() {
               ← Back to the ladder
             </button>
             {/* Same interview, no clinician chrome — for when the child is looking at the screen. */}
-            <button onClick={() => navigate(`/patients/${patientId}/session`)}
+            <button onClick={() => navigate(`/patients/${patientId}/session${searchParams.get('situation') ? `?situation=${searchParams.get('situation')}` : ''}`)}
               className="cursor-pointer"
               style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>
               ⛶ Full screen

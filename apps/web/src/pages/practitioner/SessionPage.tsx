@@ -56,9 +56,17 @@ import {
 export default function SessionPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
+  // Full screen is a way of looking at the editor, so leaving it goes back to the editor in the
+  // Plan tab — `edit=1` — rather than dropping you out onto the ladder. Whichever situation was
+  // open comes with you.
+  const situation = new URLSearchParams(window.location.search).get('situation')
+  const editing = `/patients/${patientId}?tab=plan&edit=1${situation ? `&situation=${situation}` : ''}`
   return (
     <SessionInterview
       patientId={patientId!}
+      openSituationId={situation}
+      // Leaving full screen keeps you editing; Save ladder is finished, so it lands on the ladder.
+      onCollapse={() => navigate(editing)}
       onExit={() => navigate(`/patients/${patientId}?tab=plan`)}
     />
   )
@@ -77,13 +85,17 @@ export default function SessionPage() {
  * `embedded` drops the full-screen shell so this can live inside the Plan tab. Same component
  * either way, so the Full screen button is a change of presentation rather than a different screen.
  */
-export function SessionInterview({ patientId, embedded = false, openSituationId, onExit }: {
+export function SessionInterview({ patientId, embedded = false, openSituationId, onExit, onCollapse }: {
   patientId: string
   embedded?: boolean
   /** Open with this situation already expanded — how the downward arrow comes back to the screen
    *  it was opened from. */
   openSituationId?: string | null
+  /** Finished — show the ladder. */
   onExit: () => void
+  /** Leave full screen and carry on editing. Given only on the full-screen route; without it the
+   *  way out is "Exit session". */
+  onCollapse?: () => void
 }) {
   const goToArrow = useNavigate()
 
@@ -116,7 +128,14 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
   // Full screen for when the child is looking; plain for the Plan tab, which brings its own
   // header and nav.
   const Shell = ({ children }: { children: React.ReactNode }) =>
-    embedded ? <div style={{ padding: '4px 0 8px' }}>{children}</div> : <Chrome onExit={onExit}>{children}</Chrome>
+    embedded
+      ? <div style={{ padding: '4px 0 8px' }}>{children}</div>
+      : (
+        <Chrome
+          onExit={onCollapse ?? onExit}
+          exitLabel={onCollapse ? '⛶ Exit full screen' : '← Exit session'}
+        >{children}</Chrome>
+      )
 
   if (planLoading) {
     return <Shell><div style={{ color: '#6b7a79', fontSize: 14, padding: 40, textAlign: 'center' }}>Loading…</div></Shell>
