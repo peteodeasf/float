@@ -132,11 +132,10 @@ export default function ParentPlanPanel({
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
         <div>
           <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--float-text)' }}>
-            Parent accommodations
+            Parent Accommodations
           </div>
           <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: '4px 0 0', lineHeight: 1.5, maxWidth: '520px' }}>
-            The things a parent does to lower the child's distress. One ladder per child,
-            ordered easiest-to-stop first. The rating is the child's distress if the parent stops.
+            Create a plan for parents to reduce accommodation behaviors
           </p>
         </div>
         {accommodations.length > 1 && (
