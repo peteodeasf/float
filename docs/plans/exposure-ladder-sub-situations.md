@@ -380,3 +380,23 @@ Two smaller things fixed alongside:
 
 **For the Dr. Walker queue:** suggestions can now be generated from a feared outcome the clinician
 walked to but did not explicitly confirm.
+
+## 2026-09-05 — a pass of Peter's smaller changes
+
+- **"What trigger situations do you have trouble with?"** — his word, not ours.
+- **Save ladder skips the check when nothing was edited.** Anything that writes in the editor sets
+  a flag. Open it, change nothing, press Save, and it just closes and shows the ladder. Showing the
+  same findings a second time to someone who only looked is noise.
+- **"+ Add rung" is gone.** One path for editing: Build ladder. The add form went with it.
+- **One button on a rung, not two.** "Plan it" opens the panel; "Tell them to do this one next" is
+  a checkbox inside it. Peter: *"there should be one button to plan the exposure - the suggest to
+  patient should be an option there."* A rung that is already planned still opens the panel, and
+  the button reads Save — it changes the recommendation without booking a second exposure.
+- **Removing a rung asks first.** The × was one stray click from deleting a sentence somebody wrote
+  with a child in the room.
+- **The situation moved off the main line.** It was the thing that got truncated, and it was
+  competing with the step's own wording for the width. It now sits underneath the step in small
+  grey text, with the "Do this next" badge beside it. Two other options were considered and not
+  taken: grouping the ladder by situation (loses the single easiest-first order across the whole
+  ladder, which is the point of this view) and a colour dot with a key (colour alone is not
+  readable, and a key costs a lookup on every row).

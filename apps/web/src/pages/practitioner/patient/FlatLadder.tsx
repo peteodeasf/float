@@ -10,12 +10,12 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
-  getPlanRungs, createPlanRung, updatePlanRung, deletePlanRung,
+  getPlanRungs, updatePlanRung, deletePlanRung,
   setLadderActive, setRecommendedRung, planExperimentForBehavior,
   type AvoidanceBehavior,
   type TriggerSituation,
 } from '../../../api/treatment'
-import { BEHAVIOR_TYPE_SCENARIO, clampDt, clampDtInput, getNextSchoolDayISO } from './shared'
+import { clampDt, clampDtInput, getNextSchoolDayISO } from './shared'
 
 // Every rung on the plan in one list, easiest first. A rung is a sentence and a score; the
 // situation is a quiet label you can change, not a folder you open first. See
@@ -37,29 +37,12 @@ export function FlatLadder({
   onStartConversation?: () => void
 }) {
   const qc = useQueryClient()
-  const [showAdd, setShowAdd] = useState(false)
-  const [name, setName] = useState('')
-  const [dt, setDt] = useState('')
-  const [groupId, setGroupId] = useState<string>('')
 
   const { data: rungs, isLoading } = useQuery({
     queryKey: ['plan-rungs', planId],
     queryFn: () => getPlanRungs(planId),
   })
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
-    qc.invalidateQueries({ queryKey: ['behaviors'] })
-  }
-  const addMut = useMutation({
-    mutationFn: () => createPlanRung(planId, {
-      name: name.trim(),
-      behavior_type: BEHAVIOR_TYPE_SCENARIO,
-      distress_thermometer_when_refraining: clampDt(dt),
-      trigger_situation_id: groupId || null,
-    }),
-    onSuccess: () => { invalidate(); setName(''); setDt(''); setShowAdd(false) },
-  })
   const refreshPlan = () => {
     qc.invalidateQueries({ queryKey: ['plan', patientId] })
     qc.invalidateQueries({ queryKey: ['patient', patientId] })
@@ -109,10 +92,6 @@ export function FlatLadder({
           >
             {ladderActive ? 'Patient can view' : 'Patient cannot view'}
           </button>
-          {!showAdd && (
-            <button onClick={() => setShowAdd(true)} className="cursor-pointer"
-              style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>+ Add rung</button>
-          )}
           {/* The conversation is how a ladder gets built with the child. It hangs off this view. */}
           {onStartConversation && (
             <button onClick={onStartConversation} className="cursor-pointer"
@@ -142,39 +121,12 @@ export function FlatLadder({
           ))}
           {!isLoading && ordered.length === 0 && (
             <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '8px 2px' }}>
-              Nothing on the ladder yet — {onStartConversation ? 'use “Build ladder”, or add a rung yourself.' : 'use “+ Add rung”.'}
+              Nothing on the ladder yet — use “Build ladder”.
             </div>
           )}
         </div>
       </div>
 
-      {showAdd && (
-        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginTop: '12px' }}>
-          <input value={name} onChange={e => setName(e.target.value)} autoFocus
-            placeholder="e.g. three of Diane’s posts when I’m home by myself"
-            className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded"
-            style={{ marginBottom: '8px' }}
-            onKeyDown={e => e.key === 'Enter' && name.trim() && addMut.mutate()} />
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div>
-              <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>How hard (1-10)</label>
-              <input value={dt} onChange={e => setDt(clampDtInput(e.target.value))} type="number" min="1" max="10"
-                className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Situation (optional)</label>
-              <select value={groupId} onChange={e => setGroupId(e.target.value)}
-                className="text-sm border border-slate-200 rounded" style={{ padding: '6px 8px', minWidth: '180px', cursor: 'pointer' }}>
-                <option value="">Ungrouped — decide later</option>
-                {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
-            <button onClick={() => addMut.mutate()} disabled={!name.trim() || addMut.isPending}
-              className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '7px 14px' }}>Add</button>
-            <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -206,6 +158,10 @@ function LadderRow({
   const [planning, setPlanning] = useState(false)
   const [planDate, setPlanDate] = useState(getNextSchoolDayISO())
   const [planned, setPlanned] = useState(false)
+  // Peter, 2026-09-05: one button to plan the exposure, and telling the patient to do this one
+  // next is an option inside it — not a second button competing for the same row.
+  const [wantNext, setWantNext] = useState(isRecommended)
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
@@ -242,26 +198,44 @@ function LadderRow({
   }
 
   if (planning) {
+    const agree = () => {
+      if (wantNext !== isRecommended) onRecommend()
+      if (planned) { setPlanning(false); return }
+      planMut.mutate()
+    }
     return (
       <div style={{ background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '10px', padding: '12px 13px' }}>
         <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>When will they do &ldquo;{rung.name}&rdquo;?</div>
         <p style={{ fontSize: '11.5px', color: '#64748b', margin: '4px 0 10px' }}>
           They fill in what they think will happen when they open their app.
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        {planned ? (
+          <p style={{ fontSize: '12px', color: '#3f8a78', margin: '0 0 10px', fontWeight: 600 }}>Already planned.</p>
+        ) : (
           <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)}
-            className="text-sm border border-slate-200 rounded" style={{ padding: '5px 8px' }} />
-          <button onClick={() => planMut.mutate()} disabled={planMut.isPending}
+            className="text-sm border border-slate-200 rounded" style={{ padding: '5px 8px', marginBottom: '10px' }} />
+        )}
+
+        {/* Advice, not a lock — the child can still pick any rung. Only one rung can carry it, so
+            ticking this here takes it off whichever rung had it. */}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: '#475569', cursor: 'pointer', marginBottom: '12px' }}>
+          <input type="checkbox" checked={wantNext} onChange={e => setWantNext(e.target.checked)} style={{ cursor: 'pointer' }} />
+          Tell them to do this one next
+        </label>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <button onClick={agree} disabled={planMut.isPending}
             className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50"
-            style={{ padding: '6px 12px' }}>{planMut.isPending ? 'Saving…' : 'Agree it'}</button>
-          <button onClick={() => setPlanning(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+            style={{ padding: '6px 12px' }}>{planMut.isPending ? 'Saving…' : planned ? 'Save' : 'Agree it'}</button>
+          <button onClick={() => { setWantNext(isRecommended); setPlanning(false) }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 13px' }}>
+    <div className="group" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 13px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       {editingName ? (
         <input
           value={draft}
@@ -298,43 +272,48 @@ function LadderRow({
         className="text-sm border border-slate-200 rounded"
         style={{ width: '46px', padding: '4px 6px', textAlign: 'center', flexShrink: 0, fontWeight: 700 }} />
 
-      {planned ? (
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#3f8a78', flexShrink: 0 }}>Planned</span>
-      ) : (
-        <button onClick={() => setPlanning(true)} title="Agree an exposure on this one"
-          className="opacity-0 group-hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer"
-          style={{ fontSize: '11px', fontWeight: 700, color: '#3f8a78', flexShrink: 0, whiteSpace: 'nowrap' }}>
-          Plan it
-        </button>
-      )}
-
-      {/* Which one to do next. Advice the child sees — they can still pick any of them. */}
+      {/* One button. Planning the exposure and telling them to do it next are the same decision,
+          made in the same place. */}
       <button
-        onClick={onRecommend}
-        title={isRecommended ? 'Stop suggesting this one to the patient' : 'Tell the patient to do this one next'}
-        className="cursor-pointer"
-        style={{
-          fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
-          flexShrink: 0, whiteSpace: 'nowrap',
-          color: isRecommended ? '#0d3d3a' : '#94a3b8',
-          background: isRecommended ? '#eafaf6' : '#fff',
-          border: `1px solid ${isRecommended ? 'var(--float-primary)' : '#e2e8f0'}`,
-        }}
-      >
-        {isRecommended ? 'Suggested to patient' : 'Suggest to patient'}
+        onClick={() => { setWantNext(isRecommended); setPlanning(true) }}
+        title={planned ? 'Change the plan for this one' : 'Agree an exposure on this one'}
+        className={`${planned || isRecommended ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity '}bg-transparent border-none cursor-pointer`}
+        style={{ fontSize: '11px', fontWeight: 700, color: '#3f8a78', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}>
+        {planned ? 'Planned' : 'Plan it'}
       </button>
 
-      {/* Which situation it belongs to, read-only. Changing it is the editor's job — a step is
-          added and moved where it was written, and having two places to do it was one too many. */}
-      {sit && (
-        <span style={{ fontSize: '11px', fontWeight: 600, color: '#8fa5a1', flexShrink: 0, whiteSpace: 'nowrap', maxWidth: '190px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {sit}
+      {/* Asks first. A rung is a sentence somebody wrote with a child in the room, and the × sat
+          one stray click away from taking it. */}
+      {confirmRemove ? (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: '11px', color: '#64748b' }}>Remove?</span>
+          <button onClick={() => delMut.mutate()} disabled={delMut.isPending}
+            className="bg-transparent border-none cursor-pointer disabled:opacity-50"
+            style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626', padding: 0 }}>Yes, remove</button>
+          <button onClick={() => setConfirmRemove(false)}
+            className="bg-transparent border-none cursor-pointer"
+            style={{ fontSize: '11px', color: '#94a3b8', padding: 0 }}>Cancel</button>
         </span>
+      ) : (
+        <button onClick={() => setConfirmRemove(true)} title="Remove rung"
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"
+          style={{ fontSize: '14px', padding: '0 2px', flexShrink: 0 }}>×</button>
       )}
+      </div>
 
-      <button onClick={() => delMut.mutate()} title="Remove rung"
-        className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"
-        style={{ fontSize: '14px', padding: '0 2px', flexShrink: 0 }}>×</button>
+      {/* Underneath, not beside. On the main line the situation was the thing that got truncated,
+          and it competed with the step's own wording for the width. Here it has the whole row and
+          it reads as part of the step rather than another column. */}
+      {(sit || isRecommended) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px' }}>
+          {isRecommended && (
+            <span style={{ fontSize: '10px', fontWeight: 800, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '1px 7px', flexShrink: 0 }}>
+              Do this next
+            </span>
+          )}
+          {sit && <span style={{ fontSize: '11px', color: '#8fa5a1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sit}</span>}
+        </div>
+      )}
     </div>
   )
 }

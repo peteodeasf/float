@@ -160,6 +160,10 @@ export function LadderEditor({ planId, triggers, openSituationId, onDone, onArro
   // Closing the editor puts these steps in front of a child, so it is the moment to look at the
   // ladder as a whole rather than one situation at a time.
   const [reviewing, setReviewing] = useState(false)
+  // Set by anything that writes. Peter, 2026-09-05: if you opened the editor and changed nothing,
+  // Save should just close — there is nothing new to check, and the same findings again are noise.
+  const [edited, setEdited] = useState(false)
+  const markEdited = () => setEdited(true)
   // Collapsed behind a button. Adding situations is the first thing you do and then rarely again,
   // so it should not sit open under the list taking up the room the list needs.
   const [adding, setAdding] = useState(false)
@@ -183,6 +187,7 @@ export function LadderEditor({ planId, triggers, openSituationId, onDone, onArro
     // A situation you have just named is one you are about to put steps under, so it opens.
     onSuccess: (created: TriggerSituation) => {
       invalidate()
+      markEdited()
       setNewName('')
       setOpen(prev => new Set(prev).add(created.id))
     },
@@ -201,7 +206,7 @@ export function LadderEditor({ planId, triggers, openSituationId, onDone, onArro
 
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>What situations do you have trouble with?</div>
+      <div style={bigQ}>What trigger situations do you have trouble with?</div>
       <p style={lead}>
         Give each one a thermometer score. Then open it up and add the smaller versions you could
         actually try — those are the steps on the ladder.
@@ -217,6 +222,7 @@ export function LadderEditor({ planId, triggers, openSituationId, onDone, onArro
               expanded={open.has(t.id)}
               onToggle={() => toggle(t.id)}
               onArrow={() => onArrow(t.id)}
+              onEdited={markEdited}
             />
           ))}
         </div>
@@ -261,7 +267,7 @@ export function LadderEditor({ planId, triggers, openSituationId, onDone, onArro
       {/* Closing puts these steps in front of a child, so the ladder gets looked at first. */}
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #eef2f1' }}>
         {!reviewing ? (
-          <button onClick={() => setReviewing(true)} style={{ ...primaryBtn, marginTop: 0 }}>
+          <button onClick={() => (edited ? setReviewing(true) : onDone())} style={{ ...primaryBtn, marginTop: 0 }}>
             Save ladder →
           </button>
         ) : (
@@ -313,12 +319,14 @@ export function LadderEditor({ planId, triggers, openSituationId, onDone, onArro
 }
 
 /** One situation: its name, its score, and — opened up — the steps underneath it. */
-function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
+function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }: {
   planId: string
   trigger: TriggerSituation
   expanded: boolean
   onToggle: () => void
   onArrow: () => void
+  /** Anything that writes calls this, so Save can skip the review when nothing changed. */
+  onEdited: () => void
 }) {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
@@ -328,12 +336,13 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['triggers', planId] })
   const saveMut = useMutation({
     mutationFn: (data: Parameters<typeof updateTrigger>[2]) => updateTrigger(planId, trigger.id, data),
-    onSuccess: () => { invalidate(); setEditing(false) },
+    onSuccess: () => { invalidate(); onEdited(); setEditing(false) },
   })
   const delMut = useMutation({
     mutationFn: () => deleteTrigger(planId, trigger.id),
     onSuccess: () => {
       invalidate()
+      onEdited()
       qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
     },
   })
@@ -397,7 +406,7 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
         )}
       </div>
 
-      {expanded && <StepList planId={planId} trigger={trigger} />}
+      {expanded && <StepList planId={planId} trigger={trigger} onEdited={onEdited} />}
     </div>
 
     {/* Its own thing, beside the situation rather than inside its row of controls. It opens
@@ -412,9 +421,10 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow }: {
 }
 
 /** The steps under one situation. Added, edited, scored and removed in place. */
-function StepList({ planId, trigger }: {
+function StepList({ planId, trigger, onEdited }: {
   planId: string
   trigger: TriggerSituation
+  onEdited: () => void
 }) {
   const qc = useQueryClient()
   const [draft, setDraft] = useState('')
@@ -438,6 +448,7 @@ function StepList({ planId, trigger }: {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
+    onEdited()
   }
   const addMut = useMutation({
     mutationFn: (name: string) =>
