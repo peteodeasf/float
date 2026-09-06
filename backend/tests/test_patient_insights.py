@@ -414,3 +414,71 @@ async def test_another_clinicians_patient_is_refused(api, db):
     assert (await api.post(
         f"/patients/{theirs.id}/insights/{item.id}/add"
     )).status_code in (403, 404)
+
+
+async def test_deleting_the_accommodation_puts_the_suggestion_back(api, db):
+    """Adding is the only thing that takes a suggestion off the list, so undoing it has to be
+    deleting the row it created. Otherwise a mis-tap is permanent."""
+    from app.models.experiment import AccommodationBehavior
+    from sqlalchemy import delete, select
+    from tests.factories import make_plan
+
+    org = await make_org(db)
+    plan = await make_plan(db, org)
+    patient = plan.patient
+    await _build(db, patient, org)
+    clinician = await _clinician_for(db, org, patient)
+    item = next(
+        r for r in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+        if r.kind == KIND_ACCOMMODATION
+    )
+
+    api.sign_in_as(clinician.user)
+    await api.post(f"/patients/{patient.id}/insights/{item.id}/add")
+    assert (await api.get(f"/patients/{patient.id}/insights?kind=accommodation")).json() == []
+
+    created = (await db.execute(
+        select(AccommodationBehavior).where(AccommodationBehavior.treatment_plan_id == plan.id)
+    )).scalars().all()
+    await db.execute(
+        delete(AccommodationBehavior).where(AccommodationBehavior.id == created[0].id)
+    )
+    await db.flush()
+    # This test shares one session with the API; a real request gets a fresh one. Re-reading the
+    # row is how the test sees what the database now holds — that ON DELETE SET NULL fired.
+    await db.refresh(item)
+
+    back = (await api.get(f"/patients/{patient.id}/insights?kind=accommodation")).json()
+    assert [i["name"] for i in back] == ["Mum orders for him"]
+
+
+async def test_deleting_the_situation_puts_the_suggestion_back(api, db):
+    from app.models.treatment import TriggerSituation
+    from sqlalchemy import delete, select
+    from tests.factories import make_plan
+
+    org = await make_org(db)
+    plan = await make_plan(db, org)
+    patient = plan.patient
+    await _build(db, patient, org)
+    clinician = await _clinician_for(db, org, patient)
+    item = next(
+        r for r in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+        if r.kind == KIND_SITUATION
+    )
+
+    api.sign_in_as(clinician.user)
+    await api.post(f"/patients/{patient.id}/insights/{item.id}/add")
+    assert (await api.get(f"/patients/{patient.id}/insights?kind=situation")).json() == []
+
+    created = (await db.execute(
+        select(TriggerSituation).where(TriggerSituation.treatment_plan_id == plan.id)
+    )).scalars().all()
+    await db.execute(delete(TriggerSituation).where(TriggerSituation.id == created[0].id))
+    await db.flush()
+    # This test shares one session with the API; a real request gets a fresh one. Re-reading the
+    # row is how the test sees what the database now holds — that ON DELETE SET NULL fired.
+    await db.refresh(item)
+
+    back = (await api.get(f"/patients/{patient.id}/insights?kind=situation")).json()
+    assert [i["name"] for i in back] == ["Ordering lunch in the cafeteria"]

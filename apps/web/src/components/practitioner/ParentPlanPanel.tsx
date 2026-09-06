@@ -59,6 +59,7 @@ export default function ParentPlanPanel({
     enabled: !!planId,
   })
 
+  const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [situationId, setSituationId] = useState('')
   const [dmin, setDmin] = useState('')
@@ -86,7 +87,10 @@ export default function ParentPlanPanel({
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteAccommodation(planId, id),
-    onSuccess: invalidate,
+    // Adding is the only thing that takes a suggestion off the list, so deleting the row it
+    // created is the way back. The database already does this; the list has to be re-read to
+    // show it.
+    onSuccess: () => { invalidate(); qc.invalidateQueries({ queryKey: ['insights'] }) },
   })
 
   const reorderMut = useMutation({
@@ -132,12 +136,6 @@ export default function ParentPlanPanel({
     overflow: 'hidden',
     width: '100%',
     boxSizing: 'border-box',
-  }
-  const formStyle: React.CSSProperties = {
-    background: '#f8fafc',
-    border: '1px solid var(--float-border)',
-    borderRadius: 'var(--float-radius)',
-    padding: '16px 18px',
   }
   const labelStyle: React.CSSProperties = {
     fontSize: '12px',
@@ -186,71 +184,9 @@ export default function ParentPlanPanel({
         )}
       </div>
 
-      <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Add form */}
-      <div style={formStyle}>
-        <label style={labelStyle}>New accommodation</label>
-        <input
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="e.g. Lies down with them at bedtime"
-          style={{ ...inputStyle, marginBottom: '10px' }}
-        />
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ flex: '2 1 200px' }}>
-            <label style={labelStyle}>Situation (optional)</label>
-            <select
-              value={situationId}
-              onChange={e => setSituationId(e.target.value)}
-              style={inputStyle}
-            >
-              <option value="">No situation</option>
-              {triggers.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: '1 1 80px' }}>
-            <label style={labelStyle}>Distress min</label>
-            <input
-              type="number" min={0} max={10} value={dmin}
-              onChange={e => setDmin(e.target.value)}
-              placeholder="—" style={inputStyle}
-            />
-          </div>
-          <div style={{ flex: '1 1 80px' }}>
-            <label style={labelStyle}>Distress max</label>
-            <input
-              type="number" min={0} max={10} value={dmax}
-              onChange={e => setDmax(e.target.value)}
-              placeholder="—" style={inputStyle}
-            />
-          </div>
-          <button
-            onClick={() => createMut.mutate()}
-            disabled={!name.trim() || createMut.isPending}
-            style={{
-              flex: 'none',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: '#fff',
-              background: 'var(--float-primary)',
-              border: 'none',
-              borderRadius: 'var(--float-radius-sm)',
-              padding: '9px 16px',
-              cursor: 'pointer',
-              opacity: !name.trim() || createMut.isPending ? 0.5 : 1,
-            }}
-          >
-            {createMut.isPending ? 'Adding…' : 'Add'}
-          </button>
-        </div>
-        <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '8px 0 0' }}>
-          Leave distress blank if unrated. Enter one value for a single rating, or both for a range (e.g. 5–9).
-        </p>
-      </div>
+      <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-      {/* Ladder */}
+      {/* What is on the ladder, first. This is the thing you came to look at. */}
       {isLoading ? (
         <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>Loading…</p>
       ) : accommodations.length === 0 ? null : (
@@ -270,35 +206,110 @@ export default function ParentPlanPanel({
         </div>
       )}
 
-      {fromMonitoring.length > 0 && (
-        <div>
-          <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '7px' }}>
-            From the monitoring log
+      {/* Adding, the same shape as the ladder's Add situation: a button that opens one panel with
+          the form and this child's own monitoring suggestions inside it. */}
+      {adding ? (
+        <div style={{ background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: '11px', padding: '14px 16px' }}>
+          <label style={labelStyle}>New accommodation</label>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            autoFocus
+            onKeyDown={e => { if (e.key === 'Enter' && name.trim()) createMut.mutate() }}
+            placeholder="e.g. Lies down with them at bedtime"
+            style={{ ...inputStyle, marginBottom: '10px' }}
+          />
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ flex: '2 1 200px' }}>
+              <label style={labelStyle}>Situation (optional)</label>
+              <select value={situationId} onChange={e => setSituationId(e.target.value)} style={inputStyle}>
+                <option value="">No situation</option>
+                {triggers.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: '1 1 80px' }}>
+              <label style={labelStyle}>Distress min</label>
+              <input type="number" min={0} max={10} value={dmin}
+                onChange={e => setDmin(e.target.value)} placeholder="—" style={inputStyle} />
+            </div>
+            <div style={{ flex: '1 1 80px' }}>
+              <label style={labelStyle}>Distress max</label>
+              <input type="number" min={0} max={10} value={dmax}
+                onChange={e => setDmax(e.target.value)} placeholder="—" style={inputStyle} />
+            </div>
+            <button
+              onClick={() => createMut.mutate()}
+              disabled={!name.trim() || createMut.isPending}
+              style={{
+                flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff',
+                background: 'var(--float-primary)', border: 'none',
+                borderRadius: 'var(--float-radius-sm)', padding: '9px 16px', cursor: 'pointer',
+                opacity: !name.trim() || createMut.isPending ? 0.5 : 1,
+              }}
+            >
+              {createMut.isPending ? 'Adding…' : 'Add'}
+            </button>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
-            {fromMonitoring.map(item => (
-              <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', overflow: 'hidden' }}>
-                <button
-                  onClick={() => takeMut.mutate(item.id)}
-                  disabled={takeMut.isPending}
-                  style={{ fontSize: '13px', fontWeight: 600, color: '#135450', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  + {item.name}
-                  <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
-                    {' '}&middot; {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
-                    {item.parent_name ? ` \u00b7 ${item.parent_name}` : ''}
+          <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '8px 0 0' }}>
+            Leave distress blank if unrated. Enter one value for a single rating, or both for a range (e.g. 5–9).
+          </p>
+
+          {/* What the parent actually did, in their own words, with the dated entries behind it.
+              Nothing is reworded and nothing is invented. White until added — once added it is a
+              row above, and that is what the mint means. */}
+          {fromMonitoring.length > 0 && (
+            <div style={{ marginTop: '16px', borderTop: '1px solid #e6efec', paddingTop: '14px' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '2px' }}>
+                From the monitoring log
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', marginBottom: '8px' }}>
+                Tap to add it above. Delete it there and it comes back here.
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+                {fromMonitoring.map(item => (
+                  <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', overflow: 'hidden' }}>
+                    <button
+                      onClick={() => takeMut.mutate(item.id)}
+                      disabled={takeMut.isPending}
+                      style={{ fontSize: '13px', fontWeight: 600, color: '#135450', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}
+                    >
+                      + {item.name}
+                      <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
+                        {' '}&middot; {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
+                        {item.parent_name ? ` \u00b7 ${item.parent_name}` : ''}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => dropMut.mutate(item.id)}
+                      disabled={dropMut.isPending}
+                      title="Not relevant — take it off the list"
+                      style={{ fontSize: '14px', color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 12px 0 4px' }}
+                    >&times;</button>
                   </span>
-                </button>
-                <button
-                  onClick={() => dropMut.mutate(item.id)}
-                  disabled={dropMut.isPending}
-                  title="Not relevant — take it off the list"
-                  style={{ fontSize: '14px', color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 12px 0 4px' }}
-                >&times;</button>
-              </span>
-            ))}
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => { setAdding(false); setName(''); setSituationId(''); setDmin(''); setDmax('') }}
+            style={{ marginTop: '14px', fontSize: '13px', fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', padding: '8px 16px', cursor: 'pointer' }}
+          >
+            Done adding
+          </button>
         </div>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          style={{ alignSelf: 'flex-start', fontSize: '13px', fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', padding: '9px 16px', cursor: 'pointer' }}
+        >
+          + Add accommodation
+          {fromMonitoring.length > 0 && (
+            <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · {fromMonitoring.length} from monitoring</span>
+          )}
+        </button>
       )}
 
       {moments.length > 0 && (

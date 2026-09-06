@@ -292,7 +292,10 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
           {(fromMonitoring ?? []).length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div style={sectionLabel}>From the monitoring log</div>
+              <div style={{ ...sectionLabel, marginBottom: 2 }}>From the monitoring log</div>
+              <div style={{ fontSize: 11.5, color: '#9aa9a8', marginBottom: 7 }}>
+                Tap to add it to the ladder. Delete it there and it comes back here.
+              </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {(fromMonitoring ?? []).map(item => (
                   // Same chip as the common list. White until it is added — once it is, it shows
@@ -423,6 +426,9 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
       invalidate()
       onEdited()
       qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
+      // Adding is the only thing that takes a suggestion off the list, so deleting the situation
+      // it created is the way back. The database already does this; the list has to be re-read.
+      qc.invalidateQueries({ queryKey: ['insights'] })
     },
   })
 
