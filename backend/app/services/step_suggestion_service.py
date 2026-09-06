@@ -116,8 +116,8 @@ async def suggest_steps(
     """
     if not (feared_outcome or "").strip():
         raise SuggestionUnavailable(
-            "Do the downward arrow on this situation first — what they are afraid will happen is "
-            "what decides the smaller versions."
+            "Do the downward arrow on this situation first and you can get suggested "
+            "sub-situations."
         )
 
     import json
