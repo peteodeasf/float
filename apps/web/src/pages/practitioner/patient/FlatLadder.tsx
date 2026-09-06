@@ -311,12 +311,19 @@ function LadderRow({
         style={{ width: '46px', padding: '4px 6px', textAlign: 'center', flexShrink: 0, fontWeight: 700 }} />
 
       {/* One button. Planning the exposure and telling them to do it next are the same decision,
-          made in the same place. */}
+          made in the same place — and it is always on screen. It used to appear on hover, which
+          hid the main thing you come to this row to do. */}
       <button
         onClick={() => { setWantNext(isRecommended); setPlanning(true) }}
         title={planned ? 'Change the plan for this one' : 'Agree an exposure on this one'}
-        className={`${planned || isRecommended ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity '}bg-transparent border-none cursor-pointer`}
-        style={{ fontSize: '11px', fontWeight: 700, color: '#3f8a78', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}>
+        className="cursor-pointer"
+        style={{
+          fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
+          borderRadius: '999px', padding: '3px 9px',
+          color: '#3f8a78',
+          background: planned ? '#eef7f4' : '#fff',
+          border: `1px solid ${planned ? '#bcdfd4' : '#e2e8f0'}`,
+        }}>
         {planned ? 'Planned' : 'Plan it'}
       </button>
 
