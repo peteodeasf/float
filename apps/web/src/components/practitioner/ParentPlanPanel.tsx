@@ -187,45 +187,6 @@ export default function ParentPlanPanel({
       </div>
 
       <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* What the parent actually did, from the monitoring log — their own words, with the dated
-          entries behind them. Nothing is reworded and nothing is invented. The clinician decides
-          the order, so nothing here proposes one. */}
-      {fromMonitoring.length > 0 && (
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', marginBottom: '7px' }}>
-            From the monitoring log
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {fromMonitoring.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  onClick={() => takeMut.mutate(item.id)}
-                  disabled={takeMut.isPending}
-                  style={{
-                    flex: 1, minWidth: 0, textAlign: 'left', fontSize: '13px', fontWeight: 600,
-                    color: '#0d3d3a', background: '#eafaf6',
-                    border: '1px solid var(--float-primary)',
-                    borderRadius: 'var(--float-radius-sm)', padding: '9px 13px', cursor: 'pointer',
-                  }}
-                >
-                  + {item.name}
-                  <span style={{ fontWeight: 500, color: '#4d8478' }}>
-                    {' '}&middot; {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
-                    {item.parent_name ? ` \u00b7 ${item.parent_name}` : ''}
-                  </span>
-                </button>
-                <button
-                  onClick={() => dropMut.mutate(item.id)}
-                  disabled={dropMut.isPending}
-                  title="Not relevant — take it off the list"
-                  style={{ fontSize: '15px', color: '#cbd5e1', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 4px' }}
-                >&times;</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Add form */}
       <div style={formStyle}>
         <label style={labelStyle}>New accommodation</label>
@@ -306,6 +267,37 @@ export default function ParentPlanPanel({
               onSave={(data) => updateAccommodation(planId, a.id, data).then(invalidate)}
             />
           ))}
+        </div>
+      )}
+
+      {fromMonitoring.length > 0 && (
+        <div>
+          <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '7px' }}>
+            From the monitoring log
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+            {fromMonitoring.map(item => (
+              <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => takeMut.mutate(item.id)}
+                  disabled={takeMut.isPending}
+                  style={{ fontSize: '13px', fontWeight: 600, color: '#135450', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  + {item.name}
+                  <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
+                    {' '}&middot; {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
+                    {item.parent_name ? ` \u00b7 ${item.parent_name}` : ''}
+                  </span>
+                </button>
+                <button
+                  onClick={() => dropMut.mutate(item.id)}
+                  disabled={dropMut.isPending}
+                  title="Not relevant — take it off the list"
+                  style={{ fontSize: '14px', color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 12px 0 4px' }}
+                >&times;</button>
+              </span>
+            ))}
+          </div>
         </div>
       )}
 

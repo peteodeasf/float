@@ -130,7 +130,11 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
 
   // Full screen for when the child is looking; plain for the Plan tab, which brings its own
   // header and nav.
-  const Shell = ({ children }: { children: React.ReactNode }) =>
+  //
+  // A function that returns elements, NOT a component declared in the body. Declaring one here
+  // makes a new component type on every render, so React unmounts and rebuilds everything inside
+  // it — which is what closed the Add situation panel the moment you added anything.
+  const shell = (children: React.ReactNode) =>
     embedded
       ? <div style={{ padding: '4px 0 8px' }}>{children}</div>
       : (
@@ -141,32 +145,37 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
       )
 
   if (planLoading) {
-    return <Shell><div style={{ color: '#6b7a79', fontSize: 14, padding: 40, textAlign: 'center' }}>Loading…</div></Shell>
+    return shell(<div style={{ color: '#6b7a79', fontSize: 14, padding: 40, textAlign: 'center' }}>Loading…</div>)
   }
   if (!plan) {
-    return (
-      <Shell>
-        <div style={{ ...card, textAlign: 'center' }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a' }}>No treatment plan yet</div>
-          <p style={{ fontSize: 13.5, color: '#6b7a79', marginTop: 8 }}>Create the plan from the patient page first, then start a session.</p>
-          <button onClick={onExit} style={primaryBtn}>Back to patient</button>
-        </div>
-      </Shell>
+    return shell(
+      <div style={{ ...card, textAlign: 'center' }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a' }}>No treatment plan yet</div>
+        <p style={{ fontSize: 13.5, color: '#6b7a79', marginTop: 8 }}>Create the plan from the patient page first, then start a session.</p>
+        <button onClick={onExit} style={primaryBtn}>Back to patient</button>
+      </div>
     )
   }
 
-  return (
-    <Shell>
-      <LadderEditor
-        planId={plan.id}
-        patientId={patientId!}
-        triggers={sortedTriggers}
-        openSituationId={openSituationId}
-        onDone={onExit}
-        onArrow={id => goToArrow(`/patients/${patientId}/arrow?situation=${id}`)}
-      />
-    </Shell>
+  return shell(
+    <LadderEditor
+      planId={plan.id}
+      patientId={patientId!}
+      triggers={sortedTriggers}
+      openSituationId={openSituationId}
+      onDone={onExit}
+      onArrow={id => goToArrow(`/patients/${patientId}/arrow?situation=${id}`)}
+    />
   )
+}
+
+/** The heading over a group of situations you can tap to add. Both groups use it — the one from
+ *  this child's monitoring log, and the common list — so they read as two of the same thing. */
+const sectionLabel: React.CSSProperties = {
+  fontSize: 12.5,
+  fontWeight: 700,
+  color: '#4d8478',
+  marginBottom: 7,
 }
 
 // ── The editor ────────────────────────────────────────────────────────────────
@@ -283,16 +292,16 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
           {(fromMonitoring ?? []).length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 12.5, color: '#4d8478', fontWeight: 700, marginBottom: 7 }}>
-                From the monitoring log
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={sectionLabel}>From the monitoring log</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {(fromMonitoring ?? []).map(item => (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  // Same chip as the common list. White until it is added — once it is, it shows
+                  // as a mint situation row on the ladder above, and that is what green means here.
+                  <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, overflow: 'hidden' }}>
                     <button onClick={() => takeMut.mutate(item.id)} disabled={takeMut.isPending}
-                      style={{ flex: 1, minWidth: 0, textAlign: 'left', fontSize: 13.5, fontWeight: 600, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: 10, padding: '9px 13px', cursor: 'pointer' }}>
+                      style={{ fontSize: 13, fontWeight: 600, color: '#135450', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
                       + {item.name}
-                      <span style={{ fontWeight: 500, color: '#4d8478' }}>
+                      <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
                         {' '}· {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
                         {item.fear_rating != null ? `, rated ${item.fear_rating}` : ''}
                       </span>
@@ -301,8 +310,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
                         analysed, or they would remove the same thing every week. */}
                     <button onClick={() => dropMut.mutate(item.id)} disabled={dropMut.isPending}
                       title="Not relevant — take it off the list"
-                      style={{ fontSize: 15, color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 4px' }}>×</button>
-                  </div>
+                      style={{ fontSize: 14, color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 12px 0 4px' }}>×</button>
+                  </span>
                 ))}
               </div>
             </div>
@@ -310,7 +319,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
           {suggestions.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 12.5, color: '#9aa9a8', marginBottom: 7 }}>Other kids often say these — tap any that fit</div>
+              <div style={{ ...sectionLabel, color: '#9aa9a8' }}>Common situations</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {suggestions.map(sug => (
                   <button key={sug.id} onClick={() => addMut.mutate(sug.name)} disabled={addMut.isPending}
@@ -322,7 +331,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             </div>
           )}
 
-          <button onClick={() => { setAdding(false); setNewName('') }} style={{ ...quietLink, marginTop: 12 }}>
+          <button onClick={() => { setAdding(false); setNewName('') }}
+            style={{ marginTop: 14, fontSize: 13, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '8px 16px', cursor: 'pointer' }}>
             Done adding
           </button>
         </div>
