@@ -1509,7 +1509,7 @@ export default function PatientPage() {
     <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span className="text-sm font-semibold text-slate-700">Treatment plan</span>
+          <span className="text-sm font-semibold text-slate-700">Treatment Plan</span>
           <span className={`text-xs px-1.5 py-0.5 rounded-full ${plan.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{plan.status}</span>
           <span style={{ fontSize: '12px', color: '#cbd5e1' }}>&middot;</span>
           {editingNickname ? (
@@ -2485,7 +2485,7 @@ export default function PatientPage() {
               <>
                 {treatmentPlanBuilder}
                 {plan && (
-                  <div style={{ marginTop: '8px' }}>
+                  <div style={{ marginTop: '16px' }}>
                     <ParentPlanPanel planId={plan.id} triggers={triggers ?? []} />
                   </div>
                 )}

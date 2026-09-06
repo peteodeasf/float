@@ -104,8 +104,19 @@ export default function ParentPlanPanel({
     reorderMut.mutate(ids)
   }
 
-  const cardStyle: React.CSSProperties = {
-    background: 'var(--float-surface)',
+  // The panel is one white card, matching Treatment Plan. So the add form is a sunken block inside
+  // it rather than a second white card on top of a white card.
+  const panelStyle: React.CSSProperties = {
+    background: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #cbd5e1',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+    overflow: 'hidden',
+    width: '100%',
+    boxSizing: 'border-box',
+  }
+  const formStyle: React.CSSProperties = {
+    background: '#f8fafc',
     border: '1px solid var(--float-border)',
     borderRadius: 'var(--float-radius)',
     padding: '16px 18px',
@@ -128,13 +139,11 @@ export default function ParentPlanPanel({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+    <div style={panelStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
         <div>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--float-text)' }}>
-            Parent Accommodations
-          </div>
-          <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: '4px 0 0', lineHeight: 1.5, maxWidth: '520px' }}>
+          <div className="text-sm font-semibold text-slate-700">Parent Accommodations</div>
+          <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '2px 0 0', lineHeight: 1.5 }}>
             Create a plan for parents to reduce accommodation behaviors
           </p>
         </div>
@@ -159,8 +168,9 @@ export default function ParentPlanPanel({
         )}
       </div>
 
+      <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Add form */}
-      <div style={cardStyle}>
+      <div style={formStyle}>
         <label style={labelStyle}>New accommodation</label>
         <input
           value={name}
@@ -225,11 +235,7 @@ export default function ParentPlanPanel({
       {/* Ladder */}
       {isLoading ? (
         <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>Loading…</p>
-      ) : accommodations.length === 0 ? (
-        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', fontStyle: 'italic' }}>
-          No accommodations yet. Add the ones that surfaced in monitoring or consultation.
-        </p>
-      ) : (
+      ) : accommodations.length === 0 ? null : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {accommodations.map((a, i) => (
             <AccommodationRow
@@ -293,6 +299,7 @@ export default function ParentPlanPanel({
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
