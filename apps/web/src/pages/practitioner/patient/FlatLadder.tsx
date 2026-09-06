@@ -17,6 +17,27 @@ import {
 } from '../../../api/treatment'
 import { clampDt, clampDtInput, getNextSchoolDayISO } from './shared'
 
+/** Whether the situation shows under each rung. A display preference, so it lives in the browser
+ *  rather than on the plan — it says how this clinician likes to read the list, not anything about
+ *  the patient. Reads and writes are wrapped because storage throws outright in some browsers. */
+const SHOW_SITUATIONS_KEY = 'float.ladder.showSituations'
+
+function readShowSituations(): boolean {
+  try {
+    return window.localStorage.getItem(SHOW_SITUATIONS_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+function writeShowSituations(on: boolean) {
+  try {
+    window.localStorage.setItem(SHOW_SITUATIONS_KEY, on ? '1' : '0')
+  } catch {
+    // A browser with storage blocked still gets the toggle for this visit.
+  }
+}
+
 // Every rung on the plan in one list, easiest first. A rung is a sentence and a score; the
 // situation is a quiet label you can change, not a folder you open first. See
 // docs/plans/flat-ladder-grouped-situations.md.
@@ -37,6 +58,7 @@ export function FlatLadder({
   onStartConversation?: () => void
 }) {
   const qc = useQueryClient()
+  const [showSituations, setShowSituations] = useState(readShowSituations)
 
   const { data: rungs, isLoading } = useQuery({
     queryKey: ['plan-rungs', planId],
@@ -71,7 +93,18 @@ export function FlatLadder({
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px', marginBottom: '12px' }}>
         <div>
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Ladder</div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Everything, easiest first</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+            Everything, easiest first
+            {' · '}
+            <button
+              onClick={() => { const next = !showSituations; setShowSituations(next); writeShowSituations(next) }}
+              title={showSituations ? 'Stop showing which situation each rung belongs to' : 'Show which situation each rung belongs to'}
+              className="cursor-pointer bg-transparent border-none underline"
+              style={{ fontSize: '11px', color: '#94a3b8', padding: 0 }}
+            >
+              {showSituations ? 'Hide situations' : 'Show situations'}
+            </button>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           {/* One switch for the whole ladder. Peter, 2026-09-01: "the clinician can still
@@ -116,6 +149,7 @@ export function FlatLadder({
               rung={r}
               triggers={triggers}
               isRecommended={recommendedRungId === r.id}
+              showSituation={showSituations}
               onRecommend={() => recommendMut.mutate(recommendedRungId === r.id ? null : r.id)}
             />
           ))}
@@ -144,12 +178,16 @@ function LadderRow({
   rung,
   triggers,
   isRecommended,
+  showSituation,
   onRecommend,
 }: {
   planId: string
   rung: AvoidanceBehavior
   triggers: TriggerSituation[]
   isRecommended: boolean
+  /** Off hides the second line. The "Do this next" badge still shows — that is not a label, it is
+   *  what the patient has been told to do. */
+  showSituation: boolean
   onRecommend: () => void
 }) {
   const qc = useQueryClient()
@@ -304,14 +342,14 @@ function LadderRow({
       {/* Underneath, not beside. On the main line the situation was the thing that got truncated,
           and it competed with the step's own wording for the width. Here it has the whole row and
           it reads as part of the step rather than another column. */}
-      {(sit || isRecommended) && (
+      {((sit && showSituation) || isRecommended) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px' }}>
           {isRecommended && (
             <span style={{ fontSize: '10px', fontWeight: 800, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '1px 7px', flexShrink: 0 }}>
               Do this next
             </span>
           )}
-          {sit && <span style={{ fontSize: '11px', color: '#8fa5a1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sit}</span>}
+          {sit && showSituation && <span style={{ fontSize: '11px', color: '#8fa5a1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sit}</span>}
         </div>
       )}
     </div>

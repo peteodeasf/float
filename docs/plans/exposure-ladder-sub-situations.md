@@ -400,3 +400,10 @@ walked to but did not explicitly confirm.
   taken: grouping the ladder by situation (loses the single easiest-first order across the whole
   ladder, which is the point of this view) and a colour dot with a key (colour alone is not
   readable, and a key costs a lookup on every row).
+
+**Follow-up, same day:** the second line can be switched off. "Hide situations" sits next to
+"Everything, easiest first" in the ladder header. The choice is remembered in the browser, not on
+the plan — it is how one clinician likes to read the list on the machine in front of them, and it
+says nothing about the patient, so it does not belong in the database. The "Do this next" badge
+still shows when situations are hidden: that is not a label, it is what the patient has been told
+to do.
