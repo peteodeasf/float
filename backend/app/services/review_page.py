@@ -179,8 +179,7 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None, comme
 
     for item in round_.items:
         rungs = item.get("existing") or []
-        chips = "".join(f'<span class="rung">{_esc(r)}</span>' for r in rungs) \
-            or '<span class="rung">nothing yet</span>'
+        chips = "".join(f'<span class="rung">{_esc(r)}</span>' for r in rungs)
         rows = []
         for i, suggestion in enumerate(item["suggestions"]):
             total += 1
@@ -216,11 +215,17 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None, comme
             'placeholder="Add one of your own" aria-label="Add your own suggestion">'
             '<button class="ghost addbtn" data-key="' + _esc(item["key"]) + '">Add</button></div></div>'
         )
+        # Only when there are any. A round whose situations have none showed
+        # "Safety Behaviors: nothing yet" on every card, which is a label for the old model where a
+        # rung was a behaviour the child gave up.
+        rungs_html = (
+            f'<div class="rungs"><span class="rungs-label">Safety Behaviors</span>{chips}</div>'
+            if rungs else ''
+        )
         body.append(
             f'<section class="case"><div class="case-head">'
             f'<h2 class="sit">{_esc(item["situation"])}</h2>'
-            f'<div class="rungs{"" if rungs else " empty"}">'
-            f'<span class="rungs-label">Safety Behaviors</span>{chips}</div>'
+            f'{rungs_html}'
             f'</div>{"".join(rows)}{note_html}{add_html}{comment_html}</section>'
         )
 
