@@ -300,7 +300,7 @@ export default function TeenHomePage() {
                 margin: '6px 0 0',
               }}
             >
-              Easiest at the top, with its Fear Level. Tap a step to set it up.
+              Tap a rung on the ladder to set up an exposure.
             </p>
 
             {jumpWarning && (
