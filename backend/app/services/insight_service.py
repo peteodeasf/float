@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.insight import (
     KIND_ACCOMMODATION, KIND_BEHAVIOR, KIND_SITUATION, KINDS,
-    SOURCE_MONITORING, PatientInsight,
+    SOURCE_MONITORING, SOURCE_PARENT, PatientInsight,
 )
 
 
@@ -112,6 +112,61 @@ async def upsert_insight(
             row.attributes = {**(row.attributes or {}), **attributes}
 
     _merge_evidence(row, monitoring_entry_ids or [], source)
+    return row
+
+
+async def situation_insight_for(
+    db: AsyncSession, *, patient_id: uuid.UUID, organization_id: uuid.UUID, situation
+) -> PatientInsight:
+    """The list's entry for a situation that is on the plan, made if there is none.
+
+    A clinician can put a situation on the ladder without it ever coming from the log, and what the
+    parent names for it has to hang off something.
+    """
+    row = (await db.execute(
+        select(PatientInsight).where(
+            PatientInsight.patient_id == patient_id,
+            PatientInsight.kind == KIND_SITUATION,
+            PatientInsight.trigger_situation_id == situation.id,
+        )
+    )).scalars().first()
+    if row is not None:
+        return row
+    row = await upsert_insight(
+        db, patient_id=patient_id, organization_id=organization_id, kind=KIND_SITUATION,
+        name=situation.name, source=SOURCE_PARENT, existing=await _existing(db, patient_id),
+    )
+    if row.trigger_situation_id is None:
+        row.trigger_situation_id = situation.id
+        row.added_at = datetime.now(timezone.utc)
+    return row
+
+
+async def parent_named_accommodation(
+    db: AsyncSession,
+    *,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    situation_insight: PatientInsight,
+    name: str,
+    user_id: uuid.UUID,
+) -> PatientInsight | None:
+    """Something the parent says they do, as a suggestion under its situation. Never a plan row.
+
+    If the clinician had taken the same thing off the list, it comes back: the parent saying it is
+    new information.
+    """
+    row = await upsert_insight(
+        db, patient_id=patient_id, organization_id=organization_id, kind=KIND_ACCOMMODATION,
+        name=name, parent=situation_insight, source=SOURCE_PARENT,
+        existing=await _existing(db, patient_id),
+    )
+    if row is None:
+        return None
+    row.still_does = True
+    row.removed_at = None
+    if row.named_by_user_id is None:
+        row.named_by_user_id = user_id
     return row
 
 

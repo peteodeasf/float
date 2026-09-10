@@ -212,6 +212,22 @@ export default function ParentHomePage() {
           </div>
         )}
 
+        {/* The parent's half of the accommodation conversation. docs/plans/accommodation-conversation.md */}
+        <div className="teen-card" style={{ marginTop: 16, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700, color: teen.color.ink }}>
+              What do you do when {childName} is anxious?
+            </div>
+            <div style={{ ...teen.type.body, fontSize: 13, color: teen.color.textSecondary, marginTop: 2 }}>
+              Go through it one situation at a time.
+            </div>
+          </div>
+          <button className="teen-btn teen-btn--outline" style={{ flex: 'none', width: 'auto', padding: '10px 16px' }}
+            onClick={() => navigate('/parent/accommodations')}>
+            Start
+          </button>
+        </div>
+
         {/* Child's week */}
         <div style={{ ...teen.type.eyebrow, marginTop: 28 }}>{childName}'s week</div>
         {progress && !progress.shared ? (

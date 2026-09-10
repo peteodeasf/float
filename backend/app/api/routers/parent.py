@@ -11,7 +11,7 @@ from datetime import date, datetime, timezone, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,9 +22,11 @@ from app.models.experiment import Experiment, AccommodationBehavior, Accommodati
 from app.models.message import Message
 from app.models.jit_content import JitTip, JitTipTag, TriggerSituationTag
 from app.api.routers.patients import get_parent_context, step_status
+from app.models.insight import KIND_ACCOMMODATION, KIND_SITUATION, SOURCE_PARENT, PatientInsight
+from app.services.insight_service import parent_named_accommodation, situation_insight_for
 from app.core.behavior_types import LADDER_TYPES
 from app.services.accommodation_service import get_accommodations_for_plan
-from app.schemas.accommodation import AccommodationResponse
+from app.schemas.accommodation import ParentAccommodationResponse
 
 parent_router = APIRouter(prefix="/parent", tags=["parent"])
 
@@ -201,7 +203,7 @@ async def child_progress(
 
 # ── The parent's accommodations (the child's ladder, read-only for parent) ────
 
-@parent_router.get("/accommodations", response_model=list[AccommodationResponse])
+@parent_router.get("/accommodations", response_model=list[ParentAccommodationResponse])
 async def parent_accommodations(
     context: tuple = Depends(get_parent_context),
     db: AsyncSession = Depends(get_db),
@@ -355,6 +357,180 @@ async def my_checkins(
         .order_by(AccommodationCheckin.week_start.desc())
     )).all()
     return [_checkin_out(c, name) for c, name in rows]
+
+
+# ── Naming the accommodations ────────────────────────────────────────────────
+# The parent's half of the accommodation conversation (docs/plans/accommodation-conversation.md).
+# Peter, 2026-09-10: nothing here reaches the treatment plan. Every answer lands as a suggestion on
+# the clinician's Parent Accommodations panel, and the clinician adds what to work on.
+
+class SuggestionUpdate(BaseModel):
+    still_does: bool | None = None
+    estimate_min: float | None = Field(default=None, ge=1, le=10)
+    estimate_max: float | None = Field(default=None, ge=1, le=10)
+
+
+class SuggestionCreate(BaseModel):
+    trigger_situation_id: uuid.UUID
+    name: str = Field(min_length=1, max_length=300)
+    estimate_min: float | None = Field(default=None, ge=1, le=10)
+    estimate_max: float | None = Field(default=None, ge=1, le=10)
+
+
+def _estimate(lo: float | None, hi: float | None) -> tuple[float, float] | None:
+    """A range, as the book's answers are (2–4, 5–9). One number is a range of one."""
+    if lo is None and hi is None:
+        return None
+    lo = lo if lo is not None else hi
+    hi = hi if hi is not None else lo
+    if lo > hi:
+        raise HTTPException(status_code=422, detail="The low end is above the high end")
+    return lo, hi
+
+
+def _suggestion_out(r: PatientInsight) -> dict:
+    # Only what the parent told us, or what came from their own log. Not the child's rating.
+    return {
+        "id": str(r.id),
+        "name": r.name,
+        "from_record": bool(r.monitoring_entry_ids or r.session_note_ids),
+        "still_does": r.still_does,
+        "estimate_min": float(r.parent_estimate_min) if r.parent_estimate_min is not None else None,
+        "estimate_max": float(r.parent_estimate_max) if r.parent_estimate_max is not None else None,
+    }
+
+
+async def _plan_situations(db: AsyncSession, plan: TreatmentPlan) -> list[TriggerSituation]:
+    return list((await db.execute(
+        select(TriggerSituation).where(
+            TriggerSituation.treatment_plan_id == plan.id,
+            TriggerSituation.is_placeholder.is_(False),
+        ).order_by(TriggerSituation.display_order)
+    )).scalars().all())
+
+
+async def _copy_estimate_to_plan(db: AsyncSession, row: PatientInsight) -> None:
+    """Already on the plan: the clinician should see the parent's latest estimate there too."""
+    if row.accommodation_behavior_id is None:
+        return
+    acc = await db.get(AccommodationBehavior, row.accommodation_behavior_id)
+    if acc is not None:
+        acc.parent_estimate_min = row.parent_estimate_min
+        acc.parent_estimate_max = row.parent_estimate_max
+
+
+@parent_router.get("/accommodation-conversation")
+async def accommodation_conversation(
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The child's situations, each with the accommodations already known for it — from the
+    parent's own monitoring log, or named by them before."""
+    _, children = context
+    child = _first_child(children)
+    first_name = (child.name or "").split(" ")[0] or None
+    plan = await _child_plan(db, child)
+    if not plan:
+        return {"child_name": first_name, "situations": []}
+    situations = await _plan_situations(db, plan)
+
+    rows = (await db.execute(
+        select(PatientInsight).where(
+            PatientInsight.patient_id == child.id,
+            PatientInsight.kind.in_([KIND_SITUATION, KIND_ACCOMMODATION]),
+            PatientInsight.removed_at.is_(None),
+        ).order_by(PatientInsight.first_seen_at)
+    )).scalars().all()
+    situation_of = {r.id: r.trigger_situation_id for r in rows if r.kind == KIND_SITUATION}
+
+    return {
+        "child_name": first_name,
+        "situations": [
+            {
+                "id": str(t.id),
+                "name": t.name,
+                "items": [
+                    _suggestion_out(r) for r in rows
+                    if r.kind == KIND_ACCOMMODATION and situation_of.get(r.parent_insight_id) == t.id
+                ],
+            }
+            for t in situations
+        ],
+    }
+
+
+@parent_router.put("/accommodation-suggestions/{insight_id}")
+async def answer_about_suggestion(
+    insight_id: uuid.UUID,
+    data: SuggestionUpdate,
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """"Do you still do this?" and "How hard would it be for them if you stopped?"."""
+    _, children = context
+    child = _first_child(children)
+    row = (await db.execute(
+        select(PatientInsight).where(
+            PatientInsight.id == insight_id,
+            PatientInsight.patient_id == child.id,
+            PatientInsight.kind == KIND_ACCOMMODATION,
+            PatientInsight.removed_at.is_(None),
+        )
+    )).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    fields = data.model_dump(exclude_unset=True)
+    if "still_does" in fields:
+        row.still_does = data.still_does
+        if SOURCE_PARENT not in row.sources:
+            row.sources = [*row.sources, SOURCE_PARENT]
+    if "estimate_min" in fields or "estimate_max" in fields:
+        rng = _estimate(data.estimate_min, data.estimate_max)
+        row.parent_estimate_min, row.parent_estimate_max = rng if rng else (None, None)
+        await _copy_estimate_to_plan(db, row)
+    await db.commit()
+    await db.refresh(row)
+    return _suggestion_out(row)
+
+
+@parent_router.post("/accommodation-suggestions")
+async def name_an_accommodation(
+    data: SuggestionCreate,
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Something else the parent does when a situation comes up. A suggestion, never a plan row."""
+    current_user, children = context
+    child = _first_child(children)
+    plan = await _child_plan(db, child)
+    if not plan:
+        raise HTTPException(status_code=400, detail="No active plan for this child")
+    situation = (await db.execute(
+        select(TriggerSituation).where(
+            TriggerSituation.id == data.trigger_situation_id,
+            TriggerSituation.treatment_plan_id == plan.id,
+            TriggerSituation.is_placeholder.is_(False),
+        )
+    )).scalar_one_or_none()
+    if situation is None:
+        raise HTTPException(status_code=404, detail="Situation not found")
+
+    rng = _estimate(data.estimate_min, data.estimate_max)
+    sit = await situation_insight_for(
+        db, patient_id=child.id, organization_id=child.organization_id, situation=situation)
+    row = await parent_named_accommodation(
+        db, patient_id=child.id, organization_id=child.organization_id,
+        situation_insight=sit, name=data.name, user_id=current_user.id,
+    )
+    if row is None:
+        raise HTTPException(status_code=422, detail="Say what you do")
+    if rng:
+        row.parent_estimate_min, row.parent_estimate_max = rng
+        await _copy_estimate_to_plan(db, row)
+    await db.commit()
+    await db.refresh(row)
+    return _suggestion_out(row)
 
 
 # ── Parent ↔ clinician chat (audience='parent') ──────────────────────────────

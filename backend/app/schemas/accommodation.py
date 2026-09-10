@@ -34,10 +34,29 @@ class AccommodationResponse(BaseModel):
     distress_min: Optional[float] = None
     distress_max: Optional[float] = None
     display_order: Optional[int] = None
+    parent_estimate_min: Optional[float] = None
+    parent_estimate_max: Optional[float] = None
+    child_rated_at: Optional[datetime] = None
     status: str
     is_weekly_focus: bool = False
     accommodator: str
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ParentAccommodationResponse(BaseModel):
+    """An accommodation as the parent app gets it. Not the child's rating of it
+    (distress_min/max, child_rated_at): Peter, 2026-09-10, the clinician chooses whether a parent
+    sees that. A field left out here cannot leak. docs/plans/accommodation-conversation.md"""
+    id: uuid.UUID
+    trigger_situation_id: Optional[uuid.UUID] = None
+    name: str
+    description: Optional[str] = None
+    display_order: Optional[int] = None
+    status: str
+    is_weekly_focus: bool = False
 
     class Config:
         from_attributes = True

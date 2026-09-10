@@ -37,6 +37,7 @@ import ParentResetPasswordPage from './pages/parent/ParentResetPasswordPage'
 import ParentHomePage from './pages/parent/ParentHomePage'
 import ParentMessagesPage from './pages/parent/ParentMessagesPage'
 import ParentProgressPage from './pages/parent/ParentProgressPage'
+import ParentAccommodationsPage from './pages/parent/ParentAccommodationsPage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
@@ -165,6 +166,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/parent/home" element={
                 <ParentProtectedRoute><ParentHomePage /></ParentProtectedRoute>
+              } />
+              <Route path="/parent/accommodations" element={
+                <ParentProtectedRoute><ParentAccommodationsPage /></ParentProtectedRoute>
               } />
               <Route path="/parent/progress" element={
                 <ParentProtectedRoute><ParentProgressPage /></ParentProtectedRoute>

@@ -41,6 +41,9 @@ KINDS = {KIND_SITUATION, KIND_BEHAVIOR, KIND_ACCOMMODATION, KIND_SUB_SITUATION}
 SOURCE_MONITORING = "monitoring"
 SOURCE_SESSION_NOTE = "session_note"
 SOURCE_SUGGESTION = "suggestion"
+#: The parent named it, or confirmed it, in the accommodation conversation
+#: (docs/plans/accommodation-conversation.md).
+SOURCE_PARENT = "parent"
 
 
 class PatientInsight(Base):
@@ -90,6 +93,19 @@ class PatientInsight(Base):
     )
     session_note_ids: Mapped[list[uuid.UUID]] = mapped_column(
         ARRAY(PgUUID(as_uuid=True)), nullable=False, server_default=text("'{}'")
+    )
+
+    # ── What the parent said, for an accommodation ────────────────────────────
+    # From the accommodation conversation (docs/plans/accommodation-conversation.md). The parent's
+    # guess at how hard it would be for the child if they stopped — the clinician sees it next to
+    # the child's own rating. Never shown to the child.
+    parent_estimate_min: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    parent_estimate_max: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    #: The parent's answer to "Do you still do this?" — null until asked.
+    still_does: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    #: The parent who named it, when it came from them rather than from the log.
+    named_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 
     # ── Whether a clinician has put it on the plan ────────────────────────────

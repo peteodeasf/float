@@ -11,14 +11,15 @@ export interface UpcomingExposure {
   status: string
 }
 
+/** An accommodation as the parent app gets it. Not the child's rating of it — the clinician
+ *  chooses whether a parent sees that (docs/plans/accommodation-conversation.md). */
 export interface ParentAccommodation {
   id: string
   name: string
   description: string | null
   trigger_situation_id: string | null
-  distress_min: number | null
-  distress_max: number | null
   display_order: number | null
+  status: string
   is_weekly_focus: boolean
 }
 
@@ -91,6 +92,42 @@ export const saveCheckin = async (data: {
   answer: CheckinAnswer
   week_start: string
 }): Promise<ParentCheckin> => (await parentApiClient.post('/parent/checkins', data)).data
+
+/** The parent's half of the accommodation conversation. What they say becomes suggestions for the
+ *  clinician, never plan rows. docs/plans/accommodation-conversation.md */
+export interface ConversationItem {
+  id: string
+  name: string
+  /** It came from their monitoring log, rather than being named here. */
+  from_record: boolean
+  still_does: boolean | null
+  estimate_min: number | null
+  estimate_max: number | null
+}
+export interface ConversationSituation {
+  id: string
+  name: string
+  items: ConversationItem[]
+}
+export interface AccommodationConversation {
+  child_name: string | null
+  situations: ConversationSituation[]
+}
+
+export const getAccommodationConversation = async (): Promise<AccommodationConversation> =>
+  (await parentApiClient.get('/parent/accommodation-conversation')).data
+
+export const answerSuggestion = async (
+  id: string,
+  data: { still_does?: boolean; estimate_min?: number | null; estimate_max?: number | null },
+): Promise<ConversationItem> => (await parentApiClient.put(`/parent/accommodation-suggestions/${id}`, data)).data
+
+export const nameAccommodation = async (data: {
+  trigger_situation_id: string
+  name: string
+  estimate_min?: number | null
+  estimate_max?: number | null
+}): Promise<ConversationItem> => (await parentApiClient.post('/parent/accommodation-suggestions', data)).data
 
 export const getParentMessages = async (): Promise<ParentMessage[]> =>
   (await parentApiClient.get('/parent/messages')).data

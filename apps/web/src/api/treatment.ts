@@ -455,6 +455,11 @@ export interface PatientInsight {
   sources: string[]
   added: boolean
   parent_name?: string | null
+  /** From the accommodation conversation. docs/plans/accommodation-conversation.md */
+  parent_estimate_min?: number | null
+  parent_estimate_max?: number | null
+  still_does?: boolean | null
+  named_by_parent?: boolean
 }
 
 export const getPatientInsights = async (

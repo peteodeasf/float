@@ -107,6 +107,12 @@ class AccommodationBehavior(Base):
     distress_max: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
     # Per-child ladder position; authoritative and reorderable.
     display_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # The parent's estimate of the same thing, carried over from their suggestion. The clinician
+    # sees it beside the child's rating; the child never does. docs/plans/accommodation-conversation.md
+    parent_estimate_min: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    parent_estimate_max: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    # Set when the child gave distress_min/max themselves; null means it is the clinician's guess.
+    child_rated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Where the parent has got to with stopping it: not_started, started or stopped. The clinician
     # sets it; making it the weekly focus marks it started. docs/plans/accommodation-states.md
     status: Mapped[str] = mapped_column(

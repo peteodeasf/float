@@ -30,6 +30,13 @@ const STATES: { key: AccommodationState; label: string; color: string; bg: strin
   { key: 'stopped', label: 'Stopped', color: '#166534', bg: '#f0fdf4' },
 ]
 
+/** "5" for a single value, "5–9" for a range, null when there is none. */
+function rangeLabel(lo: number | null | undefined, hi: number | null | undefined): string | null {
+  if (lo == null && hi == null) return null
+  if (lo != null && hi != null) return lo === hi ? `${lo}` : `${lo}–${hi}`
+  return `${lo ?? hi}`
+}
+
 /** "5" when min == max, "5–9" for a range, "—" when unrated. */
 function distressLabel(a: Accommodation): string {
   const { distress_min: lo, distress_max: hi } = a
@@ -297,8 +304,10 @@ export default function ParentPlanPanel({
           {/* Always shown, empty or not. An absent section reads as broken; "No suggestions" reads
               as an answer. */}
           <div style={{ marginTop: '16px', borderTop: '1px solid #e6efec', paddingTop: '14px' }}>
+              {/* The monitoring log, and what the parent named or confirmed in the accommodation
+                  conversation. docs/plans/accommodation-conversation.md */}
               <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '2px' }}>
-                From the monitoring log
+                Suggestions from the family
               </div>
               {fromMonitoring.length === 0 ? (
                 <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)' }}>No suggestions.</div>
@@ -316,8 +325,14 @@ export default function ParentPlanPanel({
                     >
                       + {item.name}
                       <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
-                        {' '}&middot; {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
+                        {' '}&middot; {item.evidence_count > 0
+                          ? `${item.evidence_count} ${item.evidence_count === 1 ? 'entry' : 'entries'}`
+                          : 'named by the parent'}
                         {item.parent_name ? ` \u00b7 ${item.parent_name}` : ''}
+                        {item.still_does === false ? ' \u00b7 parent says not any more' : ''}
+                        {rangeLabel(item.parent_estimate_min, item.parent_estimate_max)
+                          ? ` \u00b7 parent thinks ${rangeLabel(item.parent_estimate_min, item.parent_estimate_max)}`
+                          : ''}
                       </span>
                     </button>
                     <button
@@ -346,7 +361,7 @@ export default function ParentPlanPanel({
         >
           + Add accommodation
           {fromMonitoring.length > 0 && (
-            <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · {fromMonitoring.length} from monitoring</span>
+            <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · {fromMonitoring.length} {fromMonitoring.length === 1 ? 'suggestion' : 'suggestions'}</span>
           )}
         </button>
       )}
@@ -509,6 +524,13 @@ function AccommodationRow({
         <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--float-text)' }}>{a.name}</div>
         {situationName && (
           <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>{situationName}</span>
+        )}
+        {/* The parent's guess beside the child's score. The clinician's to compare; the child never
+            sees it. */}
+        {rangeLabel(a.parent_estimate_min, a.parent_estimate_max) && (
+          <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>
+            {situationName ? ' · ' : ''}Parent thinks {rangeLabel(a.parent_estimate_min, a.parent_estimate_max)}
+          </span>
         )}
       </div>
       {editingScore ? (

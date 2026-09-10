@@ -44,6 +44,12 @@ class InsightResponse(BaseModel):
     #: Set once a clinician has put it on the plan.
     added: bool
     parent_name: str | None = None
+    # From the accommodation conversation: the parent's estimate, whether they still do it, and
+    # whether they named it themselves. docs/plans/accommodation-conversation.md
+    parent_estimate_min: float | None = None
+    parent_estimate_max: float | None = None
+    still_does: bool | None = None
+    named_by_parent: bool = False
 
 
 def _to_response(row: PatientInsight, parent_name: str | None = None) -> InsightResponse:
@@ -60,7 +66,15 @@ def _to_response(row: PatientInsight, parent_name: str | None = None) -> Insight
             or row.accommodation_behavior_id
         ),
         parent_name=parent_name,
+        parent_estimate_min=_num(row.parent_estimate_min),
+        parent_estimate_max=_num(row.parent_estimate_max),
+        still_does=row.still_does,
+        named_by_parent=row.named_by_user_id is not None,
     )
+
+
+def _num(v) -> float | None:
+    return float(v) if v is not None else None
 
 
 @router.get("", response_model=list[InsightResponse])
@@ -164,6 +178,9 @@ async def add_to_plan(
             trigger_situation_id=parent_trigger_id,
             name=row.name,
             display_order=len(existing),
+            # The parent's estimate comes across; the child rates it themselves later.
+            parent_estimate_min=row.parent_estimate_min,
+            parent_estimate_max=row.parent_estimate_max,
         )
         db.add(created)
         await db.flush()

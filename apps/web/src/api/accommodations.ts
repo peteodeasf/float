@@ -13,6 +13,11 @@ export interface Accommodation {
   distress_min: number | null
   distress_max: number | null
   display_order: number | null
+  /** The parent's estimate of the child's Fear Level if they stopped. Never shown to the child. */
+  parent_estimate_min?: number | null
+  parent_estimate_max?: number | null
+  /** Set when the child rated distress_min/max themselves; null means the clinician's guess. */
+  child_rated_at?: string | null
   status: AccommodationState
   is_weekly_focus: boolean
   accommodator: string

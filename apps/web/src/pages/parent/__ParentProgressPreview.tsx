@@ -1,12 +1,14 @@
 // Local design preview for the parent app — `/__parent-progress-preview`, dev builds only (see
 // main.tsx). The Progress tab by default; `?off=1` before the clinician has shared anything;
-// `?home=1` for the home with this week's check-in.
+// `?home=1` for the home with this week's check-in; `?conversation=1` for going through their
+// accommodations.
 //
 // Seeds the react-query cache so it renders without signing in; nothing is saved.
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import ParentProgressPage from './ParentProgressPage'
 import ParentHomePage from './ParentHomePage'
+import ParentAccommodationsPage from './ParentAccommodationsPage'
 
 export default function ParentProgressPreview() {
   const qc = useQueryClient()
@@ -25,6 +27,15 @@ export default function ParentProgressPreview() {
       { id: 'c2', name: 'Lies down with them at bedtime', description: null, trigger_situation_id: null, distress_min: 6, distress_max: 6, display_order: 0, is_weekly_focus: true },
       { id: 'c3', name: 'Texts them every hour at a sleepover', description: null, trigger_situation_id: null, distress_min: 8, distress_max: 8, display_order: 1, is_weekly_focus: false },
     ])
+    qc.setQueryData(['parent-conversation'], {
+      child_name: 'Sam',
+      situations: [
+        { id: 't1', name: 'Bedtime', items: [
+          { id: 'i1', name: 'Lies down with them until asleep', from_record: true, still_does: null, estimate_min: null, estimate_max: null },
+        ] },
+        { id: 't2', name: 'Sleepovers at a friend’s house', items: [] },
+      ],
+    })
     const day = (n: number, h: number) => {
       const d = new Date()
       d.setDate(d.getDate() + n)
@@ -52,5 +63,7 @@ export default function ParentProgressPreview() {
   }, [qc])
 
   if (!ready) return null
-  return new URLSearchParams(window.location.search).has('home') ? <ParentHomePage /> : <ParentProgressPage />
+  const q = new URLSearchParams(window.location.search)
+  if (q.has('conversation')) return <ParentAccommodationsPage />
+  return q.has('home') ? <ParentHomePage /> : <ParentProgressPage />
 }
