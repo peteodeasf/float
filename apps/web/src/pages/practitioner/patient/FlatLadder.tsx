@@ -142,6 +142,16 @@ export function FlatLadder({
           <div style={{ position: 'absolute', left: '6px', top: '12px', bottom: '12px', width: '3px', borderRadius: '2px', background: 'linear-gradient(#4bb98a, #f2a33f 55%, #ef6b53)' }} />
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {/* Names the number column. Lined up with each row's score box: the row's padding plus
+              border is 14px, and the two controls after the score are fixed at 64px and 16px. */}
+          {ordered.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', padding: '0 14px', marginBottom: '-2px' }}>
+              <span style={{ flex: 1 }} />
+              <span style={{ width: '46px', flexShrink: 0, textAlign: 'center', fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#64748b', lineHeight: 1.15 }}>Fear Level</span>
+              <span style={{ width: '64px', flexShrink: 0 }} />
+              <span style={{ width: '16px', flexShrink: 0 }} />
+            </div>
+          )}
           {ordered.map(r => (
             <LadderRow
               key={r.id}
@@ -319,7 +329,9 @@ function LadderRow({
         className="cursor-pointer"
         style={{
           fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
-          borderRadius: '999px', padding: '3px 9px',
+          // Fixed width so every row's score sits in the same column, under the Fear Level heading.
+          width: '64px', textAlign: 'center',
+          borderRadius: '999px', padding: '3px 0',
           color: '#3f8a78',
           background: planned ? '#eef7f4' : '#fff',
           border: `1px solid ${planned ? '#bcdfd4' : '#e2e8f0'}`,
@@ -342,7 +354,7 @@ function LadderRow({
       ) : (
         <button onClick={() => setConfirmRemove(true)} title="Remove rung"
           className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer"
-          style={{ fontSize: '14px', padding: '0 2px', flexShrink: 0 }}>×</button>
+          style={{ fontSize: '14px', padding: 0, width: '16px', textAlign: 'center', flexShrink: 0 }}>×</button>
       )}
       </div>
 

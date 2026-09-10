@@ -265,6 +265,14 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
       {triggers.length > 0 && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Names the column. Every box ends 40px in from its card's edge, and the Downward Arrow
+              beside each card is 140px, so this row reserves both. */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: -4 }}>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', paddingRight: 40 }}>
+              <span style={{ width: 46, textAlign: 'center', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#4d8478', lineHeight: 1.15 }}>Fear Level</span>
+            </div>
+            <span style={{ width: 140, flexShrink: 0 }} />
+          </div>
           {triggers.map(t => (
             <SituationRow
               key={t.id}
@@ -491,7 +499,7 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
           </span>
         ) : (
           <button onClick={() => setConfirmRemove(true)} title="Take this situation out"
-            style={{ fontSize: 15, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0 }}>×</button>
+            style={{ fontSize: 15, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
         )}
       </div>
 
@@ -502,7 +510,7 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
         straight into THIS situation's chain — there is nothing to pick, because clicking it here
         is the choice. */}
     <button onClick={onArrow} title="Find the feared outcome behind this situation"
-      style={{ flexShrink: 0, marginTop: 6, fontSize: 12, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '7px 13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+      style={{ flexShrink: 0, width: 140, textAlign: 'center', marginTop: 6, fontSize: 12, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '7px 0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
       ↓ Downward Arrow
     </button>
     </div>
@@ -561,7 +569,7 @@ function StepList({ planId, trigger, onEdited }: {
     .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
 
   return (
-    <div style={{ background: '#fff', padding: '10px 13px 12px 24px' }}>
+    <div style={{ background: '#fff', padding: '10px 8px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
       <div style={{ fontSize: 12, color: '#8fa5a1', marginBottom: 8 }}>
         What is something you could do in this situation? What would its Fear Level be?
@@ -664,7 +672,7 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#fff', border: '1px solid #e6efec', borderRadius: 9, padding: '8px 11px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid #e6efec', borderRadius: 9, padding: '8px 6px 8px 11px' }}>
       {editing ? (
         <input
           value={draft}
@@ -686,7 +694,7 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
       <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
       <ScoreBox value={score} onSet={onScore} />
       <button onClick={onRemove} title="Take this out"
-        style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0 }}>×</button>
+        style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
     </div>
   )
 }

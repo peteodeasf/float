@@ -28,6 +28,11 @@ export default function SessionPreview() {
   const [view, setView] = useState<'editor' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain' | 'flat-ladder'>('editor')
 
   useEffect(() => {
+    // The fixtures below must be the only data. Without this the app re-fetches them as stale, and
+    // a request with no sign-in comes back "Not authenticated", which signs the page out to /login
+    // (api/session.ts). Dev-only page, so changing the defaults here touches nothing real.
+    qc.setDefaultOptions({ queries: { staleTime: Infinity, retry: false } })
+    qc.setQueryData(['insights', 'pt1', 'situation'], [])
     qc.setQueryData(['situation-library', ''], [
       { id: 's1', name: 'Speaking in front of the class' },
       { id: 's2', name: 'Being away from home overnight' },
