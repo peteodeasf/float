@@ -365,6 +365,25 @@ export const planExperimentForBehavior = async (
   return response.data
 }
 
+/** The child's answers, typed by the clinician in session. With a day and a time of day the
+ *  exposure is ready on the child's ladder; without, the child picks when at home. */
+export interface SessionSetupData {
+  prediction: string
+  bip_before: number
+  distress_thermometer_expected: number
+  confidence_level: 'low' | 'medium' | 'high'
+  scheduled_date?: string
+  scheduled_time_bucket?: 'morning' | 'afternoon' | 'evening'
+}
+
+export const setUpInSession = async (
+  behaviorId: string,
+  data: SessionSetupData
+): Promise<PlannedExperiment> => {
+  const response = await apiClient.post(`/behaviors/${behaviorId}/session-setup`, data)
+  return response.data
+}
+
 // ── The ladder, flat ──
 // Every rung on a plan, grouped or not, ordered by score. `trigger_situation_id` is the grouping
 // and may be null — a rung can be captured now and grouped later.

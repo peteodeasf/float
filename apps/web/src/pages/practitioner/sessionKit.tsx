@@ -56,14 +56,15 @@ export function Chrome({ onExit, exitLabel = '← Exit session', children }: {
 }
 
 // Shared 1–10 fear scale — tappable, colour-graded. The one scoring object in the flow.
-export function FearScale({ value, onPick, height = 44 }: { value: number | null; onPick: (n: number) => void; height?: number }) {
+// `label` names each button for a screen reader, e.g. "Fear Level 6".
+export function FearScale({ value, onPick, height = 44, label }: { value: number | null; onPick: (n: number) => void; height?: number; label?: string }) {
   return (
     <div>
       <div style={{ display: 'flex', gap: 4 }}>
         {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
           const active = value === n
           return (
-            <button key={n} onClick={() => onPick(n)}
+            <button key={n} onClick={() => onPick(n)} aria-pressed={active} aria-label={label ? `${label} ${n}` : undefined}
               style={{ flex: 1, height, borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: height >= 38 ? 13.5 : 12,
                 border: active ? '2px solid #0d3d3a' : '1px solid #e2e8f0',
                 background: active ? dtColor(n) : '#fff',

@@ -11,11 +11,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
   getPlanRungs, updatePlanRung, deletePlanRung,
-  setLadderActive, setRecommendedRung, planExperimentForBehavior,
+  setLadderActive, setRecommendedRung,
   type AvoidanceBehavior,
   type TriggerSituation,
 } from '../../../api/treatment'
-import { clampDt, clampDtInput, getNextSchoolDayISO } from './shared'
+import { clampDt, clampDtInput } from './shared'
+import { SessionSetupSheet } from './SessionSetupSheet'
 
 /** Whether the situation shows under each rung. A display preference, so it lives in the browser
  *  rather than on the plan — it says how this clinician likes to read the list, not anything about
@@ -203,12 +204,11 @@ function LadderRow({
   const qc = useQueryClient()
   const [editingName, setEditingName] = useState(false)
   const [draft, setDraft] = useState(rung.name)
-  const [planning, setPlanning] = useState(false)
-  const [planDate, setPlanDate] = useState(getNextSchoolDayISO())
+  // Peter, 2026-09-10: one button, Set it up, that opens the setup questions full screen. The
+  // child answers and the clinician types. "Tell them to do this one next" is an option inside it.
+  // There is no date-only plan any more: picking the day is more often the child's job.
+  const [settingUp, setSettingUp] = useState(false)
   const [planned, setPlanned] = useState(false)
-  // Peter, 2026-09-05: one button to plan the exposure, and telling the patient to do this one
-  // next is an option inside it — not a second button competing for the same row.
-  const [wantNext, setWantNext] = useState(isRecommended)
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   const invalidate = () => {
@@ -223,62 +223,12 @@ function LadderRow({
     mutationFn: () => deletePlanRung(planId, rung.id),
     onSuccess: invalidate,
   })
-  // The clinician sets which rung and which day; the child answers their own questions at home.
-  const planMut = useMutation({
-    mutationFn: () => planExperimentForBehavior(rung.id, {
-      confidence_level: 'medium',
-      plan_description: rung.name,
-      scheduled_date: new Date(planDate + 'T12:00:00').toISOString(),
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['experiments'] })
-      setPlanning(false)
-      setPlanned(true)
-    },
-  })
-
   const sit = triggers.find(t => t.id === rung.trigger_situation_id)?.name ?? null
 
   const rename = () => {
     const name = draft.trim()
     if (!name || name === rung.name) { setEditingName(false); setDraft(rung.name); return }
     saveMut.mutate({ name })
-  }
-
-  if (planning) {
-    const agree = () => {
-      if (wantNext !== isRecommended) onRecommend()
-      if (planned) { setPlanning(false); return }
-      planMut.mutate()
-    }
-    return (
-      <div style={{ background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '10px', padding: '12px 13px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>When will they do &ldquo;{rung.name}&rdquo;?</div>
-        <p style={{ fontSize: '11.5px', color: '#64748b', margin: '4px 0 10px' }}>
-          They fill in what they think will happen when they open their app.
-        </p>
-        {planned ? (
-          <p style={{ fontSize: '12px', color: '#3f8a78', margin: '0 0 10px', fontWeight: 600 }}>Already planned.</p>
-        ) : (
-          <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)}
-            className="text-sm border border-slate-200 rounded" style={{ padding: '5px 8px', marginBottom: '10px' }} />
-        )}
-
-        {/* Advice, not a lock — the child can still pick any rung. Only one rung can carry it, so
-            ticking this here takes it off whichever rung had it. */}
-        <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: '#475569', cursor: 'pointer', marginBottom: '12px' }}>
-          <input type="checkbox" checked={wantNext} onChange={e => setWantNext(e.target.checked)} style={{ cursor: 'pointer' }} />
-          Tell them to do this one next
-        </label>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={agree} disabled={planMut.isPending}
-            className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50"
-            style={{ padding: '6px 12px' }}>{planMut.isPending ? 'Saving…' : planned ? 'Save' : 'Agree it'}</button>
-          <button onClick={() => { setWantNext(isRecommended); setPlanning(false) }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -320,12 +270,12 @@ function LadderRow({
         className="text-sm border border-slate-200 rounded"
         style={{ width: '46px', padding: '4px 6px', textAlign: 'center', flexShrink: 0, fontWeight: 700 }} />
 
-      {/* One button. Planning the exposure and telling them to do it next are the same decision,
+      {/* One button. Setting up the exposure and telling them to do it next are the same decision,
           made in the same place — and it is always on screen. It used to appear on hover, which
           hid the main thing you come to this row to do. */}
       <button
-        onClick={() => { setWantNext(isRecommended); setPlanning(true) }}
-        title={planned ? 'Change the plan for this one' : 'Agree an exposure on this one'}
+        onClick={() => setSettingUp(true)}
+        title={planned ? 'Set up another exposure on this one' : 'Set up an exposure on this one, with them'}
         className="cursor-pointer"
         style={{
           fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
@@ -336,7 +286,7 @@ function LadderRow({
           background: planned ? '#eef7f4' : '#fff',
           border: `1px solid ${planned ? '#bcdfd4' : '#e2e8f0'}`,
         }}>
-        {planned ? 'Planned' : 'Plan it'}
+        {planned ? 'Set up ✓' : 'Set it up'}
       </button>
 
       {/* Asks first. A rung is a sentence somebody wrote with a child in the room, and the × sat
@@ -370,6 +320,17 @@ function LadderRow({
           )}
           {sit && showSituation && <span style={{ fontSize: '11px', color: '#8fa5a1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sit}</span>}
         </div>
+      )}
+
+      {settingUp && (
+        <SessionSetupSheet
+          rung={rung}
+          situationName={sit}
+          isRecommended={isRecommended}
+          onRecommend={onRecommend}
+          onClose={() => setSettingUp(false)}
+          onSaved={() => { setSettingUp(false); setPlanned(true) }}
+        />
       )}
     </div>
   )

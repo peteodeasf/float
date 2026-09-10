@@ -67,9 +67,10 @@ is fully set up — nothing left for the child to do at home.
 as the top level option. it's more likely to be something done by the child."* "Plan it" opens one
 button, **Set it up**, alongside the existing "Tell them to do this one next".
 
-**To confirm:** in session the day can be left blank for the child to pick at home. The step then
-shows on the child's ladder as set up with the clinician and waiting for a day. This is a reading of
-the note above, drawn in the mockups, not yet agreed.
+**Built this way, 2026-09-10:** in session the day can be left blank for the child to pick at home,
+and that is where the sheet starts. The step then shows on the child's ladder as set up with the
+clinician and waiting for a day. This was drawn in the mockups Peter approved ("otherwise looks good
+to build").
 
 ## The child's setup is its own design, not the clinician's sheet
 
@@ -156,13 +157,17 @@ Each step ships on its own and leaves the app working.
    "Set it up" button and the Scheduled list go. Today's exposure shows at the top only when due.
 3. ~~**Progress holds current experiments** at the top,~~ **Done 2026-09-10,** above what it shows today, with a dot on the
    tab when something is waiting.
-4. **The child's setup, one question per screen**, including the partly set up state. It must still
+4. ~~**The child's setup, one question per screen**, including the partly set up state. It must still
    finish today's clinician-planned exposures (a day, no answers) as well as the new kind (answers,
-   no day).
+   no day).~~ **Done 2026-09-10.** An older plan that only has a day skips the summary, since
+   nothing on it was answered, and keeps its day. Preview: `/__teen-setup-preview/r3` (dev only).
 5. ~~**The server side of in-session setup**: a clinician can save the child's answers, with or
    without a day, for a patient they can open. Tests and a security review.~~ **Done 2026-09-10,
    built before step 4** because finishing the new kind needs the child to be able to add the day.
    `POST /behaviors/{id}/session-setup`. The same review closed a hole: the child's
    `/patient/experiments/{id}/before` and `/after` checked the clinic, not the child.
-6. **The clinician's Set it up**: "Plan it" becomes one button that opens the setup as one sheet,
-   full screen, plus "Tell them to do this one next". The date-only option goes.
+6. ~~**The clinician's Set it up**: "Plan it" becomes one button that opens the setup as one sheet,
+   full screen, plus "Tell them to do this one next". The date-only option goes.~~ **Done
+   2026-09-10** on the Treatment Plan ladder (`FlatLadder.tsx`, `SessionSetupSheet.tsx`). The hidden
+   Situations builder (`BehaviorPanel.tsx`) still has its own date-only plan; it is not shown to
+   clinicians today.
