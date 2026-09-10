@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
 from datetime import datetime
 import uuid
 
@@ -23,6 +23,23 @@ class ExperimentBeforeState(BaseModel):
     confidence_level: str
     times_per_day: Optional[int] = None
     scheduled_time_bucket: Optional[str] = None
+    # Set when the child picks the day themselves — an exposure set up in session with the day left
+    # for them. Left out, the day already on the exposure stands.
+    scheduled_date: Optional[datetime] = None
+
+
+class ExperimentSessionSetup(BaseModel):
+    """An exposure set up with the child in session: the child answers, the clinician types.
+
+    Peter, 2026-09-10 — the answers are still the child's. The day is optional: left empty, the
+    child picks it at home and the step waits on their ladder until they do.
+    """
+    prediction: str = Field(min_length=1)
+    bip_before: float = Field(ge=0, le=100)
+    distress_thermometer_expected: float = Field(ge=1, le=10)
+    confidence_level: Literal['low', 'medium', 'high']
+    scheduled_date: Optional[datetime] = None
+    scheduled_time_bucket: Optional[Literal['morning', 'afternoon', 'evening']] = None
 
 
 class ExperimentAfterState(BaseModel):

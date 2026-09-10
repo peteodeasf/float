@@ -75,6 +75,39 @@ async def plan_experiment_for_behavior(
     return experiment
 
 
+async def save_session_setup(
+    db: AsyncSession,
+    behavior,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    data,
+) -> Experiment:
+    """Save an exposure set up with the child in session.
+
+    With a day and a time of day it is fully set up — committed, on the child's ladder as ready.
+    Without either, it is `planned`: the answers are in and the child picks when at home.
+    """
+    ready = data.scheduled_date is not None and data.scheduled_time_bucket is not None
+    experiment = Experiment(
+        avoidance_behavior_id=behavior.id,
+        patient_id=patient_id,
+        organization_id=organization_id,
+        status="committed" if ready else "planned",
+        committed_at=datetime.now(timezone.utc) if ready else None,
+        scheduled_date=data.scheduled_date,
+        scheduled_time_bucket=data.scheduled_time_bucket,
+        plan_description=behavior.name,
+        prediction=data.prediction,
+        bip_before=data.bip_before,
+        distress_thermometer_expected=data.distress_thermometer_expected,
+        confidence_level=data.confidence_level,
+    )
+    db.add(experiment)
+    await db.commit()
+    await db.refresh(experiment)
+    return experiment
+
+
 async def get_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,
@@ -196,6 +229,8 @@ async def save_before_state(
         experiment.times_per_day = data.times_per_day
     if data.scheduled_time_bucket is not None:
         experiment.scheduled_time_bucket = data.scheduled_time_bucket
+    if data.scheduled_date is not None:
+        experiment.scheduled_date = data.scheduled_date
     experiment.status = "in_progress"
     experiment.updated_at = datetime.now(timezone.utc)
 

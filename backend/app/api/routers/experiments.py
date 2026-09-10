@@ -13,6 +13,7 @@ from app.services.experiment_service import (
     get_experiments_for_rung,
     get_experiments_for_patient,
     plan_experiment_for_behavior,
+    save_session_setup,
     save_before_state,
     save_after_state,
     skip_experiment
@@ -20,6 +21,7 @@ from app.services.experiment_service import (
 from app.schemas.experiment import (
     ExperimentCreate,
     ExperimentPlanCreate,
+    ExperimentSessionSetup,
     ExperimentBeforeState,
     ExperimentAfterState,
     ExperimentResponse,
@@ -126,6 +128,52 @@ async def practitioner_plan_behavior_experiment(
 
     return await plan_experiment_for_behavior(
         db, behavior_id, plan.patient_id, practitioner.organization_id, data
+    )
+
+
+@router.post("/behaviors/{behavior_id}/session-setup",
+             response_model=ExperimentResponse,
+             status_code=status.HTTP_201_CREATED)
+async def practitioner_session_setup(
+    behavior_id: uuid.UUID,
+    data: ExperimentSessionSetup,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_behavior),
+):
+    """Set an exposure up with the child in session, from the clinician's ladder.
+
+    The child answers the same setup questions as in their own app; the clinician types. See
+    docs/plans/teen-home-ladder-and-session-setup.md.
+    """
+    _, practitioner = context
+
+    behavior = (await db.execute(
+        select(AvoidanceBehavior).where(
+            AvoidanceBehavior.id == behavior_id,
+            AvoidanceBehavior.organization_id == practitioner.organization_id,
+        )
+    )).scalar_one_or_none()
+    if not behavior:
+        raise HTTPException(status_code=404, detail="Behavior not found")
+
+    # Its own plan link first; older steps only have a situation.
+    plan_id = behavior.treatment_plan_id
+    if plan_id is None and behavior.trigger_situation_id is not None:
+        trigger = (await db.execute(
+            select(TriggerSituation).where(TriggerSituation.id == behavior.trigger_situation_id)
+        )).scalar_one_or_none()
+        plan_id = trigger.treatment_plan_id if trigger else None
+    plan = None
+    if plan_id is not None:
+        plan = (await db.execute(
+            select(TreatmentPlan).where(TreatmentPlan.id == plan_id)
+        )).scalar_one_or_none()
+    if not plan or plan.organization_id != practitioner.organization_id:
+        raise HTTPException(status_code=404, detail="Treatment plan not found")
+
+    return await save_session_setup(
+        db, behavior, plan.patient_id, practitioner.organization_id, data
     )
 
 

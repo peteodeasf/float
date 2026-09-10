@@ -634,9 +634,19 @@ Do not put case collection into the app's own code — it is eval plumbing on a 
 ## Next after the ladder build — a child's login opens the clinician app
 
 **Reported by Peter, 2026-09-10:** *"i saw that i can log into the clinical portal with a teen login."*
-He asked for it to be done at the end of the ladder build.
+He asked for it to be done at the end of the ladder build. Same day: *"check parents cannot log into
+clinician portal also."* So both — a child's and a parent's account.
 
 A child's account should never get into the clinician app. That is a role boundary, so it gets a
 security review (non-negotiable #2). To check: whether the clinician sign-in refuses a patient
 account, whether the clinician app's pages check the role, and — most important — whether any
 clinician endpoint returns data to a patient's token.
+
+## Two older gaps the 2026-09-10 security review noticed (not caused by that change)
+
+- `POST /rungs/{rung_id}/experiments` and `POST /patient/rungs/{rung_id}/experiments` create an
+  exposure from an old-style ladder rung without checking the rung belongs to the child. The
+  exposure is still saved under the child's own id, so nothing of another child's is read or
+  changed — but it can point at another child's rung.
+- The child routes in `experiments.py` use their own copy of `get_patient_context`, which skips the
+  check that stops a child whose treatment has been closed from making changes.

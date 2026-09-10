@@ -1678,8 +1678,11 @@ async def patient_save_before_state(
     db: AsyncSession = Depends(get_db)
 ):
     _, patient = context
+    # The child, not just the clinic. Without patient_id any signed-in child could overwrite another
+    # child's answers in the same clinic — the fault get_experiment's docstring describes, still open
+    # on this route until 2026-09-10.
     experiment = await save_before_state(
-        db, experiment_id, patient.organization_id, data
+        db, experiment_id, patient.organization_id, data, patient_id=patient.id
     )
     return experiment
 
@@ -1692,8 +1695,9 @@ async def patient_save_after_state(
     db: AsyncSession = Depends(get_db)
 ):
     user, patient = context
+    # The child, not just the clinic — the same hole as /before, found the same day.
     experiment = await save_after_state(
-        db, experiment_id, patient.organization_id, data
+        db, experiment_id, patient.organization_id, data, patient_id=patient.id
     )
 
     if experiment.status == "completed":

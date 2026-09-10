@@ -159,7 +159,10 @@ Each step ships on its own and leaves the app working.
 4. **The child's setup, one question per screen**, including the partly set up state. It must still
    finish today's clinician-planned exposures (a day, no answers) as well as the new kind (answers,
    no day).
-5. **The server side of in-session setup**: a clinician can save the child's answers, with or
-   without a day, for a patient they can open. Tests and a security review.
+5. ~~**The server side of in-session setup**: a clinician can save the child's answers, with or
+   without a day, for a patient they can open. Tests and a security review.~~ **Done 2026-09-10,
+   built before step 4** because finishing the new kind needs the child to be able to add the day.
+   `POST /behaviors/{id}/session-setup`. The same review closed a hole: the child's
+   `/patient/experiments/{id}/before` and `/after` checked the clinic, not the child.
 6. **The clinician's Set it up**: "Plan it" becomes one button that opens the setup as one sheet,
    full screen, plus "Tell them to do this one next". The date-only option goes.
