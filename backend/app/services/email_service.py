@@ -550,3 +550,78 @@ Sent via Float
     except Exception as e:
         logger.error(f"Failed to send password reset email to {to_email}: {e}")
         return False
+
+
+async def send_reminder_email(
+    to_email: str,
+    subject: str,
+    heading: str,
+    body: str,
+    cta_label: str,
+    cta_link: str,
+    off_link: str,
+) -> bool:
+    """A reminder from the scheduled jobs. The words are fixed by the caller and say nothing
+    clinical — email is not a secure channel (docs/plans/scheduled-jobs.md). Every one carries the
+    link that turns reminder emails off."""
+    if not settings.RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY not configured — skipping reminder email")
+        return False
+
+    resend.api_key = settings.RESEND_API_KEY
+
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="background:#135450; padding:24px 32px; text-align:center;">
+    <img src="{settings.BASE_URL}/brand/email-logo.png" width="150" height="50" alt="Float"
+         style="display:block; margin:0 auto; border:0;">
+  </div>
+  <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
+    <div style="background:#ffffff; border-radius:10px; padding:32px 28px; border:1px solid #e2e8f0;">
+      <p style="font-size:18px; font-weight:600; color:#0f172a; margin:0 0 16px;">{heading}</p>
+      <p style="font-size:15px; color:#475569; line-height:1.6; margin:0 0 24px;">{body}</p>
+      <div style="text-align:center;">
+        <a href="{cta_link}"
+           style="display:inline-block; padding:14px 40px; background:#135450;
+                  color:#ffffff; text-decoration:none; border-radius:6px;
+                  font-size:16px; font-weight:600;">{cta_label}</a>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center; padding:16px 24px 32px;">
+    <p style="font-size:12px; color:#94a3b8; margin:0;">
+      Don't want these emails? <a href="{off_link}" style="color:#94a3b8;">Turn off reminder emails</a>.
+    </p>
+  </div>
+</body>
+</html>
+"""
+    text_body = f"""{heading}
+
+{body}
+
+{cta_link}
+
+---
+Don't want these emails? Turn off reminder emails: {off_link}
+"""
+    try:
+        resend.Emails.send({
+            "from": f"{settings.RESEND_FROM_NAME} <{settings.RESEND_FROM_EMAIL}>",
+            "to": [to_email],
+            "subject": subject,
+            "html": html_body,
+            "text": text_body,
+        })
+        logger.info("Reminder email sent")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send reminder email: {e}")
+        return False
+

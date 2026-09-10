@@ -359,6 +359,11 @@ control nothing are worse than no page.
 
 ## No scheduler exists
 
+**BUILT 2026-09-10** — [`scheduled-jobs.md`](plans/scheduled-jobs.md). A Railway service
+(`floatcbt-jobs`) runs `python -m app.jobs.run` every 15 minutes: the child's exposure-day email, the
+parent's Sunday check-in email, and the missed-exposure check. Email only; texts wait on A2P 10DLC
+registration. The arrow harvest is not on it yet.
+
 **Priority: blocks three separate features.** `L`
 
 **Today:** reminders and missed-experiment detection fire only from a manual admin POST. Teen

@@ -1,4 +1,5 @@
 import secrets
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ from app.models.patient import PatientProfile, ParentPatientLink
 
 from app.core.database import get_db
 from app.core.config import settings
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.core.security import (
     verify_password,
     create_access_token,
@@ -326,3 +327,26 @@ async def reset_password(
     await db.commit()
     return {"success": True}
 # Wed Apr 15 21:18:07 EDT 2026
+
+
+class TimezoneRequest(BaseModel):
+    timezone: str = Field(max_length=64)
+
+
+@router.put("/timezone")
+async def set_timezone(
+    data: TimezoneRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The time zone of the phone or browser, sent by the child and parent apps when they open.
+    Reminders keep to 8am–8pm there. docs/plans/scheduled-jobs.md"""
+    try:
+        ZoneInfo(data.timezone)
+    except Exception:
+        raise HTTPException(status_code=422, detail="Unknown time zone")
+    if current_user.timezone != data.timezone:
+        current_user.timezone = data.timezone
+        await db.commit()
+    return {"timezone": data.timezone}
+

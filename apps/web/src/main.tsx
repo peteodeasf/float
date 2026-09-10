@@ -38,6 +38,7 @@ import ParentResetPasswordPage from './pages/parent/ParentResetPasswordPage'
 import ParentHomePage from './pages/parent/ParentHomePage'
 import ParentMessagesPage from './pages/parent/ParentMessagesPage'
 import ParentProgressPage from './pages/parent/ParentProgressPage'
+import ReminderOffPage from './pages/ReminderOffPage'
 import ParentAccommodationsPage from './pages/parent/ParentAccommodationsPage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
@@ -180,6 +181,9 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/parent/messages" element={
                 <ParentProtectedRoute><ParentMessagesPage /></ParentProtectedRoute>
               } />
+
+              {/* The off link in reminder emails. Public, like any unsubscribe link. */}
+              <Route path="/reminders/off" element={<ReminderOffPage />} />
 
               {/* Public monitoring form */}
               <Route path="/monitor/:token" element={<MonitorLandingPage />} />

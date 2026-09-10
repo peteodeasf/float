@@ -20,6 +20,11 @@ class Settings(BaseSettings):
             return v.replace('postgresql://', 'postgresql+asyncpg://', 1)
         return v
     
+    # Print every database query with its values. Off unless asked for: the values are families'
+    # records, and printed they end up in the Railway logs — every 15 minutes from the scheduled
+    # jobs alone. Set SQL_ECHO=true locally to see queries.
+    SQL_ECHO: bool = False
+
     # Auth
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

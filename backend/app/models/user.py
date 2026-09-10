@@ -27,6 +27,14 @@ class User(Base):
     password_reset_expires: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # The time zone of their phone or browser, sent by the child and parent apps when they open.
+    # Reminders keep to 8am–8pm there; with none recorded, no reminder is sent.
+    # docs/plans/scheduled-jobs.md
+    timezone: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Set from the link at the bottom of every reminder email.
+    reminder_emails_off_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

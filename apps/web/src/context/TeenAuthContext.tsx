@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { teenApiClient } from '../api/client'
+import { recordTimezone } from '../api/timezone'
 
 // replace all apiClient references with teenApiClient in this file
 
@@ -30,6 +31,7 @@ export function TeenAuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true)
       setPatientId(pid)
       setMustChangePasswordState(mcp)
+      recordTimezone(teenApiClient)
     }
     setIsLoading(false)
   }, [])
@@ -56,6 +58,7 @@ export function TeenAuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(true)
     setPatientId(pid)
     setMustChangePasswordState(mcp)
+    recordTimezone(teenApiClient)
     return { mustChangePassword: mcp }
   }
 

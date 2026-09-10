@@ -74,10 +74,13 @@ PUBLIC = {
     "POST /review/{token}/add",
     "DELETE /review/{token}/add/{addition_id}",
     "POST /review/{token}/comment",
+    # The off link in a reminder email. A signed token instead of a login, like any unsubscribe
+    # link; all it can do is turn that person's reminder emails off.
+    "POST /reminders/off",
 }
 
 # Acts on the caller, not on data named in the path.
-SELF_ONLY = {"GET /auth/me", "PUT /auth/set-password", "POST /auth/logout"}
+SELF_ONLY = {"GET /auth/me", "PUT /auth/set-password", "POST /auth/logout", "PUT /auth/timezone"}
 
 
 async def _victim_world(db):

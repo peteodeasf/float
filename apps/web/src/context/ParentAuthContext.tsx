@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { parentApiClient } from '../api/client'
+import { recordTimezone } from '../api/timezone'
 
 interface ParentAuthContextType {
   isAuthenticated: boolean
@@ -29,6 +30,7 @@ export function ParentAuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true)
       setPatientId(pid)
       setMustChangePasswordState(mcp)
+      recordTimezone(parentApiClient)
     }
     setIsLoading(false)
   }, [])
@@ -54,6 +56,7 @@ export function ParentAuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(true)
     setPatientId(pid ?? null)
     setMustChangePasswordState(mcp)
+    recordTimezone(parentApiClient)
     return { mustChangePassword: mcp }
   }
 
