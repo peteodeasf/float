@@ -18,6 +18,7 @@ import PatientPage from './pages/practitioner/PatientPage'
 import SessionPage from './pages/practitioner/SessionPage'
 import ArrowPage from './pages/practitioner/ArrowPage'
 import SessionPreview from './pages/practitioner/__SessionPreview'
+import TeenSetupPreview from './pages/teen/__TeenSetupPreview'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
@@ -91,6 +92,7 @@ createRoot(document.getElementById('root')!).render(
               {/* Practitioner routes */}
               {/* Local design preview for session mode. Dev-only: stripped from prod builds. */}
               {import.meta.env.DEV && <Route path="/__session-preview" element={<SessionPreview />} />}
+              {import.meta.env.DEV && <Route path="/__teen-setup-preview/:behaviorId" element={<TeenSetupPreview />} />}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/dashboard" element={
