@@ -482,16 +482,19 @@ async def list_patients(
     return result
 
 
-@router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
-async def create_new_patient(
-    data: PatientCreate,
-    context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db)
-):
-    _, practitioner = context
-    patient, user = await create_patient(
-        db, data, practitioner.id, practitioner.organization_id
-    )
+async def _patient_response(
+    db: AsyncSession, patient: PatientProfile, user: User | None = None
+) -> PatientResponse:
+    """The one way a patient is sent back to the clinician app.
+
+    Four endpoints used to build this separately. Three built it by hand and all three left out the
+    consent date. The fourth, recording consent, returned the database row, which has no email, so it
+    failed building its reply on every call — after the consent had already been saved. Between
+    them, from 2026-08-10 the Teen Access panel never showed consent as given and a clinician could
+    not invite a teen. See docs/solutions/consent-never-reached-the-panel.md.
+    """
+    if user is None:
+        user = (await db.execute(select(User).where(User.id == patient.user_id))).scalar_one()
     return PatientResponse(
         id=patient.id,
         user_id=patient.user_id,
@@ -506,10 +509,25 @@ async def create_new_patient(
         parent_phone=patient.parent_phone,
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
+        child_connect_consent_at=patient.child_connect_consent_at,
+        consent_source=patient.consent_source,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at,
-        closed_at=patient.closed_at
+        closed_at=patient.closed_at,
     )
+
+
+@router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
+async def create_new_patient(
+    data: PatientCreate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db)
+):
+    _, practitioner = context
+    patient, user = await create_patient(
+        db, data, practitioner.id, practitioner.organization_id
+    )
+    return await _patient_response(db, patient, user)
 
 
 @router.get("/{patient_id}", response_model=PatientResponse)
@@ -523,28 +541,7 @@ async def get_patient(
     patient = await get_patient_by_id(
         db, patient_id, practitioner.organization_id
     )
-    user_result = await db.execute(
-        select(User).where(User.id == patient.user_id)
-    )
-    user = user_result.scalar_one()
-    return PatientResponse(
-        id=patient.id,
-        user_id=patient.user_id,
-        name=patient.name,
-        email=user.email,
-        age=patient.age,
-        gender=patient.gender,
-        anxiety_presentations=patient.anxiety_presentations,
-        phone_number=patient.phone_number,
-        parent_name=patient.parent_name,
-        parent_email=patient.parent_email,
-        parent_phone=patient.parent_phone,
-        teen_email=patient.teen_email,
-        teen_invited_at=patient.teen_invited_at,
-        primary_practitioner_id=patient.primary_practitioner_id,
-        created_at=patient.created_at,
-        closed_at=patient.closed_at
-    )
+    return await _patient_response(db, patient)
 
 
 @router.put("/{patient_id}", response_model=PatientResponse)
@@ -564,28 +561,7 @@ async def update_patient(
         setattr(patient, field, value)
     await db.commit()
     await db.refresh(patient)
-    user_result = await db.execute(
-        select(User).where(User.id == patient.user_id)
-    )
-    user = user_result.scalar_one()
-    return PatientResponse(
-        id=patient.id,
-        user_id=patient.user_id,
-        name=patient.name,
-        email=user.email,
-        age=patient.age,
-        gender=patient.gender,
-        anxiety_presentations=patient.anxiety_presentations,
-        phone_number=patient.phone_number,
-        parent_name=patient.parent_name,
-        parent_email=patient.parent_email,
-        parent_phone=patient.parent_phone,
-        teen_email=patient.teen_email,
-        teen_invited_at=patient.teen_invited_at,
-        primary_practitioner_id=patient.primary_practitioner_id,
-        created_at=patient.created_at,
-        closed_at=patient.closed_at
-    )
+    return await _patient_response(db, patient)
 
 
 @router.post("/{patient_id}/invite-teen")
@@ -730,7 +706,7 @@ async def set_child_connect_consent(
         patient.consent_source = None
     await db.commit()
     await db.refresh(patient)
-    return patient
+    return await _patient_response(db, patient)
 
 
 @router.post("/{patient_id}/invite-parent")

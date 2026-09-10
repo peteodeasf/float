@@ -129,6 +129,13 @@ export default function TeenAccessPanel({
           >
             {consentMut.isPending ? 'Recording…' : 'Record consent (obtained offline)'}
           </button>
+          {/* Said out loud. It used to fail silently — the button just reset — and on 2026-09-10 a
+              clinician pressed it eight times thinking the panel had frozen. */}
+          {consentMut.isError && (
+            <p role="alert" style={{ fontSize: '12px', color: '#b91c1c', margin: '8px 0 0' }}>
+              That didn&rsquo;t save. Please try again.
+            </p>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#16a34a', marginBottom: '12px' }}>
@@ -187,6 +194,11 @@ export default function TeenAccessPanel({
       {confirmation && (
         <p style={{ fontSize: '12px', color: '#16a34a', margin: '8px 0 0' }}>
           &#10003; Invitation sent to {confirmation}
+        </p>
+      )}
+      {inviteMut.isError && (
+        <p role="alert" style={{ fontSize: '12px', color: '#b91c1c', margin: '8px 0 0' }}>
+          The invitation didn&rsquo;t send. Please try again.
         </p>
       )}
 
