@@ -87,7 +87,27 @@ expected to change. Logged in the Dr. Walker review queue.
 
 - "How much do you believe that?" becomes **"How strongly do you believe that will happen?"**
 - "Expect to feel?" becomes **"Expect Fear Level?"**
-- **Fear Level** is the one name for the 1–10 number. See `CONCEPTS.md`.
+- **Fear Level** is the one name for the 1–10 number, in the child's app and the clinician's. Peter:
+  *"not sure Fear Level will be the final term but let's be consistent."* See `CONCEPTS.md`.
+
+Where the clinician app names this number today, found 2026-09-10:
+
+| Where | Says now |
+|---|---|
+| Ladder editor, the line under the heading (`SessionPage.tsx`) | "Give each one a thermometer score" |
+| Ladder editor, adding a step (`SessionPage.tsx`) | "How hard would it be?" |
+| Number boxes in the editor and on the Treatment Plan ladder (`sessionKit.tsx`, `SessionPage.tsx`, `FlatLadder.tsx`) | "Thermometer score, 1–10" |
+| Parent Accommodations (`ParentPlanPanel.tsx`) | "Distress min" / "Distress max" |
+| Monitoring log and report (`PatientPage.tsx`, `MonitoringReportPage.tsx`) | "Fear thermometer", "FT 7" |
+| Progress chart (`ProgressPage.tsx`) | "Distress Thermometer" |
+| Hidden Situations builder (`BehaviorPanel.tsx`) | "How hard is this version?", "Fear level when refraining" |
+
+**Ask before changing:** the session tips in `PatientPage.tsx` tell the clinician to "Introduce the
+Distress Thermometer" and a "Worry Thermometer nickname". Those name the clinical tool the clinician
+teaches the child, so renaming them is a clinical wording call, not a label change.
+
+The child app's own wording — "Feels about 8/10" on the home, the setup and record questions — gets
+listed when that work is built.
 
 ## What has to be checked before building
 
