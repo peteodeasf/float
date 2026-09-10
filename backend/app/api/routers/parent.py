@@ -3,11 +3,12 @@
 All routes are gated by `get_parent_context` (the logged-in parent → their linked
 child). MVP is single-child, so every endpoint targets the first linked child.
 The parent's job is child-support-forward: see the child's upcoming exposures,
-work the assigned accommodation, log moments, get situational tips, and chat with
+work the assigned accommodation, check in on it weekly, get situational tips, and chat with
 the clinician.
 """
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -17,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.patient import PatientProfile, PractitionerProfile
 from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
-from app.models.experiment import Experiment, AccommodationMoment
+from app.models.experiment import Experiment, AccommodationBehavior, AccommodationCheckin
 from app.models.message import Message
 from app.models.jit_content import JitTip, JitTipTag, TriggerSituationTag
 from app.api.routers.patients import get_parent_context, step_status
@@ -254,65 +255,106 @@ async def parent_situation_tips(
     return out
 
 
-# ── Log a moment ─────────────────────────────────────────────────────────────
+# ── The weekly check-in ──────────────────────────────────────────────────────
+# Once a week the parent answers one question about their focus accommodation. It replaced logging
+# each moment (Peter, 2026-09-10): per-moment logging is what parents stop keeping up, and the weekly
+# answer is what the clinician decides moving on from. docs/plans/weekly-checkin.md
 
-class MomentCreate(BaseModel):
-    accommodation_id: uuid.UUID | None = None
-    held: bool
-    note: str | None = None
+class CheckinCreate(BaseModel):
+    accommodation_id: uuid.UUID
+    answer: Literal["every_time", "mostly", "gave_in"]
+    # The Monday of the week, in the parent's own time. The app works it out, since the server does
+    # not know their timezone.
+    week_start: date
 
 
-def _moment_out(m: AccommodationMoment) -> dict:
+def _checkin_out(c: AccommodationCheckin, name: str | None) -> dict:
     return {
-        "id": str(m.id),
-        "accommodation_id": str(m.accommodation_id) if m.accommodation_id else None,
-        "held": m.held,
-        "note": m.note,
-        "created_at": m.created_at.isoformat() if m.created_at else None,
+        "id": str(c.id),
+        "accommodation_id": str(c.accommodation_id),
+        "accommodation_name": name,
+        "week_start": c.week_start.isoformat(),
+        "answer": c.answer,
+        "updated_at": c.updated_at.isoformat() if c.updated_at else None,
     }
 
 
-@parent_router.post("/moments", status_code=status.HTTP_201_CREATED)
-async def log_moment(
-    data: MomentCreate,
+@parent_router.post("/checkins")
+async def save_checkin(
+    data: CheckinCreate,
     context: tuple = Depends(get_parent_context),
     db: AsyncSession = Depends(get_db),
 ):
+    """This week's answer, or a change to it. One per parent, accommodation and week."""
     current_user, children = context
     child = _first_child(children)
     plan = await _child_plan(db, child)
     if not plan:
         raise HTTPException(status_code=400, detail="No active plan for this child")
-    moment = AccommodationMoment(
-        treatment_plan_id=plan.id,
-        accommodation_id=data.accommodation_id,
-        parent_user_id=current_user.id,
-        organization_id=child.organization_id,
-        held=data.held,
-        note=data.note,
-    )
-    db.add(moment)
+    # Only an accommodation on this family's own plan.
+    acc = (await db.execute(
+        select(AccommodationBehavior).where(
+            AccommodationBehavior.id == data.accommodation_id,
+            AccommodationBehavior.treatment_plan_id == plan.id,
+        )
+    )).scalar_one_or_none()
+    if not acc:
+        raise HTTPException(status_code=404, detail="Accommodation not found")
+
+    # This week's Monday or last week's, allowing a day either way for the parent's timezone. Last
+    # week's so that a parent answering on Monday morning about the week before is not refused.
+    today = datetime.now(timezone.utc).date()
+    if data.week_start.weekday() != 0 or not (
+        today - timedelta(days=14) < data.week_start <= today + timedelta(days=1)
+    ):
+        raise HTTPException(status_code=422, detail="Check in for this week or last week")
+
+    checkin = (await db.execute(
+        select(AccommodationCheckin).where(
+            AccommodationCheckin.accommodation_id == acc.id,
+            AccommodationCheckin.parent_user_id == current_user.id,
+            AccommodationCheckin.week_start == data.week_start,
+        )
+    )).scalar_one_or_none()
+    if checkin:
+        checkin.answer = data.answer
+        checkin.updated_at = datetime.now(timezone.utc)
+    else:
+        checkin = AccommodationCheckin(
+            treatment_plan_id=plan.id,
+            accommodation_id=acc.id,
+            parent_user_id=current_user.id,
+            organization_id=child.organization_id,
+            week_start=data.week_start,
+            answer=data.answer,
+        )
+        db.add(checkin)
     await db.commit()
-    await db.refresh(moment)
-    return _moment_out(moment)
+    await db.refresh(checkin)
+    return _checkin_out(checkin, acc.name)
 
 
-@parent_router.get("/moments")
-async def my_moments(
+@parent_router.get("/checkins")
+async def my_checkins(
     context: tuple = Depends(get_parent_context),
     db: AsyncSession = Depends(get_db),
 ):
-    _, children = context
+    """This parent's own check-ins on the child's current plan, latest week first."""
+    current_user, children = context
     child = _first_child(children)
     plan = await _child_plan(db, child)
     if not plan:
         return []
     rows = (await db.execute(
-        select(AccommodationMoment)
-        .where(AccommodationMoment.treatment_plan_id == plan.id)
-        .order_by(AccommodationMoment.created_at.desc())
-    )).scalars().all()
-    return [_moment_out(m) for m in rows]
+        select(AccommodationCheckin, AccommodationBehavior.name)
+        .join(AccommodationBehavior, AccommodationBehavior.id == AccommodationCheckin.accommodation_id)
+        .where(
+            AccommodationCheckin.treatment_plan_id == plan.id,
+            AccommodationCheckin.parent_user_id == current_user.id,
+        )
+        .order_by(AccommodationCheckin.week_start.desc())
+    )).all()
+    return [_checkin_out(c, name) for c, name in rows]
 
 
 # ── Parent ↔ clinician chat (audience='parent') ──────────────────────────────

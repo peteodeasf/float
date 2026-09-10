@@ -19,19 +19,21 @@ export interface Accommodation {
   created_at: string
 }
 
-export interface AccommodationMoment {
+/** The parent's weekly answer about their focus. docs/plans/weekly-checkin.md */
+export interface AccommodationCheckin {
   id: string
-  accommodation_id: string | null
+  accommodation_id: string
   accommodation_name: string | null
-  held: boolean
-  note: string | null
-  created_at: string | null
+  parent_email: string | null
+  week_start: string
+  answer: string
+  updated_at: string | null
 }
 
-export const listAccommodationMoments = async (
+export const listAccommodationCheckins = async (
   planId: string
-): Promise<AccommodationMoment[]> => {
-  const res = await apiClient.get(`/plans/${planId}/accommodations/moments`)
+): Promise<AccommodationCheckin[]> => {
+  const res = await apiClient.get(`/plans/${planId}/accommodations/checkins`)
   return res.data
 }
 

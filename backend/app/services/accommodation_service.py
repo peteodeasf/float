@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from app.models.experiment import AccommodationBehavior, AccommodationMoment
+from app.models.experiment import AccommodationBehavior, AccommodationCheckin
+from app.models.user import User
 from app.schemas.accommodation import AccommodationCreate, AccommodationUpdate
 
 
@@ -192,33 +193,33 @@ async def reseed_by_distress(
     return await get_accommodations_for_plan(db, plan_id, organization_id)
 
 
-async def get_moments_for_plan(
+async def get_checkins_for_plan(
     db: AsyncSession,
     plan_id: uuid.UUID,
     organization_id: uuid.UUID,
 ) -> list[dict]:
-    """The parent's logged moments for a plan, newest first, with the
-    accommodation name resolved — for the clinician to coach from."""
+    """The parent's weekly check-ins for a plan, latest week first, with the accommodation's name
+    and which parent answered. docs/plans/weekly-checkin.md"""
     rows = (await db.execute(
-        select(AccommodationMoment, AccommodationBehavior.name)
-        .outerjoin(
-            AccommodationBehavior,
-            AccommodationBehavior.id == AccommodationMoment.accommodation_id,
-        )
+        select(AccommodationCheckin, AccommodationBehavior.name, User.email)
+        .join(AccommodationBehavior, AccommodationBehavior.id == AccommodationCheckin.accommodation_id)
+        .outerjoin(User, User.id == AccommodationCheckin.parent_user_id)
         .where(
-            AccommodationMoment.treatment_plan_id == plan_id,
-            AccommodationMoment.organization_id == organization_id,
+            AccommodationCheckin.treatment_plan_id == plan_id,
+            AccommodationCheckin.organization_id == organization_id,
         )
-        .order_by(AccommodationMoment.created_at.desc())
+        .order_by(AccommodationCheckin.week_start.desc(), AccommodationCheckin.updated_at.desc())
+        .limit(52)
     )).all()
     return [
         {
-            "id": str(m.id),
-            "accommodation_id": str(m.accommodation_id) if m.accommodation_id else None,
+            "id": str(c.id),
+            "accommodation_id": str(c.accommodation_id),
             "accommodation_name": name,
-            "held": m.held,
-            "note": m.note,
-            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "parent_email": email,
+            "week_start": c.week_start.isoformat(),
+            "answer": c.answer,
+            "updated_at": c.updated_at.isoformat() if c.updated_at else None,
         }
-        for m, name in rows
+        for c, name, email in rows
     ]

@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, text, Numeric, Boolean, Text, Integer
+from datetime import date, datetime
+from sqlalchemy import String, DateTime, Date, ForeignKey, text, Numeric, Boolean, Text, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -156,4 +156,48 @@ class AccommodationMoment(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
+    )
+
+
+class AccommodationCheckin(Base):
+    """The parent's weekly answer about their focus accommodation: held every time, mostly, or
+    gave in. One per parent, accommodation and week; answering again that week changes it.
+
+    Replaced AccommodationMoment, one tap per moment, on 2026-09-10 (Peter): logging every moment
+    is what parents stop keeping up. docs/plans/weekly-checkin.md
+    """
+
+    __tablename__ = "accommodation_checkins"
+    __table_args__ = (
+        UniqueConstraint("accommodation_id", "parent_user_id", "week_start", name="uq_checkin_per_week"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    # Deleting the plan, the accommodation or the parent's account takes these with it — nothing
+    # else in this database deletes on its own (docs/solutions/delete-fails-silently-no-fk-cascade.md).
+    treatment_plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("treatment_plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    accommodation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("accommodation_behaviors.id", ondelete="CASCADE"), nullable=False
+    )
+    parent_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False
+    )
+    # The Monday of the week, in the parent's own time.
+    week_start: Mapped[date] = mapped_column(Date, nullable=False)
+    # every_time | mostly | gave_in
+    answer: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
     )

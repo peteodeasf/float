@@ -1,4 +1,5 @@
 import { parentApiClient } from './client'
+import type { CheckinAnswer } from '../lib/checkin'
 
 export interface UpcomingExposure {
   id: string
@@ -25,14 +26,6 @@ export interface ParentTip {
   id: string
   title: string
   body: string
-}
-
-export interface ParentMoment {
-  id: string
-  accommodation_id: string | null
-  held: boolean
-  note: string | null
-  created_at: string | null
 }
 
 export interface ParentMessage {
@@ -80,11 +73,24 @@ export const getParentAccommodations = async (): Promise<ParentAccommodation[]> 
 export const getSituationTips = async (situationId: string): Promise<ParentTip[]> =>
   (await parentApiClient.get(`/parent/situations/${situationId}/tips`)).data
 
-export const logMoment = async (data: {
-  accommodation_id?: string | null
-  held: boolean
-  note?: string | null
-}): Promise<ParentMoment> => (await parentApiClient.post('/parent/moments', data)).data
+/** The parent's weekly check-in. docs/plans/weekly-checkin.md */
+export interface ParentCheckin {
+  id: string
+  accommodation_id: string
+  accommodation_name: string | null
+  week_start: string
+  answer: CheckinAnswer
+  updated_at: string | null
+}
+
+export const getMyCheckins = async (): Promise<ParentCheckin[]> =>
+  (await parentApiClient.get('/parent/checkins')).data
+
+export const saveCheckin = async (data: {
+  accommodation_id: string
+  answer: CheckinAnswer
+  week_start: string
+}): Promise<ParentCheckin> => (await parentApiClient.post('/parent/checkins', data)).data
 
 export const getParentMessages = async (): Promise<ParentMessage[]> =>
   (await parentApiClient.get('/parent/messages')).data

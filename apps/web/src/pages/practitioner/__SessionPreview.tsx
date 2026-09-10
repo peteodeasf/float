@@ -76,7 +76,11 @@ export default function SessionPreview() {
       acc('c2', 'Lies down with them at bedtime', 'started', true, 6, 1),
       acc('c3', 'Texts them every hour at a sleepover', 'not_started', false, 8, 2),
     ])
-    qc.setQueryData(['accommodation-moments', 'p1'], [])
+    qc.setQueryData(['accommodation-checkins', 'p1'], [
+      { id: 'k1', accommodation_id: 'c2', accommodation_name: 'Lies down with them at bedtime', parent_email: 'dana@example.com', week_start: '2026-09-07', answer: 'mostly', updated_at: null },
+      { id: 'k2', accommodation_id: 'c2', accommodation_name: 'Lies down with them at bedtime', parent_email: 'dana@example.com', week_start: '2026-08-31', answer: 'gave_in', updated_at: null },
+      { id: 'k3', accommodation_id: 'c1', accommodation_name: 'Answers for them at the doctor’s', parent_email: 'dana@example.com', week_start: '2026-08-24', answer: 'every_time', updated_at: null },
+    ])
     qc.setQueryData(['insights', 'pt1', 'accommodation'], [])
     setReady(true)
   }, [qc])

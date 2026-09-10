@@ -11,9 +11,11 @@ import {
   getChildProgress,
   getParentAccommodations,
   getSituationTips,
-  logMoment,
+  getMyCheckins,
+  saveCheckin,
   type UpcomingExposure,
 } from '../../api/parent'
+import { CHECKIN_ANSWERS, answerInfo, weekStartOf, type CheckinAnswer } from '../../lib/checkin'
 
 function whenLabel(e: UpcomingExposure): string {
   if (!e.scheduled_date) return 'Not scheduled'
@@ -61,7 +63,7 @@ export default function ParentHomePage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [openSituation, setOpenSituation] = useState<string | null>(null)
-  const [logged, setLogged] = useState<null | 'held' | 'gave'>(null)
+  const [changing, setChanging] = useState(false)
 
   const { data: me } = useQuery({
     queryKey: ['parent-me'],
@@ -84,11 +86,19 @@ export default function ParentHomePage() {
   const focus = accommodations.find(a => a.is_weekly_focus) ?? null
   const others = accommodations.filter(a => !a.is_weekly_focus)
 
-  const logMut = useMutation({
-    mutationFn: (held: boolean) => logMoment({ accommodation_id: focus?.id ?? null, held }),
-    onSuccess: (_res, held) => {
-      setLogged(held ? 'held' : 'gave')
-      qc.invalidateQueries({ queryKey: ['parent-moments'] })
+  // Once a week, one question about the focus. Peter, 2026-09-10: it replaces logging each moment.
+  // docs/plans/weekly-checkin.md
+  const thisWeek = weekStartOf(new Date())
+  const { data: checkins = [] } = useQuery({ queryKey: ['parent-checkins'], queryFn: getMyCheckins })
+  const answered = focus
+    ? checkins.find(c => c.accommodation_id === focus.id && c.week_start === thisWeek) ?? null
+    : null
+  const checkinMut = useMutation({
+    mutationFn: (answer: CheckinAnswer) =>
+      saveCheckin({ accommodation_id: focus!.id, answer, week_start: thisWeek }),
+    onSuccess: () => {
+      setChanging(false)
+      qc.invalidateQueries({ queryKey: ['parent-checkins'] })
     },
   })
 
@@ -144,60 +154,44 @@ export default function ParentHomePage() {
               When it comes up, try not to step in. {childName} may be distressed — that's the work.
             </p>
 
-            {/* log a moment */}
+            {/* This week's check-in: once a week, one question, instead of logging each moment. */}
             <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${teen.color.line}` }}>
-              {logged ? (
+              {answered && !changing ? (
                 <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.teal, margin: 0 }}>
-                  Logged —{' '}
-                  {logged === 'held'
-                    ? 'you held the line. That counts.'
-                    : 'you gave in — useful for your clinician to see too.'}{' '}
+                  {answerInfo(answered.answer)?.summary} Your clinician will see it.{' '}
                   <button
-                    onClick={() => setLogged(null)}
-                    style={{
-                      background: 'none',
-                      border: 0,
-                      color: teen.color.tealMid,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: teen.font.sans,
-                      fontSize: 14,
-                    }}
+                    onClick={() => setChanging(true)}
+                    style={{ background: 'none', border: 0, color: teen.color.tealMid, fontWeight: 600, cursor: 'pointer', fontFamily: teen.font.sans, fontSize: 14, padding: 0 }}
                   >
-                    Log another
+                    Change
                   </button>
                 </p>
               ) : (
                 <>
-                  <div
-                    style={{
-                      fontFamily: teen.font.sans,
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: teen.color.ink,
-                      marginBottom: 10,
-                    }}
-                  >
-                    Did it just come up?
+                  <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.ink, marginBottom: 10 }}>
+                    This week, did you hold the line?
                   </div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button
-                      className="teen-btn teen-btn--primary"
-                      style={{ flex: 1 }}
-                      disabled={logMut.isPending}
-                      onClick={() => logMut.mutate(true)}
-                    >
-                      I held the line
-                    </button>
-                    <button
-                      className="teen-btn teen-btn--outline"
-                      style={{ flex: 1 }}
-                      disabled={logMut.isPending}
-                      onClick={() => logMut.mutate(false)}
-                    >
-                      I gave in
-                    </button>
+                  {/* Equal weight on purpose, like the child's "did it happen?" answers: no answer
+                      is the right one to tap. */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {CHECKIN_ANSWERS.map(a => (
+                      <button
+                        key={a.key}
+                        className="teen-btn teen-btn--outline"
+                        style={{ flex: 1, paddingLeft: 6, paddingRight: 6 }}
+                        aria-pressed={answered?.answer === a.key}
+                        disabled={checkinMut.isPending}
+                        onClick={() => checkinMut.mutate(a.key)}
+                      >
+                        {a.parentLabel}
+                      </button>
+                    ))}
                   </div>
+                  {checkinMut.isError && (
+                    <p role="alert" style={{ ...teen.type.body, fontSize: 13, color: '#b91c1c', margin: '8px 0 0' }}>
+                      That didn't save. Please try again.
+                    </p>
+                  )}
                 </>
               )}
             </div>

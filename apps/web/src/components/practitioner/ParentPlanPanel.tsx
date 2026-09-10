@@ -7,11 +7,12 @@ import {
   deleteAccommodation,
   reorderAccommodations,
   reseedAccommodations,
-  listAccommodationMoments,
+  listAccommodationCheckins,
   type Accommodation,
   type AccommodationState,
 } from '../../api/accommodations'
 import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/treatment'
+import { answerInfo, weekLabel } from '../../lib/checkin'
 
 type TriggerLite = { id: string; name: string }
 
@@ -62,11 +63,13 @@ export default function ParentPlanPanel({
     enabled: !!planId,
   })
 
-  const { data: moments = [] } = useQuery({
-    queryKey: ['accommodation-moments', planId],
-    queryFn: () => listAccommodationMoments(planId),
+  const { data: checkins = [] } = useQuery({
+    queryKey: ['accommodation-checkins', planId],
+    queryFn: () => listAccommodationCheckins(planId),
     enabled: !!planId,
   })
+  // Who answered only matters when more than one parent does.
+  const manyParents = new Set(checkins.map(c => c.parent_email)).size > 1
 
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -348,50 +351,41 @@ export default function ParentPlanPanel({
         </button>
       )}
 
-      {moments.length > 0 && (
+      {/* The parent's weekly answer about their focus. Replaced logging each moment (Peter,
+          2026-09-10). Whether they are ready to move on is the clinician's call, and this is what
+          it rests on. docs/plans/weekly-checkin.md */}
+      {checkins.length > 0 && (
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '8px' }}>
-            Recent parent logs
+            Weekly check-ins
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {moments.slice(0, 12).map(m => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  fontSize: '13px',
-                  background: 'var(--float-surface)',
-                  border: '1px solid var(--float-border)',
-                  borderRadius: 'var(--float-radius-sm)',
-                  padding: '8px 12px',
-                }}
-              >
-                <span
+            {checkins.slice(0, 12).map(c => {
+              const info = answerInfo(c.answer)
+              return (
+                <div
+                  key={c.id}
                   style={{
-                    flex: 'none',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    borderRadius: '999px',
-                    padding: '2px 8px',
-                    background: m.held ? '#eafaf6' : '#fef2f2',
-                    color: m.held ? 'var(--float-primary)' : '#b91c1c',
+                    display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px',
+                    background: 'var(--float-surface)', border: '1px solid var(--float-border)',
+                    borderRadius: 'var(--float-radius-sm)', padding: '8px 12px',
                   }}
                 >
-                  {m.held ? 'Held' : 'Gave in'}
-                </span>
-                <span style={{ flex: 1, minWidth: 0, color: 'var(--float-text)' }}>
-                  {m.accommodation_name ?? 'An accommodation'}
-                  {m.note && <span style={{ color: 'var(--float-text-hint)' }}> — “{m.note}”</span>}
-                </span>
-                {m.created_at && (
-                  <span style={{ flex: 'none', fontSize: '12px', color: 'var(--float-text-hint)' }}>
-                    {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <span style={{ flex: 'none', width: '104px', textAlign: 'center', fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '2px 8px', background: info?.bg, color: info?.color }}>
+                    {info?.clinicianLabel ?? c.answer}
                   </span>
-                )}
-              </div>
-            ))}
+                  <span style={{ flex: 1, minWidth: 0, color: 'var(--float-text)' }}>
+                    {c.accommodation_name}
+                    {manyParents && c.parent_email && (
+                      <span style={{ color: 'var(--float-text-hint)' }}> · {c.parent_email}</span>
+                    )}
+                  </span>
+                  <span style={{ flex: 'none', fontSize: '12px', color: 'var(--float-text-hint)' }}>
+                    {weekLabel(c.week_start)}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

@@ -14,7 +14,7 @@ from app.services.accommodation_service import (
     delete_accommodation,
     reorder_accommodations,
     reseed_by_distress,
-    get_moments_for_plan,
+    get_checkins_for_plan,
 )
 from app.schemas.accommodation import (
     AccommodationCreate,
@@ -39,16 +39,16 @@ async def list_accommodations(
     return await get_accommodations_for_plan(db, plan_id, practitioner.organization_id)
 
 
-@router.get("/moments")
-async def list_accommodation_moments(
+@router.get("/checkins")
+async def list_accommodation_checkins(
     plan_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
     _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
-    """The parent's logged moments for this plan (clinician coaching view)."""
+    """The parent's weekly check-ins for this plan: what the clinician decides moving on from."""
     _, practitioner = context
-    return await get_moments_for_plan(db, plan_id, practitioner.organization_id)
+    return await get_checkins_for_plan(db, plan_id, practitioner.organization_id)
 
 
 @router.post("", response_model=AccommodationResponse, status_code=status.HTTP_201_CREATED)

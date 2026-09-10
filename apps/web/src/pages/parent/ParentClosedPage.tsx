@@ -3,29 +3,29 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
 import { useParentAuth } from '../../context/ParentAuthContext'
-import { parentApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import teen from '../../styles/teenTokens'
-import type { ParentMoment } from '../../api/parent'
+import { getMyCheckins } from '../../api/parent'
 
 /**
  * What a parent sees once their child's clinician has closed treatment.
  *
  * Same message as the child's screen — "All done for now", because a closed patient can be
  * reopened — and the same idea of ending on what they did rather than on a notice. A parent's work
- * is the moments they logged, and how often they held rather than stepping in.
+ * is the weeks they checked in, and how many of them they held the line.
  */
 export default function ParentClosedPage() {
   const { logout } = useParentAuth()
   const navigate = useNavigate()
 
-  const { data: moments = [], isLoading } = useQuery<ParentMoment[]>({
-    queryKey: ['parent-moments'],
-    queryFn: async () => (await parentApiClient.get('/parent/moments')).data,
+  const { data: checkins = [], isLoading } = useQuery({
+    queryKey: ['parent-checkins'],
+    queryFn: getMyCheckins,
   })
 
-  const held = useMemo(() => moments.filter(m => m.held).length, [moments])
-  const didAnything = moments.length > 0
+  // Every time or mostly counts as holding the line that week.
+  const held = useMemo(() => checkins.filter(c => c.answer !== 'gave_in').length, [checkins])
+  const didAnything = checkins.length > 0
 
   return (
     <TeenScreen bubbles>
@@ -99,10 +99,10 @@ export default function ParentClosedPage() {
                   lineHeight: 1.1,
                 }}
               >
-                {held} of {moments.length}
+                {held} of {checkins.length}
               </div>
               <p style={{ ...teen.type.body, margin: '10px 0 0' }}>
-                moments you logged where you held rather than stepping in.
+                weeks you held the line, every time or mostly.
               </p>
             </div>
           </div>

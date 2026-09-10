@@ -22,7 +22,9 @@ function open() {
     acc('a1', 'Lies down with them at bedtime', 'started', true),
     acc('a2', "Answers for them at the doctor's", 'stopped'),
   ])
-  qc.setQueryData(['accommodation-moments', 'plan1'], [])
+  qc.setQueryData(['accommodation-checkins', 'plan1'], [
+    { id: 'k1', accommodation_id: 'a1', accommodation_name: 'Lies down with them at bedtime', parent_email: 'p@example.com', week_start: '2026-09-07', answer: 'gave_in', updated_at: null },
+  ])
   qc.setQueryData(['insights', 'pt1', 'accommodation'], [])
   render(
     <QueryClientProvider client={qc}>
@@ -38,6 +40,15 @@ describe('where each accommodation has got to', () => {
     open()
     expect(screen.getByLabelText('Where the parent is with “Lies down with them at bedtime”')).toHaveValue('started')
     expect(screen.getByLabelText("Where the parent is with “Answers for them at the doctor's”")).toHaveValue('stopped')
+  })
+
+  it("shows the parent's weekly answers", () => {
+    open()
+    expect(screen.getByText('Weekly check-ins')).toBeInTheDocument()
+    expect(screen.getByText('Gave in')).toBeInTheDocument()
+    expect(screen.getByText('Week of Sep 7')).toBeInTheDocument()
+    // One parent answering, so who answered is not shown.
+    expect(screen.queryByText(/p@example.com/)).not.toBeInTheDocument()
   })
 
   it('the clinician changes it on the row', () => {
