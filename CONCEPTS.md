@@ -44,3 +44,13 @@ Distress itself is **not** a behavior type — it's the fear rating, not a categ
   actually works through.
 
 _(add: child home/exposure screens, clinician case-file & sessions IA, parent log-a-moment, etc.)_
+
+## Fear Level
+
+The 1–10 number for how frightening something is: a step on the ladder, a situation, what the child
+expects before an exposure, and what they felt after. Peter, 2026-09-10: *"let's use Fear Level as
+the consistent term."*
+
+Use it wherever a child or parent reads the number. It replaces "feels about", "expect to feel",
+"how hard", "distress" and "thermometer score" in what people see. The clinical instrument behind
+it is the distress thermometer, and the database still calls it `distress_thermometer_*`.
