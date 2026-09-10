@@ -37,10 +37,11 @@ async def test_a_step_with_no_situation_reaches_the_child(api, db):
 
 async def test_it_arrives_in_its_own_group_and_is_visible(api, db):
     """The child's screen picks a group then shows its steps, so an ungrouped step needs a group.
-    And it must be switched on, or it is invisible again for a different reason."""
+    And it must reach the child's ladder, or it is invisible again for a different reason."""
     org = await make_org(db)
     patient = await make_patient(db, org)
     plan = await make_plan(db, org, patient=patient)
+    plan.ladder_active = True
     db.add(AvoidanceBehavior(
         treatment_plan_id=plan.id, organization_id=org.id, behavior_type="scenario", name="On its own",
     ))
@@ -49,8 +50,10 @@ async def test_it_arrives_in_its_own_group_and_is_visible(api, db):
     data = await _ladder(api, patient)
     group = next(s for s in data["situations"] if s["id"] == "ungrouped")
 
-    assert group["is_active"] is True
     assert [b["name"] for b in group["behaviors"]] == ["On its own"]
+    # Visible means on the child's ladder. The group used to carry its own on/off flag; since
+    # 2026-09-01 the whole ladder has one switch, and the flag is no longer sent.
+    assert [r["name"] for r in data["rungs"]] == ["On its own"]
 
 
 async def test_no_empty_group_when_every_step_has_a_situation(api, db):

@@ -40,7 +40,6 @@ type TeenRung = TeenBehavior & {
 type TeenSituation = {
   id: string
   name: string
-  is_active: boolean
   feared_outcome: string | null
   da_approved: boolean
   behaviors: TeenBehavior[]

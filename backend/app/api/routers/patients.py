@@ -1357,7 +1357,8 @@ async def get_my_ladder(
         situations.append({
             "id": str(trigger.id),
             "name": trigger.name,
-            "is_active": trigger.is_active,
+            # No `is_active`. Replaced by the ladder switch on 2026-09-01, and a flag still sent is
+            # a flag still read somewhere — docs/solutions/stale-flag-still-read.md.
             "feared_outcome": feared_outcome,
             "da_approved": da_approved,
             "behaviors": behaviors_data,
@@ -1384,10 +1385,6 @@ async def get_my_ladder(
             # group is selected; nothing is fetched by it.
             "id": "ungrouped",
             "name": "Other steps",
-            # A situation can be built and left switched off. An ungrouped step has no such
-            # switch, so it is visible as soon as it exists. Worth revisiting if clinicians want
-            # to draft these before a child sees them.
-            "is_active": True,
             "feared_outcome": None,
             "da_approved": False,
             "behaviors": [await build_step(b) for b in ungrouped],

@@ -193,3 +193,18 @@ async def test_a_placeholder_situation_is_not_sent_to_the_child(api, db):
     body = (await api.get("/patient/ladder")).json()
     assert all(s["name"] != "(placeholder)" for s in body["situations"])
     assert all(r["name"] != "Hidden step" for r in body["rungs"])
+
+
+async def test_the_ladder_no_longer_sends_the_old_situation_flag(api, db):
+    """Retired on 2026-09-01. A flag still sent is a flag still read somewhere — that is how the
+    exposure screen came to send children home. See docs/solutions/stale-flag-still-read.md."""
+    org = await make_org(db)
+    patient, plan = await _child(db, org)
+    situation = await make_situation(db, plan)
+    await make_rung(db, situation=situation, behavior_type="scenario")
+    await make_rung(db, plan=plan, behavior_type="scenario", name="No situation")
+
+    api.sign_in_as(patient.user)
+    body = (await api.get("/patient/ladder")).json()
+    assert body["situations"], "expected the grouped and ungrouped steps"
+    assert all("is_active" not in s for s in body["situations"])
