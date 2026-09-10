@@ -44,6 +44,33 @@ export interface ParentMessage {
   read_at: string | null
 }
 
+/** What the parent may see of the child's exposures, once the clinician switches it on.
+ *  Never the child's own words or their ratings of each exposure. */
+export type ChildProgress =
+  | { shared: false }
+  | {
+      shared: true
+      steps: {
+        id: string
+        name: string
+        fear_level: number | null
+        situation_name: string | null
+        status: 'mastered' | 'in_progress' | 'not_started'
+        times_done: number
+      }[]
+      planned: {
+        id: string
+        step_name: string
+        scheduled_date: string | null
+        scheduled_time_bucket: string | null
+        status: string
+      }[]
+      done: { id: string; step_name: string; done_on: string | null; outcome: 'did_it' | 'too_hard' }[]
+    }
+
+export const getChildProgress = async (): Promise<ChildProgress> =>
+  (await parentApiClient.get('/parent/child/progress')).data
+
 export const getUpcomingExposures = async (): Promise<UpcomingExposure[]> =>
   (await parentApiClient.get('/parent/child/experiments/upcoming')).data
 

@@ -4,9 +4,9 @@ import teen from '../../styles/teenTokens'
 
 /**
  * Persistent bottom navigation for the parent app. Reuses the consumer design
- * system (teen tokens) with parent-specific routes. Two tabs for the MVP.
+ * system (teen tokens) with parent-specific routes.
  */
-type Tab = 'home' | 'chat'
+type Tab = 'home' | 'progress' | 'chat'
 
 const iconProps = {
   width: 22,
@@ -27,6 +27,11 @@ const ICONS: Record<Tab, ReactNode> = {
       <path d="M5.5 9.5V20h13V9.5" />
     </svg>
   ),
+  progress: (
+    <svg {...iconProps}>
+      <path d="M4 20h4v-5h4v-5h4V5h4" />
+    </svg>
+  ),
   chat: (
     <svg {...iconProps}>
       <path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.3-4.2A7.5 7.5 0 1 1 20 12Z" />
@@ -36,6 +41,7 @@ const ICONS: Record<Tab, ReactNode> = {
 
 const ITEMS: { key: Tab; label: string; path: string }[] = [
   { key: 'home', label: 'Home', path: '/parent/home' },
+  { key: 'progress', label: 'Progress', path: '/parent/progress' },
   { key: 'chat', label: 'Chat', path: '/parent/messages' },
 ]
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { inviteTeen, inviteParent, setChildConnectConsent } from '../../api/patients'
+import { inviteTeen, inviteParent, setChildConnectConsent, setParentProgressSharing } from '../../api/patients'
 
 /**
  * Persistent teen-access manager for a patient.
@@ -17,6 +17,7 @@ export default function TeenAccessPanel({
   teenEmail,
   teenInvitedAt,
   consentAt,
+  progressSharedAt,
   fallbackEmail,
   onViewMessages,
   onClose,
@@ -26,6 +27,7 @@ export default function TeenAccessPanel({
   teenEmail: string | null | undefined
   teenInvitedAt: string | null | undefined
   consentAt: string | null | undefined
+  progressSharedAt?: string | null
   fallbackEmail: string | null | undefined
   onViewMessages: () => void
   onClose: () => void
@@ -64,6 +66,14 @@ export default function TeenAccessPanel({
       setParentConfirmation(data.email)
       setTimeout(() => setParentConfirmation(null), 4000)
     },
+  })
+
+  // Peter, 2026-09-10: the parent can see the child's ladder, what's planned and what's done, once
+  // the clinician switches it on — after asking the child.
+  const shared = !!progressSharedAt
+  const shareMut = useMutation({
+    mutationFn: (on: boolean) => setParentProgressSharing(patientId, on),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['patient', patientId] }),
   })
 
   const label: React.CSSProperties = {
@@ -221,6 +231,30 @@ export default function TeenAccessPanel({
       {focus === 'parent' && (
       <div>
         <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Parent</div>
+
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={shared}
+              disabled={shareMut.isPending}
+              onChange={e => shareMut.mutate(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Parents can see the child's progress
+          </label>
+          <p style={{ fontSize: '12px', color: '#64748b', margin: '6px 0 0', lineHeight: 1.5 }}>
+            The ladder, what's planned and what's done. Not what the child writes, or how they rate each
+            exposure. Ask the child first.
+            {shared && ` Shared since ${new Date(progressSharedAt!).toLocaleDateString()}.`}
+          </p>
+          {shareMut.isError && (
+            <p role="alert" style={{ fontSize: '12px', color: '#b91c1c', margin: '6px 0 0' }}>
+              That didn&rsquo;t save. Please try again.
+            </p>
+          )}
+        </div>
+
         <label style={label}>Parent's email</label>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <input

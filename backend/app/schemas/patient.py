@@ -43,6 +43,8 @@ class PatientResponse(BaseModel):
     teen_invited_at: Optional[datetime] = None
     child_connect_consent_at: Optional[datetime] = None
     consent_source: Optional[str] = None
+    # When the clinician let the parent app show the child's ladder, what's planned and what's done.
+    progress_shared_with_parent_at: Optional[datetime] = None
     primary_practitioner_id: Optional[uuid.UUID] = None
     created_at: datetime
 

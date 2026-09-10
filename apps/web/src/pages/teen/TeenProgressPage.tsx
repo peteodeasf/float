@@ -302,6 +302,12 @@ export default function TeenProgressPage() {
                 <span style={{ color: teen.color.chevron, flex: 'none', fontSize: 20 }}>›</span>
               </button>
             ))}
+            {/* They agreed to this with their clinician. Said here so it stays true to them. */}
+            {ladderData?.plan?.shared_with_parent && (
+              <p style={{ ...teen.type.body, fontSize: 13, color: teen.color.textSecondary, margin: '10px 0 0' }}>
+                Your parent can see your ladder, what's planned and what you've done. Not what you write.
+              </p>
+            )}
             <div style={{ ...teen.type.eyebrow, marginTop: 10 }}>How it's going</div>
           </div>
         )}

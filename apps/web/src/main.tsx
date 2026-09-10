@@ -19,6 +19,7 @@ import SessionPage from './pages/practitioner/SessionPage'
 import ArrowPage from './pages/practitioner/ArrowPage'
 import SessionPreview from './pages/practitioner/__SessionPreview'
 import TeenSetupPreview from './pages/teen/__TeenSetupPreview'
+import ParentProgressPreview from './pages/parent/__ParentProgressPreview'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
@@ -35,6 +36,7 @@ import ParentSetPasswordPage from './pages/parent/ParentSetPasswordPage'
 import ParentResetPasswordPage from './pages/parent/ParentResetPasswordPage'
 import ParentHomePage from './pages/parent/ParentHomePage'
 import ParentMessagesPage from './pages/parent/ParentMessagesPage'
+import ParentProgressPage from './pages/parent/ParentProgressPage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
@@ -93,6 +95,7 @@ createRoot(document.getElementById('root')!).render(
               {/* Local design preview for session mode. Dev-only: stripped from prod builds. */}
               {import.meta.env.DEV && <Route path="/__session-preview" element={<SessionPreview />} />}
               {import.meta.env.DEV && <Route path="/__teen-setup-preview/:behaviorId" element={<TeenSetupPreview />} />}
+              {import.meta.env.DEV && <Route path="/__parent-progress-preview" element={<ParentProgressPreview />} />}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/dashboard" element={
@@ -162,6 +165,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/parent/home" element={
                 <ParentProtectedRoute><ParentHomePage /></ParentProtectedRoute>
+              } />
+              <Route path="/parent/progress" element={
+                <ParentProtectedRoute><ParentProgressPage /></ParentProtectedRoute>
               } />
               <Route path="/parent/messages" element={
                 <ParentProtectedRoute><ParentMessagesPage /></ParentProtectedRoute>

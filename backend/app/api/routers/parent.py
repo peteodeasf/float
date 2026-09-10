@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -20,7 +20,8 @@ from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehav
 from app.models.experiment import Experiment, AccommodationMoment
 from app.models.message import Message
 from app.models.jit_content import JitTip, JitTipTag, TriggerSituationTag
-from app.api.routers.patients import get_parent_context
+from app.api.routers.patients import get_parent_context, step_status
+from app.core.behavior_types import LADDER_TYPES
 from app.services.accommodation_service import get_accommodations_for_plan
 from app.schemas.accommodation import AccommodationResponse
 
@@ -52,6 +53,12 @@ def _message_out(m: Message) -> dict:
     }
 
 
+def _progress_shared(child: PatientProfile) -> bool:
+    """The clinician's switch, set once the child has agreed. Off, nothing about the child's
+    exposures reaches the parent. docs/plans/parent-sees-child-progress.md"""
+    return child.progress_shared_with_parent_at is not None
+
+
 # ── Child's plan (read-only context for the parent) ──────────────────────────
 
 @parent_router.get("/child/experiments/upcoming")
@@ -63,6 +70,15 @@ async def upcoming_child_experiments(
     (what + when). Read-only — the parent has a role in every one of them."""
     _, children = context
     child = _first_child(children)
+    # This is "what's planned", so it waits for the same switch as the rest. Until 2026-09-10 it
+    # was shown to every parent without anyone agreeing to it.
+    if not _progress_shared(child):
+        return []
+    # And the same limits as the progress view: only while the child's ladder is on, and only
+    # exposures on a step, since one with no step has nothing safe to name it by.
+    plan = await _child_plan(db, child)
+    if not plan or not plan.ladder_active:
+        return []
     horizon = datetime.now(timezone.utc) + timedelta(days=7)
 
     rows = (await db.execute(
@@ -71,6 +87,7 @@ async def upcoming_child_experiments(
         .outerjoin(TriggerSituation, TriggerSituation.id == AvoidanceBehavior.trigger_situation_id)
         .where(
             Experiment.patient_id == child.id,
+            Experiment.avoidance_behavior_id.is_not(None),
             Experiment.status == "committed",
             Experiment.scheduled_date.is_not(None),
             Experiment.scheduled_date <= horizon,
@@ -83,13 +100,102 @@ async def upcoming_child_experiments(
             "id": str(exp.id),
             "situation_id": str(sit.id) if sit else None,
             "situation_name": sit.name if sit else None,
-            "behavior_name": exp.plan_description or (beh.name if beh else None),
+            # The step's name, never plan_description: the child's older setup wrote their fear
+            # into that field as well as into the prediction.
+            "behavior_name": beh.name if beh else None,
             "scheduled_date": exp.scheduled_date.isoformat() if exp.scheduled_date else None,
             "scheduled_time_bucket": exp.scheduled_time_bucket,
             "status": exp.status,
         }
         for exp, beh, sit in rows
     ]
+
+
+@parent_router.get("/child/progress")
+async def child_progress(
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The child's ladder, what's planned and what they've done, once the clinician has switched
+    it on.
+
+    What a parent needs to support the child, and no more (Peter, 2026-09-10). Built field by field
+    on purpose. The child's own words (what they feared, what happened, what they learned, and the
+    older plan_description, which could hold the fear) and their ratings of each exposure are never
+    put into this reply, so they cannot leak out of it.
+    """
+    _, children = context
+    child = _first_child(children)
+    if not _progress_shared(child):
+        return {"shared": False}
+    empty = {"shared": True, "steps": [], "planned": [], "done": []}
+    plan = await _child_plan(db, child)
+    # The parent sees what the child sees: a ladder not switched on for the child is not shown here.
+    if not plan or not plan.ladder_active:
+        return empty
+
+    steps = (await db.execute(
+        select(AvoidanceBehavior, TriggerSituation)
+        .outerjoin(TriggerSituation, TriggerSituation.id == AvoidanceBehavior.trigger_situation_id)
+        .where(
+            AvoidanceBehavior.behavior_type.in_(LADDER_TYPES),
+            or_(
+                and_(AvoidanceBehavior.trigger_situation_id.is_(None),
+                     AvoidanceBehavior.treatment_plan_id == plan.id),
+                and_(TriggerSituation.treatment_plan_id == plan.id,
+                     TriggerSituation.is_placeholder.is_(False)),
+            ),
+        )
+    )).all()
+    names = {b.id: b.name for b, _ in steps}
+
+    # Only exposures on a step of this ladder. One with no step has nothing to name it by except
+    # plan_description, which is not safe to show.
+    exps = [e for e in (await db.execute(
+        select(Experiment).where(Experiment.patient_id == child.id).order_by(Experiment.created_at)
+    )).scalars().all() if e.avoidance_behavior_id in names]
+
+    def completed_on(step_id):
+        return [e for e in exps if e.avoidance_behavior_id == step_id and e.status == "completed"]
+
+    def fear_level(b):
+        v = b.distress_thermometer_when_refraining
+        return float(v) if v is not None else None
+
+    ladder = [{
+        "id": str(b.id),
+        "name": b.name,
+        "fear_level": fear_level(b),
+        "situation_name": sit.name if sit else None,
+        "status": step_status(completed_on(b.id)),
+        "times_done": len(completed_on(b.id)),
+    } for b, sit in steps]
+    # Easiest first, unscored at the end — the order the child sees.
+    ladder.sort(key=lambda s: (s["fear_level"] is None, s["fear_level"] or 0))
+
+    planned = [{
+        "id": str(e.id),
+        "step_name": names[e.avoidance_behavior_id],
+        "scheduled_date": e.scheduled_date.isoformat() if e.scheduled_date else None,
+        "scheduled_time_bucket": e.scheduled_time_bucket,
+        "status": e.status,
+    } for e in exps if e.status in ("planned", "committed")]
+    planned.sort(key=lambda p: (p["scheduled_date"] is None, p["scheduled_date"] or ""))
+
+    done = []
+    for e in exps:
+        if e.status not in ("completed", "too_hard"):
+            continue
+        when = e.completed_date or e.updated_at
+        done.append({
+            "id": str(e.id),
+            "step_name": names[e.avoidance_behavior_id],
+            "done_on": when.isoformat() if when else None,
+            "outcome": "did_it" if e.status == "completed" else "too_hard",
+        })
+    done.sort(key=lambda d: d["done_on"] or "", reverse=True)
+
+    return {"shared": True, "steps": ladder, "planned": planned, "done": done}
 
 
 # ── The parent's accommodations (the child's ladder, read-only for parent) ────

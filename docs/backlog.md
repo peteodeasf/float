@@ -298,6 +298,12 @@ focus one, shows parent-audience tips for that situation, and logs whether the p
 So from Peter's July plan, these are done: the accommodation list, log-a-moment, tips, and
 parent↔clinician chat.
 
+**Added 2026-09-10: a Progress tab.** Once the clinician switches it on (Parent access panel, after
+asking the child), the parent sees the child's ladder, what's planned and what's done. Never the
+child's own words or their ratings of each exposure. Off for every child to start with, and the old
+"this week" list on the parent home now waits for the same switch. See
+[`parent-sees-child-progress.md`](plans/parent-sees-child-progress.md).
+
 ## What is missing
 
 | Item | Today | Size |

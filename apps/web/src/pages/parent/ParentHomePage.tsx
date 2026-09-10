@@ -8,6 +8,7 @@ import ParentTabBar from '../../components/parent/ParentTabBar'
 import teen from '../../styles/teenTokens'
 import {
   getUpcomingExposures,
+  getChildProgress,
   getParentAccommodations,
   getSituationTips,
   logMoment,
@@ -72,6 +73,9 @@ export default function ParentHomePage() {
     queryKey: ['parent-upcoming'],
     queryFn: getUpcomingExposures,
   })
+  // Whether the clinician has switched on sharing the child's progress. Off, the week below is
+  // empty because nothing is shared, not because nothing is planned — so it says that instead.
+  const { data: progress } = useQuery({ queryKey: ['parent-progress'], queryFn: getChildProgress })
   const { data: accommodations = [] } = useQuery({
     queryKey: ['parent-accommodations'],
     queryFn: getParentAccommodations,
@@ -216,7 +220,11 @@ export default function ParentHomePage() {
 
         {/* Child's week */}
         <div style={{ ...teen.type.eyebrow, marginTop: 28 }}>{childName}'s week</div>
-        {exposures.length === 0 ? (
+        {progress && !progress.shared ? (
+          <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.textSecondary, marginTop: 8 }}>
+            Your clinician hasn't shared {childName}'s plan with you yet.
+          </p>
+        ) : exposures.length === 0 ? (
           <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.textSecondary, marginTop: 8 }}>
             Nothing scheduled in the next 7 days.
           </p>

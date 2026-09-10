@@ -511,6 +511,7 @@ async def _patient_response(
         teen_invited_at=patient.teen_invited_at,
         child_connect_consent_at=patient.child_connect_consent_at,
         consent_source=patient.consent_source,
+        progress_shared_with_parent_at=patient.progress_shared_with_parent_at,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at,
         closed_at=patient.closed_at,
@@ -704,6 +705,37 @@ async def set_child_connect_consent(
     else:
         patient.child_connect_consent_at = None
         patient.consent_source = None
+    await db.commit()
+    await db.refresh(patient)
+    return await _patient_response(db, patient)
+
+
+class ProgressSharingRequest(BaseModel):
+    shared: bool
+
+
+@router.put("/{patient_id}/parent-progress-sharing", response_model=PatientResponse)
+async def set_parent_progress_sharing(
+    patient_id: uuid.UUID,
+    data: ProgressSharingRequest,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    """Let the parent app show the child's ladder, what's planned and what's done — or stop it.
+
+    The clinician switches it on once the child has agreed (Peter, 2026-09-10). Records who and
+    when. What the parent then sees, and what they never see, is in /parent/child/progress.
+    Plan: docs/plans/parent-sees-child-progress.md
+    """
+    _, practitioner = context
+    if data.shared:
+        if patient.progress_shared_with_parent_at is None:
+            patient.progress_shared_with_parent_at = datetime.now(timezone.utc)
+            patient.progress_shared_by_practitioner_id = practitioner.id
+    else:
+        patient.progress_shared_with_parent_at = None
+        patient.progress_shared_by_practitioner_id = None
     await db.commit()
     await db.refresh(patient)
     return await _patient_response(db, patient)
@@ -1225,6 +1257,20 @@ async def _feared_outcome_for(db: AsyncSession, situation_id) -> tuple[str | Non
     return ((da.feared_outcome or "").strip() or None), bool(da.feared_outcome_approved)
 
 
+def step_status(completed: list) -> str:
+    """Where a step has got to, from its completed exposures in the order they were done.
+
+    Mastered is two or more done, the latest ending at Fear Level 2 or under. One rule, read by the
+    child's ladder and by the parent's view of it, so the two cannot disagree.
+    """
+    if not completed:
+        return "not_started"
+    latest = completed[-1].distress_thermometer_actual
+    if len(completed) >= 2 and latest is not None and float(latest) <= 2:
+        return "mastered"
+    return "in_progress"
+
+
 @patient_router.get("/ladder")
 async def get_my_ladder(
     context: tuple = Depends(get_patient_context),
@@ -1278,12 +1324,7 @@ async def get_my_ladder(
             latest = completed_experiments[-1]
             latest_dt_actual = float(latest.distress_thermometer_actual) if latest.distress_thermometer_actual is not None else None
 
-        if len(completed_experiments) >= 2 and latest_dt_actual is not None and latest_dt_actual <= 2:
-            b_status = "mastered"
-        elif len(completed_experiments) >= 1:
-            b_status = "in_progress"
-        else:
-            b_status = "not_started"
+        b_status = step_status(completed_experiments)
 
         return {
             "id": str(b.id),
@@ -1394,6 +1435,8 @@ async def get_my_ladder(
     return {
         "plan": {
             "id": str(plan.id),
+            # The child's Progress tab says so when their parent can see this.
+            "shared_with_parent": patient.progress_shared_with_parent_at is not None,
             "status": plan.status,
             "nickname": plan.nickname,
             # One switch for the whole ladder. Until the clinician turns it on the child has

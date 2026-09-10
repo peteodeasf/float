@@ -60,6 +60,8 @@ export interface PatientDetail {
   teen_invited_at?: string | null
   child_connect_consent_at?: string | null
   consent_source?: string | null
+  /** When the clinician let the parent app show the child's ladder, what's planned and what's done. */
+  progress_shared_with_parent_at?: string | null
   primary_practitioner_id: string
   created_at: string
   closed_at?: string | null
@@ -85,6 +87,15 @@ export const setChildConnectConsent = async (
   granted: boolean
 ): Promise<PatientDetail> => {
   const response = await apiClient.post(`/patients/${patientId}/child-connect-consent`, { granted })
+  return response.data
+}
+
+// Lets the parent app show the child's ladder, what's planned and what's done — or stops it.
+export const setParentProgressSharing = async (
+  patientId: string,
+  shared: boolean
+): Promise<PatientDetail> => {
+  const response = await apiClient.put(`/patients/${patientId}/parent-progress-sharing`, { shared })
   return response.data
 }
 

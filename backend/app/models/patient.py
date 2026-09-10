@@ -69,6 +69,15 @@ class PatientProfile(Base):
     closed_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )
+    # The clinician's switch for the parent app showing the child's ladder, what's planned and
+    # what's done — set once the child has agreed. Null is off, and off is where every child starts.
+    # docs/plans/parent-sees-child-progress.md
+    progress_shared_with_parent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    progress_shared_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
