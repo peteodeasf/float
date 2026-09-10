@@ -89,10 +89,14 @@ Two more changes of the same kind, both cutting down what the child's app receiv
 - The parent's monitoring observations ("Complained of stomach pain") are no longer in the child's
   ladder data. They were sent before, just not drawn on screen.
 - Hidden placeholder situations are no longer sent to the child's app.
+- The retired per-situation flag is no longer sent in `/patient/ladder` either. Nothing read it,
+  but a flag that is still sent is how the exposure screen came to read it — see
+  `docs/solutions/stale-flag-still-read.md`. One older test checked the flag itself; it now checks
+  that a step with no situation reaches the child's ladder.
 
 **Checked:**
 
-- 11 new backend tests, and the full backend suite including the route sweep.
+- 12 new backend tests, and the full backend suite (197) including the route sweep.
 - Each access rule was broken on purpose to confirm its test then fails.
 - Frontend typecheck, tests and build.
 
