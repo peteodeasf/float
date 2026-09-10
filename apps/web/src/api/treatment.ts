@@ -480,3 +480,36 @@ export const removeInsight = async (patientId: string, insightId: string): Promi
   const { data } = await apiClient.post(`/patients/${patientId}/insights/${insightId}/remove`)
   return data
 }
+
+// ── The accommodation conversation, in session ──
+// The parent's questions, for the clinician to ask in a parent session and type the answers. What
+// comes out is suggestions, never plan rows. docs/plans/accommodation-conversation.md
+export interface ConversationItemInSession {
+  id: string
+  name: string
+  from_record: boolean
+  still_does: boolean | null
+  estimate_min: number | null
+  estimate_max: number | null
+}
+export interface ConversationInSession {
+  child_name: string | null
+  situations: { id: string; name: string; items: ConversationItemInSession[] }[]
+}
+
+export const getConversationInSession = async (patientId: string): Promise<ConversationInSession> =>
+  (await apiClient.get(`/patients/${patientId}/insights/accommodation-conversation`)).data
+
+export const answerInSession = async (
+  patientId: string,
+  insightId: string,
+  data: { still_does?: boolean; estimate_min?: number | null; estimate_max?: number | null },
+): Promise<ConversationItemInSession> =>
+  (await apiClient.put(`/patients/${patientId}/insights/${insightId}/parent-answer`, data)).data
+
+export const nameInSession = async (
+  patientId: string,
+  data: { trigger_situation_id: string; name: string },
+): Promise<ConversationItemInSession> =>
+  (await apiClient.post(`/patients/${patientId}/insights/parent-named`, data)).data
+

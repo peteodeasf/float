@@ -81,7 +81,19 @@ export default function SessionPreview() {
       { id: 'k2', accommodation_id: 'c2', accommodation_name: 'Lies down with them at bedtime', parent_email: 'dana@example.com', week_start: '2026-08-31', answer: 'gave_in', updated_at: null },
       { id: 'k3', accommodation_id: 'c1', accommodation_name: 'Answers for them at the doctor’s', parent_email: 'dana@example.com', week_start: '2026-08-24', answer: 'every_time', updated_at: null },
     ])
-    qc.setQueryData(['insights', 'pt1', 'accommodation'], [])
+    qc.setQueryData(['insights', 'pt1', 'accommodation'], [
+      { id: 'n1', kind: 'accommodation', name: 'Sits outside the door until they fall asleep', evidence_count: 0, sources: ['parent'], added: false, parent_name: 'Sleepovers at a friend’s house', parent_estimate_min: 6, parent_estimate_max: 8, still_does: true, named_by_parent: true },
+    ])
+    qc.setQueryData(['conversation-in-session', 'pt1'], {
+      child_name: 'Sam',
+      situations: [
+        { id: 't1', name: 'Raising my hand in class', items: [
+          { id: 'i1', name: 'Emails the teacher to excuse them', from_record: true, still_does: true, estimate_min: 5, estimate_max: 8 },
+          { id: 'i2', name: 'Answers questions for them at parents’ evening', from_record: true, still_does: false, estimate_min: null, estimate_max: null },
+        ] },
+        { id: 't3', name: 'Sleepovers at a friend’s house', items: [] },
+      ],
+    })
     setReady(true)
   }, [qc])
 

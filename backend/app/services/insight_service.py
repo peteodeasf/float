@@ -149,9 +149,11 @@ async def parent_named_accommodation(
     organization_id: uuid.UUID,
     situation_insight: PatientInsight,
     name: str,
-    user_id: uuid.UUID,
+    user_id: uuid.UUID | None,
 ) -> PatientInsight | None:
     """Something the parent says they do, as a suggestion under its situation. Never a plan row.
+    `user_id` is the parent when they entered it themselves; None when a clinician typed it in
+    session.
 
     If the clinician had taken the same thing off the list, it comes back: the parent saying it is
     new information.
@@ -165,7 +167,7 @@ async def parent_named_accommodation(
         return None
     row.still_does = True
     row.removed_at = None
-    if row.named_by_user_id is None:
+    if row.named_by_user_id is None and user_id is not None:
         row.named_by_user_id = user_id
     return row
 

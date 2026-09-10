@@ -13,6 +13,7 @@ import {
 } from '../../api/accommodations'
 import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/treatment'
 import { answerInfo, weekLabel } from '../../lib/checkin'
+import ParentConversationSheet from './ParentConversationSheet'
 
 type TriggerLite = { id: string; name: string }
 
@@ -79,6 +80,8 @@ export default function ParentPlanPanel({
   const manyParents = new Set(checkins.map(c => c.parent_email)).size > 1
 
   const [adding, setAdding] = useState(false)
+  // In a parent session: the parent app's questions, full screen, the clinician typing.
+  const [goingThrough, setGoingThrough] = useState(false)
   const [name, setName] = useState('')
   const [situationId, setSituationId] = useState('')
   const [dmin, setDmin] = useState('')
@@ -199,6 +202,14 @@ export default function ParentPlanPanel({
             Create a plan for parents to reduce accommodation behaviors
           </p>
         </div>
+        <div style={{ display: 'flex', gap: '8px', flex: 'none' }}>
+        <button
+          onClick={() => setGoingThrough(true)}
+          title="Ask the parent what they do, situation by situation, and type their answers"
+          style={{ fontSize: '12px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: '1px solid var(--float-primary)', borderRadius: 'var(--float-radius-sm)', padding: '7px 12px', cursor: 'pointer' }}
+        >
+          Go through with the parent
+        </button>
         {accommodations.length > 1 && (
           <button
             onClick={() => reseedMut.mutate()}
@@ -218,7 +229,9 @@ export default function ParentPlanPanel({
             {reseedMut.isPending ? 'Sorting…' : 'Sort by distress'}
           </button>
         )}
+        </div>
       </div>
+      {goingThrough && <ParentConversationSheet patientId={patientId} onClose={() => setGoingThrough(false)} />}
 
       <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 

@@ -181,3 +181,54 @@ async def test_a_child_cannot_use_the_parents_questions(api, db):
     r = await api.post("/parent/accommodation-suggestions", json={
         "trigger_situation_id": str(f["situation"].id), "name": "Something"})
     assert r.status_code == 403
+
+
+# ── In session: the clinician asks and types ─────────────────────────────────
+
+async def test_the_clinician_goes_through_it_with_the_parent_in_session(api, db):
+    f = await _family(db)
+    api.sign_in_as(f["clinician"].user)
+    base = f"/patients/{f['child'].id}/insights"
+
+    [sit] = (await api.get(f"{base}/accommodation-conversation")).json()["situations"]
+    assert [i["name"] for i in sit["items"]] == ["Lies down with them until asleep"]
+
+    r = await api.put(f"{base}/{f['logged'].id}/parent-answer",
+                      json={"still_does": True, "estimate_min": 6, "estimate_max": 8})
+    assert r.status_code == 200, r.text
+    r = await api.post(f"{base}/parent-named", json={
+        "trigger_situation_id": str(f["situation"].id), "name": "Sits outside the door",
+        "estimate_min": 4})
+    assert r.status_code == 200, r.text
+
+    s = await _suggestions(api, f)
+    assert (s["Lies down with them until asleep"]["parent_estimate_min"], s["Lies down with them until asleep"]["named_by_parent"]) == (6, False)
+    assert s["Sits outside the door"]["named_by_parent"] is True
+    assert (s["Sits outside the door"]["parent_estimate_min"], s["Sits outside the door"]["parent_estimate_max"]) == (4, 4)
+    # Still only suggestions.
+    assert (await api.get(f"/plans/{f['plan'].id}/accommodations")).json() == []
+
+
+async def test_a_clinician_without_access_cannot_go_through_it(api, db):
+    f = await _family(db)
+    colleague = await make_practitioner(db, f["org"])
+    api.sign_in_as(colleague.user)
+    base = f"/patients/{f['child'].id}/insights"
+
+    assert (await api.get(f"{base}/accommodation-conversation")).status_code in (403, 404)
+    assert (await api.put(f"{base}/{f['logged'].id}/parent-answer", json={"still_does": False})).status_code in (403, 404)
+    r = await api.post(f"{base}/parent-named", json={
+        "trigger_situation_id": str(f["situation"].id), "name": "Something"})
+    assert r.status_code in (403, 404)
+    await db.refresh(f["logged"])
+    assert f["logged"].still_does is None
+
+
+async def test_in_session_it_cannot_reach_another_patients_suggestion(api, db):
+    f = await _family(db)
+    other = await _family(db)
+    api.sign_in_as(f["clinician"].user)
+    r = await api.put(f"/patients/{f['child'].id}/insights/{other['logged'].id}/parent-answer",
+                      json={"still_does": False})
+    assert r.status_code == 404, r.text
+

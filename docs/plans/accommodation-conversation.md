@@ -1,7 +1,7 @@
 # The accommodation conversation
 
 **Planned 2026-08-31**, from Peter's reading of chapter 5 of Dr. Walker's book. **Revised
-2026-09-10** with Peter's direction below. Steps 1 and 2 built 2026-09-10.
+2026-09-10** with Peter's direction below. Steps 1–3 built 2026-09-10.
 
 ## What it does
 
@@ -99,7 +99,10 @@ there is no switch.
    own reply without it.
 2. ~~**The parent app flow** — finding them at home.~~ **Done 2026-09-10.** "What do you do when Sam
    is anxious?" on the parent home. Preview: `/__parent-progress-preview?conversation=1` (dev only).
-3. **The clinician app flow** — the same questions, full screen, in a parent session.
+3. ~~**The clinician app flow** — the same questions, full screen, in a parent session.~~ **Done
+   2026-09-10.** "Go through with the parent" on the Parent Accommodations panel. One situation per
+   screen; every answer saves as it is given. The parent app and this share one piece of server
+   code (`app/services/accommodation_conversation.py`), so the two cannot drift.
 4. **The child rates them** — in the child app, and the plan orders by it.
 5. **Session notes as a source.** Needs notes to be read for accommodations, which nothing does
    today (docs/plans/patient-specific-suggestions.md, "Session notes. Later."). Its own plan.

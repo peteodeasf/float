@@ -20,10 +20,12 @@ from app.api.routers.patients import get_permitted_patient, get_practitioner_con
 from app.core.database import get_db
 from app.models.experiment import AccommodationBehavior
 from app.models.insight import (
-    KIND_ACCOMMODATION, KIND_BEHAVIOR, KIND_SITUATION, PatientInsight,
+    KIND_ACCOMMODATION, KIND_BEHAVIOR, KIND_SITUATION, SOURCE_PARENT, PatientInsight,
 )
 from app.models.patient import PatientProfile
 from app.models.treatment import TriggerSituation
+from app.schemas.accommodation import SuggestionCreate, SuggestionUpdate
+from app.services.accommodation_conversation import answer, conversation, name_one, suggestion_out
 from app.services.insight_service import get_insights
 from app.services.treatment_plan_service import get_active_plan
 
@@ -69,7 +71,9 @@ def _to_response(row: PatientInsight, parent_name: str | None = None) -> Insight
         parent_estimate_min=_num(row.parent_estimate_min),
         parent_estimate_max=_num(row.parent_estimate_max),
         still_does=row.still_does,
-        named_by_parent=row.named_by_user_id is not None,
+        # The parent named it — at home or in session — rather than it coming from their log.
+        named_by_parent=SOURCE_PARENT in (row.sources or [])
+        and not (row.monitoring_entry_ids or row.session_note_ids),
     )
 
 
@@ -216,3 +220,55 @@ async def remove_from_list(
     await db.commit()
     await db.refresh(row)
     return _to_response(row)
+
+
+# ── Going through it with the parent in session ──────────────────────────────
+# The parent's questions from the accommodation conversation, for the clinician to ask in a parent
+# session and type the answers (Peter, 2026-09-10: "It can be done in the room with the clinician
+# during the parent session, or the parent can do it in the app"). The same logic as the parent
+# app's routes, and the same result: suggestions, not plan rows.
+# docs/plans/accommodation-conversation.md
+
+@router.get("/accommodation-conversation")
+async def accommodation_conversation_in_session(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    _, practitioner = context
+    return await conversation(db, patient, await get_active_plan(db, patient_id, practitioner.organization_id))
+
+
+@router.put("/{insight_id}/parent-answer")
+async def parent_answer_in_session(
+    patient_id: uuid.UUID,
+    insight_id: uuid.UUID,
+    data: SuggestionUpdate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    row = await answer(db, patient, insight_id, data.model_dump(exclude_unset=True))
+    await db.commit()
+    await db.refresh(row)
+    return suggestion_out(row)
+
+
+@router.post("/parent-named")
+async def parent_named_in_session(
+    patient_id: uuid.UUID,
+    data: SuggestionCreate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    _, practitioner = context
+    plan = await get_active_plan(db, patient_id, practitioner.organization_id)
+    # Said by the parent, typed by the clinician: it is the parent's suggestion.
+    row = await name_one(db, patient, plan, data.trigger_situation_id, data.name,
+                         data.estimate_min, data.estimate_max, None)
+    await db.commit()
+    await db.refresh(row)
+    return suggestion_out(row)
+

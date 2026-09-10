@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal, Optional
 from datetime import datetime
 import uuid
@@ -60,6 +60,22 @@ class ParentAccommodationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SuggestionUpdate(BaseModel):
+    """The parent's answers about one accommodation: do they still do it, and how hard would it
+    be for the child if they stopped. docs/plans/accommodation-conversation.md"""
+    still_does: Optional[bool] = None
+    estimate_min: Optional[float] = Field(default=None, ge=1, le=10)
+    estimate_max: Optional[float] = Field(default=None, ge=1, le=10)
+
+
+class SuggestionCreate(BaseModel):
+    """Something else the parent does when a situation comes up."""
+    trigger_situation_id: uuid.UUID
+    name: str = Field(min_length=1, max_length=300)
+    estimate_min: Optional[float] = Field(default=None, ge=1, le=10)
+    estimate_max: Optional[float] = Field(default=None, ge=1, le=10)
 
 
 class ReorderRequest(BaseModel):
