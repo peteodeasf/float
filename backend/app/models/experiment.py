@@ -107,7 +107,11 @@ class AccommodationBehavior(Base):
     distress_max: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
     # Per-child ladder position; authoritative and reorderable.
     display_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    status: Mapped[str] = mapped_column(String, nullable=False, default="active")
+    # Where the parent has got to with stopping it: not_started, started or stopped. The clinician
+    # sets it; making it the weekly focus marks it started. docs/plans/accommodation-states.md
+    status: Mapped[str] = mapped_column(
+        String, nullable=False, default="not_started", server_default="not_started"
+    )
     # The one accommodation the clinician has set as this week's focus for the
     # parent. Only one per plan should be true (enforced in the service).
     is_weekly_focus: Mapped[bool] = mapped_column(

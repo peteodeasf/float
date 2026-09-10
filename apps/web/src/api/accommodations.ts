@@ -1,5 +1,8 @@
 import { apiClient } from './client'
 
+/** Where the parent has got to with stopping it. docs/plans/accommodation-states.md */
+export type AccommodationState = 'not_started' | 'started' | 'stopped'
+
 export interface Accommodation {
   id: string
   treatment_plan_id: string
@@ -10,7 +13,7 @@ export interface Accommodation {
   distress_min: number | null
   distress_max: number | null
   display_order: number | null
-  status: string
+  status: AccommodationState
   is_weekly_focus: boolean
   accommodator: string
   created_at: string
@@ -41,7 +44,7 @@ export interface CreateAccommodationData {
 }
 
 export type UpdateAccommodationData = Partial<
-  CreateAccommodationData & { status: string; is_weekly_focus: boolean }
+  CreateAccommodationData & { status: AccommodationState; is_weekly_focus: boolean }
 >
 
 export const listAccommodations = async (planId: string): Promise<Accommodation[]> => {

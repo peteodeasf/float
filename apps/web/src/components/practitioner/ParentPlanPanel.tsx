@@ -9,6 +9,7 @@ import {
   reseedAccommodations,
   listAccommodationMoments,
   type Accommodation,
+  type AccommodationState,
 } from '../../api/accommodations'
 import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/treatment'
 
@@ -19,6 +20,14 @@ const num = (v: string): number | null => {
   const n = Number(v)
   return Number.isFinite(n) ? n : null
 }
+
+/** Where the parent has got to with stopping each one. The clinician sets it; making one the focus
+ *  marks it started. docs/plans/accommodation-states.md */
+const STATES: { key: AccommodationState; label: string; color: string; bg: string }[] = [
+  { key: 'not_started', label: 'Not started', color: '#64748b', bg: '#f1f5f9' },
+  { key: 'started', label: 'Started', color: '#92400e', bg: '#fffbeb' },
+  { key: 'stopped', label: 'Stopped', color: '#166534', bg: '#f0fdf4' },
+]
 
 /** "5" when min == max, "5–9" for a range, "—" when unrated. */
 function distressLabel(a: Accommodation): string {
@@ -419,7 +428,7 @@ function AccommodationRow({
   onDragEnd: () => void
   onDrop: () => void
   onDelete: () => void
-  onSave: (data: { name?: string; trigger_situation_id?: string | null; distress_min?: number | null; distress_max?: number | null; is_weekly_focus?: boolean }) => Promise<unknown>
+  onSave: (data: { name?: string; trigger_situation_id?: string | null; distress_min?: number | null; distress_max?: number | null; is_weekly_focus?: boolean; status?: AccommodationState }) => Promise<unknown>
 }) {
   const [planning, setPlanning] = useState(false)
   const [wantFocus, setWantFocus] = useState(a.is_weekly_focus)
@@ -428,6 +437,7 @@ function AccommodationRow({
   const [scoreDraft, setScoreDraft] = useState('')
 
   const situationName = triggers.find(t => t.id === a.trigger_situation_id)?.name ?? null
+  const state = STATES.find(s => s.key === a.status) ?? STATES[0]
 
   /** "6" sets a single rating; "6-8" sets a range. The same two shapes the add form describes.
    *  Anything unreadable is left alone rather than guessed at. */
@@ -529,11 +539,25 @@ function AccommodationRow({
           {distressLabel(a)}
         </button>
       )}
-      {a.is_weekly_focus && (
-        <span style={{ flex: 'none', fontSize: '11px', fontWeight: 800, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '1px 8px' }}>
-          ★ Focus
-        </span>
-      )}
+      <select
+        value={state.key}
+        onChange={e => onSave({ status: e.target.value as AccommodationState })}
+        aria-label={`Where the parent is with “${a.name}”`}
+        title="Where the parent is with stopping this"
+        // Fixed width, like the Focus slot after it, so every row's score and state line up.
+        style={{ flex: 'none', width: '98px', fontSize: '11px', fontWeight: 700, color: state.color, background: state.bg, border: '1px solid transparent', borderRadius: '999px', padding: '3px 6px', cursor: 'pointer' }}
+      >
+        {STATES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+      </select>
+      {/* The same width on every row, empty when it is not the focus, so the columns before it
+          stay in line whichever row carries the badge. */}
+      <span style={{ flex: 'none', width: '64px', display: 'flex', justifyContent: 'center' }}>
+        {a.is_weekly_focus && (
+          <span style={{ fontSize: '11px', fontWeight: 800, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '1px 8px', whiteSpace: 'nowrap' }}>
+            ★ Focus
+          </span>
+        )}
+      </span>
       <button
         onClick={() => { setWantFocus(a.is_weekly_focus); setPlanning(true) }}
         title="Plan what the parents work on"

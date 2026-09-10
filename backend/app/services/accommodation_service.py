@@ -115,6 +115,10 @@ async def update_accommodation(
         )).scalars().all()
         for sib in siblings:
             sib.is_weekly_focus = False
+        # The focus is what the parent is working on, so it has started. That includes one marked
+        # stopped: an accommodation that has come back goes back to the focus
+        # (docs/plans/accommodation-states.md). Moving the focus on leaves the old one as it was.
+        fields.setdefault("status", "started")
 
     for field, value in fields.items():
         setattr(accommodation, field, value)

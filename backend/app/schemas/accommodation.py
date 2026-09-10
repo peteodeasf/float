@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 import uuid
 
@@ -19,7 +19,8 @@ class AccommodationUpdate(BaseModel):
     trigger_situation_id: Optional[uuid.UUID] = None
     distress_min: Optional[float] = None
     distress_max: Optional[float] = None
-    status: Optional[str] = None
+    # Where the parent has got to with stopping it. docs/plans/accommodation-states.md
+    status: Optional[Literal['not_started', 'started', 'stopped']] = None
     is_weekly_focus: Optional[bool] = None
 
 

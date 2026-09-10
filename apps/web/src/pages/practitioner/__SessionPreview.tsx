@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { LadderEditor } from './SessionPage'
 import { BehaviorPanel, FlatLadder } from './PatientPage'
 import { ArrowIntro, PickPhase, ChainPhase } from './ArrowPage'
+import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 
 const TRIGGERS = [
   { id: 't1', name: 'Raising my hand in class', distress_thermometer_rating: 7, display_order: 0 },
@@ -25,7 +26,7 @@ const BEHAVIORS = [
 export default function SessionPreview() {
   const qc = useQueryClient()
   const [ready, setReady] = useState(false)
-  const [view, setView] = useState<'editor' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain' | 'flat-ladder'>('editor')
+  const [view, setView] = useState<'editor' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain' | 'flat-ladder' | 'parent-plan'>('editor')
 
   useEffect(() => {
     // The fixtures below must be the only data. Without this the app re-fetches them as stale, and
@@ -64,6 +65,19 @@ export default function SessionPreview() {
     // Downward-arrow fixtures
     qc.setQueryData(['situation-da', 't2'], { id: 'a2', arrow_steps: [], feared_outcome: 'People will think I’m weird', is_approved: true })
     qc.setQueryData(['situation-da', 't3'], null)
+    // Parent Accommodations panel fixtures
+    const acc = (id: string, name: string, status: string, focus: boolean, lo: number | null, order: number) => ({
+      id, name, status, is_weekly_focus: focus, treatment_plan_id: 'p1', trigger_situation_id: 't3',
+      parent_user_id: null, description: null, distress_min: lo, distress_max: lo, display_order: order,
+      accommodator: 'parent', created_at: '2026-09-01T00:00:00Z',
+    })
+    qc.setQueryData(['accommodations', 'p1'], [
+      acc('c1', 'Answers for them at the doctor’s', 'stopped', false, 3, 0),
+      acc('c2', 'Lies down with them at bedtime', 'started', true, 6, 1),
+      acc('c3', 'Texts them every hour at a sleepover', 'not_started', false, 8, 2),
+    ])
+    qc.setQueryData(['accommodation-moments', 'p1'], [])
+    qc.setQueryData(['insights', 'pt1', 'accommodation'], [])
     setReady(true)
   }, [qc])
 
@@ -73,7 +87,7 @@ export default function SessionPreview() {
     <div style={{ minHeight: '100vh', background: '#eef4f3', padding: 20 }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-          {(['editor', 'builder', 'flat-ladder', 'arrow-intro', 'arrow-pick', 'arrow-chain'] as const).map(v => (
+          {(['editor', 'builder', 'flat-ladder', 'parent-plan', 'arrow-intro', 'arrow-pick', 'arrow-chain'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
                 background: view === v ? '#135450' : '#fff', color: view === v ? '#fff' : '#475569', border: '1px solid #cbd5e1' }}>{v}</button>
@@ -88,6 +102,7 @@ export default function SessionPreview() {
             <FlatLadder planId="p1" patientId="preview" triggers={TRIGGERS} ladderActive recommendedRungId={null} />
           </div>
         )}
+        {view === 'parent-plan' && <ParentPlanPanel planId="p1" patientId="pt1" triggers={TRIGGERS} />}
         {view === 'builder' && (
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12 }}>
             <BehaviorPanel trigger={TRIGGERS[0]} planId="p1" patientId="p-1" planStatus="setup" />
