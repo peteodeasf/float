@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
@@ -15,6 +16,14 @@ import {
   type SituationTag,
 } from '../../lib/teenProgress'
 import teen from '../../styles/teenTokens'
+import TodayCard from '../../components/teen/TodayCard'
+import {
+  comingUp,
+  dueToday,
+  waitingOnChild,
+  whenLabel,
+  type PendingExperiment,
+} from '../../lib/teenWork'
 
 const PILL_CLASS: Record<SituationTag, string> = {
   manageable: 'teen-pill teen-pill--manageable',
@@ -33,6 +42,31 @@ const EFFORT_LABEL: Record<string, string> = {
   'situations worked': 'situations',
 }
 
+const workName: React.CSSProperties = {
+  fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700, color: teen.color.ink, lineHeight: 1.3,
+}
+const workSit: React.CSSProperties = { fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textSecondary }
+const workAction: React.CSSProperties = {
+  fontFamily: teen.font.sans, fontSize: 13, fontWeight: 700, color: teen.color.teal, marginTop: 2,
+}
+function workRow(kind: 'setup' | 'started'): React.CSSProperties {
+  return {
+    display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer',
+    padding: '14px 15px', borderRadius: teen.radius.btn,
+    background: kind === 'setup' ? teen.color.mintSoft : teen.color.card,
+    border: kind === 'setup' ? `1.5px solid ${teen.color.mintDeep}` : `1.5px dashed ${teen.color.tealMid}`,
+  }
+}
+function chip(kind: 'setup' | 'started' | 'next'): React.CSSProperties {
+  const base: React.CSSProperties = {
+    alignSelf: 'flex-start', marginTop: 4, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 700,
+    borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap',
+  }
+  if (kind === 'setup') return { ...base, background: teen.color.ink, color: '#fff' }
+  if (kind === 'started') return { ...base, background: '#fff', color: teen.color.teal, border: `1px solid ${teen.color.tealMid}` }
+  return { ...base, background: teen.color.mint, color: teen.color.ink }
+}
+
 export default function TeenProgressPage() {
   const { patientId } = useTeenAuth()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -47,6 +81,35 @@ export default function TeenProgressPage() {
     () => ladderData?.situations ?? [],
     [ladderData]
   )
+
+  // What they're working on now. Peter, 2026-09-10: with the home as the ladder, current
+  // experiments needed a place of their own — so they lead this tab.
+  const navigate = useNavigate()
+  const { data: pendingData } = useQuery({
+    queryKey: ['teen-pending', patientId],
+    queryFn: async () => (await teenApiClient.get('/patient/experiments/pending')).data,
+    enabled: !!patientId,
+  })
+  // Same gate as the home: when the clinician has the ladder switched off, nothing is current.
+  const ladderOn = ladderData?.plan?.ladder_active !== false
+  const pending: PendingExperiment[] = ladderOn ? pendingData ?? [] : []
+  const now = new Date()
+  const today = dueToday(pending, now)
+  const waiting = waitingOnChild(pending)
+  const later = comingUp(pending, now)
+  const nameById: Record<string, string> = {}
+  const situationById: Record<string, string> = {}
+  for (const s of situations) {
+    for (const b of s.behaviors ?? []) {
+      nameById[b.id] = b.name
+      situationById[b.id] = s.name
+    }
+  }
+  const expName = (e: PendingExperiment) =>
+    e.plan_description || (e.avoidance_behavior_id ? nameById[e.avoidance_behavior_id] : '') || 'Your experiment'
+  const expSituation = (e: PendingExperiment) =>
+    (e.avoidance_behavior_id && situationById[e.avoidance_behavior_id]) || null
+  const hasWork = today.length + waiting.length + later.length > 0
   const effort = useMemo(() => deriveEffort(situations), [situations])
   const progress = useMemo(
     () => situations.map(deriveSituationProgress),
@@ -201,6 +264,48 @@ export default function TeenProgressPage() {
           gap: 16,
         }}
       >
+        {hasWork && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={teen.type.eyebrow}>What you're working on</div>
+            {today.map(e => (
+              <TodayCard
+                key={e.id}
+                when={whenLabel(e, now)}
+                name={expName(e)}
+                situation={expSituation(e)}
+                onDoItNow={() => navigate(`/teen/exposure/${e.id}?now=1`)}
+                onTellMe={() => navigate(`/teen/record/${e.id}`)}
+              />
+            ))}
+            {waiting.map(e => (
+              <button
+                key={e.id}
+                onClick={() => navigate(`/teen/experiment/${e.avoidance_behavior_id}?experiment=${e.id}`)}
+                style={workRow('started')}
+              >
+                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={workName}>{expName(e)}</span>
+                  {expSituation(e) && <span style={workSit}>{expSituation(e)}</span>}
+                  <span style={chip('started')}>Set up with your clinician</span>
+                  <span style={workAction}>{e.scheduled_date ? 'Finish setting it up' : "Pick when you'll do it"}</span>
+                </span>
+                <span style={{ color: teen.color.chevron, flex: 'none', fontSize: 20 }}>›</span>
+              </button>
+            ))}
+            {later.map(e => (
+              <button key={e.id} onClick={() => navigate(`/teen/exposure/${e.id}`)} style={workRow('setup')}>
+                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={workName}>{expName(e)}</span>
+                  {expSituation(e) && <span style={workSit}>{expSituation(e)}</span>}
+                  <span style={chip('setup')}>{whenLabel(e, now)}</span>
+                </span>
+                <span style={{ color: teen.color.chevron, flex: 'none', fontSize: 20 }}>›</span>
+              </button>
+            ))}
+            <div style={{ ...teen.type.eyebrow, marginTop: 10 }}>How it's going</div>
+          </div>
+        )}
+
         {/* Effort leads — never open on a lone red line. */}
         <div
           style={{

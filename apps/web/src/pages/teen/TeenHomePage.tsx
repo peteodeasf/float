@@ -5,75 +5,53 @@ import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import TeenTabBar from '../../components/teen/TeenTabBar'
+import TodayCard from '../../components/teen/TodayCard'
 import FloatLogo from '../../components/ui/FloatLogo'
 import teen from '../../styles/teenTokens'
-
-type TeenExperiment = {
-  id: string
-  status: string
-  scheduled_date: string | null
-  dt_actual: number | null
-  bip_before: number | null
-  bip_after: number | null
-  feared_outcome_occurred: boolean | null
-}
-
-type TeenBehavior = {
-  id: string
-  name: string
-  behavior_type: string
-  dt: number | null
-  experiment_count: number
-  latest_dt_actual: number | null
-  status: 'mastered' | 'in_progress' | 'not_started'
-  experiments: TeenExperiment[]
-}
-
-/** A rung as the flat ladder returns it: the step itself, plus its situation as a quiet label. */
-type TeenRung = TeenBehavior & {
-  situation_id: string
-  situation_name: string | null
-  feared_outcome: string | null
-  is_recommended: boolean
-}
+import {
+  dueToday,
+  stepState,
+  waitingCount,
+  whenLabel,
+  type LadderRung,
+  type PendingExperiment,
+  type StepState,
+} from '../../lib/teenWork'
 
 type TeenSituation = {
   id: string
   name: string
-  feared_outcome: string | null
-  da_approved: boolean
-  behaviors: TeenBehavior[]
+  behaviors: Array<{ id: string; name: string }>
 }
 
+/**
+ * The child's home is their ladder. Peter, 2026-09-10: "we should show the ladder and allow them to
+ * select from the ladder to set it up. we want to highlight any exposures that have been set up."
+ *
+ * Each step shows its own state — done, set up for a day, set up with the clinician and waiting on
+ * them, or not set up — and tapping it does the next thing for that state. What they're working on
+ * is listed on Progress; the home only lifts out what is due today.
+ *
+ * Plan: docs/plans/teen-home-ladder-and-session-setup.md
+ */
 export default function TeenHomePage() {
   const { patientId, logout } = useTeenAuth()
   const navigate = useNavigate()
-  const [selectedBehaviorId, setSelectedBehaviorId] = useState<string | null>(null)
   const [jumpWarning, setJumpWarning] = useState<{
-    targetBehaviorId: string
-    suggestedBehaviorId: string
+    targetId: string
+    suggestedId: string
     suggestedName: string
   } | null>(null)
   const [showWelcome, setShowWelcome] = useState(false)
-  const [showLadderHint, setShowLadderHint] = useState(false)
 
   useEffect(() => {
     if (!patientId) return
-    const onboardedKey = `float_onboarded_${patientId}`
-    const hintDismissedKey = `float_ladder_hint_dismissed_${patientId}`
-    if (!localStorage.getItem(onboardedKey)) {
-      setShowWelcome(true)
-    } else if (!localStorage.getItem(hintDismissedKey)) {
-      setShowLadderHint(true)
-    }
+    if (!localStorage.getItem(`float_onboarded_${patientId}`)) setShowWelcome(true)
   }, [patientId])
 
   const handleDismissWelcome = () => {
     if (patientId) localStorage.setItem(`float_onboarded_${patientId}`, '1')
     setShowWelcome(false)
-    if (patientId && !localStorage.getItem(`float_ladder_hint_dismissed_${patientId}`)) {
-      setShowLadderHint(true)
-    }
   }
 
   const { data: ladderData } = useQuery({
@@ -109,121 +87,64 @@ export default function TeenHomePage() {
   const situations: TeenSituation[] = ladderData?.situations ?? []
   const firstName = me?.patient_name?.split(' ')[0] ?? ''
 
-  // ONE ladder, easiest first, already ordered by the server. The child picks a rung — not a
-  // situation and then a behaviour inside it. The situation is a quiet label on the rung.
-  //
-  // Nothing comes back here until the clinician has turned the ladder on, and that is all or
-  // nothing now (Peter, 2026-09-01) — `is_active` per situation is no longer read.
-  const rungs: TeenRung[] = ladderData?.rungs ?? []
-  const sortedBehaviors: TeenRung[] = rungs
+  // One ladder, easiest first, already ordered by the server. Nothing comes back until the
+  // clinician has turned the ladder on, and that is all or nothing (Peter, 2026-09-01).
+  const rungs: LadderRung[] = ladderData?.rungs ?? []
 
-  // What their clinician suggests next, if they have said so. Otherwise the easiest thing not
-  // finished — the same advice, worked out rather than given.
-  const recommended = rungs.find(r => r.is_recommended && r.status !== 'mastered') ?? null
-  const suggestedBehavior = recommended ?? rungs.find(b => b.status !== 'mastered') ?? null
-
-  // The step previewed in the "set up an experiment" card. Tapping a ladder step selects it —
-  // updates the card, no navigation.
-  const previewBehavior =
-    rungs.find(b => b.id === selectedBehaviorId && b.status !== 'mastered') ??
-    suggestedBehavior
-
-  // ── What the home shows ────────────────────────────────────────────
-  // The home is a persistent dashboard, not a single flipping state: what's
-  // coming up + everything scheduled, plus a way to start a new experiment. A
-  // locked-in experiment is 'committed' with a scheduled_date; once reported it
-  // becomes 'completed' and drops out of the pending set. Tapping a scheduled
-  // item opens its own exposure screen — the home never becomes a report form.
-  const now = Date.now()
-  const schedTime = (e: any) =>
-    e.scheduled_date ? new Date(e.scheduled_date).getTime() : 0
-  // The switch is the only gate. It used to be per-situation membership, which broke the moment a
-  // rung stopped being a behaviour: work the child had already committed to vanished because its
-  // step was not on the new-model ladder. What they agreed to do does not depend on how its step
-  // is typed — it depends on whether their clinician has this switched on.
+  // The switch is the only gate on committed work too. What they agreed to do does not depend on
+  // how its step is typed — it depends on whether their clinician has this switched on.
   const ladderOn = ladderData?.plan?.ladder_active !== false
-  const committedExps = ((pendingExperiments ?? []) as any[])
-    .filter(e => ladderOn && e.status === 'committed' && e.scheduled_date)
-    .sort((a, b) => schedTime(a) - schedTime(b))
-  const comingUp = committedExps[0] ?? null // soonest — the hero
-  const scheduledRest = committedExps.slice(1) // everything after it
+  const pending: PendingExperiment[] = ladderOn ? pendingExperiments ?? [] : []
+  const now = new Date()
+  const today = dueToday(pending, now)
 
-  // Exposures the clinician set up in session. They arrive as 'planned' — the row exists with the
-  // step and the day on it, but none of the child's own answers. Until 2026-09-01 the home fetched
-  // these and drew none of them, so a clinician planning an exposure produced something nobody
-  // ever saw. They are not on the schedule yet: they are waiting for the child to finish them.
-  const fromClinician = ((pendingExperiments ?? []) as any[])
-    .filter(e => ladderOn && e.status === 'planned')
-    .sort((a, b) => schedTime(a) - schedTime(b))
-
-  const behaviorById: Record<string, TeenBehavior> = {}
-  const situationNameByBehaviorId: Record<string, string> = {}
+  // Names for exposures whose step is not on the ladder — steps from before the ladder change.
+  const nameById: Record<string, string> = {}
+  const situationById: Record<string, string> = {}
   for (const s of situations) {
-    for (const b of s.behaviors) {
-      behaviorById[b.id] = b
-      situationNameByBehaviorId[b.id] = s.name
+    for (const b of s.behaviors ?? []) {
+      nameById[b.id] = b.name
+      situationById[b.id] = s.name
     }
   }
+  const expName = (e: PendingExperiment) =>
+    e.plan_description || (e.avoidance_behavior_id ? nameById[e.avoidance_behavior_id] : '') || 'Your experiment'
+  const expSituation = (e: PendingExperiment) =>
+    (e.avoidance_behavior_id && situationById[e.avoidance_behavior_id]) || null
 
-  const expName = (e: any) =>
-    e?.plan_description || behaviorById[e?.avoidance_behavior_id]?.name || 'Your experiment'
-  const expSituation = (e: any) => situationNameByBehaviorId[e?.avoidance_behavior_id] ?? null
-  const expWhen = (e: any) => {
-    if (!e?.scheduled_date) return null
-    const day = new Date(e.scheduled_date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-    })
-    const b: string | null = e.scheduled_time_bucket ?? null
-    return b ? `${day} · ${b.charAt(0).toUpperCase()}${b.slice(1)}` : day
-  }
+  // What their clinician suggests next, or else the easiest step not done — the yardstick for
+  // "that's a big jump".
+  const recommended = rungs.find(r => r.is_recommended && r.status !== 'mastered') ?? null
+  const yardstick = recommended ?? rungs.find(r => r.status !== 'mastered') ?? null
 
-  const hasCommitted = committedExps.length > 0
-  const hasLadder = !!suggestedBehavior
-  const isEmpty = rungs.length === 0 && !hasCommitted && fromClinician.length === 0
-
-  // Turned off by the clinician, as opposed to never set up. Turning the ladder off also hides
-  // anything the child had already committed to, so "you're just getting started" would be a lie
-  // to someone who agreed to do something on Friday. Peter, 2026-09-01: say it has been turned off
-  // and to talk to their clinician.
-  //
-  // `situations` is not gated by the switch, so it still says whether a ladder was ever built.
+  const isEmpty = rungs.length === 0 && pending.length === 0
+  // Turned off by the clinician, as opposed to never set up. `situations` is not gated by the
+  // switch, so it still says whether a ladder was ever built. Peter, 2026-09-01.
   const ladderTurnedOff = !ladderOn && situations.length > 0
+  const allDone = rungs.length > 0 && rungs.every(r => r.status === 'mastered') && pending.length === 0
 
-  const dismissLadderHint = () => {
-    if (patientId) localStorage.setItem(`float_ladder_hint_dismissed_${patientId}`, '1')
-    setShowLadderHint(false)
-  }
-
-  // Tapping a ladder step just selects it — the top card updates, no navigation.
-  const selectBehavior = (behavior: TeenBehavior) => {
-    if (behavior.status === 'mastered') return
-    dismissLadderHint()
-    setSelectedBehaviorId(behavior.id)
-  }
-
-  // Only "Set it up" navigates. A big jump from the suggested step is gated
-  // behind the clinician's suggestion first.
-  const handleSetItUp = () => {
-    const b = previewBehavior
-    if (!b) return
-    dismissLadderHint()
+  const openSetup = (rung: LadderRung) => {
     if (
-      suggestedBehavior &&
-      b.id !== suggestedBehavior.id &&
-      b.dt != null &&
-      suggestedBehavior.dt != null &&
-      b.dt - suggestedBehavior.dt > 2
+      yardstick &&
+      rung.id !== yardstick.id &&
+      rung.dt != null &&
+      yardstick.dt != null &&
+      rung.dt - yardstick.dt > 2
     ) {
-      setJumpWarning({
-        targetBehaviorId: b.id,
-        suggestedBehaviorId: suggestedBehavior.id,
-        suggestedName: suggestedBehavior.name,
-      })
+      setJumpWarning({ targetId: rung.id, suggestedId: yardstick.id, suggestedName: yardstick.name })
       return
     }
-    navigate(`/teen/experiment/${b.id}`)
+    navigate(`/teen/experiment/${rung.id}`)
+  }
+
+  // Tapping a step does the next thing for where it has got to.
+  const tapStep = (rung: LadderRung, state: StepState) => {
+    if (state.kind === 'done') return
+    if (state.kind === 'setup' && state.exp) return navigate(`/teen/exposure/${state.exp.id}`)
+    if (state.kind === 'started' && state.exp) {
+      return navigate(`/teen/experiment/${rung.id}?experiment=${state.exp.id}`)
+    }
+    openSetup(rung)
   }
 
   // ───────────────────────────── WELCOME ──────────────────────────────
@@ -261,21 +182,6 @@ export default function TeenHomePage() {
       </TeenScreen>
     )
   }
-
-  // Shared bits of the primary "card" look.
-  const metaRow = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 20,
-    paddingTop: 18,
-    borderTop: `1px solid ${teen.color.line}`,
-    fontFamily: teen.font.sans,
-    fontSize: 13,
-    fontWeight: 600,
-    color: teen.color.tealMid,
-  }
-  const metaDot = { width: 7, height: 7, borderRadius: '50%' as const, background: teen.color.tealMid }
 
   return (
     <TeenScreen bubbles>
@@ -326,7 +232,7 @@ export default function TeenHomePage() {
         }}
       >
         <div style={{ padding: `0 ${teen.space.pad}` }}>
-          {/* No active experiments at all */}
+          {/* Nothing on the ladder and nothing pending */}
           {isEmpty && (
             <div style={{ marginTop: 30 }}>
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
@@ -355,217 +261,24 @@ export default function TeenHomePage() {
             </div>
           )}
 
-          {/* Set up with the clinician, not finished. Above the schedule on purpose: it is the
-              thing waiting on the child, and everything below is already decided. */}
-          {fromClinician.length > 0 && (
-            <>
-              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
-                From your clinician
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-                {fromClinician.map((exp: any) => (
-                  <button
-                    key={exp.id}
-                    className="teen-card"
-                    onClick={() =>
-                      navigate(`/teen/experiment/${exp.avoidance_behavior_id}?experiment=${exp.id}`)
-                    }
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      border: 0,
-                      cursor: 'pointer',
-                      padding: '20px 22px',
-                    }}
-                  >
-                    <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
-                      {expName(exp)}
-                    </h2>
-                    <div style={metaRow}>
-                      <span aria-hidden="true" style={metaDot} />
-                      {expWhen(exp) ? `${expWhen(exp)} · Tap to get ready` : 'Tap to get ready'}
-                      <span style={{ marginLeft: 'auto', color: teen.color.chevron }}>›</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Coming up — the soonest commitment; tap to open its exposure screen */}
-          {comingUp &&
-            (() => {
-              const due = schedTime(comingUp) <= now
-              return (
-                <>
-                  <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 30 }}>
-                    Next experiment
-                  </div>
-                  <button
-                    className="teen-card"
-                    onClick={() => navigate(`/teen/exposure/${comingUp.id}`)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      border: 0,
-                      cursor: 'pointer',
-                      marginTop: 16,
-                      padding: '24px 22px',
-                    }}
-                  >
-                    <h2
-                      style={{
-                        ...teen.type.headline,
-                        fontSize: teen.headSize.md,
-                        margin: 0,
-                      }}
-                    >
-                      {expName(comingUp)}
-                    </h2>
-                    {expSituation(comingUp) && (
-                      <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{expSituation(comingUp)}</div>
-                    )}
-                    <div style={metaRow}>
-                      <span aria-hidden="true" style={metaDot} />
-                      {due ? 'Ready now' : expWhen(comingUp)}
-                      <span style={{ marginLeft: 'auto', color: teen.color.chevron }}>›</span>
-                    </div>
-                  </button>
-                </>
-              )
-            })()}
-
-          {/* Scheduled — everything after the soonest one */}
-          {scheduledRest.length > 0 && (
-            <div style={{ marginTop: 28 }}>
-              <div style={teen.type.eyebrow}>Scheduled experiments</div>
-              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {scheduledRest.map((exp: any) => {
-                  const due = schedTime(exp) <= now
-                  return (
-                    <button
-                      key={exp.id}
-                      onClick={() => navigate(`/teen/exposure/${exp.id}`)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        padding: '14px 15px',
-                        borderRadius: teen.radius.btn,
-                        background: teen.color.card,
-                        border: `1px solid ${teen.color.lineCard}`,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                    >
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <span
-                          style={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            fontFamily: teen.font.sans,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: teen.color.ink,
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {expName(exp)}
-                        </span>
-                        {/* Same shape as a ladder row: the step, then its situation small and grey.
-                            Before this, a step with no situation printed its own name twice. */}
-                        {expSituation(exp) && (
-                          <span
-                            style={{
-                              display: 'block',
-                              fontFamily: teen.font.sans,
-                              fontSize: 12,
-                              color: teen.color.textSecondary,
-                              marginTop: 2,
-                            }}
-                          >
-                            {expSituation(exp)}
-                          </span>
-                        )}
-                        <span
-                          style={{
-                            display: 'block',
-                            fontFamily: teen.font.sans,
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: teen.color.tealMid,
-                            marginTop: 3,
-                          }}
-                        >
-                          {expWhen(exp) ?? 'Not scheduled'}
-                        </span>
-                      </span>
-                      {due && (
-                        <span
-                          style={{
-                            fontFamily: teen.font.sans,
-                            fontSize: 13,
-                            fontWeight: 700,
-                            letterSpacing: '0.04em',
-                            textTransform: 'uppercase',
-                            padding: '3px 8px',
-                            borderRadius: teen.radius.pill,
-                            flex: 'none',
-                            background: teen.color.mintSoft,
-                            color: teen.color.teal,
-                          }}
-                        >
-                          Ready
-                        </span>
-                      )}
-                      <span style={{ color: teen.color.chevron, flex: 'none' }}>›</span>
-                    </button>
-                  )
-                })}
-              </div>
+          {/* Due today — the only exposure the home lifts out of the list. Everything else they
+              are working on is on Progress. */}
+          {today.length > 0 && (
+            <div style={{ marginTop: 26, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {today.map(e => (
+                <TodayCard
+                  key={e.id}
+                  when={whenLabel(e, now)}
+                  name={expName(e)}
+                  situation={expSituation(e)}
+                  onDoItNow={() => navigate(`/teen/exposure/${e.id}?now=1`)}
+                  onTellMe={() => navigate(`/teen/record/${e.id}`)}
+                />
+              ))}
             </div>
           )}
 
-          {/* Set up an experiment — a preview of the currently-selected step.
-              Pick a situation + step from the ladder below to change it. */}
-          {hasLadder && previewBehavior && (
-            <div style={{ marginTop: 30 }}>
-              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>
-                {hasCommitted ? 'Set up another experiment' : 'Set up an experiment'}
-              </div>
-              <div className="teen-card" style={{ marginTop: 14, padding: '24px' }}>
-                {previewBehavior?.situation_name && (
-                  <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginBottom: 6 }}>
-                    {previewBehavior.situation_name}
-                  </div>
-                )}
-                <div
-                  style={{
-                    fontFamily: teen.font.sans,
-                    fontSize: 17,
-                    fontWeight: 600,
-                    color: teen.color.textSecondary,
-                    marginTop: 6,
-                  }}
-                >
-                  {previewBehavior.name}
-                </div>
-                {previewBehavior.dt != null && (
-                  <div style={metaRow}>
-                    <span aria-hidden="true" style={metaDot} />
-                    Fear Level {Math.round(previewBehavior.dt)}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Nothing pending and nothing left to start */}
-          {!isEmpty && !hasCommitted && !hasLadder && (
+          {allDone && (
             <div className="teen-card" style={{ marginTop: 30, padding: '24px 22px' }}>
               <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Nice work</div>
               <p style={{ ...teen.type.body, marginTop: 12, marginBottom: 0 }}>
@@ -575,130 +288,25 @@ export default function TeenHomePage() {
           )}
         </div>
 
-        {/* ── the ladder — pick which step to set up ── */}
-        {hasLadder && rungs.length > 0 && (
+        {/* ── the ladder — each step shows where it's at, and tapping it is the next thing ── */}
+        {rungs.length > 0 && (
           <div style={{ padding: `28px ${teen.space.pad} 0` }}>
             <div style={teen.type.eyebrow}>Your ladder</div>
-            {showLadderHint && sortedBehaviors.length > 0 && (
-              <p
-                style={{
-                  ...teen.type.body,
-                  fontSize: 13,
-                  color: teen.color.textSecondary,
-                  margin: '6px 0 0',
-                }}
-              >
-                Easiest at the top. Tap a step to pick it.
-              </p>
-            )}
+            <p
+              style={{
+                ...teen.type.body,
+                fontSize: 13,
+                color: teen.color.textSecondary,
+                margin: '6px 0 0',
+              }}
+            >
+              Easiest at the top, with its Fear Level. Tap a step to set it up.
+            </p>
 
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {sortedBehaviors.map((behavior, i) => {
-                const isSuggested = behavior.id === suggestedBehavior?.id
-                const isSelected = behavior.id === previewBehavior?.id
-                const isMastered = behavior.status === 'mastered'
-                return (
-                  <button
-                    key={behavior.id}
-                    onClick={() => selectBehavior(behavior)}
-                    disabled={isMastered}
-                    aria-pressed={isSelected}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '14px 15px',
-                      borderRadius: teen.radius.btn,
-                      background: isSelected ? teen.color.mintSoft : teen.color.card,
-                      border: `1px solid ${isSelected ? teen.color.mint : teen.color.lineCard}`,
-                      cursor: isMastered ? 'default' : 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                      opacity: isMastered ? 0.55 : 1,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: teen.font.mono,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: isSelected ? teen.color.teal : teen.color.tealMid,
-                        flex: 'none',
-                        width: 18,
-                      }}
-                    >
-                      {isMastered ? '✓' : `0${i + 1}`.slice(-2)}
-                    </span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          fontFamily: teen.font.sans,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: teen.color.ink,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {behavior.name}
-                      </span>
-                      {/* The situation is a quiet label on the rung now, not a folder they opened
-                          to get here — so it has to be visible somewhere. */}
-                      {behavior.situation_name && (
-                        <span
-                          style={{
-                            display: 'block',
-                            fontFamily: teen.font.sans,
-                            fontSize: 12,
-                            color: teen.color.textSecondary,
-                            marginTop: 2,
-                          }}
-                        >
-                          {behavior.situation_name}
-                        </span>
-                      )}
-                      {/* Two different things wearing one pill before now. If the clinician marked
-                          a rung, say so — it came from a person. Otherwise it is the app's own
-                          guess at the easiest thing left, and should not claim more than that. */}
-                      {behavior.is_recommended && !isMastered ? (
-                        <span className="teen-pill teen-pill--progressing" style={{ marginTop: 6 }}>
-                          your clinician suggests this
-                        </span>
-                      ) : isSuggested ? (
-                        <span className="teen-pill teen-pill--progressing" style={{ marginTop: 6 }}>
-                          suggested
-                        </span>
-                      ) : null}
-                    </span>
-                    {behavior.dt != null && (
-                      <span
-                        style={{
-                          fontFamily: teen.font.sans,
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: teen.color.inkSoft,
-                          flex: 'none',
-                        }}
-                      >
-                        {Math.round(behavior.dt)}/10
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── set it up — the only thing that navigates to the setup screen ── */}
-        {hasLadder && previewBehavior && (
-          <div style={{ padding: `24px ${teen.space.pad} 0` }}>
             {jumpWarning && (
               <div
                 className="teen-card"
-                style={{ padding: 18, marginBottom: 14, boxShadow: teen.shadow.cardSoft }}
+                style={{ padding: 18, marginTop: 14, boxShadow: teen.shadow.cardSoft }}
               >
                 <p style={{ ...teen.type.body, fontSize: 14, margin: '0 0 12px' }}>
                   That's a big jump from where you are. Your clinician suggested starting with{' '}
@@ -708,7 +316,7 @@ export default function TeenHomePage() {
                   <button
                     className="teen-btn teen-btn--primary"
                     onClick={() => {
-                      const id = jumpWarning.suggestedBehaviorId
+                      const id = jumpWarning.suggestedId
                       setJumpWarning(null)
                       navigate(`/teen/experiment/${id}`)
                     }}
@@ -718,7 +326,7 @@ export default function TeenHomePage() {
                   <button
                     className="teen-btn teen-btn--outline"
                     onClick={() => {
-                      const id = jumpWarning.targetBehaviorId
+                      const id = jumpWarning.targetId
                       setJumpWarning(null)
                       navigate(`/teen/experiment/${id}`)
                     }}
@@ -728,16 +336,171 @@ export default function TeenHomePage() {
                 </div>
               </div>
             )}
-            <button className="teen-btn teen-btn--primary" onClick={handleSetItUp}>
-              Set it up
-            </button>
+
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {rungs.map(rung => (
+                <LadderStep
+                  key={rung.id}
+                  rung={rung}
+                  state={stepState(rung, pending)}
+                  now={now}
+                  onTap={tapStep}
+                />
+              ))}
+            </div>
           </div>
         )}
 
         <div style={{ height: 28, flex: 'none' }} />
       </div>
 
-      <TeenTabBar active="home" unread={unreadMessageCount} />
+      <TeenTabBar
+        active="home"
+        unread={unreadMessageCount}
+        progressDot={waitingCount(pending, now) > 0}
+      />
     </TeenScreen>
+  )
+}
+
+/**
+ * One step. Every row has the same two columns on the right — the Fear Level, then either a chevron
+ * or a tick — so the numbers line up down the ladder.
+ */
+function LadderStep({
+  rung,
+  state,
+  now,
+  onTap,
+}: {
+  rung: LadderRung
+  state: StepState
+  now: Date
+  onTap: (rung: LadderRung, state: StepState) => void
+}) {
+  const done = state.kind === 'done'
+  const border =
+    state.kind === 'setup'
+      ? `1.5px solid ${teen.color.mintDeep}`
+      : state.kind === 'started'
+        ? `1.5px dashed ${teen.color.tealMid}`
+        : `1.5px solid ${done ? teen.color.line : teen.color.lineCard}`
+  const chip = (bg: string, fg: string, line?: string): React.CSSProperties => ({
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    fontFamily: teen.font.sans,
+    fontSize: 12,
+    fontWeight: 700,
+    borderRadius: 999,
+    padding: '3px 9px',
+    whiteSpace: 'nowrap',
+    background: bg,
+    color: fg,
+    border: line ? `1px solid ${line}` : undefined,
+  })
+
+  return (
+    <button
+      onClick={() => onTap(rung, state)}
+      disabled={done}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '14px 15px',
+        borderRadius: teen.radius.btn,
+        background: state.kind === 'setup' ? teen.color.mintSoft : done ? 'transparent' : teen.color.card,
+        border,
+        cursor: done ? 'default' : 'pointer',
+        textAlign: 'left',
+        width: '100%',
+      }}
+    >
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <span
+          style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            fontFamily: teen.font.sans,
+            fontSize: 14,
+            fontWeight: done ? 600 : 700,
+            color: done ? teen.color.textTertiary : teen.color.ink,
+          }}
+        >
+          {rung.name}
+        </span>
+        {rung.situation_name && (
+          <span style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textSecondary }}>
+            {rung.situation_name}
+          </span>
+        )}
+        {state.kind === 'setup' && state.exp && (
+          <span style={chip(teen.color.ink, '#fff')}>{whenLabel(state.exp, now)}</span>
+        )}
+        {state.kind === 'started' && (
+          <>
+            <span style={chip('#fff', teen.color.teal, teen.color.tealMid)}>
+              Set up with your clinician
+            </span>
+            <span
+              style={{ fontFamily: teen.font.sans, fontSize: 13, fontWeight: 700, color: teen.color.teal, marginTop: 2 }}
+            >
+              {state.exp?.scheduled_date ? 'Finish setting it up' : "Pick when you'll do it"}
+            </span>
+          </>
+        )}
+        {/* The clinician's suggestion. It came from a person, so it says so; the app no longer
+            puts its own guess on a step. */}
+        {rung.is_recommended && (state.kind === 'open' || state.kind === 'started') && (
+          <span style={chip(teen.color.mint, teen.color.ink)}>Do this next</span>
+        )}
+        {state.kind === 'open' && state.timesDone > 0 && (
+          <span style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textSecondary, marginTop: 2 }}>
+            Done {state.timesDone === 1 ? 'once' : `${state.timesDone} times`}
+          </span>
+        )}
+      </span>
+
+      <span
+        style={{
+          width: 42,
+          flex: 'none',
+          textAlign: 'right',
+          fontFamily: teen.font.sans,
+          fontSize: 15,
+          fontWeight: 700,
+          color: done ? teen.color.textTertiary : teen.color.teal,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {rung.dt != null ? `${Math.round(rung.dt)}/10` : ''}
+      </span>
+      {done ? (
+        <span
+          aria-label="Done"
+          style={{
+            width: 22,
+            height: 22,
+            flex: 'none',
+            borderRadius: '50%',
+            background: teen.color.mintDeep,
+            color: teen.color.ink,
+            fontSize: 13,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ✓
+        </span>
+      ) : (
+        <span aria-hidden="true" style={{ width: 22, flex: 'none', textAlign: 'center', color: teen.color.chevron, fontSize: 20, lineHeight: 1 }}>
+          ›
+        </span>
+      )}
+    </button>
   )
 }

@@ -150,10 +150,11 @@ listed when that work is built.
 
 Each step ships on its own and leaves the app working.
 
-1. **Fear Level wording**, both apps, and the two renamed setup questions. Labels only.
-2. **The child's home is the ladder**, with the step states. The "Set up an experiment" card, the
+1. ~~**Fear Level wording**, both apps, and the two renamed setup questions.~~ **Done 2026-09-10**,
+   with a Fear Level heading over one lined-up column of boxes on both clinician ladders.
+2. ~~**The child's home is the ladder**, with the step states.~~ **Done 2026-09-10.** The "Set up an experiment" card, the
    "Set it up" button and the Scheduled list go. Today's exposure shows at the top only when due.
-3. **Progress holds current experiments** at the top, above what it shows today, with a dot on the
+3. ~~**Progress holds current experiments** at the top,~~ **Done 2026-09-10,** above what it shows today, with a dot on the
    tab when something is waiting.
 4. **The child's setup, one question per screen**, including the partly set up state. It must still
    finish today's clinician-planned exposures (a day, no answers) as well as the new kind (answers,

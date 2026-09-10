@@ -630,3 +630,13 @@ Do not put case collection into the app's own code — it is eval plumbing on a 
   See [`eval-cases-burned-by-putting-them-in-the-prompt.md`](solutions/eval-cases-burned-by-putting-them-in-the-prompt.md).
 
 ---
+
+## Next after the ladder build — a child's login opens the clinician app
+
+**Reported by Peter, 2026-09-10:** *"i saw that i can log into the clinical portal with a teen login."*
+He asked for it to be done at the end of the ladder build.
+
+A child's account should never get into the clinician app. That is a role boundary, so it gets a
+security review (non-negotiable #2). To check: whether the clinician sign-in refuses a patient
+account, whether the clinician app's pages check the role, and — most important — whether any
+clinician endpoint returns data to a patient's token.

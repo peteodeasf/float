@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
@@ -21,7 +21,9 @@ type Tip = { id: string; title: string; body: string }
 export default function TeenExposurePage() {
   const { experimentId } = useParams<{ experimentId: string }>()
   const navigate = useNavigate()
-  const [phase, setPhase] = useState<Phase>('overview')
+  // ?now=1 opens straight into doing it — the home's "Do it now" should be one tap, not two.
+  const [searchParams] = useSearchParams()
+  const [phase, setPhase] = useState<Phase>(searchParams.get('now') === '1' ? 'now' : 'overview')
 
   const { data: experiment } = useQuery({
     queryKey: ['teen-experiment', experimentId],

@@ -67,7 +67,16 @@ const ITEMS: { key: Tab; label: string; path: string }[] = [
   ...(SHOW_ACTION_PLANS ? [{ key: 'plan' as Tab, label: 'Plan', path: '/teen/plans' }] : []),
 ]
 
-export default function TeenTabBar({ active, unread = 0 }: { active: Tab; unread?: number }) {
+export default function TeenTabBar({
+  active,
+  unread = 0,
+  progressDot = false,
+}: {
+  active: Tab
+  unread?: number
+  /** Something on Progress is due today or waiting on them. */
+  progressDot?: boolean
+}) {
   const navigate = useNavigate()
 
   return (
@@ -91,6 +100,7 @@ export default function TeenTabBar({ active, unread = 0 }: { active: Tab; unread
             key={it.key}
             onClick={() => navigate(it.path)}
             aria-current={isActive ? 'page' : undefined}
+            aria-label={it.key === 'progress' && progressDot && !isActive ? 'Progress, something is waiting' : undefined}
             style={{
               position: 'relative',
               flex: 1,
@@ -115,6 +125,21 @@ export default function TeenTabBar({ active, unread = 0 }: { active: Tab; unread
               style={{ position: 'relative', display: 'inline-flex', lineHeight: 0 }}
             >
               {ICONS[it.key]}
+              {it.key === 'progress' && progressDot && !isActive && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: -2,
+                    right: -5,
+                    width: 9,
+                    height: 9,
+                    borderRadius: '50%',
+                    background: teen.color.tealMid,
+                    boxShadow: `0 0 0 2px ${teen.color.cardPure}`,
+                  }}
+                />
+              )}
               {it.key === 'chat' && unread > 0 && (
                 <span
                   aria-hidden="true"
