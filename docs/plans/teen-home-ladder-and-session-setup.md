@@ -71,6 +71,32 @@ button, **Set it up**, alongside the existing "Tell them to do this one next".
 shows on the child's ladder as set up with the clinician and waiting for a day. This is a reading of
 the note above, drawn in the mockups, not yet agreed.
 
+## The child's setup is its own design, not the clinician's sheet
+
+Peter, 2026-09-10, after the clinician mockups (*"mockup looks good for clinician"*): *"partial setup
+state should show for child and child setup ux should be different than clinician. it should be
+more interactive and engaging."*
+
+So the same questions, in the same words, but built differently:
+
+- **One question per screen**, with a bar of five across the top showing how far they are.
+- **Things to tap and drag, not boxes to fill.** The fear from the downward arrow is kept with one
+  tap, or said their own way. The belief is a slider with a big number that moves with their thumb.
+  Fear Level is a thermometer they tap to fill, starting at the step's own Fear Level. The day is a
+  row of tiles for the next seven days — several allowed — then morning, afternoon or evening.
+  Readiness is three big choices.
+- **It ends on a card** that says it's on their ladder, with the day, what they think will happen,
+  how sure they are and the Fear Level.
+
+**The partly set up state.** When the clinician set it up in session but left the day, the dashed
+step on the child's ladder opens a screen that says so: everything done together is ticked and can
+still be changed, the one thing left is the next thing they do, and the bar shows 4 of 5.
+
+**The clinician's version stays one sheet**, because in session it has to be quick.
+
+**Not drawn, on purpose:** word labels on the scales ("pretty sure", "really scary"). Choosing those
+words is a clinical wording call.
+
 ## Decided: in session, the child answers and the clinician types
 
 On 2026-09-01 the plan said the child's predictions — what they think will happen, how anxious they
