@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth, NotAClinicianError } from '../../context/AuthContext'
 import { apiClient } from '../../api/client'
 import FloatLogo from '../../components/ui/FloatLogo'
 
@@ -8,6 +8,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  // A child's or parent's account: the password was right, it is the wrong sign-in page.
+  const [notClinician, setNotClinician] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [view, setView] = useState<'login' | 'forgot'>('login')
   const [forgotEmail, setForgotEmail] = useState('')
@@ -19,12 +21,14 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setNotClinician(false)
     setIsLoading(true)
     try {
       await login(email, password)
       navigate('/dashboard')
-    } catch {
-      setError('Invalid email or password')
+    } catch (err) {
+      if (err instanceof NotAClinicianError) setNotClinician(true)
+      else setError('Invalid email or password')
       setPassword('')
     } finally {
       setIsLoading(false)
@@ -141,6 +145,12 @@ export default function LoginPage() {
 
             {error && (
               <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>
+            )}
+            {notClinician && (
+              <p role="alert" className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>
+                This sign-in is for clinicians. Children sign in <a href="/teen/login" className="underline">here</a>,
+                and parents <a href="/parent/login" className="underline">here</a>.
+              </p>
             )}
 
             <button
