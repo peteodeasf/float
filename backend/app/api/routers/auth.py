@@ -134,6 +134,14 @@ async def get_me(
     elif roles:
         role = roles[0].role
 
+    # What the clinician app lets in. A clinician is someone with a practitioner profile — the
+    # same test every clinician route applies (get_practitioner_context) — not the role name, which
+    # reads "admin" for a clinician who is also an admin.
+    from app.models.patient import PractitionerProfile
+    is_practitioner = (await db.execute(
+        select(PractitionerProfile.id).where(PractitionerProfile.user_id == current_user.id)
+    )).scalar_one_or_none() is not None
+
     # Parents link to their child(ren) via parent_patient_links, not user_id.
     # MVP is single-child, but the model returns all links.
     children: list[dict] = []
@@ -164,6 +172,7 @@ async def get_me(
                          primary_child["patient_name"] if primary_child else None),
         "is_patient": patient is not None,
         "is_parent": role == "parent",
+        "is_practitioner": is_practitioner,
         "children": children,
         "must_change_password": current_user.must_change_password,
         # Treatment has been closed by a clinician. The child and parent apps still let them sign

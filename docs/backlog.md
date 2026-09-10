@@ -642,6 +642,12 @@ security review (non-negotiable #2). To check: whether the clinician sign-in ref
 account, whether the clinician app's pages check the role, and — most important — whether any
 clinician endpoint returns data to a patient's token.
 
+**Done 2026-09-10.** The server already refused a child's and a parent's login on every clinician
+route; now a test proves it for their own family's ids (`backend/tests/test_role_boundary.py`). The
+clinician app now checks the account before signing in, and signs out a saved session that is not a
+clinician's. Security review: no high or medium findings once the saved-token bug it found was
+fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md).
+
 ## Two older gaps the 2026-09-10 security review noticed (not caused by that change)
 
 - `POST /rungs/{rung_id}/experiments` and `POST /patient/rungs/{rung_id}/experiments` create an
