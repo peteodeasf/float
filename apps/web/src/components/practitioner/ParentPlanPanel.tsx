@@ -253,12 +253,12 @@ export default function ParentPlanPanel({
               </select>
             </div>
             <div style={{ flex: '1 1 80px' }}>
-              <label style={labelStyle}>Distress min</label>
+              <label style={labelStyle}>Fear Level min</label>
               <input type="number" min={0} max={10} value={dmin}
                 onChange={e => setDmin(e.target.value)} placeholder="—" style={inputStyle} />
             </div>
             <div style={{ flex: '1 1 80px' }}>
-              <label style={labelStyle}>Distress max</label>
+              <label style={labelStyle}>Fear Level max</label>
               <input type="number" min={0} max={10} value={dmax}
                 onChange={e => setDmax(e.target.value)} placeholder="—" style={inputStyle} />
             </div>
@@ -276,7 +276,7 @@ export default function ParentPlanPanel({
             </button>
           </div>
           <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '8px 0 0' }}>
-            Leave distress blank if unrated. Enter one value for a single rating, or both for a range (e.g. 5–9).
+            Leave Fear Level blank if unrated. Enter one value, or both for a range (e.g. 5–9).
           </p>
 
           {/* What the parent actually did, in their own words, with the dated entries behind it.
@@ -523,7 +523,7 @@ function AccommodationRow({
       ) : (
         <button
           onClick={() => { setScoreDraft(distressLabel(a) === '—' ? '' : distressLabel(a)); setEditingScore(true) }}
-          title="Child's distress if the parent stops. Click to change."
+          title="Child's Fear Level if the parent stops. Click to change."
           style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', border: 'none', borderRadius: '999px', padding: '3px 10px', cursor: 'text' }}
         >
           {distressLabel(a)}

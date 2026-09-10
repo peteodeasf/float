@@ -557,7 +557,7 @@ export default function TeenHomePage() {
                 {previewBehavior.dt != null && (
                   <div style={metaRow}>
                     <span aria-hidden="true" style={metaDot} />
-                    Feels about {Math.round(previewBehavior.dt)}/10
+                    Fear Level {Math.round(previewBehavior.dt)}
                   </div>
                 )}
               </div>

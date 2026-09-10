@@ -259,7 +259,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     <div style={screenSurface}>
       <div style={bigQ}>What trigger situations do you have trouble with?</div>
       <p style={lead}>
-        Give each one a thermometer score. Then open it up and add the smaller versions you could
+        Give each one a Fear Level. Then open it up and add the smaller versions you could
         actually try — those are the steps on the ladder.
       </p>
 
@@ -564,7 +564,7 @@ function StepList({ planId, trigger, onEdited }: {
     <div style={{ background: '#fff', padding: '10px 13px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
       <div style={{ fontSize: 12, color: '#8fa5a1', marginBottom: 8 }}>
-        What is something you could do in this situation? How hard would it be?
+        What is something you could do in this situation? What would its Fear Level be?
       </div>
 
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
@@ -721,7 +721,7 @@ function ScoreBox({ value, onSet }: { value: number | null; onSet: (n: number) =
       value={draft}
       onChange={e => commit(clampDtInput(e.target.value))}
       placeholder="–"
-      title="Thermometer score, 1–10"
+      title="Fear Level, 1–10"
       style={{ width: 46, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#1e293b', padding: '5px 4px', border: '1px solid #dbe8e5', borderRadius: 7, background: '#fff' }}
     />
   )

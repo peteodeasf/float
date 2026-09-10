@@ -258,7 +258,7 @@ function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onC
               <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Situation</th>
               <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">What I observed about my child</th>
               <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">How I responded</th>
-              <th className="text-center py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Fear thermometer</th>
+              <th className="text-center py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Fear Level</th>
             </tr>
           </thead>
           <tbody>
@@ -1427,7 +1427,7 @@ export default function PatientPage() {
                         </span>
                         {entry.fear_thermometer != null && (
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.fear_thermometer >= 7 ? 'bg-red-100 text-red-700' : entry.fear_thermometer >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                            FT {entry.fear_thermometer}
+                            Fear Level {entry.fear_thermometer}
                           </span>
                         )}
                       </div>
@@ -1677,7 +1677,7 @@ export default function PatientPage() {
                   )}
                 </div>
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (DT) — single value, or a range with an optional max:</label>
+                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear Level — one value, or a range with an optional max:</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
                     <input value={newTriggerDT} onChange={e => setNewTriggerDT(clampDtInput(e.target.value))} type="number" min="1" max="10" placeholder="min" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
@@ -1751,7 +1751,7 @@ export default function PatientPage() {
                   const t = trendArrow(focusDtSequence)
                   return (
                     <div style={{ fontSize: '13px', color: '#475569', marginBottom: '14px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, color: '#64748b', minWidth: '34px' }}>DT:</span>
+                      <span style={{ fontWeight: 700, color: '#64748b', minWidth: '34px' }}>Fear Level:</span>
                       <span>{focusDtSequence.map(v => `${v}`).join('  →  ')}</span>
                       {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
                     </div>
@@ -1956,7 +1956,7 @@ export default function PatientPage() {
                   {completed && dtActual != null && (
                     <>
                       <span style={{ color: '#cbd5e1' }}>·</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}>DT <DTBadge value={dtActual} /></span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}>Fear Level <DTBadge value={dtActual} /></span>
                     </>
                   )}
                   {completed && e.feared_outcome_occurred != null && (

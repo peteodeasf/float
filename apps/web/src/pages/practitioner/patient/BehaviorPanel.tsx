@@ -603,7 +603,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
           </div>
           <div style={{ marginBottom: '8px' }}>
             <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>
-              {type === BEHAVIOR_TYPE_SCENARIO ? 'How hard is this version? (1-10)' : 'Fear level when refraining (1-10)'}
+              {type === BEHAVIOR_TYPE_SCENARIO ? 'Fear Level (1–10)' : 'Fear Level when refraining (1–10)'}
             </label>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <button type="button" onClick={() => setDt(String(Math.max(1, (Number(dt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>

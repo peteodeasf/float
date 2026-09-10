@@ -513,7 +513,7 @@ export default function TeenRecordPage() {
               <div
                 style={{ fontFamily: teen.font.sans, fontSize: 13, color: teen.color.mint }}
               >
-                Distress
+                Fear Level
               </div>
               <div
                 style={{
@@ -651,13 +651,13 @@ export default function TeenRecordPage() {
         {/* actual distress + live delta */}
         <div>
           <div style={{ ...teen.type.label, marginBottom: 10 }}>
-            How anxious did you actually feel?
+            Actual Fear Level?
           </div>
           <Thermometer
             value={actualDT}
             onChange={setActualDT}
             height={46}
-            label="How anxious you actually felt"
+            label="Actual Fear Level"
           />
           {actualDT != null && (
             <div

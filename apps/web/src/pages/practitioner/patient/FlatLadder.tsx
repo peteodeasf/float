@@ -306,7 +306,7 @@ function LadderRow({
         type="number" min="1" max="10"
         value={rung.distress_thermometer_when_refraining ?? ''}
         onChange={e => { const v = clampDt(clampDtInput(e.target.value)); if (v) saveMut.mutate({ distress_thermometer_when_refraining: v }) }}
-        title="Thermometer score, 1–10"
+        title="Fear Level, 1–10"
         className="text-sm border border-slate-200 rounded"
         style={{ width: '46px', padding: '4px 6px', textAlign: 'center', flexShrink: 0, fontWeight: 700 }} />
 

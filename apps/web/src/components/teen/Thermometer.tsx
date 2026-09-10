@@ -8,7 +8,7 @@ export default function Thermometer({
   value,
   onChange,
   height = 48,
-  label = 'How anxious',
+  label = 'Fear Level',
 }: {
   value: number | null
   onChange: (value: number) => void

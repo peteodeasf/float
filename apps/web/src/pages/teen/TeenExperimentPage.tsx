@@ -427,12 +427,12 @@ export default function TeenExperimentPage() {
           {/* 02 — belief */}
           <Field
             step="02"
-            label="How much do you believe that?"
+            label="How strongly do you believe that will happen?"
             value={
               <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
             }
           >
-            <BeliefSlider value={bip} onChange={setBip} label="How much you believe it" />
+            <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe it will happen" />
           </Field>
 
           <div style={{ flex: 1 }} aria-hidden="true" />
@@ -440,7 +440,7 @@ export default function TeenExperimentPage() {
           {/* 03 — expected distress */}
           <Field
             step="03"
-            label="Expect to feel?"
+            label="Expected Fear Level?"
             value={
               <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>
                 {effectiveDT}
@@ -455,7 +455,7 @@ export default function TeenExperimentPage() {
             <Thermometer
               value={effectiveDT}
               onChange={setDtExpected}
-              label="How anxious you expect to feel"
+              label="Expected Fear Level"
             />
             {/* §3.6 — scale anchors */}
             <div

@@ -1,6 +1,6 @@
 # The child's home is the ladder, and exposures can be set up in session
 
-**Status:** design agreed with Peter 2026-09-10. Not built.
+**Status:** approved to build 2026-09-10 — *"otherwise looks good to build"*. Mockups: https://claude.ai/code/artifact/4f27ea65-0c46-4802-8de3-5693d58615de
 
 ## Why
 
@@ -112,7 +112,7 @@ expected to change. Logged in the Dr. Walker review queue.
 ## Wording — decided 2026-09-10
 
 - "How much do you believe that?" becomes **"How strongly do you believe that will happen?"**
-- "Expect to feel?" becomes **"Expect Fear Level?"**
+- "Expect to feel?" becomes **"Expected Fear Level?"**
 - **Fear Level** is the one name for the 1–10 number, in the child's app and the clinician's. Peter:
   *"not sure Fear Level will be the final term but let's be consistent."* See `CONCEPTS.md`.
 
@@ -148,9 +148,17 @@ listed when that work is built.
 
 ## Order of work
 
-1. The home screen as the ladder, with the step states. Child app only; no backend change.
-2. The setup questions pulled out so they can be shown in two places.
-3. The clinician-side save, with tests and a security review.
-4. "Plan it" becomes one button, "Set it up", in the clinician app.
+Each step ships on its own and leaves the app working.
 
-Step 1 is useful on its own and can ship first.
+1. **Fear Level wording**, both apps, and the two renamed setup questions. Labels only.
+2. **The child's home is the ladder**, with the step states. The "Set up an experiment" card, the
+   "Set it up" button and the Scheduled list go. Today's exposure shows at the top only when due.
+3. **Progress holds current experiments** at the top, above what it shows today, with a dot on the
+   tab when something is waiting.
+4. **The child's setup, one question per screen**, including the partly set up state. It must still
+   finish today's clinician-planned exposures (a day, no answers) as well as the new kind (answers,
+   no day).
+5. **The server side of in-session setup**: a clinician can save the child's answers, with or
+   without a day, for a patient they can open. Tests and a security review.
+6. **The clinician's Set it up**: "Plan it" becomes one button that opens the setup as one sheet,
+   full screen, plus "Tell them to do this one next". The date-only option goes.

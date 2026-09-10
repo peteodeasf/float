@@ -160,7 +160,7 @@ export default function ProgressPage() {
         {chartData.length > 0 && (
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-lg font-semibold text-slate-800 mb-1">
-              Distress Thermometer
+              Fear Level
             </h2>
             <p className="text-sm text-slate-400 mb-6">
               Expected distress vs actual distress during each experiment
@@ -249,7 +249,7 @@ export default function ProgressPage() {
                   )}
                   {rung.distress_thermometer_rating && (
                     <span className="text-xs font-medium text-slate-500">
-                      DT {rung.distress_thermometer_rating}
+                      Fear Level {rung.distress_thermometer_rating}
                     </span>
                   )}
                 </div>

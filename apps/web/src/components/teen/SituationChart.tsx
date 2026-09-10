@@ -55,7 +55,7 @@ export default function SituationChart({ points }: { points: SeriesPoint[] }) {
               aria-hidden="true"
             />
             <span style={{ fontFamily: teen.font.sans, fontSize: 15, color: teen.color.inkSoft }}>
-              How anxious
+              Fear Level
             </span>
           </span>
         )}

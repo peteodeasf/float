@@ -295,7 +295,7 @@ export function ScorePicker({ value, onPick, label }: {
     return (
       <div style={{ width: '100%', flexBasis: '100%', minWidth: 0, marginTop: 4 }}>
         <div style={{ fontSize: 12.5, color: '#6b7a79', marginBottom: 7 }}>
-          {label ?? 'Thermometer score'}
+          {label ?? 'Fear Level'}
         </div>
         <FearScale value={value} onPick={n => { onPick(n); setOpen(false) }} height={38} />
         <button onClick={() => setOpen(false)} style={{ ...quietLink, marginTop: 8 }}>Cancel</button>
@@ -306,7 +306,7 @@ export function ScorePicker({ value, onPick, label }: {
   return (
     <button
       onClick={() => setOpen(true)}
-      title="Set the thermometer score"
+      title="Set the Fear Level"
       style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
     >
       {value == null && (
