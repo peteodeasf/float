@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Literal, Optional
 from datetime import datetime
 import uuid
@@ -37,6 +37,7 @@ class AccommodationResponse(BaseModel):
     parent_estimate_min: Optional[float] = None
     parent_estimate_max: Optional[float] = None
     child_rated_at: Optional[datetime] = None
+    child_rating_requested_at: Optional[datetime] = None
     status: str
     is_weekly_focus: bool = False
     accommodator: str
@@ -57,9 +58,25 @@ class ParentAccommodationResponse(BaseModel):
     display_order: Optional[int] = None
     status: str
     is_weekly_focus: bool = False
+    # The child's own rating, and only when the clinician has chosen to show it to the parent.
+    # Filled in by the route, never read off the row.
+    child_rating_min: Optional[float] = None
+    child_rating_max: Optional[float] = None
 
     class Config:
         from_attributes = True
+
+
+class ChildRatingIn(BaseModel):
+    """The child's answer: if their parent stopped, how hard would it be? A Fear Level range."""
+    rating_min: float = Field(ge=1, le=10)
+    rating_max: float = Field(ge=1, le=10)
+
+    @model_validator(mode="after")
+    def _low_end_first(self):
+        if self.rating_min > self.rating_max:
+            raise ValueError("The low end is above the high end")
+        return self
 
 
 class SuggestionUpdate(BaseModel):

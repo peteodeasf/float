@@ -214,7 +214,18 @@ async def parent_accommodations(
     plan = await _child_plan(db, child)
     if not plan:
         return []
-    return await get_accommodations_for_plan(db, plan.id, child.organization_id)
+    rows = await get_accommodations_for_plan(db, plan.id, child.organization_id)
+    # The child's own rating only when the clinician has chosen to show it (Peter, 2026-09-10), and
+    # only once the child has given it — until then the number is the clinician's guess.
+    show = child.accommodation_ratings_shared_at is not None
+    out = []
+    for a in rows:
+        r = ParentAccommodationResponse.model_validate(a)
+        if show and a.child_rated_at is not None:
+            r.child_rating_min = float(a.distress_min) if a.distress_min is not None else None
+            r.child_rating_max = float(a.distress_max) if a.distress_max is not None else None
+        out.append(r)
+    return out
 
 
 # ── Situational tips (parent audience) ───────────────────────────────────────

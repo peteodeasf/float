@@ -7,6 +7,7 @@ import {
   deleteAccommodation,
   reorderAccommodations,
   reseedAccommodations,
+  askChildToRate,
   listAccommodationCheckins,
   type Accommodation,
   type AccommodationState,
@@ -14,6 +15,7 @@ import {
 import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/treatment'
 import { answerInfo, weekLabel } from '../../lib/checkin'
 import ParentConversationSheet from './ParentConversationSheet'
+import ChildRatingSheet from './ChildRatingSheet'
 
 type TriggerLite = { id: string; name: string }
 
@@ -82,6 +84,8 @@ export default function ParentPlanPanel({
   const [adding, setAdding] = useState(false)
   // In a parent session: the parent app's questions, full screen, the clinician typing.
   const [goingThrough, setGoingThrough] = useState(false)
+  // The child's ratings: sent to their app, or given together in session.
+  const [ratingWithChild, setRatingWithChild] = useState(false)
   const [name, setName] = useState('')
   const [situationId, setSituationId] = useState('')
   const [dmin, setDmin] = useState('')
@@ -119,6 +123,13 @@ export default function ParentPlanPanel({
     mutationFn: (orderedIds: string[]) => reorderAccommodations(planId, orderedIds),
     onSuccess: invalidate,
   })
+
+  const askMut = useMutation({
+    mutationFn: () => askChildToRate(planId),
+    onSuccess: invalidate,
+  })
+  const notSent = accommodations.filter(a => !a.child_rated_at && !a.child_rating_requested_at).length
+  const waitingOnChild = accommodations.filter(a => !a.child_rated_at && a.child_rating_requested_at).length
 
   const reseedMut = useMutation({
     mutationFn: () => reseedAccommodations(planId),
@@ -226,14 +237,41 @@ export default function ParentPlanPanel({
               cursor: 'pointer',
             }}
           >
-            {reseedMut.isPending ? 'Sorting…' : 'Sort by distress'}
+            {reseedMut.isPending ? 'Sorting…' : 'Sort by Fear Level'}
           </button>
         )}
         </div>
       </div>
       {goingThrough && <ParentConversationSheet patientId={patientId} onClose={() => setGoingThrough(false)} />}
+      {ratingWithChild && (
+        <ChildRatingSheet planId={planId} accommodations={accommodations}
+          onClose={() => { setRatingWithChild(false); invalidate() }} />
+      )}
 
       <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+      {/* The child rates only what is on the plan (Peter, 2026-09-10), in their app or here in
+          session. Sorting by Fear Level afterwards stays a button: it overwrites your order.
+          docs/plans/accommodation-conversation.md */}
+      {accommodations.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12px', color: 'var(--float-text-secondary)' }}>
+          <span style={{ fontWeight: 600 }}>The child's ratings:</span>
+          <button
+            onClick={() => askMut.mutate()}
+            disabled={notSent === 0 || askMut.isPending}
+            style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-border)', borderRadius: '999px', padding: '4px 11px', cursor: notSent === 0 ? 'default' : 'pointer', opacity: notSent === 0 ? 0.55 : 1 }}
+          >
+            {notSent === 0 ? 'All sent to the child' : `Send ${notSent} to the child's app`}
+          </button>
+          <button
+            onClick={() => setRatingWithChild(true)}
+            style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-border)', borderRadius: '999px', padding: '4px 11px', cursor: 'pointer' }}
+          >
+            Rate together in session
+          </button>
+          {waitingOnChild > 0 && <span style={{ color: 'var(--float-text-hint)' }}>{waitingOnChild} waiting on the child</span>}
+        </div>
+      )}
 
       {/* What is on the ladder, first. This is the thing you came to look at. */}
       {isLoading ? (
@@ -545,6 +583,12 @@ function AccommodationRow({
             {situationName ? ' · ' : ''}Parent thinks {rangeLabel(a.parent_estimate_min, a.parent_estimate_max)}
           </span>
         )}
+        {/* Whose number the score is: the child's own, or still the clinician's guess. */}
+        {a.child_rated_at ? (
+          <span style={{ fontSize: '11px', color: '#3f8a78', fontWeight: 600 }}> · rated by the child</span>
+        ) : a.child_rating_requested_at ? (
+          <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}> · waiting for the child's rating</span>
+        ) : null}
       </div>
       {editingScore ? (
         <input

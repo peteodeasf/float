@@ -5,6 +5,7 @@ import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import TeenTabBar from '../../components/teen/TeenTabBar'
+import { getAccommodationsToRate } from '../../api/teenAccommodations'
 import Sparkline from '../../components/teen/Sparkline'
 import SituationChart from '../../components/teen/SituationChart'
 import {
@@ -90,6 +91,13 @@ export default function TeenProgressPage() {
     queryFn: async () => (await teenApiClient.get('/patient/experiments/pending')).data,
     enabled: !!patientId,
   })
+  // What their clinician sent them to rate. docs/plans/accommodation-conversation.md
+  const { data: toRateData } = useQuery({
+    queryKey: ['teen-to-rate', patientId],
+    queryFn: getAccommodationsToRate,
+    enabled: !!patientId,
+  })
+  const toRate = (toRateData ?? []).filter(i => !i.rated).length
   // Same gate as the home: when the clinician has the ladder switched off, nothing is current.
   const ladderOn = ladderData?.plan?.ladder_active !== false
   const pending: PendingExperiment[] = ladderOn ? pendingData ?? [] : []
@@ -264,6 +272,24 @@ export default function TeenProgressPage() {
           gap: 16,
         }}
       >
+        {toRate > 0 && (
+          <button onClick={() => navigate('/teen/rate-accommodations')} style={workRow('started')}>
+            <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={workName}>Your parent sometimes helps when you feel anxious</span>
+              <span style={workAction}>Tell us how hard it would be if they stopped</span>
+            </span>
+            <span style={{ color: teen.color.chevron, flex: 'none', fontSize: 20 }}>›</span>
+          </button>
+        )}
+
+        {/* They agreed to this with their clinician. Said here, whatever else is on the tab, so it
+            stays true to them. */}
+        {ladderData?.plan?.shared_with_parent && (
+          <p style={{ ...teen.type.body, fontSize: 13, color: teen.color.textSecondary, margin: 0 }}>
+            Your parent can see your ladder, what's planned and what you've done. Not what you write.
+          </p>
+        )}
+
         {hasWork && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={teen.type.eyebrow}>What you're working on</div>
@@ -302,12 +328,6 @@ export default function TeenProgressPage() {
                 <span style={{ color: teen.color.chevron, flex: 'none', fontSize: 20 }}>›</span>
               </button>
             ))}
-            {/* They agreed to this with their clinician. Said here so it stays true to them. */}
-            {ladderData?.plan?.shared_with_parent && (
-              <p style={{ ...teen.type.body, fontSize: 13, color: teen.color.textSecondary, margin: '10px 0 0' }}>
-                Your parent can see your ladder, what's planned and what you've done. Not what you write.
-              </p>
-            )}
             <div style={{ ...teen.type.eyebrow, marginTop: 10 }}>How it's going</div>
           </div>
         )}

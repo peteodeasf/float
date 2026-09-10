@@ -153,6 +153,14 @@ export default function ParentHomePage() {
             <p style={{ ...teen.type.body, fontSize: 15, color: teen.color.inkSoft, marginTop: 6 }}>
               When it comes up, try not to step in. {childName} may be distressed — that's the work.
             </p>
+            {/* Only there when the clinician has chosen to show the child's rating. */}
+            {focus.child_rating_min != null && (
+              <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.textSecondary, marginTop: 6 }}>
+                {childName} said stopping would be a {focus.child_rating_min === focus.child_rating_max
+                  ? focus.child_rating_min
+                  : `${focus.child_rating_min}–${focus.child_rating_max}`}.
+              </p>
+            )}
 
             {/* This week's check-in: once a week, one question, instead of logging each moment. */}
             <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${teen.color.line}` }}>
@@ -318,6 +326,11 @@ export default function ParentHomePage() {
                   }}
                 >
                   {a.name}
+                  {a.child_rating_min != null && (
+                    <span style={{ color: teen.color.textSecondary }}>
+                      {' · '}{childName}: {a.child_rating_min === a.child_rating_max ? a.child_rating_min : `${a.child_rating_min}–${a.child_rating_max}`}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

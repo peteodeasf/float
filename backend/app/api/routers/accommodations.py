@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +22,7 @@ from app.schemas.accommodation import (
     AccommodationCreate,
     AccommodationUpdate,
     AccommodationResponse,
+    ChildRatingIn,
     ReorderRequest,
 )
 
@@ -121,3 +124,45 @@ async def delete_accommodation_behavior(
     # including one whose grant was revoked. See docs/solutions/.
     await assert_belongs_to(db, AccommodationBehavior, accommodation_id, treatment_plan_id=plan_id)
     await delete_accommodation(db, accommodation_id, practitioner.organization_id)
+
+
+# ── The child's ratings ──────────────────────────────────────────────────────
+# Peter, 2026-09-10: the accommodations on the plan are "delivered to the child to score", in their
+# app or in session. docs/plans/accommodation-conversation.md
+
+@router.post("/ask-child", response_model=list[AccommodationResponse])
+async def ask_child_to_rate(
+    plan_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    """Send the plan's accommodations the child has not rated to their app. The child sees nothing
+    until this is pressed, and one added later waits for the next press."""
+    _, practitioner = context
+    now = datetime.now(timezone.utc)
+    for a in await get_accommodations_for_plan(db, plan_id, practitioner.organization_id):
+        if a.child_rated_at is None and a.child_rating_requested_at is None:
+            a.child_rating_requested_at = now
+    await db.commit()
+    return await get_accommodations_for_plan(db, plan_id, practitioner.organization_id)
+
+
+@router.put("/{accommodation_id}/child-rating", response_model=AccommodationResponse)
+async def rate_with_child(
+    plan_id: uuid.UUID,
+    accommodation_id: uuid.UUID,
+    data: ChildRatingIn,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    """In session: the child says it, the clinician types it, and it counts as the child's rating."""
+    await assert_belongs_to(db, AccommodationBehavior, accommodation_id, treatment_plan_id=plan_id)
+    acc = await db.get(AccommodationBehavior, accommodation_id)
+    acc.distress_min, acc.distress_max = data.rating_min, data.rating_max
+    acc.child_rated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(acc)
+    return acc
+

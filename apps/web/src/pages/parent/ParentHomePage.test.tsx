@@ -34,7 +34,9 @@ function open(checkins: unknown[] = []) {
   )
 }
 
-beforeEach(() => api.saveCheckin.mockReset().mockResolvedValue({}))
+beforeEach(() => {
+  api.saveCheckin.mockReset().mockResolvedValue({})
+})
 
 describe("the parent's weekly check-in", () => {
   it('asks once a week, with three answers of equal weight, and no per-moment buttons', () => {
@@ -62,6 +64,21 @@ describe("the parent's weekly check-in", () => {
     expect(screen.getByText(/You mostly held the line this week/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Change' }))
     expect(screen.getByRole('button', { name: 'Mostly' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it("shows the child's own rating when the clinician has chosen to", () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
+    qc.setQueryData(['parent-me'], { patient_name: 'Sam Child' })
+    qc.setQueryData(['parent-upcoming'], [])
+    qc.setQueryData(['parent-progress'], { shared: false })
+    qc.setQueryData(['parent-accommodations'], [{ ...FOCUS, child_rating_min: 5, child_rating_max: 9 }])
+    qc.setQueryData(['parent-checkins'], [])
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter><ParentHomePage /></MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByText('Sam said stopping would be a 5–9.')).toBeInTheDocument()
   })
 
   it("last week's answer does not count as this week's", () => {

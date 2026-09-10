@@ -47,6 +47,7 @@ function renderWith(ui: React.ReactElement) {
   qc.setQueryData(['teen-pending', 'p1'], PENDING)
   qc.setQueryData(['teen-me', 'p1'], { patient_name: 'Sam', user_id: 'u1' })
   qc.setQueryData(['teen-messages', 'p1'], [])
+  qc.setQueryData(['teen-to-rate', 'p1'], [])
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>{ui}</MemoryRouter>

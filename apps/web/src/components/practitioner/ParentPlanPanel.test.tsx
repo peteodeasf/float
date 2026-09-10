@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const api = vi.hoisted(() => ({ updateAccommodation: vi.fn() }))
+const api = vi.hoisted(() => ({ updateAccommodation: vi.fn(), askChildToRate: vi.fn() }))
 vi.mock('../../api/accommodations', async importOriginal => ({
   ...(await importOriginal<typeof import('../../api/accommodations')>()),
   updateAccommodation: api.updateAccommodation,
+  askChildToRate: api.askChildToRate,
 }))
 
 import ParentPlanPanel from './ParentPlanPanel'
@@ -33,7 +34,10 @@ function open() {
   )
 }
 
-beforeEach(() => api.updateAccommodation.mockReset().mockResolvedValue({}))
+beforeEach(() => {
+  api.updateAccommodation.mockReset().mockResolvedValue({})
+  api.askChildToRate.mockReset().mockResolvedValue([])
+})
 
 describe('where each accommodation has got to', () => {
   it('shows each one in its state', () => {
@@ -49,6 +53,12 @@ describe('where each accommodation has got to', () => {
     expect(screen.getByText('Week of Sep 7')).toBeInTheDocument()
     // One parent answering, so who answered is not shown.
     expect(screen.queryByText(/p@example.com/)).not.toBeInTheDocument()
+  })
+
+  it("sends the unrated ones to the child's app", async () => {
+    open()
+    fireEvent.click(screen.getByRole('button', { name: "Send 2 to the child's app" }))
+    await waitFor(() => expect(api.askChildToRate).toHaveBeenCalledWith('plan1'))
   })
 
   it('the clinician changes it on the row', () => {

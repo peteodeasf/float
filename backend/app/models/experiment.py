@@ -113,6 +113,8 @@ class AccommodationBehavior(Base):
     parent_estimate_max: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
     # Set when the child gave distress_min/max themselves; null means it is the clinician's guess.
     child_rated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # When the clinician sent it to the child to rate. The child's app shows only these.
+    child_rating_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Where the parent has got to with stopping it: not_started, started or stopped. The clinician
     # sets it; making it the weekly focus marks it started. docs/plans/accommodation-states.md
     status: Mapped[str] = mapped_column(

@@ -5,6 +5,7 @@ import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import TeenTabBar from '../../components/teen/TeenTabBar'
+import { getAccommodationsToRate } from '../../api/teenAccommodations'
 import TodayCard from '../../components/teen/TodayCard'
 import FloatLogo from '../../components/ui/FloatLogo'
 import teen from '../../styles/teenTokens'
@@ -71,6 +72,13 @@ export default function TeenHomePage() {
     queryFn: async () => (await teenApiClient.get('/patient/experiments/pending')).data,
     enabled: !!patientId,
   })
+  // Accommodations their clinician sent them to rate also put a dot on Progress, where they are.
+  const { data: toRateData } = useQuery({
+    queryKey: ['teen-to-rate', patientId],
+    queryFn: getAccommodationsToRate,
+    enabled: !!patientId,
+  })
+  const toRate = (toRateData ?? []).filter(i => !i.rated).length
 
   const { data: messages } = useQuery<
     Array<{ id: string; sender_user_id: string; read_at: string | null }>
@@ -357,7 +365,7 @@ export default function TeenHomePage() {
       <TeenTabBar
         active="home"
         unread={unreadMessageCount}
-        progressDot={waitingCount(pending, now) > 0}
+        progressDot={waitingCount(pending, now) > 0 || toRate > 0}
       />
     </TeenScreen>
   )

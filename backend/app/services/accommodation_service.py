@@ -123,6 +123,11 @@ async def update_accommodation(
 
     for field, value in fields.items():
         setattr(accommodation, field, value)
+    # A score typed here is the clinician's, even over one the child gave, so it stops counting as
+    # the child's rating — otherwise it would be shown to the child, and to the parent if sharing is
+    # on, as theirs. Found by the security review, 2026-09-10.
+    if "distress_min" in fields or "distress_max" in fields:
+        accommodation.child_rated_at = None
 
     await db.commit()
     await db.refresh(accommodation)

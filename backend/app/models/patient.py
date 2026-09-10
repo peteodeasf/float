@@ -78,6 +78,11 @@ class PatientProfile(Base):
     progress_shared_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )
+    # The clinician's switch for the parent app showing the child's own ratings of the
+    # accommodations (Peter, 2026-09-10). Off to start. docs/plans/accommodation-conversation.md
+    accommodation_ratings_shared_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

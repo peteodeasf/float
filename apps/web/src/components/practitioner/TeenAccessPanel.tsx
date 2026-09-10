@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { inviteTeen, inviteParent, setChildConnectConsent, setParentProgressSharing } from '../../api/patients'
+import { inviteTeen, inviteParent, setChildConnectConsent, setParentProgressSharing, setAccommodationRatingsSharing } from '../../api/patients'
 
 /**
  * Persistent teen-access manager for a patient.
@@ -18,6 +18,7 @@ export default function TeenAccessPanel({
   teenInvitedAt,
   consentAt,
   progressSharedAt,
+  ratingsSharedAt,
   fallbackEmail,
   onViewMessages,
   onClose,
@@ -28,6 +29,7 @@ export default function TeenAccessPanel({
   teenInvitedAt: string | null | undefined
   consentAt: string | null | undefined
   progressSharedAt?: string | null
+  ratingsSharedAt?: string | null
   fallbackEmail: string | null | undefined
   onViewMessages: () => void
   onClose: () => void
@@ -73,6 +75,14 @@ export default function TeenAccessPanel({
   const shared = !!progressSharedAt
   const shareMut = useMutation({
     mutationFn: (on: boolean) => setParentProgressSharing(patientId, on),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['patient', patientId] }),
+  })
+
+  // Peter, 2026-09-10: the clinician sees the child's ratings of the accommodations beside the
+  // parent's estimates, and can choose to show the child's ratings to the parent.
+  const ratingsShared = !!ratingsSharedAt
+  const ratingsMut = useMutation({
+    mutationFn: (on: boolean) => setAccommodationRatingsSharing(patientId, on),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['patient', patientId] }),
   })
 
@@ -249,6 +259,28 @@ export default function TeenAccessPanel({
             {shared && ` Shared since ${new Date(progressSharedAt!).toLocaleDateString()}.`}
           </p>
           {shareMut.isError && (
+            <p role="alert" style={{ fontSize: '12px', color: '#b91c1c', margin: '6px 0 0' }}>
+              That didn&rsquo;t save. Please try again.
+            </p>
+          )}
+        </div>
+
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={ratingsShared}
+              disabled={ratingsMut.isPending}
+              onChange={e => ratingsMut.mutate(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Parents can see the child's ratings of the accommodations
+          </label>
+          <p style={{ fontSize: '12px', color: '#64748b', margin: '6px 0 0', lineHeight: 1.5 }}>
+            How hard the child says it would be if the parent stopped each one. The child never sees
+            the parent's estimates.
+          </p>
+          {ratingsMut.isError && (
             <p role="alert" style={{ fontSize: '12px', color: '#b91c1c', margin: '6px 0 0' }}>
               That didn&rsquo;t save. Please try again.
             </p>

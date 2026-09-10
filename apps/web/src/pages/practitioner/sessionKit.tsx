@@ -81,6 +81,30 @@ export function FearScale({ value, onPick, height = 44, label }: { value: number
   )
 }
 
+/** One Fear Level, or a range: tap a number, tap a second for a range, tap again to start over.
+ *  Used where the answer varies with the day — the accommodation ratings (the book's are 2–4, 5–9). */
+export function FearRangeScale({ lo, hi, onChange }: { lo: number | null; hi: number | null; onChange: (lo: number, hi: number) => void }) {
+  const pick = (n: number) => {
+    if (lo == null || hi == null || lo !== hi) return onChange(n, n)
+    onChange(Math.min(lo, n), Math.max(lo, n))
+  }
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
+        const on = lo != null && hi != null && n >= lo && n <= hi
+        return (
+          <button key={n} aria-label={`Fear Level ${n}`} aria-pressed={on} onClick={() => pick(n)}
+            style={{ flex: 1, height: 36, borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: 13,
+              border: on ? '2px solid #0d3d3a' : '1px solid #e2e8f0', background: on ? '#135450' : '#fff',
+              color: on ? '#fff' : '#94a3b8' }}>
+            {n}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export const DTBadge = ({ v, size = 26 }: { v: number | null; size?: number }) => (
   v == null ? null : (
     <span style={{ minWidth: size, height: size, padding: `0 ${Math.round(size / 3.2)}px`, borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: Math.round(size * 0.46), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: dtColor(v), flexShrink: 0 }}>{v}</span>

@@ -1,7 +1,7 @@
 # The accommodation conversation
 
 **Planned 2026-08-31**, from Peter's reading of chapter 5 of Dr. Walker's book. **Revised
-2026-09-10** with Peter's direction below. Steps 1–3 built 2026-09-10.
+2026-09-10** with Peter's direction below. Steps 1–4 built 2026-09-10; step 5 is its own plan.
 
 ## What it does
 
@@ -103,7 +103,15 @@ there is no switch.
    2026-09-10.** "Go through with the parent" on the Parent Accommodations panel. One situation per
    screen; every answer saves as it is given. The parent app and this share one piece of server
    code (`app/services/accommodation_conversation.py`), so the two cannot drift.
-4. **The child rates them** — in the child app, and the plan orders by it.
+4. ~~**The child rates them** — in the child app, and the plan orders by it.~~ **Done 2026-09-10.**
+   On the Parent Accommodations panel the clinician sends the unrated ones to the child's app, or
+   rates them together in session (full screen, the accommodations only — no parent estimate on
+   screen). The child's Progress tab shows a card and the tab gets a dot. Each row says whether its
+   score is "rated by the child" or still the clinician's guess. On the Parent access panel, a
+   second switch shows the child's ratings to the parent; off to start.
+   **Ordering stays a button** ("Sort by Fear Level"): re-sorting overwrites the clinician's own
+   order, and the existing code says that must never happen by itself. The "How to tell it worked"
+   line about the plan ordering itself is changed accordingly.
 5. **Session notes as a source.** Needs notes to be read for accommodations, which nothing does
    today (docs/plans/patient-specific-suggestions.md, "Session notes. Later."). Its own plan.
 
@@ -118,4 +126,5 @@ never sees the parent's estimates.
 - A parent who has never named an accommodation finishes the flow, and the clinician finds their
   suggestions on the panel, each with the parent's estimate and its situation.
 - Nothing the parent names reaches the plan until the clinician adds it.
-- The child's ratings arrive as ranges, and the plan orders itself lowest first from them.
+- The child's ratings arrive as ranges, and "Sort by Fear Level" orders the plan lowest first from
+  them.

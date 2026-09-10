@@ -10,7 +10,7 @@
 import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Chrome, primaryBtn, quietLink } from '../../pages/practitioner/sessionKit'
+import { Chrome, FearRangeScale, primaryBtn, quietLink } from '../../pages/practitioner/sessionKit'
 import {
   answerInSession,
   getConversationInSession,
@@ -23,29 +23,6 @@ const choice = (on: boolean): CSSProperties => ({
   color: on ? '#fff' : '#135450', background: on ? '#135450' : '#fff',
   border: `1.5px solid ${on ? '#135450' : '#cfe3de'}`,
 })
-
-/** One Fear Level, or a range: tap a number, tap a second for a range, tap again to start over. */
-function RangeScale({ lo, hi, onChange }: { lo: number | null; hi: number | null; onChange: (lo: number, hi: number) => void }) {
-  const pick = (n: number) => {
-    if (lo == null || hi == null || lo !== hi) return onChange(n, n)
-    onChange(Math.min(lo, n), Math.max(lo, n))
-  }
-  return (
-    <div style={{ display: 'flex', gap: 4 }}>
-      {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
-        const on = lo != null && hi != null && n >= lo && n <= hi
-        return (
-          <button key={n} aria-label={`Fear Level ${n}`} aria-pressed={on} onClick={() => pick(n)}
-            style={{ flex: 1, height: 36, borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: 13,
-              border: on ? '2px solid #0d3d3a' : '1px solid #e2e8f0', background: on ? '#135450' : '#fff',
-              color: on ? '#fff' : '#94a3b8' }}>
-            {n}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 export default function ParentConversationSheet({ patientId, onClose }: { patientId: string; onClose: () => void }) {
   const qc = useQueryClient()
@@ -99,7 +76,7 @@ export default function ParentConversationSheet({ patientId, onClose }: { patien
               <b style={{ color: '#135450' }}> {it.estimate_min === it.estimate_max ? it.estimate_min : `${it.estimate_min}–${it.estimate_max}`}</b>
             )}
           </div>
-          <RangeScale lo={it.estimate_min} hi={it.estimate_max}
+          <FearRangeScale lo={it.estimate_min} hi={it.estimate_max}
             onChange={(lo, hi) => answerMut.mutate({ id: it.id, data: { estimate_min: lo, estimate_max: hi } })} />
         </div>
       )}

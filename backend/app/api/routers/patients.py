@@ -512,6 +512,7 @@ async def _patient_response(
         child_connect_consent_at=patient.child_connect_consent_at,
         consent_source=patient.consent_source,
         progress_shared_with_parent_at=patient.progress_shared_with_parent_at,
+        accommodation_ratings_shared_at=patient.accommodation_ratings_shared_at,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at,
         closed_at=patient.closed_at,
@@ -736,6 +737,29 @@ async def set_parent_progress_sharing(
     else:
         patient.progress_shared_with_parent_at = None
         patient.progress_shared_by_practitioner_id = None
+    await db.commit()
+    await db.refresh(patient)
+    return await _patient_response(db, patient)
+
+
+@router.put("/{patient_id}/accommodation-ratings-sharing", response_model=PatientResponse)
+async def set_accommodation_ratings_sharing(
+    patient_id: uuid.UUID,
+    data: ProgressSharingRequest,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    """Let the parent app show the child's own ratings of the accommodations — or stop it.
+
+    The clinician's choice (Peter, 2026-09-10: "they can choose to show them to the parent if they
+    want to"). The child never sees the parent's estimates either way.
+    docs/plans/accommodation-conversation.md
+    """
+    if data.shared:
+        patient.accommodation_ratings_shared_at = patient.accommodation_ratings_shared_at or datetime.now(timezone.utc)
+    else:
+        patient.accommodation_ratings_shared_at = None
     await db.commit()
     await db.refresh(patient)
     return await _patient_response(db, patient)

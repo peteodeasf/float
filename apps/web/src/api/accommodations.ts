@@ -18,6 +18,8 @@ export interface Accommodation {
   parent_estimate_max?: number | null
   /** Set when the child rated distress_min/max themselves; null means the clinician's guess. */
   child_rated_at?: string | null
+  /** When the clinician sent it to the child's app to rate. */
+  child_rating_requested_at?: string | null
   status: AccommodationState
   is_weekly_focus: boolean
   accommodator: string
@@ -53,6 +55,14 @@ export interface CreateAccommodationData {
 export type UpdateAccommodationData = Partial<
   CreateAccommodationData & { status: AccommodationState; is_weekly_focus: boolean }
 >
+
+/** Send the plan's unrated accommodations to the child's app to rate. */
+export const askChildToRate = async (planId: string): Promise<Accommodation[]> =>
+  (await apiClient.post(`/plans/${planId}/accommodations/ask-child`)).data
+
+/** In session: the child's rating, typed by the clinician. */
+export const rateWithChild = async (planId: string, id: string, lo: number, hi: number): Promise<Accommodation> =>
+  (await apiClient.put(`/plans/${planId}/accommodations/${id}/child-rating`, { rating_min: lo, rating_max: hi })).data
 
 export const listAccommodations = async (planId: string): Promise<Accommodation[]> => {
   const res = await apiClient.get(`/plans/${planId}/accommodations`)

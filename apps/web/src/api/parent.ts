@@ -21,6 +21,9 @@ export interface ParentAccommodation {
   display_order: number | null
   status: string
   is_weekly_focus: boolean
+  /** The child's own rating — sent only when the clinician has chosen to show it. */
+  child_rating_min?: number | null
+  child_rating_max?: number | null
 }
 
 export interface ParentTip {

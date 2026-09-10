@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers.patients import patient_router
 from app.api.routers.parent import parent_router
+from app.api.routers.child_accommodations import router as child_accommodations_router
 
 from app.core.config import settings
 from app.api.routers import (
@@ -51,6 +52,7 @@ app.include_router(messages.router)
 # object under a second name, so every patients route was registered twice.
 app.include_router(patient_router)
 app.include_router(parent_router)
+app.include_router(child_accommodations_router)
 app.include_router(monitoring.practitioner_router)
 app.include_router(monitoring.public_router)
 app.include_router(session_notes.router)

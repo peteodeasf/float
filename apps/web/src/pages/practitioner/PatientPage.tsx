@@ -2326,6 +2326,7 @@ export default function PatientPage() {
             teenInvitedAt={patient.teen_invited_at}
             consentAt={patient.child_connect_consent_at}
             progressSharedAt={patient.progress_shared_with_parent_at}
+            ratingsSharedAt={patient.accommodation_ratings_shared_at}
             fallbackEmail={patient.email}
             onViewMessages={() => { setShowTeenAccess(false); setActiveTab('chat') }}
             onClose={() => setShowTeenAccess(false)}

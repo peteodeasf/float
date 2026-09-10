@@ -62,6 +62,8 @@ export interface PatientDetail {
   consent_source?: string | null
   /** When the clinician let the parent app show the child's ladder, what's planned and what's done. */
   progress_shared_with_parent_at?: string | null
+  /** When the clinician let the parent app show the child's ratings of the accommodations. */
+  accommodation_ratings_shared_at?: string | null
   primary_practitioner_id: string
   created_at: string
   closed_at?: string | null
@@ -96,6 +98,15 @@ export const setParentProgressSharing = async (
   shared: boolean
 ): Promise<PatientDetail> => {
   const response = await apiClient.put(`/patients/${patientId}/parent-progress-sharing`, { shared })
+  return response.data
+}
+
+// Lets the parent app show the child's own ratings of the accommodations — or stops it.
+export const setAccommodationRatingsSharing = async (
+  patientId: string,
+  shared: boolean
+): Promise<PatientDetail> => {
+  const response = await apiClient.put(`/patients/${patientId}/accommodation-ratings-sharing`, { shared })
   return response.data
 }
 
