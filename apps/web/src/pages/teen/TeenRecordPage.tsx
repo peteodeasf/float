@@ -225,26 +225,12 @@ export default function TeenRecordPage() {
         >
           <div style={{ marginTop: 16 }}>
             <span style={teen.type.eyebrow}>How it went</span>
-            {situationName && (
-              <div
-                style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: '10px 0 0' }}
-              >
-                {situationName}
-              </div>
-            )}
-            {planText && (
-              <div
-                style={{
-                  fontFamily: teen.font.sans,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: teen.color.inkSoft,
-                  marginTop: 4,
-                }}
-              >
-                {planText}
-              </div>
-            )}
+            <div
+              style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: '10px 0 0' }}
+            >
+              {planText ?? 'Your experiment'}
+            </div>
+            {situationName && <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{situationName}</div>}
           </div>
 
           <div

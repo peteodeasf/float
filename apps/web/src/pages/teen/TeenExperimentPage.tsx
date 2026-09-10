@@ -234,7 +234,8 @@ export default function TeenExperimentPage() {
         </div>
 
         <div className="teen-sheet">
-          {/* Situation is the headline; the safety behavior is the "without" sub-line (§2.2 / G6) */}
+          {/* The step is the headline — it is the thing they are going to do. The situation is
+              the quiet line under it, the same as on the home's ladder. */}
           {(behaviorData?.situation?.name || behaviorData?.name) && (
             <div>
               <h1
@@ -244,20 +245,10 @@ export default function TeenExperimentPage() {
                   margin: 0,
                 }}
               >
-                {behaviorData?.situation?.name ?? 'Your experiment'}
+                {behaviorData?.name ?? 'Your experiment'}
               </h1>
-              {behaviorData?.name && (
-                <div
-                  style={{
-                    fontFamily: teen.font.sans,
-                    fontSize: 17,
-                    fontWeight: 600,
-                    color: teen.color.textSecondary,
-                    marginTop: 6,
-                  }}
-                >
-                  {behaviorData.name}
-                </div>
+              {behaviorData?.situation?.name && (
+                <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{behaviorData.situation.name}</div>
               )}
             </div>
           )}
@@ -555,20 +546,10 @@ export default function TeenExperimentPage() {
               margin: '10px 0 0',
             }}
           >
-            {behaviorData?.situation?.name ?? 'Your experiment'}
+            {behaviorData?.name ?? 'Your experiment'}
           </div>
-          {behaviorData?.name && (
-            <div
-              style={{
-                fontFamily: teen.font.sans,
-                fontSize: 17,
-                fontWeight: 600,
-                color: teen.color.textSecondary,
-                marginTop: 4,
-              }}
-            >
-              {behaviorData.name}
-            </div>
+          {behaviorData?.situation?.name && (
+            <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{behaviorData.situation.name}</div>
           )}
           <div
             style={{

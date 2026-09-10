@@ -45,10 +45,12 @@ export default function TeenExposurePage() {
     enabled: !!behaviorId,
   })
 
-  // Deep-link guard: if the situation was deactivated, this experiment is no
-  // longer something the teen should work on — send them home.
+  // Deep-link guard: if the clinician has turned the ladder off, this is on hold — send them to
+  // the home, which says so. This used to check the situation's own on/off flag, and new
+  // situations are created with that off, so a child tapping a scheduled exposure on one was
+  // sent back to the home every time.
   useEffect(() => {
-    if (behaviorData?.situation && behaviorData.situation.is_active === false) {
+    if (behaviorData && behaviorData.ladder_active === false) {
       navigate('/teen/home', { replace: true })
     }
   }, [behaviorData, navigate])
@@ -122,27 +124,13 @@ export default function TeenExposurePage() {
         >
           <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>You're in it</span>
 
-          {situationName && (
-            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: '14px 0 2px' }}>
-              {situationName}
+          {/* The step is what they are doing; the situation is the quiet line under it. */}
+          <div style={{ margin: '14px 0 28px' }}>
+            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: 0 }}>
+              {planText ?? 'Your experiment'}
             </h2>
-          )}
-          {planText && (
-            <div
-              style={{
-                fontFamily: teen.font.sans,
-                fontSize: 17,
-                fontWeight: 600,
-                color: teen.color.textSecondary,
-                margin: '0 0 28px',
-                // §3.9 — left-align so a long behavior doesn't orphan one word when centered
-                width: '100%',
-                textAlign: 'left',
-              }}
-            >
-              {planText}
-            </div>
-          )}
+            {situationName && <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{situationName}</div>}
+          </div>
 
           <div
             style={{
@@ -283,21 +271,9 @@ export default function TeenExposurePage() {
         </div>
         <div className="teen-card" style={{ marginTop: 14, padding: '22px' }}>
           <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
-            {situationName ?? 'Your experiment'}
+            {planText ?? 'Your experiment'}
           </h1>
-          {planText && (
-            <div
-              style={{
-                fontFamily: teen.font.sans,
-                fontSize: 17,
-                fontWeight: 600,
-                color: teen.color.textSecondary,
-                marginTop: 6,
-              }}
-            >
-              {planText}
-            </div>
-          )}
+          {situationName && <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{situationName}</div>}
           {whenLabel && (
             <div
               style={{

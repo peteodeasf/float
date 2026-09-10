@@ -37,7 +37,7 @@ from app.models.session_note import SessionNote
 from app.models.message import Message
 from app.models.experiment import Experiment
 from app.services.patient_phase import LABELS, Phase, phase_of
-from app.core.behavior_types import LADDER_TYPES
+from app.core.behavior_types import LADDER_TYPES, OBSERVATION
 from app.services.patient_access_service import (
     accessible_patient_ids,
     is_institution_admin,
@@ -1219,6 +1219,36 @@ async def generate_preliminary_report(
 
 # ── Patient-facing endpoints ──────────────────────────────────────────────────
 
+async def _feared_outcome_for(db: AsyncSession, situation_id) -> tuple[str | None, bool]:
+    """What the child is afraid will happen in this situation, from its downward arrow.
+
+    Shown once the arrow has been done, whether or not the clinician pressed save on its last
+    screen. Peter, 2026-09-10: "if it has been done ... should be shown." Walking the chain and
+    leaving records the feared outcome without the approval, and the child used to see nothing.
+
+    The most recent arrow rather than exactly one. A situation is meant to have one, and asking for
+    exactly one made the child's home fail to load when it had two.
+
+    Returns (feared outcome or None, whether the clinician pressed save).
+    """
+    da = (await db.execute(
+        select(DownwardArrow)
+        .where(
+            DownwardArrow.trigger_situation_id == situation_id,
+            # Not the parent's arrow. A situation can hold one run with the parent as well as one
+            # run with the child, and the parent's answer is their guess at the child's fear — it
+            # is not something the child said. `is_distinct_from` rather than `!=`, so arrows with
+            # no value here (the clinician-with-child ones) are kept.
+            DownwardArrow.facilitated_by.is_distinct_from("parent"),
+        )
+        .order_by(DownwardArrow.updated_at.desc().nullslast())
+        .limit(1)
+    )).scalar_one_or_none()
+    if da is None:
+        return None, False
+    return ((da.feared_outcome or "").strip() or None), bool(da.feared_outcome_approved)
+
+
 @patient_router.get("/ladder")
 async def get_my_ladder(
     context: tuple = Depends(get_patient_context),
@@ -1231,10 +1261,8 @@ async def get_my_ladder(
     plan_result = await db.execute(
         select(TreatmentPlan).where(
             TreatmentPlan.patient_id == patient.id,
-            # Teen visibility is gated per-situation by is_active (filtered on
-            # the home), not by a plan-level activation step — there is no
-            # separate "activate plan" button. A plan with no active situations
-            # renders the empty state.
+            # Whether the child sees anything is `ladder_active`, below — one switch for the whole
+            # ladder. The per-situation `is_active` this used to rely on is no longer read.
             TreatmentPlan.status.in_(["setup", "active"]),
         )
     )
@@ -1244,7 +1272,10 @@ async def get_my_ladder(
 
     triggers_result = await db.execute(
         select(TriggerSituation).where(
-            TriggerSituation.treatment_plan_id == plan.id
+            TriggerSituation.treatment_plan_id == plan.id,
+            # A placeholder is a hidden holder the clinician app never shows either — it used to
+            # carry the parent's downward arrow. Nothing on it is for the child.
+            TriggerSituation.is_placeholder.is_(False),
         ).order_by(TriggerSituation.display_order)
     )
     all_triggers = triggers_result.scalars().all()
@@ -1301,17 +1332,15 @@ async def get_my_ladder(
 
     situations = []
     for trigger in all_triggers:
-        # Downward arrow
-        da_result = await db.execute(
-            select(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
-        )
-        da = da_result.scalar_one_or_none()
-        feared_outcome = da.feared_outcome if (da and da.feared_outcome_approved) else None
+        feared_outcome, da_approved = await _feared_outcome_for(db, trigger.id)
 
-        # Avoidance behaviors sorted by DT ascending (nulls last)
+        # Steps sorted by DT ascending (nulls last). Not observations: those came out of the
+        # parent's monitoring log ("Complained of stomach pain"), were never steps, and were
+        # sitting in this payload undrawn.
         behaviors_result = await db.execute(
             select(AvoidanceBehavior).where(
-                AvoidanceBehavior.trigger_situation_id == trigger.id
+                AvoidanceBehavior.trigger_situation_id == trigger.id,
+                AvoidanceBehavior.behavior_type != OBSERVATION,
             ).order_by(
                 AvoidanceBehavior.distress_thermometer_when_refraining.is_(None),
                 AvoidanceBehavior.distress_thermometer_when_refraining
@@ -1330,7 +1359,7 @@ async def get_my_ladder(
             "name": trigger.name,
             "is_active": trigger.is_active,
             "feared_outcome": feared_outcome,
-            "da_approved": bool(da and da.feared_outcome_approved),
+            "da_approved": da_approved,
             "behaviors": behaviors_data,
         })
 
@@ -1342,6 +1371,7 @@ async def get_my_ladder(
         select(AvoidanceBehavior).where(
             AvoidanceBehavior.treatment_plan_id == plan.id,
             AvoidanceBehavior.trigger_situation_id.is_(None),
+            AvoidanceBehavior.behavior_type != OBSERVATION,
         ).order_by(
             AvoidanceBehavior.distress_thermometer_when_refraining.is_(None),
             AvoidanceBehavior.distress_thermometer_when_refraining
@@ -1409,55 +1439,65 @@ async def get_behavior_detail(
     context: tuple = Depends(get_patient_context),
     db: AsyncSession = Depends(get_db)
 ):
+    """One step, for the setup, exposure and record screens."""
     _, patient = context
     from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
-    from app.models.downward_arrow import DownwardArrow
 
-    # Find the behavior
-    b_result = await db.execute(
-        select(AvoidanceBehavior).where(AvoidanceBehavior.id == behavior_id)
-    )
-    behavior = b_result.scalar_one_or_none()
+    behavior = (await db.execute(
+        select(AvoidanceBehavior).where(
+            AvoidanceBehavior.id == behavior_id,
+            # An observation came out of the parent's monitoring log. It was never a step, and the
+            # child's app has no reason to fetch the parent's words about them.
+            AvoidanceBehavior.behavior_type != OBSERVATION,
+        )
+    )).scalar_one_or_none()
     if not behavior:
         raise HTTPException(status_code=404, detail="Behavior not found")
 
-    # Verify it belongs to the patient's plan
-    ts_result = await db.execute(
-        select(TriggerSituation).where(TriggerSituation.id == behavior.trigger_situation_id)
-    )
-    trigger = ts_result.scalar_one_or_none()
-    if not trigger:
-        raise HTTPException(status_code=404, detail="Situation not found")
+    trigger = None
+    if behavior.trigger_situation_id is not None:
+        trigger = (await db.execute(
+            select(TriggerSituation).where(TriggerSituation.id == behavior.trigger_situation_id)
+        )).scalar_one_or_none()
 
-    plan_result = await db.execute(
-        select(TreatmentPlan).where(
-            TreatmentPlan.id == trigger.treatment_plan_id,
-            TreatmentPlan.patient_id == patient.id
-        )
-    )
-    plan = plan_result.scalar_one_or_none()
-    if not plan:
+    # Whose step is it. Through its own plan link first; rows written before that column existed
+    # only have a situation, so fall back to the situation's plan. Finding the patient through the
+    # situation alone made a step with no situation "not found" on every screen that reads it.
+    plan_id = behavior.treatment_plan_id or (trigger.treatment_plan_id if trigger else None)
+    plan = None
+    if plan_id is not None:
+        plan = (await db.execute(
+            select(TreatmentPlan).where(
+                TreatmentPlan.id == plan_id,
+                TreatmentPlan.patient_id == patient.id,
+            )
+        )).scalar_one_or_none()
+    # A step whose situation sits on a different plan from the step itself would otherwise hand
+    # back that other plan's situation name and feared outcome. Refuse it.
+    if not plan or (trigger is not None and trigger.treatment_plan_id != plan.id):
         raise HTTPException(status_code=404, detail="Not authorized")
 
-    # Downward arrow
-    da_result = await db.execute(
-        select(DownwardArrow).where(DownwardArrow.trigger_situation_id == trigger.id)
-    )
-    da = da_result.scalar_one_or_none()
-    feared_outcome = da.feared_outcome if (da and da.feared_outcome_approved) else None
+    situation = None
+    if trigger is not None:
+        feared_outcome, da_approved = await _feared_outcome_for(db, trigger.id)
+        situation = {
+            "id": str(trigger.id),
+            "name": trigger.name,
+            "feared_outcome": feared_outcome,
+            "da_approved": da_approved,
+        }
 
     return {
         "id": str(behavior.id),
         "name": behavior.name,
         "behavior_type": behavior.behavior_type,
         "dt": float(behavior.distress_thermometer_when_refraining) if behavior.distress_thermometer_when_refraining is not None else None,
-        "situation": {
-            "id": str(trigger.id),
-            "name": trigger.name,
-            "is_active": trigger.is_active,
-            "feared_outcome": feared_outcome,
-            "da_approved": bool(da and da.feared_outcome_approved),
-        }
+        # One switch for the whole ladder. The exposure screen used to check the situation's own
+        # on/off flag instead, and new situations are created with that off — so a child tapping a
+        # scheduled exposure on one was sent back to the home.
+        "ladder_active": bool(plan.ladder_active),
+        # None for a step with no situation.
+        "situation": situation,
     }
 
 

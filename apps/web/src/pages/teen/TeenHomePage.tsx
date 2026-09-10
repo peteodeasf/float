@@ -423,19 +423,11 @@ export default function TeenHomePage() {
                         margin: 0,
                       }}
                     >
-                      {expSituation(comingUp) ?? 'Your experiment'}
-                    </h2>
-                    <div
-                      style={{
-                        fontFamily: teen.font.sans,
-                        fontSize: 17,
-                        fontWeight: 600,
-                        color: teen.color.textSecondary,
-                        marginTop: 6,
-                      }}
-                    >
                       {expName(comingUp)}
-                    </div>
+                    </h2>
+                    {expSituation(comingUp) && (
+                      <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{expSituation(comingUp)}</div>
+                    )}
                     <div style={metaRow}>
                       <span aria-hidden="true" style={metaDot} />
                       {due ? 'Ready now' : expWhen(comingUp)}
@@ -483,20 +475,23 @@ export default function TeenHomePage() {
                             overflow: 'hidden',
                           }}
                         >
-                          {expSituation(exp) ?? expName(exp)}
-                        </span>
-                        <span
-                          style={{
-                            display: 'block',
-                            fontFamily: teen.font.sans,
-                            fontSize: 17,
-                            fontWeight: 600,
-                            color: teen.color.textSecondary,
-                            marginTop: 3,
-                          }}
-                        >
                           {expName(exp)}
                         </span>
+                        {/* Same shape as a ladder row: the step, then its situation small and grey.
+                            Before this, a step with no situation printed its own name twice. */}
+                        {expSituation(exp) && (
+                          <span
+                            style={{
+                              display: 'block',
+                              fontFamily: teen.font.sans,
+                              fontSize: 12,
+                              color: teen.color.textSecondary,
+                              marginTop: 2,
+                            }}
+                          >
+                            {expSituation(exp)}
+                          </span>
+                        )}
                         <span
                           style={{
                             display: 'block',
