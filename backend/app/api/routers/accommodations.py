@@ -9,6 +9,8 @@ from app.models.experiment import AccommodationBehavior
 from app.services.patient_access_service import assert_belongs_to
 from app.models.treatment import TreatmentPlan
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan
+from app.schemas.parent_experiment import ParentExperimentCreate
+from app.services.parent_experiment_service import list_for_plan, set_up
 from app.services.accommodation_service import (
     get_accommodations_for_plan,
     create_accommodation,
@@ -165,4 +167,31 @@ async def rate_with_child(
     await db.commit()
     await db.refresh(acc)
     return acc
+
+
+# ── The parent's experiments ─────────────────────────────────────────────────
+# The clinician sees them all, and can set one up in a parent session, typing what the parent says.
+# docs/plans/parent-accommodation-experiments.md
+
+@router.get("/experiments")
+async def list_parent_experiments(
+    plan_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    return await list_for_plan(db, plan_id)
+
+
+@router.post("/experiments", status_code=status.HTTP_201_CREATED)
+async def set_up_parent_experiment_in_session(
+    plan_id: uuid.UUID,
+    data: ParentExperimentCreate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    _, practitioner = context
+    # Said by the parent, typed by the clinician: no parent recorded as the one who set it up.
+    return await set_up(db, plan_id, practitioner.organization_id, data, None)
 

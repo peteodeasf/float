@@ -20,13 +20,14 @@ const FOCUS = {
   distress_min: 6, distress_max: 6, display_order: 0, is_weekly_focus: true,
 }
 
-function open(checkins: unknown[] = []) {
+function open(checkins: unknown[] = [], experiments: unknown[] = []) {
   const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
   qc.setQueryData(['parent-me'], { patient_name: 'Sam Child' })
   qc.setQueryData(['parent-upcoming'], [])
   qc.setQueryData(['parent-progress'], { shared: false })
   qc.setQueryData(['parent-accommodations'], [FOCUS])
   qc.setQueryData(['parent-checkins'], checkins)
+  qc.setQueryData(['parent-experiments'], experiments)
   render(
     <QueryClientProvider client={qc}>
       <MemoryRouter><ParentHomePage /></MemoryRouter>
@@ -73,6 +74,7 @@ describe("the parent's weekly check-in", () => {
     qc.setQueryData(['parent-progress'], { shared: false })
     qc.setQueryData(['parent-accommodations'], [{ ...FOCUS, child_rating_min: 5, child_rating_max: 9 }])
     qc.setQueryData(['parent-checkins'], [])
+    qc.setQueryData(['parent-experiments'], [])
     render(
       <QueryClientProvider client={qc}>
         <MemoryRouter><ParentHomePage /></MemoryRouter>
@@ -87,5 +89,16 @@ describe("the parent's weekly check-in", () => {
     open([{ id: 'k0', accommodation_id: 'a1', accommodation_name: FOCUS.name,
             week_start: weekStartOf(lastWeek), answer: 'every_time', updated_at: null }])
     expect(screen.getByText('This week, did you hold the line?')).toBeInTheDocument()
+  })
+
+  it('lists the experiments coming up, with a way to say how each went', () => {
+    open([], [{ id: 'x1', accommodation_id: 'a1', accommodation_name: 'Lies down with them at bedtime', status: 'planned',
+      set_up_in_session: false, scheduled_date: new Date().toISOString(), scheduled_time_bucket: 'evening', instead: null,
+      prediction: 'She will cry', belief_before: 80, expected_fear: 8, readiness: null, did_it: null, what_happened: null,
+      actual_fear: null, prediction_happened: null, belief_after: null, what_learned: null, too_hard_reason: null,
+      recorded_at: null, created_at: null }])
+    expect(screen.getByText('Your experiments')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'How did it go?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Plan an experiment' })).toBeInTheDocument()
   })
 })

@@ -16,6 +16,8 @@ import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/t
 import { answerInfo, weekLabel } from '../../lib/checkin'
 import ParentConversationSheet from './ParentConversationSheet'
 import ChildRatingSheet from './ChildRatingSheet'
+import ParentExperimentSheet from './ParentExperimentSheet'
+import { DID_IT_LABEL, experimentWhen, listParentExperiments, type ParentExperiment } from '../../api/parentExperiments'
 
 type TriggerLite = { id: string; name: string }
 
@@ -86,6 +88,13 @@ export default function ParentPlanPanel({
   const [goingThrough, setGoingThrough] = useState(false)
   // The child's ratings: sent to their app, or given together in session.
   const [ratingWithChild, setRatingWithChild] = useState(false)
+  // Setting up one of the parent's experiments with them in session.
+  const [planningExperiment, setPlanningExperiment] = useState(false)
+  const { data: experiments = [] } = useQuery({
+    queryKey: ['parent-experiments', planId],
+    queryFn: () => listParentExperiments(planId),
+    enabled: !!planId,
+  })
   const [name, setName] = useState('')
   const [situationId, setSituationId] = useState('')
   const [dmin, setDmin] = useState('')
@@ -243,6 +252,9 @@ export default function ParentPlanPanel({
         </div>
       </div>
       {goingThrough && <ParentConversationSheet patientId={patientId} onClose={() => setGoingThrough(false)} />}
+      {planningExperiment && (
+        <ParentExperimentSheet planId={planId} accommodations={accommodations} onClose={() => setPlanningExperiment(false)} />
+      )}
       {ratingWithChild && (
         <ChildRatingSheet planId={planId} accommodations={accommodations}
           onClose={() => { setRatingWithChild(false); invalidate() }} />
@@ -415,6 +427,30 @@ export default function ParentPlanPanel({
             <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · {fromMonitoring.length} {fromMonitoring.length === 1 ? 'suggestion' : 'suggestions'}</span>
           )}
         </button>
+      )}
+
+      {/* The parent's accommodation experiments, and how each went: what they feared against what
+          happened. The clinician can set one up with the parent in session.
+          docs/plans/parent-accommodation-experiments.md */}
+      {accommodations.length > 0 && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)' }}>The parent's experiments</span>
+            <button
+              onClick={() => setPlanningExperiment(true)}
+              style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-border)', borderRadius: '999px', padding: '4px 11px', cursor: 'pointer' }}
+            >
+              Set one up with the parent
+            </button>
+          </div>
+          {experiments.length === 0 ? (
+            <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)' }}>None yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {experiments.map(e => <ExperimentLine key={e.id} e={e} />)}
+            </div>
+          )}
+        </div>
       )}
 
       {/* The parent's weekly answer about their focus. Replaced logging each moment (Peter,
@@ -654,3 +690,36 @@ function AccommodationRow({
     </div>
   )
 }
+
+/** One of the parent's experiments: what, when, how it went, and what they feared against what
+ *  happened. */
+function ExperimentLine({ e }: { e: ParentExperiment }) {
+  const planned = e.status === 'planned'
+  const outcome = planned ? 'Planned' : e.did_it ? DID_IT_LABEL[e.did_it] : 'Recorded'
+  const tone = planned
+    ? { bg: '#f1f5f9', fg: '#475569' }
+    : e.did_it === 'not_this_time' ? { bg: '#fef2f2', fg: '#b91c1c' } : { bg: '#f0fdf4', fg: '#166534' }
+  const numbers = !planned && e.did_it !== 'not_this_time'
+    ? `Upset: expected ${Math.round(e.expected_fear)}, was ${e.actual_fear != null ? Math.round(e.actual_fear) : '—'} · belief ${Math.round(e.belief_before)}% → ${e.belief_after != null ? `${Math.round(e.belief_after)}%` : '—'}`
+    : null
+  return (
+    <div style={{ background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-sm)', padding: '8px 12px', fontSize: '13px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ flex: 'none', width: '96px', textAlign: 'center', fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '2px 8px', background: tone.bg, color: tone.fg }}>
+          {outcome}
+        </span>
+        <span style={{ flex: 1, minWidth: 0, color: 'var(--float-text)' }}>{e.accommodation_name}</span>
+        <span style={{ flex: 'none', fontSize: '12px', color: 'var(--float-text-hint)' }}>{experimentWhen(e)}</span>
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--float-text-secondary)', marginTop: '4px', paddingLeft: '106px', lineHeight: 1.5 }}>
+        Feared: &ldquo;{e.prediction}&rdquo;
+        {numbers && <> · {numbers}</>}
+        {e.what_happened && <> · What happened: {e.what_happened}</>}
+        {e.what_learned && <> · Learned: {e.what_learned}</>}
+        {e.too_hard_reason && <> · Why not: {e.too_hard_reason}</>}
+        {e.set_up_in_session && <> · set up in session</>}
+      </div>
+    </div>
+  )
+}
+

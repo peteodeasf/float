@@ -15,6 +15,7 @@ import {
   saveCheckin,
   type UpcomingExposure,
 } from '../../api/parent'
+import { DID_IT_LABEL, experimentWhen, getFamilyExperiments } from '../../api/parentExperiments'
 import { CHECKIN_ANSWERS, answerInfo, weekStartOf, type CheckinAnswer } from '../../lib/checkin'
 
 function whenLabel(e: UpcomingExposure): string {
@@ -78,6 +79,10 @@ export default function ParentHomePage() {
   // Whether the clinician has switched on sharing the child's progress. Off, the week below is
   // empty because nothing is shared, not because nothing is planned — so it says that instead.
   const { data: progress } = useQuery({ queryKey: ['parent-progress'], queryFn: getChildProgress })
+  // The parent's experiments: what is coming up, and how the last ones went.
+  const { data: experiments = [] } = useQuery({ queryKey: ['parent-experiments'], queryFn: getFamilyExperiments })
+  const plannedExperiments = experiments.filter(e => e.status === 'planned')
+  const recordedExperiments = experiments.filter(e => e.status === 'recorded').slice(0, 3)
   const { data: accommodations = [] } = useQuery({
     queryKey: ['parent-accommodations'],
     queryFn: getParentAccommodations,
@@ -235,6 +240,30 @@ export default function ParentHomePage() {
             Start
           </button>
         </div>
+
+        {/* The parent's accommodation experiments. docs/plans/parent-accommodation-experiments.md */}
+        <div style={{ ...teen.type.eyebrow, marginTop: 28 }}>Your experiments</div>
+        {plannedExperiments.map(e => (
+          <div key={e.id} className="teen-card" style={{ marginTop: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontFamily: teen.font.sans, fontSize: 15, fontWeight: 600, color: teen.color.ink }}>{e.accommodation_name}</span>
+              <span style={{ display: 'block', fontFamily: teen.font.sans, fontSize: 13, fontWeight: 600, color: teen.color.tealMid, marginTop: 3 }}>{experimentWhen(e)}</span>
+            </span>
+            <button className="teen-btn teen-btn--outline" style={{ flex: 'none', width: 'auto', padding: '9px 14px' }}
+              onClick={() => navigate(`/parent/experiments/${e.id}/after`)}>
+              How did it go?
+            </button>
+          </div>
+        ))}
+        {recordedExperiments.map(e => (
+          <div key={e.id} style={{ marginTop: 8, fontFamily: teen.font.sans, fontSize: 14, color: teen.color.inkSoft, padding: '10px 14px', background: teen.color.card, border: `1px solid ${teen.color.lineCard}`, borderRadius: teen.radius.btn }}>
+            {e.accommodation_name}
+            <span style={{ color: teen.color.textSecondary }}> · {e.did_it ? DID_IT_LABEL[e.did_it] : ''}</span>
+          </div>
+        ))}
+        <button className="teen-btn teen-btn--outline" style={{ marginTop: 12 }} onClick={() => navigate('/parent/experiments/new')}>
+          Plan an experiment
+        </button>
 
         {/* Child's week */}
         <div style={{ ...teen.type.eyebrow, marginTop: 28 }}>{childName}'s week</div>

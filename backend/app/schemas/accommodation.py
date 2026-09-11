@@ -58,6 +58,9 @@ class ParentAccommodationResponse(BaseModel):
     display_order: Optional[int] = None
     status: str
     is_weekly_focus: bool = False
+    # The parent's own estimate, from the accommodation conversation. Theirs to see.
+    parent_estimate_min: Optional[float] = None
+    parent_estimate_max: Optional[float] = None
     # The child's own rating, and only when the clinician has chosen to show it to the parent.
     # Filled in by the route, never read off the row.
     child_rating_min: Optional[float] = None

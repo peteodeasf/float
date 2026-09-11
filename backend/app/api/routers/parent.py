@@ -23,6 +23,8 @@ from app.models.message import Message
 from app.models.jit_content import JitTip, JitTipTag, TriggerSituationTag
 from app.api.routers.patients import get_parent_context, step_status
 from app.services.accommodation_conversation import answer, conversation, name_one, suggestion_out
+from app.services.parent_experiment_service import list_for_plan, record, set_up
+from app.schemas.parent_experiment import ParentExperimentAfter, ParentExperimentCreate
 from app.core.behavior_types import LADDER_TYPES
 from app.services.accommodation_service import get_accommodations_for_plan
 from app.schemas.accommodation import ParentAccommodationResponse, SuggestionCreate, SuggestionUpdate
@@ -411,6 +413,48 @@ async def name_an_accommodation(
     await db.commit()
     await db.refresh(row)
     return suggestion_out(row)
+
+
+# ── The parent's accommodation experiments ───────────────────────────────────
+# One planned attempt at not doing an accommodation, with a prediction before and how it went after.
+# Shared by every parent linked to the child. docs/plans/parent-accommodation-experiments.md
+
+@parent_router.get("/experiments")
+async def my_family_experiments(
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    _, children = context
+    plan = await _child_plan(db, _first_child(children))
+    return await list_for_plan(db, plan.id) if plan else []
+
+
+@parent_router.post("/experiments", status_code=status.HTTP_201_CREATED)
+async def set_up_experiment(
+    data: ParentExperimentCreate,
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    current_user, children = context
+    child = _first_child(children)
+    plan = await _child_plan(db, child)
+    if not plan:
+        raise HTTPException(status_code=400, detail="No active plan for this child")
+    return await set_up(db, plan.id, child.organization_id, data, current_user.id)
+
+
+@parent_router.put("/experiments/{experiment_id}/after")
+async def record_experiment(
+    experiment_id: uuid.UUID,
+    data: ParentExperimentAfter,
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    _, children = context
+    plan = await _child_plan(db, _first_child(children))
+    if not plan:
+        raise HTTPException(status_code=404, detail="Not found")
+    return await record(db, plan.id, experiment_id, data)
 
 
 # ── Parent ↔ clinician chat (audience='parent') ──────────────────────────────

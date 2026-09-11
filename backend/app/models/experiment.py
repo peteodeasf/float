@@ -209,3 +209,61 @@ class AccommodationCheckin(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()")
     )
+
+
+class ParentExperiment(Base):
+    """One planned attempt by a parent at not doing an accommodation: the parent's version of the
+    child's exposure. Before, what they will do instead and what they predict; after, how it went.
+
+    Belongs to the child's plan and is shared by every parent linked to the child. The child sees
+    none of it. docs/plans/parent-accommodation-experiments.md
+    """
+
+    __tablename__ = "parent_experiments"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    treatment_plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("treatment_plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    accommodation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("accommodation_behaviors.id", ondelete="CASCADE"), nullable=False
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False
+    )
+    # Who set it up: the parent at home, or null when a clinician typed it in a parent session.
+    parent_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    # planned | recorded
+    status: Mapped[str] = mapped_column(String, nullable=False, default="planned", server_default="planned")
+
+    # ── Before ──
+    scheduled_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    scheduled_time_bucket: Mapped[str] = mapped_column(String, nullable=False)
+    instead: Mapped[str | None] = mapped_column(Text, nullable=True)
+    prediction: Mapped[str] = mapped_column(Text, nullable=False)
+    belief_before: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    expected_fear: Mapped[float] = mapped_column(Numeric(3, 1), nullable=False)
+    readiness: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # ── After ──
+    # yes | partly | not_this_time
+    did_it: Mapped[str | None] = mapped_column(String, nullable=True)
+    what_happened: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actual_fear: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    # yes | partly | no
+    prediction_happened: Mapped[str | None] = mapped_column(String, nullable=True)
+    belief_after: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    what_learned: Mapped[str | None] = mapped_column(Text, nullable=True)
+    too_hard_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+

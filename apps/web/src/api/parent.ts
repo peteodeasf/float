@@ -21,6 +21,9 @@ export interface ParentAccommodation {
   display_order: number | null
   status: string
   is_weekly_focus: boolean
+  /** The parent's own estimate from the accommodation conversation. */
+  parent_estimate_min?: number | null
+  parent_estimate_max?: number | null
   /** The child's own rating — sent only when the clinician has chosen to show it. */
   child_rating_min?: number | null
   child_rating_max?: number | null

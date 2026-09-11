@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import ParentProgressPage from './ParentProgressPage'
 import ParentHomePage from './ParentHomePage'
 import ParentAccommodationsPage from './ParentAccommodationsPage'
+import ParentExperimentSetupPage from './ParentExperimentSetupPage'
 
 export default function ParentProgressPreview() {
   const qc = useQueryClient()
@@ -23,6 +24,7 @@ export default function ParentProgressPreview() {
     // answering would try to reach the server without a sign-in.
     qc.setQueryData(['parent-upcoming'], [])
     qc.setQueryData(['parent-checkins'], [])
+    qc.setQueryData(['parent-experiments'], [])
     qc.setQueryData(['parent-accommodations'], [
       { id: 'c2', name: 'Lies down with them at bedtime', description: null, trigger_situation_id: null, distress_min: 6, distress_max: 6, display_order: 0, is_weekly_focus: true },
       { id: 'c3', name: 'Texts them every hour at a sleepover', description: null, trigger_situation_id: null, distress_min: 8, distress_max: 8, display_order: 1, is_weekly_focus: false },
@@ -65,5 +67,6 @@ export default function ParentProgressPreview() {
   if (!ready) return null
   const q = new URLSearchParams(window.location.search)
   if (q.has('conversation')) return <ParentAccommodationsPage />
+  if (q.has('experiment')) return <ParentExperimentSetupPage />
   return q.has('home') ? <ParentHomePage /> : <ParentProgressPage />
 }

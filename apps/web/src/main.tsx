@@ -40,6 +40,8 @@ import ParentMessagesPage from './pages/parent/ParentMessagesPage'
 import ParentProgressPage from './pages/parent/ParentProgressPage'
 import ReminderOffPage from './pages/ReminderOffPage'
 import ParentAccommodationsPage from './pages/parent/ParentAccommodationsPage'
+import ParentExperimentSetupPage from './pages/parent/ParentExperimentSetupPage'
+import ParentExperimentRecordPage from './pages/parent/ParentExperimentRecordPage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
@@ -171,6 +173,12 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/parent/home" element={
                 <ParentProtectedRoute><ParentHomePage /></ParentProtectedRoute>
+              } />
+              <Route path="/parent/experiments/new" element={
+                <ParentProtectedRoute><ParentExperimentSetupPage /></ParentProtectedRoute>
+              } />
+              <Route path="/parent/experiments/:experimentId/after" element={
+                <ParentProtectedRoute><ParentExperimentRecordPage /></ParentProtectedRoute>
               } />
               <Route path="/parent/accommodations" element={
                 <ParentProtectedRoute><ParentAccommodationsPage /></ParentProtectedRoute>

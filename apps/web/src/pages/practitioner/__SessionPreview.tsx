@@ -108,6 +108,16 @@ export default function SessionPreview() {
       { id: 'k2', accommodation_id: 'c2', accommodation_name: 'Lies down with them at bedtime', parent_email: 'dana@example.com', week_start: '2026-08-31', answer: 'gave_in', updated_at: null },
       { id: 'k3', accommodation_id: 'c1', accommodation_name: 'Answers for them at the doctor’s', parent_email: 'dana@example.com', week_start: '2026-08-24', answer: 'every_time', updated_at: null },
     ])
+    qc.setQueryData(['parent-experiments', 'p1'], [
+      { id: 'x1', accommodation_id: 'c2', accommodation_name: 'Lies down with them at bedtime', status: 'planned', set_up_in_session: true,
+        scheduled_date: '2026-09-15T23:00:00Z', scheduled_time_bucket: 'evening', instead: 'Say goodnight and leave', prediction: 'She’ll cry for an hour',
+        belief_before: 80, expected_fear: 8, readiness: 'medium', did_it: null, what_happened: null, actual_fear: null, prediction_happened: null,
+        belief_after: null, what_learned: null, too_hard_reason: null, recorded_at: null, created_at: null },
+      { id: 'x2', accommodation_id: 'c2', accommodation_name: 'Lies down with them at bedtime', status: 'recorded', set_up_in_session: false,
+        scheduled_date: '2026-09-09T23:00:00Z', scheduled_time_bucket: 'evening', instead: 'Say goodnight and leave', prediction: 'She’ll cry for an hour',
+        belief_before: 80, expected_fear: 8, readiness: 'medium', did_it: 'yes', what_happened: 'Ten minutes, then asleep', actual_fear: 5, prediction_happened: 'no',
+        belief_after: 30, what_learned: 'She settles faster than I think', too_hard_reason: null, recorded_at: '2026-09-10T08:00:00Z', created_at: null },
+    ])
     qc.setQueryData(['insights', 'pt1', 'accommodation'], [
       { id: 'n1', kind: 'accommodation', name: 'Sits outside the door until they fall asleep', evidence_count: 0, sources: ['parent'], added: false, parent_name: 'Sleepovers at a friend’s house', parent_estimate_min: 6, parent_estimate_max: 8, still_does: true, named_by_parent: true },
     ])
