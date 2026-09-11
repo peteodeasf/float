@@ -65,7 +65,8 @@ async def test_one_that_came_back_is_started_again_by_making_it_the_focus(api, d
     assert r.json()["status"] == "started"
 
 
-async def test_moving_the_focus_on_leaves_the_old_one_as_it_was(api, db):
+async def test_more_than_one_can_be_the_focus(api, db):
+    """Peter, 2026-09-11: the parent can work on more than one at a time."""
     plan = await _setup(api, db)
     first = await _add(api, plan, "Lies down with them at bedtime")
     second = await _add(api, plan, "Answers for them at the doctor's")
@@ -74,7 +75,8 @@ async def test_moving_the_focus_on_leaves_the_old_one_as_it_was(api, db):
     await _put(api, plan, second, is_weekly_focus=True)
 
     rows = {a["id"]: a for a in (await api.get(f"/plans/{plan.id}/accommodations")).json()}
-    assert rows[first["id"]]["is_weekly_focus"] is False
+    assert rows[first["id"]]["is_weekly_focus"] is True
+    assert rows[second["id"]]["is_weekly_focus"] is True
     assert rows[first["id"]]["status"] == "started"
     assert rows[second["id"]]["status"] == "started"
 

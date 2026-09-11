@@ -210,7 +210,8 @@ async def parent_accommodations(
     db: AsyncSession = Depends(get_db),
 ):
     """The child's accommodation ladder, ordered by display_order, each carrying
-    `is_weekly_focus`. The parent sees the focus + the others for awareness."""
+    `is_weekly_focus`. The parent sees the focus accommodations (there can be more than one) and the
+    others for awareness."""
     _, children = context
     child = _first_child(children)
     plan = await _child_plan(db, child)

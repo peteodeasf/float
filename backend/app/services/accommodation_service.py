@@ -104,21 +104,11 @@ async def update_accommodation(
 
     fields = data.model_dump(exclude_unset=True)
 
-    # Only one accommodation per plan can be this week's focus — setting it here
-    # clears the flag on every sibling in the same plan.
+    # A plan can have more than one focus (Peter, 2026-09-11), so making this one the focus leaves
+    # the others as they are. The focus is what the parent is working on, so it has started. That
+    # includes one marked stopped: an accommodation that has come back goes back to the focus
+    # (docs/plans/accommodation-states.md). Taking the focus off leaves the state as it was.
     if fields.get("is_weekly_focus"):
-        siblings = (await db.execute(
-            select(AccommodationBehavior).where(
-                AccommodationBehavior.treatment_plan_id == accommodation.treatment_plan_id,
-                AccommodationBehavior.organization_id == organization_id,
-                AccommodationBehavior.id != accommodation.id,
-            )
-        )).scalars().all()
-        for sib in siblings:
-            sib.is_weekly_focus = False
-        # The focus is what the parent is working on, so it has started. That includes one marked
-        # stopped: an accommodation that has come back goes back to the focus
-        # (docs/plans/accommodation-states.md). Moving the focus on leaves the old one as it was.
         fields.setdefault("status", "started")
 
     for field, value in fields.items():

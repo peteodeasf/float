@@ -98,31 +98,38 @@ async def attention_for(db: AsyncSession, patient: PatientProfile, now: datetime
         if entries < 3:
             problems.append(_reason("monitoring", PROBLEM, f"Monitoring form sent; {entries} of 3 entries back"))
 
-    # The parent did not answer the weekly check-in last week. Only when a parent is linked and the
-    # focus accommodation was on the plan for all of last week: nothing records when an accommodation
+    # The parent did not answer the weekly check-in last week, for a focus accommodation. There can
+    # be more than one focus (Peter, 2026-09-11); each is asked about. Only when a parent is linked
+    # and that focus was on the plan for all of last week: nothing records when an accommodation
     # became the focus, so when it was added is the nearest honest stand-in.
     if plan is not None:
         this_monday = today_start.date() - timedelta(days=today_start.weekday())
         last_monday = this_monday - timedelta(days=7)
         last_monday_start = datetime.combine(last_monday, time.min, tzinfo=timezone.utc)
-        focus = (await db.execute(
+        focuses = (await db.execute(
             select(AccommodationBehavior).where(
                 AccommodationBehavior.treatment_plan_id == plan.id,
                 AccommodationBehavior.is_weekly_focus.is_(True),
-            )
-        )).scalars().first()
+            ).order_by(AccommodationBehavior.display_order)
+        )).scalars().all()
+        due = [f for f in focuses if f.created_at and f.created_at < last_monday_start]
         has_parent = (await db.execute(
             select(ParentPatientLink.id).where(ParentPatientLink.patient_id == patient.id).limit(1)
         )).first() is not None
-        if focus is not None and has_parent and focus.created_at and focus.created_at < last_monday_start:
-            answered = (await db.execute(
-                select(AccommodationCheckin.id).where(
+        if due and has_parent:
+            answered = set((await db.execute(
+                select(AccommodationCheckin.accommodation_id).where(
                     AccommodationCheckin.treatment_plan_id == plan.id,
                     AccommodationCheckin.week_start == last_monday,
-                ).limit(1)
-            )).first()
-            if answered is None:
-                problems.append(_reason("checkin_missed", PROBLEM, "No weekly check-in from the parent last week"))
+                )
+            )).scalars().all())
+            missed = [f.name for f in due if f.id not in answered]
+            if missed:
+                text = "No weekly check-in from the parent last week"
+                # With one focus there is nothing to name; with more, say which were missed.
+                if len(focuses) > 1:
+                    text += " on " + ", ".join(f"“{name}”" for name in missed)
+                problems.append(_reason("checkin_missed", PROBLEM, text))
 
     # The child marked an exposure too hard in the past week.
     too_hard = (await db.execute(

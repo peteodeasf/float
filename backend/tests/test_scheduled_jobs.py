@@ -156,6 +156,37 @@ async def test_not_if_they_already_answered_this_week(db):
     assert out.sent == []
 
 
+async def _second_focus(db, org, plan):
+    other = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
+                                  name="Answers for them at the doctor's", is_weekly_focus=True,
+                                  status="started")
+    db.add(other)
+    await db.flush()
+    return other
+
+
+async def test_two_focuses_still_mean_one_email(db):
+    org, plan, parent, _ = await _parent_with_focus(db)
+    await _second_focus(db, org, plan)
+
+    out = Outbox()
+    await run_due(db, at(13, 22, 10), out)
+    assert out.sent == [(parent.id, "parent_checkin")]
+
+
+async def test_with_two_focuses_answering_one_is_not_enough(db):
+    org, plan, parent, focus = await _parent_with_focus(db)
+    await _second_focus(db, org, plan)
+    db.add(AccommodationCheckin(treatment_plan_id=plan.id, accommodation_id=focus.id,
+                                parent_user_id=parent.id, organization_id=org.id,
+                                week_start=date(2026, 9, 7), answer="mostly"))
+    await db.flush()
+
+    out = Outbox()
+    await run_due(db, at(13, 22, 10), out)
+    assert out.sent == [(parent.id, "parent_checkin")]
+
+
 async def test_not_after_8pm_on_sunday_either(db):
     await _parent_with_focus(db)
     out = Outbox()

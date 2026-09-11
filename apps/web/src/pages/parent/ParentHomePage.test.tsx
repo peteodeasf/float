@@ -20,12 +20,12 @@ const FOCUS = {
   distress_min: 6, distress_max: 6, display_order: 0, is_weekly_focus: true,
 }
 
-function open(checkins: unknown[] = [], experiments: unknown[] = []) {
+function open(checkins: unknown[] = [], experiments: unknown[] = [], accommodations: unknown[] = [FOCUS]) {
   const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
   qc.setQueryData(['parent-me'], { patient_name: 'Sam Child' })
   qc.setQueryData(['parent-upcoming'], [])
   qc.setQueryData(['parent-progress'], { shared: false })
-  qc.setQueryData(['parent-accommodations'], [FOCUS])
+  qc.setQueryData(['parent-accommodations'], accommodations)
   qc.setQueryData(['parent-checkins'], checkins)
   qc.setQueryData(['parent-experiments'], experiments)
   render(
@@ -65,6 +65,21 @@ describe("the parent's weekly check-in", () => {
     expect(screen.getByText(/You mostly held the line this week/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Change' }))
     expect(screen.getByRole('button', { name: 'Mostly' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('asks about each focus, on its own card, when there is more than one', async () => {
+    const OTHER = { ...FOCUS, id: 'a2', name: "Answers for them at the doctor's", display_order: 1 }
+    open([{ id: 'k1', accommodation_id: 'a1', accommodation_name: FOCUS.name,
+            week_start: weekStartOf(new Date()), answer: 'mostly', updated_at: null }], [], [FOCUS, OTHER])
+    expect(screen.getByRole('heading', { name: FOCUS.name })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: OTHER.name })).toBeInTheDocument()
+    // The first is answered this week; the second still asks.
+    expect(screen.getByText(/You mostly held the line this week/)).toBeInTheDocument()
+    expect(screen.getAllByText('This week, did you hold the line?')).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Every time' }))
+    await waitFor(() => expect(api.saveCheckin).toHaveBeenCalledWith({
+      accommodation_id: 'a2', answer: 'every_time', week_start: weekStartOf(new Date()),
+    }))
   })
 
   it("shows the child's own rating when the clinician has chosen to", () => {

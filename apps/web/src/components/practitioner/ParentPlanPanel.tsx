@@ -560,12 +560,11 @@ function AccommodationRow({
           Plan &ldquo;{a.name}&rdquo;
         </div>
         <p style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', margin: '4px 0 10px' }}>
-          Only one accommodation is the parent&rsquo;s focus at a time. Choosing this one takes it
-          off whichever has it now.
+          The parent can have more than one focus. The weekly check-in asks about each one.
         </p>
         <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: 'var(--float-text-secondary)', cursor: 'pointer', marginBottom: '12px' }}>
           <input type="checkbox" checked={wantFocus} onChange={e => setWantFocus(e.target.checked)} style={{ cursor: 'pointer' }} />
-          Make this the parent&rsquo;s focus this week
+          Make this a focus for the parent this week
         </label>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button

@@ -64,7 +64,8 @@ export default function ParentHomePage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [openSituation, setOpenSituation] = useState<string | null>(null)
-  const [changing, setChanging] = useState(false)
+  // The focus whose check-in answer is being changed.
+  const [changing, setChanging] = useState<string | null>(null)
 
   const { data: me } = useQuery({
     queryKey: ['parent-me'],
@@ -88,21 +89,18 @@ export default function ParentHomePage() {
     queryFn: getParentAccommodations,
   })
 
-  const focus = accommodations.find(a => a.is_weekly_focus) ?? null
+  const focuses = accommodations.filter(a => a.is_weekly_focus)
   const others = accommodations.filter(a => !a.is_weekly_focus)
 
-  // Once a week, one question about the focus. Peter, 2026-09-10: it replaces logging each moment.
-  // docs/plans/weekly-checkin.md
+  // Once a week, one question about each focus. Peter, 2026-09-10: it replaces logging each moment;
+  // 2026-09-11: there can be more than one focus. docs/plans/weekly-checkin.md
   const thisWeek = weekStartOf(new Date())
   const { data: checkins = [] } = useQuery({ queryKey: ['parent-checkins'], queryFn: getMyCheckins })
-  const answered = focus
-    ? checkins.find(c => c.accommodation_id === focus.id && c.week_start === thisWeek) ?? null
-    : null
   const checkinMut = useMutation({
-    mutationFn: (answer: CheckinAnswer) =>
-      saveCheckin({ accommodation_id: focus!.id, answer, week_start: thisWeek }),
+    mutationFn: ({ accommodationId, answer }: { accommodationId: string; answer: CheckinAnswer }) =>
+      saveCheckin({ accommodation_id: accommodationId, answer, week_start: thisWeek }),
     onSuccess: () => {
-      setChanging(false)
+      setChanging(null)
       qc.invalidateQueries({ queryKey: ['parent-checkins'] })
     },
   })
@@ -152,72 +150,75 @@ export default function ParentHomePage() {
       >
         {/* This week's focus */}
         <div style={{ ...teen.type.eyebrow, marginTop: 12 }}>This week's focus</div>
-        {focus ? (
-          <div className="teen-card" style={{ marginTop: 14, padding: 22 }}>
-            <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>{focus.name}</h1>
-            <p style={{ ...teen.type.body, fontSize: 15, color: teen.color.inkSoft, marginTop: 6 }}>
-              When it comes up, try not to step in. {childName} may be distressed — that's the work.
-            </p>
-            {/* Only there when the clinician has chosen to show the child's rating. */}
-            {focus.child_rating_min != null && (
-              <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.textSecondary, marginTop: 6 }}>
-                {childName} said stopping would be a {focus.child_rating_min === focus.child_rating_max
-                  ? focus.child_rating_min
-                  : `${focus.child_rating_min}–${focus.child_rating_max}`}.
+        {focuses.length > 0 ? focuses.map(focus => {
+          const answered = checkins.find(c => c.accommodation_id === focus.id && c.week_start === thisWeek) ?? null
+          return (
+            <div key={focus.id} className="teen-card" style={{ marginTop: 14, padding: 22 }}>
+              <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>{focus.name}</h1>
+              <p style={{ ...teen.type.body, fontSize: 15, color: teen.color.inkSoft, marginTop: 6 }}>
+                When it comes up, try not to step in. {childName} may be distressed — that's the work.
               </p>
-            )}
-
-            {/* This week's check-in: once a week, one question, instead of logging each moment. */}
-            <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${teen.color.line}` }}>
-              {answered && !changing ? (
-                <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.teal, margin: 0 }}>
-                  {answerInfo(answered.answer)?.summary} Your clinician will see it.{' '}
-                  <button
-                    onClick={() => setChanging(true)}
-                    style={{ background: 'none', border: 0, color: teen.color.tealMid, fontWeight: 600, cursor: 'pointer', fontFamily: teen.font.sans, fontSize: 14, padding: 0 }}
-                  >
-                    Change
-                  </button>
+              {/* Only there when the clinician has chosen to show the child's rating. */}
+              {focus.child_rating_min != null && (
+                <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.textSecondary, marginTop: 6 }}>
+                  {childName} said stopping would be a {focus.child_rating_min === focus.child_rating_max
+                    ? focus.child_rating_min
+                    : `${focus.child_rating_min}–${focus.child_rating_max}`}.
                 </p>
-              ) : (
-                <>
-                  <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.ink, marginBottom: 10 }}>
-                    This week, did you hold the line?
-                  </div>
-                  {/* Equal weight on purpose, like the child's "did it happen?" answers: no answer
-                      is the right one to tap. */}
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {CHECKIN_ANSWERS.map(a => (
-                      <button
-                        key={a.key}
-                        className="teen-btn teen-btn--outline"
-                        style={{ flex: 1, paddingLeft: 6, paddingRight: 6 }}
-                        aria-pressed={answered?.answer === a.key}
-                        disabled={checkinMut.isPending}
-                        onClick={() => checkinMut.mutate(a.key)}
-                      >
-                        {a.parentLabel}
-                      </button>
-                    ))}
-                  </div>
-                  {checkinMut.isError && (
-                    <p role="alert" style={{ ...teen.type.body, fontSize: 13, color: '#b91c1c', margin: '8px 0 0' }}>
-                      That didn't save. Please try again.
-                    </p>
-                  )}
-                </>
+              )}
+
+              {/* This week's check-in: once a week, one question, instead of logging each moment. */}
+              <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${teen.color.line}` }}>
+                {answered && changing !== focus.id ? (
+                  <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.teal, margin: 0 }}>
+                    {answerInfo(answered.answer)?.summary} Your clinician will see it.{' '}
+                    <button
+                      onClick={() => setChanging(focus.id)}
+                      style={{ background: 'none', border: 0, color: teen.color.tealMid, fontWeight: 600, cursor: 'pointer', fontFamily: teen.font.sans, fontSize: 14, padding: 0 }}
+                    >
+                      Change
+                    </button>
+                  </p>
+                ) : (
+                  <>
+                    <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.ink, marginBottom: 10 }}>
+                      This week, did you hold the line?
+                    </div>
+                    {/* Equal weight on purpose, like the child's "did it happen?" answers: no answer
+                        is the right one to tap. */}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {CHECKIN_ANSWERS.map(a => (
+                        <button
+                          key={a.key}
+                          className="teen-btn teen-btn--outline"
+                          style={{ flex: 1, paddingLeft: 6, paddingRight: 6 }}
+                          aria-pressed={answered?.answer === a.key}
+                          disabled={checkinMut.isPending}
+                          onClick={() => checkinMut.mutate({ accommodationId: focus.id, answer: a.key })}
+                        >
+                          {a.parentLabel}
+                        </button>
+                      ))}
+                    </div>
+                    {checkinMut.isError && checkinMut.variables?.accommodationId === focus.id && (
+                      <p role="alert" style={{ ...teen.type.body, fontSize: 13, color: '#b91c1c', margin: '8px 0 0' }}>
+                        That didn't save. Please try again.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* how to support (tips for the focus situation) */}
+              {focus.trigger_situation_id && (
+                <div style={{ marginTop: 18 }}>
+                  <div style={teen.type.eyebrow}>How to support {childName}</div>
+                  <TipsList situationId={focus.trigger_situation_id} />
+                </div>
               )}
             </div>
-
-            {/* how to support (tips for the focus situation) */}
-            {focus.trigger_situation_id && (
-              <div style={{ marginTop: 18 }}>
-                <div style={teen.type.eyebrow}>How to support {childName}</div>
-                <TipsList situationId={focus.trigger_situation_id} />
-              </div>
-            )}
-          </div>
-        ) : (
+          )
+        }) : (
           <div className="teen-card" style={{ marginTop: 14, padding: 22 }}>
             <p style={{ ...teen.type.body, margin: 0 }}>
               Your clinician hasn't set a focus for this week yet. You'll see it here when they do.

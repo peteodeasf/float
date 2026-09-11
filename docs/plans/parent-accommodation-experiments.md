@@ -78,8 +78,8 @@ asking about each. Asked 2026-09-11, not answered; the experiments do not depend
 3. The clinician app: the parent's experiments on the Parent Accommodations panel; setting one up in
    a parent session.
 
-All three built 2026-09-11. Still open: whether the weekly focus can be more than one
-accommodation, with the check-in asking about each.
+All three built 2026-09-11. Peter decided the same day that the weekly focus can be more than one
+accommodation, with the check-in asking about each (docs/plans/weekly-checkin.md).
 
 ## Not in this
 

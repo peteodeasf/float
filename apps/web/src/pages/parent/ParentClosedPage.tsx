@@ -23,8 +23,10 @@ export default function ParentClosedPage() {
     queryFn: getMyCheckins,
   })
 
-  // Every time or mostly counts as holding the line that week.
+  // Every time or mostly counts as holding the line that week. With more than one focus a week has
+  // more than one answer, so then it counts answers rather than weeks.
   const held = useMemo(() => checkins.filter(c => c.answer !== 'gave_in').length, [checkins])
+  const oneAWeek = useMemo(() => new Set(checkins.map(c => c.week_start)).size === checkins.length, [checkins])
   const didAnything = checkins.length > 0
 
   return (
@@ -102,7 +104,7 @@ export default function ParentClosedPage() {
                 {held} of {checkins.length}
               </div>
               <p style={{ ...teen.type.body, margin: '10px 0 0' }}>
-                weeks you held the line, every time or mostly.
+                {oneAWeek ? 'weeks you held the line' : 'check-ins where you held the line'}, every time or mostly.
               </p>
             </div>
           </div>
