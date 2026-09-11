@@ -35,8 +35,9 @@ missed-exposure check and the arrow harvest all wait on it. Decided with Peter, 
   when "Parents can see the child's progress" is on — without it the parent is not told about the
   child's exposures at all. On a Sunday, if the weekly check-in is still to answer, the check-in gets
   the day's one reminder instead. The email says only that something is planned today.
-- **Missed exposures:** the existing check, every run. It only writes a note for the clinician
-  once per exposure.
+- **Missed exposures:** no longer a job (2026-09-11). The notes it wrote went into a table nothing
+  read; the clinician's screens now work missed exposures out from the records
+  (docs/plans/clinician-notifications.md).
 
 ## Time zones
 
@@ -68,8 +69,6 @@ sent again, and nobody gets a second reminder the same local day.
 ## Not yet
 
 - Texts.
-- Showing the clinician the missed-exposure notes. They are written today and nothing shows them —
-  that is the clinician-notifications plan.
 
 ## Also changed
 

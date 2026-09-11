@@ -1,6 +1,6 @@
 # Telling a clinician something needs attention
 
-**Planned 2026-09-01** from Peter's review. Not started.
+**Planned 2026-09-01** from Peter's review. **Step 1 built 2026-09-11** (below).
 
 ## Today
 
@@ -64,6 +64,33 @@ early, because everything else reads from it, and it is cheap to get right now a
 retrofit.
 
 **Delivery** is per channel and can arrive one at a time.
+
+## Decided, 2026-09-11 (Peter)
+
+The reasons shown, worked out on the server in one place (`app/services/attention_service.py`) so
+the patient list and the patient page show the same list, in the open rather than behind a dot:
+
+**Problems to follow up**
+- An exposure's day passed with nothing recorded (one the child agreed to, or one set for a day
+  they never finished setting up).
+- An active plan with nothing done on it in the past week.
+- A monitoring form sent with fewer than three entries back.
+- No weekly check-in from the parent last week (a parent linked, and the focus on the plan all of
+  last week).
+- An exposure marked too hard in the past week.
+
+**New to look at** (for a week after it happens)
+- The child finished rating the accommodations sent to them.
+- The parent named accommodations that are not yet added or taken off the suggestions.
+
+**Not shown:** "Gave in" on the check-in — Peter is still unsure about that answer. Unanswered
+messages.
+
+**The missed-exposure notes went.** The scheduled job wrote them into a table nothing read, and it
+skipped exposures the child had agreed to. The first reason above works them out from the records.
+
+**Low confidence on upcoming exposures**, which only the patient page showed, is not in Peter's list
+and is no longer shown.
 
 ## Order of work
 

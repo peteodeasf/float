@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { closePatient, reopenPatient, getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient } from '../../api/patients'
+import { closePatient, reopenPatient, getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient, getPatientAttention } from '../../api/patients'
 import {
   LineChart, Line, XAxis, YAxis,
   Tooltip, Legend, ResponsiveContainer
@@ -711,6 +711,12 @@ export default function PatientPage() {
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
+  // What needs attention: the same list the patient list shows, worked out on the server.
+  const { data: attention = [] } = useQuery({
+    queryKey: ['attention', patientId],
+    queryFn: () => getPatientAttention(patientId!),
+    enabled: !!patientId,
+  })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
   const { data: parentMessages } = useQuery({ queryKey: ['parent-messages', patientId], queryFn: () => getParentMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
   // The child thread and the parent thread share this panel; a toggle switches.
@@ -987,22 +993,7 @@ export default function PatientPage() {
     .filter(e => e.status === 'committed' && e.scheduled_date && e.scheduled_date.split('T')[0] >= todayISO)
     .sort((a, b) => (a.scheduled_date ?? '').localeCompare(b.scheduled_date ?? ''))[0]
 
-  // Needs attention items
-  const overdueItems = (patientExperiments ?? []).filter(isOverdue)
-  const lowConfidenceCount = (patientExperiments ?? []).filter(e =>
-    e.status === 'committed' &&
-    (e.confidence_level === 'low' || e.confidence_level === 'medium') &&
-    e.scheduled_date != null && e.scheduled_date.split('T')[0] >= todayISO
-  ).length
-  const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const hasRecentActivity = (patientExperiments ?? []).some(e => {
-    if (e.status !== 'completed' && e.status !== 'committed') return false
-    const d = e.completed_date || e.scheduled_date
-    if (!d) return false
-    return d.split('T')[0] >= sevenDaysAgoISO
-  })
-  const noActivityThisWeek = !hasRecentActivity && plan?.status === 'active'
-  const needsAttention = overdueItems.length > 0 || lowConfidenceCount > 0 || noActivityThisWeek
+  const attentionProblems = attention.some(r => r.tone === 'problem')
 
   // Timeline — group completed + committed by Mon-Sun week, newest first
   const timelineItems = (patientExperiments ?? [])
@@ -1787,38 +1778,36 @@ export default function PatientPage() {
         )}
       </div>
 
-      {/* Needs Attention */}
-      {needsAttention && (
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-            <span style={{ fontSize: '14px' }}>⚠</span>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#78350f', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Needs attention</span>
+      {/* Needs attention: the same reasons as the patient list, worked out on the server
+          (app/services/attention_service.py) so the two cannot disagree. Problems first, then what
+          is new to look at. docs/plans/clinician-notifications.md */}
+      {attention.length > 0 && (
+        <div style={{ background: attentionProblems ? '#fffbeb' : '#f0fdfa', border: `1px solid ${attentionProblems ? '#fde68a' : '#99f6e4'}`, borderRadius: '10px', padding: '16px 20px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: attentionProblems ? '#78350f' : '#0f766e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
+            {attentionProblems ? 'Needs attention' : 'New to look at'}
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {overdueItems.map(e => {
-              const dateStr = e.scheduled_date
-                ? new Date(e.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                : ''
-              return (
-                <li key={`overdue-${e.id}`} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
+            {attention.map(r => (
+              <li key={r.kind} style={{ fontSize: '13px', color: r.tone === 'new' ? '#0f766e' : '#78350f' }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                   <span style={{ fontWeight: 700 }}>·</span>
-                  <span><strong>Overdue:</strong> &ldquo;{e.behavior_name || e.plan_description || 'Experiment'}&rdquo; was scheduled {dateStr} — not yet recorded</span>
-                  <button onClick={() => setActiveTab('chat')} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
-                </li>
-              )
-            })}
-            {lowConfidenceCount > 0 && (
-              <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
-                <span style={{ fontWeight: 700 }}>·</span>
-                <span><strong>Low confidence:</strong> {lowConfidenceCount} upcoming experiment{lowConfidenceCount === 1 ? '' : 's'} rated Medium or Low confidence</span>
+                  <span>{r.tone === 'new' && <strong>New: </strong>}{r.text}</span>
+                  {r.kind === 'overdue' && (
+                    <button onClick={() => setActiveTab('chat')} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
+                  )}
+                </div>
+                {r.items.length > 0 && (
+                  <ul style={{ margin: '4px 0 0 18px', padding: 0, listStyle: 'none', fontSize: '12.5px' }}>
+                    {r.items.map(item => (
+                      <li key={item.id}>
+                        &ldquo;{item.name}&rdquo;
+                        {item.date ? ` · ${new Date(item.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
-            )}
-            {noActivityThisWeek && (
-              <li style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: '#78350f' }}>
-                <span style={{ fontWeight: 700 }}>·</span>
-                <span><strong>No experiments this week</strong></span>
-              </li>
-            )}
+            ))}
           </ul>
         </div>
       )}

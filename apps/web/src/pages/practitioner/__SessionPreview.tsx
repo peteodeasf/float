@@ -9,6 +9,33 @@ import { LadderEditor } from './SessionPage'
 import { BehaviorPanel, FlatLadder } from './PatientPage'
 import { ArrowIntro, PickPhase, ChainPhase } from './ArrowPage'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
+import { PatientRow } from './DashboardPage'
+import type { Patient } from '../../api/patients'
+
+// Patient list rows with what needs attention, for the 'patient-list' view.
+const LIST_ROW = (name: string, attention: Patient['attention'], phase = 'In treatment'): Patient => ({
+  id: name, name, email: `${name.split(' ')[0].toLowerCase()}@example.com`, created_at: '2026-08-01T00:00:00Z',
+  last_activity_at: '2026-09-10T15:00:00Z', has_monitoring_form: true, situation_count: 3,
+  has_consultation_1_note: true, has_parent_da: false, has_consultation_2_note: true, has_patient_da: true,
+  has_active_situation_with_behaviors: true, plan_status: 'active', teen_invited: true,
+  completed_experiment_count: 4, has_weekly_note: true, overdue_experiment_count: 0,
+  active_plan_with_no_recent_activity: false, monitoring_entries_count: 6, monitoring_form_sent: true,
+  checklist_checked_items: {}, phase: 'in_treatment', phase_label: phase, closed_at: null, attention,
+})
+const LIST_ROWS: Patient[] = [
+  LIST_ROW('Sam Rivera', [
+    { kind: 'overdue', tone: 'problem', text: '1 exposure passed with nothing recorded', items: [] },
+    { kind: 'checkin_missed', tone: 'problem', text: 'No weekly check-in from the parent last week', items: [] },
+    { kind: 'ratings_done', tone: 'new', text: 'Rated the accommodations: ready to sort by Fear Level', items: [] },
+  ]),
+  LIST_ROW('Maya Chen', [
+    { kind: 'parent_named', tone: 'new', text: 'The parent named 2 accommodations: see the suggestions', items: [] },
+  ]),
+  LIST_ROW('Leo Park', []),
+  LIST_ROW('Ava Singh', [
+    { kind: 'monitoring', tone: 'problem', text: 'Monitoring form sent; 1 of 3 entries back', items: [] },
+  ], 'Monitoring'),
+]
 
 const TRIGGERS = [
   { id: 't1', name: 'Raising my hand in class', distress_thermometer_rating: 7, display_order: 0 },
@@ -26,7 +53,7 @@ const BEHAVIORS = [
 export default function SessionPreview() {
   const qc = useQueryClient()
   const [ready, setReady] = useState(false)
-  const [view, setView] = useState<'editor' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain' | 'flat-ladder' | 'parent-plan'>('editor')
+  const [view, setView] = useState<'editor' | 'builder' | 'arrow-intro' | 'arrow-pick' | 'arrow-chain' | 'flat-ladder' | 'parent-plan' | 'patient-list'>('editor')
 
   useEffect(() => {
     // The fixtures below must be the only data. Without this the app re-fetches them as stale, and
@@ -103,7 +130,7 @@ export default function SessionPreview() {
     <div style={{ minHeight: '100vh', background: '#eef4f3', padding: 20 }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-          {(['editor', 'builder', 'flat-ladder', 'parent-plan', 'arrow-intro', 'arrow-pick', 'arrow-chain'] as const).map(v => (
+          {(['editor', 'builder', 'flat-ladder', 'parent-plan', 'patient-list', 'arrow-intro', 'arrow-pick', 'arrow-chain'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
                 background: view === v ? '#135450' : '#fff', color: view === v ? '#fff' : '#475569', border: '1px solid #cbd5e1' }}>{v}</button>
@@ -119,6 +146,13 @@ export default function SessionPreview() {
           </div>
         )}
         {view === 'parent-plan' && <ParentPlanPanel planId="p1" patientId="pt1" triggers={TRIGGERS} />}
+        {view === 'patient-list' && (
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>{LIST_ROWS.map(p => <PatientRow key={p.id} patient={p} onClick={noop} />)}</tbody>
+            </table>
+          </div>
+        )}
         {view === 'builder' && (
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12 }}>
             <BehaviorPanel trigger={TRIGGERS[0]} planId="p1" patientId="p-1" planStatus="setup" />

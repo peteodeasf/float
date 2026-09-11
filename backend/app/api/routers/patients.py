@@ -38,6 +38,7 @@ from app.models.message import Message
 from app.models.experiment import Experiment
 from app.services.patient_phase import LABELS, Phase, phase_of
 from app.core.behavior_types import LADDER_TYPES, OBSERVATION
+from app.services.attention_service import attention_for
 from app.services.patient_access_service import (
     accessible_patient_ids,
     is_institution_admin,
@@ -475,6 +476,7 @@ async def list_patients(
             id=patient.id,
             name=patient.name,
             email=user.email,
+            attention=await attention_for(db, patient),
             phone_number=patient.phone_number,
             created_at=patient.created_at,
             **metrics,
@@ -740,6 +742,18 @@ async def set_parent_progress_sharing(
     await db.commit()
     await db.refresh(patient)
     return await _patient_response(db, patient)
+
+
+@router.get("/{patient_id}/attention")
+async def patient_attention(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    """What needs attention on this patient: the same list the patient list shows.
+    docs/plans/clinician-notifications.md"""
+    return await attention_for(db, patient)
 
 
 @router.put("/{patient_id}/accommodation-ratings-sharing", response_model=PatientResponse)

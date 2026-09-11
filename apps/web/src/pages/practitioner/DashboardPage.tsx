@@ -44,42 +44,41 @@ export function phaseStyle(p: Patient): CSSProperties {
     : { color: 'var(--float-text)' }
 }
 
-// Reasons the patient needs attention (empty array = no badge)
+// The problems on a patient, as worked out on the server (app/services/attention_service.py). The
+// row shows these and what is new, in the open under the name — they used to hide in a tooltip on a
+// dot. docs/plans/clinician-notifications.md
 export function needsAttentionReasons(p: Patient): string[] {
-  const reasons: string[] = []
-  if (p.overdue_experiment_count > 0) {
-    reasons.push(`Overdue experiment${p.overdue_experiment_count > 1 ? 's' : ''} (${p.overdue_experiment_count})`)
-  }
-  if (p.active_plan_with_no_recent_activity) {
-    reasons.push('No activity this week')
-  }
-  if (p.monitoring_form_sent && p.monitoring_entries_count < 3) {
-    reasons.push(`Awaiting monitoring entries (${p.monitoring_entries_count}/3)`)
-  }
-  return reasons
+  return (p.attention ?? []).filter(r => r.tone === 'problem').map(r => r.text)
 }
 
 export function PatientRow({ patient, onClick }: { patient: Patient; onClick: () => void }) {
-  const reasons = needsAttentionReasons(patient)
+  const attention = patient.attention ?? []
   return (
     <tr
       onClick={onClick}
       className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
     >
       <td className="px-6 py-4">
-        <div className="flex items-center gap-2">
-          <p className="font-medium" style={{ color: 'var(--float-text)' }}>{patient.name}</p>
-          {reasons.length > 0 && (
-            <span
-              title={reasons.join('\n')}
-              aria-label="Needs attention"
-              style={{ color: '#f59e0b', fontSize: '10px', lineHeight: 1 }}
-            >
-              ●
-            </span>
-          )}
-        </div>
+        <p className="font-medium" style={{ color: 'var(--float-text)' }}>{patient.name}</p>
         <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>{patient.email}</p>
+        {/* Problems in amber, what is new in teal. Nothing to hover over. */}
+        {attention.length > 0 && (
+          <ul aria-label="Needs attention" style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {attention.map(r => (
+              <li
+                key={r.kind}
+                style={{
+                  fontSize: '11.5px', fontWeight: 600, borderRadius: '999px', padding: '2px 8px',
+                  color: r.tone === 'new' ? '#0f766e' : '#92400e',
+                  background: r.tone === 'new' ? '#f0fdfa' : '#fffbeb',
+                  border: `1px solid ${r.tone === 'new' ? '#99f6e4' : '#fde68a'}`,
+                }}
+              >
+                {r.tone === 'new' ? 'New: ' : ''}{r.text}
+              </li>
+            ))}
+          </ul>
+        )}
       </td>
       <td className="px-6 py-4 text-xs" style={phaseStyle(patient)}>
         {phaseLabel(patient)}

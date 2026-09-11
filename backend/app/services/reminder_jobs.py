@@ -2,7 +2,8 @@
 
 Every 15 minutes: remind children of today's exposures at the time they picked, give their parent
 a heads-up that morning (only when the clinician shares the child's progress with them), remind
-parents on Sunday evening to answer the weekly check-in, and run the missed-exposure check. Nothing before 8am
+parents on Sunday evening to answer the weekly check-in. Missed exposures are no longer noted here:
+the clinician's screens work them out from the records (app/services/attention_service.py). Nothing before 8am
 or after 8pm where the person lives, at most one reminder a day each, and never the same reminder
 twice. The emails say nothing clinical — only that something is waiting in Float.
 """
@@ -24,7 +25,6 @@ from app.models.reminder import ReminderSent
 from app.models.treatment import TreatmentPlan
 from app.models.user import User
 from app.services import email_service
-from app.services.missed_experiment_service import detect_missed_experiments
 
 logger = logging.getLogger(__name__)
 
@@ -287,5 +287,4 @@ async def run_due(db: AsyncSession, now_utc: datetime, send: Send | None = None)
         "parent_checkin": await parent_checkin_reminders(db, now_utc, send),
     }
     await db.commit()
-    counts["missed"] = await detect_missed_experiments(db)
     return counts

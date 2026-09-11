@@ -667,3 +667,8 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
   changed — but it can point at another child's rung.
 - The child routes in `experiments.py` use their own copy of `get_patient_context`, which skips the
   check that stops a child whose treatment has been closed from making changes.
+- Noticed by the 2026-09-11 review of what needs attention: when a clinician creates an exposure
+  (`experiments.py`, the two create routes around lines 106 and 152), its step is checked against
+  the clinic but not against the patient. The clinician's screens now show that step's name, so an
+  exposure pointed at another patient's step would show that name. Using it needs the other step's
+  id, which cannot be guessed. Tighten the check to the patient.

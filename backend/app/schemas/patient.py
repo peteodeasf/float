@@ -84,6 +84,8 @@ class PatientListResponse(BaseModel):
     closed_at: Optional[datetime] = None
     # Consultation checklist state (for surfacing the next action on the list)
     checklist_checked_items: dict = {}
+    # What needs attention, the same list the patient page shows (app/services/attention_service.py).
+    attention: list[dict] = []
 
     class Config:
         from_attributes = True

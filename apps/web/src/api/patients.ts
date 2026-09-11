@@ -12,6 +12,16 @@ export const PHASES: { value: Phase; label: string }[] = [
   { value: 'closed', label: 'Closed' },
 ]
 
+/** Something on a patient that needs the clinician's attention, or that is new to look at. Worked
+ *  out on the server so the patient list and the patient page show the same list.
+ *  docs/plans/clinician-notifications.md */
+export type AttentionReason = {
+  kind: string
+  tone: 'problem' | 'new'
+  text: string
+  items: { id: string; name: string; date: string | null }[]
+}
+
 export type Patient = {
   id: string
   name: string
@@ -42,7 +52,11 @@ export type Patient = {
   phase: Phase
   phase_label: string
   closed_at?: string | null
+  attention?: AttentionReason[]
 }
+
+export const getPatientAttention = async (patientId: string): Promise<AttentionReason[]> =>
+  (await apiClient.get(`/patients/${patientId}/attention`)).data
 
 export interface PatientDetail {
   id: string

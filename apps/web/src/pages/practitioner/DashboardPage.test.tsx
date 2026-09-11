@@ -91,28 +91,18 @@ describe('the phase filter', () => {
   })
 })
 
+// The reasons themselves are worked out on the server and tested there
+// (backend/tests/test_attention.py). This only checks the list reads them.
 describe('needs attention', () => {
   it('says nothing when there is nothing to say', () => {
     expect(needsAttentionReasons(patient())).toEqual([])
   })
 
-  it('counts overdue experiments', () => {
-    expect(needsAttentionReasons(patient({ overdue_experiment_count: 2 }))[0])
-      .toContain('Overdue experiments (2)')
-  })
-
-  it('flags a monitoring form that has come back nearly empty', () => {
-    const reasons = needsAttentionReasons(patient({
-      monitoring_form_sent: true, monitoring_entries_count: 1,
-    }))
-    expect(reasons).toContain('Awaiting monitoring entries (1/3)')
-  })
-
-  it('does not nag once enough entries are in', () => {
-    const reasons = needsAttentionReasons(patient({
-      monitoring_form_sent: true, monitoring_entries_count: 3,
-    }))
-    expect(reasons.some(r => r.includes('Awaiting monitoring'))).toBe(false)
+  it("reads the server's problems, and leaves out what is only new", () => {
+    expect(needsAttentionReasons(patient({ attention: [
+      { kind: 'overdue', tone: 'problem', text: '2 exposures passed with nothing recorded', items: [] },
+      { kind: 'parent_named', tone: 'new', text: 'The parent named 1 accommodation: see the suggestions', items: [] },
+    ] }))).toEqual(['2 exposures passed with nothing recorded'])
   })
 })
 
