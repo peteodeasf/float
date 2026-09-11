@@ -13,6 +13,7 @@ import {
   getPatientExperiments, searchSituationLibrary, type DownwardArrow
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, type PreliminaryReport } from '../../api/monitoring'
+import ParentWords from '../../components/practitioner/ParentWords'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../../lib/checklists'
@@ -269,6 +270,7 @@ function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onC
                 </td>
                 <td className="py-3 px-3 text-slate-700">
                   {entry.situation || '--'}
+                  <ParentWords entry={entry} />
                 </td>
                 <td className="py-3 px-3 text-slate-600">
                   {entry.child_behavior_observed || '--'}

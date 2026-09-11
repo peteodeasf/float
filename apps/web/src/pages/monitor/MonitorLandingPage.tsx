@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
+import JustSayIt, { CaptureChoices, MicIcon, captureApi } from './JustSayIt'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
-type Screen = 'welcome' | 'home' | 'add' | 'edit'
+type Screen = 'welcome' | 'home' | 'add' | 'edit' | 'capture'
 
 interface Entry {
   id: string
@@ -14,6 +15,8 @@ interface Entry {
   parent_response: string | null
   fear_thermometer: number | null
   is_draft: boolean
+  parent_words?: string | null
+  captured_by?: string
   created_at: string
 }
 
@@ -22,6 +25,7 @@ interface FormData {
   status: string
   patient_first_name: string | null
   practitioner_name: string | null
+  voice_available?: boolean
   entries: Entry[]
 }
 
@@ -34,9 +38,16 @@ export default function MonitorLandingPage() {
   const [showTips, setShowTips] = useState(false)
   const [showResend, setShowResend] = useState(false)
   const [resendValue, setResendValue] = useState('')
-  const [bookmarkDismissed, setBookmarkDismissed] = useState(false)
+  const [bookmarkDismissed, setBookmarkDismissed] = useState(() => {
+    try { return localStorage.getItem('float-monitor-tip') === 'dismissed' } catch { return false }
+  })
+  const [remindersOff, setRemindersOff] = useState(false)
   const [consentGiven, setConsentGiven] = useState(false)
   const [consentSaving, setConsentSaving] = useState(false)
+  // Just say it: talking, or a quick note, instead of the four boxes. docs/plans/monitoring-just-say-it.md
+  const [captureMode, setCaptureMode] = useState<'talk' | 'note'>('talk')
+  const [savedCount, setSavedCount] = useState(0)
+  const api = useMemo(() => captureApi(token ?? ''), [token])
 
   // Entry form state
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null)
@@ -49,11 +60,15 @@ export default function MonitorLandingPage() {
 
   const fetchForm = async () => {
     try {
-      const res = await axios.get(`${API_URL}/monitor/${token}`)
+      // Where they live, for the evening email during the monitoring week.
+      let tz: string | undefined
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone } catch { tz = undefined }
+      const res = await axios.get(`${API_URL}/monitor/${token}`, { params: tz ? { tz } : {} })
       setForm(res.data)
       if (res.data.entries.length > 0) {
         setScreen('home')
       }
+      return res.data as FormData
     } catch {
       setError('This form link is not valid or has expired.')
     } finally {
@@ -64,6 +79,23 @@ export default function MonitorLandingPage() {
   useEffect(() => {
     if (token) fetchForm()
   }, [token])
+
+  // The off link in the evening email lands here with ?reminders=off.
+  useEffect(() => {
+    if (!token || new URLSearchParams(window.location.search).get('reminders') !== 'off') return
+    axios.post(`${API_URL}/monitor/${token}/reminders-off`).then(() => setRemindersOff(true)).catch(() => {})
+  }, [token])
+
+  // A home screen icon should open this page, not Float's sign-in page. The app-wide manifest starts
+  // at "/", so it is taken off while this page is open and the phone uses this page's address.
+  // docs/plans/monitoring-just-say-it.md
+  useEffect(() => {
+    const link = document.querySelector('link[rel="manifest"]')
+    const parent = link?.parentNode ?? null
+    const next = link?.nextSibling ?? null
+    link?.remove()
+    return () => { if (link && parent) parent.insertBefore(link, next) }
+  }, [])
 
   const resetEntryForm = () => {
     setEditingEntry(null)
@@ -119,6 +151,28 @@ export default function MonitorLandingPage() {
   const childName = form?.patient_first_name || 'your child'
   const practitionerName = form?.practitioner_name || 'Your clinician'
   const entryCount = form?.entries.filter(e => !e.is_draft).length ?? 0
+  const voice = !!form?.voice_available
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches
+    || (navigator as { standalone?: boolean }).standalone === true
+  const homeTip = /iPhone|iPad|iPod/.test(navigator.userAgent)
+    ? 'Add Float to your home screen: tap Share, then “Add to Home Screen”. Next time it’s one tap away.'
+    : /Android/.test(navigator.userAgent)
+      ? 'Add Float to your home screen from your browser’s menu. Next time it’s one tap away.'
+      : 'Bookmark this page for easy access later'
+  const dismissTip = () => {
+    setBookmarkDismissed(true)
+    try { localStorage.setItem('float-monitor-tip', 'dismissed') } catch { /* shown again next time */ }
+  }
+  const offBanner = remindersOff && (
+    <div role="status" style={{ background: '#f1f5f9', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', color: '#334155' }}>
+      You won't get the evening emails any more.
+    </div>
+  )
+  const startCapture = (m: 'talk' | 'note') => {
+    setCaptureMode(m)
+    setSavedCount(0)
+    setScreen('capture')
+  }
 
   if (loading) {
     return (
@@ -140,11 +194,29 @@ export default function MonitorLandingPage() {
     )
   }
 
+  // ── Just say it ──
+  if (screen === 'capture') {
+    return (
+      <JustSayIt
+        mode={captureMode}
+        childName={childName}
+        api={api}
+        onClose={async saved => {
+          const data = await fetchForm()
+          setSavedCount(saved)
+          setScreen(data && data.entries.length > 0 ? 'home' : 'welcome')
+        }}
+        onUseForm={() => { resetEntryForm(); setScreen('add') }}
+      />
+    )
+  }
+
   // ── Welcome screen ──
   if (screen === 'welcome') {
     return (
       <Shell>
         <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+          {offBanner}
           <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '24px', lineHeight: '1.6' }}>
             <strong>{practitionerName}</strong> has asked you to complete a monitoring form
             for {childName} before your first appointment.
@@ -212,22 +284,7 @@ export default function MonitorLandingPage() {
             </span>
           </label>
 
-          <button
-            onClick={handleAdd}
-            style={{
-              width: '100%',
-              padding: '18px',
-              background: '#135450',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '14px',
-              fontSize: '17px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            Add my first observation
-          </button>
+          <CaptureChoices voice={voice} onTalk={() => startCapture('talk')} onNote={() => startCapture('note')} onForm={handleAdd} />
         </div>
       </Shell>
     )
@@ -238,6 +295,7 @@ export default function MonitorLandingPage() {
     return (
       <Shell>
         <div style={{ padding: '24px' }}>
+          {offBanner}
           <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
             Your observations
           </h2>
@@ -250,8 +308,14 @@ export default function MonitorLandingPage() {
             }
           </p>
 
+          {savedCount > 0 && (
+            <div role="status" style={{ background: '#eafaf6', border: '1px solid #9af6e4', color: '#0d3d3a', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>
+              Saved {savedCount === 1 ? 'your observation' : `${savedCount} observations`}. Thank you.
+            </div>
+          )}
+
           {/* Bookmark prompt */}
-          {!bookmarkDismissed && entryCount > 0 && entryCount < 3 && (
+          {!bookmarkDismissed && !standalone && (
             <div style={{
               background: '#fffbeb',
               borderRadius: '12px',
@@ -263,10 +327,11 @@ export default function MonitorLandingPage() {
               justifyContent: 'space-between'
             }}>
               <p style={{ fontSize: '13px', color: '#92400e', margin: 0 }}>
-                Bookmark this page for easy access later
+                {homeTip}
               </p>
               <button
-                onClick={() => setBookmarkDismissed(true)}
+                onClick={dismissTip}
+                aria-label="Dismiss"
                 style={{ background: 'none', border: 'none', color: '#92400e', cursor: 'pointer', fontSize: '16px' }}
               >
                 x
@@ -300,6 +365,9 @@ export default function MonitorLandingPage() {
                     </span>
                     {entry.is_draft && (
                       <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Draft</span>
+                    )}
+                    {entry.captured_by === 'voice' && (
+                      <span title="Said out loud" style={{ color: '#135450', display: 'inline-flex' }}><MicIcon size={13} /></span>
                     )}
                   </div>
                   {entry.situation && (
@@ -384,34 +452,12 @@ export default function MonitorLandingPage() {
               </div>
             )}
           </div>
+          <div style={{ height: '140px' }} />
         </div>
 
-        {/* Floating add button */}
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'calc(100% - 48px)',
-          maxWidth: '432px'
-        }}>
-          <button
-            onClick={handleAdd}
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: '#135450',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '14px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.3)'
-            }}
-          >
-            + Add observation
-          </button>
+        {/* The ways to add one: talking first once recording is set up. */}
+        <div style={{ position: 'fixed', bottom: '14px', left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 28px)', maxWidth: '452px' }}>
+          <CaptureChoices compact voice={voice} onTalk={() => startCapture('talk')} onNote={() => startCapture('note')} onForm={handleAdd} />
         </div>
       </Shell>
     )

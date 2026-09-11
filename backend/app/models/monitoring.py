@@ -35,6 +35,17 @@ class MonitoringForm(Base):
         DateTime(timezone=True), nullable=True
     )
     parent_phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Recordings and write-ups today. The form's link needs no sign-in and they call paid services,
+    # so a leaked link cannot run up the cost. docs/plans/monitoring-just-say-it.md
+    capture_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    capture_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    # The evening email during the monitoring week: the address the form was sent to (only that one,
+    # never the patient record's, which may be another parent's), where the parent lives, the last
+    # day it went, and whether they turned it off.
+    parent_email: Mapped[str | None] = mapped_column(String, nullable=True)
+    parent_timezone: Mapped[str | None] = mapped_column(String, nullable=True)
+    evening_email_sent_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    reminders_off_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")
@@ -60,6 +71,11 @@ class MonitoringEntry(Base):
     parent_response: Mapped[str | None] = mapped_column(Text, nullable=True)
     fear_thermometer: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_draft: Mapped[bool] = mapped_column(Boolean, default=False)
+    # What the parent said or typed, when Float wrote the observation up from it. The recording
+    # itself is never kept (Peter, 2026-09-11).
+    parent_words: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: form | voice | note
+    captured_by: Mapped[str] = mapped_column(String, nullable=False, default="form", server_default=text("'form'"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

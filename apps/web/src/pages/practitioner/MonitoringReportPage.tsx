@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getMonitoringReport } from '../../api/monitoring'
+import ParentWords from '../../components/practitioner/ParentWords'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 
 export default function MonitoringReportPage() {
@@ -106,6 +107,7 @@ export default function MonitoringReportPage() {
                   </td>
                   <td className="py-3 px-3 text-slate-700">
                     {entry.situation || '--'}
+                    <ParentWords entry={entry} />
                   </td>
                   <td className="py-3 px-3 text-slate-600">
                     {entry.child_behavior_observed || '--'}

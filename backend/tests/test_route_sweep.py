@@ -64,6 +64,14 @@ PUBLIC = {
     "POST /monitor/{access_token}/entries",
     "PUT /monitor/{access_token}/entries/{entry_id}",
     "POST /monitor/{access_token}/submit",
+    # Just say it: a recording turned into text, a note written up as drafts, and removing a
+    # draft. The first two call paid services, so each form has a daily limit.
+    # docs/plans/monitoring-just-say-it.md
+    "POST /monitor/{access_token}/transcribe",
+    "POST /monitor/{access_token}/write-up",
+    "DELETE /monitor/{access_token}/entries/{entry_id}",
+    # The off link in the evening email during the monitoring week: it can only stop those emails.
+    "POST /monitor/{access_token}/reminders-off",
     # The review link a clinician opens to mark generated suggestions. Same bargain as the
     # monitoring form: an unguessable token instead of a login, because the people whose judgement
     # we need will not manage one. Safe only because the review tables hold their own copy of the

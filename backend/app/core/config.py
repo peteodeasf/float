@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     # Anthropic
     ANTHROPIC_API_KEY: str = ""
 
+    # Google Speech-to-Text, for monitoring by voice (docs/plans/monitoring-just-say-it.md): a
+    # service account's JSON key, pasted whole. Empty means recording is not offered; typing a
+    # quick note still works. Google's "data logging" must stay off for patient data.
+    GOOGLE_SPEECH_CREDENTIALS: str = ""
+    GOOGLE_SPEECH_LOCATION: str = "us"
+    GOOGLE_SPEECH_MODEL: str = "chirp_3"
+
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:8081", "https://floatcbt.com", "https://www.floatcbt.com"]
     

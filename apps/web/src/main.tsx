@@ -20,6 +20,7 @@ import ArrowPage from './pages/practitioner/ArrowPage'
 import SessionPreview from './pages/practitioner/__SessionPreview'
 import TeenSetupPreview from './pages/teen/__TeenSetupPreview'
 import ParentProgressPreview from './pages/parent/__ParentProgressPreview'
+import JustSayItPreview from './pages/monitor/__JustSayItPreview'
 import NewPatientPage from './pages/practitioner/NewPatientPage'
 import ProgressPage from './pages/practitioner/ProgressPage'
 import TeenLoginPage from './pages/teen/TeenLoginPage'
@@ -101,6 +102,7 @@ createRoot(document.getElementById('root')!).render(
               {import.meta.env.DEV && <Route path="/__session-preview" element={<SessionPreview />} />}
               {import.meta.env.DEV && <Route path="/__teen-setup-preview/:behaviorId" element={<TeenSetupPreview />} />}
               {import.meta.env.DEV && <Route path="/__parent-progress-preview" element={<ParentProgressPreview />} />}
+              {import.meta.env.DEV && <Route path="/__just-say-it-preview" element={<JustSayItPreview />} />}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/dashboard" element={

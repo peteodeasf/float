@@ -2,7 +2,8 @@
 
 Every 15 minutes: remind children of today's exposures at the time they picked, give their parent
 a heads-up that morning (only when the clinician shares the child's progress with them), remind
-parents on Sunday evening to answer the weekly check-in. Missed exposures are no longer noted here:
+parents on Sunday evening to answer the weekly check-in, and ask a parent keeping the monitoring
+diary each evening of that week whether anything came up. Missed exposures are no longer noted here:
 the clinician's screens work them out from the records (app/services/attention_service.py). Nothing before 8am
 or after 8pm where the person lives, at most one reminder a day each, and never the same reminder
 twice. The emails say nothing clinical — only that something is waiting in Float.
@@ -11,7 +12,7 @@ import hashlib
 import hmac
 import logging
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Awaitable, Callable
 from zoneinfo import ZoneInfo
 
@@ -20,7 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.experiment import AccommodationBehavior, AccommodationCheckin, Experiment
-from app.models.patient import ParentPatientLink, PatientProfile
+from app.models.monitoring import MonitoringEntry, MonitoringForm
+from app.models.patient import ParentPatientLink, PatientProfile, PractitionerProfile
 from app.models.reminder import ReminderSent
 from app.models.treatment import TreatmentPlan
 from app.models.user import User
@@ -30,10 +32,13 @@ logger = logging.getLogger(__name__)
 
 WAKING_START, WAKING_END = 8, 20  # 8am up to 8pm, where they live
 CHECKIN_FROM_HOUR = 18            # Sunday from 6pm
+MONITORING_FROM_HOUR = 19         # each evening of the monitoring week, from 7pm
+MONITORING_DAYS = 7
 
 KIND_CHILD_EXPOSURE = "child_exposure"
 KIND_PARENT_EXPOSURE = "parent_exposure"
 KIND_PARENT_CHECKIN = "parent_checkin"
+KIND_MONITORING = "monitoring_evening"
 
 # Fixed words. Nothing about the child, the step or the accommodation goes into an email.
 CONTENT = {
@@ -58,9 +63,18 @@ CONTENT = {
         cta="Open Float",
         path="/parent/home",
     ),
+    # To the address the monitoring form was sent to; its link is the form's own.
+    KIND_MONITORING: dict(
+        subject="Anything come up today?",
+        heading="Anything come up today?",
+        body="If something came up today, it takes under a minute to add.",
+        cta="Add it",
+        path=None,
+    ),
 }
 
 Send = Callable[[User, str], Awaitable[bool]]
+SendMonitoring = Callable[[MonitoringForm, str], Awaitable[bool]]
 
 
 # ── The link that turns reminder emails off ──────────────────────────────────
@@ -112,6 +126,20 @@ async def default_send(user: User, kind: str) -> bool:
         cta_label=c["cta"],
         cta_link=f"{settings.BASE_URL}{c['path']}",
         off_link=f"{settings.BASE_URL}/reminders/off?token={off_token(user.id)}",
+    )
+
+
+async def default_send_monitoring(form: MonitoringForm, to_email: str) -> bool:
+    c = CONTENT[KIND_MONITORING]
+    link = f"{settings.BASE_URL}/monitor/{form.access_token}"
+    return await email_service.send_reminder_email(
+        to_email=to_email,
+        subject=c["subject"],
+        heading=c["heading"],
+        body=c["body"],
+        cta_label=c["cta"],
+        cta_link=link,
+        off_link=f"{link}?reminders=off",
     )
 
 
@@ -279,12 +307,75 @@ async def parent_checkin_reminders(db: AsyncSession, now_utc: datetime, send: Se
     return sent
 
 
-async def run_due(db: AsyncSession, now_utc: datetime, send: Send | None = None) -> dict:
+async def _clinician_timezone(db: AsyncSession, patient: PatientProfile) -> str | None:
+    if patient.primary_practitioner_id is None:
+        return None
+    return (await db.execute(
+        select(User.timezone)
+        .join(PractitionerProfile, PractitionerProfile.user_id == User.id)
+        .where(PractitionerProfile.id == patient.primary_practitioner_id)
+    )).scalar_one_or_none()
+
+
+async def monitoring_evening_reminders(db: AsyncSession, now_utc: datetime, send: SendMonitoring) -> int:
+    """Each evening of the monitoring week, from 7pm where the parent lives: anything come up today?
+
+    docs/plans/monitoring-just-say-it.md. Not on the day the form was sent, not on a day they already
+    added something, and not once they submit it or turn these off. The parent has no Float account
+    yet, so the address is the one the clinician sent the form to, and the time zone is the one the
+    monitoring page reported, else their clinician's.
+    """
+    rows = (await db.execute(
+        select(MonitoringForm, PatientProfile)
+        .join(PatientProfile, PatientProfile.id == MonitoringForm.patient_id)
+        .where(
+            MonitoringForm.status.in_(["pending", "in_progress"]),
+            MonitoringForm.sent_at.is_not(None),
+            MonitoringForm.sent_at > now_utc - timedelta(days=MONITORING_DAYS + 1),
+            MonitoringForm.reminders_off_at.is_(None),
+            PatientProfile.closed_at.is_(None),
+            MonitoringForm.parent_email.is_not(None),
+        )
+    )).all()
+    sent = 0
+    for form, patient in rows:
+        local = _local(now_utc, form.parent_timezone or await _clinician_timezone(db, patient))
+        if local is None or local.hour < MONITORING_FROM_HOUR or not _waking(local):
+            continue
+        today = local.date()
+        first_day = form.sent_at.astimezone(local.tzinfo).date()
+        if today <= first_day or today > first_day + timedelta(days=MONITORING_DAYS):
+            continue
+        if form.evening_email_sent_on == today:
+            continue
+        added = (await db.execute(
+            select(MonitoringEntry.id).where(
+                MonitoringEntry.monitoring_form_id == form.id,
+                MonitoringEntry.created_at >= datetime.combine(today, time.min, tzinfo=local.tzinfo),
+            ).limit(1)
+        )).first()
+        if added is not None:
+            continue
+        if not await send(form, form.parent_email):
+            continue  # tried again next run
+        form.evening_email_sent_on = today
+        await db.flush()
+        sent += 1
+    return sent
+
+
+async def run_due(
+    db: AsyncSession,
+    now_utc: datetime,
+    send: Send | None = None,
+    send_monitoring: SendMonitoring | None = None,
+) -> dict:
     send = send or default_send
     counts = {
         "child_exposure": await child_exposure_reminders(db, now_utc, send),
         "parent_exposure": await parent_exposure_reminders(db, now_utc, send),
         "parent_checkin": await parent_checkin_reminders(db, now_utc, send),
+        "monitoring_evening": await monitoring_evening_reminders(db, now_utc, send_monitoring or default_send_monitoring),
     }
     await db.commit()
     return counts

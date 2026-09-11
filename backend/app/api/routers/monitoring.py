@@ -1,10 +1,11 @@
 import uuid
 import secrets
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from collections import Counter
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from typing import Optional
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
+from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -12,6 +13,7 @@ from app.core.database import get_db
 from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.models.patient import PatientProfile, PractitionerProfile
 from app.api.routers.patients import get_practitioner_context, get_permitted_patient
+from app.services import monitoring_capture as capture
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
@@ -38,6 +40,21 @@ class MonitoringEntryUpdate(BaseModel):
     parent_response: Optional[str] = None
     fear_thermometer: Optional[int] = None
     is_draft: Optional[bool] = None
+
+
+def _entry_out(e: MonitoringEntry) -> dict:
+    return {
+        "id": str(e.id),
+        "entry_date": e.entry_date.isoformat(),
+        "situation": e.situation,
+        "child_behavior_observed": e.child_behavior_observed,
+        "parent_response": e.parent_response,
+        "fear_thermometer": e.fear_thermometer,
+        "is_draft": e.is_draft,
+        "parent_words": e.parent_words,
+        "captured_by": e.captured_by,
+        "created_at": e.created_at.isoformat() if e.created_at else None,
+    }
 
 
 # ── Practitioner endpoints ───────────────────────────────────────────────────
@@ -100,6 +117,12 @@ async def send_monitoring_form(
     # Store parent phone if provided
     if data.parent_phone:
         form.parent_phone = data.parent_phone
+        await db.commit()
+
+    # The address it went to. The evening emails during the monitoring week go there and nowhere
+    # else (docs/plans/monitoring-just-say-it.md); a form sent by text only gets none.
+    if data.parent_email and data.parent_email.strip():
+        form.parent_email = data.parent_email.strip()
         await db.commit()
 
     # Send email if parent_email provided
@@ -175,16 +198,7 @@ async def get_monitoring_form(
         "created_at": form.created_at.isoformat(),
         "entries_count": len(entries),
         "entries": [
-            {
-                "id": str(e.id),
-                "entry_date": e.entry_date.isoformat(),
-                "situation": e.situation,
-                "child_behavior_observed": e.child_behavior_observed,
-                "parent_response": e.parent_response,
-                "fear_thermometer": e.fear_thermometer,
-                "is_draft": e.is_draft,
-                "created_at": e.created_at.isoformat()
-            }
+            _entry_out(e)
             for e in entries
         ]
     }
@@ -313,7 +327,9 @@ async def get_monitoring_report(
             "situation": e.situation,
             "child_behavior_observed": e.child_behavior_observed,
             "parent_response": e.parent_response,
-            "fear_thermometer": e.fear_thermometer
+            "fear_thermometer": e.fear_thermometer,
+            "parent_words": e.parent_words,
+            "captured_by": e.captured_by,
         }
         for e in entries_by_distress
     ]
@@ -339,7 +355,9 @@ async def get_monitoring_report(
             "situation": e.situation,
             "child_behavior_observed": e.child_behavior_observed,
             "parent_response": e.parent_response,
-            "fear_thermometer": e.fear_thermometer
+            "fear_thermometer": e.fear_thermometer,
+            "parent_words": e.parent_words,
+            "captured_by": e.captured_by,
         }
         for e in entries
     ]
@@ -381,9 +399,21 @@ async def get_form_by_token(
 @public_router.get("/monitor/{access_token}")
 async def get_public_form(
     access_token: str,
+    tz: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
     form = await get_form_by_token(access_token, db)
+
+    # Where the parent lives, for the evening email during the monitoring week. Only a real time
+    # zone name is kept. docs/plans/monitoring-just-say-it.md
+    if tz and len(tz) <= 64 and tz != form.parent_timezone:
+        try:
+            ZoneInfo(tz)
+        except Exception:
+            pass
+        else:
+            form.parent_timezone = tz
+            await db.commit()
 
     # Get patient name
     patient_result = await db.execute(
@@ -421,17 +451,10 @@ async def get_public_form(
         "status": form.status,
         "patient_first_name": patient.name.split()[0] if patient else None,
         "practitioner_name": practitioner_name,
+        # Recording is offered only once Google is set up; typing a quick note always works.
+        "voice_available": capture.voice_available(),
         "entries": [
-            {
-                "id": str(e.id),
-                "entry_date": e.entry_date.isoformat(),
-                "situation": e.situation,
-                "child_behavior_observed": e.child_behavior_observed,
-                "parent_response": e.parent_response,
-                "fear_thermometer": e.fear_thermometer,
-                "is_draft": e.is_draft,
-                "created_at": e.created_at.isoformat()
-            }
+            _entry_out(e)
             for e in entries
         ]
     }
@@ -469,16 +492,7 @@ async def create_entry(
     await db.commit()
     await db.refresh(entry)
 
-    return {
-        "id": str(entry.id),
-        "entry_date": entry.entry_date.isoformat(),
-        "situation": entry.situation,
-        "child_behavior_observed": entry.child_behavior_observed,
-        "parent_response": entry.parent_response,
-        "fear_thermometer": entry.fear_thermometer,
-        "is_draft": entry.is_draft,
-        "created_at": entry.created_at.isoformat()
-    }
+    return _entry_out(entry)
 
 
 @public_router.put("/monitor/{access_token}/entries/{entry_id}")
@@ -521,16 +535,7 @@ async def update_entry(
     await db.commit()
     await db.refresh(entry)
 
-    return {
-        "id": str(entry.id),
-        "entry_date": entry.entry_date.isoformat(),
-        "situation": entry.situation,
-        "child_behavior_observed": entry.child_behavior_observed,
-        "parent_response": entry.parent_response,
-        "fear_thermometer": entry.fear_thermometer,
-        "is_draft": entry.is_draft,
-        "created_at": entry.created_at.isoformat()
-    }
+    return _entry_out(entry)
 
 
 @public_router.post("/monitor/{access_token}/submit")
@@ -570,3 +575,135 @@ async def record_parent_consent(
             patient.consent_source = "parent_form"
             await db.commit()
     return {"status": "ok"}
+
+
+# ── Just say it: an observation said out loud, or typed as a quick note ──────
+# docs/plans/monitoring-just-say-it.md. The same bargain as the rest of the form: the unguessable
+# token instead of a login. These call paid services, so each form has a daily limit.
+
+def _refuse_if_submitted(form: MonitoringForm) -> None:
+    if form.status == "submitted":
+        raise HTTPException(status_code=400, detail="Form already submitted")
+
+
+async def _count_capture(db: AsyncSession, form: MonitoringForm) -> None:
+    """Counted before the paid call, so a failed one still counts."""
+    today = datetime.now(timezone.utc).date()
+    if form.capture_day != today:
+        form.capture_day, form.capture_count = today, 0
+    if form.capture_count >= capture.DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail="That's the most for one day. You can still use the form.")
+    form.capture_count += 1
+    await db.commit()
+
+
+@public_router.post("/monitor/{access_token}/transcribe")
+async def transcribe_recording(
+    access_token: str,
+    audio: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """A recording of up to a minute, turned into text. The recording is not stored."""
+    form = await get_form_by_token(access_token, db)
+    _refuse_if_submitted(form)
+    if not capture.voice_available():
+        raise HTTPException(status_code=503, detail="Recording isn't available yet. You can type it instead.")
+    if not (audio.content_type or "").startswith("audio/"):
+        raise HTTPException(status_code=415, detail="That isn't a recording.")
+    data = await audio.read(capture.MAX_AUDIO_BYTES + 1)
+    if len(data) > capture.MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="That recording is too long. Keep it to a minute.")
+    if not data:
+        raise HTTPException(status_code=400, detail="That recording is empty.")
+    await _count_capture(db, form)
+    try:
+        text = await capture.transcribe(data)
+    except capture.CaptureFailed:
+        raise HTTPException(status_code=502, detail="We couldn't turn that into text. Try again, or type it.")
+    return {"text": text}
+
+
+class WriteUpRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=capture.MAX_NOTE_CHARS)
+    #: The parent's own date, so "this morning" is their morning.
+    today: Optional[str] = None
+    captured_by: Literal["voice", "note"] = "note"
+
+
+@public_router.post("/monitor/{access_token}/write-up")
+async def write_up_note(
+    access_token: str,
+    data: WriteUpRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """The parent's words written up as observations, saved as drafts for them to check."""
+    form = await get_form_by_token(access_token, db)
+    _refuse_if_submitted(form)
+    text = data.text.strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="There's nothing to write up.")
+    await _count_capture(db, form)
+
+    ours = datetime.now(timezone.utc).date()
+    try:
+        today = date.fromisoformat(data.today) if data.today else ours
+    except ValueError:
+        today = ours
+    if abs((today - ours).days) > 1:
+        today = ours
+
+    try:
+        observations = await capture.write_up(text, today)
+    except capture.CaptureFailed:
+        raise HTTPException(status_code=502, detail="We couldn't write that up. Try again, or use the form.")
+
+    entries = [
+        MonitoringEntry(monitoring_form_id=form.id, is_draft=True, parent_words=text,
+                        captured_by=data.captured_by, **o)
+        for o in observations
+    ]
+    db.add_all(entries)
+    if entries and form.status == "pending":
+        form.status = "in_progress"
+    await db.commit()
+    for e in entries:
+        await db.refresh(e)
+    return {"entries": [_entry_out(e) for e in entries]}
+
+
+@public_router.delete("/monitor/{access_token}/entries/{entry_id}", status_code=204)
+async def remove_draft(
+    access_token: str,
+    entry_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """A draft Float wrote up that the parent does not want. A saved observation stays."""
+    form = await get_form_by_token(access_token, db)
+    _refuse_if_submitted(form)
+    entry = (await db.execute(
+        select(MonitoringEntry).where(
+            MonitoringEntry.id == entry_id,
+            MonitoringEntry.monitoring_form_id == form.id,
+        )
+    )).scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    if not entry.is_draft:
+        raise HTTPException(status_code=409, detail="Only a draft can be removed.")
+    await db.delete(entry)
+    await db.commit()
+    return Response(status_code=204)
+
+
+@public_router.post("/monitor/{access_token}/reminders-off")
+async def monitoring_reminders_off(
+    access_token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """The off link in the evening email. All it can do is stop those emails for this form."""
+    form = await get_form_by_token(access_token, db)
+    if form.reminders_off_at is None:
+        form.reminders_off_at = datetime.now(timezone.utc)
+        await db.commit()
+    return {"status": "off"}
+

@@ -31,6 +31,8 @@ export interface MonitoringEntryData {
   parent_response: string | null
   fear_thermometer: number | null
   is_draft: boolean
+  parent_words?: string | null
+  captured_by?: string
   created_at: string
 }
 
@@ -41,6 +43,9 @@ export interface ReportEntry {
   child_behavior_observed: string | null
   parent_response: string | null
   fear_thermometer: number | null
+  /** What the parent said or typed, when Float wrote it up. docs/plans/monitoring-just-say-it.md */
+  parent_words?: string | null
+  captured_by?: string
 }
 
 export interface MonitoringReport {
