@@ -30,6 +30,11 @@ missed-exposure check and the arrow harvest all wait on it. Decided with Peter, 
   7pm). One email however many are due that day.
 - **Parent's check-in:** Sunday from 6pm, if their child has a weekly focus and they have not
   answered for this week.
+- **Parent's heads-up on the child's exposure day** (added 2026-09-11, Peter: "parent reminder"):
+  the morning of the day, from 8am where the parent lives, so they have the day to get ready. Only
+  when "Parents can see the child's progress" is on — without it the parent is not told about the
+  child's exposures at all. On a Sunday, if the weekly check-in is still to answer, the check-in gets
+  the day's one reminder instead. The email says only that something is planned today.
 - **Missed exposures:** the existing check, every run. It only writes a note for the clinician
   once per exposure.
 
@@ -63,8 +68,6 @@ sent again, and nobody gets a second reminder the same local day.
 ## Not yet
 
 - Texts.
-- Parent reminders on the day of the child's exposure (they would go only when "Parents can see the
-  child's progress" is on).
 - Showing the clinician the missed-exposure notes. They are written today and nothing shows them —
   that is the clinician-notifications plan.
 

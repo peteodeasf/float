@@ -1,7 +1,8 @@
 """What the scheduled-jobs service does each time it runs. docs/plans/scheduled-jobs.md
 
-Every 15 minutes: remind children of today's exposures at the time they picked, remind parents on
-Sunday evening to answer the weekly check-in, and run the missed-exposure check. Nothing before 8am
+Every 15 minutes: remind children of today's exposures at the time they picked, give their parent
+a heads-up that morning (only when the clinician shares the child's progress with them), remind
+parents on Sunday evening to answer the weekly check-in, and run the missed-exposure check. Nothing before 8am
 or after 8pm where the person lives, at most one reminder a day each, and never the same reminder
 twice. The emails say nothing clinical — only that something is waiting in Float.
 """
@@ -31,6 +32,7 @@ WAKING_START, WAKING_END = 8, 20  # 8am up to 8pm, where they live
 CHECKIN_FROM_HOUR = 18            # Sunday from 6pm
 
 KIND_CHILD_EXPOSURE = "child_exposure"
+KIND_PARENT_EXPOSURE = "parent_exposure"
 KIND_PARENT_CHECKIN = "parent_checkin"
 
 # Fixed words. Nothing about the child, the step or the accommodation goes into an email.
@@ -41,6 +43,13 @@ CONTENT = {
         body="Open Float to see it.",
         cta="Open Float",
         path="/teen/home",
+    ),
+    KIND_PARENT_EXPOSURE: dict(
+        subject="Something planned in Float today",
+        heading="There's something planned today",
+        body="Open Float to see what it is and how you can help.",
+        cta="Open Float",
+        path="/parent/home",
     ),
     KIND_PARENT_CHECKIN: dict(
         subject="Your weekly check-in is ready",
@@ -165,6 +174,74 @@ async def child_exposure_reminders(db: AsyncSession, now_utc: datetime, send: Se
     return sent
 
 
+async def _checkin_pending(db: AsyncSession, parent_id: uuid.UUID, plan_ids: set, week_start: date) -> bool:
+    """A weekly focus on one of these plans that this parent has not answered for this week."""
+    focus_ids = (await db.execute(
+        select(AccommodationBehavior.id).where(
+            AccommodationBehavior.treatment_plan_id.in_(plan_ids),
+            AccommodationBehavior.is_weekly_focus.is_(True),
+        )
+    )).scalars().all()
+    for focus_id in focus_ids:
+        answered = (await db.execute(
+            select(AccommodationCheckin.id).where(
+                AccommodationCheckin.parent_user_id == parent_id,
+                AccommodationCheckin.accommodation_id == focus_id,
+                AccommodationCheckin.week_start == week_start,
+            ).limit(1)
+        )).first()
+        if answered is None:
+            return True
+    return False
+
+
+async def parent_exposure_reminders(db: AsyncSession, now_utc: datetime, send: Send) -> int:
+    """The morning of a child's exposure day, a heads-up to their parent, so they have the day to get
+    ready. Only when the clinician has switched on "Parents can see the child's progress" — without
+    it the parent is not told about the child's exposures at all (Peter, 2026-09-10).
+
+    On a Sunday the weekly check-in, if still to answer, gets the day's one reminder instead.
+    """
+    rows = (await db.execute(
+        select(Experiment, User, TreatmentPlan.id)
+        .join(PatientProfile, PatientProfile.id == Experiment.patient_id)
+        .join(ParentPatientLink, ParentPatientLink.patient_id == PatientProfile.id)
+        .join(User, User.id == ParentPatientLink.parent_user_id)
+        .join(TreatmentPlan, TreatmentPlan.patient_id == PatientProfile.id)
+        .where(
+            Experiment.status == "committed",
+            Experiment.scheduled_date.is_not(None),
+            Experiment.scheduled_date > now_utc - timedelta(days=1),
+            Experiment.scheduled_date < now_utc + timedelta(days=1),
+            PatientProfile.closed_at.is_(None),
+            PatientProfile.progress_shared_with_parent_at.is_not(None),
+            TreatmentPlan.status.in_(["setup", "active"]),
+            TreatmentPlan.ladder_active.is_(True),
+            User.timezone.is_not(None),
+            User.reminder_emails_off_at.is_(None),
+        )
+    )).all()
+    by_parent: dict[uuid.UUID, tuple[User, list[Experiment], set]] = {}
+    for exp, user, plan_id in rows:
+        entry = by_parent.setdefault(user.id, (user, [], set()))
+        entry[1].append(exp)
+        entry[2].add(plan_id)
+
+    sent = 0
+    for user, exps, plan_ids in by_parent.values():
+        local = _local(now_utc, user.timezone)
+        if local is None or not _waking(local):
+            continue
+        if not any(e.scheduled_date.astimezone(local.tzinfo).date() == local.date() for e in exps):
+            continue
+        week_start = local.date() - timedelta(days=local.weekday())
+        if local.weekday() == 6 and await _checkin_pending(db, user.id, plan_ids, week_start):
+            continue
+        if await _remind(db, user, KIND_PARENT_EXPOSURE, local.date().isoformat(), local.date(), send):
+            sent += 1
+    return sent
+
+
 async def parent_checkin_reminders(db: AsyncSession, now_utc: datetime, send: Send) -> int:
     """Sunday evening, where they live: a parent whose child has a weekly focus and who has not
     answered for this week."""
@@ -206,6 +283,7 @@ async def run_due(db: AsyncSession, now_utc: datetime, send: Send | None = None)
     send = send or default_send
     counts = {
         "child_exposure": await child_exposure_reminders(db, now_utc, send),
+        "parent_exposure": await parent_exposure_reminders(db, now_utc, send),
         "parent_checkin": await parent_checkin_reminders(db, now_utc, send),
     }
     await db.commit()
