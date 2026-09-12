@@ -91,20 +91,32 @@ Until Google is set up, the page offers only "Type a quick note" and the form.
 
 ## What Peter has to set up (I can't sign in)
 
-1. In the Google Cloud console (console.cloud.google.com), create a project, for example
-   "float-speech", with a billing account attached.
-2. Accept Google's HIPAA agreement for it. Google's page on this is
-   cloud.google.com/security/compliance/hipaa. It is free and self-serve, and it is the first step
-   of the hosting plan anyway (`hosting-for-real-patient-data.md`).
-3. APIs & Services → Library → turn on **Cloud Speech-to-Text API**.
-4. IAM & Admin → Service Accounts → Create service account, for example "float-speech", with the
+Done on 2026-09-12, up to the Google account itself:
+
+1. **A Google account for Float, not a personal one.** The HIPAA agreement is accepted for a whole
+   Google organization, so it cannot sit beside family sharing and personal files. Google Workspace
+   is not needed: **Cloud Identity Free** (workspace.google.com/signup/gcpidentity/welcome) is free,
+   and gives peter@floatcbt.com as a sign-in with no mailbox. The domain is proved with a TXT record
+   in Netlify DNS (Netlify → Domains → floatcbt.com → Add new record → TXT, name left blank).
+2. **The HIPAA agreement.** admin.google.com as that account → Account settings → Legal and
+   compliance. It asks "Are you a Covered Entity (or Business Associate of a Covered Entity)?" —
+   **yes**: Float is a business associate of the clinicians who use it. Google treats a screenshot
+   of the accepted state as the proof, so keep one. Float also needs its own agreement with each
+   clinic; that is separate and already in the backlog.
+3. The organization and the Cloud console appear by themselves the first time that account signs in
+   to console.cloud.google.com. It takes a while, and the console says it cannot load until it is
+   ready. If it stays that way: Admin console → Apps → Additional Google services → Google Cloud
+   Platform must be on.
+4. In the Cloud console: create a project, for example "float-speech", with a billing account.
+5. APIs & Services → Library → turn on **Cloud Speech-to-Text API**.
+6. IAM & Admin → Service Accounts → Create service account, for example "float-speech", with the
    role **Cloud Speech Client**.
-5. On that account: Keys → Add key → Create new key → JSON. A file downloads. If Google refuses to
+7. On that account: Keys → Add key → Create new key → JSON. A file downloads. If Google refuses to
    create a key, the organization policy "Disable service account key creation" is on and has to
    be turned off for this project.
-6. In Railway, service floatcbt → Variables: add `GOOGLE_SPEECH_CREDENTIALS` with the whole contents
+8. In Railway, service floatcbt → Variables: add `GOOGLE_SPEECH_CREDENTIALS` with the whole contents
    of that file. Railway redeploys and "Tap and talk" appears on the monitoring page.
-7. Leave Google's "data logging" off, which is the default. Google says HIPAA customers must not
+9. Leave Google's "data logging" off, which is the default. Google says HIPAA customers must not
    turn it on.
 
 Anthropic's HIPAA agreement is needed anyway for the existing extraction.
