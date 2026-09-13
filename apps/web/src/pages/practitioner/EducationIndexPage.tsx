@@ -34,7 +34,6 @@ export default function EducationIndexPage({ basePath = '/education' }: { basePa
   const navigate = useNavigate()
   const byId = new Map(clinicianModules.map(m => [m.id, m]))
   const done = clinicianModules.filter(m => getProgress(m.id) === 'complete').length
-  const totalMinutes = clinicianModules.reduce((n, m) => n + m.estimatedMinutes, 0)
 
   // Back to the module they were last in, or the first one they have not finished.
   const last = lastOpened()
@@ -52,8 +51,7 @@ export default function EducationIndexPage({ basePath = '/education' }: { basePa
         <div className="edu-hero-in">
           <div style={{ flex: 1 }}>
             <div className="edu-eyebrow">Clinician guide</div>
-            <h1>Treating childhood anxiety with Float</h1>
-            <p>Dr. Walker's CBT model, from the anxiety cycle to the parent's work. {clinicianModules.length} modules, about {totalMinutes} minutes.</p>
+            <h1>Using Exposure-based CBT and Float</h1>
           </div>
           <ProgressRing done={done} total={clinicianModules.length} />
         </div>
