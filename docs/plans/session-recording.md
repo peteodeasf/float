@@ -79,6 +79,17 @@ through the clinician's own sign-in and the same patient access check.
 
 ## What Peter sets up in Google (I can't sign in)
 
+**Done 2026-09-13.** Bucket `float-session-recordings`; the Float service account
+(`id-246-3153-3544-5423@float-speech.iam.gserviceaccount.com`) has Storage Object Admin on it; the
+speech service's account (`service-897225650047@gcp-sa-speech.iam.gserviceaccount.com`) has Storage
+Object Viewer; `GOOGLE_RECORDINGS_BUCKET` is set in Railway. The speech service's account did not
+exist until created from Cloud Shell (shell.cloud.google.com) with
+`gcloud beta services identity create --service=speech.googleapis.com --project=float-speech`;
+before that, Google refused it as a principal.
+
+**Next:** Peter records the mock session. The test runs locally through `railway run`, so the Google
+key is passed in without being shown.
+
 In the same `float-speech` project:
 1. **Cloud Storage → Create bucket**: a name like `float-session-recordings`, location **us**,
    public access prevention **on**, uniform access. Lifecycle rule: delete objects older than 2 days.
