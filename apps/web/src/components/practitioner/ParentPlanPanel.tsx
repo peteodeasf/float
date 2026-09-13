@@ -228,7 +228,7 @@ export default function ParentPlanPanel({
           title="Ask the parent what they do, situation by situation, and type their answers"
           style={{ fontSize: '12px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: '1px solid var(--float-primary)', borderRadius: 'var(--float-radius-sm)', padding: '7px 12px', cursor: 'pointer' }}
         >
-          Go through with the parent
+          Build plan
         </button>
         {accommodations.length > 1 && (
           <button
