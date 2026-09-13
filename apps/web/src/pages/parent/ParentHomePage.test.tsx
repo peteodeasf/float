@@ -17,7 +17,7 @@ import { weekStartOf } from '../../lib/checkin'
 
 const FOCUS = {
   id: 'a1', name: 'Lies down with them at bedtime', description: null, trigger_situation_id: null,
-  distress_min: 6, distress_max: 6, display_order: 0, is_weekly_focus: true,
+  distress_min: 6, distress_max: 6, display_order: 0, status: 'started',
 }
 
 function open(checkins: unknown[] = [], experiments: unknown[] = [], accommodations: unknown[] = [FOCUS]) {

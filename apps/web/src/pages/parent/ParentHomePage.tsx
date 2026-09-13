@@ -89,11 +89,12 @@ export default function ParentHomePage() {
     queryFn: getParentAccommodations,
   })
 
-  const focuses = accommodations.filter(a => a.is_weekly_focus)
-  const others = accommodations.filter(a => !a.is_weekly_focus)
+  // What the clinician has marked Working on it (Peter, 2026-09-13: the weekly focus became that).
+  const focuses = accommodations.filter(a => a.status === 'started')
+  const others = accommodations.filter(a => a.status !== 'started')
 
-  // Once a week, one question about each focus. Peter, 2026-09-10: it replaces logging each moment;
-  // 2026-09-11: there can be more than one focus. docs/plans/weekly-checkin.md
+  // Once a week, one question about each. Peter, 2026-09-10: it replaces logging each moment;
+  // 2026-09-11: there can be more than one. docs/plans/weekly-checkin.md
   const thisWeek = weekStartOf(new Date())
   const { data: checkins = [] } = useQuery({ queryKey: ['parent-checkins'], queryFn: getMyCheckins })
   const checkinMut = useMutation({
@@ -148,8 +149,8 @@ export default function ParentHomePage() {
           padding: `0 ${teen.space.pad}`,
         }}
       >
-        {/* This week's focus */}
-        <div style={{ ...teen.type.eyebrow, marginTop: 12 }}>This week's focus</div>
+        {/* What they are working on */}
+        <div style={{ ...teen.type.eyebrow, marginTop: 12 }}>What you're working on</div>
         {focuses.length > 0 ? focuses.map(focus => {
           const answered = checkins.find(c => c.accommodation_id === focus.id && c.week_start === thisWeek) ?? null
           return (
@@ -221,7 +222,7 @@ export default function ParentHomePage() {
         }) : (
           <div className="teen-card" style={{ marginTop: 14, padding: 22 }}>
             <p style={{ ...teen.type.body, margin: 0 }}>
-              Your clinician hasn't set a focus for this week yet. You'll see it here when they do.
+              Your clinician hasn't chosen what to work on yet. You'll see it here when they do.
             </p>
           </div>
         )}
@@ -340,7 +341,7 @@ export default function ParentHomePage() {
         {/* Other accommodations — awareness */}
         {others.length > 0 && (
           <>
-            <div style={{ ...teen.type.eyebrow, marginTop: 28 }}>Also working toward</div>
+            <div style={{ ...teen.type.eyebrow, marginTop: 28 }}>Also on your plan</div>
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {others.map(a => (
                 <div

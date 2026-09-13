@@ -70,13 +70,13 @@ describe('a row on the patient list', () => {
   it('shows what needs attention in the open, and what is new', () => {
     renderRow(patient({ attention: [
       { kind: 'overdue', tone: 'problem', text: '3 exposures passed with nothing recorded', items: [] },
-      { kind: 'ratings_done', tone: 'new', text: 'Rated the accommodations: ready to sort by Fear Level', items: [] },
+      { kind: 'parent_named', tone: 'new', text: 'The parent named 1 accommodation: see the suggestions', items: [] },
     ] }))
 
     expect(screen.getByLabelText('Needs attention')).toBeInTheDocument()
     // Peter, 2026-09-11: the reasons used to hide in a tooltip on a dot. Now they are on the row.
     expect(screen.getByText('3 exposures passed with nothing recorded')).toBeInTheDocument()
-    expect(screen.getByText('New: Rated the accommodations: ready to sort by Fear Level')).toBeInTheDocument()
+    expect(screen.getByText('New: The parent named 1 accommodation: see the suggestions')).toBeInTheDocument()
   })
 
   it('does not mark a child who does not', () => {

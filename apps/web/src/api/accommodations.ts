@@ -1,6 +1,8 @@
 import { apiClient } from './client'
 
-/** Where the parent has got to with stopping it. docs/plans/accommodation-states.md */
+/** Where the parent has got to with stopping it. `started` shows as "Working on it": what the
+ *  parent's weekly check-in and home screen follow (Peter, 2026-09-13, merging it with the weekly
+ *  focus). docs/plans/parent-accommodations-like-the-ladder.md */
 export type AccommodationState = 'not_started' | 'started' | 'stopped'
 
 export interface Accommodation {
@@ -18,15 +20,12 @@ export interface Accommodation {
   parent_estimate_max?: number | null
   /** Set when the child rated distress_min/max themselves; null means the clinician's guess. */
   child_rated_at?: string | null
-  /** When the clinician sent it to the child's app to rate. */
-  child_rating_requested_at?: string | null
   status: AccommodationState
-  is_weekly_focus: boolean
   accommodator: string
   created_at: string
 }
 
-/** The parent's weekly answer about their focus. docs/plans/weekly-checkin.md */
+/** The parent's weekly answer about an accommodation they are working on. docs/plans/weekly-checkin.md */
 export interface AccommodationCheckin {
   id: string
   accommodation_id: string
@@ -53,12 +52,8 @@ export interface CreateAccommodationData {
 }
 
 export type UpdateAccommodationData = Partial<
-  CreateAccommodationData & { status: AccommodationState; is_weekly_focus: boolean }
+  CreateAccommodationData & { status: AccommodationState }
 >
-
-/** Send the plan's unrated accommodations to the child's app to rate. */
-export const askChildToRate = async (planId: string): Promise<Accommodation[]> =>
-  (await apiClient.post(`/plans/${planId}/accommodations/ask-child`)).data
 
 /** In session: the child's rating, typed by the clinician. */
 export const rateWithChild = async (planId: string, id: string, lo: number, hi: number): Promise<Accommodation> =>

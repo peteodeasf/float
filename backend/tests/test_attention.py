@@ -1,7 +1,8 @@
 """What needs a clinician's attention on a patient — the same list on the patient list and page.
 
 Peter, 2026-09-11: the list's three reasons, a missed weekly check-in, an exposure marked too hard,
-and what is new (the child finished rating, the parent named accommodations). Not "Gave in", not
+and what is new (the parent named accommodations; the child finishing their ratings went with
+the child's rating screen, 2026-09-13). Not "Gave in", not
 unanswered messages. Plan: docs/plans/clinician-notifications.md
 """
 from datetime import date, datetime, time, timedelta, timezone
@@ -64,8 +65,7 @@ async def test_an_active_plan_with_nothing_done_this_week(db):
 async def _focus(db, org, plan, child, added_days_ago):
     parent = await _parent_of(db, org, child)
     focus = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
-                                  name="Lies down with them until asleep", is_weekly_focus=True,
-                                  status="started", created_at=NOW - timedelta(days=added_days_ago))
+                                  name="Lies down with them until asleep", status="started", created_at=NOW - timedelta(days=added_days_ago))
     db.add(focus)
     await db.flush()
     return parent, focus
@@ -93,8 +93,7 @@ async def test_with_more_than_one_focus_it_names_the_one_missed(db):
     org, child, plan, _ = await _patient(db)
     parent, focus = await _focus(db, org, plan, child, added_days_ago=30)
     db.add(AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
-                                 name="Answers for them at the doctor's", is_weekly_focus=True,
-                                 status="started", created_at=NOW - timedelta(days=30), display_order=1))
+                                 name="Answers for them at the doctor's", status="started", created_at=NOW - timedelta(days=30), display_order=1))
     db.add(AccommodationCheckin(treatment_plan_id=plan.id, accommodation_id=focus.id,
                                 parent_user_id=parent.id, organization_id=org.id,
                                 week_start=_last_monday(), answer="mostly"))
@@ -133,26 +132,6 @@ async def test_an_exposure_marked_too_hard_this_week(db):
     assert too_hard["text"] == "Marked 1 exposure too hard this week"
 
 
-async def test_new_the_child_finished_rating(db):
-    org, child, plan, _ = await _patient(db)
-    rated = NOW - timedelta(days=1)
-    db.add_all([
-        AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id, name="A",
-                              child_rating_requested_at=NOW - timedelta(days=3), child_rated_at=rated),
-        AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id, name="B",
-                              child_rating_requested_at=NOW - timedelta(days=3), child_rated_at=None),
-    ])
-    await db.flush()
-    assert "ratings_done" not in _kinds(await attention_for(db, child))
-
-    b = [a for a in (await db.execute(__import__("sqlalchemy").select(AccommodationBehavior).where(
-        AccommodationBehavior.treatment_plan_id == plan.id))).scalars() if a.name == "B"][0]
-    b.child_rated_at = rated
-    await db.flush()
-    [done] = [r for r in await attention_for(db, child) if r["kind"] == "ratings_done"]
-    assert done["tone"] == "new"
-
-
 async def test_new_the_parent_named_accommodations(db):
     org, child, plan, _ = await _patient(db)
     situation = await make_situation(db, plan, name="Bedtime")
@@ -168,9 +147,10 @@ async def test_new_the_parent_named_accommodations(db):
 
 async def test_problems_come_before_what_is_new(db):
     org, child, plan, _ = await _patient(db, plan_status="active")
-    db.add(AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id, name="A",
-                                 child_rating_requested_at=NOW - timedelta(days=3),
-                                 child_rated_at=NOW - timedelta(days=1)))
+    situation = await make_situation(db, plan, name="Bedtime")
+    sit = await situation_insight_for(db, patient_id=child.id, organization_id=org.id, situation=situation)
+    await parent_named_accommodation(db, patient_id=child.id, organization_id=org.id,
+                                     situation_insight=sit, name="Leaves the hall light on", user_id=None)
     await db.flush()
     tones = [r["tone"] for r in await attention_for(db, child)]
     assert tones == sorted(tones, key=lambda t: t != "problem")

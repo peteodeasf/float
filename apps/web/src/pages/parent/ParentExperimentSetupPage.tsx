@@ -35,9 +35,9 @@ export default function ParentExperimentSetupPage() {
     queryKey: ['parent-accommodations'],
     queryFn: getParentAccommodations,
   })
-  // The weekly focus first: the one they are most likely to try.
+  // What they are working on first: the one they are most likely to try.
   const ordered = useMemo(
-    () => [...accommodations].sort((a, b) => Number(b.is_weekly_focus) - Number(a.is_weekly_focus)),
+    () => [...accommodations].sort((a, b) => Number(b.status === 'started') - Number(a.status === 'started')),
     [accommodations],
   )
 
@@ -185,8 +185,8 @@ export default function ParentExperimentSetupPage() {
             {ordered.map(a => (
               <button key={a.id} aria-pressed={picked?.id === a.id} onClick={() => setPickedId(a.id)} style={{ ...tile(picked?.id === a.id), padding: '14px 16px' }}>
                 <span style={{ display: 'block', fontSize: 16, fontWeight: 700 }}>{a.name}</span>
-                {a.is_weekly_focus && (
-                  <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: teen.color.tealMid, marginTop: 3 }}>This week's focus</span>
+                {a.status === 'started' && (
+                  <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: teen.color.tealMid, marginTop: 3 }}>You're working on this</span>
                 )}
               </button>
             ))}

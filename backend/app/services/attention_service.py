@@ -98,10 +98,10 @@ async def attention_for(db: AsyncSession, patient: PatientProfile, now: datetime
         if entries < 3:
             problems.append(_reason("monitoring", PROBLEM, f"Monitoring form sent; {entries} of 3 entries back"))
 
-    # The parent did not answer the weekly check-in last week, for a focus accommodation. There can
-    # be more than one focus (Peter, 2026-09-11); each is asked about. Only when a parent is linked
-    # and that focus was on the plan for all of last week: nothing records when an accommodation
-    # became the focus, so when it was added is the nearest honest stand-in.
+    # The parent did not answer the weekly check-in last week, for an accommodation they are working
+    # on ("Working on it", which was the weekly focus until 2026-09-13). There can be more than one;
+    # each is asked about. Only when a parent is linked and it was on the plan for all of last week:
+    # nothing records when it became Working on it, so when it was added is the nearest stand-in.
     if plan is not None:
         this_monday = today_start.date() - timedelta(days=today_start.weekday())
         last_monday = this_monday - timedelta(days=7)
@@ -109,7 +109,7 @@ async def attention_for(db: AsyncSession, patient: PatientProfile, now: datetime
         focuses = (await db.execute(
             select(AccommodationBehavior).where(
                 AccommodationBehavior.treatment_plan_id == plan.id,
-                AccommodationBehavior.is_weekly_focus.is_(True),
+                AccommodationBehavior.status == "started",
             ).order_by(AccommodationBehavior.display_order)
         )).scalars().all()
         due = [f for f in focuses if f.created_at and f.created_at < last_monday_start]
@@ -126,7 +126,7 @@ async def attention_for(db: AsyncSession, patient: PatientProfile, now: datetime
             missed = [f.name for f in due if f.id not in answered]
             if missed:
                 text = "No weekly check-in from the parent last week"
-                # With one focus there is nothing to name; with more, say which were missed.
+                # With one there is nothing to name; with more, say which were missed.
                 if len(focuses) > 1:
                     text += " on " + ", ".join(f"“{name}”" for name in missed)
                 problems.append(_reason("checkin_missed", PROBLEM, text))
@@ -147,18 +147,6 @@ async def attention_for(db: AsyncSession, patient: PatientProfile, now: datetime
             f"Marked {_n(len(too_hard), 'exposure', 'exposures')} too hard this week",
             [_item(e, name, e.too_hard_at) for e, name in too_hard],
         ))
-
-    # New: the child rated every accommodation sent to them, the last one in the past week.
-    if plan is not None:
-        sent = (await db.execute(
-            select(AccommodationBehavior).where(
-                AccommodationBehavior.treatment_plan_id == plan.id,
-                AccommodationBehavior.child_rating_requested_at.is_not(None),
-            )
-        )).scalars().all()
-        rated = [a.child_rated_at for a in sent]
-        if sent and all(rated) and max(rated) >= week_ago:
-            new.append(_reason("ratings_done", NEW, "Rated the accommodations: ready to sort by Fear Level"))
 
     # New: accommodations the parent named in the past week, not yet added or taken off the list.
     named = [

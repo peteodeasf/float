@@ -7,6 +7,10 @@ parent is ready to move to the next accommodation, not a status report.
 Peter, 2026-09-10: it **replaces** logging each moment. Logging every moment is the part parents do
 not keep up.
 
+Peter, 2026-09-13: the focus is now the state **Working on it** on the Parent Accommodations plan
+(`docs/plans/parent-accommodations-like-the-ladder.md`); everything below that says "focus" means an
+accommodation marked Working on it. The check-ins list moved to the Experiments tab.
+
 Peter, 2026-09-11: the parent can have **more than one focus**. The check-in asks about each one,
 on that focus's own card. The clinician's list of what needs attention names the focus that was
 missed when there is more than one.

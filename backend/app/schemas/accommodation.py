@@ -20,8 +20,9 @@ class AccommodationUpdate(BaseModel):
     distress_min: Optional[float] = None
     distress_max: Optional[float] = None
     # Where the parent has got to with stopping it. docs/plans/accommodation-states.md
+    # `started` is "Working on it": what the parent's weekly check-in and home screen follow
+    # (Peter, 2026-09-13, merging it with the weekly focus).
     status: Optional[Literal['not_started', 'started', 'stopped']] = None
-    is_weekly_focus: Optional[bool] = None
 
 
 class AccommodationResponse(BaseModel):
@@ -37,9 +38,7 @@ class AccommodationResponse(BaseModel):
     parent_estimate_min: Optional[float] = None
     parent_estimate_max: Optional[float] = None
     child_rated_at: Optional[datetime] = None
-    child_rating_requested_at: Optional[datetime] = None
     status: str
-    is_weekly_focus: bool = False
     accommodator: str
     created_at: datetime
 
@@ -57,7 +56,6 @@ class ParentAccommodationResponse(BaseModel):
     description: Optional[str] = None
     display_order: Optional[int] = None
     status: str
-    is_weekly_focus: bool = False
     # The parent's own estimate, from the accommodation conversation. Theirs to see.
     parent_estimate_min: Optional[float] = None
     parent_estimate_max: Optional[float] = None

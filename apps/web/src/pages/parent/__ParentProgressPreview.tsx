@@ -26,8 +26,8 @@ export default function ParentProgressPreview() {
     qc.setQueryData(['parent-checkins'], [])
     qc.setQueryData(['parent-experiments'], [])
     qc.setQueryData(['parent-accommodations'], [
-      { id: 'c2', name: 'Lies down with them at bedtime', description: null, trigger_situation_id: null, distress_min: 6, distress_max: 6, display_order: 0, is_weekly_focus: true },
-      { id: 'c3', name: 'Texts them every hour at a sleepover', description: null, trigger_situation_id: null, distress_min: 8, distress_max: 8, display_order: 1, is_weekly_focus: true },
+      { id: 'c2', name: 'Lies down with them at bedtime', description: null, trigger_situation_id: null, distress_min: 6, distress_max: 6, display_order: 0, status: 'started' },
+      { id: 'c3', name: 'Texts them every hour at a sleepover', description: null, trigger_situation_id: null, distress_min: 8, distress_max: 8, display_order: 1, status: 'started' },
     ])
     qc.setQueryData(['parent-conversation'], {
       child_name: 'Sam',

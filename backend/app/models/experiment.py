@@ -113,15 +113,15 @@ class AccommodationBehavior(Base):
     parent_estimate_max: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
     # Set when the child gave distress_min/max themselves; null means it is the clinician's guess.
     child_rated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    # When the clinician sent it to the child to rate. The child's app shows only these.
+    # No longer set: sending ratings to the child's app was removed (Peter, 2026-09-13).
     child_rating_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Where the parent has got to with stopping it: not_started, started or stopped. The clinician
     # sets it; making it the weekly focus marks it started. docs/plans/accommodation-states.md
     status: Mapped[str] = mapped_column(
         String, nullable=False, default="not_started", server_default="not_started"
     )
-    # The one accommodation the clinician has set as this week's focus for the
-    # parent. Only one per plan should be true (enforced in the service).
+    # No longer read. Peter, 2026-09-13: the weekly focus became the state "Working on it"
+    # (status `started`). docs/plans/parent-accommodations-like-the-ladder.md
     is_weekly_focus: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false"), default=False
     )

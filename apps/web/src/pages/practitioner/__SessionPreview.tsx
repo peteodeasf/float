@@ -26,7 +26,7 @@ const LIST_ROWS: Patient[] = [
   LIST_ROW('Sam Rivera', [
     { kind: 'overdue', tone: 'problem', text: '1 exposure passed with nothing recorded', items: [] },
     { kind: 'checkin_missed', tone: 'problem', text: 'No weekly check-in from the parent last week', items: [] },
-    { kind: 'ratings_done', tone: 'new', text: 'Rated the accommodations: ready to sort by Fear Level', items: [] },
+    { kind: 'parent_named', tone: 'new', text: 'The parent named 1 accommodation: see the suggestions', items: [] },
   ]),
   LIST_ROW('Maya Chen', [
     { kind: 'parent_named', tone: 'new', text: 'The parent named 2 accommodations: see the suggestions', items: [] },
@@ -94,7 +94,7 @@ export default function SessionPreview() {
     qc.setQueryData(['situation-da', 't3'], null)
     // Parent Accommodations panel fixtures
     const acc = (id: string, name: string, status: string, focus: boolean, lo: number | null, order: number) => ({
-      id, name, status, is_weekly_focus: focus, treatment_plan_id: 'p1', trigger_situation_id: 't3',
+      id, name, status: focus ? 'started' : status, treatment_plan_id: 'p1', trigger_situation_id: 't3',
       parent_user_id: null, description: null, distress_min: lo, distress_max: lo, display_order: order,
       accommodator: 'parent', created_at: '2026-09-01T00:00:00Z',
     })

@@ -3,7 +3,7 @@
  *
  * The parent app's questions on one sheet, full screen so the parent can see it, with the clinician
  * typing what they say (Peter, 2026-09-11: set up by the parent or the clinician). Any accommodation
- * on the plan, the weekly focus first. docs/plans/parent-accommodation-experiments.md
+ * on the plan, what the parent is working on first. docs/plans/parent-accommodation-experiments.md
  */
 import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
@@ -33,7 +33,7 @@ export default function ParentExperimentSheet({
   onClose: () => void
 }) {
   const qc = useQueryClient()
-  const ordered = [...accommodations].sort((a, b) => Number(b.is_weekly_focus) - Number(a.is_weekly_focus))
+  const ordered = [...accommodations].sort((a, b) => Number(b.status === 'started') - Number(a.status === 'started'))
   const [accId, setAccId] = useState(ordered[0]?.id ?? '')
   const acc = ordered.find(a => a.id === accId) ?? null
   const [day, setDay] = useState(getNextSchoolDayISO())
@@ -75,7 +75,7 @@ export default function ParentExperimentSheet({
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Set up an experiment with the parent"
       style={{ position: 'fixed', inset: 0, zIndex: 1000, overflowY: 'auto' }}>
-      <Chrome onExit={onClose} exitLabel="← Back to the plan">
+      <Chrome onExit={onClose} exitLabel="← Back">
         <div style={{ background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: '22px 24px 8px' }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 6 }}>ASK THE PARENT · TYPE WHAT THEY SAY</div>
 
@@ -83,7 +83,7 @@ export default function ParentExperimentSheet({
             <label htmlFor="exp-which" style={question}>Which one will you try?</label>
             <select id="exp-which" value={accId} onChange={e => { setAccId(e.target.value); setLevel(null) }} style={field}>
               {ordered.map(a => (
-                <option key={a.id} value={a.id}>{a.name}{a.is_weekly_focus ? ' (this week’s focus)' : ''}</option>
+                <option key={a.id} value={a.id}>{a.name}{a.status === 'started' ? ' (working on it)' : ''}</option>
               ))}
             </select>
           </div>

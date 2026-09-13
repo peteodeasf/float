@@ -203,11 +203,11 @@ async def child_exposure_reminders(db: AsyncSession, now_utc: datetime, send: Se
 
 
 async def _checkin_pending(db: AsyncSession, parent_id: uuid.UUID, plan_ids: set, week_start: date) -> bool:
-    """A weekly focus on one of these plans that this parent has not answered for this week."""
+    """An accommodation the parent is working on, on one of these plans, not answered this week."""
     focus_ids = (await db.execute(
         select(AccommodationBehavior.id).where(
             AccommodationBehavior.treatment_plan_id.in_(plan_ids),
-            AccommodationBehavior.is_weekly_focus.is_(True),
+            AccommodationBehavior.status == "started",
         )
     )).scalars().all()
     for focus_id in focus_ids:
@@ -271,8 +271,8 @@ async def parent_exposure_reminders(db: AsyncSession, now_utc: datetime, send: S
 
 
 async def parent_checkin_reminders(db: AsyncSession, now_utc: datetime, send: Send) -> int:
-    """Sunday evening, where they live: a parent whose child has a weekly focus and who has not
-    answered for this week."""
+    """Sunday evening, where they live: a parent working on an accommodation who has not answered
+    for this week."""
     rows = (await db.execute(
         select(User, AccommodationBehavior)
         .join(ParentPatientLink, ParentPatientLink.parent_user_id == User.id)
@@ -280,7 +280,7 @@ async def parent_checkin_reminders(db: AsyncSession, now_utc: datetime, send: Se
         .join(TreatmentPlan, TreatmentPlan.patient_id == PatientProfile.id)
         .join(AccommodationBehavior, AccommodationBehavior.treatment_plan_id == TreatmentPlan.id)
         .where(
-            AccommodationBehavior.is_weekly_focus.is_(True),
+            AccommodationBehavior.status == "started",
             PatientProfile.closed_at.is_(None),
             TreatmentPlan.status.in_(["setup", "active"]),
             User.timezone.is_not(None),

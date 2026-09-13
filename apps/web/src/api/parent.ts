@@ -19,8 +19,8 @@ export interface ParentAccommodation {
   description: string | null
   trigger_situation_id: string | null
   display_order: number | null
+  /** `started` is what the parent is working on. */
   status: string
-  is_weekly_focus: boolean
   /** The parent's own estimate from the accommodation conversation. */
   parent_estimate_min?: number | null
   parent_estimate_max?: number | null

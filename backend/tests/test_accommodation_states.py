@@ -48,44 +48,24 @@ async def test_only_the_three_states(api, db):
         assert (await _put(api, plan, acc, status=bad)).status_code == 422, bad
 
 
-async def test_making_it_the_focus_marks_it_started(api, db):
-    plan = await _setup(api, db)
-    acc = await _add(api, plan, "Sits outside the classroom")
-
-    r = await _put(api, plan, acc, is_weekly_focus=True)
-    assert r.json()["status"] == "started"
-
-
-async def test_one_that_came_back_is_started_again_by_making_it_the_focus(api, db):
-    plan = await _setup(api, db)
-    acc = await _add(api, plan, "Checks the doors with them")
-    await _put(api, plan, acc, status="stopped")
-
-    r = await _put(api, plan, acc, is_weekly_focus=True)
-    assert r.json()["status"] == "started"
-
-
-async def test_more_than_one_can_be_the_focus(api, db):
-    """Peter, 2026-09-11: the parent can work on more than one at a time."""
+async def test_more_than_one_can_be_working_on_it(api, db):
+    """Peter, 2026-09-13: the weekly focus became "Working on it" (status started), and the parent can
+    work on more than one at a time."""
     plan = await _setup(api, db)
     first = await _add(api, plan, "Lies down with them at bedtime")
     second = await _add(api, plan, "Answers for them at the doctor's")
-    await _put(api, plan, first, is_weekly_focus=True)
 
-    await _put(api, plan, second, is_weekly_focus=True)
+    await _put(api, plan, first, status="started")
+    await _put(api, plan, second, status="started")
 
     rows = {a["id"]: a for a in (await api.get(f"/plans/{plan.id}/accommodations")).json()}
-    assert rows[first["id"]]["is_weekly_focus"] is True
-    assert rows[second["id"]]["is_weekly_focus"] is True
-    assert rows[first["id"]]["status"] == "started"
-    assert rows[second["id"]]["status"] == "started"
+    assert rows[first["id"]]["status"] == rows[second["id"]]["status"] == "started"
+    assert "is_weekly_focus" not in rows[first["id"]]
 
 
-async def test_clearing_the_focus_does_not_change_the_state(api, db):
+async def test_the_old_focus_flag_is_not_accepted_as_a_setting(api, db):
     plan = await _setup(api, db)
     acc = await _add(api, plan, "Sits outside the classroom")
-    await _put(api, plan, acc, is_weekly_focus=True)
-    await _put(api, plan, acc, status="stopped")
-
-    r = await _put(api, plan, acc, is_weekly_focus=False)
-    assert r.json()["status"] == "stopped"
+    r = await _put(api, plan, acc, is_weekly_focus=True)
+    assert r.status_code == 200
+    assert r.json()["status"] == "not_started"

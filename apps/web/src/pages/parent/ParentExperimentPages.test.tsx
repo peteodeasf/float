@@ -16,9 +16,9 @@ import ParentExperimentRecordPage from './ParentExperimentRecordPage'
 
 const ACCOMMODATIONS = [
   { id: 'a2', name: "Answers for them at the doctor's", description: null, trigger_situation_id: null,
-    display_order: 1, status: 'not_started', is_weekly_focus: false },
+    display_order: 1, status: 'not_started' },
   { id: 'a1', name: 'Lies down with them until asleep', description: null, trigger_situation_id: 's1',
-    display_order: 0, status: 'started', is_weekly_focus: true, parent_estimate_min: 6, parent_estimate_max: 8 },
+    display_order: 0, status: 'started', parent_estimate_min: 6, parent_estimate_max: 8 },
 ]
 const PLANNED = {
   id: 'x1', accommodation_id: 'a1', accommodation_name: 'Lies down with them until asleep', status: 'planned',
@@ -64,12 +64,12 @@ beforeEach(() => {
 })
 
 describe('a parent plans an experiment', () => {
-  it('asks one question at a time, starting on the weekly focus, and saves it', async () => {
+  it('asks one question at a time, starting on what they are working on, and saves it', async () => {
     openSetup()
     expect(heading('Which one will you try?')).toBeInTheDocument()
-    // Any accommodation can be picked, but the focus comes first and is picked to start.
+    // Any accommodation can be picked, but what they are working on comes first and is picked to start.
     expect(screen.getByRole('button', { name: /Lies down with them until asleep/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText("This week's focus")).toBeInTheDocument()
+    expect(screen.getByText("You're working on this")).toBeInTheDocument()
     click('Next')
 
     expect(heading('When will you try it?')).toBeInTheDocument()

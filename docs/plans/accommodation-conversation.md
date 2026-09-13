@@ -1,3 +1,7 @@
+> **2026-09-13 (Peter):** the child no longer rates in their own app. "Send to the child's app" and
+> the child's rating screen are removed; the child rates only in session, with the clinician (**Child
+> ratings** while building the plan). See `parent-accommodations-like-the-ladder.md`.
+
 # The accommodation conversation
 
 **Planned 2026-08-31**, from Peter's reading of chapter 5 of Dr. Walker's book. **Revised

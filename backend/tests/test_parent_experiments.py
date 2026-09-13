@@ -24,7 +24,7 @@ async def _family(db):
     await grant_patient_to(db, child, clinician, owner=True)
     parent = await _parent_of(db, org, child)
     focus = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
-                                  name="Lies down with them until asleep", is_weekly_focus=True)
+                                  name="Lies down with them until asleep", status="started")
     other = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
                                   name="Answers for them at the doctor's")
     db.add_all([focus, other])

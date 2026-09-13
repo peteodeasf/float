@@ -30,6 +30,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
+import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
@@ -2026,6 +2027,10 @@ export default function PatientPage() {
           )
         })()}
       </div>
+
+      {/* The parent's progress: their experiments and weekly check-ins. Peter, 2026-09-13: tracking
+          is here, the plan is on the Plan tab. */}
+      {plan?.id && <ParentProgressSection planId={plan.id} />}
     </div>
   )
 

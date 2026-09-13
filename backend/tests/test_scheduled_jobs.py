@@ -126,8 +126,7 @@ async def _parent_with_focus(db):
     parent = await _parent_of(db, org, child)
     parent.timezone = NEW_YORK
     focus = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
-                                  name="Lies down with them until asleep", is_weekly_focus=True,
-                                  status="started")
+                                  name="Lies down with them until asleep", status="started")
     db.add(focus)
     await db.flush()
     return org, plan, parent, focus
@@ -158,8 +157,7 @@ async def test_not_if_they_already_answered_this_week(db):
 
 async def _second_focus(db, org, plan):
     other = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
-                                  name="Answers for them at the doctor's", is_weekly_focus=True,
-                                  status="started")
+                                  name="Answers for them at the doctor's", status="started")
     db.add(other)
     await db.flush()
     return other
@@ -263,8 +261,7 @@ async def _sharing_parent(db, sharing=True, with_focus=False):
         child.progress_shared_with_parent_at = at(1, 12)
     if with_focus:
         db.add(AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
-                                     name="Lies down with them until asleep", is_weekly_focus=True,
-                                     status="started"))
+                                     name="Lies down with them until asleep", status="started"))
     await db.flush()
     return org, child, plan, parent
 

@@ -28,7 +28,6 @@ import TeenResetPasswordPage from './pages/teen/TeenResetPasswordPage'
 import TeenSetPasswordPage from './pages/teen/TeenSetPasswordPage'
 import TeenHomePage from './pages/teen/TeenHomePage'
 import TeenExperimentPage from './pages/teen/TeenExperimentPage'
-import TeenRateAccommodationsPage from './pages/teen/TeenRateAccommodationsPage'
 import TeenExposurePage from './pages/teen/TeenExposurePage'
 import TeenRecordPage from './pages/teen/TeenRecordPage'
 import TeenPlansPage from './pages/teen/TeenPlansPage'
@@ -147,9 +146,6 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/teen/experiment/:behaviorId" element={
                 <TeenProtectedRoute><TeenExperimentPage /></TeenProtectedRoute>
-              } />
-              <Route path="/teen/rate-accommodations" element={
-                <TeenProtectedRoute><TeenRateAccommodationsPage /></TeenProtectedRoute>
               } />
               <Route path="/teen/exposure/:experimentId" element={
                 <TeenProtectedRoute><TeenExposurePage /></TeenProtectedRoute>

@@ -13,7 +13,7 @@ import type { Accommodation } from '../../api/accommodations'
 
 const acc = (id: string, name: string, over: Partial<Accommodation> = {}): Accommodation => ({
   id, name, treatment_plan_id: 'plan1', trigger_situation_id: null, parent_user_id: null, description: null,
-  distress_min: null, distress_max: null, display_order: 0, status: 'not_started', is_weekly_focus: false,
+  distress_min: null, distress_max: null, display_order: 0, status: 'not_started',
   accommodator: 'parent', created_at: '2026-09-01T00:00:00Z', ...over,
 })
 
@@ -23,7 +23,7 @@ function open() {
     <QueryClientProvider client={new QueryClient()}>
       <ParentExperimentSheet planId="plan1" onClose={onClose} accommodations={[
         acc('a2', "Answers for them at the doctor's"),
-        acc('a1', 'Lies down with them until asleep', { is_weekly_focus: true, parent_estimate_min: 6, parent_estimate_max: 8 }),
+        acc('a1', 'Lies down with them until asleep', { status: 'started', parent_estimate_min: 6, parent_estimate_max: 8 }),
       ]} />
     </QueryClientProvider>,
   )

@@ -104,13 +104,6 @@ async def update_accommodation(
 
     fields = data.model_dump(exclude_unset=True)
 
-    # A plan can have more than one focus (Peter, 2026-09-11), so making this one the focus leaves
-    # the others as they are. The focus is what the parent is working on, so it has started. That
-    # includes one marked stopped: an accommodation that has come back goes back to the focus
-    # (docs/plans/accommodation-states.md). Taking the focus off leaves the state as it was.
-    if fields.get("is_weekly_focus"):
-        fields.setdefault("status", "started")
-
     for field, value in fields.items():
         setattr(accommodation, field, value)
     # A score typed here is the clinician's, even over one the child gave, so it stops counting as

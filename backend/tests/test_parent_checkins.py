@@ -25,8 +25,7 @@ async def _family(db):
     await grant_patient_to(db, child, clinician, owner=True)
     parent = await _parent_of(db, org, child)
     acc = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
-                                name="Lies down with them at bedtime", is_weekly_focus=True,
-                                status="started")
+                                name="Lies down with them at bedtime", status="started")
     db.add(acc)
     await db.flush()
     return org, child, plan, clinician, parent, acc
