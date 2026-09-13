@@ -374,6 +374,15 @@ already there.
 
 **How to tell it worked:** something fires on its own, and a failure is visible rather than silent.
 
+## Session mode does not offer "ritual" as a behaviour type
+
+**Priority: low** (Peter, 2026-09-13). Session mode derives the type from the child's words: "I do this…"
+is a safety behaviour, "I avoid this altogether" is avoidance. Ritual is only settable in the hidden
+Plan-tab builder. Whether session mode should offer it is a question for Dr. Walker, not on her
+current list.
+
+---
+
 ## Smaller, already agreed
 
 - **~~`behavior_type` holds 11 distinct values across 136 rows~~ — DONE 2026-09-01.** Folded onto
