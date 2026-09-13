@@ -15,6 +15,12 @@ AsyncSessionLocal = async_sessionmaker(
 class Base(DeclarativeBase):
     pass
 
+def get_session_factory():
+    """Opens a session of its own, for work that runs after the response has gone: the request's
+    session is closed by then. Tests swap it for theirs."""
+    return AsyncSessionLocal
+
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:

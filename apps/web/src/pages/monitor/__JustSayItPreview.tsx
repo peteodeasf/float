@@ -1,44 +1,39 @@
 import { useState } from 'react'
-import JustSayIt, { CaptureChoices, localToday, type CaptureApi, type CapturedEntry } from './JustSayIt'
+import JustSayIt, { CaptureChoices, NoteRow, localToday, type CaptureApi, type CapturedNote } from './JustSayIt'
 
 /**
  * Dev only: the Just say it screens with the monitoring routes stood in for, so they can be seen
- * without Google, Claude or a family's link. ?start=1 opens straight in; ?mode=note for typing.
+ * without Google, Claude or a family's link. ?start=1 opens straight in; ?mode=note for typing;
+ * ?done=1 for "Got it".
  */
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
-const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return localToday(d) }
 
-const WORDS = "This morning Maya froze at the front door when it was time to go to school. She was crying and said her tummy hurt, I'd say about an eight. I told her she could stay home. And last night at bedtime she asked me to stay until she fell asleep, so I lay down with her."
+const WORDS = "This morning Maya froze at the front door when it was time to go to school. She was crying and said her tummy hurt. I told her she could stay home. And last night at bedtime she asked me to stay until she fell asleep, so I lay down with her."
 
-const found = (text: string, by: 'voice' | 'note'): CapturedEntry[] => [
-  { id: 'p1', entry_date: localToday(), situation: 'Leaving for school in the morning',
-    child_behavior_observed: 'Froze at the front door, cried and said her tummy hurt',
-    parent_response: 'I told her she could stay home', fear_thermometer: 8, is_draft: true, parent_words: text, captured_by: by },
-  { id: 'p2', entry_date: yesterday(), situation: 'Bedtime',
-    child_behavior_observed: 'Asked me to stay until she fell asleep',
-    parent_response: 'I lay down with her', fear_thermometer: null, is_draft: true, parent_words: text, captured_by: by },
-]
+const note = (words: string, by: 'voice' | 'note'): CapturedNote => ({
+  id: 'n1', words, captured_by: by, entry_date: localToday(), fear_level: null, created_at: new Date().toISOString(),
+})
 
 const api: CaptureApi = {
-  transcribe: async () => { await wait(900); return WORDS },
-  writeUp: async (text, by) => { await wait(2600); return found(text, by) },
-  save: async () => { await wait(300) },
-  remove: async () => {},
+  sayIt: async () => { await wait(1400); return note(WORDS, 'voice') },
+  writeIt: async text => { await wait(700); return note(text, 'note') },
+  setFear: async () => { await wait(300) },
+  deleteNote: async () => { await wait(300) },
 }
 
 export default function JustSayItPreview() {
   const params = new URLSearchParams(window.location.search)
-  const [open, setOpen] = useState(params.get('start') === '1')
+  const [open, setOpen] = useState(params.get('start') === '1' || params.get('done') === '1')
   const [mode, setMode] = useState<'talk' | 'note'>(params.get('mode') === 'note' ? 'note' : 'talk')
-  const [saved, setSaved] = useState(0)
 
   if (open) {
-    return <JustSayIt mode={mode} childName="Maya" api={api} onClose={n => { setSaved(n); setOpen(false) }} onUseForm={() => setOpen(false)} />
+    return <JustSayIt mode={mode} childName="Maya" api={api} onClose={() => setOpen(false)}
+      startDone={params.get('done') === '1' ? note(WORDS, 'voice') : undefined} />
   }
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: 24, background: '#f8fafc', minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {saved > 0 && <p role="status">Saved {saved}.</p>}
       <CaptureChoices voice onTalk={() => { setMode('talk'); setOpen(true) }} onNote={() => { setMode('note'); setOpen(true) }} onForm={() => {}} />
+      <NoteRow note={{ ...note(WORDS, 'voice'), fear_level: 8 }} onDelete={async () => {}} />
       <CaptureChoices compact voice onTalk={() => { setMode('talk'); setOpen(true) }} onNote={() => { setMode('note'); setOpen(true) }} onForm={() => {}} />
     </div>
   )

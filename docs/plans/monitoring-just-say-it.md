@@ -8,64 +8,68 @@ Fear Level), about 5 minutes a day for a week. The form stays. This adds a secon
 
 ## What the parent sees
 
+**Peter, 2026-09-12: the parent just talks, and it goes.** The first version wrote the recording up
+as observations and showed them to the parent to check and save. Peter: that is a form they may not
+understand, and they should not have to review it. So there is no review screen.
+
 On the monitoring page, above the form, a big **Tap and talk** button, and a smaller **Type a quick
-note**.
+note**. "Talk for up to a minute. That's it: it goes straight to your clinician."
 
-**Recording.** "Tell us what happened: where you were, what Sam did or said, and what you did." Bars
-move with their voice, and a timer counts up to 1:00. It stops by itself at one minute; they can
-record again to add more. Before the first recording, one line: "Your recording is turned into text
-and then deleted. Only the text is kept."
+**Recording.** "Tell us what happened": where you were, what the child did or said, what you did.
+Bars move with their voice, and a timer counts up to 1:00. It stops by itself at one minute. Before
+the first recording, one line: "Your recording is turned into text and then deleted. Only the text
+is kept."
 
-**Writing it up.** A few seconds of "Writing it up…".
+**Sending.** A couple of seconds while Google turns it into text.
 
-**Here's what we heard.** One card per moment. If they talked about the school run and bedtime, that
-is two cards. Each card has the date (from "this morning", "yesterday", "on Tuesday"), the situation,
-what the child did and what the parent did, all filled in and all editable. Under each card, "What
-you said": their own words.
+**Got it, thanks.** "Your clinician will see it", and their words fading in, so they know it heard
+them. Then one question: **"How upset was Sam?"** 1 to 10, one tap, or **Skip**. Tapping closes it.
 
-**Fear Level is never guessed.** It is filled in only when the parent said a number. Otherwise the
-card shows the 1–10 row with "How upset was Sam? Tap one."
+**Their list** shows each recording or note as their own words, with the date, the Fear Level they
+tapped, and **Delete** (it asks first) for one they did not mean to send. Not the situation, child
+and parent boxes: what Float writes up is for the clinician.
 
-**Save** keeps it. It then appears in their list like any other observation.
-
-**Type a quick note** works the same way, from typed text instead of a recording.
+**Type a quick note** works the same way, from typed text.
 
 When it goes wrong:
-- No speech heard: "We couldn't hear that. Try again, or type it."
-- Nothing about anxiety in it: "We didn't find a moment to record in that. Try again, or use the form."
+- No speech heard: "We couldn't hear that. Try again, or type it." Nothing is saved.
+- Google fails: "We couldn't turn that into text. Try again, or type it." Nothing is saved.
 - Microphone blocked: how to allow it on their phone, and the typing option.
 
 ## What the clinician sees
 
-In the monitoring report, an observation made this way has a small mic mark and "The parent's
-words" under it, so the clinician can check what Float made of it.
+In the monitoring report, observations arrive without the parent doing anything more. Each one
+written up from a recording or note has a small mic mark and "The parent's words" under it, so the
+clinician can check what Float made of it. The check that the write-up is right is the clinician's,
+which is the rule for anything Float writes (STRATEGY.md: AI output is a draft a clinician confirms).
 
 ## How it works
 
 1. The page records in the phone's browser. iPhone Safari records AAC in MP4; Chrome and Android
    record Opus in WebM. Google accepts both as they are, so nothing is converted.
-2. The page uploads it to `POST /monitor/{token}/transcribe`, guarded by the form's token like the
-   other monitoring routes. The server sends it to **Google Speech-to-Text** (V2, `chirp_3`, US
-   region) and returns the text. **The recording is not stored.** One minute is Google's limit for
-   a quick request, which is why recordings stop at one minute.
-3. The page shows the parent their own words, word by word, while it sends them to
-   `POST /monitor/{token}/write-up` with the parent's own date. The server asks Claude for the
-   observations.
-4. The server saves them as **drafts** on the form (`is_draft`, which already exists), with the
-   parent's words and how they were captured. If the parent closes the page, nothing is lost; the
-   draft is in their list.
-5. Save turns a draft into an observation with the existing update route. Remove deletes a draft
-   (`DELETE /monitor/{token}/entries/{id}`, drafts only). The clinician's report ignores drafts, as
-   it does now.
-
-A typed note skips step 2.
+2. `POST /monitor/{token}/notes/voice`, guarded by the form's token like the other monitoring
+   routes. The server sends the recording to **Google Speech-to-Text** (V2, `chirp_3`, US region)
+   and waits for the text. **The recording is not stored.** One minute is Google's limit for a
+   quick request, which is why recordings stop at one minute. A typed note is
+   `POST /monitor/{token}/notes/text` and skips Google.
+3. The server saves the words as a **note** (`monitoring_notes`: the words, voice or note, the
+   parent's date) and answers. That is when the parent sees "Got it".
+4. After answering, the server asks Claude to write the note up as observations and saves them as
+   ordinary entries (not drafts), each linked to the note and carrying the parent's words.
+   **Nothing is lost:** if Claude fails, or finds no moment in it, the words are saved as one entry
+   on their own, so the clinician still sees them and extraction still reads them.
+5. The tap is `PUT /monitor/{token}/notes/{id}/fear`. It fills every moment in the note that has no
+   number. A number the parent said stays. If the tap lands before Claude has finished, the
+   write-up uses it.
+6. Delete is `DELETE /monitor/{token}/notes/{id}`, which removes the note and everything written up
+   from it. One deleted while Claude is still writing it up leaves nothing behind.
 
 As well as the instructions to Claude, the server drops any Fear Level whose number is not in the
 parent's words, and any date in the future or more than 14 days back becomes today.
 
-**Database:** two new columns on `monitoring_entries`: `parent_words` (their transcript or typed
-note) and `captured_by` (`form`, `voice` or `note`; existing rows are `form`). Adds columns only;
-nothing is dropped.
+**Database:** `monitoring_entries` has `parent_words`, `captured_by` (`form`, `voice` or `note`)
+and `note_id`; the new table `monitoring_notes` holds what the parent said. Adds only; nothing is
+dropped.
 
 ## Claude's instructions
 
@@ -77,14 +81,15 @@ nothing is dropped.
 - Leave a part empty rather than invent it.
 - Dates from the parent's own words, counted from their date; when unclear, today.
 
-Same model as monitoring extraction (`claude-sonnet-4-6`). How a note is split into situation, what
-the child did and what the parent did is a clinical call, so it goes in Dr. Walker's review list.
+Same model as monitoring extraction (`claude-sonnet-4-6`). For Dr. Walker's review list: how a note
+is split into situation, what the child did and what the parent did, now with no parent check; and
+one tapped Fear Level applied to every moment in a note the parent gave no number for.
 
 ## Limits
 
-The new routes need no login and call paid services, so a leaked link could run up cost:
+The routes need no login and call paid services, so a leaked link could run up cost:
 - At most one minute or 10 MB per recording, audio files only.
-- At most 80 calls to Google or Claude per form per day, about 40 recordings.
+- At most 40 recordings or notes per form per day.
 - Refused once the form is submitted, like the other monitoring routes.
 
 Until Google is set up, the page offers only "Type a quick note" and the form.

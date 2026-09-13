@@ -147,7 +147,8 @@ async def db(engine) -> AsyncSession:
 async def api(db):
     import httpx
     from app.main import app
-    from app.core.database import get_db
+    from contextlib import asynccontextmanager
+    from app.core.database import get_db, get_session_factory
     from app.core.dependencies import get_current_user
 
     state = {"user": None}
@@ -161,7 +162,14 @@ async def api(db):
             raise HTTPException(status_code=http_status.HTTP_401_UNAUTHORIZED, detail="Not signed in")
         return state["user"]
 
+    @asynccontextmanager
+    async def _this_session():
+        yield db
+
     app.dependency_overrides[get_db] = _db_override
+    # Work that runs after the response (writing up a monitoring note) uses the test session too,
+    # never the real database.
+    app.dependency_overrides[get_session_factory] = lambda: _this_session
     app.dependency_overrides[get_current_user] = _user_override
 
     transport = httpx.ASGITransport(app=app)

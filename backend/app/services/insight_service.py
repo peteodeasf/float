@@ -283,6 +283,10 @@ def format_entries(entries) -> tuple[str, dict[int, uuid.UUID]]:
             f"Child behavior observed: {e.child_behavior_observed or 'N/A'}\n"
             f"Parent response: {e.parent_response or 'N/A'}\n"
             f"Distress level: {distress}/10"
+            # A recording Float could not write up is kept as the parent's words alone.
+            + (f"\nParent's own words: {e.parent_words}"
+               if getattr(e, "parent_words", None) and not (e.situation or e.child_behavior_observed or e.parent_response)
+               else "")
         )
     return "\n\n".join(blocks), by_number
 

@@ -64,12 +64,13 @@ PUBLIC = {
     "POST /monitor/{access_token}/entries",
     "PUT /monitor/{access_token}/entries/{entry_id}",
     "POST /monitor/{access_token}/submit",
-    # Just say it: a recording turned into text, a note written up as drafts, and removing a
-    # draft. The first two call paid services, so each form has a daily limit.
-    # docs/plans/monitoring-just-say-it.md
-    "POST /monitor/{access_token}/transcribe",
-    "POST /monitor/{access_token}/write-up",
-    "DELETE /monitor/{access_token}/entries/{entry_id}",
+    # Just say it: a recording or a typed note, the one Fear Level tap after it, and deleting one
+    # the parent did not mean to send. The first two call paid services, so each form has a daily
+    # limit. docs/plans/monitoring-just-say-it.md
+    "POST /monitor/{access_token}/notes/voice",
+    "POST /monitor/{access_token}/notes/text",
+    "PUT /monitor/{access_token}/notes/{note_id}/fear",
+    "DELETE /monitor/{access_token}/notes/{note_id}",
     # The off link in the evening email during the monitoring week: it can only stop those emails.
     "POST /monitor/{access_token}/reminders-off",
     # The review link a clinician opens to mark generated suggestions. Same bargain as the

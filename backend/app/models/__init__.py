@@ -7,7 +7,7 @@ from app.models.experiment import Experiment, AccommodationBehavior, Accommodati
 from app.models.notification import Notification, LadderReviewFlag
 from app.models.downward_arrow import DownwardArrow
 from app.models.message import Message
-from app.models.monitoring import MonitoringForm, MonitoringEntry
+from app.models.monitoring import MonitoringForm, MonitoringEntry, MonitoringNote
 from app.models.session_note import SessionNote
 from app.models.action_plan import ActionPlan
 from app.models.waitlist import WaitlistEntry

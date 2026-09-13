@@ -2,15 +2,15 @@ import uuid
 import secrets
 from datetime import date, datetime, timezone
 from collections import Counter
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import Optional
 from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import delete, func, select, update
 
-from app.core.database import get_db
-from app.models.monitoring import MonitoringForm, MonitoringEntry
+from app.core.database import get_db, get_session_factory
+from app.models.monitoring import MonitoringEntry, MonitoringForm, MonitoringNote
 from app.models.patient import PatientProfile, PractitionerProfile
 from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 from app.services import monitoring_capture as capture
@@ -53,6 +53,7 @@ def _entry_out(e: MonitoringEntry) -> dict:
         "is_draft": e.is_draft,
         "parent_words": e.parent_words,
         "captured_by": e.captured_by,
+        "note_id": str(e.note_id) if e.note_id else None,
         "created_at": e.created_at.isoformat() if e.created_at else None,
     }
 
@@ -440,6 +441,10 @@ async def get_public_form(
         ).order_by(MonitoringEntry.entry_date.desc())
     )
     entries = entries_result.scalars().all()
+    notes = (await db.execute(
+        select(MonitoringNote).where(MonitoringNote.monitoring_form_id == form.id)
+        .order_by(MonitoringNote.created_at.desc())
+    )).scalars().all()
 
     # Update status to in_progress if still pending and being viewed
     if form.status == "pending":
@@ -453,6 +458,9 @@ async def get_public_form(
         "practitioner_name": practitioner_name,
         # Recording is offered only once Google is set up; typing a quick note always works.
         "voice_available": capture.voice_available(),
+        # What they said or typed, in their words. The observations written up from these are in
+        # `entries` with a note_id, for the clinician; the parent sees the words.
+        "notes": [_note_out(n) for n in notes],
         "entries": [
             _entry_out(e)
             for e in entries
@@ -580,6 +588,7 @@ async def record_parent_consent(
 # ── Just say it: an observation said out loud, or typed as a quick note ──────
 # docs/plans/monitoring-just-say-it.md. The same bargain as the rest of the form: the unguessable
 # token instead of a login. These call paid services, so each form has a daily limit.
+# Peter, 2026-09-12: the parent just talks and it goes. No form to check.
 
 def _refuse_if_submitted(form: MonitoringForm) -> None:
     if form.status == "submitted":
@@ -597,13 +606,51 @@ async def _count_capture(db: AsyncSession, form: MonitoringForm) -> None:
     await db.commit()
 
 
-@public_router.post("/monitor/{access_token}/transcribe")
-async def transcribe_recording(
+def _parent_today(value: Optional[str]) -> date:
+    """The parent's own date, so "this morning" is their morning. More than a day from ours is taken
+    as a wrong clock."""
+    ours = datetime.now(timezone.utc).date()
+    try:
+        today = date.fromisoformat(value) if value else ours
+    except ValueError:
+        return ours
+    return today if abs((today - ours).days) <= 1 else ours
+
+
+def _note_out(n: MonitoringNote) -> dict:
+    return {
+        "id": str(n.id),
+        "words": n.words,
+        "captured_by": n.captured_by,
+        "entry_date": n.entry_date.isoformat(),
+        "fear_level": n.fear_level,
+        "created_at": n.created_at.isoformat() if n.created_at else None,
+    }
+
+
+async def _save_note(db: AsyncSession, form: MonitoringForm, words: str, captured_by: str, today: Optional[str],
+                     background: BackgroundTasks, sessions) -> dict:
+    note = MonitoringNote(monitoring_form_id=form.id, words=words, captured_by=captured_by,
+                          entry_date=_parent_today(today))
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+    # Written up after the response: the parent is told "Got it" without waiting for Claude.
+    background.add_task(capture.write_up_note, sessions, note.id)
+    return {"note": _note_out(note)}
+
+
+@public_router.post("/monitor/{access_token}/notes/voice")
+async def say_it(
     access_token: str,
+    background: BackgroundTasks,
     audio: UploadFile = File(...),
+    today: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
+    sessions=Depends(get_session_factory),
 ):
-    """A recording of up to a minute, turned into text. The recording is not stored."""
+    """A recording of up to a minute. Turned into text before the parent is told "Got it", so a
+    recording with nothing heard can be tried again. The recording is not stored."""
     form = await get_form_by_token(access_token, db)
     _refuse_if_submitted(form)
     if not capture.voice_available():
@@ -617,80 +664,87 @@ async def transcribe_recording(
         raise HTTPException(status_code=400, detail="That recording is empty.")
     await _count_capture(db, form)
     try:
-        text = await capture.transcribe(data)
+        words = (await capture.transcribe(data)).strip()
     except capture.CaptureFailed:
         raise HTTPException(status_code=502, detail="We couldn't turn that into text. Try again, or type it.")
-    return {"text": text}
+    if not words:
+        raise HTTPException(status_code=422, detail="We couldn't hear that. Try again, or type it.")
+    return await _save_note(db, form, words[:capture.MAX_NOTE_CHARS], "voice", today, background, sessions)
 
 
-class WriteUpRequest(BaseModel):
+class NoteRequest(BaseModel):
     text: str = Field(min_length=1, max_length=capture.MAX_NOTE_CHARS)
-    #: The parent's own date, so "this morning" is their morning.
     today: Optional[str] = None
-    captured_by: Literal["voice", "note"] = "note"
 
 
-@public_router.post("/monitor/{access_token}/write-up")
-async def write_up_note(
+@public_router.post("/monitor/{access_token}/notes/text")
+async def write_it(
     access_token: str,
-    data: WriteUpRequest,
+    data: NoteRequest,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    sessions=Depends(get_session_factory),
 ):
-    """The parent's words written up as observations, saved as drafts for them to check."""
+    """A quick typed note, the same way as a recording."""
     form = await get_form_by_token(access_token, db)
     _refuse_if_submitted(form)
-    text = data.text.strip()
-    if not text:
-        raise HTTPException(status_code=422, detail="There's nothing to write up.")
+    words = data.text.strip()
+    if not words:
+        raise HTTPException(status_code=422, detail="There's nothing to send.")
     await _count_capture(db, form)
-
-    ours = datetime.now(timezone.utc).date()
-    try:
-        today = date.fromisoformat(data.today) if data.today else ours
-    except ValueError:
-        today = ours
-    if abs((today - ours).days) > 1:
-        today = ours
-
-    try:
-        observations = await capture.write_up(text, today)
-    except capture.CaptureFailed:
-        raise HTTPException(status_code=502, detail="We couldn't write that up. Try again, or use the form.")
-
-    entries = [
-        MonitoringEntry(monitoring_form_id=form.id, is_draft=True, parent_words=text,
-                        captured_by=data.captured_by, **o)
-        for o in observations
-    ]
-    db.add_all(entries)
-    if entries and form.status == "pending":
-        form.status = "in_progress"
-    await db.commit()
-    for e in entries:
-        await db.refresh(e)
-    return {"entries": [_entry_out(e) for e in entries]}
+    return await _save_note(db, form, words, "note", data.today, background, sessions)
 
 
-@public_router.delete("/monitor/{access_token}/entries/{entry_id}", status_code=204)
-async def remove_draft(
+async def _note_on_form(db: AsyncSession, form: MonitoringForm, note_id: uuid.UUID) -> MonitoringNote:
+    note = (await db.execute(
+        select(MonitoringNote).where(
+            MonitoringNote.id == note_id,
+            MonitoringNote.monitoring_form_id == form.id,
+        ).with_for_update()
+    )).scalar_one_or_none()
+    if not note:
+        raise HTTPException(status_code=404, detail="Not found")
+    return note
+
+
+class NoteFearRequest(BaseModel):
+    fear_level: int = Field(ge=1, le=10)
+
+
+@public_router.put("/monitor/{access_token}/notes/{note_id}/fear")
+async def note_fear(
     access_token: str,
-    entry_id: uuid.UUID,
+    note_id: uuid.UUID,
+    data: NoteFearRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """A draft Float wrote up that the parent does not want. A saved observation stays."""
+    """The one tap after recording: how upset the child was. It fills every moment in the note the
+    parent gave no number for. A number they said stays."""
     form = await get_form_by_token(access_token, db)
     _refuse_if_submitted(form)
-    entry = (await db.execute(
-        select(MonitoringEntry).where(
-            MonitoringEntry.id == entry_id,
-            MonitoringEntry.monitoring_form_id == form.id,
-        )
-    )).scalar_one_or_none()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    if not entry.is_draft:
-        raise HTTPException(status_code=409, detail="Only a draft can be removed.")
-    await db.delete(entry)
+    note = await _note_on_form(db, form, note_id)
+    note.fear_level = data.fear_level
+    await db.execute(
+        update(MonitoringEntry)
+        .where(MonitoringEntry.note_id == note.id, MonitoringEntry.fear_thermometer.is_(None))
+        .values(fear_thermometer=data.fear_level)
+    )
+    await db.commit()
+    return {"note": _note_out(note)}
+
+
+@public_router.delete("/monitor/{access_token}/notes/{note_id}", status_code=204)
+async def delete_note(
+    access_token: str,
+    note_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """A recording or note the parent did not mean to send, and everything written up from it."""
+    form = await get_form_by_token(access_token, db)
+    _refuse_if_submitted(form)
+    note = await _note_on_form(db, form, note_id)
+    await db.execute(delete(MonitoringEntry).where(MonitoringEntry.note_id == note.id))
+    await db.delete(note)
     await db.commit()
     return Response(status_code=204)
 

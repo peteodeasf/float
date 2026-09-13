@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
-import JustSayIt, { CaptureChoices, MicIcon, captureApi } from './JustSayIt'
+import JustSayIt, { CaptureChoices, MicIcon, NoteRow, captureApi, type CapturedNote } from './JustSayIt'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
@@ -17,6 +17,8 @@ interface Entry {
   is_draft: boolean
   parent_words?: string | null
   captured_by?: string
+  /** Written up from something they said or typed. The parent sees their words instead. */
+  note_id?: string | null
   created_at: string
 }
 
@@ -27,6 +29,7 @@ interface FormData {
   practitioner_name: string | null
   voice_available?: boolean
   entries: Entry[]
+  notes?: CapturedNote[]
 }
 
 export default function MonitorLandingPage() {
@@ -46,7 +49,6 @@ export default function MonitorLandingPage() {
   const [consentSaving, setConsentSaving] = useState(false)
   // Just say it: talking, or a quick note, instead of the four boxes. docs/plans/monitoring-just-say-it.md
   const [captureMode, setCaptureMode] = useState<'talk' | 'note'>('talk')
-  const [savedCount, setSavedCount] = useState(0)
   const api = useMemo(() => captureApi(token ?? ''), [token])
 
   // Entry form state
@@ -65,7 +67,7 @@ export default function MonitorLandingPage() {
       try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone } catch { tz = undefined }
       const res = await axios.get(`${API_URL}/monitor/${token}`, { params: tz ? { tz } : {} })
       setForm(res.data)
-      if (res.data.entries.length > 0) {
+      if (res.data.entries.length > 0 || res.data.notes?.length > 0) {
         setScreen('home')
       }
       return res.data as FormData
@@ -150,7 +152,15 @@ export default function MonitorLandingPage() {
 
   const childName = form?.patient_first_name || 'your child'
   const practitionerName = form?.practitioner_name || 'Your clinician'
-  const entryCount = form?.entries.filter(e => !e.is_draft).length ?? 0
+  // What they said or typed shows as their words; the observations Float wrote up from it are the
+  // clinician's, so they are left out of this list.
+  const notes = form?.notes ?? []
+  const formEntries = form?.entries.filter(e => !e.note_id) ?? []
+  const entryCount = notes.length + formEntries.filter(e => !e.is_draft).length
+  const listItems = [
+    ...notes.map(n => ({ kind: 'note' as const, date: n.entry_date, note: n })),
+    ...formEntries.map(e => ({ kind: 'entry' as const, date: e.entry_date, entry: e })),
+  ].sort((a, b) => b.date.localeCompare(a.date))
   const voice = !!form?.voice_available
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches
     || (navigator as { standalone?: boolean }).standalone === true
@@ -170,7 +180,6 @@ export default function MonitorLandingPage() {
   )
   const startCapture = (m: 'talk' | 'note') => {
     setCaptureMode(m)
-    setSavedCount(0)
     setScreen('capture')
   }
 
@@ -201,12 +210,10 @@ export default function MonitorLandingPage() {
         mode={captureMode}
         childName={childName}
         api={api}
-        onClose={async saved => {
+        onClose={async () => {
           const data = await fetchForm()
-          setSavedCount(saved)
-          setScreen(data && data.entries.length > 0 ? 'home' : 'welcome')
+          setScreen(data && (data.entries.length > 0 || (data.notes?.length ?? 0) > 0) ? 'home' : 'welcome')
         }}
-        onUseForm={() => { resetEntryForm(); setScreen('add') }}
       />
     )
   }
@@ -308,12 +315,6 @@ export default function MonitorLandingPage() {
             }
           </p>
 
-          {savedCount > 0 && (
-            <div role="status" style={{ background: '#eafaf6', border: '1px solid #9af6e4', color: '#0d3d3a', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>
-              Saved {savedCount === 1 ? 'your observation' : `${savedCount} observations`}. Thank you.
-            </div>
-          )}
-
           {/* Bookmark prompt */}
           {!bookmarkDismissed && !standalone && (
             <div style={{
@@ -341,7 +342,10 @@ export default function MonitorLandingPage() {
 
           {/* Entry list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-            {form?.entries.map(entry => (
+            {listItems.map(item => item.kind === 'note' ? (
+              <NoteRow key={item.note.id} note={item.note}
+                onDelete={async () => { await api.deleteNote(item.note.id); await fetchForm() }} />
+            ) : ((entry: Entry) => (
               <button
                 key={entry.id}
                 onClick={() => handleEdit(entry)}
@@ -403,7 +407,7 @@ export default function MonitorLandingPage() {
                   </div>
                 )}
               </button>
-            ))}
+            ))(item.entry))}
           </div>
 
           {/* Resend link */}

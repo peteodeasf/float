@@ -1,20 +1,25 @@
 """A parent's monitoring observation, said out loud or typed as a quick note.
 
 Peter, 2026-09-11: a faster way in than the four-box form, alongside it. A recording goes to Google
-Speech-to-Text and is never stored. The text goes to Claude, which writes it up as one or more
-observations for the parent to check before they are saved. Only the text is kept.
-docs/plans/monitoring-just-say-it.md
+Speech-to-Text and is never stored. Only the text is kept.
+
+Peter, 2026-09-12: the parent is not asked to check a form they may not understand. Their words are
+saved and they are told "Got it". Claude writes the words up as observations afterwards, and the
+clinician sees them with the parent's words beside them. docs/plans/monitoring-just-say-it.md
 """
 import base64
 import json
 import logging
 import re
 import time
-from datetime import date, timedelta
+import uuid
+from datetime import date, datetime, timedelta, timezone
 
 import anthropic
 import httpx
 from jose import jwt
+
+from sqlalchemy import select
 
 from app.core.config import settings
 from app.services.insight_service import parse_model_json
@@ -22,7 +27,7 @@ from app.services.insight_service import parse_model_json
 logger = logging.getLogger(__name__)
 
 MAX_AUDIO_BYTES = 10 * 1024 * 1024  # Google's limit for a quick request; a minute is well under it
-DAILY_LIMIT = 80                    # recordings and write-ups together, per form per day
+DAILY_LIMIT = 40                    # recordings and notes, per form per day
 MAX_NOTE_CHARS = 5000
 MAX_OBSERVATIONS = 10
 OLDEST_DAYS = 14                    # a date further back than this is taken as a mistake: today
@@ -186,3 +191,49 @@ async def write_up(text: str, today: date) -> list[dict]:
     found = data.get("observations") if isinstance(data, dict) else None
     cleaned = [_clean(o, text, today) for o in (found if isinstance(found, list) else [])]
     return [c for c in cleaned if c][:MAX_OBSERVATIONS]
+
+
+async def write_up_note(sessions, note_id: uuid.UUID) -> None:
+    """A parent's note written up as observations, after they have been told "Got it".
+
+    `sessions` opens a session of its own: the request's is closed by the time this runs. Nothing
+    the parent said is lost. When Claude fails, or finds no moment in it, the words are kept as one
+    observation on their own, so the clinician still sees them.
+    """
+    from app.models.monitoring import MonitoringEntry, MonitoringForm, MonitoringNote
+
+    async with sessions() as db:
+        try:
+            note = await db.get(MonitoringNote, note_id)
+            if note is None:
+                return
+            try:
+                observations = await write_up(note.words, note.entry_date)
+            except CaptureFailed:
+                observations = []
+
+            # Read again, and hold it: the parent may have deleted it or tapped a Fear Level while
+            # Claude was writing it up.
+            note = (await db.execute(
+                select(MonitoringNote).where(MonitoringNote.id == note_id)
+                .with_for_update().execution_options(populate_existing=True)
+            )).scalar_one_or_none()
+            if note is None:
+                return
+            if not observations:
+                observations = [{"entry_date": note.entry_date, "situation": None, "child_behavior_observed": None,
+                                 "parent_response": None, "fear_thermometer": None}]
+            for o in observations:
+                if o["fear_thermometer"] is None:
+                    o = {**o, "fear_thermometer": note.fear_level}
+                db.add(MonitoringEntry(monitoring_form_id=note.monitoring_form_id, note_id=note.id, is_draft=False,
+                                       parent_words=note.words, captured_by=note.captured_by, **o))
+            note.written_up_at = datetime.now(timezone.utc)
+            form = await db.get(MonitoringForm, note.monitoring_form_id)
+            if form is not None and form.status == "pending":
+                form.status = "in_progress"
+            await db.commit()
+        except Exception as e:
+            # The kind of failure only, never the words. The note itself is already saved.
+            logger.warning("writing up a monitoring note failed: %s", type(e).__name__)
+
