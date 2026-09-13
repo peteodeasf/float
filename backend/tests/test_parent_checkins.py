@@ -70,7 +70,9 @@ async def test_only_this_week_or_last(api, db):
 
     assert (await api.post("/parent/checkins", json=_answer(acc, week=_monday(-1)))).status_code == 200
     tuesday = (datetime.fromisoformat(_monday()) + timedelta(days=1)).date().isoformat()
-    for week in (tuesday, _monday(-2), _monday(1)):
+    # Two Mondays ahead, not next Monday: the server allows a day either way for the parent's time
+    # zone, so on a Sunday (UTC) next Monday is tomorrow and is rightly accepted.
+    for week in (tuesday, _monday(-2), _monday(2)):
         r = await api.post("/parent/checkins", json=_answer(acc, week=week))
         assert r.status_code == 422, (week, r.text)
 
