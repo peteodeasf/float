@@ -1,3 +1,5 @@
+import type { FigureId } from '../components/education/figures'
+
 export interface QuizQuestion {
   id: string
   question: string
@@ -23,6 +25,8 @@ export interface EducationModule {
   sections: {
     heading: string
     content: string
+    /** A diagram shown after the section's opening paragraph. docs/plans/education-redesign.md */
+    figure?: FigureId
   }[]
   quiz?: QuizQuestion[]
   exercise?: Exercise
@@ -46,6 +50,7 @@ This is not weakness, manipulation, or attention-seeking. The child is genuinely
       },
       {
         heading: 'The anxiety cycle',
+        figure: 'anxiety-cycle',
         content: `Understanding the anxiety cycle is the foundation of everything you will do with Float.
 
 The cycle has four stages:
@@ -62,6 +67,7 @@ This is the core mechanism of anxiety maintenance. **Avoidance is not the soluti
       },
       {
         heading: 'The habituation curve — Worry Hill',
+        figure: 'worry-hill',
         content: `Anxiety cannot stay at peak intensity indefinitely. Left alone — without avoidance, without escape — anxiety will rise, peak, and then fall on its own. This is habituation.
 
 The Worry Hill is a visual representation of this curve. Show it to every child, every parent, every clinician you work with. It explains why exposure works:
@@ -161,6 +167,7 @@ The reduction in accommodation is not a separate treatment — it is part of the
       },
       {
         heading: 'The accommodation ladder',
+        figure: 'two-ladders',
         content: `The parent module in Float is built on the same ladder principle as the exposure ladder. Each accommodation behavior is given a DT rating — the child's estimated distress if the parent stopped doing it. The behaviors are arranged from lowest to highest distress and reduced gradually, starting at the bottom.
 
 This approach accomplishes two things:
@@ -219,6 +226,7 @@ This approach accomplishes two things:
     sections: [
       {
         heading: 'The Distress Thermometer',
+        figure: 'fear-scale',
         content: `The Distress Thermometer (DT) is the primary assessment tool in Float. It is a 0-10 scale on which the child rates their level of distress, discomfort, anxiety, or unease in a given situation or when contemplating a given action.
 
 **Why DT, not SUDS?**
@@ -331,6 +339,7 @@ This has the lowest DT and occurs daily, making it ideal for frequent practice a
     sections: [
       {
         heading: 'What the Downward Arrow is',
+        figure: 'downward-arrow',
         content: `The Downward Arrow is a structured facilitation technique used to identify the child's most feared outcome — the core belief driving their anxiety. It is one of the most important tools in the model.
 
 Many anxious children (and adults) cannot initially articulate what they are actually afraid of. They know the situation makes them anxious, but they describe it in surface terms: "I just don't want to go," "It feels wrong," "I might feel sick." The Downward Arrow drills below the surface to find the specific feared consequence.
@@ -385,6 +394,7 @@ This is an appropriate feared outcome. It is core, catastrophic, and specific en
       },
       {
         heading: 'BIP — Belief in Prediction',
+        figure: 'belief-falls',
         content: `Once the feared outcome is identified and approved, ask:
 
 > "How strongly do you believe this will happen — that if you sit near students in the cafeteria, you will end up completely alone with no friends ever? If 100% means you're completely certain it will happen, and 0% means you're certain it won't, where are you?"
@@ -444,6 +454,7 @@ You are beginning to build his exposure ladder. Before you can assign a BIP, you
     sections: [
       {
         heading: 'From behaviors to rungs',
+        figure: 'exposure-ladder',
         content: `The exposure ladder is built directly from the avoidance and safety behaviors identified for a given trigger situation. Each behavior becomes a rung. The DT rating for refraining from that behavior is the rung's distress rating.
 
 **The ladder is arranged from lowest to highest DT — bottom to top.**
@@ -531,6 +542,7 @@ Sophie will eat lunch in the cafeteria on Tuesday at 12:15pm at her usual table.
     sections: [
       {
         heading: 'The before-exposure worksheet',
+        figure: 'before-after',
         content: `Every exposure in Float is planned before it happens. Vague intentions ("I'll try to sit near people this week") do not work. The exposure must be:
 
 - **Specific** — exactly what the child will do, where, and with whom
@@ -622,6 +634,7 @@ Next clinical step: Plan 2-3 more exposures at this rung to solidify mastery, th
     sections: [
       {
         heading: 'Overview',
+        figure: 'parent-stages',
         content: `The parent module runs in parallel with the child's exposure work. It has five stages, which are addressed in order:
 
 1. **Monitor** — identify accommodation behaviors systematically
@@ -718,6 +731,7 @@ The accommodation reduction mirrors Jamie's exposure work. As Jamie's DT for con
     sections: [
       {
         heading: 'The patient lifecycle in Float',
+        figure: 'patient-path',
         content: `Every patient in Float moves through a defined sequence of stages:
 
 **Referred** — patient created in Float, referral recorded

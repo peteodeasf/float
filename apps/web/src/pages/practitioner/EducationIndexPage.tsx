@@ -1,94 +1,104 @@
 import { useNavigate } from 'react-router-dom'
-import { clinicianModules } from '../../data/education'
+import { clinicianModules, type EducationModule } from '../../data/education'
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import { ModuleIcon } from '../../components/education/figures'
+import { EDU_CSS } from '../../components/education/educationStyles'
+import { getProgress, lastOpened } from '../../components/education/progress'
 
-function getProgress(moduleId: string): 'not_started' | 'in_progress' | 'complete' {
-  if (localStorage.getItem(`education_complete_${moduleId}`)) return 'complete'
-  if (localStorage.getItem(`education_started_${moduleId}`)) return 'in_progress'
-  return 'not_started'
+/** The modules in treatment order. docs/plans/education-redesign.md */
+const GROUPS: { title: string; note: string; ids: string[] }[] = [
+  { title: 'Foundations', note: 'Why anxiety lasts, and what families do', ids: ['understanding-anxiety', 'family-accommodation'] },
+  { title: 'Assessment', note: 'Finding what to work on', ids: ['assessment-tools', 'downward-arrow'] },
+  { title: 'Treatment', note: 'Ladders and exposures', ids: ['exposure-ladder', 'planning-exposures'] },
+  { title: 'Working with parents', note: 'Reducing accommodation', ids: ['parent-module'] },
+  { title: 'The app', note: 'Float day to day', ids: ['using-float'] },
+]
+
+const STATUS = { not_started: 'Not started', in_progress: 'In progress', complete: 'Done' } as const
+
+function ProgressRing({ done, total }: { done: number; total: number }) {
+  const r = 50, c = 2 * Math.PI * r
+  return (
+    <div className="edu-ring" role="img" aria-label={`${done} of ${total} modules done`}>
+      <svg width={116} height={116} viewBox="0 0 116 116">
+        <circle cx={58} cy={58} r={r} fill="none" stroke="rgba(154,246,228,.18)" strokeWidth={10} />
+        <circle cx={58} cy={58} r={r} fill="none" stroke="#9af6e4" strokeWidth={10} strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - done / total)} />
+      </svg>
+      <div className="edu-ring-label"><b>{done}/{total}</b><span>modules done</span></div>
+    </div>
+  )
 }
 
-const statusStyles = {
-  not_started: { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Not started' },
-  in_progress: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In progress' },
-  complete: { bg: 'bg-green-100', text: 'text-green-700', label: 'Complete' },
-}
-
-export default function EducationIndexPage() {
+export default function EducationIndexPage({ basePath = '/education' }: { basePath?: string }) {
   const navigate = useNavigate()
-  const completedCount = clinicianModules.filter(m => getProgress(m.id) === 'complete').length
+  const byId = new Map(clinicianModules.map(m => [m.id, m]))
+  const done = clinicianModules.filter(m => getProgress(m.id) === 'complete').length
+  const totalMinutes = clinicianModules.reduce((n, m) => n + m.estimatedMinutes, 0)
+
+  // Back to the module they were last in, or the first one they have not finished.
+  const last = lastOpened()
+  const resume: EducationModule | undefined =
+    (last && byId.get(last) && getProgress(last) !== 'complete' ? byId.get(last) : undefined)
+    ?? clinicianModules.find(m => getProgress(m.id) !== 'complete')
+  const started = resume ? getProgress(resume.id) === 'in_progress' : false
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
+    <div className="edu">
+      <style>{EDU_CSS}</style>
       <PractitionerNav activePage="education" />
 
-      <main className="max-w-4xl mx-auto px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--float-text)' }}>
-            Clinician Education
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--float-text-secondary)' }}>
-            Based on Dr. Walker's CBT model for anxiety
-          </p>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mb-8 bg-white rounded-xl p-5" style={{ border: '1px solid var(--float-border)' }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium" style={{ color: 'var(--float-text)' }}>
-              {completedCount} of {clinicianModules.length} modules complete
-            </span>
-            <span className="text-xs" style={{ color: 'var(--float-text-hint)' }}>
-              {Math.round((completedCount / clinicianModules.length) * 100)}%
-            </span>
+      <header className="edu-hero">
+        <div className="edu-hero-in">
+          <div style={{ flex: 1 }}>
+            <div className="edu-eyebrow">Clinician guide</div>
+            <h1>Treating childhood anxiety with Float</h1>
+            <p>Dr. Walker's CBT model, from the anxiety cycle to the parent's work. {clinicianModules.length} modules, about {totalMinutes} minutes.</p>
           </div>
-          <div className="w-full h-2 rounded-full" style={{ background: 'var(--float-border)' }}>
-            <div
-              className="h-2 rounded-full transition-all duration-500"
-              style={{
-                width: `${(completedCount / clinicianModules.length) * 100}%`,
-                background: 'var(--float-primary)'
-              }}
-            />
-          </div>
+          <ProgressRing done={done} total={clinicianModules.length} />
         </div>
+      </header>
 
-        {/* Module grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {clinicianModules.map(mod => {
-            const progress = getProgress(mod.id)
-            const styles = statusStyles[progress]
-            return (
-              <button
-                key={mod.id}
-                onClick={() => navigate(`/education/${mod.id}`)}
-                className="bg-white rounded-xl p-5 text-left transition-all hover:shadow-md cursor-pointer"
-                style={{ border: '1px solid var(--float-border)' }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <span
-                    className="text-xs font-bold px-2 py-1 rounded"
-                    style={{ background: 'var(--float-primary-light)', color: 'var(--float-primary-text)' }}
-                  >
-                    {String(mod.number).padStart(2, '0')}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles.bg} ${styles.text}`}>
-                    {styles.label}
-                  </span>
-                </div>
-                <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--float-text)' }}>
-                  {mod.title}
-                </h3>
-                <p className="text-sm mb-3" style={{ color: 'var(--float-text-secondary)' }}>
-                  {mod.description}
-                </p>
-                <span className="text-xs" style={{ color: 'var(--float-text-hint)' }}>
-                  {mod.estimatedMinutes} min
-                </span>
-              </button>
-            )
-          })}
-        </div>
+      <main className="edu-body">
+        {resume && (
+          <button className="edu-continue" onClick={() => navigate(`${basePath}/${resume.id}`)}>
+            <span className="edu-continue-icon"><ModuleIcon id={resume.id} size={32} /></span>
+            <span>
+              <span className="edu-eyebrow" style={{ color: '#135450' }}>{started ? 'Continue where you left off' : 'Start here'}</span>
+              <span style={{ display: 'block', fontSize: 17, fontWeight: 750, color: '#0d3d3a', marginTop: 2 }}>
+                {resume.number}. {resume.title}
+              </span>
+            </span>
+            <span className="edu-continue-go">{started ? 'Continue' : 'Start'} →</span>
+          </button>
+        )}
+
+        {GROUPS.map(g => (
+          <section key={g.title} className="edu-group" aria-labelledby={`g-${g.title}`}>
+            <div className="edu-group-head">
+              <h2 id={`g-${g.title}`}>{g.title}</h2>
+              <span>{g.note}</span>
+            </div>
+            <div className="edu-cards">
+              {g.ids.map(id => byId.get(id)).filter((m): m is EducationModule => !!m).map(m => {
+                const p = getProgress(m.id)
+                return (
+                  <button key={m.id} className={`edu-card ${p === 'complete' ? 'edu-card-done' : ''}`} onClick={() => navigate(`${basePath}/${m.id}`)}>
+                    <span className="edu-card-icon"><ModuleIcon id={m.id} size={34} /></span>
+                    <span style={{ minWidth: 0 }}>
+                      <span className="edu-card-meta">
+                        <span>Module {m.number}</span><span aria-hidden="true">·</span><span>{m.estimatedMinutes} min</span>
+                        <span className={`edu-pill edu-pill-${p}`}>{STATUS[p]}</span>
+                      </span>
+                      <h3>{m.title}</h3>
+                      <p>{m.description}</p>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ))}
       </main>
     </div>
   )

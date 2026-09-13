@@ -1,130 +1,93 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { clinicianModules, type QuizQuestion, type Exercise } from '../../data/education'
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import Prose from '../../components/education/Prose'
+import { Figure, ModuleIcon } from '../../components/education/figures'
+import { EDU_CSS } from '../../components/education/educationStyles'
+import { getProgress, markComplete, markStarted, saveQuizScore } from '../../components/education/progress'
 
-function getProgress(moduleId: string): 'not_started' | 'in_progress' | 'complete' {
-  if (localStorage.getItem(`education_complete_${moduleId}`)) return 'complete'
-  if (localStorage.getItem(`education_started_${moduleId}`)) return 'in_progress'
-  return 'not_started'
-}
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 
-// ── Quiz Component ──
+// ── Quiz: one question at a time, with the answer straight away ──
 function QuizSection({ questions, moduleId, onComplete }: {
   questions: QuizQuestion[]
   moduleId: string
   onComplete: () => void
 }) {
-  const [currentQ, setCurrentQ] = useState(0)
-  const [selected, setSelected] = useState<number | null>(null)
-  const [revealed, setRevealed] = useState(false)
-  const [correctCount, setCorrectCount] = useState(0)
+  const [current, setCurrent] = useState(0)
+  const [answers, setAnswers] = useState<(number | null)[]>(questions.map(() => null))
   const [finished, setFinished] = useState(false)
 
-  const q = questions[currentQ]
+  const q = questions[current]
+  const picked = answers[current]
+  const correct = answers.filter((a, i) => a === questions[i].correctIndex).length
 
-  const handleSelect = (idx: number) => {
-    if (revealed) return
-    setSelected(idx)
-    setRevealed(true)
-    if (idx === q.correctIndex) setCorrectCount(c => c + 1)
+  const pick = (idx: number) => {
+    if (picked !== null) return
+    setAnswers(a => a.map((v, i) => (i === current ? idx : v)))
   }
-
-  const handleNext = () => {
-    if (currentQ < questions.length - 1) {
-      setCurrentQ(c => c + 1)
-      setSelected(null)
-      setRevealed(false)
-    } else {
-      setFinished(true)
-      const score = correctCount + (selected === q.correctIndex ? 0 : 0)
-      localStorage.setItem(`education_quiz_score_${moduleId}`, String(score))
-    }
+  const next = () => {
+    if (current < questions.length - 1) setCurrent(c => c + 1)
+    else { setFinished(true); saveQuizScore(moduleId, correct) }
   }
-
-  if (finished) {
-    const finalScore = correctCount
-    return (
-      <div className="bg-white rounded-xl p-8 text-center" style={{ border: '1px solid var(--float-border)' }}>
-        <div className="text-4xl mb-4">
-          {finalScore === questions.length ? '🎉' : finalScore >= questions.length * 0.6 ? '👍' : '📚'}
-        </div>
-        <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--float-text)' }}>
-          Quiz complete
-        </h3>
-        <p className="text-lg mb-6" style={{ color: 'var(--float-text-secondary)' }}>
-          {finalScore} of {questions.length} correct
-        </p>
-        <button
-          onClick={onComplete}
-          className="text-white px-6 py-3 rounded-lg text-sm font-medium cursor-pointer border-none"
-          style={{ background: 'var(--float-primary)' }}
-        >
-          Mark module complete
-        </button>
-      </div>
-    )
-  }
+  const retake = () => { setAnswers(questions.map(() => null)); setCurrent(0); setFinished(false) }
 
   return (
-    <div className="bg-white rounded-xl p-6" style={{ border: '1px solid var(--float-border)' }}>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--float-text)' }}>Quiz</h3>
-        <span className="text-xs" style={{ color: 'var(--float-text-hint)' }}>
-          Question {currentQ + 1} of {questions.length}
-        </span>
-      </div>
-
-      <p className="text-base font-medium mb-5" style={{ color: 'var(--float-text)' }}>
-        {q.question}
-      </p>
-
-      <div className="space-y-3 mb-5">
-        {q.options.map((opt, idx) => {
-          let borderColor = 'var(--float-border)'
-          let bg = 'transparent'
-          if (revealed) {
-            if (idx === q.correctIndex) { borderColor = '#22c55e'; bg = '#f0fdf4' }
-            else if (idx === selected) { borderColor = '#ef4444'; bg = '#fef2f2' }
-          } else if (idx === selected) {
-            borderColor = 'var(--float-primary)'
-            bg = 'var(--float-primary-light)'
-          }
-          return (
-            <button
-              key={idx}
-              onClick={() => handleSelect(idx)}
-              className="w-full text-left p-4 rounded-lg text-sm transition-colors cursor-pointer"
-              style={{ border: `2px solid ${borderColor}`, background: bg, color: 'var(--float-text)' }}
-            >
-              {opt}
-            </button>
-          )
-        })}
-      </div>
-
-      {revealed && (
-        <div className="p-4 rounded-lg mb-4" style={{ background: '#eafaf6', border: '1px solid #9af6e4' }}>
-          <p className="text-sm" style={{ color: '#0d3d3a' }}>
-            {q.explanation}
-          </p>
+    <section className="edu-panel" aria-labelledby="quiz-title">
+      <div className="edu-panel-head">
+        <h2 id="quiz-title">Check your understanding</h2>
+        <div className="edu-dots" aria-hidden="true">
+          {questions.map((qq, i) => {
+            const a = answers[i]
+            const cls = a === null ? (i === current && !finished ? 'on' : '') : a === qq.correctIndex ? 'right' : 'wrong'
+            return <span key={qq.id} className={cls} />
+          })}
         </div>
-      )}
+      </div>
 
-      {revealed && (
-        <button
-          onClick={handleNext}
-          className="text-white px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer border-none"
-          style={{ background: 'var(--float-primary)' }}
-        >
-          {currentQ < questions.length - 1 ? 'Next question' : 'See results'}
-        </button>
+      {finished ? (
+        <div className="edu-score">
+          <b>{correct} / {questions.length}</b>
+          <span>{correct === questions.length ? 'Every one right.' : 'Go back over the explanations for the ones you missed.'}</span>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="edu-btn" onClick={onComplete}>Mark module complete</button>
+            <button className="edu-btn edu-btn-quiet" onClick={retake}>Try again</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p style={{ fontSize: 12.5, fontWeight: 700, color: '#5b6b72', margin: '0 0 6px' }}>Question {current + 1} of {questions.length}</p>
+          <p className="edu-q">{q.question}</p>
+          <div className="edu-options">
+            {q.options.map((opt, idx) => {
+              const state = picked === null ? '' : idx === q.correctIndex ? 'edu-option-right' : idx === picked ? 'edu-option-wrong' : ''
+              return (
+                <button key={idx} className={`edu-option ${state}`} onClick={() => pick(idx)} disabled={picked !== null}>
+                  <span className="edu-option-letter">{LETTERS[idx]}</span>
+                  <span>{opt}</span>
+                </button>
+              )
+            })}
+          </div>
+          {picked !== null && (
+            <>
+              <div className={`edu-feedback ${picked === q.correctIndex ? 'edu-feedback-right' : 'edu-feedback-wrong'}`} role="status">
+                <b>{picked === q.correctIndex ? 'Right.' : 'Not quite.'}</b>
+                {q.explanation}
+              </div>
+              <button className="edu-btn" style={{ marginTop: 14 }} onClick={next}>
+                {current < questions.length - 1 ? 'Next question' : 'See my score'}
+              </button>
+            </>
+          )}
+        </>
       )}
-    </div>
+    </section>
   )
 }
 
-// ── Exercise Component ──
+// ── Exercise: the case, a box per task, then the model answer ──
 function ExerciseSection({ exercise, moduleId, onComplete }: {
   exercise: Exercise
   moduleId: string
@@ -132,277 +95,167 @@ function ExerciseSection({ exercise, moduleId, onComplete }: {
 }) {
   const [responses, setResponses] = useState<string[]>(exercise.tasks.map(() => ''))
   const [showAnswer, setShowAnswer] = useState(false)
-
   const allAttempted = responses.every(r => r.trim().length > 0)
 
-  const handleReveal = () => {
-    setShowAnswer(true)
-    localStorage.setItem(`education_complete_${moduleId}`, 'true')
-  }
-
   return (
-    <div className="bg-white rounded-xl p-6" style={{ border: '1px solid var(--float-border)' }}>
-      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--float-text)' }}>
-        Exercise: {exercise.title}
-      </h3>
-
-      {/* Vignette */}
-      <div className="p-5 rounded-lg mb-6" style={{ background: '#f8fafc', border: '1px solid var(--float-border)' }}>
-        <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--float-text-secondary)' }}>
-          {exercise.vignette}
-        </p>
+    <section className="edu-panel" aria-labelledby="exercise-title">
+      <div className="edu-panel-head">
+        <h2 id="exercise-title">Practice: {exercise.title}</h2>
       </div>
-
-      {/* Tasks */}
-      <div className="space-y-5 mb-6">
-        {exercise.tasks.map((task, i) => (
-          <div key={i}>
-            <p className="text-sm font-medium mb-2" style={{ color: 'var(--float-text)' }}>
-              {i + 1}. {task}
-            </p>
-            <textarea
-              value={responses[i]}
-              onChange={e => {
-                const next = [...responses]
-                next[i] = e.target.value
-                setResponses(next)
-              }}
-              rows={3}
-              placeholder="Type your response..."
-              className="w-full p-3 rounded-lg text-sm resize-vertical"
-              style={{
-                border: '1px solid var(--float-border)',
-                fontFamily: 'inherit',
-                color: 'var(--float-text)'
-              }}
-            />
-          </div>
-        ))}
+      <div className="edu-case">
+        <div className="edu-case-label">The case</div>
+        <Prose content={exercise.vignette} />
       </div>
-
-      {/* Reveal */}
+      {exercise.tasks.map((task, i) => (
+        <div key={i} className="edu-task">
+          <label htmlFor={`task-${i}`}><span className="edu-ol-n">{i + 1}</span><span>{task}</span></label>
+          <textarea id={`task-${i}`} rows={3} placeholder="Your answer" value={responses[i]}
+            onChange={e => setResponses(r => r.map((v, j) => (j === i ? e.target.value : v)))} />
+        </div>
+      ))}
       {!showAnswer ? (
-        <button
-          onClick={handleReveal}
-          disabled={!allAttempted}
-          className="text-white px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer border-none disabled:opacity-40"
-          style={{ background: 'var(--float-primary)' }}
-        >
-          View model answer
+        <button className="edu-btn" disabled={!allAttempted}
+          onClick={() => { setShowAnswer(true); markComplete(moduleId) }}>
+          Show the model answer
         </button>
       ) : (
-        <div>
-          <div className="p-5 rounded-lg mb-4" style={{ background: '#eafaf6', border: '1px solid #9af6e4' }}>
-            <p className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: '#135450' }}>
-              Model answer
-            </p>
-            <div
-              className="text-sm leading-relaxed prose prose-sm max-w-none"
-              style={{ color: '#0d3d3a' }}
-              dangerouslySetInnerHTML={{
-                __html: exercise.modelAnswer
-                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/\n/g, '<br />')
-              }}
-            />
+        <>
+          <div className="edu-answer">
+            <div className="edu-case-label">Model answer</div>
+            <Prose content={exercise.modelAnswer} />
           </div>
-          <button
-            onClick={onComplete}
-            className="text-white px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer border-none"
-            style={{ background: 'var(--float-primary)' }}
-          >
-            Mark module complete
-          </button>
-        </div>
+          <button className="edu-btn" onClick={onComplete}>Mark module complete</button>
+        </>
       )}
-    </div>
+      {!showAnswer && !allAttempted && (
+        <p style={{ fontSize: 13, color: '#5b6b72', margin: '10px 0 0' }}>Answer each task to see the model answer.</p>
+      )}
+    </section>
   )
 }
 
-// ── Main Module Page ──
-export default function EducationModulePage() {
+// ── A module ──
+export default function EducationModulePage({ basePath = '/education' }: { basePath?: string }) {
   const { moduleId } = useParams<{ moduleId: string }>()
   const navigate = useNavigate()
   const mod = clinicianModules.find(m => m.id === moduleId)
+  const [activeSection, setActiveSection] = useState(0)
+  const [read, setRead] = useState(0)
 
   useEffect(() => {
-    if (moduleId) {
-      localStorage.setItem(`education_started_${moduleId}`, 'true')
+    if (moduleId) markStarted(moduleId)
+    window.scrollTo?.(0, 0)
+    setActiveSection(0)
+  }, [moduleId])
+
+  // The thin bar under the header, and which section "On this page" marks.
+  useEffect(() => {
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      setRead(max > 0 ? Math.min(1, window.scrollY / max) : 0)
+      const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-edu-section]'))
+      let current = 0
+      sections.forEach((el, i) => { if (el.getBoundingClientRect().top < 140) current = i })
+      setActiveSection(current)
     }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [moduleId])
 
   if (!mod) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Module not found.</p>
+      <div className="edu">
+        <style>{EDU_CSS}</style>
+        <PractitionerNav activePage="education" subHeader={{ backTo: basePath, backLabel: 'All modules', title: 'Not found' }} />
+        <p style={{ padding: 40, textAlign: 'center' }}>Module not found.</p>
       </div>
     )
   }
 
-  const currentIndex = clinicianModules.findIndex(m => m.id === moduleId)
-  const prevModule = currentIndex > 0 ? clinicianModules[currentIndex - 1] : null
-  const nextModule = currentIndex < clinicianModules.length - 1 ? clinicianModules[currentIndex + 1] : null
-
-  const handleComplete = () => {
-    localStorage.setItem(`education_complete_${mod.id}`, 'true')
-    if (nextModule) {
-      navigate(`/education/${nextModule.id}`)
-    } else {
-      navigate('/education')
-    }
+  const index = clinicianModules.findIndex(m => m.id === mod.id)
+  const prev = index > 0 ? clinicianModules[index - 1] : null
+  const next = index < clinicianModules.length - 1 ? clinicianModules[index + 1] : null
+  const complete = () => {
+    markComplete(mod.id)
+    navigate(next ? `${basePath}/${next.id}` : basePath)
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
-      <PractitionerNav
-        activePage="education"
-        subHeader={{
-          backTo: '/education',
-          backLabel: 'Back to modules',
-          title: `Module ${mod.number}: ${mod.title}`,
-        }}
-      />
+    <div className="edu">
+      <style>{EDU_CSS}</style>
+      <PractitionerNav activePage="education" subHeader={{ backTo: basePath, backLabel: 'All modules', title: `Module ${mod.number}: ${mod.title}` }} />
 
-      <div className="max-w-6xl mx-auto px-8 py-8 flex gap-8">
-        {/* Sidebar */}
-        <aside className="hidden lg:block w-56 flex-shrink-0">
-          <div className="sticky top-8 space-y-1">
-            {clinicianModules.map(m => {
-              const progress = getProgress(m.id)
-              const isCurrent = m.id === moduleId
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => navigate(`/education/${m.id}`)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm cursor-pointer border-none flex items-center gap-2.5 transition-colors"
-                  style={{
-                    background: isCurrent ? 'var(--float-primary-light)' : 'transparent',
-                    color: isCurrent ? 'var(--float-primary-text)' : 'var(--float-text-secondary)'
-                  }}
-                >
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold"
-                    style={{
-                      background: progress === 'complete' ? '#22c55e' : isCurrent ? 'var(--float-primary)' : 'var(--float-border)',
-                      color: progress === 'complete' || isCurrent ? '#fff' : 'var(--float-text-hint)'
-                    }}
-                  >
-                    {progress === 'complete' ? '\u2713' : m.number}
-                  </span>
-                  <span className="truncate">{m.title}</span>
-                </button>
-              )
-            })}
+      <header className="edu-mhero">
+        <div className="edu-mhero-in">
+          <div>
+            <div className="edu-eyebrow">Module {mod.number} of {clinicianModules.length} · {mod.estimatedMinutes} min read</div>
+            <h1>{mod.title}</h1>
+            <p>{mod.description}</p>
+            <div className="edu-learn" aria-label="What you'll learn">
+              {mod.sections.filter(s => s.heading !== 'Key takeaway').map(s => <span key={s.heading}>{s.heading}</span>)}
+            </div>
           </div>
-        </aside>
+          <div className="edu-mhero-art"><ModuleIcon id={mod.id} size={76} /></div>
+        </div>
+      </header>
+      <div className="edu-readbar" aria-hidden="true"><span style={{ width: `${read * 100}%` }} /></div>
 
-        {/* Main content */}
-        <main className="flex-1 min-w-0 max-w-3xl">
-          {/* Module header */}
-          <div className="mb-8">
-            <span className="text-xs font-bold px-2 py-1 rounded mb-3 inline-block"
-              style={{ background: 'var(--float-primary-light)', color: 'var(--float-primary-text)' }}
-            >
-              Module {mod.number}
-            </span>
-            <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--float-text)' }}>
-              {mod.title}
-            </h1>
-            <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>
-              {mod.estimatedMinutes} minute read
-            </p>
-          </div>
-
-          {/* Sections */}
-          <div className="space-y-8 mb-12">
-            {mod.sections.map((section, i) => (
-              <div key={i}>
-                <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--float-text)' }}>
-                  {section.heading}
-                </h2>
-                <div
-                  className="text-sm leading-relaxed prose prose-sm max-w-none"
-                  style={{ color: 'var(--float-text-secondary)' }}
-                  dangerouslySetInnerHTML={{
-                    __html: section.content
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-slate-200 pl-4 italic my-2">$1</blockquote>')
-                      .replace(/^(\d+)\. /gm, '<br/><strong>$1.</strong> ')
-                      .replace(/^- (.+)$/gm, '<br/>• $1')
-                      .replace(/\n\n/g, '</p><p class="mt-3">')
-                      .replace(/\|(.+)\|/g, (match) => {
-                        if (match.includes('---')) return ''
-                        const cells = match.split('|').filter(Boolean).map(c => c.trim())
-                        return `<div class="flex gap-4 py-1 text-sm">${cells.map(c => `<span class="flex-1">${c}</span>`).join('')}</div>`
-                      })
-                  }}
-                />
-              </div>
+      <div className="edu-layout">
+        <nav className="edu-toc" aria-label="On this page">
+          <div className="edu-toc-label">On this page</div>
+          <ol>
+            {mod.sections.map((s, i) => (
+              <li key={s.heading}>
+                <a href={`#s-${i}`} aria-current={activeSection === i ? 'true' : undefined}
+                  onClick={e => { e.preventDefault(); document.getElementById(`s-${i}`)?.scrollIntoView({ behavior: 'smooth' }) }}>
+                  {s.heading}
+                </a>
+              </li>
             ))}
-          </div>
-
-          {/* Quiz or Exercise */}
-          {mod.quiz && (
-            <div className="mb-12">
-              <QuizSection
-                questions={mod.quiz}
-                moduleId={mod.id}
-                onComplete={handleComplete}
-              />
-            </div>
-          )}
-
-          {mod.exercise && (
-            <div className="mb-12">
-              <ExerciseSection
-                exercise={mod.exercise}
-                moduleId={mod.id}
-                onComplete={handleComplete}
-              />
-            </div>
-          )}
-
-          {/* Mark complete if no quiz/exercise */}
-          {!mod.quiz && !mod.exercise && getProgress(mod.id) !== 'complete' && (
-            <div className="mb-12 text-center">
-              <button
-                onClick={handleComplete}
-                className="text-white px-6 py-3 rounded-lg text-sm font-medium cursor-pointer border-none"
-                style={{ background: 'var(--float-primary)' }}
-              >
-                Mark module complete
-              </button>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between pt-6" style={{ borderTop: '1px solid var(--float-border)' }}>
-            {prevModule ? (
-              <button
-                onClick={() => navigate(`/education/${prevModule.id}`)}
-                className="text-sm cursor-pointer bg-transparent border-none"
-                style={{ color: 'var(--float-primary)' }}
-              >
-                &larr; {prevModule.title}
-              </button>
-            ) : <div />}
-            {nextModule ? (
-              <button
-                onClick={() => navigate(`/education/${nextModule.id}`)}
-                className="text-sm cursor-pointer bg-transparent border-none"
-                style={{ color: 'var(--float-primary)' }}
-              >
-                {nextModule.title} &rarr;
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate('/education')}
-                className="text-sm cursor-pointer bg-transparent border-none"
-                style={{ color: 'var(--float-primary)' }}
-              >
-                Back to all modules
-              </button>
+            {(mod.quiz || mod.exercise) && (
+              <li>
+                <a href="#practice" onClick={e => { e.preventDefault(); document.getElementById('practice')?.scrollIntoView({ behavior: 'smooth' }) }}>
+                  {mod.quiz ? 'Quiz' : 'Practice'}
+                </a>
+              </li>
             )}
+          </ol>
+          <div className="edu-toc-extra">
+            <a href={basePath} onClick={e => { e.preventDefault(); navigate(basePath) }}>← All modules</a>
           </div>
+        </nav>
+
+        <main className="edu-main">
+          {mod.sections.map((s, i) => (
+            <section key={s.heading} id={`s-${i}`} data-edu-section
+              className={`edu-section ${s.heading === 'Key takeaway' ? 'edu-takeaway' : ''}`}>
+              <h2>{s.heading}</h2>
+              <Prose content={s.content} figure={s.figure ? <Figure id={s.figure} /> : undefined} />
+            </section>
+          ))}
+
+          <div id="practice" style={{ scrollMarginTop: 24 }}>
+            {mod.quiz && <QuizSection questions={mod.quiz} moduleId={mod.id} onComplete={complete} />}
+            {mod.exercise && <ExerciseSection exercise={mod.exercise} moduleId={mod.id} onComplete={complete} />}
+          </div>
+          {!mod.quiz && !mod.exercise && getProgress(mod.id) !== 'complete' && (
+            <button className="edu-btn" style={{ marginBottom: 28 }} onClick={complete}>Mark module complete</button>
+          )}
+
+          {next ? (
+            <button className="edu-next" onClick={() => navigate(`${basePath}/${next.id}`)}>
+              <span className="edu-next-icon"><ModuleIcon id={next.id} size={34} /></span>
+              <span><small>Next · Module {next.number}</small><strong>{next.title}</strong></span>
+              <span style={{ marginLeft: 'auto', fontSize: 22 }} aria-hidden="true">→</span>
+            </button>
+          ) : (
+            <button className="edu-next" onClick={() => navigate(basePath)}>
+              <span className="edu-next-icon"><ModuleIcon id="understanding-anxiety" size={34} /></span>
+              <span><small>That's every module</small><strong>Back to all modules</strong></span>
+            </button>
+          )}
+          {prev && <button className="edu-prev" onClick={() => navigate(`${basePath}/${prev.id}`)}>← Module {prev.number}: {prev.title}</button>}
         </main>
       </div>
     </div>
