@@ -1,9 +1,9 @@
 """
 Loop driver for the Float extraction prompt.
 
-  load fixtures + current prompt
+  load the tuning half of the fixtures + the app's prompt
   repeat:
-    run extractor over all fixtures, score each (deterministic + accuracy + judge)
+    run extractor over the tuning cases, score each (deterministic + accuracy + judge)
     log the iteration
     if deterministic 100% and accuracy >= BAR  -> DONE (passed)
     if plateaued                               -> STOP (not improving)
@@ -12,7 +12,12 @@ Loop driver for the Float extraction prompt.
     if the revision touches clinical logic     -> PAUSE for human approval
     accept prompt, continue
 
-The fixtures never change. Only the prompt changes. The best prompt seen is saved.
+The fixtures never change. Only the prompt changes. The best prompt seen is saved in the run
+folder; it never replaces the app's prompt. Adopting it is a change to
+backend/app/api/routers/patients.py, made and reviewed by hand.
+
+Each fixture is in one half: "tune" or "holdout". The loop only ever sees the tuning half. At
+the end the best prompt is scored once on the held-out half, which is the number to trust.
 
 Usage:
   FLOAT_DRY_RUN=1 python loop_driver.py        # plumbing check, no API calls
@@ -25,17 +30,14 @@ import sys
 import datetime
 
 import config
+import extractor
 import scorer
 import analyze as analyze_mod
 import reviser as reviser_mod
 
 
-def load_fixtures():
-    return json.load(open(config.FIXTURES))["cases"]
-
-
-def load_prompt():
-    return open(config.PROMPT_FILE, encoding="utf-8").read()
+def load_fixtures(split):
+    return [c for c in json.load(open(config.FIXTURES))["cases"] if c["split"] == split]
 
 
 def passed(report):
@@ -58,7 +60,8 @@ def log_iteration(run_dir, i, prompt, report, revision=None):
     slim = {k: v for k, v in report.items() if k != "per_case"}
     slim["per_case"] = [{"case_id": r["case_id"], "deterministic_pass": r["deterministic_pass"],
                          "type_accuracy": r["accuracy"]["type_accuracy"], "judge": r["judge"],
-                         "stable": r.get("stable", True)}
+                         "stable": r.get("stable", True),
+                         **({"raw": r["raw"]} if not r["parsed_ok"] else {})}
                         for r in report["per_case"]]
     with open(os.path.join(d, "report.json"), "w") as f:
         json.dump(slim, f, indent=2)
@@ -82,8 +85,9 @@ def approve_clinical(revision, interactive):
 
 def main():
     interactive = "--non-interactive" not in sys.argv
-    cases = load_fixtures()
-    prompt = load_prompt()
+    cases = load_fixtures("tune")
+    holdout = load_fixtures("holdout")
+    prompt = extractor.app_prompt()
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     run_dir = os.path.join(config.RUNS_DIR, stamp + ("_dry" if config.DRY_RUN else ""))
     os.makedirs(run_dir, exist_ok=True)
@@ -146,6 +150,20 @@ def main():
                 break
 
         prompt = revision["revised_prompt"]
+
+    # score the best prompt once on the held-out half
+    held = scorer.score_all(holdout, best["prompt"])
+    slim = {k: v for k, v in held.items() if k != "per_case"}
+    slim["per_case"] = [{"case_id": r["case_id"], "deterministic_pass": r["deterministic_pass"],
+                         "type_accuracy": r["accuracy"]["type_accuracy"], "judge": r["judge"],
+                         **({"raw": r["raw"]} if not r["parsed_ok"] else {})}
+                        for r in held["per_case"]]
+    with open(os.path.join(run_dir, "holdout_report.json"), "w") as f:
+        json.dump(slim, f, indent=2)
+    print(f"\n=== held-out half ({len(holdout)} cases) ===")
+    print(f"deterministic_pass={held['deterministic_pass']}  "
+          f"type_accuracy={held['type_accuracy']}  "
+          f"judge_pass_rate={held['judge_pass_rate']}")
 
     # save the best prompt seen
     best_path = os.path.join(run_dir, "best_prompt.md")

@@ -1,0 +1,211 @@
+{
+  "deterministic_pass": false,
+  "type_accuracy": 0.7222,
+  "judge_pass_rate": 0.875,
+  "stable": true,
+  "unstable_cases": [],
+  "stability_runs": 1,
+  "failures": [
+    {
+      "case_id": 2,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Raising hand in class",
+        "gold_types": {
+          "avoidance": 2
+        },
+        "output_types": {
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 2,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "fear_rating is reported as 6 but the maximum observed distress across entries is 8 (from entry 1); 6 is the lower value from entry 2, so the max should be 8 and the representative or latest rating should not silently drop the higher value without explanation"
+    },
+    {
+      "case_id": 2,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The behavior description from entry 2 ('Still not raising his hand. He says he's scared he'll get it wrong and everyone will laugh') is omitted entirely \u2014 only entry 1's behavior is captured, losing the child's stated reason for avoidance"
+    },
+    {
+      "case_id": 8,
+      "layer": "deterministic",
+      "check": "app_can_read",
+      "detail": "the app could not read the reply"
+    },
+    {
+      "case_id": 8,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "no parse"
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "At home when parent is not in the same room",
+        "gold_types": {
+          "safety": 1,
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "spurious_situation",
+      "detail": "Being in a different room at home from mom"
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at a party",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at dinner",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 4
+        }
+      }
+    },
+    {
+      "case_id": 16,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Being called on in class",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1
+        }
+      }
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 2,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "fear_rating is reported as 6 but the maximum observed distress across entries is 8 (from entry 1); 6 is the lower value from entry 2, so the max should be 8 and the representative or latest rating should not silently drop the higher value without explanation",
+          "The behavior description from entry 2 ('Still not raising his hand. He says he's scared he'll get it wrong and everyone will laugh') is omitted entirely \u2014 only entry 1's behavior is captured, losing the child's stated reason for avoidance"
+        ]
+      }
+    },
+    {
+      "case_id": 4,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      }
+    },
+    {
+      "case_id": 6,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      }
+    },
+    {
+      "case_id": 8,
+      "deterministic_pass": false,
+      "type_accuracy": 0.0,
+      "judge": {
+        "naming_ok": null,
+        "faithful_ok": null,
+        "issues": [
+          "no parse"
+        ]
+      },
+      "raw": "I need to read this note carefully before classifying.\n\nThe note says Jack \"refused to go into the party **and** asked to leave after ten minutes.\" This is ambiguous \u2014 it could mean he refused at first but then went in and left after ten minutes, or it could be a loosely written note describing two separate things. However, \"stayed glued to my side the whole time\" suggests he was present at the party at some point. Reading the note as a sequence: (1) initial reluctance/refusal at the door, (2) he was inside (evidenced by \"the whole time\" and \"asked to leave after ten minutes\"), then (3) left.\n\nBut I must not over-split. The most defensible reading: the note describes him being at the party (he was there long enough to ask to leave after ten minutes and to stay glued to the parent's side), with an initial refusal at the entrance. I'll treat the entrance refusal and the asking-to-leave as two behaviors, and staying glued as a third distinct action.\n\nActually \u2014 re-reading the rules: \"refused to go into the party\" sounds like avoidance (never entered), but \"asked to leave after ten minutes\" implies he was inside. These are contradictory within the same note. Per the rules: \"Split compound or contradictory notes into separate behaviors and classify each.\" I'll classify both as written.\n\n```json\n{\n  \"situations\": [\n    {\n      \"name\": \"Birthday parties\",\n      \"fear_rating\": 9,\n      \"behaviors\": [\n        {\n          \"order\": 1,\n          \"type\": \"avoidance\",\n          \"description\": \"Refused to go into the party\"\n        },\n        {\n          \"order\": 2,\n          \"type\": \"escape\",\n          \"description\": \"Asked to leave after ten minutes\"\n        },\n        {\n          \"order\": 3,\n          \"type\": \"safety\",\n          \"description\": \"Stayed glued to parent's side the whole time\"\n        }\n      ],\n      \"accommodations\": [\n        {\n          \"description\": \"Parent let him leave the party\"\n        },\n        {\n          \"description\": \"Parent bought him ice cream on the way home\"\n        }\n      ],\n      \"entries\": [1]\n    }\n  ]\n}\n```"
+    },
+    {
+      "case_id": 10,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      }
+    },
+    {
+      "case_id": 12,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      }
+    },
+    {
+      "case_id": 14,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      }
+    },
+    {
+      "case_id": 16,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      }
+    },
+    {
+      "case_id": 18,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      }
+    }
+  ]
+}

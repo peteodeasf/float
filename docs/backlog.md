@@ -472,41 +472,40 @@ the app cannot reach the database.
 
 ---
 
-## Monitoring extraction discards the clinician's corrections
+## Improving monitoring extraction
 
-**Priority: high — it is what unblocks improving extraction at all.** Raised 2026-08-28. `M`
+**Rewritten 2026-09-15.** The old entry ("extraction discards the clinician's corrections") described
+a review screen that no longer exists. Today Analyze with AI saves the AI's list as suggestions, and
+Float records whether a clinician added or dismissed each situation and accommodation suggestion.
 
-**Today:** `POST /patients/{patient_id}/monitoring/extract`
-(`backend/app/api/routers/patients.py:912`) returns a proposed list of situations, scores and
-behaviours. The clinician keeps some, rewrites some, deletes what is wrong, adds what was missed,
-and commits the result. `apps/web/src/api/monitoring.ts:83` says exactly this in its own comment.
-The backend then stores **only `plan.last_extracted_at`**. The proposal is never saved.
+**1. The test tool tests the app — DONE 2026-09-15.** `AI-dev/Extraction Loop/float_harness` now
+uses the app's prompt, call and input, not its own copy (deleted). The 18 cases are split 9 tuning,
+9 held out. First real score of the app's prompt: behavior types 0.65 on the tuning half, 0.72 held
+out (the 0.926 on record came from the old copy). Recurring situations are merged before scoring,
+the way the app returns them. Details in the tool's README and `runs/20260915_161200`.
 
-So every extraction has a trained clinician marking the model's work item by item, and the product
-throws it away.
+What the run showed, from 18 cases:
+- **One reply the app could not read** (case 8, both runs): the model wrote its reasoning before
+  the JSON. In the app that is an "AI analysis failed" error for the clinician. `S` to look at.
+- Differences from the confirmed answers, mostly: one action split into two behaviors, `unclear`
+  where the answer is `avoidance`, and `safety` where the answer is `escape`. Eighteen cases is too
+  few to say which of these are patterns.
 
-**Why it matters:** improving extraction needs examples of "this input, this correct output". The
-harness has **18**, because Dr. Walker reviewed a batch in June 2026 and her time is the bottleneck.
-Without new cases the tuning loop in `AI-dev/Extraction Loop/float_harness` just overfits those 18.
+**2. Clinicians' choices as cases for Dr. Walker — needs a decision.** `M`
+Planned with Peter 2026-09-15: a read-only query Peter runs in Railway, and a local script that
+turns each patient into a case (the log, the AI's suggestions, what the clinician did) marked
+"needs review". The output stays off the repository. Run it once real clinicians have used Analyze.
 
-**What changes:** persist what the model proposed alongside what was committed. The difference is
-the correction.
+Found while checking, before building:
+- **Behavior suggestions are never shown to clinicians.** Only situations (session mode) and
+  accommodations (parent plan) can be added or dismissed. Behaviors on the ladder come from the
+  session, not the suggestions. So there is no clinician choice about behavior types to learn from,
+  and behavior types are what the tool scores.
+- **Re-analyzing folds runs together.** Suggestions are matched by name; a new name adds a new
+  suggestion, and the fear rating and behavior type are overwritten by the latest run. A case from
+  a patient analyzed more than once is the combined list, not one AI answer.
 
-**What it is NOT:** confirmed answers. A rewrite may be preference; a deletion may mean "not now".
-These are candidates — the value is that Dr. Walker confirms a filtered pile instead of authoring
-from a blank page.
-
-**Do first, and smaller:** the harness is wired to a stub. `extractor_adapter.py:33` returns the
-expected fixture as the answer, so every check passes trivially and it has **never run against the
-real extractor**. It also reads its own copy of the prompt (`Float-Extractor-Prompt.md`) while the
-shipped prompt is inline at `backend/app/api/routers/patients.py:751`. Point it at the shipped
-prompt, as `AI-dev/Arrow Eval/run_eval.py` does. **Expect the first real score to be well below the
-0.926 on record — that number came from the stub answering itself.**
-
-Also split the cases into a tuning half and a held-out half. Whatever the loop optimises against
-stops being a measurement.
-
-**Gate:** `/security-review` — the proposal is clinical text about a child.
+**Gate:** `/security-review` on anything that reads patients' records out of production.
 
 ## No way to read a review's results
 

@@ -2,11 +2,9 @@
 Tests for the accuracy layer (accuracy.py).
 
 Two things proven here:
-  1. On gold-vs-gold (stub), every case scores perfectly -- including the tricky
-     cases where two situations share a name and rating (case 1 cafeteria 8/6,
-     case 3 bedtime 7/7). If the situation matcher mis-aligned those, type
-     accuracy would drop below 1.0 even though output == gold. So these tests also
-     validate the ALIGNMENT, not just the scoring.
+  1. On gold-vs-gold, every case scores perfectly. Situations sharing a name
+     (case 1 cafeteria 8/6, case 3 bedtime 7/7) are merged before comparing, the
+     way the app returns them.
   2. Negative tests: a flipped type, a dropped situation, and an invented
      situation are each caught.
 
@@ -19,7 +17,6 @@ import os
 import pytest
 
 import accuracy
-from extractor_adapter import extract
 
 HERE = os.path.dirname(__file__)
 CASES = json.load(open(os.path.join(HERE, "tests", "fixtures.json")))["cases"]
@@ -28,8 +25,7 @@ IDS = [f"case{c['case_id']}" for c in CASES]
 
 @pytest.mark.parametrize("case", CASES, ids=IDS)
 def test_gold_vs_gold_scores_perfect(case):
-    raw, out = extract(case["source_note"], expected=case)
-    report = accuracy.score_case(out, case)
+    report = accuracy.score_case(copy.deepcopy(case), case)
     assert report["situation_recall"] == 1.0, report
     assert report["type_accuracy"] == 1.0, report
     assert report["mismatches"] == []
@@ -71,13 +67,22 @@ def test_invented_situation_is_caught():
     assert report["spurious_situations"], "an invented situation should be reported"
 
 
-def test_same_name_same_rating_disambiguates():
-    # case 3: two "Bedtime, 7/10" situations, distinguished only by behavior type.
-    gold = _case(3)
-    out = copy.deepcopy(gold)
-    # reverse the order the extractor returns them
-    out["situations"] = list(reversed(out["situations"]))
-    report = accuracy.score_case(out, gold)
-    # must still match correctly despite identical name+rating and reversed order
+def test_recurring_situation_returned_once_is_not_missed():
+    # case 1: the fixture has "Lunchtime at school" twice (8/10, then 6/10). The app returns it
+    # once, with both entries' behaviors and one of the ratings.
+    gold = _case(1)
+    once = copy.deepcopy(gold["situations"][0])
+    once["behaviors"] += copy.deepcopy(gold["situations"][1]["behaviors"])
+    once["fear_rating"] = 6
+    report = accuracy.score_case({"situations": [once]}, gold)
+    assert report["missed_situations"] == []
     assert report["type_accuracy"] == 1.0, report
-    assert report["mismatches"] == []
+
+
+def test_merged_situation_with_a_wrong_type_is_caught():
+    gold = _case(3)
+    once = copy.deepcopy(gold["situations"][0])
+    once["behaviors"] += [dict(b, type="escape") for b in gold["situations"][1]["behaviors"]]
+    report = accuracy.score_case({"situations": [once]}, gold)
+    assert report["type_accuracy"] < 1.0
+    assert report["mismatches"]

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "source": "Float sample monitoring data + Dr. Walker entry-form batch 2 (reviewed, confirmed 2026-06-23)",
-  "notes": "Ground-truth labels for the monitoring-extraction loop. Each element of `situations` is one parent monitoring entry (occurrence); a recurring situation appears as multiple elements sharing a name. `fear_rating` is the parent's own number or null (never estimated). `behaviors` is ordered; one entry can hold a sequence (e.g. avoidance -> escape). `decision_ref` points to the entry in Float-Extraction-Decisions-Log.md that drove a non-obvious label. | fear_rating_max is optional, present only for a genuine same-trigger range (one trigger whose intensity varies by occurrence). diagnosis is case-level metadata; the behavior taxonomy is diagnosis-agnostic. in_session_questions (parent/patient) seed the Stage 2 templates.",
+  "notes": "Ground-truth labels for the monitoring-extraction loop. Each element of `situations` is one parent monitoring entry (occurrence); a recurring situation appears as multiple elements sharing a name. `fear_rating` is the parent's own number or null (never estimated). `behaviors` is ordered; one entry can hold a sequence (e.g. avoidance -> escape). `decision_ref` points to the entry in Float-Extraction-Decisions-Log.md that drove a non-obvious label. | fear_rating_max is optional, present only for a genuine same-trigger range (one trigger whose intensity varies by occurrence). diagnosis is case-level metadata; the behavior taxonomy is diagnosis-agnostic. in_session_questions (parent/patient) seed the Stage 2 templates. `split` is \"tune\" or \"holdout\" (odd case ids tune, even ids are held out): the loop tunes only on \"tune\" and scores its best prompt once on \"holdout\".",
   "taxonomy": {
     "behavior_types": [
       "avoidance",
@@ -60,7 +60,8 @@
           "accommodations": []
         }
       ],
-      "source_note": "(Lunchtime at school, fear 8/10) Mia ate in the library again instead of the cafeteria. She said the cafeteria was too loud but then admitted she didn't want to sit alone. Parent did: I emailed her teacher to ask about a lunch buddy. (Lunchtime at school, fear 6/10) She went to the cafeteria but wore her headphones the whole time so nobody would talk to her. Parent did: I told her that was a good first step."
+      "source_note": "(Lunchtime at school, fear 8/10) Mia ate in the library again instead of the cafeteria. She said the cafeteria was too loud but then admitted she didn't want to sit alone. Parent did: I emailed her teacher to ask about a lunch buddy. (Lunchtime at school, fear 6/10) She went to the cafeteria but wore her headphones the whole time so nobody would talk to her. Parent did: I told her that was a good first step.",
+      "split": "tune"
     },
     {
       "case_id": 2,
@@ -98,7 +99,8 @@
           ]
         }
       ],
-      "source_note": "(Raising hand in class, fear 8/10) Sam wouldn't raise his hand even though he knew the answer. Parent did: I encouraged him to try next time. (Raising hand in class, fear 6/10) Still not raising his hand. He says he's scared he'll get it wrong and everyone will laugh. Parent did: I reassured him that everyone makes mistakes."
+      "source_note": "(Raising hand in class, fear 8/10) Sam wouldn't raise his hand even though he knew the answer. Parent did: I encouraged him to try next time. (Raising hand in class, fear 6/10) Still not raising his hand. He says he's scared he'll get it wrong and everyone will laugh. Parent did: I reassured him that everyone makes mistakes.",
+      "split": "holdout"
     },
     {
       "case_id": 3,
@@ -141,7 +143,8 @@
           ]
         }
       ],
-      "source_note": "(Bedtime, fear 7/10) Lily refused to sleep in her own room and cried until I lay down with her. Parent did: I ended up sleeping in her room again so she would settle. (Bedtime, fear 7/10) She kept calling me back into the room to check for monsters. Parent did: I checked the closet and under the bed several times to reassure her."
+      "source_note": "(Bedtime, fear 7/10) Lily refused to sleep in her own room and cried until I lay down with her. Parent did: I ended up sleeping in her room again so she would settle. (Bedtime, fear 7/10) She kept calling me back into the room to check for monsters. Parent did: I checked the closet and under the bed several times to reassure her.",
+      "split": "tune"
     },
     {
       "case_id": 4,
@@ -188,7 +191,8 @@
           ]
         }
       ],
-      "source_note": "(Getting ready for school, fear 5/10) Noah was very quiet and slow this morning. Hard to tell what was going on with him. Parent did: I gave him some space. (Getting ready for school, fear 5/10) Something seemed off again but I honestly couldn't tell what. I'm not sure if it was anxiety or just a bad morning. Parent did: I waited with him until it was time to go."
+      "source_note": "(Getting ready for school, fear 5/10) Noah was very quiet and slow this morning. Hard to tell what was going on with him. Parent did: I gave him some space. (Getting ready for school, fear 5/10) Something seemed off again but I honestly couldn't tell what. I'm not sure if it was anxiety or just a bad morning. Parent did: I waited with him until it was time to go.",
+      "split": "holdout"
     },
     {
       "case_id": 5,
@@ -232,7 +236,8 @@
           ]
         }
       ],
-      "source_note": "(Going to soccer practice, fear 7/10) Ava said she felt sick in the car and refused to get out at the field. Parent did: I took her home. (Soccer practice attendance, fear 7/10) Again wouldn't get out of the car at soccer. Stayed in the back seat. Parent did: I let her skip it."
+      "source_note": "(Going to soccer practice, fear 7/10) Ava said she felt sick in the car and refused to get out at the field. Parent did: I took her home. (Soccer practice attendance, fear 7/10) Again wouldn't get out of the car at soccer. Stayed in the back seat. Parent did: I let her skip it.",
+      "split": "tune"
     },
     {
       "case_id": 6,
@@ -295,7 +300,8 @@
           "accommodations": []
         }
       ],
-      "source_note": "(Walking between classes, fear 4/10) Ethan rushes through the halls so nobody has a chance to talk to him. He also pretends not to see kids he knows. Parent did: I didn't know about this until his teacher mentioned it. (Taking the school bus, fear 3/10) He sits right at the back so kids don't notice him, and keeps his headphones on the whole ride. Parent did: I let him take headphones to make it easier. (Being called on in class, fear 7/10) When the teacher might call on him he looks down at his notes and avoids eye contact so he won't be picked. Parent did: I talked to him about it after school."
+      "source_note": "(Walking between classes, fear 4/10) Ethan rushes through the halls so nobody has a chance to talk to him. He also pretends not to see kids he knows. Parent did: I didn't know about this until his teacher mentioned it. (Taking the school bus, fear 3/10) He sits right at the back so kids don't notice him, and keeps his headphones on the whole ride. Parent did: I let him take headphones to make it easier. (Being called on in class, fear 7/10) When the teacher might call on him he looks down at his notes and avoids eye contact so he won't be picked. Parent did: I talked to him about it after school.",
+      "split": "holdout"
     },
     {
       "case_id": 7,
@@ -320,7 +326,8 @@
           ]
         }
       ],
-      "source_note": "(Lunch with peers, fear 4/10) Zoe goes to the library at lunch whenever her two close friends aren't there, so she doesn't have to sit with anyone else. Parent did: I said that was fine if it made her comfortable."
+      "source_note": "(Lunch with peers, fear 4/10) Zoe goes to the library at lunch whenever her two close friends aren't there, so she doesn't have to sit with anyone else. Parent did: I said that was fine if it made her comfortable.",
+      "split": "tune"
     },
     {
       "case_id": 8,
@@ -363,7 +370,8 @@
           ]
         }
       ],
-      "source_note": "(Birthday parties, fear 9/10) Jack refused to go into the party and asked to leave after ten minutes. He stayed glued to my side the whole time. Parent did: I let him leave and bought him ice cream on the way home to cheer him up."
+      "source_note": "(Birthday parties, fear 9/10) Jack refused to go into the party and asked to leave after ten minutes. He stayed glued to my side the whole time. Parent did: I let him leave and bought him ice cream on the way home to cheer him up.",
+      "split": "holdout"
     },
     {
       "case_id": 9,
@@ -425,7 +433,8 @@
           ]
         }
       ],
-      "source_note": "(Noticing body sensations after activity, fear 7/10) After running around in the yard Theo noticed his heart beating fast. He stopped playing and came inside, then kept asking me if his heart was OK and whether he needed to see a doctor. Parent did: I checked his pulse, told him he was fine, and reassured him several times. (Feeling unwell before school, fear 8/10) Theo said his stomach felt strange and he was sure something was wrong. He didn't want to go to school and asked to see a doctor. Parent did: I kept him home and booked a doctor's appointment to put his mind at rest."
+      "source_note": "(Noticing body sensations after activity, fear 7/10) After running around in the yard Theo noticed his heart beating fast. He stopped playing and came inside, then kept asking me if his heart was OK and whether he needed to see a doctor. Parent did: I checked his pulse, told him he was fine, and reassured him several times. (Feeling unwell before school, fear 8/10) Theo said his stomach felt strange and he was sure something was wrong. He didn't want to go to school and asked to see a doctor. Parent did: I kept him home and booked a doctor's appointment to put his mind at rest.",
+      "split": "tune"
     },
     {
       "case_id": 10,
@@ -486,7 +495,8 @@
           ]
         }
       ],
-      "source_note": "(Math homework, fear 9/10) Ruby cried and said 'I can't do this', pushed the book away and refused to attempt any of the problems. Parent did: I told her she could do it and ended up doing the first few problems for her. (Math homework, fear 7/10) She would only start her math if I sat right next to her the whole time. As soon as I got up she stopped. Parent did: I sat with her. (Math test at school, fear 8/10) The night before her math test she said she felt sick and begged to stay home. Parent did: I let her stay home."
+      "source_note": "(Math homework, fear 9/10) Ruby cried and said 'I can't do this', pushed the book away and refused to attempt any of the problems. Parent did: I told her she could do it and ended up doing the first few problems for her. (Math homework, fear 7/10) She would only start her math if I sat right next to her the whole time. As soon as I got up she stopped. Parent did: I sat with her. (Math test at school, fear 8/10) The night before her math test she said she felt sick and begged to stay home. Parent did: I let her stay home.",
+      "split": "holdout"
     },
     {
       "case_id": 11,
@@ -512,7 +522,8 @@
           ]
         }
       ],
-      "source_note": "(Making a mistake in a soccer game, fear 6/10) Leo missed an easy goal, then walked off to the far end of the bench and sat by himself. He wouldn't talk to his teammates or the coach for the rest of the game. Parent did: I told him it was fine and gave him space."
+      "source_note": "(Making a mistake in a soccer game, fear 6/10) Leo missed an easy goal, then walked off to the far end of the bench and sat by himself. He wouldn't talk to his teammates or the coach for the rest of the game. Parent did: I told him it was fine and gave him space.",
+      "split": "tune"
     },
     {
       "case_id": 12,
@@ -561,7 +572,8 @@
           }
         }
       ],
-      "source_note": "(At home when M, age 6, and I are not in the same room, fear 8/10) M cries, pleads, hyperventilates, and gets so upset he almost vomits when I have to be out of the house without him for even an hour. He calls out to me, stays by my side, and asks many questions about where I am throughout the day. He refuses sitters. Parent did: I avoid leaving him; I don't go out unless I must, and never unless his father is home."
+      "source_note": "(At home when M, age 6, and I are not in the same room, fear 8/10) M cries, pleads, hyperventilates, and gets so upset he almost vomits when I have to be out of the house without him for even an hour. He calls out to me, stays by my side, and asks many questions about where I am throughout the day. He refuses sitters. Parent did: I avoid leaving him; I don't go out unless I must, and never unless his father is home.",
+      "split": "holdout"
     },
     {
       "case_id": 13,
@@ -617,7 +629,8 @@
           }
         }
       ],
-      "source_note": "(Packing for the outdoor-ed trip, fear 6/10) Pippa is excited about Outdoor Ed until about two weeks before the departure date, when she tells me she's worried about going and may not want to after all. Parent did: I urge her to go. (Staying overnight at outdoor ed, fear 10/10) The night before camp she cries and doesn't sleep much. Parent did: I tell her she can come home when bedtime comes, like she always does."
+      "source_note": "(Packing for the outdoor-ed trip, fear 6/10) Pippa is excited about Outdoor Ed until about two weeks before the departure date, when she tells me she's worried about going and may not want to after all. Parent did: I urge her to go. (Staying overnight at outdoor ed, fear 10/10) The night before camp she cries and doesn't sleep much. Parent did: I tell her she can come home when bedtime comes, like she always does.",
+      "split": "tune"
     },
     {
       "case_id": 14,
@@ -688,7 +701,8 @@
           }
         }
       ],
-      "source_note": "(Parent out at dinner, fear 7/10) F begs us not to go, sometimes says she feels sick, asks all sorts of questions about where the restaurant is and who we're going with, and texts and calls us after we've been away thirty minutes. Parent did: We reassure her she'll be fine, make sure our long-time sitter comes, give her text updates that all is well, and tell her we'll come home early -- and we do come home before we want to. (Parent out at a party, fear 9/10) F asks lots of questions about the party location, how long we'll stay, and when we'll be back, then texts and calls nonstop telling us to come home and asking where we are. Parent did: We give the same reassurance before and during."
+      "source_note": "(Parent out at dinner, fear 7/10) F begs us not to go, sometimes says she feels sick, asks all sorts of questions about where the restaurant is and who we're going with, and texts and calls us after we've been away thirty minutes. Parent did: We reassure her she'll be fine, make sure our long-time sitter comes, give her text updates that all is well, and tell her we'll come home early -- and we do come home before we want to. (Parent out at a party, fear 9/10) F asks lots of questions about the party location, how long we'll stay, and when we'll be back, then texts and calls nonstop telling us to come home and asking where we are. Parent did: We give the same reassurance before and during.",
+      "split": "holdout"
     },
     {
       "case_id": 15,
@@ -754,7 +768,8 @@
           }
         }
       ],
-      "source_note": "(School drop-off, fear 5-8/10) Edward refuses to get out of the car, kicks the back of my seat, cries, and yells that I'm the worst mother ever. Parent did: I go into his classroom and stay the first hour until he's more comfortable, then slip out when he can't see. (Drop-off at Taekwondo, fear 5/10) E insists that either I or his father stay to watch the entire class; he scans the room for us and comes running or gives a mean look even if we just go to the bathroom. Parent did: We stay to watch and reassure him we'll stay."
+      "source_note": "(School drop-off, fear 5-8/10) Edward refuses to get out of the car, kicks the back of my seat, cries, and yells that I'm the worst mother ever. Parent did: I go into his classroom and stay the first hour until he's more comfortable, then slip out when he can't see. (Drop-off at Taekwondo, fear 5/10) E insists that either I or his father stay to watch the entire class; he scans the room for us and comes running or gives a mean look even if we just go to the bathroom. Parent did: We stay to watch and reassure him we'll stay.",
+      "split": "tune"
     },
     {
       "case_id": 16,
@@ -790,7 +805,8 @@
           }
         }
       ],
-      "source_note": "(Being called on in class, fear 4/10) Rosco's teachers report that he doesn't speak in class; when he is called on he averts eye contact, shrugs, and mumbles 'I don't know'. Parent did: I told him to try harder, that his grades count for college now and are lower because he doesn't participate."
+      "source_note": "(Being called on in class, fear 4/10) Rosco's teachers report that he doesn't speak in class; when he is called on he averts eye contact, shrugs, and mumbles 'I don't know'. Parent did: I told him to try harder, that his grades count for college now and are lower because he doesn't participate.",
+      "split": "holdout"
     },
     {
       "case_id": 17,
@@ -852,7 +868,8 @@
           }
         }
       ],
-      "source_note": "(Talking on the phone, fear 9/10) Rosie refuses to talk on the phone except to me when she's alone; she never picks up my call at first but finds a private place and then answers. Parent did: If she gets a call on the home phone I answer and say she's not home or is busy -- I make excuses so she doesn't feel embarrassed. (Texting in front of others, fear 6/10) She hides her phone if she texts in front of me so I can't see, and never texts in front of her friends unless she hides what she's doing. Parent did: I make excuses for her so her friends don't know."
+      "source_note": "(Talking on the phone, fear 9/10) Rosie refuses to talk on the phone except to me when she's alone; she never picks up my call at first but finds a private place and then answers. Parent did: If she gets a call on the home phone I answer and say she's not home or is busy -- I make excuses so she doesn't feel embarrassed. (Texting in front of others, fear 6/10) She hides her phone if she texts in front of me so I can't see, and never texts in front of her friends unless she hides what she's doing. Parent did: I make excuses for her so her friends don't know.",
+      "split": "tune"
     },
     {
       "case_id": 18,
@@ -883,7 +900,8 @@
           },
           "note": "Synthetic fixture: parent submitted a note with no fear rating. Exercises the null-rating path; not clinically reviewed (tests data integrity, not classification)."
         }
-      ]
+      ],
+      "split": "holdout"
     }
   ]
 }

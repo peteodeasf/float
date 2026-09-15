@@ -1182,13 +1182,9 @@ async def generate_preliminary_report(
 
     # ── 1. The list ───────────────────────────────────────────────────────────
     try:
-        extract_message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            system=EXTRACTION_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": entries_text}],
+        extraction = insight_service.parse_model_json(
+            insight_service.request_extraction(client, EXTRACTION_SYSTEM_PROMPT, entries_text)
         )
-        extraction = insight_service.parse_model_json(extract_message.content[0].text)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {type(e).__name__}: {str(e)}")
     except Exception as e:

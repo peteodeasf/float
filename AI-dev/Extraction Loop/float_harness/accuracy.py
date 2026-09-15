@@ -48,8 +48,28 @@ def _typeset_jaccard(g, o):
     return len(gs & os_) / len(gs | os_) if (gs | os_) else 0.0
 
 
+def merge_same_name(sits):
+    """One situation per name, with every occurrence's behaviors under it.
+
+    The fixtures list each monitoring entry as its own situation, so "Bedtime" logged twice is
+    two items. The app returns one "Bedtime" with both entries as its evidence, which is what a
+    clinician sees as a suggestion. Both sides are merged before comparing, so a recurring
+    situation is not scored as a missed one. The ratings of all occurrences are kept.
+    """
+    merged = {}
+    for s in sits:
+        key = _norm(s.get("name"))
+        if key not in merged:
+            merged[key] = {**s, "behaviors": list(s.get("behaviors", [])),
+                           "fear_ratings": {s.get("fear_rating")}}
+        else:
+            merged[key]["behaviors"] += list(s.get("behaviors", []))
+            merged[key]["fear_ratings"].add(s.get("fear_rating"))
+    return list(merged.values())
+
+
 def _pair_score(g, o):
-    rating_eq = 1.0 if g.get("fear_rating") == o.get("fear_rating") else 0.0
+    rating_eq = 1.0 if (g.get("fear_ratings") or {g.get("fear_rating")}) & (o.get("fear_ratings") or {o.get("fear_rating")}) else 0.0
     return (W_NAME * _name_sim(g.get("name"), o.get("name"))
             + W_RATING * rating_eq
             + W_TYPESET * _typeset_jaccard(g, o))
@@ -90,8 +110,8 @@ def score_case(output, gold):
       missed_situations  -- gold situations with no match (extractor dropped them)
       spurious_situations-- output situations with no match (extractor invented them)
     """
-    gold_sits = gold["situations"]
-    out_sits = output["situations"]
+    gold_sits = merge_same_name(gold["situations"])
+    out_sits = merge_same_name(output["situations"])
     matches, un_g, un_o = align_situations(gold_sits, out_sits)
 
     total_gold_behaviors = sum(len(s["behaviors"]) for s in gold_sits)

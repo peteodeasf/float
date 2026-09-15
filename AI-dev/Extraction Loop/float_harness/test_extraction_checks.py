@@ -1,12 +1,14 @@
 """
-Pytest harness for the Float monitoring-extraction loop.
+Pytest harness for the Float monitoring-extraction loop. No API calls.
 
-Two layers:
-  * PARAMETRIZED tests run each fixture's source_note through extract() and apply
-    the four deterministic checks to the result. (With the stub, these pass; they
-    become meaningful the moment the real extractor is wired in.)
+  * The fixtures are the right answers, so each one must pass the deterministic checks.
+    A fixture that fails a check means the fixture or the check is wrong.
+  * Every note must turn into one monitoring entry per "(Situation, fear N/10)", which is
+    how extractor.py feeds cases to the app's prompt.
   * NEGATIVE tests feed deliberately broken output to each check to prove the
     check actually catches the failure -- so a green suite means something.
+
+Scoring the app's real extraction is loop_driver.py, not pytest.
 
 Run:  pytest -v
 """
@@ -16,7 +18,7 @@ import os
 import pytest
 
 import checks
-from extractor_adapter import extract
+from extractor import entries_from_note
 
 HERE = os.path.dirname(__file__)
 FIXTURES = json.load(open(os.path.join(HERE, "tests", "fixtures.json")))
@@ -24,34 +26,34 @@ CASES = FIXTURES["cases"]
 IDS = [f"case{c['case_id']}-{c['title'].replace(' ', '_')}" for c in CASES]
 
 
-# ============================================================ live checks
+# ============================================================ the fixtures themselves
 @pytest.mark.parametrize("case", CASES, ids=IDS)
 def test_behavior_enum(case):
-    raw, out = extract(case["source_note"], expected=case)
-    fails = checks.check_behavior_enum(out)
+    fails = checks.check_behavior_enum(case)
     assert not fails, fails
 
 
 @pytest.mark.parametrize("case", CASES, ids=IDS)
 def test_rating_integrity(case):
-    raw, out = extract(case["source_note"], expected=case)
-    fails = checks.check_rating_integrity(out, case["source_note"])
+    fails = checks.check_rating_integrity(case, case["source_note"])
     assert not fails, fails
 
 
 @pytest.mark.parametrize("case", CASES, ids=IDS)
 def test_no_duplicate_situations(case):
-    raw, out = extract(case["source_note"], expected=case)
-    fails = checks.check_no_duplicate_situations(out)
+    fails = checks.check_no_duplicate_situations(case)
     assert not fails, fails
 
 
 @pytest.mark.parametrize("case", CASES, ids=IDS)
-def test_clean_json(case):
-    raw, _ = extract(case["source_note"], expected=case)
-    parsed, fails = checks.check_clean_json(raw)
-    assert not fails, fails
-    assert parsed is not None
+def test_note_becomes_one_entry_per_occurrence(case):
+    entries = entries_from_note(case["source_note"])
+    assert len(entries) == len(case["situations"])
+    assert all(e.situation and e.parent_response for e in entries)
+
+
+def test_every_case_is_in_one_half():
+    assert {c["split"] for c in CASES} == {"tune", "holdout"}
 
 
 # ============================================================ no-rating path
@@ -63,8 +65,7 @@ NO_RATING = [c for c in CASES if all(s.get("fear_rating") is None for s in c["si
 
 @pytest.mark.parametrize("case", NO_RATING, ids=[f"case{c['case_id']}" for c in NO_RATING])
 def test_no_invented_rating_when_none_given(case):
-    raw, out = extract(case["source_note"], expected=case)
-    invented = [s["name"] for s in out["situations"] if s.get("fear_rating") is not None]
+    invented = [s["name"] for s in case["situations"] if s.get("fear_rating") is not None]
     assert not invented, f"extractor invented a rating for: {invented}"
 
 
@@ -102,15 +103,3 @@ def test_dedup_allows_same_name_different_fear():
         {"name": "Lunchtime", "fear_rating": 6, "behaviors": [{"type": "safety", "description": "headphones"}]},
     ]}
     assert not checks.check_no_duplicate_situations(out)  # different occurrences, not dups
-
-
-def test_clean_json_catches_fences():
-    raw = "```json\n{\"situations\": []}\n```"
-    _, fails = checks.check_clean_json(raw)
-    assert fails  # fenced output should fail
-
-
-def test_clean_json_catches_bad_json():
-    raw = "{situations: [}"
-    parsed, fails = checks.check_clean_json(raw)
-    assert fails and parsed is None

@@ -314,6 +314,24 @@ def entry_ids_by_situation(extraction: dict, by_number: dict[int, uuid.UUID]) ->
     return out
 
 
+EXTRACTION_MODEL = "claude-sonnet-4-6"
+
+
+def request_extraction(client, system_prompt: str, entries_text: str) -> str:
+    """Ask the model for the list and return its reply as text.
+
+    The one place the call is made: Analyze with AI uses it, and so does the test tool in
+    `AI-dev/Extraction Loop/float_harness`, so what the tool scores is what clinicians get.
+    """
+    message = client.messages.create(
+        model=EXTRACTION_MODEL,
+        max_tokens=4096,
+        system=system_prompt,
+        messages=[{"role": "user", "content": entries_text}],
+    )
+    return message.content[0].text
+
+
 def parse_model_json(raw: str) -> dict:
     """The model is asked for bare JSON; a fenced block is the usual way that goes wrong."""
     import json

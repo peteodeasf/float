@@ -5,17 +5,15 @@ These are plain pass/fail code checks -- no model, no judgment. Each function
 takes the extractor's output (and the source note where needed) and returns a
 list of human-readable failure strings. Empty list == passed.
 
-The four checks:
+The checks:
   1. check_behavior_enum      -- every behavior type is one of the allowed labels
   2. check_rating_integrity   -- no fear_rating that doesn't appear in the source note
   3. check_no_duplicate_situations -- the same occurrence isn't emitted twice
-  4. check_clean_json         -- raw extractor text parses as JSON with no markdown fences
 
-These bind to the FIXTURE output shape (the target the extractor must conform to),
-not to the existing auto-generated extractor.
+A fourth, whether the app could read the reply at all, lives in scorer.py because it
+uses the app's own reader.
 """
 
-import json
 import re
 
 ALLOWED_TYPES = {"avoidance", "safety", "escape", "unclear"}
@@ -88,29 +86,3 @@ def check_no_duplicate_situations(output):
             )
         seen[key] = True
     return fails
-
-
-# ---------------------------------------------------------------- check 4
-def check_clean_json(raw_text):
-    """
-    The extractor's raw text output must parse as JSON and carry no markdown
-    code fences. Returns (parsed_or_None, fails).
-    """
-    fails = []
-    if "```" in raw_text:
-        fails.append("output contains markdown code fences (```)")
-    parsed = None
-    try:
-        parsed = json.loads(raw_text)
-    except (json.JSONDecodeError, TypeError) as e:
-        fails.append(f"output is not valid JSON: {e}")
-    return parsed, fails
-
-
-def run_all(output, source_note):
-    """Convenience: run the output-vs-source checks, return {check: fails}."""
-    return {
-        "behavior_enum": check_behavior_enum(output),
-        "rating_integrity": check_rating_integrity(output, source_note),
-        "no_duplicate_situations": check_no_duplicate_situations(output),
-    }

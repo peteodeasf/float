@@ -104,7 +104,7 @@ June 2026:
 
 This is the right shape. Two things stop it paying off:
 
-1. **It is still wired to a fake.** `extractor_adapter.extract()` hands back the answer it was
+1. **It is still wired to a fake.** *(Fixed 2026-09-15: it now runs the app's prompt and call. See the tool's README.)* `extractor_adapter.extract()` hands back the answer it was
    given, so every check passes trivially. It has never run against the real extractor.
 2. **It sits outside the product,** so it can't run against the prompt that actually ships.
 

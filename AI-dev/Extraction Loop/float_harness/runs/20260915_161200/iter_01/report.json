@@ -1,0 +1,265 @@
+{
+  "deterministic_pass": true,
+  "type_accuracy": 0.6481,
+  "judge_pass_rate": 0.7777777777777778,
+  "stable": true,
+  "unstable_cases": [],
+  "stability_runs": 1,
+  "failures": [
+    {
+      "case_id": 1,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Situation name 'Lunchtime at school \u2014 eating in the cafeteria' misrepresents entry [1], where Mia specifically avoided the cafeteria and ate in the library; the name implies cafeteria eating occurred on both days"
+    },
+    {
+      "case_id": 1,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "fear_rating of 6 is taken from entry [2] but the higher distress of 8 from entry [1] is listed as fear_rating_max, implying a single situation with a range; these are two separate observations and collapsing them this way misrepresents the data"
+    },
+    {
+      "case_id": 1,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The avoidance behavior in entry [1] also included Mia admitting she didn't want to sit alone, which is omitted from the description, losing a key detail the parent reported"
+    },
+    {
+      "case_id": 3,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Bedtime",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 5,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Going to soccer practice",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 2
+        }
+      }
+    },
+    {
+      "case_id": 5,
+      "layer": "type",
+      "check": "missed_situation",
+      "detail": "Soccer practice attendance"
+    },
+    {
+      "case_id": 11,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Making a mistake in a soccer game",
+        "gold_types": {
+          "escape": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Packing for the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Staying overnight at the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "School drop-off",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior description says 'yells that she's the worst mother ever' but the note says 'yells that I'm the worst mother ever' \u2014 the parent is the narrator, so 'she' introduces a third-person framing not in the source; should remain 'his mother' or quote the note directly"
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Texting in front of others",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Talking on the phone",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 1,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": false,
+        "faithful_ok": false,
+        "issues": [
+          "Situation name 'Lunchtime at school \u2014 eating in the cafeteria' misrepresents entry [1], where Mia specifically avoided the cafeteria and ate in the library; the name implies cafeteria eating occurred on both days",
+          "fear_rating of 6 is taken from entry [2] but the higher distress of 8 from entry [1] is listed as fear_rating_max, implying a single situation with a range; these are two separate observations and collapsing them this way misrepresents the data",
+          "The avoidance behavior in entry [1] also included Mia admitting she didn't want to sit alone, which is omitted from the description, losing a key detail the parent reported"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 3,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 5,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 7,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 9,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 11,
+      "deterministic_pass": true,
+      "type_accuracy": 0.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 13,
+      "deterministic_pass": true,
+      "type_accuracy": 0.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    },
+    {
+      "case_id": 15,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior description says 'yells that she's the worst mother ever' but the note says 'yells that I'm the worst mother ever' \u2014 the parent is the narrator, so 'she' introduces a third-person framing not in the source; should remain 'his mother' or quote the note directly"
+        ]
+      },
+      "stable": true
+    },
+    {
+      "case_id": 17,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "stable": true
+    }
+  ]
+}

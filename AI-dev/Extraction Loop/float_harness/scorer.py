@@ -1,14 +1,13 @@
 """
 Scoring: run the extractor once per case, then apply every score layer to that one
-output — the four deterministic checks, the accuracy/type scorer, and the isolated
-judge. Aggregates into a run report the driver consumes.
+output — the deterministic checks, the accuracy/type scorer, and the isolated judge. Aggregates into a run report the driver consumes.
 """
 import re
 import checks
 import accuracy
 import judge as judge_mod
 import config
-from extractor import extract
+import extractor
 
 
 def _stability_signature(parsed):
@@ -27,7 +26,7 @@ def _stability_signature(parsed):
 
 
 def score_case(case, prompt):
-    raw, out = extract(prompt, case["source_note"], case=case)
+    raw, out = extractor.extract(prompt, case)
 
     # Stability check: at temperature 0 the SCORE should be reproducible. We compare
     # the score signature (names + ratings + behavior types) across runs, not raw
@@ -38,7 +37,7 @@ def score_case(case, prompt):
     if stability_runs > 1:
         sigs = {_stability_signature(out)}
         for _ in range(stability_runs - 1):
-            _, out_again = extract(prompt, case["source_note"], case=case)
+            _, out_again = extractor.extract(prompt, case)
             sigs.add(_stability_signature(out_again))
         distinct_outputs = len(sigs)
     stable = distinct_outputs == 1
@@ -50,8 +49,8 @@ def score_case(case, prompt):
         "rating_integrity": checks.check_rating_integrity(parsed_for_checks, case["source_note"]),
         "no_duplicate_situations": checks.check_no_duplicate_situations(parsed_for_checks),
     }
-    _, clean_fails = checks.check_clean_json(raw)
-    det["clean_json"] = clean_fails
+    # The app reads the reply leniently (a fenced block is fine), so the check is whether it could.
+    det["app_can_read"] = [] if out is not None else ["the app could not read the reply"]
     det_pass = all(len(v) == 0 for v in det.values())
 
     # accuracy + judge only meaningful if we got a parse
@@ -62,7 +61,9 @@ def score_case(case, prompt):
         jdg = {"naming_ok": None, "faithful_ok": None, "issues": ["no parse"]}
     else:
         acc = accuracy.score_case(out, case)
-        jdg = judge_mod.judge_case(case["source_note"], out)
+        # The judge sees what the model saw.
+        note = case["source_note"] if config.DRY_RUN else extractor.app_input(case)
+        jdg = judge_mod.judge_case(note, out)
 
     return {
         "case_id": case["case_id"],
