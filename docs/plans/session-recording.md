@@ -4,7 +4,7 @@ Peter, 2026-09-13: the clinician records the session on their phone. It records 
 turns it into text, works out who said what, and saves it on the patient's record as a session note,
 tagged. Sessions can run 60 minutes or longer.
 
-Built 2026-09-15, not yet tried on a phone. Agreed with Peter, 2026-09-13.
+Built 2026-09-15. Peter tried it on his iPhone the same day: the normal path worked (record, stop, draft note). Agreed with Peter, 2026-09-13.
 
 Checked before Peter's own test recording: a made-up three-voice session (74 seconds, voices generated on a
 Mac) went through Google with the speakers correctly separated. The first run took about four
@@ -95,8 +95,8 @@ exist until created from Cloud Shell (shell.cloud.google.com) with
 `gcloud beta services identity create --service=speech.googleapis.com --project=float-speech`;
 before that, Google refused it as a principal.
 
-**Next:** try it on an iPhone with a short practice session. Safari's recording format has not been
-through Google yet.
+**Tried on an iPhone 2026-09-15:** the normal path worked, so Safari's recording format goes through
+Google. Not yet tried: screen lock and "tap to carry on", a full-length session, a failed upload.
 
 In the same `float-speech` project:
 1. **Cloud Storage → Create bucket**: a name like `float-session-recordings`, location **us**,
