@@ -381,6 +381,29 @@ is a safety behaviour, "I avoid this altogether" is avoidance. Ritual is only se
 Plan-tab builder. Whether session mode should offer it is a question for Dr. Walker, not on her
 current list.
 
+## Scalability upgrades
+
+**Priority: not needed before the first launch** (Peter, 2026-09-15). Do them as real usage grows.
+
+**Today:** one copy of the server running one process, with at most 15 database connections. Claude
+write-ups and session recording uploads run in that same process. Nobody has load-tested it. A rough
+guess is a few hundred people using it at the same moment. In the week to 2026-09-15 the busiest day
+was about 4,800 requests, using about 6% of one processor core.
+
+**What changes, roughly in order:**
+1. **Load test** against a copy of the app, not production, to get a real number. `S`
+2. **More server processes** on the one copy: a change to the start command. `S`
+3. **A second server copy** on Railway. This also keeps the app up during a restart. Check first that
+   nothing assumes only one copy is running. `S`–`M`
+4. **Move slow work to its own worker** (Claude write-ups, Google transcription), so a burst of them
+   does not slow clinicians clicking around. `M`
+5. **Recording uploads go straight from the phone to Google** with a short-lived upload link, instead
+   of through the server. `M`
+6. **Database size and backups** checked as real data arrives. `S`
+
+**How to tell it worked:** the load test number goes up after each step, and response times stay
+where they are now at the expected number of users.
+
 ---
 
 ## Smaller, already agreed
