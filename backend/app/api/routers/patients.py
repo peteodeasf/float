@@ -515,6 +515,8 @@ async def _patient_response(
         consent_source=patient.consent_source,
         progress_shared_with_parent_at=patient.progress_shared_with_parent_at,
         accommodation_ratings_shared_at=patient.accommodation_ratings_shared_at,
+        recording_consent_at=patient.recording_consent_at,
+        recording_consent_by=patient.recording_consent_by,
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at,
         closed_at=patient.closed_at,

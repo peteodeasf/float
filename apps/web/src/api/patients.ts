@@ -78,6 +78,9 @@ export interface PatientDetail {
   progress_shared_with_parent_at?: string | null
   /** When the clinician let the parent app show the child's ratings of the accommodations. */
   accommodation_ratings_shared_at?: string | null
+  /** Everyone in the session agreed to it being recorded. docs/plans/session-recording.md */
+  recording_consent_at?: string | null
+  recording_consent_by?: string | null
   primary_practitioner_id: string
   created_at: string
   closed_at?: string | null

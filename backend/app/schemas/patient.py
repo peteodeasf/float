@@ -47,6 +47,9 @@ class PatientResponse(BaseModel):
     progress_shared_with_parent_at: Optional[datetime] = None
     # When the clinician let the parent app show the child's ratings of the accommodations.
     accommodation_ratings_shared_at: Optional[datetime] = None
+    # Everyone in the session agreed to it being recorded. docs/plans/session-recording.md
+    recording_consent_at: Optional[datetime] = None
+    recording_consent_by: Optional[str] = None
     primary_practitioner_id: Optional[uuid.UUID] = None
     created_at: datetime
 

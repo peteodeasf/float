@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     GOOGLE_SPEECH_CREDENTIALS: str = ""
     GOOGLE_SPEECH_LOCATION: str = "us"
     GOOGLE_SPEECH_MODEL: str = "chirp_3"
+    # Recorded sessions wait here while Google transcribes them, then are deleted
+    # (docs/plans/session-recording.md). Same Google project and HIPAA agreement. Empty means
+    # recording a session is not offered.
+    GOOGLE_RECORDINGS_BUCKET: str = ""
 
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:8081", "https://floatcbt.com", "https://www.floatcbt.com"]

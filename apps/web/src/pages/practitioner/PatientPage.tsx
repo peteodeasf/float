@@ -31,6 +31,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
+import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
@@ -1122,8 +1123,20 @@ export default function PatientPage() {
           <span className="text-sm font-semibold text-slate-700">Session notes</span>
           {filteredNotes.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{filteredNotes.length}</span>}
         </div>
-        {!showNoteForm && <button onClick={startNewNote} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>}
+        {!showNoteForm && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* On the clinician's phone: record the session, and a draft note is written from it.
+                docs/plans/session-recording.md */}
+            <button onClick={() => navigate(`/patients/${patientId}/record`)} className="bg-transparent border-none cursor-pointer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#135450' }}>
+              <span aria-hidden="true" style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#d64545' }} />
+              Record session
+            </button>
+            <button onClick={startNewNote} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>
+          </div>
+        )}
       </div>
+      <RecordingsInProgress patientId={patientId!} />
 
       {/* Two filters, two dimensions — who was in the room, and how the note is tagged. They sit
           in one row but are labelled and divided so they don't read as one list of choices. */}
@@ -1186,6 +1199,7 @@ export default function PatientPage() {
                   {(n.participants ?? []).map(pt => (
                     <span key={pt} className="px-1 py-0.5 rounded font-medium" style={{ background: pt === 'parent' ? '#eafaf6' : '#ede9fe', color: pt === 'parent' ? '#0d3d3a' : '#5b21b6' }}>{pt === 'parent' ? 'Parent' : 'Patient'}</span>
                   ))}
+                  {n.is_draft && <span className="px-1 py-0.5 rounded" style={{ background: '#fff4d6', color: '#8a5a00', fontWeight: 700 }}>Draft · from a recording</span>}
                   {(n.tags ?? []).map(t => <span key={t} className="px-1 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#475569', fontWeight: 500 }}>{t}</span>)}
                   <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </div>
@@ -1197,6 +1211,7 @@ export default function PatientPage() {
               <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
                 {expandedNoteId === n.id ? n.content : n.content.length > 100 ? n.content.slice(0, 100) + '...' : n.content}
               </p>
+              <RecordedNoteDetails note={n} patientId={patientId!} />
             </div>
           ))}
         </div>

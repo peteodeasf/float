@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
@@ -31,6 +31,10 @@ class SessionNoteUpdate(BaseModel):
     tags: Optional[list[str]] = None
     session_date: Optional[date] = None
     content: Optional[str] = None
+    # A note from a recording: who each speaker is, and approving the draft (False only).
+    # docs/plans/session-recording.md
+    speaker_names: Optional[dict[str, str]] = None
+    is_draft: Optional[bool] = None
 
 
 class SessionNoteResponse(BaseModel):
@@ -43,6 +47,10 @@ class SessionNoteResponse(BaseModel):
     tags: list[str] = []
     session_date: date
     content: str
+    is_draft: bool = False
+    source: str = "typed"
+    transcript: Optional[list[dict]] = None
+    speaker_names: Optional[dict[str, str]] = None
     created_at: datetime
     updated_at: datetime
 
@@ -141,6 +149,16 @@ async def update_session_note(
         note.session_date = data.session_date
     if data.content is not None:
         note.content = data.content
+    if data.speaker_names is not None:
+        keys = {t.get("speaker") for t in (note.transcript or [])}
+        names = {k: v.strip() for k, v in data.speaker_names.items()}
+        if not keys or not set(names) <= keys or any(not v or len(v) > 40 for v in names.values()):
+            raise HTTPException(status_code=422, detail="Those speakers aren't in this transcript.")
+        note.speaker_names = {**(note.speaker_names or {}), **names}
+    if data.is_draft is not None:
+        if data.is_draft:
+            raise HTTPException(status_code=422, detail="A note can be approved, not made a draft again.")
+        note.is_draft = False
 
     await db.commit()
     await db.refresh(note)

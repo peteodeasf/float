@@ -4,7 +4,11 @@ Peter, 2026-09-13: the clinician records the session on their phone. It records 
 turns it into text, works out who said what, and saves it on the patient's record as a session note,
 tagged. Sessions can run 60 minutes or longer.
 
-Not built. Agreed with Peter, 2026-09-13.
+Built 2026-09-15, not yet tried on a phone. Agreed with Peter, 2026-09-13.
+
+Checked before Peter's own test recording: a made-up three-voice session (74 seconds, voices generated on a
+Mac) went through Google with the speakers correctly separated. The first run took about four
+minutes; a second took 16 seconds.
 
 ## Decided (Peter, 2026-09-13)
 
@@ -36,7 +40,7 @@ A note marked **Draft — from a recording**:
 - **The note**, written by Claude from the transcript, in the structure above.
 - **Tags**: participants from who spoke; a session tag (Initial, Consult, Weekly or Review) guessed
   from what was said. Both editable.
-- **The transcript**: who said what, with times. Speakers named Clinician, Child and Parent, guessed
+- **The transcript**: who said what. No times: `chirp_3` does not return them with speakers. Speakers named Clinician, Child and Parent, guessed
   by Claude from what each says. Rename a speaker with one tap and the whole transcript updates.
 - **Approve** makes it a normal note.
 
@@ -53,17 +57,21 @@ interruption says **"Recording stopped — tap to carry on"**, adding to the sam
 
 1. **Recording.** The phone uploads a piece every 30 seconds. Float's server puts each piece in a
    private Google Cloud Storage bucket (Google's HIPAA agreement), never on Railway.
-2. **Stop.** The server joins the pieces, including any from after "tap to carry on", into one audio
-   file in the bucket. Separate stretches of recording cannot simply be stuck together, so the server
-   uses **ffmpeg** (a standard audio tool) to make one file.
+2. **Stop.** The server joins each stretch of recording's pieces into one audio file in the bucket,
+   using Google Storage's own join. Each stretch (before and after "tap to carry on") is a separate
+   file and is transcribed separately, so speaker numbers are per stretch ("2:1" is speaker 1 of the
+   second stretch). No ffmpeg.
 3. **Transcribing.** The server asks Google to transcribe that file in the bucket (Speech-to-Text V2,
    `chirp_3`, batch mode, speaker separation on, expecting two to four speakers). Batch mode takes
    files of up to eight hours.
-4. **Waiting.** Google does not call back. The server checks the job every 30 seconds. If the server
-   restarts meanwhile, the scheduled jobs service picks up any unfinished job on its next run.
-5. **The transcript.** Google returns words, each with a speaker number and a time. Float groups them
+4. **Waiting.** Google does not call back. The server checks the job every 20 seconds. If the server
+   restarts meanwhile, the scheduled jobs service picks up any unfinished job on its next run (every 15 minutes). It gives up
+   three hours after Google was asked. A recording with no new piece for two hours is stopped and saved.
+   The jobs service needs `GOOGLE_SPEECH_CREDENTIALS`, `GOOGLE_RECORDINGS_BUCKET` and
+   `ANTHROPIC_API_KEY`; without them it leaves recordings alone.
+5. **The transcript.** Google returns words, each with a speaker number. Float groups them
    into turns.
-6. **The note.** Claude reads the transcript, with the child's name and what is on their plan, and
+6. **The note.** Claude (Sonnet 4.6) reads the transcript, with the child's first name and who was in the room, and
    returns the note, the tags, and a name for each speaker number.
 7. **Saving.** The draft note is saved with the transcript. The recording is deleted from the bucket. A rule on the bucket also deletes anything older than two days, in case a
    delete is missed.
@@ -71,7 +79,7 @@ interruption says **"Recording stopped — tap to carry on"**, adding to the sam
    **Try again**, while the recording is still in the bucket.
 
 **Database:** session notes gain: draft or approved; how it was made (typed or recorded); the
-transcript (speaker, time, words); the speaker names; the job's status. A new table for a recording
+transcript (speaker, words); the speaker names. The job's status is on a new table for a recording
 while it is in progress. Adds only.
 
 **Access:** as notes today, clinicians with access to the patient. Uploading pieces and stopping go
@@ -87,8 +95,8 @@ exist until created from Cloud Shell (shell.cloud.google.com) with
 `gcloud beta services identity create --service=speech.googleapis.com --project=float-speech`;
 before that, Google refused it as a principal.
 
-**Next:** Peter records the mock session. The test runs locally through `railway run`, so the Google
-key is passed in without being shown.
+**Next:** try it on an iPhone with a short practice session. Safari's recording format has not been
+through Google yet.
 
 In the same `float-speech` project:
 1. **Cloud Storage → Create bucket**: a name like `float-session-recordings`, location **us**,
@@ -116,10 +124,9 @@ note. To confirm on Google's pricing page before launch.
 
 ## Build order
 
-1. **Check Google with a mock session.** Peter records about 20 minutes with three voices (no real
-   patient) on a phone. It goes through Google's batch mode with speaker separation, and Claude writes
-   the note. We look at whether who-said-what is good enough. Needs the bucket set up.
-2. **The server**: pieces into the bucket, joining with ffmpeg, the Google job and checking it,
+1. **Check Google with a mock session.** Done with generated voices (above). A real 20-minute
+   session recorded on a phone is still to try.
+2. **The server**: pieces into the bucket, joining in the bucket, the Google job and checking it,
    Claude's note, tags and speaker names, the draft note, deleting the recording, retrying.
 3. **Recording on the phone**: consent check, who is in the room, record, pause, pieces uploaded,
    carry on after an interruption.

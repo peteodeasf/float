@@ -32,7 +32,7 @@ from app.models.experiment import Experiment, AccommodationBehavior
 from app.models.jit_content import JitTip, Tag
 from app.models.ladder import ExposureLadder
 from app.models.message import Message
-from app.models.session_note import SessionNote
+from app.models.session_note import SessionNote, SessionRecording
 from app.models.treatment import AvoidanceBehavior, TriggerSituation
 from tests.factories import (
     grant_patient_to, make_org, make_patient, make_plan, make_practitioner, make_rung,
@@ -128,13 +128,18 @@ async def _victim_world(db):
     tip = JitTip(title="Shared tip", body="Shared tip body")
     db.add_all([exp, arrow, msg, ladder, accommodation, note, item, tag, tip])
     await db.flush()
+    recording = SessionRecording(patient_id=patient.id, organization_id=org.id,
+                                 practitioner_id=plan.practitioner_id, participants=["patient"],
+                                 content_type="audio/mp4", status="failed", error=f"{CANARY} recording")
+    db.add(recording)
+    await db.flush()
 
     return {
         "org": org, "patient": patient, "plan": plan, "situation": situation,
         "rung": rung, "experiment": exp, "arrow": arrow, "message": msg,
         "ladder": ladder, "accommodation": accommodation, "note": note,
         "item": item, "tag": tag, "tip": tip,
-        "house_clinician": house_clinician,
+        "house_clinician": house_clinician, "recording": recording,
     }
 
 
@@ -162,6 +167,9 @@ def _param_values(w):
         "item_id": w["item"].id,
         "tag_id": w["tag"].id,
         "tip_id": w["tip"].id,
+        "recording_id": w["recording"].id,
+        "segment": 1,
+        "seq": 0,
     }
 
 

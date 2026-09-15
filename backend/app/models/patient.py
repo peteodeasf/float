@@ -83,6 +83,13 @@ class PatientProfile(Base):
     accommodation_ratings_shared_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # The clinician confirmed everyone in the session agreed to it being recorded: when, who agreed
+    # (in the clinician's words), and which clinician confirmed it. docs/plans/session-recording.md
+    recording_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recording_consent_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    recording_consent_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

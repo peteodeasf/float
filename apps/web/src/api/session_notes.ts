@@ -12,6 +12,12 @@ export interface SessionNote {
   tags: string[]
   session_date: string
   content: string
+  /** Written by Float from a recorded session, until the clinician approves it. */
+  is_draft?: boolean
+  source?: 'typed' | 'recording'
+  /** Who said what, in order. Speaker keys like "1:2". */
+  transcript?: { speaker: string; text: string }[] | null
+  speaker_names?: Record<string, string> | null
   created_at: string
   updated_at: string
 }
@@ -28,6 +34,9 @@ export interface UpdateSessionNote {
   tags?: string[]
   session_date?: string
   content?: string
+  speaker_names?: Record<string, string>
+  /** false approves a draft. */
+  is_draft?: false
 }
 
 export const getSessionNotes = async (patientId: string): Promise<SessionNote[]> => {

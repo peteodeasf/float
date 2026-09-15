@@ -378,4 +378,8 @@ async def run_due(
         "monitoring_evening": await monitoring_evening_reminders(db, now_utc, send_monitoring or default_send_monitoring),
     }
     await db.commit()
+    # Not a reminder, but the same every-15-minutes run: session recordings the phone or the server
+    # left part-way. docs/plans/session-recording.md
+    from app.services.session_recording import backstop
+    counts["session_recordings"] = await backstop(db, now_utc)
     return counts
