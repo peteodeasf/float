@@ -445,7 +445,7 @@ tests; CI on push; this file).
 
 **Raised 2026-08-29. Deferred by Peter the same day — not urgent, but do it.** `S`
 
-The password was pasted into a chat transcript on 2026-08-29, so treat it as known.
+The password was pasted into a chat transcript on 2026-08-29, so treat it as known. It was printed into a session transcript again on 2026-09-15, when `railway connect` showed it while creating review rounds.
 
 **Why it is not urgent:** the database came off the public internet the same day. Its TCP proxy and
 its public domain are both gone, so the only route in is `postgres.railway.internal`. Using the
@@ -491,6 +491,12 @@ What the run showed, from 18 cases:
 - Differences from the confirmed answers, mostly: one action split into two behaviors, `unclear`
   where the answer is `avoidance`, and `safety` where the answer is `escape`. Eighteen cases is too
   few to say which of these are patterns.
+
+**2b. Dr. Walker's review rounds — OUT 2026-09-15.** Two rounds on the review link, built by
+`float_harness/review/build_rounds.py` from made-up notes: `extraction-disagreements-1` (8 places
+the AI and her June answers disagree on behavior type) and `extraction-samples-1` (16 new notes, 67
+things to mark). Answers: Admin → Reviews. Next: fold her answers into the test cases, then
+look at the prompt.
 
 **2. Clinicians' choices as cases for Dr. Walker — needs a decision.** `M`
 Planned with Peter 2026-09-15: a read-only query Peter runs in Railway, and a local script that
