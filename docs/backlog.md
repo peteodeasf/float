@@ -535,6 +535,27 @@ is no word-level safety check the way there was for the arrow.
 
 # Education content
 
+## The content plan — every item
+
+From the one-page content plan (Peter, 2026-09-15):
+https://claude.ai/artifact/FYw2twvuhxY3qQ2fJthTM5. Writing the content is not engineering work; each
+item also needs a place in the app, noted where it is known. "From Dr. Walker's guidance" lists
+topics her consultation guidance (2026-09-15) says the item should cover.
+
+| Item | For | Status | Notes |
+|---|---|---|---|
+| **Key concept videos** | Child and parent | In production. First sample made; topics to confirm. | 10 to start. From Dr. Walker's guidance, candidate topics: what CBT is, exposures, the Worry Hill, the nickname, the Distress Thermometer, parental accommodation. Getting them into the apps is the video item below. |
+| **Clinical reference** | Clinician | Drafted. 8 modules, design done, clinical review next. | From Dr. Walker's guidance, not yet covered: scripts for what CBT is and how and why exposures work; pacing the consultation; the structure of a weekly session; working in session (reviewing the session 1 video, a cheat sheet, notes). Progress saved on one device only: see Clinician education modules under Clinician. |
+| **Tips for the clinician** | Clinician | Not written. Places for them exist. | At the step where needed: the consultation checklist, building the ladder and the parent plan, running a session. |
+| **Tips for the child** | Child | Live. Growing the set. | Just-in-time tips on the exposure screen. |
+| **Tips for the parent** | Parent | Live. Growing the set. | From Dr. Walker's guidance: using the nickname and the Distress Thermometer at home; parental accommodation; rewards. |
+| **Parent guides** | Parent | Not started. | Longer written education, with examples. Before each consultation meeting, and in the parent's app during treatment. From Dr. Walker's guidance: what to expect before the consultation and how to prepare; obvious and less obvious signs of anxiety; the downward arrow; exposures in words (consultation part 2); parental accommodation; what ongoing treatment looks like; rewards. No place in the app yet, and the parent has no app during the monitoring week. |
+| **Session materials and handouts** | Clinician, with the family | Not started. | Visuals to show in session (the Worry Hill, the Fear Level scale, a ladder) and handouts to take home. From Dr. Walker's guidance: monitoring instructions for parents (why both parents, for a week). |
+| **Getting started** | Child and parent | Not started. | The first time they open their app: what Float is, what they will do, who sees what. |
+| **Privacy and consent, in plain language** | Child and parent | Not started. | Before anything is recorded or shared: what is recorded, what the clinician and parent can see, what stays private. |
+| **If things get worse** | Child and parent | Not started. | Always easy to find: when to contact the clinician, where to go in a crisis. |
+| **Encouragement, reminders and notifications** | Child and parent | Partly written. Reminder emails exist. | Celebrating progress, and reminders by email or in the app. |
+
 ## Video content — production
 
 **Owner: not engineering.** Raised 2026-08-30. Outside this workstream.
