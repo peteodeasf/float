@@ -21,6 +21,7 @@ organisation membership alone was enough to open anyone.
 Routes whose path parameters cannot be filled are reported as NOT COVERED rather than passing
 silently — a sweep that quietly skips half the surface is worse than no sweep.
 """
+import uuid
 import pytest
 from fastapi.routing import APIRoute
 
@@ -32,6 +33,7 @@ from app.models.experiment import Experiment, AccommodationBehavior
 from app.models.jit_content import JitTip, Tag
 from app.models.ladder import ExposureLadder
 from app.models.message import Message
+from app.models.review import ReviewRound
 from app.models.session_note import SessionNote, SessionRecording
 from app.models.treatment import AvoidanceBehavior, TriggerSituation
 from tests.factories import (
@@ -132,6 +134,10 @@ async def _victim_world(db):
                                  practitioner_id=plan.practitioner_id, participants=["patient"],
                                  content_type="audio/mp4", status="failed", error=f"{CANARY} recording")
     db.add(recording)
+    # Review rounds belong to no patient; only a Float admin may read one.
+    review_round = ReviewRound(slug=f"sweep-{uuid.uuid4().hex[:8]}", title=f"{CANARY} round",
+                               items=[{"key": "k", "situation": CANARY, "suggestions": [CANARY]}])
+    db.add(review_round)
     await db.flush()
 
     return {
@@ -139,7 +145,7 @@ async def _victim_world(db):
         "rung": rung, "experiment": exp, "arrow": arrow, "message": msg,
         "ladder": ladder, "accommodation": accommodation, "note": note,
         "item": item, "tag": tag, "tip": tip,
-        "house_clinician": house_clinician, "recording": recording,
+        "house_clinician": house_clinician, "recording": recording, "review_round": review_round,
     }
 
 
@@ -168,6 +174,7 @@ def _param_values(w):
         "tag_id": w["tag"].id,
         "tip_id": w["tip"].id,
         "recording_id": w["recording"].id,
+        "round_id": w["review_round"].id,
         "segment": 1,
         "seq": 0,
     }

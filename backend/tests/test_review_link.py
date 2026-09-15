@@ -282,3 +282,86 @@ async def test_a_comment_is_escaped_on_the_page(api, db):
     page = (await api.get(f"/review/{reviewer.token}")).text
     assert "<script>alert(1)</script>" not in page
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
+
+
+# ── Rounds that show a parent's note and ask about each part of the AI's answer ────────────────
+
+EXTRACTION = [{
+    "key": "case-8",
+    "situation": "Birthday parties",
+    "log": [{"situation": "Birthday parties", "fear": 9, "child": "Refused to go in.", "parent": "Let him leave."}],
+    "rows": [
+        {"id": "b1", "text": "Refused to go into the party", "detail": "The AI said: avoidance",
+         "proposed": "avoidance",
+         "options": [{"v": t, "label": t.title()} for t in ("avoidance", "safety", "escape", "unclear")]},
+        {"id": "d1", "text": "What Jack did",
+         "compare": [{"label": "Your June answer", "lines": ["escape: asked to leave"]},
+                     {"label": "The AI's answer", "lines": ["avoidance: refused to go in"]}],
+         "options": [{"v": "june", "label": "My June answer"}, {"v": "ai", "label": "The AI's"},
+                     {"v": "neither", "label": "Neither"}]},
+    ],
+    "add_placeholder": "Anything the AI missed",
+}]
+
+
+async def _extraction_round(db, token="tok-ext"):
+    r = ReviewRound(slug=f"round-{uuid.uuid4().hex[:8]}", title="Check the AI's answers", items=EXTRACTION)
+    db.add(r)
+    await db.flush()
+    reviewer = ReviewReviewer(round_id=r.id, name="Dr. Walker", token=token)
+    db.add(reviewer)
+    await db.flush()
+    return r, reviewer
+
+
+async def test_the_page_shows_the_parents_note_and_both_answers(api, db):
+    await _extraction_round(db)
+    page = (await api.get("/review/tok-ext")).text
+    assert "What the parent wrote" in page and "Refused to go in." in page
+    assert "Your June answer" in page and "The AI&#x27;s answer" in page
+    assert "Anything the AI missed" in page
+    assert 'of</span> <span>2</span>' in page
+
+
+async def test_each_row_accepts_only_its_own_choices(api, db):
+    await _extraction_round(db)
+    ok = await api.post("/review/tok-ext/mark", json={"item_key": "case-8:b1", "choice": "escape"})
+    assert ok.status_code == 204
+    wrong_row = await api.post("/review/tok-ext/mark", json={"item_key": "case-8:b1", "choice": "june"})
+    assert wrong_row.status_code == 400
+    assert (await api.post("/review/tok-ext/mark", json={"item_key": "case-8:d1", "choice": "june"})).status_code == 204
+    no_such = await api.post("/review/tok-ext/mark", json={"item_key": "case-8:zz", "choice": "ai"})
+    assert no_such.status_code == 400
+    page = (await api.get("/review/tok-ext")).text
+    assert 'data-v="escape" data-key="case-8:b1" aria-pressed="true"' in page
+
+
+# ── Reading the answers ───────────────────────────────────────────────────────
+
+async def test_an_admin_reads_every_reviewers_answers(api, db):
+    from tests.factories import make_org, _make_user
+    r, reviewer = await _extraction_round(db)
+    await api.post("/review/tok-ext/mark", json={"item_key": "case-8:d1", "choice": "neither"})
+    await api.post("/review/tok-ext/comment", json={"item_key": "case-8", "body": "It reads both ways."})
+    await api.post("/review/tok-ext/add", json={"item_key": "case-8", "body": "Stayed at his side"})
+
+    api.sign_in_as(await _make_user(db, await make_org(db), "admin"))
+    listed = (await api.get("/admin/review-rounds")).json()
+    mine = next(x for x in listed if x["id"] == str(r.id))
+    assert mine["to_mark"] == 2 and mine["reviewers"][0]["marked"] == 1
+
+    got = (await api.get(f"/admin/review-rounds/{r.id}")).json()
+    rid = str(reviewer.id)
+    assert got["marks"][rid] == {"case-8:d1": "neither"}
+    assert got["comments"][rid] == {"case-8": "It reads both ways."}
+    assert got["additions"][rid] == {"case-8": ["Stayed at his side"]}
+    assert "tok-ext" not in (await api.get(f"/admin/review-rounds/{r.id}")).text
+
+
+async def test_only_an_admin_reads_answers(api, db):
+    from tests.factories import make_org, make_practitioner
+    r, _ = await _extraction_round(db)
+    assert (await api.get("/admin/review-rounds")).status_code == 401
+    api.sign_in_as((await make_practitioner(db, await make_org(db))).user)
+    assert (await api.get("/admin/review-rounds")).status_code == 403
+    assert (await api.get(f"/admin/review-rounds/{r.id}")).status_code == 403

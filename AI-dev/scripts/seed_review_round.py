@@ -2,6 +2,8 @@
 
     python "AI-dev/scripts/seed_review_round.py" ladder-v1 "AI-dev/Ladder Eval/review_sheet_source.json" "Dr. Walker" "Peter"
 
+The source is either a list of sub-situation cases or a whole round, {title, instructions, items}.
+
 Writes to PRODUCTION, which since 2026-08-29 needs a tunnel — see AI-dev/scripts/db.py. That is the
 point here: the link has to work for someone who is not on this machine.
 
@@ -30,15 +32,24 @@ async def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     slug, source, names = args[0], pathlib.Path(args[1]), args[2:]
 
-    cases = json.loads(source.read_text())
-    items = [{
-        "key": c["id"],
-        "situation": c["situation"],
-        "rating": c.get("distress_rating"),
-        "existing": c.get("existing_rungs") or [],
-        "suggestions": c["suggestions"],
-        "note": c.get("note"),
-    } for c in cases]
+    data = json.loads(source.read_text())
+    if isinstance(data, dict):
+        # A whole round, already in the page's shape: {title, instructions, items}. The extraction
+        # rounds are built this way by "AI-dev/Extraction Loop/float_harness/review/build_rounds.py".
+        title, instructions, items = data["title"], data.get("instructions"), data["items"]
+    else:
+        # A list of sub-situation cases, the first kind of round.
+        title = "Would you show these sub-situation suggestions to a therapist / child?"
+        instructions = ("Review the situations below and the suggested sub-situations for each. Mark "
+                        "every one <b>Show</b> or <b>Don&rsquo;t show</b>.")
+        items = [{
+            "key": c["id"],
+            "situation": c["situation"],
+            "rating": c.get("distress_rating"),
+            "existing": c.get("existing_rungs") or [],
+            "suggestions": c["suggestions"],
+            "note": c.get("note"),
+        } for c in data]
 
     # The deployed URL is NOT read from backend/.env: app.core.config.Settings rejects unknown
     # keys, so an extra line in that file stops the whole app booting. Pass --base= to override.
@@ -50,14 +61,10 @@ async def main() -> int:
             row = await conn.fetchrow(
                 """insert into review_rounds (slug, title, instructions, items)
                    values ($1, $2, $3, $4::jsonb) returning id""",
-                slug,
-                "Would you show these sub-situation suggestions to a therapist / child?",
-                "Review the situations below and the suggested sub-situations for each. Mark "
-                "every one <b>Show</b> or <b>Don&rsquo;t show</b>.",
-                json.dumps(items),
+                slug, title, instructions, json.dumps(items),
             )
-            print(f"created round {slug} with {len(items)} situations, "
-                  f"{sum(len(i['suggestions']) for i in items)} suggestions")
+            marks = sum(len(i.get("suggestions") or []) + len(i.get("rows") or []) for i in items)
+            print(f"created round {slug} with {len(items)} items, {marks} things to mark")
         else:
             print(f"round {slug} already exists")
         round_id = row["id"]

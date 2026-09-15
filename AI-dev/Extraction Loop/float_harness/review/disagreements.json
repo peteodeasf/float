@@ -1,0 +1,386 @@
+{
+  "title": "Where the AI and your June answers disagree",
+  "instructions": "Each card shows a parent’s note, the answer you confirmed in June, and the answer the AI gives today. For each one, choose <b>My June answer is right</b>, <b>The AI’s answer is right</b>, or <b>Neither</b>. If it could be read either way, say so in the comments. That is as useful as a choice.",
+  "items": [
+    {
+      "key": "case-11",
+      "situation": "Making a mistake in a game",
+      "log": [
+        {
+          "situation": "Making a mistake in a soccer game",
+          "fear": "6",
+          "child": "Leo missed an easy goal, then walked off to the far end of the bench and sat by himself. He wouldn't talk to his teammates or the coach for the rest of the game.",
+          "parent": "I told him it was fine and gave him space."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Making a mistake in a soccer game",
+          "detail": "The AI gave this answer in 3 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "escape: Withdraws and sits alone away from the team after a mistake"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "safety: Walked off to the far end of the bench and sat by himself after missing an easy goal",
+                "safety: Wouldn't talk to his teammates or the coach for the rest of the game"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        }
+      ],
+      "no_add": true
+    },
+    {
+      "key": "case-12",
+      "situation": "Separation from parent at home",
+      "log": [
+        {
+          "situation": "At home when M, age 6, and I are not in the same room",
+          "fear": "8",
+          "child": "M cries, pleads, hyperventilates, and gets so upset he almost vomits when I have to be out of the house without him for even an hour. He calls out to me, stays by my side, and asks many questions about where I am throughout the day. He refuses sitters.",
+          "parent": "I avoid leaving him; I don't go out unless I must, and never unless his father is home."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "At home when parent is not in the same room",
+          "detail": "The AI gave this answer in 2 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "safety: Calls out to parent, stays by her side, repeatedly asks about her location (reassurance-seeking)",
+                "avoidance: Refuses sitters"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "avoidance: Refuses sitters",
+                "unclear: Cries, pleads, and hyperventilates; gets so upset he almost vomits when parent has to be out of the house without him"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        }
+      ],
+      "no_add": true
+    },
+    {
+      "key": "case-13",
+      "situation": "Sleep-away school event",
+      "log": [
+        {
+          "situation": "Packing for the outdoor-ed trip",
+          "fear": "6",
+          "child": "Pippa is excited about Outdoor Ed until about two weeks before the departure date, when she tells me she's worried about going and may not want to after all.",
+          "parent": "I urge her to go."
+        },
+        {
+          "situation": "Staying overnight at outdoor ed",
+          "fear": "10",
+          "child": "The night before camp she cries and doesn't sleep much.",
+          "parent": "I tell her she can come home when bedtime comes, like she always does."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Packing for the outdoor-ed trip",
+          "detail": "The AI gave this answer in 3 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "avoidance: Says she's worried about going and may not want to go after all"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "unclear: Tells her parent she is worried about going and may not want to go after all"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        },
+        {
+          "id": "s2",
+          "text": "Staying overnight at the outdoor-ed trip",
+          "detail": "The AI gave this answer in 3 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "avoidance: Cries and doesn't sleep the night before; relies on the option to come home"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "unclear: Cries and doesn't sleep much the night before camp"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        }
+      ],
+      "no_add": true
+    },
+    {
+      "key": "case-15",
+      "situation": "Drop-off separations",
+      "log": [
+        {
+          "situation": "School drop-off",
+          "fear": "5-8",
+          "child": "Edward refuses to get out of the car, kicks the back of my seat, cries, and yells that I'm the worst mother ever.",
+          "parent": "I go into his classroom and stay the first hour until he's more comfortable, then slip out when he can't see."
+        },
+        {
+          "situation": "Drop-off at Taekwondo",
+          "fear": "5",
+          "child": "E insists that either I or his father stay to watch the entire class; he scans the room for us and comes running or gives a mean look even if we just go to the bathroom.",
+          "parent": "We stay to watch and reassure him we'll stay."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "School drop-off",
+          "detail": "The AI gave this answer in 3 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "avoidance: Refuses to get out of the car",
+                "safety: Insults, physical aggression, and kicking to get mom to come into the classroom"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "avoidance: Refuses to get out of the car",
+                "unclear: Kicks the back of the seat, cries, and yells that she's the worst mother ever"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        }
+      ],
+      "no_add": true
+    },
+    {
+      "key": "case-16",
+      "situation": "Speaking in class",
+      "log": [
+        {
+          "situation": "Being called on in class",
+          "fear": "4",
+          "child": "Rosco's teachers report that he doesn't speak in class; when he is called on he averts eye contact, shrugs, and mumbles 'I don't know'.",
+          "parent": "I told him to try harder, that his grades count for college now and are lower because he doesn't participate."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Being called on in class",
+          "detail": "The AI gave this answer in 3 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "avoidance: Does not speak in class",
+                "safety: Averts eye contact, mumbles 'I don't know', shrugs when called on"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "safety: Averts eye contact, shrugs, and mumbles 'I don't know' when called on"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        }
+      ],
+      "no_add": true
+    },
+    {
+      "key": "case-17",
+      "situation": "Phone and texting around others",
+      "log": [
+        {
+          "situation": "Talking on the phone",
+          "fear": "9",
+          "child": "Rosie refuses to talk on the phone except to me when she's alone; she never picks up my call at first but finds a private place and then answers.",
+          "parent": "If she gets a call on the home phone I answer and say she's not home or is busy -- I make excuses so she doesn't feel embarrassed."
+        },
+        {
+          "situation": "Texting in front of others",
+          "fear": "6",
+          "child": "She hides her phone if she texts in front of me so I can't see, and never texts in front of her friends unless she hides what she's doing.",
+          "parent": "I make excuses for her so her friends don't know."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Talking on the phone",
+          "detail": "The AI gave this answer in 3 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "avoidance: Refuses to talk on the phone unless alone; doesn't pick up until she finds a private place"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "avoidance: Refuses to talk on the phone except to the parent when alone; never picks up the parent's call at first",
+                "safety: Finds a private place before answering the parent's call"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        },
+        {
+          "id": "s2",
+          "text": "Texting in front of others",
+          "detail": "The AI gave this answer in 3 of 3 runs.",
+          "compare": [
+            {
+              "label": "Your June answer",
+              "lines": [
+                "avoidance: Never texts in front of friends",
+                "safety: Hides her phone and conceals that she is texting"
+              ]
+            },
+            {
+              "label": "The AI’s answer",
+              "lines": [
+                "safety: Hides her phone screen when texting in front of the parent or friends so no one can see what she's doing"
+              ]
+            }
+          ],
+          "options": [
+            {
+              "v": "june",
+              "label": "My June answer is right"
+            },
+            {
+              "v": "ai",
+              "label": "The AI’s answer is right"
+            },
+            {
+              "v": "neither",
+              "label": "Neither"
+            }
+          ]
+        }
+      ],
+      "no_add": true
+    }
+  ]
+}

@@ -1,0 +1,703 @@
+{
+  "deterministic_pass": true,
+  "type_accuracy": 0.7963,
+  "judge_pass_rate": 1.0,
+  "stable": true,
+  "unstable_cases": [],
+  "stability_runs": 1,
+  "failures": [
+    {
+      "case_id": 2,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Raising hand in class",
+        "gold_types": {
+          "avoidance": 2
+        },
+        "output_types": {
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 4,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Getting ready for school",
+        "gold_types": {
+          "unclear": 2
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Math homework",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1
+        }
+      }
+    },
+    {
+      "case_id": 10,
+      "layer": "type",
+      "check": "spurious_situation",
+      "detail": "Math homework with parent sitting nearby"
+    },
+    {
+      "case_id": 12,
+      "layer": "type",
+      "check": "spurious_situation",
+      "detail": "Parent being in a different room at home"
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at a party",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 14,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Parent out at dinner",
+        "gold_types": {
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 4
+        }
+      }
+    },
+    {
+      "case_id": 16,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Being called on in class",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1
+        }
+      }
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 2,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Raising hand in class",
+            "fear_rating": 6,
+            "fear_rating_max": 8,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Wouldn't raise his hand even though he knew the answer; still not raising his hand"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent encouraged him to try next time"
+              },
+              {
+                "description": "Parent reassured him that everyone makes mistakes"
+              }
+            ],
+            "entries": [
+              1,
+              2
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 0.5,
+        "mismatches": [
+          {
+            "situation": "Raising hand in class",
+            "gold_types": {
+              "avoidance": 2
+            },
+            "output_types": {
+              "avoidance": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      }
+    },
+    {
+      "case_id": 4,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Getting ready for school",
+            "fear_rating": 5,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "unclear",
+                "description": "Very quiet and slow; hard to tell what was going on with him"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent gave him some space"
+              },
+              {
+                "description": "Parent waited with him until it was time to go"
+              }
+            ],
+            "entries": [
+              1,
+              2
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 0.5,
+        "mismatches": [
+          {
+            "situation": "Getting ready for school",
+            "gold_types": {
+              "unclear": 2
+            },
+            "output_types": {
+              "unclear": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      }
+    },
+    {
+      "case_id": 6,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Walking between classes",
+            "fear_rating": 4,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Rushes through the halls so nobody has a chance to talk to him"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Pretends not to see kids he knows"
+              }
+            ],
+            "accommodations": [],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Taking the school bus",
+            "fear_rating": 3,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Sits at the back so kids don't notice him"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Keeps his headphones on the whole ride"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent allows him to take headphones to make the bus ride easier"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          },
+          {
+            "name": "Being called on in class",
+            "fear_rating": 7,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Looks down at his notes and avoids eye contact with the teacher so he won't be picked"
+              }
+            ],
+            "accommodations": [],
+            "entries": [
+              3
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": []
+      }
+    },
+    {
+      "case_id": 8,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Birthday parties",
+            "fear_rating": 9,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Refused to go into the party"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Stayed glued to parent's side the whole time"
+              },
+              {
+                "order": 3,
+                "type": "escape",
+                "description": "Asked to leave after ten minutes"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent let him leave the party"
+              },
+              {
+                "description": "Parent bought him ice cream on the way home to cheer him up"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": []
+      }
+    },
+    {
+      "case_id": 10,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Math homework",
+            "fear_rating": 9,
+            "fear_rating_max": 9,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Cried, said 'I can't do this', pushed the book away, and refused to attempt any of the problems"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent told her she could do it and did the first few problems for her"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Math homework with parent sitting nearby",
+            "fear_rating": 7,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Would only start her math if the parent sat right next to her the whole time; stopped as soon as the parent got up"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent sat with her for the entire homework session"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          },
+          {
+            "name": "Math test at school",
+            "fear_rating": 8,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "The night before the test said she felt sick and begged to stay home"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent let her stay home"
+              }
+            ],
+            "entries": [
+              3
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 0.6666666666666666,
+        "mismatches": [
+          {
+            "situation": "Math homework",
+            "gold_types": {
+              "avoidance": 1,
+              "safety": 1
+            },
+            "output_types": {
+              "avoidance": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": [
+          "Math homework with parent sitting nearby"
+        ]
+      }
+    },
+    {
+      "case_id": 12,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Parent leaving the house without M",
+            "fear_rating": 8,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Refuses sitters"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Cries, pleads, and hyperventilates; gets so upset he almost vomits when parent has to be out of the house without him"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent avoids leaving him and does not go out unless absolutely necessary, and never unless his father is home"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Parent being in a different room at home",
+            "fear_rating": null,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Calls out to parent, stays by parent's side, and asks many questions about where parent is throughout the day"
+              }
+            ],
+            "accommodations": [],
+            "entries": [
+              1
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": [
+          "Parent being in a different room at home"
+        ]
+      }
+    },
+    {
+      "case_id": 14,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Parent out at dinner",
+            "fear_rating": 7,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Begs parents not to go"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Sometimes says she feels sick"
+              },
+              {
+                "order": 3,
+                "type": "safety",
+                "description": "Asks lots of questions about where the restaurant is and who they're going with"
+              },
+              {
+                "order": 4,
+                "type": "safety",
+                "description": "Texts and calls parents after they've been away thirty minutes"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parents reassure her she'll be fine"
+              },
+              {
+                "description": "Parents make sure their long-time sitter comes"
+              },
+              {
+                "description": "Parents give her text updates that all is well"
+              },
+              {
+                "description": "Parents tell her they'll come home early and do come home before they want to"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Parent out at a party",
+            "fear_rating": 9,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Asks lots of questions about the party location, how long they'll stay, and when they'll be back"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Texts and calls nonstop telling parents to come home and asking where they are"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parents give the same reassurance before and during the outing"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [
+          {
+            "situation": "Parent out at a party",
+            "gold_types": {
+              "safety": 1
+            },
+            "output_types": {
+              "safety": 2
+            }
+          },
+          {
+            "situation": "Parent out at dinner",
+            "gold_types": {
+              "safety": 1
+            },
+            "output_types": {
+              "safety": 4
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      }
+    },
+    {
+      "case_id": 16,
+      "deterministic_pass": true,
+      "type_accuracy": 0.5,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Being called on in class",
+            "fear_rating": 4,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Averts eye contact, shrugs, and mumbles 'I don't know' when called on"
+              }
+            ],
+            "accommodations": [],
+            "entries": [
+              1
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 0.5,
+        "mismatches": [
+          {
+            "situation": "Being called on in class",
+            "gold_types": {
+              "avoidance": 1,
+              "safety": 1
+            },
+            "output_types": {
+              "safety": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      }
+    },
+    {
+      "case_id": 18,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "output": {
+        "situations": [
+          {
+            "name": "Dentist appointment",
+            "fear_rating": null,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Refused to go into the dentist's office and waited in the car no matter what they tried"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Let him wait in the car instead of going in"
+              },
+              {
+                "description": "Rebooked the appointment for another day"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          }
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": []
+      }
+    }
+  ]
+}

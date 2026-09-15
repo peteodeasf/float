@@ -73,6 +73,7 @@ def score_case(case, prompt):
         "accuracy": acc,
         "judge": jdg,
         "raw": raw,
+        "output": out,
         "stable": stable,
         "distinct_outputs": distinct_outputs,
     }

@@ -22,7 +22,8 @@ For the note, identify:
 1. **Situations** — the specific real-world triggers the child faced. Each distinct
    trigger is its own situation, even if mentioned together. ("Packing for camp" and
    "staying overnight at camp" are two situations, not one.) Name each in the
-   family's everyday words.
+   family's everyday words. Do not drop a trigger because it seems minor or because
+   the child's response to it is brief — if a distinct trigger is mentioned, list it.
 2. **Behaviors** — what the child did in each situation, each classified (see below).
    List them in the order they happened; one situation can contain a sequence.
 3. **Accommodations** — what a parent or other adult did in response to the child's
@@ -46,6 +47,28 @@ For the note, identify:
 The key avoidance-vs-escape distinction: did the child get into the situation or not?
 Never entered → avoidance. Got in, then left → escape.
 
+## Classifying carefully — do not over-classify
+
+- **Classify only behaviors the note actually describes.** Do not infer an additional
+  behavior from the same action. If the child refuses or won't do something, that is
+  one behavior (usually avoidance); do not add a separate `safety` behavior unless the
+  note describes a distinct second action the child took to feel safer.
+- **Do not label something `safety` (e.g. "seeking reassurance") unless the note shows
+  the child sought comfort, reassurance, or protection.** A child simply stating that
+  they are scared, or explaining why, is not by itself reassurance-seeking — do not
+  add that framing unless the note supports it.
+- **Do not add interpretive parentheticals or inferred functions** (e.g. labeling an
+  action as "coercive behavior to get the parent to stay") unless the parent's note
+  states or plainly describes that function. Describe what the note says, not why you
+  think the child did it.
+- **Never convert a parent/adult action into a child behavior.** If the note says a
+  parent allowed, let, or arranged something, that is an accommodation, not a child
+  behavior — even if it implies the child did or didn't do something. Only record a
+  child behavior the note actually attributes to the child.
+- **One action, one behavior.** When a single action could plausibly fit two types,
+  pick the single best-fitting type rather than listing both. Use `unclear` once for
+  an ambiguous note, not repeatedly for the same ambiguity.
+
 ## Rules
 
 - **Fear rating.** Use only the number the parent actually wrote. If the parent gave
@@ -54,12 +77,13 @@ Never entered → avoidance. Got in, then left → escape.
   "5–8"), record `fear_rating` as the low end and `fear_rating_max` as the high end.
   Do NOT use a range to cover two different triggers — split those into two situations,
   each with its own number.
-- **Reassurance-seeking is `safety`.**
+- **Reassurance-seeking is `safety`** — but only when the note shows the child actually
+  sought reassurance, not merely expressed a feeling.
 - **Accommodation includes passive adult responses** — giving space, allowing delays,
   waiting — not only active facilitation. Anger or pressure is not accommodation.
 - **Split compound or contradictory notes** into separate behaviors and classify each.
   A note describing a refusal followed by leaving early is two behaviors:
-  avoidance, then escape.
+  avoidance, then escape. Do not split a single action into multiple behaviors.
 - **Do not output a diagnosis** and do not let any suspected diagnosis influence the
   classification. Classify only from what the note describes.
 - **Out of scope:** OCD, rituals, and compulsions. If the note is clearly about these,
@@ -69,54 +93,55 @@ Never entered → avoidance. Got in, then left → escape.
 
 Return ONLY valid JSON in exactly this shape. No markdown, no code fences, no commentary.
 
-```
 {
   "situations": [
     {
       "name": "string — family's own words",
       "fear_rating": number or null,
-      "fear_rating_max": number,          // OMIT unless a genuine same-trigger range
+      "fear_rating_max": number,
       "behaviors": [
         { "order": 1, "type": "avoidance|safety|escape|unclear", "description": "string" }
       ],
       "accommodations": [
         { "description": "string" }
-      ]
+      ],
+      "entries": [1, 4, 7]
     }
   ]
 }
-```
 
-(IDs are assigned downstream — do not generate them.)
+`entries` is the list of numbers of the dated entries this situation was drawn from — every
+entry that describes it, not just the first. The entries are numbered for you in the input.
+If you cannot tell, use an empty list rather than guessing.
+
+(IDs are assigned downstream — do not generate them. Omit fear_rating_max unless a
+genuine same-trigger range.)
 
 ## Examples
 
 *(Illustrative only — these notes are not from the test set.)*
 
-**Note (one trigger, a sequence of behaviors):**
+Note (one trigger, a sequence of behaviors):
 "(Swimming lessons, fear 8/10) Maya wouldn't get into the pool at first and sat on
 the edge. Once the coach coaxed her in she got out again after a couple of minutes
 and wouldn't go back. She gripped the coach's hand the whole time. I told the coach
 she could just watch from the side for the rest of the lesson."
 
-**Output:**
-```
+Output:
 {"situations":[{"name":"Swimming lessons","fear_rating":8,"behaviors":[
 {"order":1,"type":"avoidance","description":"Wouldn't get into the pool; sat on the edge"},
 {"order":2,"type":"escape","description":"Got out of the pool after a couple of minutes and wouldn't go back"},
 {"order":3,"type":"safety","description":"Gripped the coach's hand the whole time"}],
 "accommodations":[
 {"description":"Parent arranged for her to watch from the side for the rest of the lesson"}]}]}
-```
 
-**Note (two distinct triggers — split them):**
+Note (two distinct triggers — split them):
 "(Ordering for herself at a restaurant, fear 6/10) Lia won't order her own food and
 whispers to me to do it for her. (Using a public bathroom, fear 9/10) She refuses to
 use public bathrooms and holds it until we get home. I order for her, and I drive
 home early so she can use ours."
 
-**Output:**
-```
+Output:
 {"situations":[
 {"name":"Ordering for herself at a restaurant","fear_rating":6,"behaviors":[
 {"order":1,"type":"avoidance","description":"Won't order her own food"},
@@ -125,7 +150,6 @@ home early so she can use ours."
 {"name":"Using a public bathroom","fear_rating":9,"behaviors":[
 {"order":1,"type":"avoidance","description":"Refuses to use public bathrooms and holds it until home"}],
 "accommodations":[{"description":"Parent drives home early so she can use their own bathroom"}]}]}
-```
 
 ## Safety
 

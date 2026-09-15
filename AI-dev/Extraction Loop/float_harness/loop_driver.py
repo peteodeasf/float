@@ -60,7 +60,8 @@ def log_iteration(run_dir, i, prompt, report, revision=None):
     slim = {k: v for k, v in report.items() if k != "per_case"}
     slim["per_case"] = [{"case_id": r["case_id"], "deterministic_pass": r["deterministic_pass"],
                          "type_accuracy": r["accuracy"]["type_accuracy"], "judge": r["judge"],
-                         "stable": r.get("stable", True),
+                         "accuracy": r["accuracy"],
+                         "stable": r.get("stable", True), "output": r["output"],
                          **({"raw": r["raw"]} if not r["parsed_ok"] else {})}
                         for r in report["per_case"]]
     with open(os.path.join(d, "report.json"), "w") as f:
@@ -156,6 +157,7 @@ def main():
     slim = {k: v for k, v in held.items() if k != "per_case"}
     slim["per_case"] = [{"case_id": r["case_id"], "deterministic_pass": r["deterministic_pass"],
                          "type_accuracy": r["accuracy"]["type_accuracy"], "judge": r["judge"],
+                         "output": r["output"], "accuracy": r["accuracy"],
                          **({"raw": r["raw"]} if not r["parsed_ok"] else {})}
                         for r in held["per_case"]]
     with open(os.path.join(run_dir, "holdout_report.json"), "w") as f:

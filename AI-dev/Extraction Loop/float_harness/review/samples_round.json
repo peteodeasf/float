@@ -1,0 +1,1614 @@
+{
+  "title": "Check the AI’s reading of these notes",
+  "instructions": "These notes are made up. Under each is how the AI read it. Mark each situation and each accommodation <b>Right</b> or <b>Wrong</b>. For each thing the child did, click the type it should be. The dashed button is the AI’s choice, so click it if you agree. Add anything the AI missed, and use the comments for anything else.",
+  "items": [
+    {
+      "key": "s01",
+      "situation": "Swim team",
+      "log": [
+        {
+          "situation": "Swim practice",
+          "fear": "7",
+          "child": "Owen got in the pool for warm-ups but climbed out after two laps saying his goggles were leaking, and sat on the bench for the rest of practice.",
+          "parent": "I told the coach he wasn't feeling well."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Swim practice",
+          "detail": "Situation · fear 7/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Got in the pool for warm-ups but climbed out after two laps saying his goggles were leaking, and sat on the bench for the rest of practice",
+          "detail": "What the child did · the AI said: escape",
+          "proposed": "escape",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent told the coach Owen wasn't feeling well",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s02",
+      "situation": "Sleepovers",
+      "log": [
+        {
+          "situation": "Sleepover at a friend's house",
+          "fear": "8",
+          "child": "Grace went to the sleepover but called me at 10pm asking to be picked up. I drove over and brought her home.",
+          "parent": "I picked her up."
+        },
+        {
+          "situation": "Sleepover at a friend's house",
+          "fear": "8",
+          "child": "This time she said no to the invitation before it was even planned.",
+          "parent": "I told the other mom she had a family thing."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Sleepover at a friend's house",
+          "detail": "Situation · fear 8/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Went to the sleepover but called to be picked up at 10pm and came home",
+          "detail": "What the child did · the AI said: escape",
+          "proposed": "escape",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Said no to a sleepover invitation before it was even planned",
+          "detail": "What the child did · the AI said: avoidance",
+          "proposed": "avoidance",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent drove over and brought her home",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1a2",
+          "text": "Parent told the other mom she had a family thing",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s03",
+      "situation": "Ordering food",
+      "log": [
+        {
+          "situation": "Ordering at a restaurant",
+          "fear": "6",
+          "child": "Maya pointed at the menu and had me tell the waiter what she wanted.",
+          "parent": "I ordered for her."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Ordering at a restaurant",
+          "detail": "Situation · fear 6/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Pointed at the menu and had the parent tell the waiter what she wanted",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent ordered for her",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s04",
+      "situation": "Morning stomach aches",
+      "log": [
+        {
+          "situation": "School mornings",
+          "fear": "5",
+          "child": "Theo said his stomach hurt again. He ate a little breakfast and went to school, but he was slow and quiet. I'm not sure if it's worry or he's actually sick.",
+          "parent": "I let him take his time and drove him instead of the bus."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "School mornings",
+          "detail": "Situation · fear 5/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Said his stomach hurt, ate a little, was slow and quiet — parent unsure if it's worry or illness",
+          "detail": "What the child did · the AI said: unclear",
+          "proposed": "unclear",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Let him take his time getting ready",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1a2",
+          "text": "Drove him to school instead of having him take the bus",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s05",
+      "situation": "Dogs",
+      "log": [
+        {
+          "situation": "Walking past the neighbor's dog",
+          "fear": "9",
+          "child": "Isla crossed the street as soon as she saw the dog and made me walk on the dog side.",
+          "parent": "I switched sides with her."
+        },
+        {
+          "situation": "Visiting grandma, who has a dog",
+          "fear": "8",
+          "child": "She would only go in if the dog was shut in the bedroom, and she checked the door was closed twice.",
+          "parent": "I asked grandma to put the dog away before we arrived."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Walking past the neighbor's dog",
+          "detail": "Situation · fear 9/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Crossed the street as soon as she saw the dog",
+          "detail": "What the child did · the AI said: avoidance",
+          "proposed": "avoidance",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Made the parent walk on the dog side",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent switched sides with her",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s2",
+          "text": "Visiting grandma, who has a dog",
+          "detail": "Situation · fear 8/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s2b1",
+          "text": "Would only go in if the dog was shut in the bedroom",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s2b2",
+          "text": "Checked the bedroom door was closed twice",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s2a1",
+          "text": "Parent asked grandma to put the dog away before they arrived",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s06",
+      "situation": "Piano recital",
+      "log": [
+        {
+          "situation": "Piano recital",
+          "fear": null,
+          "child": "Ben played his piece but kept his eyes on the keys the whole time and rushed off the stage without bowing. He cried in the car.",
+          "parent": "I told him it didn't matter and we got pizza."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Piano recital",
+          "detail": "Situation · no rating",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Kept his eyes on the keys the whole time while playing",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Rushed off the stage without bowing",
+          "detail": "What the child did · the AI said: escape",
+          "proposed": "escape",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b3",
+          "text": "Cried in the car after the recital",
+          "detail": "What the child did · the AI said: unclear",
+          "proposed": "unclear",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent told him it didn't matter",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1a2",
+          "text": "Parent took him out for pizza",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s07",
+      "situation": "Tests at school",
+      "log": [
+        {
+          "situation": "Math test",
+          "fear": "8",
+          "child": "Chloe asked me the night before, over and over, whether she would fail. She also stayed up late re-doing practice problems she already knew.",
+          "parent": "I kept telling her she would be fine and helped her study until 11."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Math test",
+          "detail": "Situation · fear 8/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Asked the parent over and over the night before whether she would fail",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Stayed up late re-doing practice problems she already knew",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent repeatedly reassured her she would be fine",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1a2",
+          "text": "Parent helped her study until 11",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s08",
+      "situation": "Answering the door",
+      "log": [
+        {
+          "situation": "Doorbell rings",
+          "fear": "7",
+          "child": "Lucas runs to his room whenever the doorbell rings.",
+          "parent": "I answer it and tell him when they're gone."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Doorbell rings",
+          "detail": "Situation · fear 7/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Runs to his room whenever the doorbell rings",
+          "detail": "What the child did · the AI said: avoidance",
+          "proposed": "avoidance",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent answers the door and tells Lucas when the visitor is gone",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s09",
+      "situation": "New babysitter",
+      "log": [
+        {
+          "situation": "New babysitter coming",
+          "fear": "6-9",
+          "child": "Sophie gets upset the whole afternoon before. Some nights she is fine once the sitter arrives, other nights she clings to me at the door and I end up staying an extra half hour.",
+          "parent": "I stay until she settles, and I've started only using the one sitter she knows."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "New babysitter coming",
+          "detail": "Situation · fear 6/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Gets upset the whole afternoon before the sitter arrives",
+          "detail": "What the child did · the AI said: unclear",
+          "proposed": "unclear",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Some nights clings to the parent at the door",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent stays an extra half hour until Sophie settles on nights she clings",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1a2",
+          "text": "Parent has started only using the one sitter Sophie already knows",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s10",
+      "situation": "Soccer game",
+      "log": [
+        {
+          "situation": "Soccer game",
+          "fear": "7",
+          "child": "Mateo went on the field but stayed near the back the whole game and never went for the ball. At halftime he asked the coach to sit out, and did.",
+          "parent": "nothing, I watched from the stands."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Soccer game",
+          "detail": "Situation · fear 7/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Stayed near the back the whole game and never went for the ball",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Asked the coach to sit out at halftime, and did",
+          "detail": "What the child did · the AI said: escape",
+          "proposed": "escape",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s11",
+      "situation": "Bedtime noises",
+      "log": [
+        {
+          "situation": "Bedtime",
+          "fear": "6",
+          "child": "Ava hears noises and gets up to check the windows are locked, usually three or four times. Then she falls asleep.",
+          "parent": "I sometimes check them with her so she'll go to bed faster."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Bedtime",
+          "detail": "Situation · fear 6/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Gets up to check the windows are locked, usually three or four times — note describes a repetitive checking pattern; unclear whether this fits safety behavior or OCD-type compulsion",
+          "detail": "What the child did · the AI said: unclear",
+          "proposed": "unclear",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent sometimes checks the windows with her so she will go to bed faster",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s12",
+      "situation": "Class presentation",
+      "log": [
+        {
+          "situation": "Presenting in class",
+          "fear": "10",
+          "child": "Noah stayed home sick on the day of his presentation. He said he had a headache but was fine by lunch.",
+          "parent": "I called him in sick and emailed the teacher to ask if he could present to her alone."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Presenting in class",
+          "detail": "Situation · fear 10/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Stayed home on the day of his presentation",
+          "detail": "What the child did · the AI said: avoidance",
+          "proposed": "avoidance",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent called him in sick",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1a2",
+          "text": "Parent emailed the teacher to ask if he could present to her alone instead",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s13",
+      "situation": "Elevators",
+      "log": [
+        {
+          "situation": "Taking the elevator at the dentist",
+          "fear": "8",
+          "child": "Ella got in the elevator but held my hand very tightly and kept her eyes shut until the doors opened.",
+          "parent": "I held her hand and counted floors out loud for her."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Taking the elevator at the dentist",
+          "detail": "Situation · fear 8/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Held parent's hand very tightly and kept her eyes shut until the doors opened",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent held her hand and counted floors out loud for her",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s14",
+      "situation": "Hard to tell",
+      "log": [
+        {
+          "situation": "After school",
+          "fear": "4",
+          "child": "Something is off with Jack after school most days this week. He goes quiet and doesn't want to talk about his day.",
+          "parent": "I gave him space."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "After school",
+          "detail": "Situation · fear 4/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Goes quiet and doesn't want to talk about his day",
+          "detail": "What the child did · the AI said: unclear",
+          "proposed": "unclear",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent gave him space",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s15",
+      "situation": "Birthday party",
+      "log": [
+        {
+          "situation": "Birthday party at the trampoline park",
+          "fear": "8",
+          "child": "Zara went in and jumped for a few minutes, then said she felt sick and wanted to go home. She sat with me in the cafe until pickup instead of leaving.",
+          "parent": "I bought her a drink and let her sit with me."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Birthday party at the trampoline park",
+          "detail": "Situation · fear 8/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Went in and jumped for a few minutes, then said she felt sick and wanted to go home",
+          "detail": "What the child did · the AI said: escape",
+          "proposed": "escape",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Sat with the parent in the cafe instead of leaving for the rest of the party",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Parent bought her a drink and let her sit together in the cafe",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    },
+    {
+      "key": "s16",
+      "situation": "Phone calls",
+      "log": [
+        {
+          "situation": "Calling to book his haircut",
+          "fear": "7",
+          "child": "Liam wrote out a script of exactly what to say before he'd make the call, and asked me to stand next to him. He made the call.",
+          "parent": "I stood next to him and mouthed the answers when he got stuck."
+        }
+      ],
+      "rows": [
+        {
+          "id": "s1",
+          "text": "Calling to book his haircut",
+          "detail": "Situation · fear 7/10",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1b1",
+          "text": "Wrote out a script of exactly what to say before making the call",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1b2",
+          "text": "Asked the parent to stand next to him while he made the call",
+          "detail": "What the child did · the AI said: safety",
+          "proposed": "safety",
+          "options": [
+            {
+              "v": "avoidance",
+              "label": "Avoidance"
+            },
+            {
+              "v": "safety",
+              "label": "Safety"
+            },
+            {
+              "v": "escape",
+              "label": "Escape"
+            },
+            {
+              "v": "unclear",
+              "label": "Unclear"
+            },
+            {
+              "v": "remove",
+              "label": "Not a behavior"
+            }
+          ]
+        },
+        {
+          "id": "s1a1",
+          "text": "Stood next to him during the call",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        },
+        {
+          "id": "s1a2",
+          "text": "Mouthed the answers to him when he got stuck",
+          "detail": "What the adult did (accommodation)",
+          "options": [
+            {
+              "v": "right",
+              "label": "Right"
+            },
+            {
+              "v": "wrong",
+              "label": "Wrong"
+            }
+          ]
+        }
+      ],
+      "add_placeholder": "Anything the AI missed"
+    }
+  ]
+}

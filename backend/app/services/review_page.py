@@ -109,6 +109,8 @@ button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,
 }
 .sug:last-of-type{border-bottom:0}
 .sug-text{font-size:1rem;line-height:1.45}
+.sug[data-choice]{background:var(--yes-bg)}
+.sug[data-choice="wrong"],.sug[data-choice="neither"]{background:var(--no-bg)}
 .sug[data-choice="show"]{background:var(--yes-bg)}
 .sug[data-choice="hide"]{background:var(--no-bg)}
 .sug[data-choice="hide"] .sug-text{color:var(--ink-soft)}
@@ -162,7 +164,25 @@ button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,
   font-weight:600;color:var(--ink-faint);font-size:.7rem;letter-spacing:.1em;
   text-transform:uppercase;display:block;margin-bottom:.3rem
 }
+.log{margin:.9rem 0 0;display:flex;flex-direction:column;gap:.55rem}
+.log-label{
+  font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)
+}
+.entry{padding:.65rem .85rem;background:var(--sunk);border:1px solid var(--line);border-radius:3px;font-size:.93rem}
+.entry b{font-weight:600}
+.entry p{margin:.2rem 0 0;color:var(--ink-soft)}
+.sug-detail{font-size:.85rem;color:var(--ink-faint);margin-top:.15rem}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.6rem}
+.side{padding:.55rem .75rem;border:1px solid var(--line);border-radius:3px;font-size:.9rem}
+.side b{display:block;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.25rem}
+.side ul{margin:0;padding-left:1.1rem}
+.choices{flex-wrap:wrap;justify-content:flex-end}
+.choice[aria-pressed="true"]{background:var(--yes);border-color:var(--yes);color:var(--ground);font-weight:600}
+.choice.proposed{border-style:dashed}
+.sug.wide{grid-template-columns:1fr}
+.sug.wide .choices{justify-content:flex-start}
 @media (max-width:34rem){
+  .compare{grid-template-columns:1fr}
   .sug{grid-template-columns:1fr;gap:.7rem}
   .choices{justify-content:flex-start}
 }
@@ -170,8 +190,68 @@ button{font:inherit;cursor:pointer;border-radius:3px;transition:background .12s,
 </style>"""
 
 
+#: The choices on a sub-situation suggestion, the first kind of round.
+SHOW_HIDE = [{"v": "show", "label": "Show"}, {"v": "hide", "label": "Don\u2019t show"}]
+
+
+def allowed_choices(items) -> dict[str, set[str]]:
+    """Every markable key in a round and the choices it accepts."""
+    out: dict[str, set[str]] = {}
+    for item in items:
+        for row in item.get("rows") or []:
+            out[f'{item["key"]}:{row["id"]}'] = {o["v"] for o in row["options"]}
+        for i, _ in enumerate(item.get("suggestions") or []):
+            out[f'{item["key"]}:{i}'] = {o["v"] for o in SHOW_HIDE}
+    return out
+
+
+def _log_html(log) -> str:
+    """What the parent wrote, one monitoring entry per block."""
+    if not log:
+        return ""
+    entries = []
+    for e in log:
+        fear = f' &middot; fear {_esc(e["fear"])}/10' if e.get("fear") not in (None, "") else ""
+        entries.append(
+            f'<div class="entry"><b>{_esc(e.get("situation") or "")}</b>{fear}'
+            + (f'<p>{_esc(e["child"])}</p>' if e.get("child") else "")
+            + (f'<p><i>Parent did:</i> {_esc(e["parent"])}</p>' if e.get("parent") else "")
+            + '</div>'
+        )
+    return f'<div class="log"><span class="log-label">What the parent wrote</span>{"".join(entries)}</div>'
+
+
+def _row_html(row, key, chosen) -> str:
+    """One thing to mark: its text, optional detail or side-by-side answers, and its choices."""
+    attr = f' data-choice="{_esc(chosen)}"' if chosen else ""
+    detail = f'<div class="sug-detail">{_esc(row["detail"])}</div>' if row.get("detail") else ""
+    compare = ""
+    if row.get("compare"):
+        sides = "".join(
+            f'<div class="side"><b>{_esc(side["label"])}</b><ul>'
+            + "".join(f"<li>{_esc(line)}</li>" for line in side["lines"])
+            + "</ul></div>"
+            for side in row["compare"]
+        )
+        compare = f'<div class="compare">{sides}</div>'
+    buttons = "".join(
+        f'<button class="choice{" proposed" if o["v"] == row.get("proposed") else ""}" '
+        f'data-v="{_esc(o["v"])}" data-key="{_esc(key)}" '
+        f'aria-pressed="{"true" if o["v"] == chosen else "false"}">{_esc(o["label"])}</button>'
+        for o in row["options"]
+    )
+    wide = " wide" if compare or len(row["options"]) > 2 else ""
+    return (
+        f'<div class="sug{wide}" data-key="{_esc(key)}"{attr}>'
+        f'<div><div class="sug-text">{_esc(row["text"])}</div>{detail}{compare}</div>'
+        f'<div class="choices">{buttons}</div></div>'
+    )
+
+
 def render_page(round_, reviewer, marks: dict, token: str, additions=None, comments=None) -> str:
-    """`round_.items` is a list of {key, situation, existing, suggestions, note}."""
+    """`round_.items` is a list of items. A sub-situation item is {key, situation, existing,
+    suggestions, note}. Any item can instead carry `rows`, each {id, text, detail?, compare?,
+    options: [{v, label}], proposed?}, and `log`, the parent's entries shown above them."""
     additions = additions or {}
     comments = comments or {}
     body = []
@@ -181,19 +261,18 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None, comme
         rungs = item.get("existing") or []
         chips = "".join(f'<span class="rung">{_esc(r)}</span>' for r in rungs)
         rows = []
-        for i, suggestion in enumerate(item["suggestions"]):
+        for row in item.get("rows") or []:
+            total += 1
+            key = f'{item["key"]}:{row["id"]}'
+            rows.append(_row_html(row, key, marks.get(key)))
+        for i, suggestion in enumerate(item.get("suggestions") or []):
             total += 1
             key = f'{item["key"]}:{i}'
             chosen = marks.get(key)
             attr = f' data-choice="{_esc(chosen)}"' if chosen else ""
-            rows.append(
-                f'<div class="sug" data-key="{_esc(key)}"{attr}>'
-                f'<div class="sug-text">{_esc(suggestion)}</div>'
-                f'<div class="choices">'
-                f'<button class="choice" data-v="show" data-key="{_esc(key)}">Show</button>'
-                f'<button class="choice" data-v="hide" data-key="{_esc(key)}">Don\u2019t show</button>'
-                f'</div></div>'
-            )
+            rows.append(_row_html(
+                {"text": suggestion, "options": SHOW_HIDE}, key, chosen,
+            ))
         note = item.get("note")
         note_html = (
             f'<div class="variations"><b>Other variations</b>{_esc(note)}</div>' if note else ""
@@ -209,10 +288,11 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None, comme
             'rows="3" placeholder="Anything worth saying about this one">'
             + _esc(comments.get(item["key"], "")) + '</textarea></div>'
         )
-        add_html = (
+        placeholder = item.get("add_placeholder") or "Add one of your own"
+        add_html = "" if item.get("no_add") else (
             '<div class="own"><ul class="mine" data-for="' + _esc(item["key"]) + '">' + mine + '</ul>'
             '<div class="add"><input type="text" data-key="' + _esc(item["key"]) + '" '
-            'placeholder="Add one of your own" aria-label="Add your own suggestion">'
+            'placeholder="' + _esc(placeholder) + '" aria-label="' + _esc(placeholder) + '">'
             '<button class="ghost addbtn" data-key="' + _esc(item["key"]) + '">Add</button></div></div>'
         )
         # Only when there are any. A round whose situations have none showed
@@ -225,7 +305,7 @@ def render_page(round_, reviewer, marks: dict, token: str, additions=None, comme
         body.append(
             f'<section class="case"><div class="case-head">'
             f'<h2 class="sit">{_esc(item["situation"])}</h2>'
-            f'{rungs_html}'
+            f'{rungs_html}{_log_html(item.get("log"))}'
             f'</div>{"".join(rows)}{note_html}{add_html}{comment_html}</section>'
         )
 
@@ -276,6 +356,7 @@ list.addEventListener("click", async (e) => {{
 
   const before = row.dataset.choice || null;
   if (next) row.dataset.choice = next; else delete row.dataset.choice;
+  press(row);
   count();
 
   pending++; state("saving\u2026");
@@ -290,6 +371,7 @@ list.addEventListener("click", async (e) => {{
   }} catch (err) {{
     pending--;
     if (before) row.dataset.choice = before; else delete row.dataset.choice;
+    press(row);
     count();
     state("not saved \u2014 check your connection", true);
   }}
@@ -377,6 +459,10 @@ async function saveComment(el){{
   }} catch (err) {{
     state("not saved \u2014 check your connection", true);
   }}
+}}
+
+function press(row){{
+  row.querySelectorAll(".choice").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.v === row.dataset.choice)));
 }}
 
 function count(){{

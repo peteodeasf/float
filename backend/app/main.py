@@ -13,7 +13,7 @@ from app.api.routers import (
     downward_arrows, messages, monitoring,
     session_notes, session_recordings, action_plans, admin, waitlist,
     formulation, checklist, accommodations, situation_tags, library,
-    insights,
+    insights, admin_reviews,
 )
 
 app = FastAPI(
@@ -61,6 +61,7 @@ app.include_router(formulation.router)
 app.include_router(checklist.router)
 app.include_router(action_plans.router)
 app.include_router(admin.router)
+app.include_router(admin_reviews.router)
 app.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
 
 @app.get("/health")

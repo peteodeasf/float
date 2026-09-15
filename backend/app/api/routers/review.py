@@ -22,11 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.models.review import ReviewRound, ReviewReviewer, ReviewMark, ReviewAddition, ReviewComment
-from app.services.review_page import render_page
+from app.services.review_page import allowed_choices, render_page
 
 router = APIRouter(tags=["review-public"])
-
-CHOICES = {"show", "hide"}
 
 
 class MarkIn(BaseModel):
@@ -84,9 +82,12 @@ async def review_page(token: str, db: AsyncSession = Depends(get_db)):
 
 @router.post("/review/{token}/mark", status_code=status.HTTP_204_NO_CONTENT)
 async def save_mark(token: str, data: MarkIn, db: AsyncSession = Depends(get_db)):
-    reviewer, _ = await _reviewer(db, token)
+    reviewer, round_ = await _reviewer(db, token)
 
-    if data.choice is not None and data.choice not in CHOICES:
+    allowed = allowed_choices(round_.items).get(data.item_key)
+    if allowed is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown item")
+    if data.choice is not None and data.choice not in allowed:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown choice")
 
     result = await db.execute(

@@ -286,6 +286,12 @@ export default function AdminDashboardPage() {
           >
             Content
           </button>
+          <button
+            onClick={() => navigate('/admin/reviews')}
+            style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Reviews
+          </button>
         </div>
         <button
           onClick={handleLogout}

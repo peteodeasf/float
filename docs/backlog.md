@@ -510,7 +510,7 @@ Found while checking, before building:
 
 ## No way to read a review's results
 
-**Raised 2026-08-31. Peter: querying the database is fine for now.** `S`
+**BUILT 2026-09-15:** Admin → Reviews (`/admin/reviews`) shows every round, every item, each reviewer's choice, additions and comments. Raised 2026-08-31. `S`
 
 Each reviewer's link shows only their own marks and comments — enforced, and tested. There is no
 screen showing what everyone said, so reading Dr. Walker's answers means opening the tunnel and

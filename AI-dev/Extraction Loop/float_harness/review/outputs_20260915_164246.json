@@ -1,0 +1,2671 @@
+{
+  "2": [
+    {
+      "situations": [
+        {
+          "name": "Raising hand in class",
+          "fear_rating": 6,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Wouldn't raise his hand even though he knew the answer"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent encouraged him to try next time"
+            },
+            {
+              "description": "Parent reassured him that everyone makes mistakes"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Raising hand in class",
+          "fear_rating": 6,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Wouldn't raise his hand even though he knew the answer"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent encouraged him to try next time"
+            },
+            {
+              "description": "Parent reassured him that everyone makes mistakes"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Raising hand in class",
+          "fear_rating": 6,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Wouldn't raise his hand even though he knew the answer"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent encouraged him to try next time"
+            },
+            {
+              "description": "Parent reassured him that everyone makes mistakes"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "1": [
+    {
+      "situations": [
+        {
+          "name": "Lunchtime at school — eating in the cafeteria",
+          "fear_rating": 6,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Ate in the library instead of the cafeteria"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Went to the cafeteria but wore headphones the whole time so nobody would talk to her"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent emailed her teacher to ask about a lunch buddy"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Lunchtime at school — eating in the cafeteria",
+          "fear_rating": 6,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Ate in the library instead of the cafeteria"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Went to the cafeteria but wore headphones the whole time so nobody would talk to her"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent emailed her teacher to ask about a lunch buddy"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Lunchtime at school — eating in the cafeteria",
+          "fear_rating": 6,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Ate in the library instead of the cafeteria"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Went to the cafeteria but wore headphones the whole time so nobody would talk to her"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent emailed her teacher to ask about a lunch buddy"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "3": [
+    {
+      "situations": [
+        {
+          "name": "Bedtime",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to sleep in her own room"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Cried until the parent lay down with her"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Kept calling the parent back into the room to check for monsters"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent slept in her room so she would settle"
+            },
+            {
+              "description": "Parent checked the closet and under the bed several times to reassure her"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Bedtime",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to sleep in her own room"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Cried until the parent lay down with her"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Kept calling the parent back into the room to check for monsters"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent slept in her room so she would settle"
+            },
+            {
+              "description": "Parent checked the closet and under the bed several times to reassure her"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Bedtime",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to sleep in her own room"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Cried until parent lay down with her"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Kept calling parent back into the room to check for monsters"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent slept in her room so she would settle"
+            },
+            {
+              "description": "Parent checked the closet and under the bed several times to reassure her"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "5": [
+    {
+      "situations": [
+        {
+          "name": "Going to soccer practice",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Said she felt sick in the car and refused to get out at the field"
+            },
+            {
+              "order": 2,
+              "type": "avoidance",
+              "description": "Wouldn't get out of the car at soccer; stayed in the back seat"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent took her home after she refused to get out of the car"
+            },
+            {
+              "description": "Parent let her skip practice"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Going to soccer practice",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Said she felt sick in the car and refused to get out at the field"
+            },
+            {
+              "order": 2,
+              "type": "avoidance",
+              "description": "Wouldn't get out of the car at soccer; stayed in the back seat"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent took her home (entry 1)"
+            },
+            {
+              "description": "Parent let her skip practice (entry 2)"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Going to soccer practice",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Said she felt sick in the car and refused to get out at the field"
+            },
+            {
+              "order": 2,
+              "type": "avoidance",
+              "description": "Wouldn't get out of the car at soccer; stayed in the back seat"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent took her home"
+            },
+            {
+              "description": "Parent let her skip practice"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "4": [
+    {
+      "situations": [
+        {
+          "name": "Getting ready for school",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Was very quiet and slow; hard to tell what was going on (entry 1)"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Something seemed off but parent couldn't tell if it was anxiety or just a bad morning (entry 2)"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Gave him some space (entry 1)"
+            },
+            {
+              "description": "Waited with him until it was time to go (entry 2)"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Getting ready for school",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Very quiet and slow; hard to tell what was going on (entry 1)"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Something seemed off but parent couldn't tell what; unclear whether it was anxiety or a bad morning (entry 2)"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Gave him some space (entry 1)"
+            },
+            {
+              "description": "Waited with him until it was time to go (entry 2)"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Getting ready for school",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Was very quiet and slow; hard to tell what was going on (entry 1)"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Something seemed off but parent couldn't tell if it was anxiety or just a bad morning (entry 2)"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Gave him some space (entry 1)"
+            },
+            {
+              "description": "Waited with him until it was time to go (entry 2)"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "6": [
+    {
+      "situations": [
+        {
+          "name": "Walking between classes",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Rushes through the halls so nobody has a chance to talk to him"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Pretends not to see kids he knows"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Taking the school bus",
+          "fear_rating": 3,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Sits at the back so kids don't notice him"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Keeps his headphones on the whole ride"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent allows him to take headphones to make the bus ride easier"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        },
+        {
+          "name": "Being called on in class",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Looks down at his notes and avoids eye contact so he won't be picked"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Walking between classes",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Rushes through the halls so nobody has a chance to talk to him"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Pretends not to see kids he knows"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Taking the school bus",
+          "fear_rating": 3,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Sits at the back so kids don't notice him"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Keeps his headphones on the whole ride"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent allows him to take headphones to make the bus ride easier"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        },
+        {
+          "name": "Being called on in class",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Looks down at his notes and avoids eye contact so he won't be picked"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Walking between classes",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Rushes through the halls so nobody has a chance to talk to him"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Pretends not to see kids he knows"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Taking the school bus",
+          "fear_rating": 3,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Sits at the back of the bus so kids don't notice him"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Keeps his headphones on the whole ride"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent allows him to bring headphones to school to make the bus ride easier"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        },
+        {
+          "name": "Being called on in class",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Looks down at his notes and avoids eye contact with the teacher so he won't be picked"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "7": [
+    {
+      "situations": [
+        {
+          "name": "Lunch with peers",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Goes to the library at lunch whenever her two close friends aren't there, so she doesn't have to sit with anyone else"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told her it was fine to go to the library if it made her comfortable"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Lunch with peers",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Goes to the library at lunch whenever her two close friends aren't there, so she doesn't have to sit with anyone else"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told her it was fine to go to the library if it made her comfortable"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Lunch with peers",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Goes to the library at lunch whenever her two close friends aren't there, so she doesn't have to sit with anyone else"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told her it was fine to go to the library if it made her comfortable"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "9": [
+    {
+      "situations": [
+        {
+          "name": "Noticing body sensations after activity",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "escape",
+              "description": "Stopped playing and came inside after noticing his heart beating fast"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Kept asking the parent if his heart was OK and whether he needed to see a doctor"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Checked his pulse"
+            },
+            {
+              "description": "Told him he was fine and reassured him several times"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Feeling unwell before school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Didn't want to go to school"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Asked to see a doctor"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Kept him home from school"
+            },
+            {
+              "description": "Booked a doctor's appointment to put his mind at rest"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Noticing body sensations after activity",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "escape",
+              "description": "Stopped playing and came inside after noticing his heart beating fast"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Kept asking the parent if his heart was OK and whether he needed to see a doctor"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Checked his pulse and reassured him several times that he was fine"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Feeling unwell before school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Didn't want to go to school"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Asked to see a doctor"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Kept him home from school"
+            },
+            {
+              "description": "Booked a doctor's appointment to put his mind at rest"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Noticing heart beating fast after running",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "escape",
+              "description": "Stopped playing and came inside"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Kept asking the parent if his heart was OK and whether he needed to see a doctor"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent checked his pulse"
+            },
+            {
+              "description": "Parent told him he was fine and reassured him several times"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Feeling unwell before school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Didn't want to go to school"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Asked to see a doctor"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent kept him home from school"
+            },
+            {
+              "description": "Parent booked a doctor's appointment to put his mind at rest"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "11": [
+    {
+      "situations": [
+        {
+          "name": "Making a mistake in a soccer game",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Walked off to the far end of the bench and sat by himself after missing an easy goal"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Wouldn't talk to his teammates or the coach for the rest of the game"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told him it was fine and gave him space"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Making a mistake in a soccer game",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Walked off to the far end of the bench and sat by himself after missing a goal"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Wouldn't talk to his teammates or the coach for the rest of the game"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told him it was fine and gave him space"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Making a mistake in a soccer game",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Walked off to the far end of the bench and sat by himself after missing a goal"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Wouldn't talk to his teammates or the coach for the rest of the game"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told him it was fine and gave him space"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "10": [
+    {
+      "situations": [
+        {
+          "name": "Math homework",
+          "fear_rating": 9,
+          "fear_rating_max": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Cried, said 'I can't do this', pushed the book away, and refused to attempt any of the problems"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told her she could do it and did the first few problems for her"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Math homework",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Would only start her math if the parent sat right next to her the whole time; stopped as soon as the parent got up"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent sat with her the whole time"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        },
+        {
+          "name": "Math test at school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "The night before, said she felt sick and begged to stay home"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent allowed her to stay home"
+            }
+          ],
+          "entries": [
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Math homework",
+          "fear_rating": 9,
+          "fear_rating_max": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Cried, said 'I can't do this', pushed the book away, and refused to attempt any of the problems"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told her she could do it and did the first few problems for her"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Math homework",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Would only start her math if parent sat right next to her the whole time; stopped as soon as parent got up"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent sat with her the whole time"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        },
+        {
+          "name": "Math test at school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "The night before the test said she felt sick and begged to stay home"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent let her stay home"
+            }
+          ],
+          "entries": [
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Math homework",
+          "fear_rating": 9,
+          "fear_rating_max": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Cried and said 'I can't do this'"
+            },
+            {
+              "order": 2,
+              "type": "avoidance",
+              "description": "Pushed the book away and refused to attempt any of the problems"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Would only start her math if the parent sat right next to her the whole time; stopped as soon as the parent got up"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told her she could do it and did the first few problems for her"
+            },
+            {
+              "description": "Parent sat next to her the whole time"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        },
+        {
+          "name": "Math test at school",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "The night before the test, said she felt sick and begged to stay home"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent let her stay home"
+            }
+          ],
+          "entries": [
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "8": [
+    {
+      "situations": [
+        {
+          "name": "Birthday parties",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to go into the party"
+            },
+            {
+              "order": 2,
+              "type": "escape",
+              "description": "Asked to leave after ten minutes"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Stayed glued to parent's side the whole time"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent let him leave"
+            },
+            {
+              "description": "Parent bought him ice cream on the way home to cheer him up"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Birthday parties",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to go into the party"
+            },
+            {
+              "order": 2,
+              "type": "escape",
+              "description": "Asked to leave after ten minutes"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Stayed glued to parent's side the whole time"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent let him leave the party"
+            },
+            {
+              "description": "Parent bought him ice cream on the way home"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Birthday parties",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to go into the party"
+            },
+            {
+              "order": 2,
+              "type": "escape",
+              "description": "Asked to leave after ten minutes"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Stayed glued to parent's side the whole time"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Let him leave the party"
+            },
+            {
+              "description": "Bought him ice cream on the way home to cheer him up"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "13": [
+    {
+      "situations": [
+        {
+          "name": "Packing for the outdoor-ed trip",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Tells her parent she is worried about going and may not want to go after all"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Staying overnight at outdoor ed",
+          "fear_rating": 10,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Cries and doesn't sleep much the night before camp"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent tells her she can come home when bedtime comes"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Packing for the outdoor-ed trip",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Tells parent she's worried about going and may not want to go after all"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Staying overnight at outdoor ed",
+          "fear_rating": 10,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Cries the night before camp and doesn't sleep much"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent tells her she can come home when bedtime comes, as she always does"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Packing for the outdoor-ed trip",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Tells parent she's worried about going and may not want to go after all"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Staying overnight at outdoor ed",
+          "fear_rating": 10,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Cries and doesn't sleep much the night before camp"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent tells her she can come home when bedtime comes"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "12": [
+    {
+      "situations": [
+        {
+          "name": "Parent being out of the house without M",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses sitters"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Cries, pleads, and hyperventilates; gets so upset he almost vomits when parent has to be out of the house without him"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent avoids leaving him; does not go out unless absolutely necessary, and never unless his father is home"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Parent being in a different room at home",
+          "fear_rating": null,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Calls out to parent, stays by parent's side, and asks many questions about where parent is throughout the day"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Parent being out of the house without M",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses sitters"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Cries, pleads, hyperventilates, and gets so upset he almost vomits when parent has to be out of the house — note does not make clear whether this happens as parent is leaving (before separation) or once parent is already gone"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent avoids leaving M; does not go out unless absolutely necessary, and only when his father is home"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Parent and M not being in the same room at home",
+          "fear_rating": null,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Calls out to parent, stays by parent's side, and asks many questions about where parent is throughout the day"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Being at home when not in the same room as parent",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Calls out to parent, stays by parent's side, and asks many questions about where parent is throughout the day when they are not in the same room"
+            },
+            {
+              "order": 2,
+              "type": "avoidance",
+              "description": "Refuses sitters"
+            },
+            {
+              "order": 3,
+              "type": "escape",
+              "description": "Cries, pleads, and hyperventilates to the point of almost vomiting when parent has to be out of the house without him"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent avoids leaving him and does not go out unless absolutely necessary"
+            },
+            {
+              "description": "Parent only leaves when his father is home"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "14": [
+    {
+      "situations": [
+        {
+          "name": "Parent out at dinner",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Begs parents not to go"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Sometimes says she feels sick"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Asks lots of questions about where the restaurant is and who they're going with"
+            },
+            {
+              "order": 4,
+              "type": "safety",
+              "description": "Texts and calls parents after they've been away thirty minutes"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents reassure her she'll be fine before leaving"
+            },
+            {
+              "description": "Parents make sure their long-time sitter comes"
+            },
+            {
+              "description": "Parents send text updates that all is well while out"
+            },
+            {
+              "description": "Parents tell her they'll come home early, and do come home before they want to"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Parent out at a party",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Asks lots of questions about the party location, how long they'll stay, and when they'll be back"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Texts and calls nonstop while parents are out, telling them to come home and asking where they are"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents give the same reassurance before and during the outing"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Parent out at dinner",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Begs parents not to go and sometimes says she feels sick"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Asks lots of questions about where the restaurant is and who they're going with"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Texts and calls parents after they've been away thirty minutes"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents reassure her she'll be fine before leaving"
+            },
+            {
+              "description": "Parents make sure their long-time sitter comes"
+            },
+            {
+              "description": "Parents send text updates that all is well while out"
+            },
+            {
+              "description": "Parents tell her they'll come home early, and do come home before they want to"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Parent out at a party",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Asks lots of questions about the party location, how long they'll stay, and when they'll be back"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Texts and calls nonstop telling parents to come home and asking where they are"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents give the same reassurance before and during the outing"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Parent out at dinner",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Begs parents not to go"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Sometimes says she feels sick"
+            },
+            {
+              "order": 3,
+              "type": "safety",
+              "description": "Asks lots of questions about where the restaurant is and who they're going with"
+            },
+            {
+              "order": 4,
+              "type": "safety",
+              "description": "Texts and calls parents after they've been away thirty minutes"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents reassure her she'll be fine"
+            },
+            {
+              "description": "Parents make sure their long-time sitter comes"
+            },
+            {
+              "description": "Parents give her text updates that all is well"
+            },
+            {
+              "description": "Parents tell her they'll come home early and do come home before they want to"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Parent out at a party",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Asks lots of questions about the party location, how long they'll stay, and when they'll be back"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Texts and calls nonstop telling parents to come home and asking where they are"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents give the same reassurance before and during the outing"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "15": [
+    {
+      "situations": [
+        {
+          "name": "School drop-off",
+          "fear_rating": 5,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to get out of the car"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Kicks the back of the seat, cries, and yells that she's the worst mother ever"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent goes into his classroom and stays for the first hour until he's more comfortable, then slips out when he can't see"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Drop-off at Taekwondo",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Insists that either parent stay to watch the entire class; scans the room for them and comes running or gives a mean look if they step away even briefly"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents stay to watch the entire class and reassure him they will stay"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "School drop-off",
+          "fear_rating": 5,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to get out of the car"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Kicks the back of the seat, cries, and yells that mom is the worst mother ever"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent goes into his classroom and stays the first hour until he is more comfortable, then slips out when he can't see"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Drop-off at Taekwondo",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Insists that a parent stay to watch the entire class; scans the room for them and comes running or gives a mean look if they leave even briefly"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents stay to watch the entire class and reassure him they will stay"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "School drop-off",
+          "fear_rating": 5,
+          "fear_rating_max": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to get out of the car"
+            },
+            {
+              "order": 2,
+              "type": "unclear",
+              "description": "Kicks the back of the seat, cries, and yells that she's the worst mother ever — distress is clear but not enough detail to determine whether this is aimed at getting the parent to stay, leave, or do something else"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent goes into his classroom and stays for the first hour until he's more comfortable, then slips out when he can't see"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Drop-off at Taekwondo",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Insists that a parent stay to watch the entire class; scans the room for them and comes running or gives a mean look if they step away even to use the bathroom"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parents stay to watch the entire class and reassure him they will stay"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "16": [
+    {
+      "situations": [
+        {
+          "name": "Being called on in class",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Averts eye contact, shrugs, and mumbles 'I don't know' when called on"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Being called on in class",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Averts eye contact, shrugs, and mumbles 'I don't know' when called on"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Being called on in class",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Averts eye contact, shrugs, and mumbles 'I don't know' when called on"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "18": [
+    {
+      "situations": [
+        {
+          "name": "Dentist appointment",
+          "fear_rating": null,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to go into the dentist's office and waited in the car no matter what they tried"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Let him wait in the car instead of going in"
+            },
+            {
+              "description": "Rebooked the appointment for another day"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Dentist appointment",
+          "fear_rating": null,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to go into the dentist's office and waited in the car no matter what they tried"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Let him wait in the car instead of going in"
+            },
+            {
+              "description": "Rebooked the appointment for another day"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Dentist appointment",
+          "fear_rating": null,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refused to go into the dentist's office and waited in the car no matter what they tried"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Let him wait in the car instead of going in"
+            },
+            {
+              "description": "Rebooked the appointment for another day"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s01": [
+    {
+      "situations": [
+        {
+          "name": "Swim practice",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "escape",
+              "description": "Got in the pool for warm-ups but climbed out after two laps saying his goggles were leaking, and sat on the bench for the rest of practice"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told the coach Owen wasn't feeling well"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "17": [
+    {
+      "situations": [
+        {
+          "name": "Talking on the phone",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to talk on the phone except to the parent when alone; never picks up the parent's call at first"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Finds a private place before answering the parent's call"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "When Rosie gets a call on the home phone, parent answers and tells the caller she's not home or is busy"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Texting in front of others",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Hides her phone screen when texting in front of the parent or friends so no one can see what she's doing"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent makes excuses to Rosie's friends so they don't know she is texting or what she is doing"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Talking on the phone",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to talk on the phone except to the parent when she's alone; never picks up the parent's call at first"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Finds a private place before answering the parent's call"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "When Rosie gets a call on the home phone, parent answers and tells the caller she's not home or is busy"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Texting in front of others",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Hides her phone when texting in front of the parent so they can't see; hides what she's doing when texting in front of friends"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent makes excuses to her friends so they don't notice or know what Rosie is doing"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "situations": [
+        {
+          "name": "Talking on the phone",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Refuses to talk on the phone except to the parent when alone; never picks up the parent's call at first"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Finds a private place before answering the parent's call"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "When the home phone rings for Rosie, parent answers and makes excuses (says she's not home or is busy) so Rosie doesn't have to take the call"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Texting in front of others",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Hides her phone screen when texting in front of the parent or friends so no one can see what she's doing"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent makes excuses to Rosie's friends on her behalf so they don't notice or ask about her behavior"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "s03": [
+    {
+      "situations": [
+        {
+          "name": "Ordering at a restaurant",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Pointed at the menu and had the parent tell the waiter what she wanted"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent ordered for her"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s02": [
+    {
+      "situations": [
+        {
+          "name": "Sleepover at a friend's house",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "escape",
+              "description": "Went to the sleepover but called to be picked up at 10pm and came home"
+            },
+            {
+              "order": 2,
+              "type": "avoidance",
+              "description": "Said no to a sleepover invitation before it was even planned"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent drove over and brought her home"
+            },
+            {
+              "description": "Parent told the other mom she had a family thing"
+            }
+          ],
+          "entries": [
+            1,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "s04": [
+    {
+      "situations": [
+        {
+          "name": "School mornings",
+          "fear_rating": 5,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Said his stomach hurt, ate a little, was slow and quiet — parent unsure if it's worry or illness"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Let him take his time getting ready"
+            },
+            {
+              "description": "Drove him to school instead of having him take the bus"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s08": [
+    {
+      "situations": [
+        {
+          "name": "Doorbell rings",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Runs to his room whenever the doorbell rings"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent answers the door and tells Lucas when the visitor is gone"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s06": [
+    {
+      "situations": [
+        {
+          "name": "Piano recital",
+          "fear_rating": null,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Kept his eyes on the keys the whole time while playing"
+            },
+            {
+              "order": 2,
+              "type": "escape",
+              "description": "Rushed off the stage without bowing"
+            },
+            {
+              "order": 3,
+              "type": "unclear",
+              "description": "Cried in the car after the recital"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent told him it didn't matter"
+            },
+            {
+              "description": "Parent took him out for pizza"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s05": [
+    {
+      "situations": [
+        {
+          "name": "Walking past the neighbor's dog",
+          "fear_rating": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Crossed the street as soon as she saw the dog"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Made the parent walk on the dog side"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent switched sides with her"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        },
+        {
+          "name": "Visiting grandma, who has a dog",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Would only go in if the dog was shut in the bedroom"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Checked the bedroom door was closed twice"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent asked grandma to put the dog away before they arrived"
+            }
+          ],
+          "entries": [
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "s07": [
+    {
+      "situations": [
+        {
+          "name": "Math test",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Asked the parent over and over the night before whether she would fail"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Stayed up late re-doing practice problems she already knew"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent repeatedly reassured her she would be fine"
+            },
+            {
+              "description": "Parent helped her study until 11"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s10": [
+    {
+      "situations": [
+        {
+          "name": "Soccer game",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Stayed near the back the whole game and never went for the ball"
+            },
+            {
+              "order": 2,
+              "type": "escape",
+              "description": "Asked the coach to sit out at halftime, and did"
+            }
+          ],
+          "accommodations": [],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s12": [
+    {
+      "situations": [
+        {
+          "name": "Presenting in class",
+          "fear_rating": 10,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "avoidance",
+              "description": "Stayed home on the day of his presentation"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent called him in sick"
+            },
+            {
+              "description": "Parent emailed the teacher to ask if he could present to her alone instead"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s09": [
+    {
+      "situations": [
+        {
+          "name": "New babysitter coming",
+          "fear_rating": 6,
+          "fear_rating_max": 9,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Gets upset the whole afternoon before the sitter arrives"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Some nights clings to the parent at the door"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent stays an extra half hour until Sophie settles on nights she clings"
+            },
+            {
+              "description": "Parent has started only using the one sitter Sophie already knows"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s14": [
+    {
+      "situations": [
+        {
+          "name": "After school",
+          "fear_rating": 4,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Goes quiet and doesn't want to talk about his day"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent gave him space"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s13": [
+    {
+      "situations": [
+        {
+          "name": "Taking the elevator at the dentist",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Held parent's hand very tightly and kept her eyes shut until the doors opened"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent held her hand and counted floors out loud for her"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s15": [
+    {
+      "situations": [
+        {
+          "name": "Birthday party at the trampoline park",
+          "fear_rating": 8,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "escape",
+              "description": "Went in and jumped for a few minutes, then said she felt sick and wanted to go home"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Sat with the parent in the cafe instead of leaving for the rest of the party"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent bought her a drink and let her sit together in the cafe"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s16": [
+    {
+      "situations": [
+        {
+          "name": "Calling to book his haircut",
+          "fear_rating": 7,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "safety",
+              "description": "Wrote out a script of exactly what to say before making the call"
+            },
+            {
+              "order": 2,
+              "type": "safety",
+              "description": "Asked the parent to stand next to him while he made the call"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Stood next to him during the call"
+            },
+            {
+              "description": "Mouthed the answers to him when he got stuck"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "s11": [
+    {
+      "review_flag": false,
+      "ocd_scope_note": "The behavior described (getting up to check windows three or four times repeatedly before sleep) has features consistent with OCD-range rituals and compulsions, which are out of scope for this extractor. Classification below reflects what the note describes behaviorally but should be reviewed by a practitioner before use.",
+      "situations": [
+        {
+          "name": "Bedtime",
+          "fear_rating": 6,
+          "behaviors": [
+            {
+              "order": 1,
+              "type": "unclear",
+              "description": "Gets up to check the windows are locked, usually three or four times — note describes a repetitive checking pattern; unclear whether this fits safety behavior or OCD-type compulsion"
+            }
+          ],
+          "accommodations": [
+            {
+              "description": "Parent sometimes checks the windows with her so she will go to bed faster"
+            }
+          ],
+          "entries": [
+            1
+          ]
+        }
+      ]
+    }
+  ]
+}

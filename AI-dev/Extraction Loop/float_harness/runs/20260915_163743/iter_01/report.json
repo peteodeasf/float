@@ -1,0 +1,728 @@
+{
+  "deterministic_pass": true,
+  "type_accuracy": 0.8148,
+  "judge_pass_rate": 0.7777777777777778,
+  "stable": true,
+  "unstable_cases": [],
+  "stability_runs": 1,
+  "failures": [
+    {
+      "case_id": 1,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "fear_rating is listed as 6 but the higher distress value of 8 (from entry 1, which contains the avoidance behavior) should arguably anchor the rating; more critically, the avoidance behavior (eating in the library) occurred on 2026-06-01 with distress 8, yet the situation's fear_rating is set to 6, misrepresenting the distress associated with that specific behavior"
+    },
+    {
+      "case_id": 1,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "The situation is named 'eating in the cafeteria' but entry 1 describes Mia eating in the library, not the cafeteria \u2014 the name does not accurately reflect both entries and implies cafeteria eating was the context for all behaviors"
+    },
+    {
+      "case_id": 3,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Bedtime",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 2
+        }
+      }
+    },
+    {
+      "case_id": 11,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Making a mistake in a soccer game",
+        "gold_types": {
+          "escape": 1
+        },
+        "output_types": {
+          "escape": 1,
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Packing for the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 13,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Staying overnight at the outdoor-ed trip",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "School drop-off",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "unclear": 1
+        }
+      }
+    },
+    {
+      "case_id": 15,
+      "layer": "judge",
+      "check": "judge",
+      "detail": "Behavior 2 in School drop-off says 'yells that she's the worst mother ever' but the note says 'I'm the worst mother ever' \u2014 the parent is the mother, so 'she' is a fabricated substitution that changes the wording without basis; the note does not identify the parent's gender, only uses first-person 'I'"
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Texting in front of others",
+        "gold_types": {
+          "avoidance": 1,
+          "safety": 1
+        },
+        "output_types": {
+          "safety": 1
+        }
+      }
+    },
+    {
+      "case_id": 17,
+      "layer": "type",
+      "check": "type_mismatch",
+      "detail": {
+        "situation": "Talking on the phone",
+        "gold_types": {
+          "avoidance": 1
+        },
+        "output_types": {
+          "avoidance": 1,
+          "safety": 1
+        }
+      }
+    }
+  ],
+  "per_case": [
+    {
+      "case_id": 1,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "fear_rating is listed as 6 but the higher distress value of 8 (from entry 1, which contains the avoidance behavior) should arguably anchor the rating; more critically, the avoidance behavior (eating in the library) occurred on 2026-06-01 with distress 8, yet the situation's fear_rating is set to 6, misrepresenting the distress associated with that specific behavior",
+          "The situation is named 'eating in the cafeteria' but entry 1 describes Mia eating in the library, not the cafeteria \u2014 the name does not accurately reflect both entries and implies cafeteria eating was the context for all behaviors"
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Lunchtime at school \u2014 eating in the cafeteria",
+            "fear_rating": 6,
+            "fear_rating_max": 8,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Ate in the library instead of the cafeteria"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Went to the cafeteria but wore headphones the whole time so nobody would talk to her"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent emailed the teacher to ask about a lunch buddy"
+              }
+            ],
+            "entries": [
+              1,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 3,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [
+          {
+            "situation": "Bedtime",
+            "gold_types": {
+              "avoidance": 1,
+              "safety": 1
+            },
+            "output_types": {
+              "avoidance": 1,
+              "safety": 2
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Bedtime",
+            "fear_rating": 7,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Refused to sleep in her own room"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Cried until the parent lay down with her"
+              },
+              {
+                "order": 3,
+                "type": "safety",
+                "description": "Kept calling the parent back into the room to check for monsters"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent slept in her room so she would settle"
+              },
+              {
+                "description": "Parent checked the closet and under the bed several times to reassure her"
+              }
+            ],
+            "entries": [
+              1,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 5,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Going to soccer practice",
+            "fear_rating": 7,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Said she felt sick in the car and refused to get out at the field"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent took her home"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Soccer practice attendance",
+            "fear_rating": 7,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Wouldn't get out of the car at soccer; stayed in the back seat"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent let her skip practice"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 7,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Lunch with peers",
+            "fear_rating": 4,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Goes to the library at lunch whenever her two close friends aren't there, so she doesn't have to sit with anyone else"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent told her it was fine if it made her comfortable"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 9,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Noticing his heart beating fast after running around",
+            "fear_rating": 7,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "escape",
+                "description": "Stopped playing and came inside"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Kept asking parent if his heart was OK and whether he needed to see a doctor"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent checked his pulse"
+              },
+              {
+                "description": "Parent told him he was fine and reassured him several times"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Feeling like something was wrong with his stomach before school",
+            "fear_rating": 8,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Didn't want to go to school"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Asked to see a doctor"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent kept him home from school"
+              },
+              {
+                "description": "Parent booked a doctor's appointment to put his mind at rest"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 11,
+      "deterministic_pass": true,
+      "type_accuracy": 1.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 1.0,
+        "mismatches": [
+          {
+            "situation": "Making a mistake in a soccer game",
+            "gold_types": {
+              "escape": 1
+            },
+            "output_types": {
+              "escape": 1,
+              "safety": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Making a mistake in a soccer game",
+            "fear_rating": 6,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "escape",
+                "description": "After missing an easy goal, walked off to the far end of the bench and sat by himself"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Wouldn't talk to his teammates or the coach for the rest of the game"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent told him it was fine and gave him space"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 13,
+      "deterministic_pass": true,
+      "type_accuracy": 0.0,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 0.0,
+        "mismatches": [
+          {
+            "situation": "Packing for the outdoor-ed trip",
+            "gold_types": {
+              "avoidance": 1
+            },
+            "output_types": {
+              "unclear": 1
+            }
+          },
+          {
+            "situation": "Staying overnight at the outdoor-ed trip",
+            "gold_types": {
+              "avoidance": 1
+            },
+            "output_types": {
+              "unclear": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Packing for the outdoor-ed trip",
+            "fear_rating": 6,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "unclear",
+                "description": "Tells her parent she is worried about going and may not want to go after all"
+              }
+            ],
+            "accommodations": [],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Staying overnight at outdoor ed",
+            "fear_rating": 10,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "unclear",
+                "description": "Cries and doesn't sleep much the night before camp"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent tells her she can come home when bedtime comes"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 15,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": false,
+        "issues": [
+          "Behavior 2 in School drop-off says 'yells that she's the worst mother ever' but the note says 'I'm the worst mother ever' \u2014 the parent is the mother, so 'she' is a fabricated substitution that changes the wording without basis; the note does not identify the parent's gender, only uses first-person 'I'"
+        ]
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 0.6666666666666666,
+        "mismatches": [
+          {
+            "situation": "School drop-off",
+            "gold_types": {
+              "avoidance": 1,
+              "safety": 1
+            },
+            "output_types": {
+              "avoidance": 1,
+              "unclear": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "School drop-off",
+            "fear_rating": 5,
+            "fear_rating_max": 8,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Refuses to get out of the car"
+              },
+              {
+                "order": 2,
+                "type": "unclear",
+                "description": "Kicks the back of the seat, cries, and yells that she's the worst mother ever \u2014 hard to classify the function from the note alone"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent goes into his classroom and stays for the first hour until he is more comfortable, then slips out when he can't see"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Drop-off at Taekwondo",
+            "fear_rating": 5,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Insists that a parent stay to watch the entire class; scans the room for them and comes running or gives a mean look if they step away even briefly"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parents stay to watch the entire class and reassure him they will stay"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": 17,
+      "deterministic_pass": true,
+      "type_accuracy": 0.6666666666666666,
+      "judge": {
+        "naming_ok": true,
+        "faithful_ok": true,
+        "issues": []
+      },
+      "accuracy": {
+        "situation_recall": 1.0,
+        "type_accuracy": 0.6666666666666666,
+        "mismatches": [
+          {
+            "situation": "Texting in front of others",
+            "gold_types": {
+              "avoidance": 1,
+              "safety": 1
+            },
+            "output_types": {
+              "safety": 1
+            }
+          },
+          {
+            "situation": "Talking on the phone",
+            "gold_types": {
+              "avoidance": 1
+            },
+            "output_types": {
+              "avoidance": 1,
+              "safety": 1
+            }
+          }
+        ],
+        "missed_situations": [],
+        "spurious_situations": []
+      },
+      "stable": true,
+      "output": {
+        "situations": [
+          {
+            "name": "Talking on the phone",
+            "fear_rating": 9,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "avoidance",
+                "description": "Refuses to talk on the phone except to the parent when she's alone; never picks up the parent's call at first"
+              },
+              {
+                "order": 2,
+                "type": "safety",
+                "description": "Finds a private place before answering the parent's call"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "When Rosie gets a call on the home phone, parent answers and says she's not home or is busy, making excuses so she doesn't feel embarrassed"
+              }
+            ],
+            "entries": [
+              1
+            ]
+          },
+          {
+            "name": "Texting in front of others",
+            "fear_rating": 6,
+            "behaviors": [
+              {
+                "order": 1,
+                "type": "safety",
+                "description": "Hides her phone when texting in front of the parent so they can't see; hides what she's doing when texting in front of friends"
+              }
+            ],
+            "accommodations": [
+              {
+                "description": "Parent makes excuses to her friends so they don't notice what Rosie is doing"
+              }
+            ],
+            "entries": [
+              2
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
