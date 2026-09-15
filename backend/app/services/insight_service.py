@@ -333,14 +333,42 @@ def request_extraction(client, system_prompt: str, entries_text: str) -> str:
 
 
 def parse_model_json(raw: str) -> dict:
-    """The model is asked for bare JSON; a fenced block is the usual way that goes wrong."""
+    """The model is asked for bare JSON. It sometimes wraps it in a fenced block, and sometimes
+    writes its reasoning first and the JSON after (seen 2026-09-15 on a note it found ambiguous,
+    twice in two runs). Either way the answer is there, so it is read rather than failed.
+
+    Raises json.JSONDecodeError when there is no JSON object in the reply at all."""
     import json
+    import re
 
     clean = (raw or "").strip()
-    if clean.startswith("```"):
-        lines = clean.split("\n")
-        clean = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
-    return json.loads(clean)
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        pass
+
+    fenced = re.findall(r"```(?:json)?\s*\n(.*?)\n?```", clean, re.S)
+    for block in reversed(fenced):
+        try:
+            return json.loads(block.strip())
+        except json.JSONDecodeError:
+            continue
+    if clean.startswith("```"):  # an unclosed fence
+        clean = clean.split("\n", 1)[1] if "\n" in clean else ""
+
+    # The largest JSON object anywhere in the text: the answer, not a brace inside the reasoning.
+    decoder = json.JSONDecoder()
+    best, best_len = None, 0
+    for start in (i for i, ch in enumerate(clean) if ch == "{"):
+        try:
+            value, end = decoder.raw_decode(clean, start)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict) and end - start > best_len:
+            best, best_len = value, end - start
+    if best is None:
+        return json.loads(clean)  # raises, with the model's own text in the error
+    return best
 
 
 def summarise_for_report(insights: list[PatientInsight]) -> str:

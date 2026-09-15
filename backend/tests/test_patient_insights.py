@@ -13,6 +13,7 @@ from app.services.insight_service import (
     get_insights, normalise_name, rebuild_from_monitoring,
 )
 
+from app.services import insight_service
 from tests.factories import make_org, make_patient
 
 
@@ -482,3 +483,29 @@ async def test_deleting_the_situation_puts_the_suggestion_back(api, db):
 
     back = (await api.get(f"/patients/{patient.id}/insights?kind=situation")).json()
     assert [i["name"] for i in back] == ["Ordering lunch in the cafeteria"]
+
+
+# ── Reading the model's reply ─────────────────────────────────────────────────
+
+def test_the_reply_is_read_when_the_model_reasons_first():
+    # The shape of a real reply, 2026-09-15: reasoning, then the answer in a fenced block.
+    raw = ('I need to read this note carefully. "Refused to go in" {sounds like} avoidance.\n\n'
+           '```json\n{"situations": [{"name": "Birthday parties", "fear_rating": 9, "entries": [1]}]}\n```')
+    assert insight_service.parse_model_json(raw)["situations"][0]["name"] == "Birthday parties"
+
+
+def test_the_reply_is_read_with_reasoning_and_no_fence():
+    raw = 'Reading it as a sequence.\n{"situations": [{"name": "Bedtime", "behaviors": []}]}\nDone.'
+    assert insight_service.parse_model_json(raw) == {"situations": [{"name": "Bedtime", "behaviors": []}]}
+
+
+def test_plain_and_fenced_replies_still_read():
+    assert insight_service.parse_model_json('{"a": 1}') == {"a": 1}
+    assert insight_service.parse_model_json('```json\n{"a": 1}\n```') == {"a": 1}
+    assert insight_service.parse_model_json('```\n{"a": 1}') == {"a": 1}
+
+
+def test_a_reply_with_no_answer_still_fails():
+    import json
+    with pytest.raises(json.JSONDecodeError):
+        insight_service.parse_model_json("I could not classify this note.")

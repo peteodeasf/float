@@ -486,7 +486,8 @@ the way the app returns them. Details in the tool's README and `runs/20260915_16
 
 What the run showed, from 18 cases:
 - **One reply the app could not read** (case 8, both runs): the model wrote its reasoning before
-  the JSON. In the app that is an "AI analysis failed" error for the clinician. `S` to look at.
+  the JSON. In the app that was an "AI analysis failed" error. **FIXED 2026-09-15:** the app's
+  reader (`parse_model_json`) now finds the answer after reasoning or inside a fenced block.
 - Differences from the confirmed answers, mostly: one action split into two behaviors, `unclear`
   where the answer is `avoidance`, and `safety` where the answer is `escape`. Eighteen cases is too
   few to say which of these are patterns.
