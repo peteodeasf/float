@@ -12,6 +12,7 @@
  *
  * Design record: docs/plans/session-situation-screen-focus.md
  */
+import { btn } from '../../components/ui/buttons'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 
 // Fear scores are a fixed 1–10 scale (see docs/solutions — enforced backend + here).
@@ -24,12 +25,14 @@ export const article = (n: number) => (n === 8 ? 'an' : 'a')
 // ── styles ──────────────────────────────────────────────────────
 export const screenSurface: CSSProperties = { background: 'linear-gradient(180deg,#f2fbf8,#ffffff 55%)', border: '1px solid #d7ebe5', borderRadius: 16, padding: '22px 24px' }
 export const card: CSSProperties = { background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: 22, boxShadow: '0 8px 24px rgba(13,61,58,.06)' }
-export const primaryBtn: CSSProperties = { marginTop: 14, background: '#135450', color: '#fff', fontWeight: 800, fontSize: 14, border: 'none', borderRadius: 12, padding: '11px 22px', cursor: 'pointer' }
-export const ghostBtn: CSSProperties = { ...primaryBtn, background: '#fff', color: '#135450', border: '1.5px solid #135450' }
+// The session screens' three buttons now come from the one set (components/ui/buttons.ts) rather
+// than being their own shape and weight. Peter, 2026-09-15.
+export const primaryBtn: CSSProperties = { ...btn('primary', 'md'), marginTop: 14 }
+export const ghostBtn: CSSProperties = { ...btn('secondary', 'md'), marginTop: 14 }
 export const bigQ: CSSProperties = { fontSize: 20, fontWeight: 800, color: '#0d3d3a', lineHeight: 1.3 }
 export const lead: CSSProperties = { fontSize: 14, color: '#4b5a59', lineHeight: 1.5, marginTop: 6 }
 export const eyebrow: CSSProperties = { fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 4 }
-export const quietLink: CSSProperties = { fontSize: 12.5, fontWeight: 600, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }
+export const quietLink: CSSProperties = btn('quiet', 'sm')
 
 // Module scope, deliberately: defined inside the page it would get a new identity every render,
 // and React would remount the whole tree — losing step state and input focus mid-session.

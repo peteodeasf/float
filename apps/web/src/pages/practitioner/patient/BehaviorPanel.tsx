@@ -4,6 +4,7 @@
  * Shows the situation's rungs, its tags, its feared outcome, and the plan-an-experiment flow.
  * Moved out of PatientPage.tsx unchanged.
  */
+import { btn } from '../../../components/ui/buttons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -366,8 +367,8 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <button onClick={() => editMut.mutate()} disabled={!editName.trim() || editMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Save</button>
-                  <button onClick={() => setEditingBehaviorId(null)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                  <button onClick={() => editMut.mutate()} disabled={!editName.trim() || editMut.isPending} style={btn('primary', 'sm')}>Save</button>
+                  <button onClick={() => setEditingBehaviorId(null)} style={btn('quiet', 'sm')}>Cancel</button>
                 </div>
               </div>
             ) : deletingBehaviorId === b.id ? (
@@ -376,8 +377,8 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this behavior{sortedBehaviors.some(c => c.parent_behavior_id === b.id) ? ' and its smaller steps' : ''}?</span>
                   <div style={{ display: 'flex', gap: '6px' }}>
-                    <button onClick={() => delMut.mutate(b.id)} disabled={delMut.isPending} className="text-[11px] text-red-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50">{delMut.isPending ? 'Deleting…' : 'Yes, delete'}</button>
-                    <button onClick={() => { setDeletingBehaviorId(null); setDelError(null) }} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                    <button onClick={() => delMut.mutate(b.id)} disabled={delMut.isPending} style={btn('danger', 'sm')}>{delMut.isPending ? 'Deleting…' : 'Yes, delete'}</button>
+                    <button onClick={() => { setDeletingBehaviorId(null); setDelError(null) }} style={btn('quiet', 'sm')}>Cancel</button>
                   </div>
                 </div>
                 {delError && <p style={{ fontSize: '11px', color: '#b91c1c', margin: '6px 0 0' }}>{delError}</p>}
@@ -401,8 +402,10 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                     <DTBadge value={b.distress_thermometer_when_refraining} />
                   </div>
                   <div style={{ width: '126px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
-                    <button onClick={() => startEdit(b)} className="text-[12px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
-                    <button onClick={() => setDeletingBehaviorId(b.id)} className="text-[12px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                    {/* They appear on hover, but they are buttons, and Delete is red: it used to be
+                        the same grey 12px text as Edit. */}
+                    <button onClick={() => startEdit(b)} style={btn('secondary', 'sm')} className="opacity-0 group-hover:opacity-100 transition-opacity">Edit</button>
+                    <button onClick={() => setDeletingBehaviorId(b.id)} style={btn('danger', 'sm')} className="opacity-0 group-hover:opacity-100 transition-opacity">Delete</button>
                   </div>
                 </div>
 
@@ -440,8 +443,8 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <button onClick={() => subMut.mutate(b)} disabled={!subName.trim() || subMut.isPending} className="bg-teal-600 text-white rounded text-[11px] font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add step</button>
-                        <button onClick={resetSub} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+                        <button onClick={() => subMut.mutate(b)} disabled={!subName.trim() || subMut.isPending} style={btn('primary', 'sm')}>Add step</button>
+                        <button onClick={resetSub} style={btn('quiet', 'sm')}>Cancel</button>
                       </div>
                     </div>
                   </div>
@@ -532,7 +535,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   {!expWarning && (
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button onClick={() => handleSaveExperiment(planningBehavior.id)} disabled={!expPlan.trim() || planExpMut.isPending}
-                        className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>
+                        style={btn('primary', 'sm')} style={{ padding: '6px 12px' }}>
                         {planExpMut.isPending ? 'Saving...' : 'Save experiment plan'}</button>
                       <button onClick={() => setPlanningBehaviorId(null)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                     </div>
@@ -612,7 +615,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <button onClick={() => addMut.mutate()} disabled={!name.trim() && type !== 'avoidance'} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>Add</button>
+            <button onClick={() => addMut.mutate()} disabled={!name.trim() && type !== 'avoidance'} style={btn('primary', 'sm')} style={{ padding: '6px 12px' }}>Add</button>
             <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
           </div>
         </div>

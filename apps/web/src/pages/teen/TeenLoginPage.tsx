@@ -152,14 +152,7 @@ export default function TeenLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
-              style={{
-                background: 'var(--float-primary)',
-                borderRadius: 'var(--float-radius-sm)',
-                border: 'none',
-              }}
-              onMouseOver={(e) => { if (!isLoading) e.currentTarget.style.background = 'var(--float-primary-dark)' }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'var(--float-primary)' }}
+              className="teen-btn teen-btn--primary"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -218,16 +211,7 @@ export default function TeenLoginPage() {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={forgotLoading}
-                  className="w-full py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
-                  style={{
-                    background: 'var(--float-primary)',
-                    borderRadius: 'var(--float-radius-sm)',
-                    border: 'none',
-                  }}
-                >
+                <button type="submit" disabled={forgotLoading} className="teen-btn teen-btn--primary">
                   {forgotLoading ? 'Sending...' : 'Send reset link'}
                 </button>
 

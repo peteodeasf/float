@@ -9,6 +9,7 @@
  * (`consultation_checklists.checked_items`). The API refuses to change a key for that reason, and
  * deleting an item leaves any tick already recorded against it orphaned but harmless.
  */
+import { btn } from '../../components/ui/buttons'
 import { useEffect, useState } from 'react'
 import { adminApiClient } from '../../context/AdminAuthContext'
 
@@ -29,14 +30,8 @@ const input: React.CSSProperties = {
   border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 10px', fontSize: '13px',
   fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
 }
-const ghostBtn: React.CSSProperties = {
-  background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
-  padding: '3px 8px', fontSize: '11px', color: '#64748b', cursor: 'pointer',
-}
-const primaryBtn: React.CSSProperties = {
-  background: 'var(--float-primary)', color: '#fff', border: 'none', borderRadius: '8px',
-  padding: '9px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-}
+const ghostBtn: React.CSSProperties = btn('secondary', 'sm')
+const primaryBtn: React.CSSProperties = btn('primary', 'md')
 
 export default function ChecklistAdmin() {
   const [orgs, setOrgs] = useState<Org[]>([])

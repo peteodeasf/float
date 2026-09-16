@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -188,14 +189,14 @@ export default function NewPatientPage() {
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
+                style={{ ...btn('secondary', 'md'), flex: 1 }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={mutation.isPending}
-                className="flex-1 bg-teal-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
+                style={{ ...btn('primary', 'md'), flex: 1 }}
               >
                 {mutation.isPending ? 'Creating...' : 'Add patient'}
               </button>

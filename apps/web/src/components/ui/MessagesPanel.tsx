@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getMessages, sendMessage } from '../../api/patients'
@@ -57,7 +58,7 @@ export default function MessagesPanel({ patientId, patientUserId }: Props) {
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="text-xs text-teal-600 font-medium hover:underline"
+            style={btn('quiet', 'sm')}
           >
             + New message
           </button>
@@ -98,7 +99,7 @@ export default function MessagesPanel({ patientId, patientUserId }: Props) {
             <button
               onClick={() => sendMutation.mutate()}
               disabled={!content || sendMutation.isPending}
-              className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              style={btn('primary', 'sm')}
             >
               {sendMutation.isPending ? 'Sending...' : 'Send'}
             </button>
@@ -140,7 +141,7 @@ export default function MessagesPanel({ patientId, patientUserId }: Props) {
         !showForm && (
           <p className="text-sm text-slate-400">
             No messages yet &middot;{' '}
-            <button onClick={() => setShowForm(true)} className="text-teal-600 hover:underline bg-transparent border-none cursor-pointer text-sm font-medium">
+            <button onClick={() => setShowForm(true)} style={btn('secondary', 'sm')}>
               + Send message
             </button>
           </p>

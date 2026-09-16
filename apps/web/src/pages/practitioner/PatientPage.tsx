@@ -1380,7 +1380,7 @@ export default function PatientPage() {
           {!showSendForm ? (
             <button
               onClick={() => { setShowSendForm(true); if (patient?.parent_email) setParentEmail(patient.parent_email); if (patient?.parent_name) setParentName(patient.parent_name); if (patient?.parent_phone) setParentPhone(patient.parent_phone) }}
-              className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors border-none cursor-pointer"
+              style={btn('primary', 'md')}
             >
               Send monitoring form
             </button>
@@ -1404,19 +1404,17 @@ export default function PatientPage() {
               <div className="flex flex-wrap gap-2">
                 {(parentEmail || parentPhone) && (
                   <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
-                    className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
+                    style={btn('primary', 'md')}>
                     {sendFormMutation.isPending ? 'Sending...' :
                       parentEmail && parentPhone ? 'Send both + copy link' :
                       parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
                   </button>
                 )}
                 <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
-                    (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
-                  }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
+                  style={btn((parentEmail || parentPhone) ? 'secondary' : 'primary', 'md')}>
                   {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
                 </button>
-                <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
+                <button onClick={() => setShowSendForm(false)} style={btn('quiet', 'md')}>Cancel</button>
               </div>
             </div>
           )}
@@ -1479,11 +1477,7 @@ export default function PatientPage() {
           {(monitoringForm.entries_count ?? 0) > 0 && (
             <div style={{ marginBottom: '12px' }}>
               <button onClick={() => setShowInlineReport(true)}
-                className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-                  (monitoringForm.entries_count ?? 0) >= 5
-                    ? 'bg-teal-600 text-white hover:bg-teal-700 border-none'
-                    : 'text-slate-600 hover:bg-slate-50 bg-white'
-                }`} style={(monitoringForm.entries_count ?? 0) < 5 ? { border: '1px solid #e2e8f0' } : undefined}>
+                style={btn((monitoringForm.entries_count ?? 0) >= 5 ? 'primary' : 'secondary', 'md')}>
                 View monitoring report
               </button>
             </div>
@@ -1516,19 +1510,17 @@ export default function PatientPage() {
                 <div className="flex flex-wrap gap-2">
                   {(parentEmail || parentPhone) && (
                     <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
-                      className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 border-none cursor-pointer">
+                      style={btn('primary', 'md')}>
                       {sendFormMutation.isPending ? 'Sending...' :
                         parentEmail && parentPhone ? 'Send both + copy link' :
                         parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
                     </button>
                   )}
                   <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
-                      (parentEmail || parentPhone) ? 'text-slate-600 hover:bg-slate-100 bg-white' : 'bg-teal-600 text-white hover:bg-teal-700'
-                    }`} style={(parentEmail || parentPhone) ? { border: '1px solid #e2e8f0' } : { border: 'none' }}>
+                    style={btn((parentEmail || parentPhone) ? 'secondary' : 'primary', 'md')}>
                     {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
                   </button>
-                  <button onClick={() => setShowSendForm(false)} className="px-3 py-2 text-sm text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">Cancel</button>
+                  <button onClick={() => setShowSendForm(false)} style={btn('quiet', 'md')}>Cancel</button>
                 </div>
               </div>
             )}
@@ -1552,8 +1544,9 @@ export default function PatientPage() {
                 className="text-xs border border-slate-200 rounded" autoFocus
                 style={{ padding: '3px 8px', width: '140px' }}
                 onKeyDown={e => { if (e.key === 'Enter' && nicknameVal.trim()) nicknameMut.mutate(); if (e.key === 'Escape') setEditingNickname(false) }} />
-              <button onClick={() => nicknameMut.mutate()} disabled={!nicknameVal.trim() || nicknameMut.isPending} className="text-[11px] text-teal-600 font-medium bg-transparent border-none cursor-pointer disabled:opacity-40">Save</button>
-              <button onClick={() => setEditingNickname(false)} className="text-[11px] text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+              {/* Save was 11px teal text; a Save should look like a button. */}
+              <button onClick={() => nicknameMut.mutate()} disabled={!nicknameVal.trim() || nicknameMut.isPending} style={btn('primary', 'sm')}>Save</button>
+              <button onClick={() => setEditingNickname(false)} style={btn('quiet', 'sm')}>Cancel</button>
             </>
           ) : plan.nickname ? (
             <>
@@ -1721,7 +1714,7 @@ export default function PatientPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-                  <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '7px 14px' }}>Add situation</button>
+                  <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} style={btn('primary', 'sm')} style={{ padding: '7px 14px' }}>Add situation</button>
                   <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerLibraryId(null); setShowSitSuggest(false); setNewTriggerDT(''); setNewTriggerDTMax('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                 </div>
               </div>
@@ -2201,7 +2194,7 @@ export default function PatientPage() {
             <EditorContent editor={editor} />
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
+            <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} style={btn('primary', 'sm')} style={{ padding: '6px 12px' }}>
               {(createPlanActionMut.isPending || updatePlanActionMut.isPending) && !publishPlanMut.isPending ? 'Saving...' : 'Save draft'}
             </button>
             <button onClick={handlePublishPlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending || publishPlanMut.isPending} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
@@ -2442,7 +2435,7 @@ export default function PatientPage() {
               <button
                 onClick={() => updatePatientMut.mutate()}
                 disabled={!profileName.trim() || updatePatientMut.isPending}
-                className="bg-teal-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-40"
+                style={btn('primary', 'sm')}
                 style={{ padding: '7px 14px' }}
               >
                 {updatePatientMut.isPending ? 'Saving...' : 'Save'}

@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -134,7 +135,7 @@ export default function SettingsPage() {
                 <button
                   onClick={() => saveDetails.mutate()}
                   disabled={!detailsChanged || !name.trim() || saveDetails.isPending}
-                  className="bg-teal-600 text-white rounded text-sm font-medium disabled:opacity-40 border-none cursor-pointer"
+                  style={btn('primary', 'md')}
                   style={{ padding: '8px 16px' }}
                 >
                   {saveDetails.isPending ? 'Saving…' : 'Save'}
@@ -168,7 +169,7 @@ export default function SettingsPage() {
                 <button
                   onClick={submitPassword}
                   disabled={!currentPassword || !newPassword || !confirmPassword || savePassword.isPending}
-                  className="bg-teal-600 text-white rounded text-sm font-medium disabled:opacity-40 border-none cursor-pointer"
+                  style={btn('primary', 'md')}
                   style={{ padding: '8px 16px' }}
                 >
                   {savePassword.isPending ? 'Changing…' : 'Change password'}

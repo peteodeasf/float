@@ -122,12 +122,7 @@ export default function ParentLoginPage() {
 
             {error && <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
-              style={{ background: 'var(--float-primary)', borderRadius: 'var(--float-radius-sm)', border: 'none' }}
-            >
+            <button type="submit" disabled={isLoading} className="teen-btn teen-btn--primary">
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
@@ -170,12 +165,7 @@ export default function ParentLoginPage() {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={forgotLoading}
-                  className="w-full py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
-                  style={{ background: 'var(--float-primary)', borderRadius: 'var(--float-radius-sm)', border: 'none' }}
-                >
+                <button type="submit" disabled={forgotLoading} className="teen-btn teen-btn--primary">
                   {forgotLoading ? 'Sending...' : 'Send reset link'}
                 </button>
 

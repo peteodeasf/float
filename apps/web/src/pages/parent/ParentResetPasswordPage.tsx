@@ -118,12 +118,7 @@ export default function ParentResetPasswordPage() {
 
               {error && <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>}
 
-              <button
-                type="submit"
-                disabled={isLoading || !token}
-                className="w-full py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
-                style={{ background: 'var(--float-primary)', borderRadius: 'var(--float-radius-sm)', border: 'none' }}
-              >
+              <button type="submit" disabled={isLoading || !token} className="teen-btn teen-btn--primary">
                 {isLoading ? 'Updating...' : 'Set new password'}
               </button>
             </form>

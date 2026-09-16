@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient, createClinician } from '../../context/AdminAuthContext'
@@ -83,21 +84,11 @@ const tdStyle: React.CSSProperties = {
   borderBottom: '1px solid #f1f5f9',
 }
 
-const smallBtn: React.CSSProperties = {
-  fontSize: '12px',
-  padding: '5px 10px',
-  borderRadius: '6px',
-  border: '1px solid #e2e8f0',
-  background: '#fff',
-  cursor: 'pointer',
-  marginRight: '6px',
-}
+// The admin app's buttons come from the one set now (components/ui/buttons.ts), which the
+// clinician app uses too. Peter, 2026-09-15.
+const smallBtn: React.CSSProperties = { ...btn('secondary', 'sm'), marginRight: '6px' }
 
-const dangerBtn: React.CSSProperties = {
-  ...smallBtn,
-  borderColor: '#fecaca',
-  color: '#b91c1c',
-}
+const dangerBtn: React.CSSProperties = { ...btn('danger', 'sm'), marginRight: '6px' }
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'

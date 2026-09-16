@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient } from '../../context/AdminAuthContext'
@@ -51,25 +52,8 @@ const input: React.CSSProperties = {
   color: '#0f172a',
   background: '#fff',
 }
-const primaryBtn: React.CSSProperties = {
-  fontSize: '13px',
-  fontWeight: 600,
-  padding: '8px 14px',
-  borderRadius: '8px',
-  border: 'none',
-  background: 'var(--float-primary)',
-  color: '#fff',
-  cursor: 'pointer',
-}
-const ghostBtn: React.CSSProperties = {
-  fontSize: '12px',
-  padding: '5px 10px',
-  borderRadius: '6px',
-  border: '1px solid #e2e8f0',
-  background: '#fff',
-  color: '#475569',
-  cursor: 'pointer',
-}
+const primaryBtn: React.CSSProperties = btn('primary', 'md')
+const ghostBtn: React.CSSProperties = btn('secondary', 'sm')
 const label: React.CSSProperties = {
   fontSize: '12px',
   fontWeight: 600,

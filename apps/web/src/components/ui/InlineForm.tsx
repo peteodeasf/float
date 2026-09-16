@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useState } from 'react'
 
 interface Field {
@@ -83,7 +84,7 @@ export default function InlineForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-1.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
+          style={btn('primary', 'sm')}
         >
           {isLoading ? 'Adding...' : submitLabel}
         </button>

@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -231,7 +232,7 @@ export default function ClinicianAccessPanel({
           <button
             onClick={() => chosen && grantMut.mutate(chosen)}
             disabled={!chosen || grantMut.isPending}
-            className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer"
+            style={btn('primary', 'sm')}
             style={{ padding: '6px 12px' }}
           >
             {grantMut.isPending ? 'Adding…' : 'Add'}

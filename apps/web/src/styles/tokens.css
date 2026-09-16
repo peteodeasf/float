@@ -29,3 +29,19 @@
   --float-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --float-shadow-md: 0 4px 20px rgba(0,0,0,0.07);
 }
+
+/* Every button in the app fades the same way when it cannot be used, and shows the same ring when
+   reached with a keyboard. Peter, 2026-09-15: the app had three disabled treatments and four focus
+   rings. Buttons that set their own opacity (the child's app) still win, as they should. */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--float-primary);
+  outline-offset: 2px;
+}

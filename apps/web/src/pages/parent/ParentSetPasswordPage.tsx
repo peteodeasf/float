@@ -108,12 +108,7 @@ export default function ParentSetPasswordPage() {
 
           {error && <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
-            style={{ background: 'var(--float-primary)', borderRadius: 'var(--float-radius-sm)', border: 'none' }}
-          >
+          <button type="submit" disabled={isLoading} className="teen-btn teen-btn--primary">
             {isLoading ? 'Saving...' : 'Set password'}
           </button>
         </form>

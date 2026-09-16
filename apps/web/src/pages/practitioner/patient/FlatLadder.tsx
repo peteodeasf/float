@@ -6,6 +6,7 @@
  *
  * Moved out of PatientPage.tsx unchanged.
  */
+import { btn } from '../../../components/ui/buttons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -294,9 +295,7 @@ function LadderRow({
       {confirmRemove ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, whiteSpace: 'nowrap' }}>
           <span style={{ fontSize: '11px', color: '#64748b' }}>Remove?</span>
-          <button onClick={() => delMut.mutate()} disabled={delMut.isPending}
-            className="bg-transparent border-none cursor-pointer disabled:opacity-50"
-            style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626', padding: 0 }}>Yes, remove</button>
+          <button onClick={() => delMut.mutate()} disabled={delMut.isPending} style={btn('danger', 'sm')}>Yes, remove</button>
           <button onClick={() => setConfirmRemove(false)}
             className="bg-transparent border-none cursor-pointer"
             style={{ fontSize: '11px', color: '#94a3b8', padding: 0 }}>Cancel</button>
