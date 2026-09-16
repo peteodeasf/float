@@ -409,6 +409,39 @@ where they are now at the expected number of users.
 
 ---
 
+## Google Workspace email for floatcbt.com — DKIM not published
+
+**Raised 2026-09-16.** `S`. No code — Google Admin console and DNS only.
+
+Setting up Google Workspace mail on **pete@floatcbt.com**. Getting into Gmail was blocked by "you do
+not have access to Gmail — enable it in your Admin Console." Cause: no Gmail licence was assigned to
+the user (upgrading the plan adds licences to the pool but does not attach one). Fixed by assigning a
+licence in Admin → Directory → Users → pete@floatcbt.com → Licenses.
+
+DNS for floatcbt.com is managed at **Netlify** (nameservers are `dns*.p06.nsone.net`). Confirmed live
+at Netlify's own nameserver on 2026-09-16:
+
+- MX → `smtp.google.com` (incoming mail routes to Google)
+- SPF → `v=spf1 include:_spf.google.com ~all`
+- DMARC → `v=DMARC1; p=none;`
+
+**What is left:** DKIM is not published. In Admin → Apps → Google Workspace → Gmail → Authenticate
+email, generate the key and publish the TXT record it gives you at host `google._domainkey`. Peter
+said he added it, but nothing resolves under `google._domainkey.floatcbt.com`, the doubled-name
+version, or `default._domainkey`. Likely one of: the Netlify name field is wrong (must be exactly
+`google._domainkey` — Netlify appends `.floatcbt.com`), or Netlify rejected the value because a
+2048-bit key is too long (a known Netlify limit — regenerate as 1024-bit in the Admin screen and
+re-add). After it saves, return to the Admin DKIM screen and click **Start authentication**.
+
+**How to tell it worked:** `dig +short TXT google._domainkey.floatcbt.com` returns the `v=DKIM1; …`
+value, and the Admin DKIM screen shows it authenticating. None of this is needed to open Gmail or
+receive mail — only to keep mail Float *sends from Google* out of spam.
+
+**Separate, worth checking before tightening DMARC:** the SPF record only authorises Google. The
+Railway backend already sends waitlist email — if that goes out through Resend or another service,
+that sender is not in SPF and its mail can fail authentication. Confirm the real sending path before
+moving DMARC past `p=none`.
+
 ## Smaller, already agreed
 
 - **~~`behavior_type` holds 11 distinct values across 136 rows~~ — DONE 2026-09-01.** Folded onto
