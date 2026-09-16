@@ -95,7 +95,7 @@ def steps_for(membership: Membership) -> list[str]:
 
 
 def add_flag(user: User, flag: str) -> None:
-    """Record something done during onboarding: a setup screen or a getting-started step."""
+    """Record a finished onboarding setup screen."""
     if flag not in (user.onboarding_flags or []):
         # A new list, so SQLAlchemy sees the change to the JSON column.
         user.onboarding_flags = [*(user.onboarding_flags or []), flag]

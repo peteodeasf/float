@@ -50,17 +50,3 @@ export const changeMyPassword = async (
     localStorage.setItem(PRACTITIONER_KEYS.refresh, data.refresh_token)
   }
 }
-
-/** The getting-started checklist on the home screen. Each item's `done` comes from real data.
- *  docs/plans/clinician-practice-onboarding.md */
-export interface GettingStarted {
-  items: { key: 'education' | 'invite' | 'patient' | 'monitoring'; done: boolean }[]
-  can_hide: boolean
-  hidden: boolean
-}
-
-export const getGettingStarted = async (): Promise<GettingStarted> =>
-  (await apiClient.get('/practitioners/me/getting-started')).data
-
-export const markGettingStarted = async (action: 'read_education' | 'hide_getting_started') =>
-  apiClient.post(`/practitioners/me/getting-started/${action}`)
