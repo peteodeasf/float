@@ -88,16 +88,17 @@ Where the two parents disagree, that is worth showing rather than averaging.
 `PatientProfile.parent_name / parent_email / parent_phone` (`patient.py:50-52`) are separate from the
 link table and will drift. Decide whether they become the invite defaults only, or go.
 
-## Open questions for Peter
+## Questions, answered
 
-1. **Sharing switches.** "Show the child's progress to the parent" and the child's accommodation
-   ratings are one switch per child today. One switch for both parents, or one per parent? Custody
-   situations are the reason to ask.
-2. **The accommodation conversation** (item 6): both parents answer separately, or one shared family
-   answer either can change?
-3. **Removing a parent:** should the clinician be able to, and does the parent's app stop working
-   immediately?
-4. **What the child sees.** Nothing today tells the child which parent does what. Leave it that way?
+All answered by Peter, 2026-09-15:
+
+1. **"Parents can see the child's progress"** (the tick box under Parent on the patient page) stays
+   one tick box covering both parents.
+2. **The accommodation conversation:** each parent answers separately (item 6).
+3. **The clinician can remove a parent.** Their check-ins, messages and experiments stay on the
+   record.
+4. **Each accommodation names the parent it belongs to**, so the child is rating the right thing when
+   the clinician rates them together in session. The child's app still shows nothing about parents.
 
 ## Size
 
