@@ -5,6 +5,7 @@
  * typing what they say (Peter, 2026-09-11: set up by the parent or the clinician). Any accommodation
  * on the plan, what the parent is working on first. docs/plans/parent-accommodation-experiments.md
  */
+import { chip } from '../../components/ui/buttons'
 import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -17,11 +18,9 @@ import { getNextSchoolDayISO } from '../../pages/practitioner/patient/shared'
 const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: '#0d3d3a', marginBottom: 10, display: 'block' }
 const section: CSSProperties = { padding: '16px 0', borderTop: '1px solid #e3eeeb' }
 const field: CSSProperties = { width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 12px', borderRadius: 10, border: '1px solid #cfe3de', fontFamily: 'inherit' }
-const choice = (on: boolean): CSSProperties => ({
-  fontSize: 14, fontWeight: 700, borderRadius: 10, padding: '9px 16px', cursor: 'pointer',
-  color: on ? '#fff' : '#135450', background: on ? '#135450' : '#fff',
-  border: `1.5px solid ${on ? '#135450' : '#cfe3de'}`,
-})
+// The same chip as everywhere else: these three sheets each had their own, and two of
+// them had already drifted apart in size. components/ui/buttons.ts
+const choice = (on: boolean): CSSProperties => chip(on, 'md')
 
 export default function ParentExperimentSheet({
   planId,

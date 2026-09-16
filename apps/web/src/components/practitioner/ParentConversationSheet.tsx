@@ -7,6 +7,7 @@
  * it is given and lands as a suggestion on the Parent Accommodations panel — nothing goes onto the
  * plan from here. Plan: docs/plans/accommodation-conversation.md
  */
+import { chip } from '../../components/ui/buttons'
 import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -18,11 +19,9 @@ import {
   type ConversationItemInSession,
 } from '../../api/treatment'
 
-const choice = (on: boolean): CSSProperties => ({
-  fontSize: 13, fontWeight: 700, borderRadius: 10, padding: '7px 14px', cursor: 'pointer',
-  color: on ? '#fff' : '#135450', background: on ? '#135450' : '#fff',
-  border: `1.5px solid ${on ? '#135450' : '#cfe3de'}`,
-})
+// The same chip as everywhere else: these three sheets each had their own, and two of
+// them had already drifted apart in size. components/ui/buttons.ts
+const choice = (on: boolean): CSSProperties => chip(on, 'md')
 
 export default function ParentConversationSheet({ patientId, onClose }: { patientId: string; onClose: () => void }) {
   const qc = useQueryClient()

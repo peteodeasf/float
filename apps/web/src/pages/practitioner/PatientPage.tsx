@@ -32,7 +32,7 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
-import { btn, buttonRow, countPill, liveDot, statusCard, statusCardState, statusCardTitle } from '../../components/ui/buttons'
+import { btn, buttonRow, countPill, liveDot, statusCard, statusCardState, statusCardTitle, chip, iconBtn } from '../../components/ui/buttons'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
@@ -1120,9 +1120,11 @@ export default function PatientPage() {
 
   // ── Unified session-notes list (participant + flexible tags) ──
   const noteFieldCap: CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }
-  const notePill = (on: boolean): CSSProperties => ({ fontSize: '13px', fontWeight: 600, padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', background: on ? 'var(--float-primary)' : '#fff', color: on ? '#fff' : '#475569', border: on ? '1px solid var(--float-primary)' : '1px solid #cbd5e1' })
+  // One chip style for the whole app (components/ui/buttons.ts). These were two different chips
+  // eight lines apart: one filled solid teal when on, the other pale teal.
+  const notePill = (on: boolean): CSSProperties => chip(on, 'md')
   const noteFilterGroupCap: CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }
-  const noteTagFilterChip = (on: boolean): CSSProperties => ({ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '999px', cursor: 'pointer', background: on ? '#eafaf6' : '#fff', color: on ? '#0d3d3a' : '#64748b', border: on ? '1px solid var(--float-primary)' : '1px solid #e2e8f0' })
+  const noteTagFilterChip = (on: boolean): CSSProperties => chip(on, 'sm')
 
   // A joint session records both, so it shows under either filter.
   const noteParticipantFilter = notesWhoFilter
@@ -1619,7 +1621,7 @@ export default function PatientPage() {
         <div style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Situations</span>
-            {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} className="cursor-pointer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>+ Add</button>}
+            {!showTriggerAdd && <button onClick={() => setShowTriggerAdd(true)} style={btn('secondary', 'sm')}>+ Add</button>}
           </div>
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {triggers?.map(t => (
@@ -1706,9 +1708,9 @@ export default function PatientPage() {
                 <div style={{ marginBottom: '10px' }}>
                   <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear Level — one value, or a range with an optional max:</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
+                    <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={iconBtn('sm')}>−</button>
                     <input value={newTriggerDT} onChange={e => setNewTriggerDT(clampDtInput(e.target.value))} type="number" min="1" max="10" placeholder="min" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
-                    <button type="button" onClick={() => setNewTriggerDT(String(Math.min(10, (Number(newTriggerDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                    <button type="button" onClick={() => setNewTriggerDT(String(Math.min(10, (Number(newTriggerDT) || 0) + 1)))} style={iconBtn('sm')}>+</button>
                     <span style={{ color: '#94a3b8', padding: '0 2px' }}>–</span>
                     <input value={newTriggerDTMax} onChange={e => setNewTriggerDTMax(clampDtInput(e.target.value))} type="number" min="1" max="10" placeholder="max" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
                   </div>

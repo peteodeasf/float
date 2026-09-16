@@ -4,7 +4,7 @@
  * Shows the situation's rungs, its tags, its feared outcome, and the plan-an-experiment flow.
  * Moved out of PatientPage.tsx unchanged.
  */
-import { btn } from '../../../components/ui/buttons'
+import { btn, iconBtn, chip } from '../../../components/ui/buttons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -264,13 +264,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
           disabled={toggleActive.isPending || !canToggleActive}
           title={!canToggleActive ? 'Add at least one behavior before activating this situation' : undefined}
           style={{
-            fontSize: '11px',
-            fontWeight: 600,
-            padding: '4px 12px',
-            borderRadius: '999px',
-            border: trigger.is_active ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-            background: trigger.is_active ? 'var(--float-primary)' : '#fff',
-            color: trigger.is_active ? '#fff' : '#64748b',
+            ...chip(trigger.is_active, 'sm'),
             display: 'inline-flex',
             alignItems: 'center',
             gap: '5px',
@@ -293,16 +287,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 onClick={() => toggleSituationTag(tag.id)}
                 disabled={setTagsMut.isPending}
                 title="Tag — targets the tips the teen sees on this situation"
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  padding: '4px 11px',
-                  borderRadius: '999px',
-                  cursor: 'pointer',
-                  border: `1px solid ${on ? 'var(--float-primary)' : '#cbd5e1'}`,
-                  background: on ? 'var(--float-primary)' : '#fff',
-                  color: on ? '#fff' : '#64748b',
-                }}
+                style={chip(on, 'sm')}
               >
                 {tag.label}
               </button>
@@ -350,20 +335,16 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   <div style={{ display: 'flex', gap: '4px' }}>
                     {['avoidance', 'safety', 'ritual'].map(opt => (
                       <button key={opt} onClick={() => setEditType(opt)} type="button"
-                        style={{ fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '999px', cursor: 'pointer',
-                          background: editType === opt ? 'var(--float-primary)' : '#fff',
-                          color: editType === opt ? '#fff' : '#475569',
-                          border: editType === opt ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                          textTransform: 'capitalize' }}>{opt}</button>
+                        style={{ ...chip(editType === opt, 'sm'), textTransform: 'capitalize' }}>{opt}</button>
                     ))}
                   </div>
                 </div>
                 <div style={{ marginBottom: '8px' }}>
                   <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <button type="button" onClick={() => setEditDT(String(Math.max(1, (Number(editDT) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>&minus;</button>
+                    <button type="button" onClick={() => setEditDT(String(Math.max(1, (Number(editDT) || 1) - 1)))} style={iconBtn('sm')}>&minus;</button>
                     <input value={editDT} onChange={e => setEditDT(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
-                    <button type="button" onClick={() => setEditDT(String(Math.min(10, (Number(editDT) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                    <button type="button" onClick={() => setEditDT(String(Math.min(10, (Number(editDT) || 0) + 1)))} style={iconBtn('sm')}>+</button>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -437,9 +418,9 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                       <div style={{ marginBottom: '8px' }}>
                         <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (lower than {b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : '—'})</label>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <button type="button" onClick={() => setSubDt(String(Math.max(1, (Number(subDt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>&minus;</button>
+                          <button type="button" onClick={() => setSubDt(String(Math.max(1, (Number(subDt) || 1) - 1)))} style={iconBtn('sm')}>&minus;</button>
                           <input value={subDt} onChange={e => setSubDt(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
-                          <button type="button" onClick={() => setSubDt(String(Math.min(10, (Number(subDt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+                          <button type="button" onClick={() => setSubDt(String(Math.min(10, (Number(subDt) || 0) + 1)))} style={iconBtn('sm')}>+</button>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -497,11 +478,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {CONFIDENCE_OPTIONS.map(opt => (
                         <button key={opt.key} type="button" onClick={() => { setExpConfidence(opt.key); setExpWarning(false) }}
-                          style={{ fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '999px', cursor: 'pointer',
-                            background: expConfidence === opt.key ? 'var(--float-primary)' : '#fff',
-                            color: expConfidence === opt.key ? '#fff' : '#475569',
-                            border: expConfidence === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                            display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          style={chip(expConfidence === opt.key, 'sm')}>
                           <span>{opt.emoji}</span>{opt.label}
                         </button>
                       ))}
@@ -550,7 +527,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
       {/* Below the list it adds to, not up in the section header. */}
       {!showAdd && (
         <button onClick={() => setShowAdd(true)} className="cursor-pointer"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px', marginBottom: '12px' }}>+ Add rung</button>
+          style={{ ...btn('secondary', 'sm'), marginBottom: '12px' }}>+ Add rung</button>
       )}
 
       {/* Add behavior inline */}
@@ -595,12 +572,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 { key: 'ritual', label: 'Ritual' },
               ].map(opt => (
                 <button key={opt.key} onClick={() => setType(opt.key)} type="button"
-                  style={{
-                    fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '999px', cursor: 'pointer',
-                    background: type === opt.key ? 'var(--float-primary)' : '#fff',
-                    color: type === opt.key ? '#fff' : '#475569',
-                    border: type === opt.key ? '1px solid var(--float-primary)' : '1px solid #cbd5e1',
-                  }}>{opt.label}</button>
+                  style={chip(type === opt.key, 'sm')}>{opt.label}</button>
               ))}
             </div>
           </div>
@@ -609,9 +581,9 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
               {type === BEHAVIOR_TYPE_SCENARIO ? 'Fear Level (1–10)' : 'Fear Level when refraining (1–10)'}
             </label>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <button type="button" onClick={() => setDt(String(Math.max(1, (Number(dt) || 1) - 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>−</button>
+              <button type="button" onClick={() => setDt(String(Math.max(1, (Number(dt) || 1) - 1)))} style={iconBtn('sm')}>−</button>
               <input value={dt} onChange={e => setDt(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
-              <button type="button" onClick={() => setDt(String(Math.min(10, (Number(dt) || 0) + 1)))} style={{ width: '28px', height: '32px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>+</button>
+              <button type="button" onClick={() => setDt(String(Math.min(10, (Number(dt) || 0) + 1)))} style={iconBtn('sm')}>+</button>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>

@@ -3,6 +3,7 @@
  * draft note the transcript with the speakers named, renaming a speaker, and Approve.
  * docs/plans/session-recording.md
  */
+import { btn, chip } from '../../components/ui/buttons'
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { updateSessionNote, type SessionNote } from '../../api/session_notes'
@@ -56,13 +57,15 @@ function RecordingRow({ r, onRetry, onDiscard, busy }: { r: SessionRecording; on
       background: failed ? '#fef2f2' : '#eafaf6', color: failed ? '#991b1b' : '#0d3d3a' }}>
       <span aria-hidden="true" style={{ width: '8px', height: '8px', borderRadius: '50%', flex: 'none', background: failed ? '#dc2626' : '#135450' }} />
       <span style={{ flex: 1, minWidth: 0 }}><strong>Recording · {when}</strong> — {text}</span>
-      {failed && <button onClick={onRetry} disabled={busy} style={linkBtn('#135450')}>Try again</button>}
-      {r.status !== 'transcribing' && <button onClick={onDiscard} disabled={busy} style={linkBtn('#94a3b8')}>Delete</button>}
+      {failed && <button onClick={onRetry} disabled={busy} style={tryAgainBtn}>Try again</button>}
+      {r.status !== 'transcribing' && <button onClick={onDiscard} disabled={busy} style={deleteBtn}>Delete</button>}
     </div>
   )
 }
 
-const linkBtn = (color: string): React.CSSProperties => ({ background: 'none', border: 'none', color, fontWeight: 700, fontSize: '12px', cursor: 'pointer', padding: 0, flex: 'none' })
+/** Was a bare coloured word; now the app's small buttons. */
+const tryAgainBtn: React.CSSProperties = { ...btn('secondary', 'sm'), flex: 'none' }
+const deleteBtn: React.CSSProperties = { ...btn('danger', 'sm'), flex: 'none' }
 
 /** On a note written from a recording: the draft mark, the transcript, and Approve. */
 export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; patientId: string }) {
@@ -84,13 +87,13 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
     <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         {note.transcript && note.transcript.length > 0 && (
-          <button onClick={() => setOpen(o => !o)} aria-expanded={open} style={linkBtn('#135450')}>
+          <button onClick={() => setOpen(o => !o)} aria-expanded={open} style={btn('secondary', 'sm')}>
             {open ? 'Hide transcript' : 'Transcript'}
           </button>
         )}
         {note.is_draft && (
           <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}
-            style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: 700, color: '#fff', background: '#135450', border: 'none', borderRadius: '999px', padding: '5px 12px', cursor: 'pointer' }}>
+            style={{ ...btn('primary', 'sm'), marginLeft: 'auto' }}>
             {approveMut.isPending ? 'Approving…' : 'Approve note'}
           </button>
         )}
@@ -105,16 +108,14 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
                 <span key={key} style={{ display: 'inline-flex', gap: '4px' }}>
                   {NAMES.map(n => (
                     <button key={n} onClick={() => renameMut.mutate({ key, name: n })} disabled={renameMut.isPending}
-                      aria-pressed={names[key] === n}
-                      style={{ fontSize: '11.5px', fontWeight: 600, borderRadius: '999px', padding: '2px 8px', cursor: 'pointer',
-                        border: '1px solid #cbd5e1', background: names[key] === n ? '#135450' : '#fff', color: names[key] === n ? '#fff' : '#334155' }}>
+                      aria-pressed={names[key] === n} style={chip(names[key] === n, 'sm')}>
                       {n}
                     </button>
                   ))}
                 </span>
               ) : (
                 <button key={key} onClick={() => setRenaming(key)} title="Change who this speaker is"
-                  style={{ fontSize: '11.5px', fontWeight: 700, borderRadius: '999px', padding: '2px 8px', cursor: 'pointer', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0d3d3a' }}>
+                  style={chip(false, 'sm')}>
                   {names[key] ?? key} ✎
                 </button>
               )

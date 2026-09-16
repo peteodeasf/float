@@ -8,6 +8,7 @@
  *
  * Plan: docs/plans/teen-home-ladder-and-session-setup.md
  */
+import { chip } from '../../../components/ui/buttons'
 import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -22,12 +23,9 @@ import { getNextSchoolDayISO } from './shared'
 
 const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: '#0d3d3a', marginBottom: 10, display: 'block' }
 const section: CSSProperties = { padding: '18px 0', borderTop: '1px solid #e3eeeb' }
-const choice = (on: boolean): CSSProperties => ({
-  fontSize: 14, fontWeight: 700, borderRadius: 10, padding: '9px 16px', cursor: 'pointer',
-  color: on ? '#fff' : '#135450',
-  background: on ? '#135450' : '#fff',
-  border: `1.5px solid ${on ? '#135450' : '#cfe3de'}`,
-})
+// The same chip as everywhere else: these three sheets each had their own, and two of
+// them had already drifted apart in size. components/ui/buttons.ts
+const choice = (on: boolean): CSSProperties => chip(on, 'md')
 
 export function SessionSetupSheet({
   rung,

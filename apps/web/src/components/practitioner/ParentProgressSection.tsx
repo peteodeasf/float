@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listAccommodations, listAccommodationCheckins } from '../../api/accommodations'
@@ -59,7 +60,7 @@ export default function ParentProgressSection({ planId }: { planId: string }) {
           {accommodations.length > 0 && (
             <button
               onClick={() => setPlanning(true)}
-              style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', background: '#fff', border: '1px solid var(--float-border)', borderRadius: '999px', padding: '4px 11px', cursor: 'pointer' }}
+              style={btn('secondary', 'sm')}
             >
               Set one up with the parent
             </button>

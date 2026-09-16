@@ -1,3 +1,4 @@
+import { btn } from '../../components/ui/buttons'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -249,7 +250,7 @@ function AddAccommodation({ planId, patientId, triggers, onAdded }: {
   if (!adding) {
     return (
       <button onClick={() => setAdding(true)}
-        style={{ alignSelf: 'flex-start', fontSize: '13px', fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', padding: '9px 16px', cursor: 'pointer' }}>
+        style={{ ...btn('secondary', 'md'), alignSelf: 'flex-start' }}>
         + Add accommodation
         {suggestions.length > 0 && (
           <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · {suggestions.length} {suggestions.length === 1 ? 'suggestion' : 'suggestions'}</span>
@@ -329,7 +330,7 @@ function AddAccommodation({ planId, patientId, triggers, onAdded }: {
       </div>
 
       <button onClick={() => { setAdding(false); setName(''); setSituationId(''); setDmin(''); setDmax('') }}
-        style={{ marginTop: '14px', fontSize: '13px', fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', padding: '8px 16px', cursor: 'pointer' }}>
+        style={{ ...btn('secondary', 'md'), marginTop: '14px' }}>
         Done adding
       </button>
     </div>
@@ -432,7 +433,7 @@ function AccommodationRow({ accommodation: a, triggers, editing, onSave, onDelet
         {state.label}
       </span>
       <button onClick={() => { setPicked(a.status); setPlanning(true) }} title="Where the parent is with stopping this"
-        style={{ flex: 'none', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'pointer', borderRadius: '999px', padding: '3px 9px', color: '#3f8a78', background: '#fff', border: '1px solid var(--float-border)' }}>
+        style={{ ...btn('secondary', 'sm'), flex: 'none' }}>
         Plan it
       </button>
       {editing && (confirmRemove ? (
