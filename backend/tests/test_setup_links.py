@@ -174,3 +174,13 @@ async def test_the_admin_list_offers_a_setup_link_only_to_clinicians_sent_one(ap
     await api.post("/auth/setup-link/complete", json={"token": token, "password": "a-good-password"})
     users = {u["id"]: u for u in (await api.get("/admin/users")).json()}
     assert users[created["user_id"]]["awaiting_setup"] is False
+
+
+async def test_signing_in_straight_after_choosing_a_password_works(api, db, no_outbound):
+    """The setup page signs in the moment the password is saved, often in the same second."""
+    created, token, _ = await invite_clinician(api, db, no_outbound)
+    await api.post("/auth/setup-link/complete", json={"token": token, "password": "a-good-password"})
+
+    tokens = (await api.post("/auth/login", json={"email": created["email"], "password": "a-good-password"})).json()
+    api.sign_in_with_token(tokens["access_token"])
+    assert (await api.get("/auth/me")).status_code == 200

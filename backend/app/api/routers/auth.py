@@ -16,6 +16,7 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    fresh_issue_time,
     hash_password,
     token_predates_password_change,
 )
@@ -86,8 +87,9 @@ async def login(
             detail="Incorrect email or password"
         )
 
-    access_token = create_access_token(subject=str(user.id))
-    refresh_token = create_refresh_token(subject=str(user.id))
+    issued_at = fresh_issue_time(user.password_changed_at)
+    access_token = create_access_token(subject=str(user.id), issued_at=issued_at)
+    refresh_token = create_refresh_token(subject=str(user.id), issued_at=issued_at)
 
     return TokenResponse(
         access_token=access_token,
@@ -124,8 +126,9 @@ async def refresh(
     if token_predates_password_change(payload, user.password_changed_at):
         raise credentials_exception
 
-    access_token = create_access_token(subject=str(user.id))
-    refresh_token = create_refresh_token(subject=str(user.id))
+    issued_at = fresh_issue_time(user.password_changed_at)
+    access_token = create_access_token(subject=str(user.id), issued_at=issued_at)
+    refresh_token = create_refresh_token(subject=str(user.id), issued_at=issued_at)
 
     return TokenResponse(
         access_token=access_token,

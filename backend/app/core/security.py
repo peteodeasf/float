@@ -71,3 +71,19 @@ def token_predates_password_change(payload: dict[str, Any], password_changed_at)
     # tokens handed back by change-password are stamped a second later so they survive. The cost
     # is that anyone signing in during that same one second has to sign in again.
     return int(issued_at) <= int(changed.timestamp())
+
+
+def fresh_issue_time(password_changed_at) -> datetime:
+    """When to stamp a token issued now to someone who has just proved who they are.
+
+    Tokens from the same second as a password change are refused (see above). Someone who chooses
+    a password and signs in straight away, as the setup page does, would be refused too. So a token
+    handed out after a successful sign-in is stamped at least a second after the change.
+    """
+    now = datetime.now(timezone.utc)
+    if password_changed_at is None:
+        return now
+    changed = password_changed_at
+    if changed.tzinfo is None:
+        changed = changed.replace(tzinfo=timezone.utc)
+    return max(now, changed + timedelta(seconds=1))

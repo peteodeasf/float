@@ -1,6 +1,6 @@
 # Practice and clinician onboarding — plan
 
-**Planned 2026-09-16.** Steps 1 and 2 done.
+**Planned 2026-09-16.** Steps 1–8 built 2026-09-16 (not yet pushed). Step 9, the sample family, is not started.
 **Gate:** `/security-review` before any part ships. All of it touches sign-in and who can see
 which patients (non-negotiable #2).
 
