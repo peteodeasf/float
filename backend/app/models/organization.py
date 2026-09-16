@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, JSON, text
+from sqlalchemy import String, DateTime, Integer, JSON, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -19,6 +19,17 @@ class Organization(Base):
         nullable=False
     )
     settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    # setting_up until the person setting up the practice finishes, then active. Float admin can
+    # suspend it. Nobody in a practice that is not active can use the clinician app.
+    # docs/plans/clinician-practice-onboarding.md
+    status: Mapped[str] = mapped_column(
+        String, nullable=False, default="active", server_default="active"
+    )
+    state: Mapped[str | None] = mapped_column(String, nullable=True)
+    phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Roughly how many clinicians, from the access request. Only decides whether the setup
+    # checklist suggests inviting a colleague.
+    size: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

@@ -87,6 +87,8 @@ def _generate_temp_password(length: int = 12) -> str:
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
+from app.services import practice_service
+
 router = APIRouter(prefix="/patients", tags=["patients"])
 patient_router = APIRouter(prefix="/patient", tags=["patient"])
 # Its own prefix rather than a path under /patients, so it cannot be shadowed by
@@ -108,6 +110,8 @@ async def get_practitioner_context(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Practitioner profile not found"
         )
+    # Nobody uses the clinician app until their setup is finished and their practice is active.
+    await practice_service.require_ready(db, current_user, practitioner.organization_id)
     return current_user, practitioner
 
 

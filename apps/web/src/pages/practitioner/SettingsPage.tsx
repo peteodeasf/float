@@ -1,9 +1,9 @@
 import { btn } from '../../components/ui/buttons'
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
 
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import { CARD, CARD_STYLE, ERROR_BOX, Field, INPUT, SECTION_NOTE, SECTION_TITLE, errorMessage } from '../../components/ui/form'
 import { changeMyPassword, getMyProfile, updateMyProfile } from '../../api/me_practitioner'
 
 /**
@@ -37,11 +37,6 @@ export default function SettingsPage() {
     setPhone(profile.phone_number ?? '')
   }, [profile])
 
-  const message = (e: unknown, fallback: string) => {
-    const detail = axios.isAxiosError(e) ? e.response?.data?.detail : null
-    return typeof detail === 'string' ? detail : fallback
-  }
-
   const saveDetails = useMutation({
     mutationFn: () => updateMyProfile({
       name,
@@ -56,7 +51,7 @@ export default function SettingsPage() {
       qc.invalidateQueries({ queryKey: ['patients'] })
       setTimeout(() => setSaved(false), 3000)
     },
-    onError: (e) => setDetailsError(message(e, 'Could not save your details.')),
+    onError: (e) => setDetailsError(errorMessage(e, 'Could not save your details.')),
   })
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -73,7 +68,7 @@ export default function SettingsPage() {
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
       setTimeout(() => setPasswordChanged(false), 5000)
     },
-    onError: (e) => setPasswordError(message(e, 'Could not change your password.')),
+    onError: (e) => setPasswordError(errorMessage(e, 'Could not change your password.')),
   })
 
   const submitPassword = () => {
@@ -183,22 +178,5 @@ export default function SettingsPage() {
         )}
       </main>
     </div>
-  )
-}
-
-const CARD = 'bg-white rounded-xl'
-const CARD_STYLE: React.CSSProperties = { border: '1px solid var(--float-border)', padding: '20px' }
-const SECTION_TITLE: React.CSSProperties = { fontSize: '15px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }
-const SECTION_NOTE: React.CSSProperties = { fontSize: '13px', color: 'var(--float-text-secondary)', margin: '6px 0 0', lineHeight: 1.5 }
-const INPUT: React.CSSProperties = { width: '100%', padding: '8px 10px', boxSizing: 'border-box', fontSize: '14px', border: '1px solid #cbd5e1', borderRadius: '6px' }
-const ERROR_BOX: React.CSSProperties = { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', marginTop: '14px', fontSize: '13px', color: '#991b1b' }
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <label style={{ display: 'block' }}>
-      <span style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>{label}</span>
-      {children}
-      {hint && <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{hint}</span>}
-    </label>
   )
 }

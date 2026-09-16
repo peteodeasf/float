@@ -79,7 +79,8 @@ async def login(
     )
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(request.password, user.password_hash):
+    # A removed account gets the same answer as a wrong password.
+    if not user or user.deactivated_at is not None or not verify_password(request.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
@@ -116,7 +117,7 @@ async def refresh(
         select(User).where(User.id == user_id)
     )
     user = result.scalar_one_or_none()
-    if not user:
+    if not user or user.deactivated_at is not None:
         raise credentials_exception
     # A refresh token lasts a week. Without this, changing a password left a stolen one working
     # for the rest of that week.
@@ -167,6 +168,8 @@ async def get_me(
     is_practitioner = (await db.execute(
         select(PractitionerProfile.id).where(PractitionerProfile.user_id == current_user.id)
     )).scalar_one_or_none() is not None
+    # An office manager also signs in to the clinician app, but only reaches the practice screens.
+    is_practice_manager = any(r.role == "practice_manager" for r in roles)
 
     # Parents link to their child(ren) via parent_patient_links, not user_id.
     # MVP is single-child, but the model returns all links.
@@ -199,6 +202,9 @@ async def get_me(
         "is_patient": patient is not None,
         "is_parent": role == "parent",
         "is_practitioner": is_practitioner,
+        "is_practice_manager": is_practice_manager,
+        # Whether the clinician app should send them to the setup screens first.
+        "setup_complete": current_user.setup_completed_at is not None,
         "children": children,
         "must_change_password": current_user.must_change_password,
         # Treatment has been closed by a clinician. The child and parent apps still let them sign
@@ -313,6 +319,8 @@ async def complete_setup_link(request: SetupLinkCompleteRequest, db: AsyncSessio
         raise SETUP_LINK_UNUSABLE
 
     user = await db.get(User, link.user_id)
+    if user.deactivated_at is not None:
+        raise SETUP_LINK_UNUSABLE
     link.used_at = apply_new_password(user, request.password)
     await db.commit()
     # No tokens here. The page signs in with the new password through the normal login, which is
@@ -329,7 +337,7 @@ async def forgot_password(
     result = await db.execute(select(User).where(User.email == request.email))
     user = result.scalar_one_or_none()
 
-    if user:
+    if user and user.deactivated_at is None:
         token = secrets.token_hex(32)
         user.password_reset_token = token
         user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)

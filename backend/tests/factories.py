@@ -4,6 +4,7 @@ Only what a ladder test needs: an org, a patient, a plan, situations, rungs. Eve
 to the caller's session and flushed, never committed — the `db` fixture rolls the whole test back.
 """
 import uuid
+from datetime import datetime, timezone
 
 from app.models.organization import Organization
 from app.models.patient import PatientProfile, PractitionerProfile
@@ -23,6 +24,8 @@ async def _make_user(db, org, role: str) -> User:
     u = User(
         email=f"{role}-{uuid.uuid4().hex[:8]}@test.invalid",
         password_hash="not-a-real-hash",
+        # Someone already using Float, not someone partway through setup.
+        setup_completed_at=datetime.now(timezone.utc),
     )
     db.add(u)
     await db.flush()

@@ -1,3 +1,4 @@
+import html
 import logging
 import resend
 from app.core.config import settings
@@ -355,11 +356,14 @@ Sent via Float
         return False
 
 
-async def send_clinician_setup_email(to_email: str, setup_url: str, days_valid: int) -> bool:
-    """Invite a clinician with a one-time link to choose their password. No password is emailed."""
+async def send_setup_email(to_email: str, setup_url: str, days_valid: int, intro: str) -> bool:
+    """Invite someone with a one-time link to choose their password. No password is emailed.
+
+    `intro` is the one line saying why they are getting it, e.g. that a practice was approved.
+    """
 
     if not settings.RESEND_API_KEY:
-        logger.warning("RESEND_API_KEY not configured — skipping clinician setup email")
+        logger.warning("RESEND_API_KEY not configured — skipping setup email")
         return False
 
     resend.api_key = settings.RESEND_API_KEY
@@ -386,7 +390,7 @@ async def send_clinician_setup_email(to_email: str, setup_url: str, days_valid: 
       </p>
 
       <p style="font-size:15px; color:#475569; line-height:1.6; margin:0 0 20px;">
-        You've been set up as a clinician on Float. Choose a password to get started.
+        {html.escape(intro)} Choose a password to get started.
       </p>
 
       <div style="text-align:center; margin:0 0 24px;">
@@ -399,7 +403,7 @@ async def send_clinician_setup_email(to_email: str, setup_url: str, days_valid: 
       </div>
 
       <p style="font-size:13px; color:#64748b; line-height:1.5; margin:0 0 12px;">
-        You'll sign in as <strong>{to_email}</strong>. This link works once and expires in
+        You'll sign in as <strong>{html.escape(to_email)}</strong>. This link works once and expires in
         {days_valid} days.
       </p>
 
@@ -422,7 +426,7 @@ async def send_clinician_setup_email(to_email: str, setup_url: str, days_valid: 
 
     text_body = f"""You've been invited to Float
 
-You've been set up as a clinician on Float. Choose a password to get started:
+{intro} Choose a password to get started:
 
 {setup_url}
 
@@ -442,10 +446,10 @@ Sent via Float
             "html": html_body,
             "text": text_body,
         })
-        logger.info(f"Clinician setup email sent to {to_email}")
+        logger.info(f"Setup email sent to {to_email}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send clinician setup email to {to_email}: {e}")
+        logger.error(f"Failed to send setup email to {to_email}: {e}")
         return False
 
 

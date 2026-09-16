@@ -19,3 +19,4 @@ from app.models.review import ReviewRound, ReviewReviewer, ReviewMark, ReviewAdd
 from app.models.insight import PatientInsight
 from app.models.reminder import ReminderSent
 from app.models.setup_link import SetupLink
+from app.models.practice import PracticeManagerProfile, AgreementAcceptance, AccessRequest

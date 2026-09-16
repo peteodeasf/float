@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.dependencies import get_current_user
-from app.core.security import hash_password
 from app.models.user import User, UserRole
 from app.models.organization import Organization
 from app.models.setup_link import SetupLink
@@ -18,10 +17,9 @@ from app.models.patient import PatientProfile, PractitionerProfile, ParentPatien
 from app.models.experiment import Experiment
 from app.models.jit_content import Tag, JitTip, JitTipTag
 from app.services import checklist_item_service as checklist_items
-from app.services import setup_link_service
+from app.services import practice_service
 from app.api.routers.checklist import checklist_item_out
 from app.services.email_service import (
-    send_clinician_setup_email,
     send_password_reset_email,
 )
 
@@ -463,33 +461,34 @@ async def create_organization(
     admin: User = Depends(get_admin_context),
     db: AsyncSession = Depends(get_db),
 ):
-    org = Organization(name=request.name, type="clinic", settings={})
-    db.add(org)
-    await db.flush()
+    """A new practice. With an admin email, that person is sent a setup link and the practice stays
+    in setup until they finish it. Without one, the practice is active straight away."""
+    admin_email = (request.admin_email or "").lower().strip()
+    if admin_email and await practice_service.email_in_use(db, admin_email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with that email already exists.",
+        )
+
+    org = await practice_service.create_practice(
+        db, request.name, org_status="setting_up" if admin_email else "active",
+    )
     org_id = org.id
-    # Every organization starts with the default process checklist — the same list the seed
-    # migration gave the organizations that already existed.
-    await checklist_items.seed_defaults(db, org_id)
-    await db.commit()
+    if admin_email:
+        owner = await practice_service.create_member(
+            db, org_id, admin_email, name="", role=practice_service.CLINICIAN, is_admin=True,
+        )
+        await practice_service.send_setup_link(
+            db, owner, org_id, purpose="practice_owner",
+            intro=f"Your practice, {request.name}, has been set up on Float.",
+            created_by_user_id=admin.id,
+        )
+    else:
+        await db.commit()
     return {
         "id": str(org_id),
         "name": request.name,
     }
-
-
-async def _send_clinician_setup_link(
-    db: AsyncSession, user_id: uuid.UUID, organization_id: uuid.UUID, email: str, admin: User,
-) -> None:
-    """Issue a setup link, commit, then email it. Committed first so the link works on arrival."""
-    token = await setup_link_service.issue(
-        db, user_id, organization_id, purpose="clinician", created_by_user_id=admin.id,
-    )
-    await db.commit()
-    await send_clinician_setup_email(
-        to_email=email,
-        setup_url=setup_link_service.setup_url(token),
-        days_valid=setup_link_service.LINK_LIFETIME.days,
-    )
 
 
 @router.post("/clinicians")
@@ -520,36 +519,19 @@ async def create_clinician(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Create the User. The password is random and never sent: they choose their own from the
-    # setup link.
-    new_user = User(
-        email=email,
-        password_hash=hash_password(secrets.token_urlsafe(32)),
+    user = await practice_service.create_member(
+        db, org_uuid, email, request.name, practice_service.CLINICIAN,
     )
-    db.add(new_user)
-    await db.flush()
-
-    # Create practitioner role
-    role = UserRole(
-        user_id=new_user.id,
-        organization_id=org_uuid,
-        role="practitioner",
-    )
-    db.add(role)
-
-    # Create practitioner profile
-    profile = PractitionerProfile(
-        user_id=new_user.id,
-        organization_id=org_uuid,
-        name=request.name,
-    )
-    db.add(profile)
-    await db.flush()
-
+    profile = (await db.execute(
+        select(PractitionerProfile).where(PractitionerProfile.user_id == user.id)
+    )).scalar_one()
     profile_id = profile.id
-    user_id = new_user.id
-
-    await _send_clinician_setup_link(db, user_id, org_uuid, email, admin)
+    user_id = user.id
+    org_name = org.name
+    await practice_service.send_setup_link(
+        db, user, org_uuid, purpose="colleague",
+        intro="You've been set up as a clinician on Float.", created_by_user_id=admin.id,
+    )
 
     return {
         "id": str(profile_id),
@@ -557,7 +539,7 @@ async def create_clinician(
         "user_id": str(user_id),
         "email": email,
         "organization_id": str(org_uuid),
-        "organization_name": org.name,
+        "organization_name": org_name,
     }
 
 
@@ -582,7 +564,10 @@ async def resend_clinician_setup_link(
             detail="This clinician has already set up their account. Use Reset password instead.",
         )
 
-    await _send_clinician_setup_link(db, user_id, profile.organization_id, user.email, admin)
+    await practice_service.send_setup_link(
+        db, user, profile.organization_id, purpose="colleague",
+        intro="You've been set up as a clinician on Float.", created_by_user_id=admin.id,
+    )
     return {"success": True}
 
 

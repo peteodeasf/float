@@ -13,7 +13,7 @@ from app.api.routers import (
     downward_arrows, messages, monitoring,
     session_notes, session_recordings, action_plans, admin, waitlist,
     formulation, checklist, accommodations, situation_tags, library,
-    insights, admin_reviews,
+    insights, admin_reviews, setup,
 )
 
 app = FastAPI(
@@ -32,6 +32,7 @@ app.add_middleware(
 
 app.include_router(review.router)
 app.include_router(auth.router)
+app.include_router(setup.router)
 app.include_router(patients.router)
 app.include_router(patients.practitioners_router)
 app.include_router(treatment_plans.router)

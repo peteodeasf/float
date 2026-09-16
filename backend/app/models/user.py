@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import String, DateTime, Boolean, ForeignKey, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -33,6 +34,19 @@ class User(Base):
     timezone: Mapped[str | None] = mapped_column(String, nullable=True)
     # Set from the link at the bottom of every reminder email.
     reminder_emails_off_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Onboarding. The setup screens this person has finished, and when they finished all of them.
+    # A clinician or office manager cannot use the app until setup_completed_at is set.
+    # docs/plans/clinician-practice-onboarding.md
+    setup_steps_done: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
+    setup_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Set when a practice admin removes them. The account stops working; nothing is deleted.
+    deactivated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(

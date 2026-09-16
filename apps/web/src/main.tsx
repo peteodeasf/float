@@ -15,6 +15,7 @@ import AdminReviewsPage from './pages/admin/AdminReviewsPage'
 import LoginPage from './pages/auth/LoginPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import SetupAccountPage from './pages/auth/SetupAccountPage'
+import SetupStepsPage from './pages/setup/SetupStepsPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
 import SessionPage from './pages/practitioner/SessionPage'
@@ -113,6 +114,9 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/setup" element={<SetupAccountPage />} />
+              <Route path="/setup/steps" element={
+                <ProtectedRoute area="setup"><SetupStepsPage /></ProtectedRoute>
+              } />
               <Route path="/dashboard" element={
                 <ProtectedRoute><DashboardPage /></ProtectedRoute>
               } />

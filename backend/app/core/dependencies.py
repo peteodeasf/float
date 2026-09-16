@@ -38,6 +38,9 @@ async def get_current_user(
         raise credentials_exception
     if token_predates_password_change(payload, user.password_changed_at):
         raise credentials_exception
+    # Removed from their practice. The account stays for the record but no longer works.
+    if user.deactivated_at is not None:
+        raise credentials_exception
     return user
 
 

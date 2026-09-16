@@ -213,6 +213,44 @@ Open mode also needs, before it's switched on:
 
 All migrations add things. None drop data.
 
+## How it is built (steps 3–8)
+
+Written 2026-09-16 before building. Decisions made here without Peter, all easy to change:
+
+- **Where "Request access" lives:** `app.floatcbt.com/request-access`, linked from the clinician
+  sign-in page. The marketing site can link to it.
+- **Placeholder terms and BAA text,** clearly marked as a draft, until the lawyer's version
+  exists. Versions are named in one backend file, so a new version means new acceptances.
+- **The request form asks "clinician or office manager"**, and the approval creates that role.
+
+**Data** (one migration, adds only):
+- `organizations`: `status` (setting_up / active / suspended; existing rows active), `state`,
+  `phone`, `size` (the rough number of clinicians from the request).
+- `users`: `setup_steps_done` (list of finished setup screens), `setup_completed_at` (existing
+  users filled in, so nobody already using Float is sent through setup), `deactivated_at`.
+- `practice_manager_profiles`: user, practice, name, phone.
+- `agreement_acceptances`: practice, user, document, version, accepted at.
+- `access_requests`: as in "Data changes", plus the sender's IP address for the request limit.
+- `patient_access_grants.granted_by_user_id`, because a manager is not a clinician and the
+  existing "granted by" column points at a clinician.
+
+**The one gate.** `require_ready` refuses anyone whose own setup isn't finished, whose practice
+isn't active, or whose account was removed. It runs inside `get_practitioner_context`, which 115
+clinician endpoints already use, in the two places that look up the clinician without it
+(`messages.py`, `experiments.py`), and in the manager's endpoints. A removed account is also
+refused in `get_current_user`.
+
+**Setup screens** (`/setup/...` endpoints, `/setup/steps` in the app): details, then practice
+(owner only), then agreements. Terms for everyone; the BAA only for the person setting up the
+practice, who also ticks that they are allowed to sign for it. Finishing the last screen marks
+the user done and, for the owner, makes the practice active.
+
+**Practice admin endpoints** (`/practice/...`): members list, invite (clinician or office
+manager), resend, make or remove admin (never the last admin), remove (sets `deactivated_at`;
+never yourself). Manager-only: patient names with their clinicians, give a clinician access,
+make a clinician the patient's own clinician. Each manager view of that list is written to the
+access log with `via="practice_manager"`.
+
 ## Also fixed along the way
 
 - **Temporary passwords for clinicians.** The admin "New clinician" button sends a setup link

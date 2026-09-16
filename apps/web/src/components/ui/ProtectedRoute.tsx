@@ -1,8 +1,18 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+/**
+ * Which part of the app a screen belongs to.
+ *   clinician — patients, education, settings: clinicians who have finished setup.
+ *   practice  — the practice screens: office managers, and clinicians who are practice admins
+ *               (the server decides who is an admin).
+ *   setup     — the setup screens: anyone signed in who has not finished setup.
+ * docs/plans/clinician-practice-onboarding.md
+ */
+type Area = 'clinician' | 'practice' | 'setup'
+
+export default function ProtectedRoute({ children, area = 'clinician' }: { children: React.ReactNode; area?: Area }) {
+  const { isAuthenticated, isLoading, setupComplete, isPracticeManager } = useAuth()
 
   if (isLoading) {
     return (
@@ -14,6 +24,13 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+  if (area === 'setup') {
+    if (setupComplete) return <Navigate to={isPracticeManager ? '/practice' : '/dashboard'} replace />
+  } else if (!setupComplete) {
+    return <Navigate to="/setup/steps" replace />
+  } else if (area === 'clinician' && isPracticeManager) {
+    return <Navigate to="/practice" replace />
   }
 
   // One wrapper around every clinician screen, so the app's text boxes can be styled in one place

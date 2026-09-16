@@ -23,7 +23,7 @@ from app.models.patient import (
     PatientProfile,
     PractitionerProfile,
 )
-from app.models.user import UserRole
+from app.models.user import User, UserRole
 
 
 logger = logging.getLogger(__name__)
@@ -92,6 +92,12 @@ async def get_patient_for_practitioner(
     dependencies call it, directly or through _require - so this is where the access log is
     written. A route added later is covered without anyone remembering.
     """
+    # The same gate as get_practitioner_context, for the routes that look the clinician up
+    # themselves (messages, experiments) rather than through it.
+    from app.services.practice_service import require_ready
+    user = await db.get(User, user_id)
+    await require_ready(db, user, practitioner.organization_id)
+
     result = await db.execute(
         select(PatientProfile).where(PatientProfile.id == patient_id)
     )

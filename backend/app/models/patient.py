@@ -163,6 +163,10 @@ class PatientAccessGrant(Base):
     granted_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )
+    # Who gave access when it was not a clinician: an office manager. docs/plans/clinician-practice-onboarding.md
+    granted_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     revoked_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )
