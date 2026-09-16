@@ -61,6 +61,12 @@ PUBLIC = {
     "POST /auth/forgot-password",
     "POST /auth/reset-password",
     "POST /waitlist",
+    # Request access for a practice. Always answers the same way and saves only a request; limited
+    # per email and per IP address. docs/plans/clinician-practice-onboarding.md
+    "POST /access-requests",
+    # A new user's setup link. Guarded by an unguessable one-time token.
+    "POST /auth/setup-link/check",
+    "POST /auth/setup-link/complete",
     # The monitoring form a parent opens from an emailed link. Guarded by an unguessable token in
     # the URL rather than a login.
     "GET /monitor/{access_token}",

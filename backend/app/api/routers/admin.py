@@ -1,6 +1,6 @@
 import secrets
 import uuid
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
 from app.models.organization import Organization
+from app.models.practice import AgreementAcceptance
 from app.models.setup_link import SetupLink
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
@@ -448,6 +449,7 @@ async def list_organizations(
         output.append({
             "id": str(o.id),
             "name": o.name,
+            "status": o.status,
             "clinician_count": clinician_count,
             "patient_count": patient_count,
             "created_at": o.created_at.isoformat() if o.created_at else None,
@@ -489,6 +491,45 @@ async def create_organization(
         "id": str(org_id),
         "name": request.name,
     }
+
+
+class OrganizationStatusRequest(BaseModel):
+    status: Literal["active", "suspended"]
+
+
+@router.put("/organizations/{org_id}/status")
+async def set_organization_status(
+    org_id: uuid.UUID,
+    request: OrganizationStatusRequest,
+    admin: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Suspend a practice, or let it back in. Nobody in a suspended practice can use Float.
+
+    Letting back in a practice that never accepted the BAA returns it to setup, not to active:
+    suspending must not be a way around the agreement.
+    """
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    if request.status == "suspended":
+        org.status = "suspended"
+    elif org.status == "suspended":
+        signed_baa = (await db.execute(
+            select(AgreementAcceptance.id).where(
+                AgreementAcceptance.organization_id == org.id,
+                AgreementAcceptance.document == "baa",
+            )
+        )).first() is not None
+        # Practices from before onboarding existed never went through setup; they stay usable.
+        has_members_set_up = (await db.execute(
+            select(User.id)
+            .join(UserRole, UserRole.user_id == User.id)
+            .where(UserRole.organization_id == org.id, User.setup_completed_at.is_not(None))
+        )).first() is not None
+        org.status = "active" if signed_baa or has_members_set_up else "setting_up"
+    await db.commit()
+    return {"id": str(org.id), "status": org.status}
 
 
 @router.post("/clinicians")

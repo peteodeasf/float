@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, NotAClinicianError } from '../../context/AuthContext'
 import { apiClient } from '../../api/client'
 import FloatLogo from '../../components/ui/FloatLogo'
@@ -167,6 +167,13 @@ export default function LoginPage() {
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
+
+            <p className="text-center" style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>
+              New to Float?{' '}
+              <Link to="/request-access" style={{ color: 'var(--float-primary)', fontWeight: 500 }}>
+                Request access for your practice
+              </Link>
+            </p>
           </form>
         ) : (
           <div>

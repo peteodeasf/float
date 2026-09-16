@@ -186,3 +186,37 @@ async def send_setup_link(
         days_valid=setup_link_service.LINK_LIFETIME.days,
         intro=intro,
     )
+
+
+# ── Access requests ───────────────────────────────────────────────────────────
+
+async def approve_request(db: AsyncSession, request, reviewed_by_user_id: uuid.UUID | None) -> Organization:
+    """Create the practice and the person who asked, and send them a setup link.
+
+    The practice stays in setup until that person finishes the setup screens, which is where the
+    BAA is accepted. Raises 409 if the request was already dealt with or the email has an account.
+    """
+    if request.status != "new":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="This request has already been dealt with.")
+    if await email_in_use(db, request.email):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="Someone with this email already has a Float account.")
+
+    org = await create_practice(db, request.practice_name, state=request.state,
+                                size=request.practice_size)
+    user = await create_member(
+        db, org.id, request.email, request.name, request.role, is_admin=True,
+        credentials=request.credentials if request.role == CLINICIAN else None,
+    )
+    request.status = "approved"
+    request.reviewed_at = datetime.now(timezone.utc)
+    request.reviewed_by_user_id = reviewed_by_user_id
+    request.organization_id = org.id
+    practice_name = org.name
+    await send_setup_link(
+        db, user, org.id, purpose="practice_owner",
+        intro=f"Your request to use Float for {practice_name} has been approved.",
+        created_by_user_id=reviewed_by_user_id,
+    )
+    return org

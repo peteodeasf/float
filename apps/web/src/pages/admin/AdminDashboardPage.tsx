@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient, createClinician } from '../../context/AdminAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
+import AccessRequestsSection from './AccessRequestsSection'
 
 type Stats = {
   total_users: number
@@ -27,6 +28,7 @@ type AdminUser = {
 type AdminOrg = {
   id: string
   name: string
+  status: 'setting_up' | 'active' | 'suspended'
   clinician_count: number
   patient_count: number
   created_at: string | null
@@ -228,13 +230,25 @@ export default function AdminDashboardPage() {
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault()
-    await adminApiClient.post('/admin/organizations', {
-      name: newOrgName,
-      admin_email: newOrgAdminEmail || null,
-    })
+    try {
+      await adminApiClient.post('/admin/organizations', {
+        name: newOrgName,
+        admin_email: newOrgAdminEmail || null,
+      })
+    } catch (err: any) {
+      alert(err?.response?.data?.detail ?? 'Failed to create the organization.')
+      return
+    }
     setShowNewOrg(false)
     setNewOrgName('')
     setNewOrgAdminEmail('')
+    await loadAll()
+  }
+
+  const handleOrgStatus = async (org: AdminOrg) => {
+    const next = org.status === 'suspended' ? 'active' : 'suspended'
+    if (next === 'suspended' && !confirm(`Suspend ${org.name}? Nobody there will be able to use Float until you let them back in.`)) return
+    await adminApiClient.put(`/admin/organizations/${org.id}/status`, { status: next })
     await loadAll()
   }
 
@@ -361,6 +375,8 @@ export default function AdminDashboardPage() {
             </tbody>
           </table>
         </section>
+
+        <AccessRequestsSection cardStyle={cardStyle} onApproved={loadAll} />
 
         {/* Users */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
@@ -636,7 +652,7 @@ export default function AdminDashboardPage() {
               </div>
               <div style={{ flex: '1 1 200px' }}>
                 <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
-                  Admin email (optional)
+                  Admin email (optional, gets a setup link)
                 </label>
                 <input
                   type="email"
@@ -671,6 +687,7 @@ export default function AdminDashboardPage() {
             <thead>
               <tr>
                 <th style={thStyle}>Name</th>
+                <th style={thStyle}>Status</th>
                 <th style={thStyle}>Clinicians</th>
                 <th style={thStyle}>Patients</th>
                 <th style={thStyle}>Created</th>
@@ -682,6 +699,9 @@ export default function AdminDashboardPage() {
                 <Fragment key={o.id}>
                   <tr>
                     <td style={tdStyle}>{o.name}</td>
+                    <td style={tdStyle}>
+                      {o.status === 'setting_up' ? 'Setting up' : o.status === 'suspended' ? 'Suspended' : 'Active'}
+                    </td>
                     <td style={tdStyle}>{o.clinician_count}</td>
                     <td style={tdStyle}>{o.patient_count}</td>
                     <td style={tdStyle}>{formatDate(o.created_at)}</td>
@@ -689,11 +709,14 @@ export default function AdminDashboardPage() {
                       <button onClick={() => handleExpandOrg(o.id)} style={smallBtn}>
                         {expandedOrgId === o.id ? 'Hide' : 'View'}
                       </button>
+                      <button onClick={() => handleOrgStatus(o)} style={o.status === 'suspended' ? smallBtn : dangerBtn}>
+                        {o.status === 'suspended' ? 'Let back in' : 'Suspend'}
+                      </button>
                     </td>
                   </tr>
                   {expandedOrgId === o.id && (
                     <tr>
-                      <td colSpan={5} style={{ ...tdStyle, background: '#f8fafc' }}>
+                      <td colSpan={6} style={{ ...tdStyle, background: '#f8fafc' }}>
                         {!expandedOrgDetail ? (
                           <span style={{ color: '#94a3b8' }}>Loading...</span>
                         ) : (

@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     RESEND_FROM_NAME: str = "Float"
     BASE_URL: str = "http://localhost:5173"
 
+    # How a new practice gets in. "approval": the Request access form saves a request and a Float
+    # admin approves it. "open": the same form approves it straight away and sends the setup link.
+    # docs/plans/clinician-practice-onboarding.md, step 7.
+    PRACTICE_SIGNUP_MODE: str = "approval"
+
     # SMS (Twilio)
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
