@@ -11,7 +11,7 @@ Not built. The database already allows it; the app assumes one parent in several
   sees the other's messages.
 - **Both parents answer the weekly check-in.** The clinician sees who has answered and who has not.
   A parent who never takes part is visible rather than hidden.
-- **Both parents get the reminder emails, and each can turn their own off.**
+- **Both parents get the reminder emails**, and each parent can turn their own off.
 - **A link each for the monitoring week, and the clinician sees which parent wrote each entry.**
 
 ## What is already true
@@ -54,12 +54,12 @@ progress panel shows each parent's answer, and the attention flag names who is m
 lapse moves the family on to the next accommodation is unchanged — it is still the clinician's call.
 **Gate:** clinical sign-off (it changes when a family advances). Pre-launch that is Peter's call.
 
-### 4. Reminder emails: both, with a switch each `M`
+### 4. Reminder emails: both parents, and each can turn their own off `M`
 
 `reminder_jobs.py:236-237` and `:278-279` already send to every linked parent.
 
-**Changes:** a per-parent switch in the parent app ("email me reminders"), stored on the link row, and
-honoured by both jobs. The monitoring week's evening email uses the same switch.
+**Changes:** a tick box in the parent app, "Email me reminders", saved per parent and honoured by
+both scheduled jobs. The monitoring week's evening email uses the same switch.
 
 ### 5. Monitoring: a link each, and who wrote what `M`
 
@@ -81,7 +81,7 @@ the shared suggestion row, so the second parent overwrites the first, and `named
 
 **Changes:** a row per parent per accommodation, and the clinician sees both answers side by side.
 Where the two parents disagree, that is worth showing rather than averaging.
-**Needs a decision first** (below).
+Peter, 2026-09-15: each parent answers separately.
 
 ### 7. The patient record's own parent fields `S`
 
