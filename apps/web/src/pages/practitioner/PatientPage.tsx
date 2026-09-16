@@ -32,6 +32,7 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
+import { btn, buttonRow, countPill, liveDot, statusCard, statusCardState, statusCardTitle } from '../../components/ui/buttons'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
@@ -1147,15 +1148,14 @@ export default function PatientPage() {
           {filteredNotes.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{filteredNotes.length}</span>}
         </div>
         {!showNoteForm && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={buttonRow}>
             {/* On the clinician's phone: record the session, and a draft note is written from it.
                 docs/plans/session-recording.md */}
-            <button onClick={() => navigate(`/patients/${patientId}/record`)} className="bg-transparent border-none cursor-pointer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#135450' }}>
-              <span aria-hidden="true" style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#d64545' }} />
+            <button onClick={() => navigate(`/patients/${patientId}/record`)} style={btn('secondary', 'sm')}>
+              <span aria-hidden="true" style={liveDot} />
               Record session
             </button>
-            <button onClick={startNewNote} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ Add note</button>
+            <button onClick={startNewNote} style={btn('primary', 'sm')}>+ Add note</button>
           </div>
         )}
       </div>
@@ -1207,9 +1207,9 @@ export default function PatientPage() {
           {/* Tall enough to read a whole note written from a recording, which runs to several
               hundred words; a four-line box meant scrolling to edit a sentence. */}
           <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={editingNote ? 18 : 6} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '10px', minHeight: editingNote ? '380px' : '110px', lineHeight: 1.55, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim() || noteParticipants.length === 0} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? (editingNote.is_draft ? 'Update and approve' : 'Update') : 'Save'}</button>
-            <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
+          <div style={buttonRow}>
+            <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim() || noteParticipants.length === 0} className="disabled:opacity-40" style={btn('primary')}>{editingNote ? (editingNote.is_draft ? 'Update and approve' : 'Update') : 'Save'}</button>
+            <button onClick={resetNoteForm} style={btn('quiet')}>Cancel</button>
           </div>
         </div>
       )}
@@ -1228,9 +1228,9 @@ export default function PatientPage() {
                   {(n.tags ?? []).map(t => <span key={t} className="px-1 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#475569', fontWeight: 500 }}>{t}</span>)}
                   <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                  <button onClick={() => { setEditingNote(n); setNoteParticipants(n.participants ?? []); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '13px', fontWeight: 600, padding: '2px 6px' }}>Edit</button>
-                  <button onClick={() => { if (confirm('Delete this note?')) deleteNoteMut.mutate(n.id) }} className="bg-transparent border-none cursor-pointer" style={{ fontSize: '13px', fontWeight: 600, color: '#dc2626', padding: '2px 6px' }}>Delete</button>
+                <div style={{ ...buttonRow, flexShrink: 0 }}>
+                  <button onClick={() => { setEditingNote(n); setNoteParticipants(n.participants ?? []); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} style={btn('secondary', 'sm')}>Edit</button>
+                  <button onClick={() => { if (confirm('Delete this note?')) deleteNoteMut.mutate(n.id) }} style={btn('danger', 'sm')}>Delete</button>
                 </div>
               </div>
               <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
@@ -2293,59 +2293,41 @@ export default function PatientPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              {/* Teen access card */}
-              <button onClick={() => openAccess('teen')} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: showTeenAccess && accessFocus === 'teen' ? '#eafaf6' : '#fff', border: showTeenAccess && accessFocus === 'teen' ? '1px solid var(--float-primary)' : '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+            {/* Every control here is the same height, radius and type size, from
+                components/ui/buttons. Who can get in comes first, then what you can do to the
+                record, then the process panel. */}
+            <div style={buttonRow}>
+              <button onClick={() => openAccess('teen')} style={statusCard(showTeenAccess && accessFocus === 'teen')}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '9999px', background: patient.teen_invited_at ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
                 <span>
-                  <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155' }}>Teen access</span>
-                  <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8' }}>{patient.teen_invited_at ? 'Set up' : patient.child_connect_consent_at ? 'Ready to invite' : 'Awaiting consent'}</span>
+                  <span style={statusCardTitle}>Teen access</span>
+                  <span style={statusCardState}>{patient.teen_invited_at ? 'Set up' : patient.child_connect_consent_at ? 'Ready to invite' : 'Awaiting consent'}</span>
                 </span>
               </button>
-              {/* Parent access card */}
-              <button onClick={() => openAccess('parent')} className="cursor-pointer" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: showTeenAccess && accessFocus === 'parent' ? '#eafaf6' : '#fff', border: showTeenAccess && accessFocus === 'parent' ? '1px solid var(--float-primary)' : '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+              <button onClick={() => openAccess('parent')} style={statusCard(showTeenAccess && accessFocus === 'parent')}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '9999px', background: patient.parent_email ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
                 <span>
-                  <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155' }}>Parent access</span>
-                  <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8' }}>{patient.parent_email ? 'Invite / manage' : 'Not set up'}</span>
+                  <span style={statusCardTitle}>Parent access</span>
+                  <span style={statusCardState}>{patient.parent_email ? 'Invite / manage' : 'Not set up'}</span>
                 </span>
               </button>
-              <button onClick={openProfileEdit} className="text-xs font-medium bg-transparent cursor-pointer" style={{ color: 'var(--float-primary)', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}>
-                Edit profile
-              </button>
-              <button
-                onClick={() => setShowClinicianAccess(v => !v)}
-                className="text-xs font-medium cursor-pointer"
-                style={{ color: showClinicianAccess ? '#fff' : 'var(--float-primary)', background: showClinicianAccess ? 'var(--float-primary)' : 'transparent', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}
-              >
+              <span aria-hidden="true" style={{ width: '1px', height: '24px', background: 'var(--float-border)' }} />
+              <button onClick={openProfileEdit} style={btn('secondary')}>Edit profile</button>
+              <button onClick={() => setShowClinicianAccess(v => !v)} style={btn(showClinicianAccess ? 'on' : 'secondary')}>
                 Clinician access
               </button>
               {patient.closed_at ? (
-                <button
-                  onClick={handleReopen}
-                  disabled={closing.isPending}
-                  className="text-xs font-medium cursor-pointer"
-                  style={{ color: 'var(--float-primary)', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '8px 14px' }}
-                >
+                <button onClick={handleReopen} disabled={closing.isPending} style={btn('secondary')}>
                   {closing.isPending ? 'Reopening…' : 'Reopen treatment'}
                 </button>
               ) : (
-                <button
-                  onClick={handleClose}
-                  disabled={closing.isPending}
-                  className="text-xs font-medium bg-transparent cursor-pointer"
-                  style={{ color: '#7c6a58', border: '1px solid #cbd5e1', borderRadius: '999px', padding: '8px 14px' }}
-                >
+                <button onClick={handleClose} disabled={closing.isPending} style={btn('secondary')}>
                   {closing.isPending ? 'Closing…' : 'Close treatment'}
                 </button>
               )}
-              <button
-                onClick={() => setProcessPanelOpen(v => !v)}
-                className="text-xs font-medium cursor-pointer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: processPanelOpen ? '#fff' : 'var(--float-primary)', background: processPanelOpen ? 'var(--float-primary)' : 'transparent', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '8px 14px' }}
-              >
+              <button onClick={() => setProcessPanelOpen(v => !v)} style={btn(processPanelOpen ? 'on' : 'secondary')}>
                 Process
-                <span style={{ fontSize: '10px', fontWeight: 700, color: processPanelOpen ? 'var(--float-primary)' : '#fff', background: processPanelOpen ? '#fff' : 'var(--float-primary)', borderRadius: '9999px', padding: '0 6px', lineHeight: '15px' }}>{processChecklistDone}/{processChecklistTotal}</span>
+                <span style={countPill(processPanelOpen)}>{processChecklistDone}/{processChecklistTotal}</span>
               </button>
             </div>
           </div>
