@@ -1,8 +1,8 @@
 """Practice onboarding: practice status, setup progress, office managers, agreements, access requests.
 
 docs/plans/clinician-practice-onboarding.md. Adds only; nothing is dropped. Every existing user is
-marked as having finished setup and every existing practice as active, so nobody already using
-Float is sent through setup.
+marked as having finished setup (except anyone holding an unused setup link who has not chosen a
+password) and every existing practice as active, so nobody already using Float is sent through setup.
 
 Revision ID: c4f8d2e1b7a3
 Revises: b3e7c1d9a2f4
@@ -30,7 +30,15 @@ def upgrade() -> None:
                                      server_default=sa.text("'[]'::jsonb")))
     op.add_column("users", sa.Column("setup_completed_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column("users", sa.Column("deactivated_at", sa.DateTime(timezone=True), nullable=True))
-    op.execute("UPDATE users SET setup_completed_at = now()")
+    # Everyone already using Float is set up. Not someone invited by a setup link who has not used
+    # it yet: they go through setup like anyone invited from now on.
+    op.execute("""
+        UPDATE users SET setup_completed_at = now()
+        WHERE NOT (
+            password_changed_at IS NULL
+            AND EXISTS (SELECT 1 FROM setup_links l WHERE l.user_id = users.id AND l.used_at IS NULL)
+        )
+    """)
 
     op.add_column("patient_access_grants", sa.Column("granted_by_user_id", sa.UUID(), nullable=True))
     op.create_foreign_key("fk_patient_access_grants_granted_by_user", "patient_access_grants",

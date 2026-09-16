@@ -114,6 +114,8 @@ async def _active_admin_count(db: AsyncSession, organization_id: uuid.UUID) -> i
             UserRole.role.in_(practice_service.PRACTICE_ROLES),
             UserRole.is_org_admin.is_(True),
             User.deactivated_at.is_(None),
+            # Someone invited but not set up yet can't sign in, so doesn't count.
+            User.setup_completed_at.is_not(None),
         )
     )).all()
     return len(rows)

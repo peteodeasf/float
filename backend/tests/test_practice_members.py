@@ -235,3 +235,13 @@ async def test_no_setup_link_is_offered_or_sent_to_someone_already_using_float(a
     member = next(x for x in (await api.get("/practice/members")).json() if x["user_id"] == str(colleague.user.id))
     assert member["can_resend_link"] is False
     assert (await api.post(f"/practice/members/{colleague.user.id}/setup-link")).status_code == 409
+
+
+async def test_an_admin_who_has_not_set_up_does_not_count_as_the_other_admin(api, db):
+    org = await make_org(db)
+    admin = await make_org_admin(db, org)
+    api.sign_in_as(admin.user)
+    await api.post("/practice/members", json={"name": "Morgan", "email": an_email(), "role": "practice_manager"})
+
+    r = await api.request("PUT", f"/practice/members/{admin.user.id}/admin", json={"is_admin": False})
+    assert r.status_code == 409

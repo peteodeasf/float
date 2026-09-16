@@ -202,3 +202,13 @@ async def test_auth_me_says_whether_setup_is_done(api, db):
     assert body["setup_complete"] is False
     assert body["is_practitioner"] is True
     assert body["is_practice_manager"] is False
+
+
+async def test_float_admin_cannot_add_a_clinician_to_a_practice_still_in_setup(api, db):
+    _, org = await new_owner(api, db)
+    api.sign_in_as(await make_float_admin(db))
+
+    r = await api.post("/admin/clinicians", json={
+        "name": "Too Early", "email": f"early-{uuid.uuid4().hex[:8]}@example.com", "organization_id": str(org.id),
+    })
+    assert r.status_code == 409

@@ -547,6 +547,13 @@ async def create_clinician(
     org = org_result.scalar_one_or_none()
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
+    # Only the person setting a practice up can finish that setup, and nobody else there can use
+    # Float until they do. Adding a clinician now would leave them locked out with no explanation.
+    if org.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This practice is still being set up. Add clinicians once its setup is finished.",
+        )
 
     user, profile = await practice_service.create_member(
         db, org_uuid, email, request.name, practice_service.CLINICIAN,
