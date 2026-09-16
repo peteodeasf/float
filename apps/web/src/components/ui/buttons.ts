@@ -165,3 +165,53 @@ export function iconBtn(size: ButtonSize = 'sm'): CSSProperties {
     cursor: 'pointer',
   }
 }
+
+
+/**
+ * A tab along the top of a screen: Monitoring, Sessions, Plan, Experiments, Chat. The patient page
+ * had two tab looks at once — these underlined ones, and small uppercase pills inside the process
+ * panel. Sub-tabs are the chip above, so there is one tab and one chip rather than four of each.
+ */
+export function tab(on: boolean): CSSProperties {
+  return {
+    flex: '0 0 auto',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '10px 18px',
+    fontFamily: 'inherit',
+    fontSize: '14px',
+    fontWeight: on ? 700 : 500,
+    color: on ? 'var(--float-text)' : 'var(--float-text-hint)',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: `3px solid ${on ? 'var(--float-primary)' : 'transparent'}`,
+    marginBottom: '-1px',
+    cursor: 'pointer',
+  }
+}
+
+/** The count on a tab, like Chat 3. */
+export const tabCount: CSSProperties = {
+  fontSize: '10px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)',
+  borderRadius: '999px', padding: '0 6px', lineHeight: '16px',
+}
+
+/**
+ * A box you type in. Text boxes were their own size, border and radius on nearly every screen:
+ * 6px, 8px and 10px corners, four different heights. 'lg' is for a phone screen.
+ */
+export function field(size: ButtonSize = 'md'): CSSProperties {
+  const height = size === 'lg' ? '48px' : size === 'sm' ? '28px' : '36px'
+  return {
+    height,
+    padding: size === 'sm' ? '0 8px' : '0 10px',
+    fontFamily: 'inherit',
+    fontSize: size === 'lg' ? '15px' : size === 'sm' ? '12.5px' : '13px',
+    color: 'var(--float-text)',
+    background: '#fff',
+    border: '1px solid var(--float-border-strong)',
+    borderRadius: 'var(--float-radius-sm)',
+    boxSizing: 'border-box',
+  }
+}

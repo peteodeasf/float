@@ -16,5 +16,5 @@ export default function AdminProtectedRoute({ children }: { children: React.Reac
     return <Navigate to="/admin/login" replace />
   }
 
-  return <>{children}</>
+  return <div className="float-app">{children}</div>
 }

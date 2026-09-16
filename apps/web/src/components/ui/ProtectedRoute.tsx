@@ -16,5 +16,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     return <Navigate to="/login" replace />
   }
 
-  return <>{children}</>
+  // One wrapper around every clinician screen, so the app's text boxes can be styled in one place
+  // (styles/tokens.css, .float-app input) rather than on each of the 71 of them. The child's and
+  // parent's apps are not inside it and keep their own look.
+  return <div className="float-app">{children}</div>
 }

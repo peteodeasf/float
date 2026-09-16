@@ -32,7 +32,7 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
-import { btn, buttonRow, countPill, liveDot, statusCard, statusCardState, statusCardTitle, chip, iconBtn } from '../../components/ui/buttons'
+import { btn, buttonRow, countPill, liveDot, statusCard, statusCardState, statusCardTitle, chip, iconBtn, tab, tabCount } from '../../components/ui/buttons'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
@@ -2470,11 +2470,10 @@ export default function PatientPage() {
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
-                className="bg-transparent border-none cursor-pointer"
-                style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', fontSize: '14px', fontWeight: cur ? 700 : 500, color: cur ? '#1e293b' : '#94a3b8', borderBottom: cur ? '3px solid #135450' : '3px solid transparent', marginBottom: '-1px' }}
+                style={tab(cur)}
               >
                 {t.label}
-                {b ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: '#135450', borderRadius: '9999px', padding: '0 6px', lineHeight: '16px' }}>{b}</span> : null}
+                {b ? <span style={tabCount}>{b}</span> : null}
               </button>
             )
           })}
@@ -2531,13 +2530,12 @@ export default function PatientPage() {
                       <button
                         key={pt.id}
                         onClick={() => setProcessTab(pt.id)}
-                        className="bg-transparent border-none cursor-pointer"
-                        style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: on ? 'var(--float-primary)' : '#94a3b8', background: on ? '#eafaf6' : 'transparent' }}
+                        style={chip(on, 'sm')}
                       >{pt.label}</button>
                     )
                   })}
                 </div>
-                <button onClick={() => setProcessPanelOpen(false)} aria-label="Close process panel" className="bg-transparent border-none cursor-pointer" style={{ fontSize: '18px', color: '#94a3b8', lineHeight: 1 }}>×</button>
+                <button onClick={() => setProcessPanelOpen(false)} aria-label="Close process panel" style={iconBtn('sm')}>×</button>
               </div>
 
               {processTab === 'checklist' && patientId && (

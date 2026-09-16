@@ -45,3 +45,22 @@ select:focus-visible {
   outline: 2px solid var(--float-primary);
   outline-offset: 2px;
 }
+
+/* Text boxes in the clinician and admin apps. They were hand-styled on nearly every screen: 6px,
+   8px and 10px corners and four different heights. The child's and parent's apps are outside
+   .float-app and keep their own, bigger, thumb-sized fields. A screen can still override this. */
+.float-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.float-app select,
+.float-app textarea {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--float-text);
+  background: #fff;
+  border: 1px solid var(--float-border-strong);
+  border-radius: var(--float-radius-sm);
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+.float-app textarea {
+  line-height: 1.55;
+}
