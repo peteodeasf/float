@@ -916,7 +916,15 @@ export default function PatientPage() {
   // Session notes
   const resetNoteForm = () => { setShowNoteForm(false); setEditingNote(null); setNoteParticipants([]); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent('') }
   const createNoteMut = useMutation({ mutationFn: () => createSessionNote(patientId!, { participants: noteParticipants, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
-  const updateNoteMut = useMutation({ mutationFn: () => updateSessionNote(editingNote!.id, { participants: noteParticipants, tags: noteTags, session_date: noteDate, content: noteContent }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() } })
+  // Peter, 2026-09-15: editing a draft and pressing Update is the same as approving it — reading
+  // it through and changing it IS the check. docs/plans/session-recording.md
+  const updateNoteMut = useMutation({
+    mutationFn: () => updateSessionNote(editingNote!.id, {
+      participants: noteParticipants, tags: noteTags, session_date: noteDate, content: noteContent,
+      ...(editingNote!.is_draft ? { is_draft: false as const } : {}),
+    }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }); resetNoteForm() },
+  })
   const deleteNoteMut = useMutation({ mutationFn: (id: string) => deleteSessionNote(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }) })
 
   // Action plans
@@ -1196,15 +1204,17 @@ export default function PatientPage() {
             <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Date:</label>
             <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
           </div>
-          <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={4} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+          {/* Tall enough to read a whole note written from a recording, which runs to several
+              hundred words; a four-line box meant scrolling to edit a sentence. */}
+          <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} rows={editingNote ? 18 : 6} placeholder="Session notes..." className="text-xs border border-slate-200 rounded" style={{ width: '100%', padding: '10px', minHeight: editingNote ? '380px' : '110px', lineHeight: 1.55, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim() || noteParticipants.length === 0} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? 'Update' : 'Save'}</button>
+            <button onClick={() => editingNote ? updateNoteMut.mutate() : createNoteMut.mutate()} disabled={!noteContent.trim() || noteParticipants.length === 0} className="bg-teal-600 text-white rounded text-xs font-medium disabled:opacity-40 border-none cursor-pointer" style={{ padding: '6px 12px' }}>{editingNote ? (editingNote.is_draft ? 'Update and approve' : 'Update') : 'Save'}</button>
             <button onClick={resetNoteForm} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
           </div>
         </div>
       )}
 
-      {filteredNotes.length > 0 ? (
+      {showNoteForm ? null : filteredNotes.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {filteredNotes.map(n => (
             <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
