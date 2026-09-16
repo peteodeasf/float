@@ -36,7 +36,7 @@ beforeEach(() => {
 describe('a note from a recording', () => {
   it('shows the transcript with the speakers named, and a speaker can be renamed', async () => {
     wrap(<RecordedNoteDetails note={note} patientId="pt1" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Transcript · 2 turns' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Transcript' }))
     expect(screen.getByText('Clinician:')).toBeInTheDocument()
     expect(screen.getByText('Speaker 2:')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Speaker 2 ✎' }))
@@ -52,7 +52,7 @@ describe('a note from a recording', () => {
 
   it('a typed note shows nothing extra', () => {
     wrap(<RecordedNoteDetails note={{ ...note, source: 'typed', transcript: null, is_draft: false }} patientId="pt1" />)
-    expect(screen.queryByRole('button', { name: /Transcript/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Transcript' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Approve note' })).not.toBeInTheDocument()
   })
 })

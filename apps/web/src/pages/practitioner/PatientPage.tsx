@@ -1228,9 +1228,9 @@ export default function PatientPage() {
                   {(n.tags ?? []).map(t => <span key={t} className="px-1 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#475569', fontWeight: 500 }}>{t}</span>)}
                   <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                  <button onClick={() => { setEditingNote(n); setNoteParticipants(n.participants ?? []); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
-                  <button onClick={() => { if (confirm('Delete?')) deleteNoteMut.mutate(n.id) }} className="text-red-400 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Del</button>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  <button onClick={() => { setEditingNote(n); setNoteParticipants(n.participants ?? []); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} className="text-teal-600 bg-transparent border-none cursor-pointer" style={{ fontSize: '13px', fontWeight: 600, padding: '2px 6px' }}>Edit</button>
+                  <button onClick={() => { if (confirm('Delete this note?')) deleteNoteMut.mutate(n.id) }} className="bg-transparent border-none cursor-pointer" style={{ fontSize: '13px', fontWeight: 600, color: '#dc2626', padding: '2px 6px' }}>Delete</button>
                 </div>
               </div>
               <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>

@@ -85,7 +85,7 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         {note.transcript && note.transcript.length > 0 && (
           <button onClick={() => setOpen(o => !o)} aria-expanded={open} style={linkBtn('#135450')}>
-            {open ? 'Hide transcript' : `Transcript · ${note.transcript.length} turns`}
+            {open ? 'Hide transcript' : 'Transcript'}
           </button>
         )}
         {note.is_draft && (
