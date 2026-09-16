@@ -160,7 +160,13 @@
       "mcp__railway__list_services",
       "mcp__visualize__read_me",
       "mcp__visualize__show_widget",
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(dig +short TXT google._domainkey.floatcbt.com.floatcbt.com @dns1.p06.nsone.net)",
+      "Bash(dig +short TXT default._domainkey.floatcbt.com @dns1.p06.nsone.net)",
+      "Bash(dig +short TXT _dmarc.floatcbt.com @dns1.p06.nsone.net)",
+      "Bash(dig +short TXT floatcbt.com @dns1.p06.nsone.net)",
+      "Bash(dig +short TXT google._domainkey.floatcbt.com @dns1.p06.nsone.net)",
+      "Bash(dig +short CNAME google._domainkey.floatcbt.com @dns1.p06.nsone.net)"
     ],
     "ask": [
       "Bash(git push:*)"
