@@ -207,7 +207,7 @@ Open mode also needs, before it's switched on:
 | Change | What it holds |
 |---|---|
 | New `access_requests` table | name, email, clinician or office manager, credentials, practice name, state, practice size, status (new / approved / declined), reviewed by, reviewed at, the practice it became |
-| `organizations.status` | setting up / active / suspended. Existing practices become active. |
+| `organizations.status`, `suspended_at` | setting up / active, and whether Float has suspended it. Existing practices become active. |
 | New `setup_links` table | user, practice, purpose (practice owner / colleague), token hash, expires at, used at, created by |
 | New `agreement_acceptances` table | practice, user, document (terms / BAA), version, accepted at. One row per acceptance, so a new BAA version adds a row rather than overwriting the old one. |
 
@@ -224,9 +224,10 @@ Written 2026-09-16 before building. Decisions made here without Peter, all easy 
 - **The request form asks "clinician or office manager"**, and the approval creates that role.
 
 **Data** (one migration, adds only):
-- `organizations`: `status` (setting_up / active / suspended; existing rows active), `state`,
+- `organizations`: `status` (setting_up / active; existing rows active), `suspended_at` (set by
+  Float admin, kept apart so letting a practice back in returns it to where it was), `state`,
   `phone`, `size` (the rough number of clinicians from the request).
-- `users`: `setup_steps_done` (list of finished setup screens), `setup_completed_at` (existing
+- `users`: `onboarding_flags` (finished setup screens, and getting-started steps), `setup_completed_at` (existing
   users filled in, so nobody already using Float is sent through setup), `deactivated_at`.
 - `practice_manager_profiles`: user, practice, name, phone.
 - `agreement_acceptances`: practice, user, document, version, accepted at.
@@ -235,9 +236,9 @@ Written 2026-09-16 before building. Decisions made here without Peter, all easy 
   existing "granted by" column points at a clinician.
 
 **The one gate.** `require_ready` refuses anyone whose own setup isn't finished, whose practice
-isn't active, or whose account was removed. It runs inside `get_practitioner_context`, which 115
-clinician endpoints already use, in the two places that look up the clinician without it
-(`messages.py`, `experiments.py`), and in the manager's endpoints. A removed account is also
+isn't active or is suspended. It runs inside `get_practitioner_context`, which every clinician
+endpoint uses (the two that looked the clinician up by hand now call it too), and in the practice
+endpoints. A removed account is also
 refused in `get_current_user`.
 
 **Setup screens** (`/setup/...` endpoints, `/setup/steps` in the app): details, then practice

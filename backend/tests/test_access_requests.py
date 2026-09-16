@@ -12,12 +12,14 @@ from app.models.organization import Organization
 from app.models.practice import AccessRequest, PracticeManagerProfile
 from app.models.user import User, UserRole
 
-from tests.factories import _make_user, make_org, make_practitioner
+from tests.factories import make_float_admin, make_org, make_practitioner
+
+
+pytestmark = pytest.mark.usefixtures("email_configured")
 
 
 @pytest.fixture(autouse=True)
-def email_configured(monkeypatch):
-    monkeypatch.setattr(settings, "RESEND_API_KEY", "test-key")
+def approval_mode(monkeypatch):
     monkeypatch.setattr(settings, "PRACTICE_SIGNUP_MODE", "approval")
 
 
@@ -40,7 +42,7 @@ async def stored(db, email) -> AccessRequest:
 
 
 async def sign_in_float_admin(api, db):
-    admin = await _make_user(db, await make_org(db), "admin")
+    admin = await make_float_admin(db)
     api.sign_in_as(admin)
     return admin
 
@@ -173,26 +175,26 @@ async def test_suspending_a_practice_locks_it_and_reactivating_lets_it_back(api,
     clinician = await make_practitioner(db, org)
     await sign_in_float_admin(api, db)
 
-    r = await api.request("PUT", f"/admin/organizations/{org.id}/status", json={"status": "suspended"})
-    assert r.json()["status"] == "suspended"
+    r = await api.request("PUT", f"/admin/organizations/{org.id}/suspended", json={"suspended": True})
+    assert r.json()["suspended"] is True
     api.sign_in_as(clinician.user)
     assert (await api.get("/patients")).status_code == 403
 
     await sign_in_float_admin(api, db)
-    r = await api.request("PUT", f"/admin/organizations/{org.id}/status", json={"status": "active"})
-    assert r.json()["status"] == "active"
+    r = await api.request("PUT", f"/admin/organizations/{org.id}/suspended", json={"suspended": False})
+    assert (r.json()["status"], r.json()["suspended"]) == ("active", False)
     api.sign_in_as(clinician.user)
     assert (await api.get("/patients")).status_code == 200
 
 
-async def test_reactivating_a_practice_that_never_signed_the_baa_returns_it_to_setup(api, db):
+async def test_letting_a_practice_back_in_returns_it_to_setup_if_it_was_in_setup(api, db):
     body = a_request()
     await api.post("/access-requests", json=body)
     request = await stored(db, body["email"])
     await sign_in_float_admin(api, db)
     org_id = (await api.post(f"/admin/access-requests/{request.id}/approve")).json()["organization_id"]
 
-    await api.request("PUT", f"/admin/organizations/{org_id}/status", json={"status": "suspended"})
-    r = await api.request("PUT", f"/admin/organizations/{org_id}/status", json={"status": "active"})
+    await api.request("PUT", f"/admin/organizations/{org_id}/suspended", json={"suspended": True})
+    r = await api.request("PUT", f"/admin/organizations/{org_id}/suspended", json={"suspended": False})
 
-    assert r.json()["status"] == "setting_up"
+    assert (r.json()["status"], r.json()["suspended"]) == ("setting_up", False)

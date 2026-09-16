@@ -8,7 +8,6 @@ export interface SetupState {
   role: 'clinician' | 'practice_manager'
   is_practice_owner: boolean
   steps: SetupStep[]
-  steps_done: SetupStep[]
   next_step: SetupStep | null
   setup_complete: boolean
   email: string

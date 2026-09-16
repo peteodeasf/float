@@ -14,22 +14,11 @@ from app.models.practice import PracticeManagerProfile
 from app.models.user import User, UserRole
 
 from tests.factories import (
-    _make_user, grant_patient_to, make_org, make_org_admin, make_patient, make_practitioner,
+    grant_patient_to, make_org, make_org_admin, make_patient, make_practice_manager, make_practitioner,
 )
 
 
-@pytest.fixture(autouse=True)
-def email_configured(monkeypatch):
-    monkeypatch.setattr(settings, "RESEND_API_KEY", "test-key")
-
-
-async def make_manager(db, org) -> User:
-    user = await _make_user(db, org, "practice_manager")
-    role = (await db.execute(select(UserRole).where(UserRole.user_id == user.id))).scalar_one()
-    role.is_org_admin = True
-    db.add(PracticeManagerProfile(user_id=user.id, organization_id=org.id, name="Morgan Office"))
-    await db.flush()
-    return user
+pytestmark = pytest.mark.usefixtures("email_configured")
 
 
 def an_email() -> str:
@@ -144,7 +133,7 @@ async def test_a_removed_clinician_is_not_offered_as_a_colleague(api, db):
 async def test_an_office_manager_cannot_open_any_clinician_endpoint(api, db):
     org = await make_org(db)
     patient = await make_patient(db, org)
-    manager = await make_manager(db, org)
+    manager = await make_practice_manager(db, org)
     api.sign_in_as(manager)
 
     assert (await api.get("/patients")).status_code == 403
@@ -156,7 +145,7 @@ async def test_an_office_manager_sees_names_and_clinicians_only(api, db):
     clinician = await make_practitioner(db, org, name="Dr Owner")
     patient = await make_patient(db, org, name="Casey Child")
     await grant_patient_to(db, patient, clinician, owner=True)
-    manager = await make_manager(db, org)
+    manager = await make_practice_manager(db, org)
     api.sign_in_as(manager)
 
     rows = (await api.get("/practice/patients")).json()
@@ -169,7 +158,7 @@ async def test_an_office_manager_sees_names_and_clinicians_only(api, db):
 async def test_the_manager_viewing_the_list_is_in_the_access_log(api, db):
     org = await make_org(db)
     patient = await make_patient(db, org)
-    manager = await make_manager(db, org)
+    manager = await make_practice_manager(db, org)
     api.sign_in_as(manager)
 
     await api.get("/practice/patients")
@@ -183,14 +172,14 @@ async def test_the_manager_viewing_the_list_is_in_the_access_log(api, db):
 async def test_an_office_manager_does_not_see_another_practices_patients(api, db):
     mine, theirs = await make_org(db), await make_org(db)
     other_patient = await make_patient(db, theirs)
-    manager = await make_manager(db, mine)
+    manager = await make_practice_manager(db, mine)
     api.sign_in_as(manager)
 
     ids = [r["patient_id"] for r in (await api.get("/practice/patients")).json()]
     assert str(other_patient.id) not in ids
     other_clinician = await make_practitioner(db, theirs)
-    r = await api.post(f"/practice/patients/{other_patient.id}/access",
-                       json={"practitioner_id": str(other_clinician.id)})
+    r = await api.request("PUT", f"/practice/patients/{other_patient.id}/clinician",
+                          json={"practitioner_id": str(other_clinician.id)})
     assert r.status_code == 404
 
 
@@ -200,7 +189,7 @@ async def test_an_office_manager_hands_a_patient_to_another_clinician(api, db):
     taking_over = await make_practitioner(db, org)
     patient = await make_patient(db, org)
     await grant_patient_to(db, patient, leaving, owner=True)
-    manager = await make_manager(db, org)
+    manager = await make_practice_manager(db, org)
     api.sign_in_as(manager)
 
     r = await api.request("PUT", f"/practice/patients/{patient.id}/clinician",
@@ -223,11 +212,11 @@ async def test_a_patient_cannot_be_given_to_a_removed_clinician(api, db):
     gone = await make_practitioner(db, org)
     gone.user.deactivated_at = datetime.now(timezone.utc)
     patient = await make_patient(db, org)
-    manager = await make_manager(db, org)
+    manager = await make_practice_manager(db, org)
     await db.flush()
     api.sign_in_as(manager)
 
-    r = await api.post(f"/practice/patients/{patient.id}/access", json={"practitioner_id": str(gone.id)})
+    r = await api.request("PUT", f"/practice/patients/{patient.id}/clinician", json={"practitioner_id": str(gone.id)})
     assert r.status_code == 404
 
 

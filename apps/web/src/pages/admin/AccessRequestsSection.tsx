@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminApiClient } from '../../context/AdminAuthContext'
 import { btn } from '../../components/ui/buttons'
+import { tdStyle as td, thStyle as th } from './tableStyles'
 
 /**
  * Practices asking to use Float, from the public Request access page. Approving creates the
@@ -19,12 +20,6 @@ type AccessRequest = {
   status: 'new' | 'approved' | 'declined'
   created_at: string | null
 }
-
-const th: React.CSSProperties = {
-  textAlign: 'left', padding: '10px 12px', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase',
-  letterSpacing: '0.04em', color: '#64748b', borderBottom: '1px solid #e2e8f0',
-}
-const td: React.CSSProperties = { padding: '12px', fontSize: '13px', color: '#334155', borderBottom: '1px solid #f1f5f9' }
 
 export default function AccessRequestsSection({ cardStyle, onApproved }: {
   cardStyle: React.CSSProperties

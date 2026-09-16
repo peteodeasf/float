@@ -1,7 +1,7 @@
 import { btn } from '../../components/ui/buttons'
+import { errorMessage } from '../../components/ui/form'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
 
 import {
   getColleagues,
@@ -62,10 +62,7 @@ export default function ClinicianAccessPanel({
   }
 
   /** The backend's message, which says the actual rule that was broken. */
-  const explain = (e: unknown, fallback: string) => {
-    const detail = axios.isAxiosError(e) ? e.response?.data?.detail : null
-    setError(typeof detail === 'string' ? detail : fallback)
-  }
+  const explain = (e: unknown, fallback: string) => setError(errorMessage(e, fallback))
 
   const grantMut = useMutation({
     mutationFn: (practitionerId: string) => grantPatientAccess(patientId, practitionerId),

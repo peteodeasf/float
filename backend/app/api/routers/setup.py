@@ -23,9 +23,7 @@ async def get_setup_membership(
     db: AsyncSession = Depends(get_db),
 ) -> Membership:
     membership = await practice_service.membership_of(db, current_user)
-    if membership is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a practice member")
-    if membership.organization.status == "suspended":
+    if membership.organization.suspended_at is not None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=practice_service.PRACTICE_NOT_ACTIVE)
     return membership
@@ -37,7 +35,6 @@ def _state(m: Membership) -> dict:
         "role": "practice_manager" if m.is_manager else "clinician",
         "is_practice_owner": m.is_practice_owner,
         "steps": practice_service.steps_for(m),
-        "steps_done": list(m.user.setup_steps_done or []),
         "next_step": practice_service.next_step(m),
         "setup_complete": m.user.setup_completed_at is not None,
         "email": m.user.email,

@@ -24,8 +24,9 @@ def upgrade() -> None:
     op.add_column("organizations", sa.Column("state", sa.String(), nullable=True))
     op.add_column("organizations", sa.Column("phone", sa.String(), nullable=True))
     op.add_column("organizations", sa.Column("size", sa.Integer(), nullable=True))
+    op.add_column("organizations", sa.Column("suspended_at", sa.DateTime(timezone=True), nullable=True))
 
-    op.add_column("users", sa.Column("setup_steps_done", postgresql.JSONB(), nullable=False,
+    op.add_column("users", sa.Column("onboarding_flags", postgresql.JSONB(), nullable=False,
                                      server_default=sa.text("'[]'::jsonb")))
     op.add_column("users", sa.Column("setup_completed_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column("users", sa.Column("deactivated_at", sa.DateTime(timezone=True), nullable=True))
@@ -97,7 +98,8 @@ def downgrade() -> None:
     op.drop_column("patient_access_grants", "granted_by_user_id")
     op.drop_column("users", "deactivated_at")
     op.drop_column("users", "setup_completed_at")
-    op.drop_column("users", "setup_steps_done")
+    op.drop_column("users", "onboarding_flags")
+    op.drop_column("organizations", "suspended_at")
     op.drop_column("organizations", "size")
     op.drop_column("organizations", "phone")
     op.drop_column("organizations", "state")

@@ -12,13 +12,10 @@ from app.core.security import verify_password
 from app.models.setup_link import SetupLink
 from app.models.user import User
 
-from tests.factories import _make_user, make_org, make_practitioner
+from tests.factories import make_float_admin, make_org, make_practitioner
 
 
-@pytest.fixture(autouse=True)
-def email_configured(monkeypatch):
-    # So the email is built and captured by no_outbound, whatever .env holds.
-    monkeypatch.setattr(settings, "RESEND_API_KEY", "test-key")
+pytestmark = pytest.mark.usefixtures("email_configured")
 
 
 def token_from(email_payload) -> str:
@@ -28,7 +25,7 @@ def token_from(email_payload) -> str:
 async def invite_clinician(api, db, no_outbound, email="new.clinician@example.com"):
     """Returns the created clinician, the token from their email, and the Float admin who sent it."""
     org = await make_org(db)
-    admin = await _make_user(db, org, "admin")  # a Float admin
+    admin = await make_float_admin(db)
     api.sign_in_as(admin)
     r = await api.post("/admin/clinicians", json={
         "name": "New Clinician", "email": email, "organization_id": str(org.id),

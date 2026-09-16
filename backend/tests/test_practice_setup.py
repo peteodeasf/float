@@ -14,18 +14,16 @@ from app.models.organization import Organization
 from app.models.practice import AgreementAcceptance
 from app.models.user import User
 
-from tests.factories import _make_user, make_org, make_practitioner
+from tests.factories import make_float_admin, make_org, make_practitioner
 
 
-@pytest.fixture(autouse=True)
-def email_configured(monkeypatch):
-    monkeypatch.setattr(settings, "RESEND_API_KEY", "test-key")
+pytestmark = pytest.mark.usefixtures("email_configured")
 
 
 async def new_colleague(api, db):
     """A clinician a Float admin has just added to an active practice. Not set up yet."""
     org = await make_org(db)
-    api.sign_in_as(await _make_user(db, org, "admin"))
+    api.sign_in_as(await make_float_admin(db))
     r = await api.post("/admin/clinicians", json={
         "name": "New Clinician", "email": f"colleague-{uuid.uuid4().hex[:8]}@example.com", "organization_id": str(org.id),
     })
@@ -37,8 +35,7 @@ async def new_colleague(api, db):
 
 async def new_owner(api, db):
     """The person a Float admin named when creating a practice. The practice is still in setup."""
-    admin_org = await make_org(db)
-    api.sign_in_as(await _make_user(db, admin_org, "admin"))
+    api.sign_in_as(await make_float_admin(db))
     email = f"owner-{uuid.uuid4().hex[:8]}@example.com"
     r = await api.post("/admin/organizations", json={
         "name": "Harbor Kids Therapy", "admin_email": email,
@@ -167,7 +164,7 @@ async def test_the_owner_is_the_practice_admin(api, db):
 async def test_a_suspended_practice_is_refused(api, db):
     org = await make_org(db)
     me = await make_practitioner(db, org)
-    org.status = "suspended"
+    org.suspended_at = datetime.now(timezone.utc)
     await db.flush()
 
     api.sign_in_as(me.user)

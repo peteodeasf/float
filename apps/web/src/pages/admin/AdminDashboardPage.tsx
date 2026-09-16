@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient, createClinician } from '../../context/AdminAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
 import AccessRequestsSection from './AccessRequestsSection'
+import { tdStyle, thStyle } from './tableStyles'
 
 type Stats = {
   total_users: number
@@ -28,7 +29,8 @@ type AdminUser = {
 type AdminOrg = {
   id: string
   name: string
-  status: 'setting_up' | 'active' | 'suspended'
+  status: 'setting_up' | 'active'
+  suspended: boolean
   clinician_count: number
   patient_count: number
   created_at: string | null
@@ -67,24 +69,6 @@ const cardStyle: React.CSSProperties = {
   borderRadius: 'var(--float-radius-lg)',
   boxShadow: 'var(--float-shadow-sm)',
   padding: '24px',
-}
-
-const thStyle: React.CSSProperties = {
-  textAlign: 'left',
-  padding: '10px 12px',
-  fontSize: '12px',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-  color: '#64748b',
-  borderBottom: '1px solid #e2e8f0',
-}
-
-const tdStyle: React.CSSProperties = {
-  padding: '12px',
-  fontSize: '13px',
-  color: '#334155',
-  borderBottom: '1px solid #f1f5f9',
 }
 
 // The admin app's buttons come from the one set now (components/ui/buttons.ts), which the
@@ -245,10 +229,9 @@ export default function AdminDashboardPage() {
     await loadAll()
   }
 
-  const handleOrgStatus = async (org: AdminOrg) => {
-    const next = org.status === 'suspended' ? 'active' : 'suspended'
-    if (next === 'suspended' && !confirm(`Suspend ${org.name}? Nobody there will be able to use Float until you let them back in.`)) return
-    await adminApiClient.put(`/admin/organizations/${org.id}/status`, { status: next })
+  const handleOrgSuspended = async (org: AdminOrg) => {
+    if (!org.suspended && !confirm(`Suspend ${org.name}? Nobody there will be able to use Float until you let them back in.`)) return
+    await adminApiClient.put(`/admin/organizations/${org.id}/suspended`, { suspended: !org.suspended })
     await loadAll()
   }
 
@@ -700,7 +683,7 @@ export default function AdminDashboardPage() {
                   <tr>
                     <td style={tdStyle}>{o.name}</td>
                     <td style={tdStyle}>
-                      {o.status === 'setting_up' ? 'Setting up' : o.status === 'suspended' ? 'Suspended' : 'Active'}
+                      {o.suspended ? 'Suspended' : o.status === 'setting_up' ? 'Setting up' : 'Active'}
                     </td>
                     <td style={tdStyle}>{o.clinician_count}</td>
                     <td style={tdStyle}>{o.patient_count}</td>
@@ -709,8 +692,8 @@ export default function AdminDashboardPage() {
                       <button onClick={() => handleExpandOrg(o.id)} style={smallBtn}>
                         {expandedOrgId === o.id ? 'Hide' : 'View'}
                       </button>
-                      <button onClick={() => handleOrgStatus(o)} style={o.status === 'suspended' ? smallBtn : dangerBtn}>
-                        {o.status === 'suspended' ? 'Let back in' : 'Suspend'}
+                      <button onClick={() => handleOrgSuspended(o)} style={o.suspended ? smallBtn : dangerBtn}>
+                        {o.suspended ? 'Let back in' : 'Suspend'}
                       </button>
                     </td>
                   </tr>

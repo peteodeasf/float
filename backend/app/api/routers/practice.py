@@ -12,16 +12,15 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.patient import PatientAccessGrant, PatientProfile, PractitionerProfile
 from app.models.practice import PracticeManagerProfile
-from app.models.setup_link import SetupLink
 from app.models.user import User, UserRole
-from app.services import patient_access_service, practice_service
+from app.services import patient_access_service, practice_service, setup_link_service
 from app.services.practice_service import Membership
 
 router = APIRouter(prefix="/practice", tags=["practice"])
@@ -34,9 +33,7 @@ async def get_member(
     db: AsyncSession = Depends(get_db),
 ) -> Membership:
     membership = await practice_service.membership_of(db, current_user)
-    if membership is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a practice member")
-    await practice_service.require_ready(db, current_user, membership.organization.id)
+    practice_service.require_ready(current_user, membership.organization)
     return membership
 
 
@@ -58,8 +55,6 @@ async def get_practice_manager(m: Membership = Depends(get_member)) -> Membershi
 async def read_practice(m: Membership = Depends(get_member)):
     return {
         "name": m.organization.name,
-        "state": m.organization.state,
-        "size": m.organization.size,
         "me": {"name": m.name, "email": m.user.email, "is_admin": m.is_admin, "is_manager": m.is_manager},
     }
 
@@ -93,7 +88,7 @@ async def _members(db: AsyncSession, organization_id: uuid.UUID) -> list[dict]:
             "is_admin": bool(role.is_org_admin),
             "status": state,
             # Chosen a password yet. Until they have, a new setup link can be sent.
-            "can_resend_link": state == "invited" and user.password_changed_at is None,
+            "can_resend_link": practice_service.awaiting_first_password(user),
         })
     order = {"active": 0, "invited": 1, "removed": 2}
     return sorted(out, key=lambda r: (order[r["status"]], r["name"].lower(), r["email"]))
@@ -124,6 +119,14 @@ async def _active_admin_count(db: AsyncSession, organization_id: uuid.UUID) -> i
     return len(rows)
 
 
+async def _send_colleague_link(db: AsyncSession, m: Membership, user: User) -> None:
+    await practice_service.send_setup_link(
+        db, user, m.organization.id, purpose="colleague",
+        intro=f"{m.name or 'Your practice'} has invited you to join {m.organization.name} on Float.",
+        created_by_user_id=m.user.id,
+    )
+
+
 @router.get("/members")
 async def list_members(m: Membership = Depends(get_practice_admin), db: AsyncSession = Depends(get_db)):
     return await _members(db, m.organization.id)
@@ -146,18 +149,13 @@ async def invite_member(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="Someone with this email already has a Float account.")
     is_manager = data.role == "practice_manager"
-    user = await practice_service.create_member(
+    user, _ = await practice_service.create_member(
         db, m.organization.id, email, data.name.strip(),
         practice_service.PRACTICE_MANAGER if is_manager else practice_service.CLINICIAN,
         # An office manager is there to run the practice, so is always one of its admins.
         is_admin=is_manager,
     )
-    practice_name, inviter = m.organization.name, m.name or "Your practice"
-    await practice_service.send_setup_link(
-        db, user, m.organization.id, purpose="colleague",
-        intro=f"{inviter} has invited you to join {practice_name} on Float.",
-        created_by_user_id=m.user.id,
-    )
+    await _send_colleague_link(db, m, user)
     return {"user_id": str(user.id)}
 
 
@@ -168,16 +166,10 @@ async def resend_member_setup_link(
     db: AsyncSession = Depends(get_db),
 ):
     user, _ = await _member_of_my_practice(db, m, user_id)
-    if (user.deactivated_at is not None or user.password_changed_at is not None
-            or user.setup_completed_at is not None):
+    if not practice_service.awaiting_first_password(user):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="They have already set up their account.")
-    practice_name, inviter = m.organization.name, m.name or "Your practice"
-    await practice_service.send_setup_link(
-        db, user, m.organization.id, purpose="colleague",
-        intro=f"{inviter} has invited you to join {practice_name} on Float.",
-        created_by_user_id=m.user.id,
-    )
+    await _send_colleague_link(db, m, user)
     return {"success": True}
 
 
@@ -220,11 +212,7 @@ async def remove_member(
     if user.deactivated_at is None:
         now = datetime.now(timezone.utc)
         user.deactivated_at = now
-        await db.execute(
-            update(SetupLink)
-            .where(SetupLink.user_id == user.id, SetupLink.used_at.is_(None), SetupLink.revoked_at.is_(None))
-            .values(revoked_at=now)
-        )
+        await setup_link_service.revoke_unused(db, user.id)
         await db.commit()
     return {"success": True}
 
@@ -269,9 +257,7 @@ async def list_practice_patients(
             "clinician": owner,
             "others_with_access": [c for c in clinicians if c is not owner],
         })
-    user_id = m.user.id
-    for p in patients:
-        await patient_access_service.record_access(db, p, user_id, None, "practice_manager", request)
+    await patient_access_service.record_access(db, list(patients), m.user.id, None, "practice_manager", request)
     return out
 
 
@@ -300,19 +286,6 @@ async def _patient_of_my_practice(db: AsyncSession, m: Membership, patient_id: u
 
 class ClinicianIn(BaseModel):
     practitioner_id: uuid.UUID
-
-
-@router.post("/patients/{patient_id}/access")
-async def give_clinician_access(
-    patient_id: uuid.UUID,
-    data: ClinicianIn,
-    request: Request,
-    m: Membership = Depends(get_practice_manager),
-    db: AsyncSession = Depends(get_db),
-):
-    patient = await _patient_of_my_practice(db, m, patient_id)
-    await patient_access_service.manager_grant_access(db, patient, data.practitioner_id, m.user.id, request)
-    return {"success": True}
 
 
 @router.put("/patients/{patient_id}/clinician")

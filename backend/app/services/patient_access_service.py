@@ -48,14 +48,7 @@ async def is_institution_admin(
 async def has_live_grant(
     db: AsyncSession, patient_id: uuid.UUID, practitioner_id: uuid.UUID
 ) -> bool:
-    result = await db.execute(
-        select(PatientAccessGrant).where(
-            PatientAccessGrant.patient_id == patient_id,
-            PatientAccessGrant.practitioner_id == practitioner_id,
-            PatientAccessGrant.revoked_at.is_(None),
-        )
-    )
-    return result.scalar_one_or_none() is not None
+    return await _live_grant(db, patient_id, practitioner_id) is not None
 
 
 async def may_access(
@@ -92,12 +85,6 @@ async def get_patient_for_practitioner(
     dependencies call it, directly or through _require - so this is where the access log is
     written. A route added later is covered without anyone remembering.
     """
-    # The same gate as get_practitioner_context, for the routes that look the clinician up
-    # themselves (messages, experiments) rather than through it.
-    from app.services.practice_service import require_ready
-    user = await db.get(User, user_id)
-    await require_ready(db, user, practitioner.organization_id)
-
     result = await db.execute(
         select(PatientProfile).where(PatientProfile.id == patient_id)
     )
@@ -115,13 +102,13 @@ async def get_patient_for_practitioner(
 
 async def record_access(
     db: AsyncSession,
-    patient: PatientProfile,
+    patients: PatientProfile | list[PatientProfile],
     user_id: uuid.UUID,
     practitioner: PractitionerProfile | None,
     via: str,
     request=None,
 ) -> None:
-    """Write one row saying this person opened this record.
+    """Write one row per patient saying this person opened their record, in one commit.
 
     Only successful access is recorded - this answers "who saw this file", not "who tried".
 
@@ -130,20 +117,23 @@ async def record_access(
     to open patient records. The failure goes to the application log instead. Peter's to overrule;
     see docs/plans/patient-access-log.md.
     """
+    if isinstance(patients, PatientProfile):
+        patients = [patients]
     try:
-        db.add(PatientAccessLog(
-            patient_id=patient.id,
-            user_id=user_id,
-            practitioner_id=practitioner.id if practitioner else None,
-            organization_id=patient.organization_id,
-            method=getattr(request, "method", None) if request is not None else None,
-            path=str(request.url.path) if request is not None else None,
-            via=via,
-        ))
+        for patient in patients:
+            db.add(PatientAccessLog(
+                patient_id=patient.id,
+                user_id=user_id,
+                practitioner_id=practitioner.id if practitioner else None,
+                organization_id=patient.organization_id,
+                method=getattr(request, "method", None) if request is not None else None,
+                path=str(request.url.path) if request is not None else None,
+                via=via,
+            ))
         await db.commit()
     except Exception:
         logger.exception(
-            "Failed to record patient access: patient=%s user=%s", patient.id, user_id
+            "Failed to record patient access: patients=%s user=%s", [p.id for p in patients], user_id
         )
         await db.rollback()
 
@@ -247,7 +237,7 @@ async def _add_grant(
     granted_by_practitioner_id: uuid.UUID | None = None,
     granted_by_user_id: uuid.UUID | None = None,
 ) -> PatientAccessGrant:
-    """Give access, or return the grant they already have."""
+    """Give access, or return the grant they already have. The caller commits."""
     existing = await _live_grant(db, patient.id, practitioner_id)
     if existing is not None:
         return existing
@@ -259,8 +249,7 @@ async def _add_grant(
         granted_by_user_id=granted_by_user_id,
     )
     db.add(grant)
-    await db.commit()
-    await db.refresh(grant)
+    await db.flush()
     return grant
 
 
@@ -302,7 +291,10 @@ async def grant_access(
     """
     await assert_may_manage_access(db, patient, granted_by)
     await _target_practitioner(db, patient, practitioner_id)
-    return await _add_grant(db, patient, practitioner_id, granted_by_practitioner_id=granted_by.id)
+    grant = await _add_grant(db, patient, practitioner_id, granted_by_practitioner_id=granted_by.id)
+    await db.commit()
+    await db.refresh(grant)
+    return grant
 
 
 async def revoke_access(
@@ -355,16 +347,6 @@ async def revoke_access(
 # which is what a practice needs when a clinician leaves. The caller has already been checked as a
 # manager of this patient's practice. docs/plans/clinician-practice-onboarding.md
 
-async def manager_grant_access(
-    db: AsyncSession, patient: PatientProfile, practitioner_id: uuid.UUID, manager_user_id: uuid.UUID,
-    request=None,
-) -> PatientAccessGrant:
-    await _target_practitioner(db, patient, practitioner_id)
-    grant = await _add_grant(db, patient, practitioner_id, granted_by_user_id=manager_user_id)
-    await record_access(db, patient, manager_user_id, None, "practice_manager", request)
-    return grant
-
-
 async def manager_set_owner(
     db: AsyncSession, patient: PatientProfile, practitioner_id: uuid.UUID, manager_user_id: uuid.UUID,
     request=None,
@@ -373,6 +355,7 @@ async def manager_set_owner(
     await _target_practitioner(db, patient, practitioner_id)
     await _add_grant(db, patient, practitioner_id, granted_by_user_id=manager_user_id)
     patient.primary_practitioner_id = practitioner_id
+    # Committed before the log row: a failed log write rolls back, and must not undo the change.
     await db.commit()
     await record_access(db, patient, manager_user_id, None, "practice_manager", request)
 

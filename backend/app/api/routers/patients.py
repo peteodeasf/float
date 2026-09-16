@@ -15,6 +15,9 @@ from app.core.dependencies import get_current_user
 from app.core.security import hash_password
 from app.core.config import settings
 from app.models.user import User, UserRole
+from app.models.organization import Organization
+from app.models.practice import PracticeManagerProfile
+from app.services import practice_service
 from app.models.patient import (
     PatientAccessGrant,
     PractitionerProfile,
@@ -88,8 +91,6 @@ def _generate_temp_password(length: int = 12) -> str:
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-from app.services import practice_service
-from app.models.practice import PracticeManagerProfile
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 patient_router = APIRouter(prefix="/patient", tags=["patient"])
@@ -102,18 +103,19 @@ async def get_practitioner_context(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> tuple[User, PractitionerProfile]:
-    result = await db.execute(
-        select(PractitionerProfile)
+    row = (await db.execute(
+        select(PractitionerProfile, Organization)
+        .join(Organization, Organization.id == PractitionerProfile.organization_id)
         .where(PractitionerProfile.user_id == current_user.id)
-    )
-    practitioner = result.scalar_one_or_none()
-    if not practitioner:
+    )).first()
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Practitioner profile not found"
         )
+    practitioner, organization = row
     # Nobody uses the clinician app until their setup is finished and their practice is active.
-    await practice_service.require_ready(db, current_user, practitioner.organization_id)
+    practice_service.require_ready(current_user, organization)
     return current_user, practitioner
 
 
@@ -2384,11 +2386,10 @@ async def read_getting_started(
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.models.monitoring import MonitoringForm
-    from app.models.organization import Organization
-
     user, me = context
-    flags = set(user.setup_steps_done or [])
+    flags = set(user.onboarding_flags or [])
+    if "hide_getting_started" in flags:
+        return {"items": [], "can_hide": True, "hidden": True}
     my_patient_ids = select(PatientAccessGrant.patient_id).where(
         PatientAccessGrant.practitioner_id == me.id, PatientAccessGrant.revoked_at.is_(None),
     )
@@ -2416,7 +2417,7 @@ async def read_getting_started(
         "items": items,
         # Hiding it is offered once they have a patient: before that, it is the way in.
         "can_hide": has_patient,
-        "hidden": "hide_getting_started" in flags,
+        "hidden": False,
     }
 
 
@@ -2427,6 +2428,5 @@ async def update_getting_started(
     db: AsyncSession = Depends(get_db),
 ):
     user, _ = context
-    if action not in (user.setup_steps_done or []):
-        user.setup_steps_done = [*(user.setup_steps_done or []), action]
-        await db.commit()
+    practice_service.add_flag(user, action)
+    await db.commit()

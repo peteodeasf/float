@@ -1,6 +1,6 @@
 import secrets
 import uuid
-from typing import Literal, Optional
+from typing import Optional
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -12,7 +12,6 @@ from app.core.config import settings
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
 from app.models.organization import Organization
-from app.models.practice import AgreementAcceptance
 from app.models.setup_link import SetupLink
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
@@ -47,6 +46,9 @@ async def get_admin_context(
 class CreateOrganizationRequest(BaseModel):
     name: str
     admin_email: str | None = None
+
+
+CLINICIAN_INVITE_INTRO = "You've been set up as a clinician on Float."
 
 
 class CreateClinicianRequest(BaseModel):
@@ -450,6 +452,7 @@ async def list_organizations(
             "id": str(o.id),
             "name": o.name,
             "status": o.status,
+            "suspended": o.suspended_at is not None,
             "clinician_count": clinician_count,
             "patient_count": patient_count,
             "created_at": o.created_at.isoformat() if o.created_at else None,
@@ -477,7 +480,7 @@ async def create_organization(
     )
     org_id = org.id
     if admin_email:
-        owner = await practice_service.create_member(
+        owner, _ = await practice_service.create_member(
             db, org_id, admin_email, name="", role=practice_service.CLINICIAN, is_admin=True,
         )
         await practice_service.send_setup_link(
@@ -493,43 +496,28 @@ async def create_organization(
     }
 
 
-class OrganizationStatusRequest(BaseModel):
-    status: Literal["active", "suspended"]
+class OrganizationSuspendRequest(BaseModel):
+    suspended: bool
 
 
-@router.put("/organizations/{org_id}/status")
-async def set_organization_status(
+@router.put("/organizations/{org_id}/suspended")
+async def set_organization_suspended(
     org_id: uuid.UUID,
-    request: OrganizationStatusRequest,
+    request: OrganizationSuspendRequest,
     admin: User = Depends(get_admin_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """Suspend a practice, or let it back in. Nobody in a suspended practice can use Float.
-
-    Letting back in a practice that never accepted the BAA returns it to setup, not to active:
-    suspending must not be a way around the agreement.
-    """
+    """Suspend a practice, or let it back in. Nobody in a suspended practice can use Float. Letting
+    it back in returns it to where it was: active, or still in setup."""
     org = await db.get(Organization, org_id)
     if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
-    if request.status == "suspended":
-        org.status = "suspended"
-    elif org.status == "suspended":
-        signed_baa = (await db.execute(
-            select(AgreementAcceptance.id).where(
-                AgreementAcceptance.organization_id == org.id,
-                AgreementAcceptance.document == "baa",
-            )
-        )).first() is not None
-        # Practices from before onboarding existed never went through setup; they stay usable.
-        has_members_set_up = (await db.execute(
-            select(User.id)
-            .join(UserRole, UserRole.user_id == User.id)
-            .where(UserRole.organization_id == org.id, User.setup_completed_at.is_not(None))
-        )).first() is not None
-        org.status = "active" if signed_baa or has_members_set_up else "setting_up"
+    if request.suspended:
+        org.suspended_at = org.suspended_at or datetime.now(timezone.utc)
+    else:
+        org.suspended_at = None
     await db.commit()
-    return {"id": str(org.id), "status": org.status}
+    return {"id": str(org.id), "status": org.status, "suspended": org.suspended_at is not None}
 
 
 @router.post("/clinicians")
@@ -560,18 +548,15 @@ async def create_clinician(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    user = await practice_service.create_member(
+    user, profile = await practice_service.create_member(
         db, org_uuid, email, request.name, practice_service.CLINICIAN,
     )
-    profile = (await db.execute(
-        select(PractitionerProfile).where(PractitionerProfile.user_id == user.id)
-    )).scalar_one()
     profile_id = profile.id
     user_id = user.id
     org_name = org.name
     await practice_service.send_setup_link(
         db, user, org_uuid, purpose="colleague",
-        intro="You've been set up as a clinician on Float.", created_by_user_id=admin.id,
+        intro=CLINICIAN_INVITE_INTRO, created_by_user_id=admin.id,
     )
 
     return {
@@ -598,7 +583,7 @@ async def resend_clinician_setup_link(
     user = await db.get(User, user_id)
     if profile is None or user is None:
         raise HTTPException(status_code=404, detail="Clinician not found")
-    if user.password_changed_at is not None:
+    if not practice_service.awaiting_first_password(user):
         # Once they have a password of their own, a lost one goes through Reset password.
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -607,7 +592,7 @@ async def resend_clinician_setup_link(
 
     await practice_service.send_setup_link(
         db, user, profile.organization_id, purpose="colleague",
-        intro="You've been set up as a clinician on Float.", created_by_user_id=admin.id,
+        intro=CLINICIAN_INVITE_INTRO, created_by_user_id=admin.id,
     )
     return {"success": True}
 

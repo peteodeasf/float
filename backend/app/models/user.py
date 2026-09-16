@@ -36,10 +36,11 @@ class User(Base):
     reminder_emails_off_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    # Onboarding. The setup screens this person has finished, and when they finished all of them.
-    # A clinician or office manager cannot use the app until setup_completed_at is set.
+    # Onboarding. What this person has done so far: the setup screens they have finished, and the
+    # getting-started flags (opened the education, hid the checklist). A clinician or office
+    # manager cannot use the app until setup_completed_at is set.
     # docs/plans/clinician-practice-onboarding.md
-    setup_steps_done: Mapped[list] = mapped_column(
+    onboarding_flags: Mapped[list] = mapped_column(
         JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )
     setup_completed_at: Mapped[datetime | None] = mapped_column(

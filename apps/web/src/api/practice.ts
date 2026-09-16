@@ -5,8 +5,6 @@ import { apiClient } from './client'
 
 export interface Practice {
   name: string
-  state: string | null
-  size: number | null
   me: { name: string; email: string; is_admin: boolean; is_manager: boolean }
 }
 

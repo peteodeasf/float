@@ -85,16 +85,8 @@ async def read_message(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    from app.models.patient import PractitionerProfile
-    from sqlalchemy import select
-    result = await db.execute(
-        select(PractitionerProfile)
-        .where(PractitionerProfile.user_id == current_user.id)
-    )
-    practitioner = result.scalar_one_or_none()
-    if not practitioner:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="Not authorized")
+    # The same lookup, and the same setup gate, as every other clinician route.
+    _, practitioner = await get_practitioner_context(current_user, db)
     # Only for a patient this clinician has been granted. In the handler rather than a dependency
     # because the message id, not a patient id, is what the route is keyed on.
     await _require(db, (current_user, practitioner),

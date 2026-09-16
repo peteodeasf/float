@@ -11,16 +11,13 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy import select
 
-from app.core.config import settings
-from app.models.patient import ParentPatientLink, PatientProfile
+from app.models.patient import ParentPatientLink
 from app.models.user import User, UserRole
 
-from tests.factories import _make_user, grant_patient_to, make_org, make_patient, make_practitioner
+from tests.factories import _make_user, grant_patient_to, make_float_admin, make_org, make_patient, make_practitioner
 
 
-@pytest.fixture(autouse=True)
-def email_configured(monkeypatch):
-    monkeypatch.setattr(settings, "RESEND_API_KEY", "test-key")
+pytestmark = pytest.mark.usefixtures("email_configured")
 
 
 async def clinic_with_consent(db):
@@ -58,7 +55,7 @@ async def test_a_child_invite_cannot_use_another_practices_clinician(api, db, no
 
 async def test_a_child_invite_cannot_use_a_float_admin(api, db):
     _, child, clinician = await clinic_with_consent(db)
-    admin = await with_real_email(db, await _make_user(db, await make_org(db), "admin"))
+    admin = await with_real_email(db, await make_float_admin(db))
     api.sign_in_as(clinician.user)
 
     r = await api.post(f"/patients/{child.id}/invite-teen", json={"email": admin.email})

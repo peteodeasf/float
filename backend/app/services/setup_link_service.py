@@ -27,6 +27,19 @@ def setup_url(token: str) -> str:
     return f"{settings.BASE_URL}/setup#token={token}"
 
 
+async def revoke_unused(db: AsyncSession, user_id: uuid.UUID) -> None:
+    """Stop every link this user has not used yet."""
+    await db.execute(
+        update(SetupLink)
+        .where(
+            SetupLink.user_id == user_id,
+            SetupLink.used_at.is_(None),
+            SetupLink.revoked_at.is_(None),
+        )
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
+
+
 async def issue(
     db: AsyncSession,
     user_id: uuid.UUID,
@@ -36,15 +49,7 @@ async def issue(
 ) -> str:
     """Make a new link for this user and return its token. Any earlier unused link stops working."""
     now = datetime.now(timezone.utc)
-    await db.execute(
-        update(SetupLink)
-        .where(
-            SetupLink.user_id == user_id,
-            SetupLink.used_at.is_(None),
-            SetupLink.revoked_at.is_(None),
-        )
-        .values(revoked_at=now)
-    )
+    await revoke_unused(db, user_id)
     token = secrets.token_urlsafe(32)
     db.add(SetupLink(
         user_id=user_id,

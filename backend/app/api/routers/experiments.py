@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.models.patient import PatientProfile, PractitionerProfile
+from app.models.patient import PatientProfile
 from app.models.treatment import AvoidanceBehavior, TriggerSituation, TreatmentPlan
 from app.services.experiment_service import (
     create_experiment,
@@ -220,13 +220,8 @@ async def get_single_experiment(
     if patient:
         org_id = patient.organization_id
     else:
-        result = await db.execute(
-            select(PractitionerProfile)
-            .where(PractitionerProfile.user_id == current_user.id)
-        )
-        practitioner = result.scalar_one_or_none()
-        if not practitioner:
-            raise Exception("Profile not found")
+        # The same lookup, and the same setup gate, as every other clinician route.
+        _, practitioner = await get_practitioner_context(current_user, db)
         org_id = practitioner.organization_id
         # A clinician reads an experiment only for a patient they have been granted. This is
         # checked here rather than by a dependency because the same route serves the child, who

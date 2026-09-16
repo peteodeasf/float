@@ -147,3 +147,20 @@ async def make_org_admin(db, org):
         role.is_org_admin = True
     await db.flush()
     return prof
+
+
+async def make_float_admin(db) -> User:
+    """Someone on Float's own team, who uses the admin app."""
+    return await _make_user(db, await make_org(db), "admin")
+
+
+async def make_practice_manager(db, org) -> User:
+    """An office manager: a practice admin with no clinician profile."""
+    from sqlalchemy import select
+    from app.models.practice import PracticeManagerProfile
+    user = await _make_user(db, org, "practice_manager")
+    role = (await db.execute(select(UserRole).where(UserRole.user_id == user.id))).scalar_one()
+    role.is_org_admin = True
+    db.add(PracticeManagerProfile(user_id=user.id, organization_id=org.id, name="Morgan Office"))
+    await db.flush()
+    return user

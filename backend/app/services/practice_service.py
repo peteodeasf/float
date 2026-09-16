@@ -25,24 +25,20 @@ PRACTICE_ROLES = (CLINICIAN, PRACTICE_MANAGER)
 
 
 # ── The gate ──────────────────────────────────────────────────────────────────
-# The `detail` strings are read by the clinician app to decide where to send someone.
 
 SETUP_INCOMPLETE = "setup_incomplete"
 PRACTICE_NOT_ACTIVE = "practice_not_active"
 
 
-async def require_ready(db: AsyncSession, user: User, organization_id: uuid.UUID) -> None:
-    """Refuse anyone who has not finished setup, or whose practice is not active.
+def require_ready(user: User, organization: Organization) -> None:
+    """Refuse anyone who has not finished setup, or whose practice is not active or is suspended.
 
-    Called from get_practitioner_context, from get_patient_for_practitioner, and from every
-    practice endpoint, so no clinician or manager route can be reached around it.
+    Called from get_practitioner_context, which every clinician route goes through, and from
+    get_member for the practice routes. The caller has already loaded the practice.
     """
     if user.setup_completed_at is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SETUP_INCOMPLETE)
-    org_status = (await db.execute(
-        select(Organization.status).where(Organization.id == organization_id)
-    )).scalar_one_or_none()
-    if org_status != "active":
+    if organization.status != "active" or organization.suspended_at is not None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=PRACTICE_NOT_ACTIVE)
 
 
@@ -75,21 +71,18 @@ class Membership:
         return self.is_admin and self.organization.status == "setting_up"
 
 
-async def membership_of(db: AsyncSession, user: User) -> Membership | None:
-    """The practice this clinician or office manager belongs to. None for anyone else."""
-    role = (await db.execute(
-        select(UserRole).where(UserRole.user_id == user.id, UserRole.role.in_(PRACTICE_ROLES))
-    )).scalars().first()
-    if role is None:
-        return None
-    org = await db.get(Organization, role.organization_id)
-    practitioner = (await db.execute(
-        select(PractitionerProfile).where(PractitionerProfile.user_id == user.id)
-    )).scalar_one_or_none()
-    manager = (await db.execute(
-        select(PracticeManagerProfile).where(PracticeManagerProfile.user_id == user.id)
-    )).scalar_one_or_none()
-    return Membership(user, role, org, practitioner, manager)
+async def membership_of(db: AsyncSession, user: User) -> Membership:
+    """The practice this clinician or office manager belongs to. 403 for anyone else."""
+    row = (await db.execute(
+        select(UserRole, Organization, PractitionerProfile, PracticeManagerProfile)
+        .join(Organization, Organization.id == UserRole.organization_id)
+        .outerjoin(PractitionerProfile, PractitionerProfile.user_id == UserRole.user_id)
+        .outerjoin(PracticeManagerProfile, PracticeManagerProfile.user_id == UserRole.user_id)
+        .where(UserRole.user_id == user.id, UserRole.role.in_(PRACTICE_ROLES))
+    )).first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a practice member")
+    return Membership(user, *row)
 
 
 # ── Setup progress ────────────────────────────────────────────────────────────
@@ -101,18 +94,29 @@ def steps_for(membership: Membership) -> list[str]:
     return ["details", "agreements"]
 
 
+def add_flag(user: User, flag: str) -> None:
+    """Record something done during onboarding: a setup screen or a getting-started step."""
+    if flag not in (user.onboarding_flags or []):
+        # A new list, so SQLAlchemy sees the change to the JSON column.
+        user.onboarding_flags = [*(user.onboarding_flags or []), flag]
+
+
 def next_step(membership: Membership) -> str | None:
-    done = set(membership.user.setup_steps_done or [])
+    done = set(membership.user.onboarding_flags or [])
     return next((s for s in steps_for(membership) if s not in done), None)
+
+
+def awaiting_first_password(user: User) -> bool:
+    """Invited, and has not chosen a password yet: the only person a new setup link is sent to."""
+    return (user.deactivated_at is None and user.setup_completed_at is None
+            and user.password_changed_at is None)
 
 
 def mark_step_done(membership: Membership, step: str) -> None:
     """Record a finished screen. Finishing the last one finishes setup, and for the person setting
     up the practice, makes the practice active."""
     user = membership.user
-    if step not in user.setup_steps_done:
-        # A new list, so SQLAlchemy sees the change to the JSON column.
-        user.setup_steps_done = [*user.setup_steps_done, step]
+    add_flag(user, step)
     if next_step(membership) is None and user.setup_completed_at is None:
         user.setup_completed_at = datetime.now(timezone.utc)
         if membership.is_practice_owner:
@@ -133,21 +137,22 @@ async def create_member(
     role: str,
     is_admin: bool = False,
     credentials: str | None = None,
-) -> User:
-    """A clinician or office manager in a practice, who has not set up yet. Their password is
-    random and never sent: they choose their own from a setup link."""
+) -> tuple[User, PractitionerProfile | PracticeManagerProfile]:
+    """A clinician or office manager in a practice, who has not set up yet, and their profile.
+    Their password is random and never sent: they choose their own from a setup link."""
     user = User(email=email, password_hash=hash_password(secrets.token_urlsafe(32)))
     db.add(user)
     await db.flush()
     db.add(UserRole(user_id=user.id, organization_id=organization_id, role=role,
                     is_org_admin=is_admin))
     if role == CLINICIAN:
-        db.add(PractitionerProfile(user_id=user.id, organization_id=organization_id, name=name,
-                                   credentials=credentials))
+        profile = PractitionerProfile(user_id=user.id, organization_id=organization_id, name=name,
+                                      credentials=credentials)
     else:
-        db.add(PracticeManagerProfile(user_id=user.id, organization_id=organization_id, name=name))
+        profile = PracticeManagerProfile(user_id=user.id, organization_id=organization_id, name=name)
+    db.add(profile)
     await db.flush()
-    return user
+    return user, profile
 
 
 async def create_practice(
@@ -205,7 +210,7 @@ async def approve_request(db: AsyncSession, request, reviewed_by_user_id: uuid.U
 
     org = await create_practice(db, request.practice_name, state=request.state,
                                 size=request.practice_size)
-    user = await create_member(
+    user, _ = await create_member(
         db, org.id, request.email, request.name, request.role, is_admin=True,
         credentials=request.credentials if request.role == CLINICIAN else None,
     )

@@ -235,3 +235,11 @@ def no_outbound(monkeypatch):
         pass
 
     return sent
+
+
+@pytest.fixture
+def email_configured(monkeypatch):
+    """Emails are built and captured by no_outbound, whatever .env holds. Opt in per file with
+    pytestmark = pytest.mark.usefixtures("email_configured")."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "RESEND_API_KEY", "test-key")

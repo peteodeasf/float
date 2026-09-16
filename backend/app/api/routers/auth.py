@@ -55,6 +55,19 @@ class SetupLinkCompleteRequest(BaseModel):
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def issue_tokens(user: User) -> TokenResponse:
+    """A new session for someone who has just proved who they are.
+
+    Stamped at least a second after their last password change: tokens from that same second are
+    refused, and signing in straight after choosing a password is exactly when that happens.
+    """
+    issued_at = fresh_issue_time(user.password_changed_at)
+    return TokenResponse(
+        access_token=create_access_token(subject=str(user.id), issued_at=issued_at),
+        refresh_token=create_refresh_token(subject=str(user.id), issued_at=issued_at),
+    )
+
+
 def apply_new_password(user: User, password: str) -> datetime:
     """Save a new password, the same way on every path that sets one.
 
@@ -87,14 +100,7 @@ async def login(
             detail="Incorrect email or password"
         )
 
-    issued_at = fresh_issue_time(user.password_changed_at)
-    access_token = create_access_token(subject=str(user.id), issued_at=issued_at)
-    refresh_token = create_refresh_token(subject=str(user.id), issued_at=issued_at)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token
-    )
+    return issue_tokens(user)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -126,14 +132,7 @@ async def refresh(
     if token_predates_password_change(payload, user.password_changed_at):
         raise credentials_exception
 
-    issued_at = fresh_issue_time(user.password_changed_at)
-    access_token = create_access_token(subject=str(user.id), issued_at=issued_at)
-    refresh_token = create_refresh_token(subject=str(user.id), issued_at=issued_at)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token
-    )
+    return issue_tokens(user)
 
     from app.core.dependencies import get_current_user
 from app.models.patient import PatientProfile
@@ -233,17 +232,13 @@ async def set_password(
     # Same rule as change-password below: a password that changes ends every session older than
     # it. Here that is the temporary password Float emailed out — if someone else used it first,
     # setting a real password has to be what stops them.
-    changed_at = apply_new_password(current_user, request.password)
+    apply_new_password(current_user, request.password)
     await db.commit()
 
     # And the caller keeps a working session, stamped past the change. The teen and parent apps
     # store these; if one did not, the person is simply asked to sign in with the password they
     # have just chosen.
-    fresh = changed_at + timedelta(seconds=1)
-    return TokenResponse(
-        access_token=create_access_token(subject=str(current_user.id), issued_at=fresh),
-        refresh_token=create_refresh_token(subject=str(current_user.id), issued_at=fresh),
-    )
+    return issue_tokens(current_user)
 
 
 @router.put("/change-password")
@@ -275,18 +270,14 @@ async def change_password(
             detail="Your new password has to be different from your current one.",
         )
 
-    changed_at = apply_new_password(current_user, request.new_password)
+    apply_new_password(current_user, request.new_password)
     await db.commit()
 
     # Every token from that second or earlier is now refused, including the one this request
     # arrived with. Hand this browser a new pair, stamped a second later so they are on the right
     # side of that line: the person who just changed their own password stays signed in, while
     # anyone else holding their session does not.
-    fresh = changed_at + timedelta(seconds=1)
-    return TokenResponse(
-        access_token=create_access_token(subject=str(current_user.id), issued_at=fresh),
-        refresh_token=create_refresh_token(subject=str(current_user.id), issued_at=fresh),
-    )
+    return issue_tokens(current_user)
 
 
 # ── Setup links ───────────────────────────────────────────────────────────────
