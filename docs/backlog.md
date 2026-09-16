@@ -441,9 +441,11 @@ tests; CI on push; this file).
 
 # AI features
 
-## Rotate the production database password
+## Change the production database password — DONE 2026-09-15
 
-**Raised 2026-08-29. Deferred by Peter the same day — not urgent, but do it.** `S`
+**DONE 2026-09-15.** Peter changed it in the database itself and updated every Railway variable that holds it: the Postgres service's `POSTGRES_PASSWORD`, `PGPASSWORD`, `DATABASE_URL` and `DATABASE_PUBLIC_URL`, and `DATABASE_URL` and `ASYNC_DATABASE_URL` on floatcbt and floatcbt-jobs. Raised 2026-08-29, deferred the same day. `S`
+
+Worth knowing for next time: Railway's **Redeploy** re-runs the old deployment with its old variables, so it kept failing on the old password. A new deployment (a push) is what picks up changed variables.
 
 The password was pasted into a chat transcript on 2026-08-29, so treat it as known. It was printed into a session transcript again on 2026-09-15, when `railway connect` showed it while creating review rounds.
 
