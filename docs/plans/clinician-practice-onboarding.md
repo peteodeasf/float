@@ -89,9 +89,8 @@ The practice size given on the request form only decides whether the owner's che
   `must_change_password`, so they can keep using that password indefinitely.
 - The admin form for a new practice asks for an admin email, but the backend ignores it. Nothing
   in the app can make someone a practice admin (`is_org_admin`). Only a script sets it.
-- The waitlist stores first name, last name, email and role (clinician / parent / other). It
-  can't be approved or turned into an account. The public form isn't in `apps/web`; it's
-  presumably on the marketing site.
+- The waitlist is not part of onboarding (Peter, 2026-09-16: not fit for that purpose). Access
+  requests are a separate thing and don't touch it.
 - No signup page, terms or BAA step, billing, email verification, or MFA.
 - The only guidance a new clinician sees: "No patients yet. Add your first patient to get started."
 - Production email is sent from `notifications@send.floatcbt.com`. `send.floatcbt.com` is the
@@ -111,7 +110,7 @@ Otherwise the form tells a stranger which emails are Float users.
 
 ### 2. Float approves (approval mode only)
 
-A new "Access requests" list in the Float admin app, replacing the read-only waitlist view.
+A new "Access requests" list in the Float admin app. The waitlist stays as it is.
 Float can approve or decline each request.
 
 Approving creates the practice with status **setting up**, creates the user, and emails a
@@ -207,7 +206,7 @@ Open mode also needs, before it's switched on:
 
 | Change | What it holds |
 |---|---|
-| `waitlist_entries` gains columns | practice name, state, practice size, credentials, status (new / approved / declined), reviewed by, reviewed at, the practice it became |
+| New `access_requests` table | name, email, clinician or office manager, credentials, practice name, state, practice size, status (new / approved / declined), reviewed by, reviewed at, the practice it became |
 | `organizations.status` | setting up / active / suspended. Existing practices become active. |
 | New `setup_links` table | user, practice, purpose (practice owner / colleague), token hash, expires at, used at, created by |
 | New `agreement_acceptances` table | practice, user, document (terms / BAA), version, accepted at. One row per acceptance, so a new BAA version adds a row rather than overwriting the old one. |
