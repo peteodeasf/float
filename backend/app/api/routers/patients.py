@@ -4,7 +4,7 @@ import string
 import traceback
 import uuid
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,7 @@ from app.core.security import hash_password
 from app.core.config import settings
 from app.models.user import User, UserRole
 from app.models.patient import (
+    PatientAccessGrant,
     PractitionerProfile,
     PatientProfile,
     ParentPatientLink,
@@ -2370,3 +2371,61 @@ async def update_my_profile(
         current_user,
         await is_institution_admin(db, current_user.id, practitioner.organization_id),
     )
+
+
+# ── Getting started ───────────────────────────────────────────────────────────
+# The checklist on a new clinician's home screen. Each item is worked out from what is really in
+# the database; the only thing stored is that they opened the education and whether they hid it.
+# docs/plans/clinician-practice-onboarding.md, step 5 ("First run").
+
+@practitioners_router.get("/me/getting-started")
+async def read_getting_started(
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.monitoring import MonitoringForm
+    from app.models.organization import Organization
+
+    user, me = context
+    flags = set(user.setup_steps_done or [])
+    my_patient_ids = select(PatientAccessGrant.patient_id).where(
+        PatientAccessGrant.practitioner_id == me.id, PatientAccessGrant.revoked_at.is_(None),
+    )
+    has_patient = (await db.execute(my_patient_ids.limit(1))).first() is not None
+    sent_form = (await db.execute(
+        select(MonitoringForm.id).where(
+            MonitoringForm.patient_id.in_(my_patient_ids), MonitoringForm.sent_at.is_not(None),
+        ).limit(1)
+    )).first() is not None
+
+    items = [{"key": "education", "done": "read_education" in flags}]
+    org = await db.get(Organization, me.organization_id)
+    if await is_institution_admin(db, user.id, me.organization_id) and (org.size or 1) > 1:
+        colleagues = (await db.execute(
+            select(func.count(UserRole.id)).where(
+                UserRole.organization_id == me.organization_id,
+                UserRole.role.in_(practice_service.PRACTICE_ROLES),
+            )
+        )).scalar()
+        items.append({"key": "invite", "done": colleagues > 1})
+    items.append({"key": "patient", "done": has_patient})
+    items.append({"key": "monitoring", "done": sent_form})
+
+    return {
+        "items": items,
+        # Hiding it is offered once they have a patient: before that, it is the way in.
+        "can_hide": has_patient,
+        "hidden": "hide_getting_started" in flags,
+    }
+
+
+@practitioners_router.post("/me/getting-started/{action}", status_code=status.HTTP_204_NO_CONTENT)
+async def update_getting_started(
+    action: Literal["read_education", "hide_getting_started"],
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    user, _ = context
+    if action not in (user.setup_steps_done or []):
+        user.setup_steps_done = [*(user.setup_steps_done or []), action]
+        await db.commit()

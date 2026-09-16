@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getPatients, PHASES, type Patient, type Phase } from '../../api/patients'
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import GettingStartedCard from '../../components/practitioner/GettingStartedCard'
 
 // Relative "last activity" label
 export function relativeActivityLabel(iso: string | null | undefined): string {
@@ -169,6 +170,8 @@ export default function DashboardPage() {
             Add patient
           </button>
         </div>
+
+        <GettingStartedCard />
 
         <div
           className="bg-white overflow-hidden"
