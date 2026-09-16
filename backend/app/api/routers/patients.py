@@ -576,6 +576,24 @@ async def update_patient(
     return await _patient_response(db, patient)
 
 
+# An invite can reuse an existing account only when that account is already this family's. Anything
+# else — a clinician, an office manager, a Float admin, a child or parent in another practice — would
+# have its password reset and be linked to a patient that is not theirs. The refusal says nothing
+# about who owns the email.
+INVITE_EMAIL_REFUSED = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="That email can't be used for this invite. Use a different email.",
+)
+
+
+async def _only_parent_roles_here(db: AsyncSession, user: User, organization_id: uuid.UUID) -> bool:
+    """An active account whose only roles are parent, in this practice."""
+    if user.deactivated_at is not None:
+        return False
+    roles = (await db.execute(select(UserRole).where(UserRole.user_id == user.id))).scalars().all()
+    return bool(roles) and all(r.role == "parent" and r.organization_id == organization_id for r in roles)
+
+
 @router.post("/{patient_id}/invite-teen")
 async def invite_teen(
     patient_id: uuid.UUID,
@@ -628,30 +646,12 @@ async def invite_teen(
         # Link patient profile to the new user
         patient.user_id = new_user.id
     else:
-        # This email already has an account. A teen account can only belong to
-        # one patient (patient.user_id is a single FK), so refuse if it's
-        # already the teen for a *different* patient — otherwise the invite
-        # would silently point the wrong account at this patient (or steal it
-        # from the other one). This is the guard for the cross-patient mixup.
-        other_patient_result = await db.execute(
-            select(PatientProfile).where(
-                PatientProfile.user_id == existing_user.id,
-                PatientProfile.id != patient.id,
-            )
-        )
-        other_patient = other_patient_result.scalars().first()
-        if other_patient is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    f"{email} is already the teen login for another patient "
-                    f"({other_patient.name}). Use a different email for this teen."
-                ),
-            )
+        # Only this child's own login can be re-invited. Any other account is refused, including one
+        # that is no one's child login yet: it may be a clinician's, a parent's or an admin's.
+        if existing_user.id != patient.user_id or existing_user.deactivated_at is not None:
+            raise INVITE_EMAIL_REFUSED
 
-        # The account is free (or already this patient's). Reset the password,
-        # ensure the patient role exists in this org, and — the previously
-        # missing step — actually link the account to this patient.
+        # It is this child's own login: reset the password for a fresh invite.
         existing_user.password_hash = hash_password(temp_password)
         existing_user.must_change_password = True
 
@@ -823,9 +823,8 @@ async def invite_parent(
         if already is not None:
             return {"success": False, "email": email, "already_a_parent": True}
 
-    temp_password = _generate_temp_password()
-
     if existing_user is None:
+        temp_password = _generate_temp_password()
         parent_user = User(
             email=email,
             password_hash=hash_password(temp_password),
@@ -834,10 +833,12 @@ async def invite_parent(
         db.add(parent_user)
         await db.flush()
     else:
-        # Re-invite: reset the password to a fresh temp.
+        # A parent already on Float in this practice, for another of their children. They keep their
+        # password; the email tells them to sign in as usual. Any other account is refused.
+        if not await _only_parent_roles_here(db, existing_user, patient.organization_id):
+            raise INVITE_EMAIL_REFUSED
+        temp_password = None
         parent_user = existing_user
-        parent_user.password_hash = hash_password(temp_password)
-        parent_user.must_change_password = True
 
     # Ensure a parent role exists for this org.
     role_result = await db.execute(

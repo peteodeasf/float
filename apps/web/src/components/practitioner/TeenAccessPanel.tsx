@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { errorMessage } from '../ui/form'
 import { inviteTeen, inviteParent, listParents, removeParent, setChildConnectConsent, setParentProgressSharing, setAccommodationRatingsSharing } from '../../api/patients'
 
 /**
@@ -235,7 +236,7 @@ export default function TeenAccessPanel({
       )}
       {inviteMut.isError && (
         <p role="alert" style={{ fontSize: '12px', color: '#b91c1c', margin: '8px 0 0' }}>
-          The invitation didn&rsquo;t send. Please try again.
+          {errorMessage(inviteMut.error, 'The invitation didn’t send. Please try again.')}
         </p>
       )}
 
@@ -355,6 +356,11 @@ export default function TeenAccessPanel({
         {alreadyAParent && (
           <p style={{ fontSize: '12px', color: '#b45309', margin: '8px 0 0' }}>
             {alreadyAParent} is already a parent of this child. Nothing was sent, and their password is unchanged.
+          </p>
+        )}
+        {parentInviteMut.isError && (
+          <p role="alert" style={{ fontSize: '12px', color: '#b91c1c', margin: '8px 0 0' }}>
+            {errorMessage(parentInviteMut.error, 'The invitation didn’t send. Please try again.')}
           </p>
         )}
         {parentConfirmation && (

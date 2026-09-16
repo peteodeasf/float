@@ -245,10 +245,11 @@ Sent via Float
 async def send_parent_invitation_email(
     to_email: str,
     login_url: str,
-    temporary_password: str,
+    temporary_password: str | None,
     child_name: str = "",
 ) -> bool:
-    """Send a parent invitation email with a temporary password."""
+    """Send a parent invitation email. With a temporary password for a new account; without one for
+    a parent who already uses Float for another child and keeps their own password."""
 
     if not settings.RESEND_API_KEY:
         logger.warning("RESEND_API_KEY not configured — skipping parent invite email")
@@ -257,6 +258,36 @@ async def send_parent_invitation_email(
     resend.api_key = settings.RESEND_API_KEY
 
     about = f" to support {child_name}'s treatment" if child_name else ""
+
+    if temporary_password:
+        login_box = f"""      <div style="background:#eafaf6; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
+        <p style="font-size:13px; font-weight:600; color:#0d3d3a; margin:0 0 8px;">
+          Your login
+        </p>
+        <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
+          Email: <strong>{to_email}</strong>
+        </p>
+        <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
+          Temporary password: <code style="background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #e2e8f0;">{temporary_password}</code>
+        </p>
+        <p style="font-size:13px; color:#64748b; line-height:1.5; margin:8px 0 0;">
+          You'll be asked to set your own password the first time you sign in.
+        </p>
+      </div>
+
+"""
+        login_text = f"""Your login:
+Email: {to_email}
+Temporary password: {temporary_password}
+
+You'll be asked to set your own password the first time you sign in."""
+    else:
+        login_box = f"""      <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 20px;">
+        Sign in as <strong>{to_email}</strong> with the password you already use for Float.
+      </p>
+
+"""
+        login_text = f"Sign in as {to_email} with the password you already use for Float."
 
     html_body = f"""
 <!DOCTYPE html>
@@ -293,22 +324,7 @@ async def send_parent_invitation_email(
         </a>
       </div>
 
-      <div style="background:#eafaf6; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
-        <p style="font-size:13px; font-weight:600; color:#0d3d3a; margin:0 0 8px;">
-          Your login
-        </p>
-        <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
-          Email: <strong>{to_email}</strong>
-        </p>
-        <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
-          Temporary password: <code style="background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #e2e8f0;">{temporary_password}</code>
-        </p>
-        <p style="font-size:13px; color:#64748b; line-height:1.5; margin:8px 0 0;">
-          You'll be asked to set your own password the first time you sign in.
-        </p>
-      </div>
-
-      <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0;">
+{login_box}      <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0;">
         Log in here: <a href="{login_url}" style="color:#135450;">{login_url}</a>
       </p>
 
@@ -331,11 +347,7 @@ Your clinician has invited you to Float{about}. Log in to see the plan.
 
 Log in here: {login_url}
 
-Your login:
-Email: {to_email}
-Temporary password: {temporary_password}
-
-You'll be asked to set your own password the first time you sign in.
+{login_text}
 
 ---
 Sent via Float
