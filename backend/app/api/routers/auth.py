@@ -22,6 +22,7 @@ from app.core.security import (
 from app.models.user import User, UserRole
 from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest
 from app.services.email_service import send_password_reset_email
+from app.services import setup_link_service
 
 
 class SetPasswordRequest(BaseModel):
@@ -41,7 +42,31 @@ class ResetPasswordRequest(BaseModel):
     token: str
     password: str
 
+
+class SetupLinkCheckRequest(BaseModel):
+    token: str
+
+
+class SetupLinkCompleteRequest(BaseModel):
+    token: str
+    password: str
+
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def apply_new_password(user: User, password: str) -> datetime:
+    """Save a new password, the same way on every path that sets one.
+
+    Recording when it changed is what refuses every session token issued before it
+    (token_predates_password_change), and any pending reset link stops working. Returns that time.
+    """
+    changed_at = datetime.now(timezone.utc)
+    user.password_hash = hash_password(password)
+    user.must_change_password = False
+    user.password_changed_at = changed_at
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    return changed_at
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -199,10 +224,7 @@ async def set_password(
     # Same rule as change-password below: a password that changes ends every session older than
     # it. Here that is the temporary password Float emailed out — if someone else used it first,
     # setting a real password has to be what stops them.
-    changed_at = datetime.now(timezone.utc)
-    current_user.password_hash = hash_password(request.password)
-    current_user.must_change_password = False
-    current_user.password_changed_at = changed_at
+    changed_at = apply_new_password(current_user, request.password)
     await db.commit()
 
     # And the caller keeps a working session, stamped past the change. The teen and parent apps
@@ -244,10 +266,7 @@ async def change_password(
             detail="Your new password has to be different from your current one.",
         )
 
-    current_user.password_hash = hash_password(request.new_password)
-    current_user.must_change_password = False
-    changed_at = datetime.now(timezone.utc)
-    current_user.password_changed_at = changed_at
+    changed_at = apply_new_password(current_user, request.new_password)
     await db.commit()
 
     # Every token from that second or earlier is now refused, including the one this request
@@ -259,6 +278,46 @@ async def change_password(
         access_token=create_access_token(subject=str(current_user.id), issued_at=fresh),
         refresh_token=create_refresh_token(subject=str(current_user.id), issued_at=fresh),
     )
+
+
+# ── Setup links ───────────────────────────────────────────────────────────────
+# A new user follows a one-time emailed link and chooses their password. No temporary password is
+# ever sent. The token comes in the request body, never the URL, so it stays out of server logs.
+# docs/plans/clinician-practice-onboarding.md
+
+SETUP_LINK_UNUSABLE = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="This link has expired or has already been used.",
+)
+
+
+@router.post("/setup-link/check")
+async def check_setup_link(request: SetupLinkCheckRequest, db: AsyncSession = Depends(get_db)):
+    """Whether the link still works, and the email it is for, so the page can show it."""
+    link = await setup_link_service.find_usable(db, request.token)
+    if link is None:
+        raise SETUP_LINK_UNUSABLE
+    user = await db.get(User, link.user_id)
+    return {"email": user.email}
+
+
+@router.post("/setup-link/complete")
+async def complete_setup_link(request: SetupLinkCompleteRequest, db: AsyncSession = Depends(get_db)):
+    if len(request.password or "") < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your password must be at least 8 characters.",
+        )
+    link = await setup_link_service.find_usable(db, request.token, lock=True)
+    if link is None:
+        raise SETUP_LINK_UNUSABLE
+
+    user = await db.get(User, link.user_id)
+    link.used_at = apply_new_password(user, request.password)
+    await db.commit()
+    # No tokens here. The page signs in with the new password through the normal login, which is
+    # also where the clinician app checks the account is a clinician's.
+    return {"email": user.email}
 
 
 @router.post("/forgot-password")
@@ -317,13 +376,9 @@ async def reset_password(
     if expires < datetime.now(timezone.utc):
         return {"error": "Invalid or expired token"}
 
-    user.password_hash = hash_password(request.password)
-    user.password_reset_token = None
-    user.password_reset_expires = None
-    user.must_change_password = False
     # Resetting by email is the "I have lost control of my account" path, so it has the most
     # reason of all to end sessions elsewhere.
-    user.password_changed_at = datetime.now(timezone.utc)
+    apply_new_password(user, request.password)
     await db.commit()
     return {"success": True}
 # Wed Apr 15 21:18:07 EDT 2026

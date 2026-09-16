@@ -21,6 +21,7 @@ type AdminUser = {
   created_at: string | null
   last_login: string | null
   must_change_password: boolean
+  awaiting_setup: boolean
 }
 
 type AdminOrg = {
@@ -166,10 +167,21 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const handleResetPassword = async (id: string) => {
-    await adminApiClient.post(`/admin/users/${id}/reset-password`)
-    setResetSentFor(id)
-    setTimeout(() => setResetSentFor((cur) => (cur === id ? null : cur)), 3000)
+  // A clinician who has never chosen a password gets a new setup link; everyone else a reset email.
+  const handleSendPasswordEmail = async (u: AdminUser) => {
+    const path = u.awaiting_setup
+      ? `/admin/clinicians/${u.id}/setup-link`
+      : `/admin/users/${u.id}/reset-password`
+    try {
+      await adminApiClient.post(path)
+    } catch (err: any) {
+      // Most likely the clinician finished setup after this list loaded. Say so and refresh the row.
+      alert(err?.response?.data?.detail ?? 'Failed to send the email. Please try again.')
+      await loadAll()
+      return
+    }
+    setResetSentFor(u.id)
+    setTimeout(() => setResetSentFor((cur) => (cur === u.id ? null : cur)), 3000)
   }
 
   const handleDeletePatient = async (id: string) => {
@@ -549,12 +561,12 @@ export default function AdminDashboardPage() {
                       </div>
                     ) : resetSentFor === u.id ? (
                       <span style={{ fontSize: '12px', color: '#059669' }}>
-                        ✓ Reset email sent
+                        {u.awaiting_setup ? '✓ Setup link sent' : '✓ Reset email sent'}
                       </span>
                     ) : (
                       <>
-                        <button onClick={() => handleResetPassword(u.id)} style={smallBtn}>
-                          Reset password
+                        <button onClick={() => handleSendPasswordEmail(u)} style={smallBtn}>
+                          {u.awaiting_setup ? 'Resend setup link' : 'Reset password'}
                         </button>
                         <button
                           onClick={() => setConfirmDeleteUserId(u.id)}

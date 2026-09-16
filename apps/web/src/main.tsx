@@ -14,6 +14,7 @@ import AdminContentPage from './pages/admin/AdminContentPage'
 import AdminReviewsPage from './pages/admin/AdminReviewsPage'
 import LoginPage from './pages/auth/LoginPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import SetupAccountPage from './pages/auth/SetupAccountPage'
 import DashboardPage from './pages/practitioner/DashboardPage'
 import PatientPage from './pages/practitioner/PatientPage'
 import SessionPage from './pages/practitioner/SessionPage'
@@ -111,6 +112,7 @@ createRoot(document.getElementById('root')!).render(
               {import.meta.env.DEV && <Route path="/__education-preview/:moduleId" element={<EducationPreview />} />}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/setup" element={<SetupAccountPage />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute><DashboardPage /></ProtectedRoute>
               } />

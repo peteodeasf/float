@@ -1,5 +1,4 @@
 import secrets
-import string
 import uuid
 from typing import Optional
 from datetime import datetime, timedelta, timezone
@@ -14,13 +13,15 @@ from app.core.dependencies import get_current_user
 from app.core.security import hash_password
 from app.models.user import User, UserRole
 from app.models.organization import Organization
+from app.models.setup_link import SetupLink
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
 from app.models.jit_content import Tag, JitTip, JitTipTag
 from app.services import checklist_item_service as checklist_items
+from app.services import setup_link_service
 from app.api.routers.checklist import checklist_item_out
 from app.services.email_service import (
-    send_clinician_invitation_email,
+    send_clinician_setup_email,
     send_password_reset_email,
 )
 
@@ -53,11 +54,6 @@ class CreateClinicianRequest(BaseModel):
     name: str
     email: str
     organization_id: str
-
-
-def _generate_clinician_temp_password(length: int = 12) -> str:
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 @router.get("/stats")
@@ -127,6 +123,15 @@ async def list_users(
     orgs_result = await db.execute(select(Organization))
     orgs_by_id = {o.id: o for o in orgs_result.scalars().all()}
 
+    # Who has been sent a setup link, and who has used one. A clinician created before setup links
+    # existed has neither, and is offered Reset password like anyone else.
+    links_result = await db.execute(select(SetupLink.user_id, SetupLink.used_at))
+    sent_link, used_link = set(), set()
+    for link_user_id, used_at in links_result.all():
+        sent_link.add(link_user_id)
+        if used_at is not None:
+            used_link.add(link_user_id)
+
     roles_result = await db.execute(select(UserRole))
     roles_by_user: dict[uuid.UUID, list[UserRole]] = {}
     for r in roles_result.scalars().all():
@@ -148,6 +153,10 @@ async def list_users(
             "created_at": u.created_at.isoformat() if u.created_at else None,
             "last_login": None,
             "must_change_password": u.must_change_password,
+            # Sent a setup link and has not chosen a password yet: the admin app offers a new link.
+            "awaiting_setup": (
+                u.id in sent_link and u.id not in used_link and u.password_changed_at is None
+            ),
         })
     return output
 
@@ -468,6 +477,21 @@ async def create_organization(
     }
 
 
+async def _send_clinician_setup_link(
+    db: AsyncSession, user_id: uuid.UUID, organization_id: uuid.UUID, email: str, admin: User,
+) -> None:
+    """Issue a setup link, commit, then email it. Committed first so the link works on arrival."""
+    token = await setup_link_service.issue(
+        db, user_id, organization_id, purpose="clinician", created_by_user_id=admin.id,
+    )
+    await db.commit()
+    await send_clinician_setup_email(
+        to_email=email,
+        setup_url=setup_link_service.setup_url(token),
+        days_valid=setup_link_service.LINK_LIFETIME.days,
+    )
+
+
 @router.post("/clinicians")
 async def create_clinician(
     request: CreateClinicianRequest,
@@ -496,12 +520,11 @@ async def create_clinician(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Create the User
-    temp_password = _generate_clinician_temp_password()
+    # Create the User. The password is random and never sent: they choose their own from the
+    # setup link.
     new_user = User(
         email=email,
-        password_hash=hash_password(temp_password),
-        must_change_password=True,
+        password_hash=hash_password(secrets.token_urlsafe(32)),
     )
     db.add(new_user)
     await db.flush()
@@ -526,15 +549,7 @@ async def create_clinician(
     profile_id = profile.id
     user_id = new_user.id
 
-    await db.commit()
-
-    # Send invitation email
-    login_url = f"{settings.BASE_URL}/login"
-    await send_clinician_invitation_email(
-        to_email=email,
-        login_url=login_url,
-        temporary_password=temp_password,
-    )
+    await _send_clinician_setup_link(db, user_id, org_uuid, email, admin)
 
     return {
         "id": str(profile_id),
@@ -544,6 +559,31 @@ async def create_clinician(
         "organization_id": str(org_uuid),
         "organization_name": org.name,
     }
+
+
+@router.post("/clinicians/{user_id}/setup-link")
+async def resend_clinician_setup_link(
+    user_id: uuid.UUID,
+    admin: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a new setup link to a clinician who has not chosen a password yet. The old link stops
+    working."""
+    profile = (await db.execute(
+        select(PractitionerProfile).where(PractitionerProfile.user_id == user_id)
+    )).scalar_one_or_none()
+    user = await db.get(User, user_id)
+    if profile is None or user is None:
+        raise HTTPException(status_code=404, detail="Clinician not found")
+    if user.password_changed_at is not None:
+        # Once they have a password of their own, a lost one goes through Reset password.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This clinician has already set up their account. Use Reset password instead.",
+        )
+
+    await _send_clinician_setup_link(db, user_id, profile.organization_id, user.email, admin)
+    return {"success": True}
 
 
 @router.get("/organizations/{org_id}")

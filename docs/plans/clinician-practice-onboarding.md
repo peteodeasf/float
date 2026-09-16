@@ -1,6 +1,6 @@
 # Practice and clinician onboarding — plan
 
-**Planned 2026-09-16.** Nothing built yet.
+**Planned 2026-09-16.** Steps 1 and 2 done.
 **Gate:** `/security-review` before any part ships. All of it touches sign-in and who can see
 which patients (non-negotiable #2).
 
@@ -94,9 +94,8 @@ The practice size given on the request form only decides whether the owner's che
   presumably on the marketing site.
 - No signup page, terms or BAA step, billing, email verification, or MFA.
 - The only guidance a new clinician sees: "No patients yet. Add your first patient to get started."
-- Email sender defaults to `onboarding@resend.dev`. Resend only delivers from that address to the
-  Resend account owner. **Every step below needs a verified sending domain in production.** Check
-  this before anything else.
+- Production email is sent from `notifications@send.floatcbt.com`. `send.floatcbt.com` is the
+  domain verified in Resend, so any sender address must end in `@send.floatcbt.com`.
 
 ## The flow
 
@@ -235,9 +234,11 @@ All migrations add things. None drop data.
 
 ## Order of work
 
-1. **Check production email sends from a verified domain.** Nothing else works without it.
+1. **Check production email sends from a verified domain.** **Done 2026-09-16.**
 2. **Setup links**, replacing clinician temporary passwords in the existing admin flow. Works
-   on its own and removes the current gap.
+   on its own and removes the current gap. **Built 2026-09-16.** The admin Users list offers
+   "Resend setup link" to a clinician who was sent a link and hasn't used it. Clinicians made
+   before this still sign in with whatever password they have; nothing forces them to change it.
 3. **Practice status and terms/BAA acceptance**, plus the backend check that blocks the whole
    clinician app until setup is finished. Uses placeholder text until the lawyer's version exists.
 4. **Request access page, admin approval list, and the four setup screens.**

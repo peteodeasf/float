@@ -355,15 +355,11 @@ Sent via Float
         return False
 
 
-async def send_clinician_invitation_email(
-    to_email: str,
-    login_url: str,
-    temporary_password: str,
-) -> bool:
-    """Send a clinician invitation email with a temporary password."""
+async def send_clinician_setup_email(to_email: str, setup_url: str, days_valid: int) -> bool:
+    """Invite a clinician with a one-time link to choose their password. No password is emailed."""
 
     if not settings.RESEND_API_KEY:
-        logger.warning("RESEND_API_KEY not configured — skipping clinician invite email")
+        logger.warning("RESEND_API_KEY not configured — skipping clinician setup email")
         return False
 
     resend.api_key = settings.RESEND_API_KEY
@@ -390,35 +386,25 @@ async def send_clinician_invitation_email(
       </p>
 
       <p style="font-size:15px; color:#475569; line-height:1.6; margin:0 0 20px;">
-        You've been set up as a clinician on Float. Log in to get started.
+        You've been set up as a clinician on Float. Choose a password to get started.
       </p>
 
       <div style="text-align:center; margin:0 0 24px;">
-        <a href="{login_url}"
+        <a href="{setup_url}"
            style="display:inline-block; padding:14px 40px; background:#135450;
                   color:#ffffff; text-decoration:none; border-radius:6px;
                   font-size:16px; font-weight:600;">
-          Log in to Float
+          Set up your account
         </a>
       </div>
 
-      <div style="background:#eafaf6; border-radius:8px; padding:16px 20px; margin:0 0 20px;">
-        <p style="font-size:13px; font-weight:600; color:#0d3d3a; margin:0 0 8px;">
-          Your login
-        </p>
-        <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
-          Email: <strong>{to_email}</strong>
-        </p>
-        <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 4px;">
-          Temporary password: <code style="background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #e2e8f0;">{temporary_password}</code>
-        </p>
-        <p style="font-size:13px; color:#64748b; line-height:1.5; margin:8px 0 0;">
-          You'll be asked to set your own password the first time you sign in.
-        </p>
-      </div>
+      <p style="font-size:13px; color:#64748b; line-height:1.5; margin:0 0 12px;">
+        You'll sign in as <strong>{to_email}</strong>. This link works once and expires in
+        {days_valid} days.
+      </p>
 
       <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0;">
-        Log in here: <a href="{login_url}" style="color:#135450;">{login_url}</a>
+        If you weren't expecting this, you can ignore it.
       </p>
 
     </div>
@@ -436,15 +422,13 @@ async def send_clinician_invitation_email(
 
     text_body = f"""You've been invited to Float
 
-You've been set up as a clinician on Float. Log in to get started.
+You've been set up as a clinician on Float. Choose a password to get started:
 
-Log in here: {login_url}
+{setup_url}
 
-Your login:
-Email: {to_email}
-Temporary password: {temporary_password}
+You'll sign in as {to_email}. This link works once and expires in {days_valid} days.
 
-You'll be asked to set your own password the first time you sign in.
+If you weren't expecting this, you can ignore it.
 
 ---
 Sent via Float
@@ -458,10 +442,10 @@ Sent via Float
             "html": html_body,
             "text": text_body,
         })
-        logger.info(f"Clinician invitation email sent to {to_email}")
+        logger.info(f"Clinician setup email sent to {to_email}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send clinician invitation email to {to_email}: {e}")
+        logger.error(f"Failed to send clinician setup email to {to_email}: {e}")
         return False
 
 
