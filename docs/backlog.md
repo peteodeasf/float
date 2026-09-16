@@ -552,7 +552,7 @@ topics her consultation guidance (2026-09-15) says the item should cover.
 
 | Item | For | Status | Notes |
 |---|---|---|---|
-| **Key concept videos** | Child and parent | In production. First sample made; topics to confirm. | 10 to start. From Dr. Walker's guidance, candidate topics: what CBT is, exposures, the Worry Hill, the nickname, the Distress Thermometer, parental accommodation. Getting them into the apps is the video item below. |
+| **Key concept videos** | Child and parent | In production. First sample made; **nine topics agreed 2026-09-15**. | Distress Thermometer; Worry Hill; The Candy Jar; Nickname the Fear; Rewards; The Exposure Ladder; How Exposures Work; Doing Exposures; The Parent Role &amp; Accommodations. Getting them into the apps is the video item below. |
 | **Clinical reference** | Clinician | Drafted. 8 modules, design done, clinical review next. | From Dr. Walker's guidance, not yet covered: scripts for what CBT is and how and why exposures work; pacing the consultation; the structure of a weekly session; working in session (reviewing the session 1 video, a cheat sheet, notes). Progress saved on one device only: see Clinician education modules under Clinician. |
 | **Tips for the clinician** | Clinician | Not written. Places for them exist. | At the step where needed: the consultation checklist, building the ladder and the parent plan, running a session. |
 | **Tips for the child** | Child | Live. Growing the set. | Just-in-time tips on the exposure screen. |
