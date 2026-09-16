@@ -805,6 +805,18 @@ async def invite_parent(
     )
     existing_user = existing_user_result.scalar_one_or_none()
 
+    # Already this child's parent: do nothing. Inviting again used to reset their password, which
+    # is easy to do by accident when adding the second parent and mistyping the first one's email.
+    if existing_user is not None:
+        already = (await db.execute(
+            select(ParentPatientLink).where(
+                ParentPatientLink.parent_user_id == existing_user.id,
+                ParentPatientLink.patient_id == patient.id,
+            )
+        )).scalar_one_or_none()
+        if already is not None:
+            return {"success": False, "email": email, "already_a_parent": True}
+
     temp_password = _generate_temp_password()
 
     if existing_user is None:
@@ -860,7 +872,56 @@ async def invite_parent(
         child_name=patient.name,
     )
 
-    return {"success": True, "email": email}
+    return {"success": True, "email": email, "already_a_parent": False}
+
+
+@router.get("/{patient_id}/parents")
+async def list_parents(
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    """Who this child's parents are. A child can have more than one, and until now the clinician
+    had no way to see them. docs/plans/two-parent-accounts.md"""
+    rows = (await db.execute(
+        select(ParentPatientLink, User)
+        .join(User, User.id == ParentPatientLink.parent_user_id)
+        .where(ParentPatientLink.patient_id == patient.id)
+        .order_by(ParentPatientLink.created_at)
+    )).all()
+    return [
+        {
+            "parent_user_id": str(user.id),
+            "email": user.email,
+            "invited_at": link.created_at.isoformat() if link.created_at else None,
+            # They set their own password, so they have signed in at least once.
+            "has_signed_in": not user.must_change_password,
+            "reminder_emails_off": user.reminder_emails_off_at is not None,
+        }
+        for link, user in rows
+    ]
+
+
+@router.delete("/{patient_id}/parents/{parent_user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_parent(
+    parent_user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    patient: PatientProfile = Depends(get_permitted_patient),
+):
+    """Take a parent off this child. Their app stops working for this child straight away.
+
+    What they wrote stays on the record — check-ins, messages and monitoring entries. Only the link
+    goes, so nothing the clinician read disappears underneath them.
+    """
+    link = (await db.execute(
+        select(ParentPatientLink).where(
+            ParentPatientLink.parent_user_id == parent_user_id,
+            ParentPatientLink.patient_id == patient.id,
+        )
+    )).scalar_one_or_none()
+    if link is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not a parent of this child")
+    await db.delete(link)
+    await db.commit()
 
 
 # Tuned via the extraction harness (AI-dev/Extraction Loop). Emits the 4-type shape
@@ -1877,7 +1938,11 @@ async def get_my_messages(
             or_(
                 Message.recipient_user_id == current_user.id,
                 Message.sender_user_id == current_user.id,
-            )
+            ),
+            # Never a parent's thread. Nothing writes a child onto a parent message today, so this
+            # changes nothing — it means the child/parent boundary holds by a check rather than by
+            # that accident. Raised by the security review, 2026-09-15.
+            Message.audience != "parent",
         )
         .order_by(Message.created_at.asc())
     )

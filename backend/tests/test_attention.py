@@ -103,6 +103,27 @@ async def test_with_more_than_one_focus_it_names_the_one_missed(db):
     assert reason["text"] == "No weekly check-in from the parent last week on “Answers for them at the doctor's”"
 
 
+async def test_both_parents_have_to_answer(db):
+    """Peter, 2026-09-15: one parent answering used to settle the week, which hid a parent who
+    never took part. docs/plans/two-parent-accounts.md"""
+    org, child, plan, _ = await _patient(db)
+    mum, focus = await _focus(db, org, plan, child, added_days_ago=30)
+    dad = await _parent_of(db, org, child)
+    db.add(AccommodationCheckin(treatment_plan_id=plan.id, accommodation_id=focus.id,
+                                parent_user_id=mum.id, organization_id=org.id,
+                                week_start=_last_monday(), answer="mostly"))
+    await db.flush()
+
+    [reason] = [r for r in await attention_for(db, child) if r["kind"] == "checkin_missed"]
+    assert reason["text"] == f"No weekly check-in from {dad.email} last week"
+
+    db.add(AccommodationCheckin(treatment_plan_id=plan.id, accommodation_id=focus.id,
+                                parent_user_id=dad.id, organization_id=org.id,
+                                week_start=_last_monday(), answer="gave_in"))
+    await db.flush()
+    assert "checkin_missed" not in _kinds(await attention_for(db, child))
+
+
 async def test_not_for_a_focus_that_has_not_had_a_full_week(db):
     org, child, plan, _ = await _patient(db)
     await _focus(db, org, plan, child, added_days_ago=0)

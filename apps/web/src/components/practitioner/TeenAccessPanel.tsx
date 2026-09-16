@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { inviteTeen, inviteParent, setChildConnectConsent, setParentProgressSharing, setAccommodationRatingsSharing } from '../../api/patients'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { inviteTeen, inviteParent, listParents, removeParent, setChildConnectConsent, setParentProgressSharing, setAccommodationRatingsSharing } from '../../api/patients'
 
 /**
  * Persistent teen-access manager for a patient.
@@ -62,12 +62,29 @@ export default function TeenAccessPanel({
   // Parent invite — no stored status yet; a case can have any number of parents.
   const [parentEmail, setParentEmail] = useState('')
   const [parentConfirmation, setParentConfirmation] = useState<string | null>(null)
+  const [alreadyAParent, setAlreadyAParent] = useState<string | null>(null)
+  const { data: parents = [] } = useQuery({
+    queryKey: ['parents', patientId],
+    queryFn: () => listParents(patientId),
+    enabled: !!patientId && focus === 'parent',
+  })
   const parentInviteMut = useMutation({
     mutationFn: (addr: string) => inviteParent(patientId, addr),
     onSuccess: (data) => {
+      if (data.already_a_parent) {
+        setAlreadyAParent(data.email)
+        setTimeout(() => setAlreadyAParent(null), 4000)
+        return
+      }
+      setParentEmail('')
       setParentConfirmation(data.email)
+      qc.invalidateQueries({ queryKey: ['parents', patientId] })
       setTimeout(() => setParentConfirmation(null), 4000)
     },
+  })
+  const parentRemoveMut = useMutation({
+    mutationFn: (parentUserId: string) => removeParent(patientId, parentUserId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['parents', patientId] }),
   })
 
   // Peter, 2026-09-10: the parent can see the child's ladder, what's planned and what's done, once
@@ -287,7 +304,34 @@ export default function TeenAccessPanel({
           )}
         </div>
 
-        <label style={label}>Parent's email</label>
+        <div style={{ marginBottom: '14px' }}>
+          <label style={label}>{parents.length === 1 ? "This child's parent" : "This child's parents"}</label>
+          {parents.length === 0 && (
+            <p style={{ fontSize: '12.5px', color: '#94a3b8', margin: '4px 0 0' }}>
+              Nobody yet. Invite a parent below.
+            </p>
+          )}
+          {parents.map(p => (
+            <div key={p.parent_user_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: '#334155', overflowWrap: 'anywhere' }}>
+                {p.email}
+                <span style={{ display: 'block', fontSize: '11.5px', color: '#94a3b8' }}>
+                  {p.has_signed_in ? 'Has signed in' : 'Has not signed in yet'}
+                  {p.reminder_emails_off ? ' · reminder emails off' : ''}
+                </span>
+              </span>
+              <button
+                onClick={() => { if (confirm(`Remove ${p.email}? Their app stops working for this child. What they have written stays on the record.`)) parentRemoveMut.mutate(p.parent_user_id) }}
+                disabled={parentRemoveMut.isPending}
+                style={{ flex: 'none', fontSize: '12px', fontWeight: 600, color: '#b91c1c', background: 'none', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer' }}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <label style={label}>Invite another parent</label>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <input
             type="email"
@@ -306,8 +350,13 @@ export default function TeenAccessPanel({
           </button>
         </div>
         <p style={{ fontSize: '12px', color: '#94a3b8', margin: '6px 0 0' }}>
-          Emails a temporary password to sign in at /parent/login. No cap on parents per child.
+          Emails a temporary password to sign in at /parent/login. A child can have more than one parent.
         </p>
+        {alreadyAParent && (
+          <p style={{ fontSize: '12px', color: '#b45309', margin: '8px 0 0' }}>
+            {alreadyAParent} is already a parent of this child. Nothing was sent, and their password is unchanged.
+          </p>
+        )}
         {parentConfirmation && (
           <p style={{ fontSize: '12px', color: '#16a34a', margin: '8px 0 0' }}>
             &#10003; Invitation sent to {parentConfirmation}

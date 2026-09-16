@@ -121,6 +121,18 @@ async def _load_patient(db: AsyncSession, patient_id: uuid.UUID, org_id: uuid.UU
     return patient
 
 
+async def _parent_of(db: AsyncSession, patient: PatientProfile, parent_user_id: uuid.UUID) -> uuid.UUID:
+    link = (await db.execute(
+        select(ParentPatientLink).where(
+            ParentPatientLink.patient_id == patient.id,
+            ParentPatientLink.parent_user_id == parent_user_id,
+        )
+    )).scalar_one_or_none()
+    if link is None:
+        raise HTTPException(status_code=400, detail="Not a parent of this patient")
+    return parent_user_id
+
+
 @router.get("/patients/{patient_id}/parent-messages", response_model=list[MessageResponse])
 async def list_parent_messages(
     patient_id: uuid.UUID,
@@ -128,6 +140,7 @@ async def list_parent_messages(
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
+    """Every parent message on this child, whichever parent it was with."""
     _, practitioner = context
     patient = await _load_patient(db, patient_id, practitioner.organization_id)
     rows = (await db.execute(
@@ -142,13 +155,43 @@ async def list_parent_messages(
     return rows
 
 
+@router.get("/patients/{patient_id}/parents/{parent_user_id}/messages", response_model=list[MessageResponse])
+async def list_one_parents_messages(
+    patient_id: uuid.UUID,
+    parent_user_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
+):
+    """The clinician's conversation with one parent. Where a child has two parents they get a
+    thread each, and neither sees the other's (docs/plans/two-parent-accounts.md)."""
+    _, practitioner = context
+    patient = await _load_patient(db, patient_id, practitioner.organization_id)
+    await _parent_of(db, patient, parent_user_id)
+    rows = (await db.execute(
+        select(Message)
+        .where(
+            Message.patient_id == patient.id,
+            Message.audience == "parent",
+            Message.organization_id == practitioner.organization_id,
+            or_(
+                Message.recipient_user_id == parent_user_id,
+                Message.sender_user_id == parent_user_id,
+            ),
+        )
+        .order_by(Message.created_at.asc())
+    )).scalars().all()
+    return rows
+
+
 @router.post(
-    "/patients/{patient_id}/parent-messages",
+    "/patients/{patient_id}/parents/{parent_user_id}/messages",
     response_model=MessageResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_parent_message(
     patient_id: uuid.UUID,
+    parent_user_id: uuid.UUID,
     data: ParentThreadMessageCreate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
@@ -156,15 +199,13 @@ async def create_parent_message(
 ):
     _, practitioner = context
     patient = await _load_patient(db, patient_id, practitioner.organization_id)
-    link = (await db.execute(
-        select(ParentPatientLink).where(ParentPatientLink.patient_id == patient.id)
-    )).scalars().first()
-    if not link:
-        raise HTTPException(status_code=400, detail="No parent linked to this patient")
+    # Which parent this is to. It used to be whichever parent row came back first, which sent the
+    # message to the wrong one of two parents (docs/plans/two-parent-accounts.md).
+    recipient_id = await _parent_of(db, patient, parent_user_id)
     message = Message(
         organization_id=practitioner.organization_id,
         sender_user_id=practitioner.user_id,
-        recipient_user_id=link.parent_user_id,
+        recipient_user_id=recipient_id,
         patient_id=patient.id,
         content=data.content,
         message_type=data.message_type,

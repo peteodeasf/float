@@ -16,6 +16,7 @@ from app.models.insight import KIND_ACCOMMODATION, SOURCE_PARENT, PatientInsight
 from app.models.monitoring import MonitoringEntry, MonitoringForm
 from app.models.patient import ParentPatientLink, PatientProfile
 from app.models.treatment import AvoidanceBehavior, TreatmentPlan
+from app.models.user import User
 
 PROBLEM = "problem"
 NEW = "new"
@@ -113,20 +114,31 @@ async def attention_for(db: AsyncSession, patient: PatientProfile, now: datetime
             ).order_by(AccommodationBehavior.display_order)
         )).scalars().all()
         due = [f for f in focuses if f.created_at and f.created_at < last_monday_start]
-        has_parent = (await db.execute(
-            select(ParentPatientLink.id).where(ParentPatientLink.patient_id == patient.id).limit(1)
-        )).first() is not None
-        if due and has_parent:
+        # Every parent answers for themselves. Peter, 2026-09-15: a parent who never answers should
+        # be visible, so one parent answering no longer settles the week for the family.
+        # docs/plans/two-parent-accounts.md
+        parents = (await db.execute(
+            select(ParentPatientLink.parent_user_id, User.email)
+            .join(User, User.id == ParentPatientLink.parent_user_id)
+            .where(ParentPatientLink.patient_id == patient.id)
+            .order_by(ParentPatientLink.created_at)
+        )).all()
+        if due and parents:
             answered = set((await db.execute(
-                select(AccommodationCheckin.accommodation_id).where(
+                select(AccommodationCheckin.accommodation_id, AccommodationCheckin.parent_user_id)
+                .where(
                     AccommodationCheckin.treatment_plan_id == plan.id,
                     AccommodationCheckin.week_start == last_monday,
                 )
-            )).scalars().all())
-            missed = [f.name for f in due if f.id not in answered]
-            if missed:
-                text = "No weekly check-in from the parent last week"
-                # With one there is nothing to name; with more, say which were missed.
+            )).all())
+            for parent_id, email in parents:
+                missed = [f.name for f in due if (f.id, parent_id) not in answered]
+                if not missed:
+                    continue
+                # One parent is "the parent"; with two, say which one.
+                who = "the parent" if len(parents) == 1 else email
+                text = f"No weekly check-in from {who} last week"
+                # With one accommodation there is nothing to name; with more, say which were missed.
                 if len(focuses) > 1:
                     text += " on " + ", ".join(f"“{name}”" for name in missed)
                 problems.append(_reason("checkin_missed", PROBLEM, text))

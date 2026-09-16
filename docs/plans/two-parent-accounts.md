@@ -25,34 +25,40 @@ Not built. The database already allows it; the app assumes one parent in several
 
 ## What breaks today, in the order it should be fixed
 
-### 1. The clinician cannot see who a child's parents are `S`
+### 1. The clinician cannot see who a child's parents are — BUILT 2026-09-15 `S`
 
 `TeenAccessPanel.tsx:289-308` is one "Parent's email" box with an Invite button. There is no list, no
 way to remove a parent, and re-inviting an existing email **resets that parent's password**
 (`patients.py:816-822`) — easy to do by accident when adding the second parent.
 
-**Changes:** a list of linked parents (name, email, last signed in), an Invite box that says when the
-email is already linked, and a Remove. Removing unlinks the parent and keeps their check-ins,
-messages and experiments on the record.
+**Built:** the Parent panel lists each parent with their email, whether they have signed in, and
+whether their reminder emails are off, with a Remove on each. Inviting an email that is already a
+parent of this child does nothing and says so — it no longer resets their password. Removing
+unlinks the parent and keeps their check-ins, messages and monitoring entries.
+`GET /patients/{id}/parents`, `DELETE /patients/{id}/parents/{parent_user_id}`. A parent has no name
+anywhere in Float, so the list shows the email.
 
-### 2. Messages: a thread per parent `M`
+### 2. Messages: a thread per parent — BUILT 2026-09-15 `M`
 
 Today the clinician's reply picks whichever parent row comes back first
 (`backend/app/api/routers/messages.py:159-167`), and the other parent gets a 403 when their app marks
 it read (`parent.py:534-535`), silently and on every message.
 
-**Changes:** the clinician's parent chat becomes one conversation per parent, chosen in the clinician
-app. Read state stays per message, which it already is once each message has one recipient.
-**Gate:** `/security-review` — one parent must never see the other's thread.
+**Built:** the Chat tab lists the child and then each parent, and each parent's messages are their
+own. `GET`/`POST /patients/{id}/parents/{parent_user_id}/messages`; `GET /parent/messages` returns
+only the signed-in parent's own. Sending to someone who is not a parent of the child is a 400.
+The ids are in the path, not the query string — `tests/test_access_dependency_wiring.py` enforces
+that, and it caught the first attempt.
 
-### 3. The weekly check-in: both parents answer `S`–`M`
+### 3. The weekly check-in: both parents answer — BUILT 2026-09-15 `S`–`M`
 
 `attention_service.py:117-131` treats a check-in from anyone as the week answered.
 
-**Changes:** the week is answered when every linked parent has answered. The clinician's parent
-progress panel shows each parent's answer, and the attention flag names who is missing. Whether a
-lapse moves the family on to the next accommodation is unchanged — it is still the clinician's call.
-**Gate:** clinical sign-off (it changes when a family advances). Pre-launch that is Peter's call.
+**Built:** the week is answered only when every linked parent has answered, and the flag on the
+patient names the parent who has not ("No weekly check-in from dad@example.com last week"). With one
+parent the wording is unchanged. The Experiments tab already showed which parent answered when more
+than one had. Whether a lapse moves the family on is still the clinician's call.
+**Gate:** clinical sign-off; pre-launch that is Peter's, and he asked for this on 2026-09-15.
 
 ### 4. Reminder emails: both parents, and each can turn their own off `M`
 

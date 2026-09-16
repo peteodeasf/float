@@ -260,23 +260,44 @@ export const sendMessage = async (
 export const inviteParent = async (
   patientId: string,
   email: string
-): Promise<{ success: boolean; email: string }> => {
+): Promise<{ success: boolean; email: string; already_a_parent: boolean }> => {
   const res = await apiClient.post(`/patients/${patientId}/invite-parent`, { email })
   return res.data
 }
 
-/** The separate parent<->clinician thread (audience='parent'). */
+/** A child can have more than one parent. docs/plans/two-parent-accounts.md */
+export interface ChildParent {
+  parent_user_id: string
+  email: string
+  invited_at: string | null
+  has_signed_in: boolean
+  reminder_emails_off: boolean
+}
+
+export const listParents = async (patientId: string): Promise<ChildParent[]> =>
+  (await apiClient.get(`/patients/${patientId}/parents`)).data
+
+export const removeParent = async (patientId: string, parentUserId: string): Promise<void> => {
+  await apiClient.delete(`/patients/${patientId}/parents/${parentUserId}`)
+}
+
+/** Every parent message on this child, whichever parent it was with. */
 export const getParentMessages = async (patientId: string): Promise<Message[]> => {
   const response = await apiClient.get(`/patients/${patientId}/parent-messages`)
   return response.data
 }
 
+/** One parent's own conversation. Two parents get a thread each. */
+export const getOneParentsMessages = async (patientId: string, parentUserId: string): Promise<Message[]> =>
+  (await apiClient.get(`/patients/${patientId}/parents/${parentUserId}/messages`)).data
+
 export const sendParentMessage = async (
   patientId: string,
+  parentUserId: string,
   content: string,
   messageType: string = 'general'
 ): Promise<Message> => {
-  const response = await apiClient.post(`/patients/${patientId}/parent-messages`, {
+  const response = await apiClient.post(`/patients/${patientId}/parents/${parentUserId}/messages`, {
     content,
     message_type: messageType,
   })

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { closePatient, reopenPatient, getPatient, getMessages, sendMessage, getParentMessages, sendParentMessage, getPatientProgress, updatePatient, getPatientAttention } from '../../api/patients'
+import { closePatient, reopenPatient, getPatient, getMessages, sendMessage, getOneParentsMessages, listParents, sendParentMessage, getPatientProgress, updatePatient, getPatientAttention } from '../../api/patients'
 import {
   LineChart, Line, XAxis, YAxis,
   Tooltip, Legend, ResponsiveContainer
@@ -547,7 +547,9 @@ export default function PatientPage() {
   const [smsSentTo, setSmsSentTo] = useState<string | null>(null)
   const [showEntries, setShowEntries] = useState(false)
   const [msgContent, setMsgContent] = useState('')
-  const [msgThread, setMsgThread] = useState<'teen' | 'parent'>('teen')
+  // 'teen', or a parent's user id: a child can have two parents and each has their own thread
+  // (docs/plans/two-parent-accounts.md).
+  const [msgThread, setMsgThread] = useState<string>('teen')
 
   // Inline monitoring report (Step 1)
   const [showInlineReport, setShowInlineReport] = useState(false)
@@ -722,9 +724,19 @@ export default function PatientPage() {
     enabled: !!patientId,
   })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
-  const { data: parentMessages } = useQuery({ queryKey: ['parent-messages', patientId], queryFn: () => getParentMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
-  // The child thread and the parent thread share this panel; a toggle switches.
-  const activeMessages = msgThread === 'parent' ? (parentMessages ?? []) : (messages ?? [])
+  const { data: parents = [] } = useQuery({ queryKey: ['parents', patientId], queryFn: () => listParents(patientId!), enabled: !!patientId })
+  // Opening a different patient goes back to the child's thread: a parent id from the last patient
+  // is not a parent of this one (the server refuses it, but the panel should not ask).
+  useEffect(() => { setMsgThread('teen') }, [patientId])
+  const parentThreadId = msgThread === 'teen' ? null : msgThread
+  const { data: parentMessages } = useQuery({
+    queryKey: ['parent-messages', patientId, parentThreadId],
+    queryFn: () => getOneParentsMessages(patientId!, parentThreadId!),
+    enabled: !!patientId && !!parentThreadId,
+    refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true,
+  })
+  // The child's thread and each parent's thread share this panel; the list on the left switches.
+  const activeMessages = parentThreadId ? (parentMessages ?? []) : (messages ?? [])
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   // Keep the newest message in view when one arrives (poll), the thread switches,
   // or when the tab opens.
@@ -863,10 +875,13 @@ export default function PatientPage() {
     : null
 
   const sendMsgMut = useMutation({
-    mutationFn: () => msgThread === 'parent'
-      ? sendParentMessage(patientId!, msgContent, 'general')
+    mutationFn: () => parentThreadId
+      ? sendParentMessage(patientId!, parentThreadId, msgContent, 'general')
       : sendMessage(patientId!, patient!.user_id, msgContent, 'general'),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [msgThread === 'parent' ? 'parent-messages' : 'messages', patientId] }); setMsgContent('') }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: parentThreadId ? ['parent-messages', patientId, parentThreadId] : ['messages', patientId] })
+      setMsgContent('')
+    }
   })
 
   const updatePatientMut = useMutation({
@@ -2051,11 +2066,19 @@ export default function PatientPage() {
 
   const parentUnreadCount = (parentMessages ?? []).filter(m => !m.read_at).length
   const lastMsgPreview = (arr?: typeof messages) => { const a = arr ?? []; return a.length ? a[a.length - 1].content : '' }
+  // One row for the child, then one per parent. The preview and unread count are only loaded for
+  // the thread that is open, so the others show nothing until they are opened.
   const chatThreads = [
-    { id: 'teen' as const, name: patient?.name || 'Patient', role: 'Teen · private thread', preview: lastMsgPreview(messages), unread: unreadMessageCount },
-    { id: 'parent' as const, name: patient?.parent_name || 'Parent', role: 'Parent · private thread', preview: lastMsgPreview(parentMessages), unread: parentUnreadCount },
+    { id: 'teen', name: patient?.name || 'Patient', role: 'Teen · private thread', preview: lastMsgPreview(messages), unread: unreadMessageCount },
+    ...parents.map(p => ({
+      id: p.parent_user_id,
+      name: p.email,
+      role: 'Parent · private thread',
+      preview: msgThread === p.parent_user_id ? lastMsgPreview(parentMessages) : '',
+      unread: msgThread === p.parent_user_id ? parentUnreadCount : 0,
+    })),
   ]
-  const chatRecipientName = msgThread === 'teen' ? (patient?.name || 'Patient') : (patient?.parent_name || 'Parent')
+  const chatRecipientName = chatThreads.find(t => t.id === msgThread)?.name || (patient?.name || 'Patient')
 
   const messagesContent = (
     <div id="messages-section" style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', height: '620px', display: 'flex', overflow: 'hidden' }}>
@@ -2090,20 +2113,20 @@ export default function PatientPage() {
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{chatRecipientName}</span>
-          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: '#135450', background: '#eafaf6', border: '1px solid #9af6e4', borderRadius: '999px', padding: '2px 8px' }}>{msgThread === 'teen' ? 'TEEN ONLY' : 'PARENT ONLY'}</span>
+          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: '#135450', background: '#eafaf6', border: '1px solid #9af6e4', borderRadius: '999px', padding: '2px 8px' }}>{parentThreadId ? 'THIS PARENT ONLY' : 'TEEN ONLY'}</span>
         </div>
 
         <div ref={messagesScrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
           {activeMessages.length === 0 && (
             <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
-              {msgThread === 'parent'
-                ? 'Message the parent between sessions — coaching, encouragement, plan notes.'
+              {parentThreadId
+                ? 'Message this parent between sessions — coaching, encouragement, plan notes. The other parent does not see it.'
                 : 'Send check-ins, encouragement, or plan adjustments to the patient between sessions.'}
             </p>
           )}
           {activeMessages.map(m => {
             const ts = formatMsgTime(m.created_at)
-            const isFamily = msgThread === 'parent'
+            const isFamily = parentThreadId
               ? m.sender_type === 'parent'
               : !!(patient && m.sender_user_id === patient.user_id)
             const special = m.message_type === 'experiment_completed'

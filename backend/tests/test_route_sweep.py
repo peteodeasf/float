@@ -33,10 +33,12 @@ from app.models.experiment import Experiment, AccommodationBehavior
 from app.models.jit_content import JitTip, Tag
 from app.models.ladder import ExposureLadder
 from app.models.message import Message
+from app.models.patient import ParentPatientLink
 from app.models.review import ReviewRound
 from app.models.session_note import SessionNote, SessionRecording
 from app.models.treatment import AvoidanceBehavior, TriggerSituation
 from tests.factories import (
+    _make_user,
     grant_patient_to, make_org, make_patient, make_plan, make_practitioner, make_rung,
     make_situation,
 )
@@ -134,6 +136,15 @@ async def _victim_world(db):
                                  practitioner_id=plan.practitioner_id, participants=["patient"],
                                  content_type="audio/mp4", status="failed", error=f"{CANARY} recording")
     db.add(recording)
+    # A parent of the victim's child, with their own thread. A child can have two parents and each
+    # has their own conversation with the clinician (docs/plans/two-parent-accounts.md), so the
+    # parent routes need a real parent id to be reachable at all.
+    parent_user = await _make_user(db, org, "parent")
+    db.add(ParentPatientLink(parent_user_id=parent_user.id, patient_id=patient.id,
+                             organization_id=org.id))
+    db.add(Message(organization_id=org.id, sender_user_id=patient.user.id,
+                   recipient_user_id=parent_user.id, patient_id=patient.id, audience="parent",
+                   content=f"{CANARY} parent message", message_type="general"))
     # Review rounds belong to no patient; only a Float admin may read one.
     review_round = ReviewRound(slug=f"sweep-{uuid.uuid4().hex[:8]}", title=f"{CANARY} round",
                                items=[{"key": "k", "situation": CANARY, "suggestions": [CANARY]}])
@@ -142,7 +153,7 @@ async def _victim_world(db):
 
     return {
         "org": org, "patient": patient, "plan": plan, "situation": situation,
-        "rung": rung, "experiment": exp, "arrow": arrow, "message": msg,
+        "rung": rung, "experiment": exp, "arrow": arrow, "message": msg, "parent_user": parent_user,
         "ladder": ladder, "accommodation": accommodation, "note": note,
         "item": item, "tag": tag, "tip": tip,
         "house_clinician": house_clinician, "recording": recording, "review_round": review_round,
@@ -175,6 +186,7 @@ def _param_values(w):
         "tip_id": w["tip"].id,
         "recording_id": w["recording"].id,
         "round_id": w["review_round"].id,
+        "parent_user_id": w["parent_user"].id,
         "segment": 1,
         "seq": 0,
     }
@@ -196,7 +208,7 @@ def _routes():
 
 @pytest.mark.parametrize(
     "intruder_kind",
-    ["foreign_clinician", "other_family_child", "ungranted_clinician"],
+    ["foreign_clinician", "other_family_child", "ungranted_clinician", "other_family_parent"],
 )
 async def test_no_route_leaks_the_victims_data(api, db, intruder_kind, capsys):
     w = await _victim_world(db)
@@ -209,6 +221,14 @@ async def test_no_route_leaks_the_victims_data(api, db, intruder_kind, capsys):
         # Same institution, no grant, not an admin. Before patient_access_grants this clinician
         # could open every route below.
         intruder = (await make_practitioner(db, w["org"])).user
+    elif intruder_kind == "other_family_parent":
+        # Same institution, a parent of a different child. A child can have two parents, so a
+        # parent id is now something a route takes (docs/plans/two-parent-accounts.md).
+        other_child = await make_patient(db, w["org"], name="Other Family Child")
+        intruder = await _make_user(db, w["org"], "parent")
+        db.add(ParentPatientLink(parent_user_id=intruder.id, patient_id=other_child.id,
+                                 organization_id=w["org"].id))
+        await db.flush()
     else:
         # Same institution, different family — the case the experiments hole exposed.
         intruder = (await make_patient(db, w["org"], name="Other Family Child")).user

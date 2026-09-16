@@ -470,15 +470,19 @@ async def parent_messages(
     context: tuple = Depends(get_parent_context),
     db: AsyncSession = Depends(get_db),
 ):
-    # The parent thread is child-scoped (audience='parent'), so co-parents linked
-    # to the same child share one conversation with the clinician.
-    _, children = context
+    # A parent sees only their own conversation with the clinician. Where a child has two parents
+    # they get a thread each, and neither sees the other's (docs/plans/two-parent-accounts.md).
+    current_user, children = context
     child = _first_child(children)
     rows = (await db.execute(
         select(Message)
         .where(
             Message.patient_id == child.id,
             Message.audience == "parent",
+            or_(
+                Message.recipient_user_id == current_user.id,
+                Message.sender_user_id == current_user.id,
+            ),
         )
         .order_by(Message.created_at.asc())
     )).scalars().all()
