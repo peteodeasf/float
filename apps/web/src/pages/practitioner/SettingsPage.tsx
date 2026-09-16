@@ -136,7 +136,6 @@ export default function SettingsPage() {
                   onClick={() => saveDetails.mutate()}
                   disabled={!detailsChanged || !name.trim() || saveDetails.isPending}
                   style={btn('primary', 'md')}
-                  style={{ padding: '8px 16px' }}
                 >
                   {saveDetails.isPending ? 'Saving…' : 'Save'}
                 </button>
@@ -170,7 +169,6 @@ export default function SettingsPage() {
                   onClick={submitPassword}
                   disabled={!currentPassword || !newPassword || !confirmPassword || savePassword.isPending}
                   style={btn('primary', 'md')}
-                  style={{ padding: '8px 16px' }}
                 >
                   {savePassword.isPending ? 'Changing…' : 'Change password'}
                 </button>

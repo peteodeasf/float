@@ -512,7 +512,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   {!expWarning && (
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button onClick={() => handleSaveExperiment(planningBehavior.id)} disabled={!expPlan.trim() || planExpMut.isPending}
-                        style={btn('primary', 'sm')} style={{ padding: '6px 12px' }}>
+                        style={btn('primary', 'sm')}>
                         {planExpMut.isPending ? 'Saving...' : 'Save experiment plan'}</button>
                       <button onClick={() => setPlanningBehaviorId(null)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                     </div>
@@ -587,7 +587,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <button onClick={() => addMut.mutate()} disabled={!name.trim() && type !== 'avoidance'} style={btn('primary', 'sm')} style={{ padding: '6px 12px' }}>Add</button>
+            <button onClick={() => addMut.mutate()} disabled={!name.trim() && type !== 'avoidance'} style={btn('primary', 'sm')}>Add</button>
             <button onClick={() => setShowAdd(false)} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
           </div>
         </div>

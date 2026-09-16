@@ -233,7 +233,6 @@ export default function ClinicianAccessPanel({
             onClick={() => chosen && grantMut.mutate(chosen)}
             disabled={!chosen || grantMut.isPending}
             style={btn('primary', 'sm')}
-            style={{ padding: '6px 12px' }}
           >
             {grantMut.isPending ? 'Adding…' : 'Add'}
           </button>

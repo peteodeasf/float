@@ -1716,7 +1716,7 @@ export default function PatientPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-                  <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} style={btn('primary', 'sm')} style={{ padding: '7px 14px' }}>Add situation</button>
+                  <button onClick={() => addTriggerMut.mutate()} disabled={!newTriggerName.trim()} style={btn('primary', 'sm')}>Add situation</button>
                   <button onClick={() => { setShowTriggerAdd(false); setNewTriggerName(''); setNewTriggerLibraryId(null); setShowSitSuggest(false); setNewTriggerDT(''); setNewTriggerDTMax('') }} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
                 </div>
               </div>
@@ -2196,7 +2196,7 @@ export default function PatientPage() {
             <EditorContent editor={editor} />
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} style={btn('primary', 'sm')} style={{ padding: '6px 12px' }}>
+            <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} style={btn('primary', 'sm')}>
               {(createPlanActionMut.isPending || updatePlanActionMut.isPending) && !publishPlanMut.isPending ? 'Saving...' : 'Save draft'}
             </button>
             <button onClick={handlePublishPlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending || publishPlanMut.isPending} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
@@ -2438,7 +2438,6 @@ export default function PatientPage() {
                 onClick={() => updatePatientMut.mutate()}
                 disabled={!profileName.trim() || updatePatientMut.isPending}
                 style={btn('primary', 'sm')}
-                style={{ padding: '7px 14px' }}
               >
                 {updatePatientMut.isPending ? 'Saving...' : 'Save'}
               </button>
