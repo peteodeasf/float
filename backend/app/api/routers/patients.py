@@ -88,6 +88,7 @@ def _generate_temp_password(length: int = 12) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 from app.services import practice_service
+from app.models.practice import PracticeManagerProfile
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 patient_router = APIRouter(prefix="/patient", tags=["patient"])
@@ -2168,9 +2169,15 @@ async def read_access_log(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     result = await db.execute(
-        select(PatientAccessLog, PractitionerProfile.name, User.email)
+        select(
+            PatientAccessLog,
+            # An office manager's view has no clinician; their own name comes from their profile.
+            func.coalesce(PractitionerProfile.name, PracticeManagerProfile.name),
+            User.email,
+        )
         .join(User, User.id == PatientAccessLog.user_id)
         .outerjoin(PractitionerProfile, PractitionerProfile.id == PatientAccessLog.practitioner_id)
+        .outerjoin(PracticeManagerProfile, PracticeManagerProfile.user_id == PatientAccessLog.user_id)
         .where(PatientAccessLog.patient_id == patient.id)
         .order_by(PatientAccessLog.occurred_at.desc())
         .limit(limit)
@@ -2268,10 +2275,13 @@ async def list_my_colleagues(
     result = await db.execute(
         select(PractitionerProfile, UserRole)
         .join(UserRole, UserRole.user_id == PractitionerProfile.user_id)
+        .join(User, User.id == PractitionerProfile.user_id)
         .where(
             PractitionerProfile.organization_id == me.organization_id,
             UserRole.organization_id == me.organization_id,
             UserRole.role == "practitioner",
+            # Removed from the practice: not someone a patient can be handed to.
+            User.deactivated_at.is_(None),
         )
         .order_by(PractitionerProfile.name)
     )

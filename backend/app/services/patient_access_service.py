@@ -117,7 +117,7 @@ async def record_access(
     db: AsyncSession,
     patient: PatientProfile,
     user_id: uuid.UUID,
-    practitioner: PractitionerProfile,
+    practitioner: PractitionerProfile | None,
     via: str,
     request=None,
 ) -> None:
@@ -134,7 +134,7 @@ async def record_access(
         db.add(PatientAccessLog(
             patient_id=patient.id,
             user_id=user_id,
-            practitioner_id=practitioner.id,
+            practitioner_id=practitioner.id if practitioner else None,
             organization_id=patient.organization_id,
             method=getattr(request, "method", None) if request is not None else None,
             path=str(request.url.path) if request is not None else None,
@@ -213,6 +213,57 @@ async def assert_may_manage_access(
         )
 
 
+async def _target_practitioner(
+    db: AsyncSession, patient: PatientProfile, practitioner_id: uuid.UUID
+) -> PractitionerProfile:
+    """The clinician being given a patient: in the patient's institution, and not removed."""
+    result = await db.execute(
+        select(PractitionerProfile, User.deactivated_at)
+        .join(User, User.id == PractitionerProfile.user_id)
+        .where(PractitionerProfile.id == practitioner_id)
+    )
+    row = result.first()
+    if row is None or row[0].organization_id != patient.organization_id or row[1] is not None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Clinician not found"
+        )
+    return row[0]
+
+
+async def _live_grant(db: AsyncSession, patient_id: uuid.UUID, practitioner_id: uuid.UUID):
+    return (await db.execute(
+        select(PatientAccessGrant).where(
+            PatientAccessGrant.patient_id == patient_id,
+            PatientAccessGrant.practitioner_id == practitioner_id,
+            PatientAccessGrant.revoked_at.is_(None),
+        )
+    )).scalar_one_or_none()
+
+
+async def _add_grant(
+    db: AsyncSession,
+    patient: PatientProfile,
+    practitioner_id: uuid.UUID,
+    granted_by_practitioner_id: uuid.UUID | None = None,
+    granted_by_user_id: uuid.UUID | None = None,
+) -> PatientAccessGrant:
+    """Give access, or return the grant they already have."""
+    existing = await _live_grant(db, patient.id, practitioner_id)
+    if existing is not None:
+        return existing
+    grant = PatientAccessGrant(
+        patient_id=patient.id,
+        practitioner_id=practitioner_id,
+        organization_id=patient.organization_id,
+        granted_by_practitioner_id=granted_by_practitioner_id,
+        granted_by_user_id=granted_by_user_id,
+    )
+    db.add(grant)
+    await db.commit()
+    await db.refresh(grant)
+    return grant
+
+
 async def set_owner(
     db: AsyncSession,
     patient: PatientProfile,
@@ -226,14 +277,7 @@ async def set_owner(
     """
     await assert_may_manage_access(db, patient, changed_by)
 
-    result = await db.execute(
-        select(PractitionerProfile).where(PractitionerProfile.id == practitioner_id)
-    )
-    target = result.scalar_one_or_none()
-    if target is None or target.organization_id != patient.organization_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Clinician not found"
-        )
+    await _target_practitioner(db, patient, practitioner_id)
     if not await has_live_grant(db, patient.id, practitioner_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -257,36 +301,8 @@ async def grant_access(
     and the clinician being granted to.
     """
     await assert_may_manage_access(db, patient, granted_by)
-
-    result = await db.execute(
-        select(PractitionerProfile).where(PractitionerProfile.id == practitioner_id)
-    )
-    target = result.scalar_one_or_none()
-    if target is None or target.organization_id != patient.organization_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Clinician not found"
-        )
-
-    if await has_live_grant(db, patient.id, practitioner_id):
-        existing = await db.execute(
-            select(PatientAccessGrant).where(
-                PatientAccessGrant.patient_id == patient.id,
-                PatientAccessGrant.practitioner_id == practitioner_id,
-                PatientAccessGrant.revoked_at.is_(None),
-            )
-        )
-        return existing.scalar_one()
-
-    grant = PatientAccessGrant(
-        patient_id=patient.id,
-        practitioner_id=practitioner_id,
-        organization_id=patient.organization_id,
-        granted_by_practitioner_id=granted_by.id,
-    )
-    db.add(grant)
-    await db.commit()
-    await db.refresh(grant)
-    return grant
+    await _target_practitioner(db, patient, practitioner_id)
+    return await _add_grant(db, patient, practitioner_id, granted_by_practitioner_id=granted_by.id)
 
 
 async def revoke_access(
@@ -332,6 +348,33 @@ async def revoke_access(
     grant.revoked_at = datetime.now(timezone.utc)
     grant.revoked_by_practitioner_id = revoked_by.id
     await db.commit()
+
+
+# ── An office manager ─────────────────────────────────────────────────────────
+# A manager is not a clinician and never opens a record. They can hand a patient to a clinician,
+# which is what a practice needs when a clinician leaves. The caller has already been checked as a
+# manager of this patient's practice. docs/plans/clinician-practice-onboarding.md
+
+async def manager_grant_access(
+    db: AsyncSession, patient: PatientProfile, practitioner_id: uuid.UUID, manager_user_id: uuid.UUID,
+    request=None,
+) -> PatientAccessGrant:
+    await _target_practitioner(db, patient, practitioner_id)
+    grant = await _add_grant(db, patient, practitioner_id, granted_by_user_id=manager_user_id)
+    await record_access(db, patient, manager_user_id, None, "practice_manager", request)
+    return grant
+
+
+async def manager_set_owner(
+    db: AsyncSession, patient: PatientProfile, practitioner_id: uuid.UUID, manager_user_id: uuid.UUID,
+    request=None,
+) -> None:
+    """Make a clinician the patient's own clinician, giving them access first if they have none."""
+    await _target_practitioner(db, patient, practitioner_id)
+    await _add_grant(db, patient, practitioner_id, granted_by_user_id=manager_user_id)
+    patient.primary_practitioner_id = practitioner_id
+    await db.commit()
+    await record_access(db, patient, manager_user_id, None, "practice_manager", request)
 
 
 async def patient_of_record(db: AsyncSession, model, record_id: uuid.UUID) -> uuid.UUID:

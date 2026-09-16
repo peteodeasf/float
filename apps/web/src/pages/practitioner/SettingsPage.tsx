@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import PracticeMembersPanel from '../../components/practice/PracticeMembersPanel'
 import { CARD, CARD_STYLE, ERROR_BOX, Field, INPUT, SECTION_NOTE, SECTION_TITLE, errorMessage } from '../../components/ui/form'
 import { changeMyPassword, getMyProfile, updateMyProfile } from '../../api/me_practitioner'
 
@@ -13,8 +14,8 @@ import { changeMyPassword, getMyProfile, updateMyProfile } from '../../api/me_pr
  * in the data and had nowhere to live: a clinician's name, credentials and phone are on their
  * profile, shown on the patient page, and could not be edited anywhere.
  *
- * The clinic half of the plan — the consultation checklist, the sign-out timer, who can open which
- * patients — is not here yet. Nothing on this page is a switch that controls nothing.
+ * "Your clinic" shows practice admins the people in the practice (docs/plans/clinician-practice-onboarding.md).
+ * The consultation checklist and sign-out timer from the settings plan are not here yet.
  */
 export default function SettingsPage() {
   const qc = useQueryClient()
@@ -174,6 +175,13 @@ export default function SettingsPage() {
                 )}
               </div>
             </section>
+
+            {profile?.is_org_admin && (
+              <div style={{ marginTop: '32px' }}>
+                <h2 className="text-lg font-bold" style={{ color: 'var(--float-text)', marginBottom: '12px' }}>Your clinic</h2>
+                <PracticeMembersPanel myEmail={profile.email} />
+              </div>
+            )}
           </>
         )}
       </main>
