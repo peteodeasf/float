@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import FloatLogo from '../../components/ui/FloatLogo'
+import { Button } from '../../components/ui/primitives'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -99,7 +100,7 @@ export default function ResetPasswordPage() {
                   style={{
                     color: 'var(--float-text)',
                     border: '1px solid var(--float-border)',
-                    borderRadius: 'var(--float-radius-sm)',
+                    borderRadius: 'var(--float-radius-control)',
                     '--tw-ring-color': 'var(--float-primary)',
                   } as React.CSSProperties}
                   placeholder="••••••••"
@@ -122,7 +123,7 @@ export default function ResetPasswordPage() {
                   style={{
                     color: 'var(--float-text)',
                     border: '1px solid var(--float-border)',
-                    borderRadius: 'var(--float-radius-sm)',
+                    borderRadius: 'var(--float-radius-control)',
                     '--tw-ring-color': 'var(--float-primary)',
                   } as React.CSSProperties}
                   placeholder="••••••••"
@@ -134,18 +135,9 @@ export default function ResetPasswordPage() {
                 <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>
               )}
 
-              <button
-                type="submit"
-                disabled={isLoading || !token}
-                className="w-full py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
-                style={{
-                  background: 'var(--float-primary)',
-                  borderRadius: 'var(--float-radius-sm)',
-                  border: 'none',
-                }}
-              >
+              <Button kind="primary" type="submit" disabled={isLoading || !token} style={{ width: '100%' }}>
                 {isLoading ? 'Updating...' : 'Set new password'}
-              </button>
+              </Button>
             </form>
           </>
         )}

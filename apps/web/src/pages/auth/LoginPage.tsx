@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, NotAClinicianError } from '../../context/AuthContext'
 import { apiClient } from '../../api/client'
 import FloatLogo from '../../components/ui/FloatLogo'
+import { Button } from '../../components/ui/primitives'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -96,7 +97,7 @@ export default function LoginPage() {
                 style={{
                   color: 'var(--float-text)',
                   border: '1px solid var(--float-border)',
-                  borderRadius: 'var(--float-radius-sm)',
+                  borderRadius: 'var(--float-radius-control)',
                   '--tw-ring-color': 'var(--float-primary)',
                 } as React.CSSProperties}
                 placeholder="you@example.com"
@@ -119,7 +120,7 @@ export default function LoginPage() {
                 style={{
                   color: 'var(--float-text)',
                   border: '1px solid var(--float-border)',
-                  borderRadius: 'var(--float-radius-sm)',
+                  borderRadius: 'var(--float-radius-control)',
                   '--tw-ring-color': 'var(--float-primary)',
                 } as React.CSSProperties}
                 placeholder="••••••••"
@@ -131,7 +132,7 @@ export default function LoginPage() {
                   onClick={() => setView('forgot')}
                   style={{
                     fontSize: '12px',
-                    color: '#94a3b8',
+                    color: 'var(--float-text-hint)',
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
@@ -153,20 +154,9 @@ export default function LoginPage() {
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
-              style={{
-                background: 'var(--float-primary)',
-                borderRadius: 'var(--float-radius-sm)',
-                border: 'none',
-              }}
-              onMouseOver={(e) => { if (!isLoading) e.currentTarget.style.background = 'var(--float-primary-dark)' }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'var(--float-primary)' }}
-            >
+            <Button kind="primary" type="submit" disabled={isLoading} style={{ width: '100%' }}>
               {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
+            </Button>
 
             <p className="text-center" style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>
               New to Float?{' '}
@@ -221,7 +211,7 @@ export default function LoginPage() {
                     style={{
                       color: 'var(--float-text)',
                       border: '1px solid var(--float-border)',
-                      borderRadius: 'var(--float-radius-sm)',
+                      borderRadius: 'var(--float-radius-control)',
                       '--tw-ring-color': 'var(--float-primary)',
                     } as React.CSSProperties}
                     placeholder="you@example.com"
@@ -229,18 +219,9 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={forgotLoading}
-                  className="w-full py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
-                  style={{
-                    background: 'var(--float-primary)',
-                    borderRadius: 'var(--float-radius-sm)',
-                    border: 'none',
-                  }}
-                >
+                <Button kind="primary" type="submit" disabled={forgotLoading} style={{ width: '100%' }}>
                   {forgotLoading ? 'Sending...' : 'Send reset link'}
-                </button>
+                </Button>
 
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { adminApiClient } from '../../context/AdminAuthContext'
-import { btn } from '../../components/ui/buttons'
+import { Button } from '../../components/ui/primitives'
 import { tdStyle as td, thStyle as th } from './tableStyles'
 
 /**
@@ -51,19 +51,19 @@ export default function AccessRequestsSection({ cardStyle, onApproved }: {
   return (
     <section style={{ ...cardStyle, marginBottom: '32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#0f172a', margin: 0 }}>
-          Access requests {waiting > 0 && <span style={{ color: '#059669' }}>({waiting} waiting)</span>}
+        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--float-text-strong)', margin: 0 }}>
+          Access requests {waiting > 0 && <span style={{ color: 'var(--float-success)' }}>({waiting} waiting)</span>}
         </h2>
-        <label style={{ fontSize: '13px', color: '#64748b', display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <label style={{ fontSize: '13px', color: 'var(--float-text-secondary)', display: 'flex', gap: '6px', alignItems: 'center' }}>
           <input type="checkbox" checked={showDone} onChange={e => setShowDone(e.target.checked)} />
           Show approved and declined
         </label>
       </div>
-      <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 12px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', margin: '0 0 12px' }}>
         Approving creates the practice and emails the person a link to set it up. Declining sends nothing.
       </p>
       {shown.length === 0 ? (
-        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No requests waiting.</p>
+        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No requests waiting.</p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -75,10 +75,10 @@ export default function AccessRequestsSection({ cardStyle, onApproved }: {
           <tbody>
             {shown.map(r => (
               <tr key={r.id}>
-                <td style={td}>{r.practice_name}<div style={{ color: '#94a3b8' }}>{r.state}</div></td>
+                <td style={td}>{r.practice_name}<div style={{ color: 'var(--float-text-hint)' }}>{r.state}</div></td>
                 <td style={td}>
                   {r.name}{r.credentials ? `, ${r.credentials}` : ''}
-                  <div style={{ color: '#94a3b8' }}>{r.email}</div>
+                  <div style={{ color: 'var(--float-text-hint)' }}>{r.email}</div>
                 </td>
                 <td style={td}>{r.role === 'practice_manager' ? 'Office manager' : 'Clinician'}</td>
                 <td style={td}>{r.practice_size}</td>
@@ -86,13 +86,12 @@ export default function AccessRequestsSection({ cardStyle, onApproved }: {
                 <td style={td}>
                   {r.status === 'new' ? (
                     <>
-                      <button disabled={busyId === r.id} onClick={() => act(r.id, 'approve')}
-                        style={{ ...btn('primary', 'sm'), marginRight: '6px' }}>Approve</button>
-                      <button disabled={busyId === r.id} onClick={() => act(r.id, 'decline')}
-                        style={btn('quiet', 'sm')}>Decline</button>
+                      <Button kind="primary" size="sm" disabled={busyId === r.id} onClick={() => act(r.id, 'approve')}
+                        style={{ marginRight: '6px' }}>Approve</Button>
+                      <Button kind="quiet" size="sm" disabled={busyId === r.id} onClick={() => act(r.id, 'decline')}>Decline</Button>
                     </>
                   ) : (
-                    <span style={{ color: r.status === 'approved' ? '#059669' : '#94a3b8' }}>
+                    <span style={{ color: r.status === 'approved' ? 'var(--float-success)' : 'var(--float-text-hint)' }}>
                       {r.status === 'approved' ? 'Approved' : 'Declined'}
                     </span>
                   )}

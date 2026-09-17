@@ -1,4 +1,5 @@
 import { btn } from '../../components/ui/buttons'
+import { Badge, Banner } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -94,52 +95,45 @@ export default function ClinicianAccessPanel({
   return (
     <div
       style={{
-        background: '#fff',
-        border: '1px solid #cbd5e1',
-        borderRadius: '12px',
+        background: 'var(--float-surface)',
+        border: '1px solid var(--float-border-strong)',
+        borderRadius: 'var(--float-radius-card)',
         boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
         padding: '20px',
         marginBottom: '16px',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           Who can open this patient
         </span>
         <button onClick={onClose} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Close</button>
       </div>
-      <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 14px' }}>
+      <p style={{ fontSize: '12px', color: 'var(--float-text-secondary)', margin: '0 0 14px' }}>
         {canManage
           ? `Only these clinicians can open ${patientName}’s record.`
           : `Only these clinicians can open ${patientName}’s record. This is not your patient, so only their own clinician or an admin here can change the list.`}
       </p>
 
       {error && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px' }}>
-          <span style={{ fontSize: '12px', color: '#991b1b' }}>{error}</span>
-        </div>
+        <Banner tone="danger" style={{ marginBottom: '12px' }}>{error}</Banner>
       )}
 
       {loadingAccess ? (
-        <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>Loading…</p>
+        <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0 }}>Loading…</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
           {grants.map(g => (
             <div
               key={g.practitioner_id}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-sm)' }}
             >
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{g.practitioner_name}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)' }}>{g.practitioner_name}</span>
                 {g.is_owner && (
-                  <span
-                    className="px-1 py-0.5 rounded font-medium"
-                    style={{ fontSize: '11px', background: '#eafaf6', color: '#0d3d3a' }}
-                  >
-                    Their clinician
-                  </span>
+                  <Badge tone="primary">Their clinician</Badge>
                 )}
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>
                   {g.granted_by_backfill
                     ? 'had access before this screen existed'
                     : `added ${new Date(g.granted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
@@ -153,7 +147,7 @@ export default function ClinicianAccessPanel({
                     onClick={() => revokeMut.mutate(g.practitioner_id)}
                     disabled={busy}
                     className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50"
-                    style={{ background: '#dc2626', padding: '4px 10px', borderRadius: '4px' }}
+                    style={{ background: 'var(--float-danger)', padding: '4px 10px', borderRadius: '4px' }}
                   >
                     Yes, remove
                   </button>
@@ -196,7 +190,7 @@ export default function ClinicianAccessPanel({
                           : undefined
                     }
                     className="text-[11px] bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-                    style={{ color: '#dc2626' }}
+                    style={{ color: 'var(--float-danger)' }}
                   >
                     Remove
                   </button>
@@ -205,7 +199,7 @@ export default function ClinicianAccessPanel({
             </div>
           ))}
           {grants.length === 0 && (
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>Nobody has been given access yet.</p>
+            <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0 }}>Nobody has been given access yet.</p>
           )}
         </div>
       )}
@@ -238,15 +232,15 @@ export default function ClinicianAccessPanel({
           {colleaguesFailed ? (
             <span style={{ fontSize: '11px', color: '#991b1b' }}>Could not load who works here.</span>
           ) : loadingColleagues ? (
-            <span style={{ fontSize: '11px', color: '#94a3b8' }}>Loading…</span>
+            <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>Loading…</span>
           ) : canBeAdded.length === 0 ? (
-            <span style={{ fontSize: '11px', color: '#94a3b8' }}>Everyone here already has access.</span>
+            <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>Everyone here already has access.</span>
           ) : null}
         </div>
       )}
 
       {canManage && admins.length > 0 && (
-        <p style={{ fontSize: '11px', color: '#94a3b8', margin: '14px 0 0', lineHeight: 1.5 }}>
+        <p style={{ fontSize: '11px', color: 'var(--float-text-hint)', margin: '14px 0 0', lineHeight: 1.5 }}>
           {admins.length === 1 ? `${admins[0].name} is` : `${admins.map(a => a.name).join(', ')} are`}
           {' '}an admin here and can open every patient at this clinic. That is not something this
           screen can change.

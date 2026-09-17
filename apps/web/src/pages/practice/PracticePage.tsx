@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import FloatLogo from '../../components/ui/FloatLogo'
-import { btn } from '../../components/ui/buttons'
+import { Button } from '../../components/ui/primitives'
 import PracticeMembersPanel from '../../components/practice/PracticeMembersPanel'
 import PracticePatientsPanel from '../../components/practice/PracticePatientsPanel'
 import { useAuth } from '../../context/AuthContext'
@@ -24,7 +24,7 @@ export default function PracticePage() {
           <FloatLogo size="md" />
           <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)' }}>{practice?.name}</span>
         </div>
-        <button onClick={logout} style={btn('quiet', 'sm')}>Sign out</button>
+        <Button kind="quiet" size="sm" onClick={logout}>Sign out</Button>
       </nav>
       <main className="max-w-3xl mx-auto px-8 py-8" style={{ display: 'grid', gap: '16px' }}>
         <div>

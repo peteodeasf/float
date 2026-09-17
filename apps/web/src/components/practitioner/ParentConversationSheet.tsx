@@ -56,7 +56,7 @@ export default function ParentConversationSheet({ patientId, onClose }: { patien
   const item = (it: ConversationItemInSession) => (
     <div key={it.id} role="group" aria-label={it.name}
       style={{ border: '1px solid #dde8e6', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10, opacity: it.still_does === false ? 0.6 : 1 }}>
-      <div style={{ fontSize: 15, fontWeight: 700, color: '#0d3d3a' }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--float-primary-dark)' }}>
         {it.name}
         <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8fa5a1' }}> · {it.from_record ? 'from the monitoring log' : 'said before'}</span>
       </div>
@@ -72,7 +72,7 @@ export default function ParentConversationSheet({ patientId, onClose }: { patien
           <div style={{ fontSize: 13, color: '#4b5a59', marginBottom: 6 }}>
             If they stopped, how hard would it be for {child}?
             {it.estimate_min != null && (
-              <b style={{ color: '#135450' }}> {it.estimate_min === it.estimate_max ? it.estimate_min : `${it.estimate_min}–${it.estimate_max}`}</b>
+              <b style={{ color: 'var(--float-primary)' }}> {it.estimate_min === it.estimate_max ? it.estimate_min : `${it.estimate_min}–${it.estimate_max}`}</b>
             )}
           </div>
           <FearRangeScale lo={it.estimate_min} hi={it.estimate_max}
@@ -91,16 +91,16 @@ export default function ParentConversationSheet({ patientId, onClose }: { patien
             <p style={{ color: '#6b7a79', fontSize: 14 }}>Loading…</p>
           ) : !sit ? (
             <>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#0d3d3a' }}>No situations on the ladder yet</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--float-primary-dark)' }}>No situations on the ladder yet</div>
               <p style={{ fontSize: 14, color: '#4b5a59', margin: 0 }}>Add {child}'s situations to the plan first; the questions go situation by situation.</p>
             </>
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em' }}>ASK THE PARENT · TYPE WHAT THEY SAY</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8' }}>Situation {idx + 1} of {situations.length}</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--float-text-hint)', letterSpacing: '.04em' }}>ASK THE PARENT · TYPE WHAT THEY SAY</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--float-text-hint)' }}>Situation {idx + 1} of {situations.length}</div>
               </div>
-              <div style={{ fontSize: 21, fontWeight: 800, color: '#0d3d3a' }}>When {child} is anxious about “{sit.name}”, what do you do?</div>
+              <div style={{ fontSize: 21, fontWeight: 800, color: 'var(--float-primary-dark)' }}>When {child} is anxious about “{sit.name}”, what do you do?</div>
 
               {sit.items.map(item)}
 

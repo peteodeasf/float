@@ -36,6 +36,7 @@
   --float-radius-control: 8px;   /* buttons, inputs, selects */
   --float-radius-card: 12px;     /* cards, modals, panels */
   --float-radius-pill: 999px;    /* badges, chips, status labels */
+  --float-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
   --float-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --float-shadow-md: 0 4px 20px rgba(0,0,0,0.07);
 

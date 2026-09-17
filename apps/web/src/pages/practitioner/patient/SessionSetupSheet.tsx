@@ -21,7 +21,7 @@ import {
 } from '../../../lib/setupQuestions'
 import { getNextSchoolDayISO } from './shared'
 
-const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: '#0d3d3a', marginBottom: 10, display: 'block' }
+const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: 'var(--float-primary-dark)', marginBottom: 10, display: 'block' }
 const section: CSSProperties = { padding: '18px 0', borderTop: '1px solid #e3eeeb' }
 // The same chip as everywhere else: these three sheets each had their own, and two of
 // them had already drifted apart in size. components/ui/buttons.ts
@@ -90,7 +90,7 @@ export function SessionSetupSheet({
     <div role="dialog" aria-modal="true" aria-label={`Set up ${rung.name}`}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, overflowY: 'auto' }}>
       <Chrome onExit={onClose} exitLabel="← Back to the ladder">
-        <div style={{ background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: '22px 24px 8px' }}>
+        <div style={{ background: 'var(--float-surface)', border: '1px solid #dde8e6', borderRadius: 'var(--float-radius-card)', padding: '22px 24px 8px' }}>
           <Context text={rung.name} dt={stepDt} />
           {situationName && (
             <div style={{ fontSize: 13, color: '#6b7a79', margin: '-8px 0 12px' }}>{situationName}</div>
@@ -103,15 +103,15 @@ export function SessionSetupSheet({
             <label htmlFor="setup-fear" style={question}>{QUESTION.fear}</label>
             <textarea id="setup-fear" rows={2} value={fear} onChange={e => setTypedFear(e.target.value)}
               placeholder="In their words"
-              style={{ width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 12px', borderRadius: 10, border: '1px solid #cfe3de', resize: 'vertical', fontFamily: 'inherit' }} />
+              style={{ width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 12px', borderRadius: 'var(--float-radius-control)', border: '1px solid #cfe3de', resize: 'vertical', fontFamily: 'inherit' }} />
           </div>
 
           <div style={section}>
             <label htmlFor="setup-believe" style={question}>{QUESTION.believe}</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <input id="setup-believe" type="range" min={0} max={100} value={bip}
-                onChange={e => setBip(Number(e.target.value))} style={{ flex: 1, accentColor: '#135450' }} />
-              <span style={{ fontSize: 22, fontWeight: 800, color: '#135450', width: 60, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{bip}%</span>
+                onChange={e => setBip(Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--float-primary)' }} />
+              <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--float-primary)', width: 60, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{bip}%</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#6b7a79', marginTop: 4, paddingRight: 76 }}>
               <span>Not at all</span><span>Completely</span>
@@ -132,7 +132,7 @@ export function SessionSetupSheet({
             {dayNow && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                 <input type="date" aria-label="Day" value={day} onChange={e => setDay(e.target.value)}
-                  style={{ fontSize: 14, padding: '8px 10px', borderRadius: 10, border: '1px solid #cfe3de' }} />
+                  style={{ fontSize: 14, padding: '8px 10px', borderRadius: 'var(--float-radius-control)', border: '1px solid #cfe3de' }} />
                 {TIME_BUCKETS.map(b => (
                   <button key={b.key} aria-pressed={bucket === b.key} onClick={() => setBucket(b.key)} style={choice(bucket === b.key)}>
                     {b.label}

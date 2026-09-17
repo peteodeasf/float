@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
+import { Button } from '../../components/ui/primitives'
 
 // The page a new clinician's setup link opens. The token is after the #, so it never reaches the
 // web server; once read it is removed from the address bar and browser history.
@@ -14,7 +15,7 @@ function tokenFromUrl(): string {
 const inputStyle = {
   color: 'var(--float-text)',
   border: '1px solid var(--float-border)',
-  borderRadius: 'var(--float-radius-sm)',
+  borderRadius: 'var(--float-radius-control)',
   '--tw-ring-color': 'var(--float-primary)',
 } as React.CSSProperties
 
@@ -159,14 +160,9 @@ export default function SetupAccountPage() {
                 <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>
               )}
 
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="w-full py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
-                style={{ background: 'var(--float-primary)', borderRadius: 'var(--float-radius-sm)', border: 'none' }}
-              >
+              <Button kind="primary" type="submit" disabled={isSaving} style={{ width: '100%' }}>
                 {isSaving ? 'Setting up…' : 'Set password and sign in'}
-              </button>
+              </Button>
             </form>
           </>
         )}

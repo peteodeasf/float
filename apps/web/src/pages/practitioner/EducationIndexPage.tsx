@@ -62,8 +62,8 @@ export default function EducationIndexPage({ basePath = '/education' }: { basePa
           <button className="edu-continue" onClick={() => navigate(`${basePath}/${resume.id}`)}>
             <span className="edu-continue-icon"><ModuleIcon id={resume.id} size={32} /></span>
             <span>
-              <span className="edu-eyebrow" style={{ color: '#135450' }}>{started ? 'Continue where you left off' : 'Start here'}</span>
-              <span style={{ display: 'block', fontSize: 17, fontWeight: 750, color: '#0d3d3a', marginTop: 2 }}>
+              <span className="edu-eyebrow" style={{ color: 'var(--float-primary)' }}>{started ? 'Continue where you left off' : 'Start here'}</span>
+              <span style={{ display: 'block', fontSize: 17, fontWeight: 750, color: 'var(--float-primary-dark)', marginTop: 2 }}>
                 {resume.number}. {resume.title}
               </span>
             </span>

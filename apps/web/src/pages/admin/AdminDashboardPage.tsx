@@ -1,4 +1,5 @@
 import { btn } from '../../components/ui/buttons'
+import { Button, Banner } from '../../components/ui/primitives'
 import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient, createClinician } from '../../context/AdminAuthContext'
@@ -71,11 +72,14 @@ const cardStyle: React.CSSProperties = {
   padding: '24px',
 }
 
-// The admin app's buttons come from the one set now (components/ui/buttons.ts), which the
-// clinician app uses too. Peter, 2026-09-15.
-const smallBtn: React.CSSProperties = { ...btn('secondary', 'sm'), marginRight: '6px' }
-
-const dangerBtn: React.CSSProperties = { ...btn('danger', 'sm'), marginRight: '6px' }
+// A form field inside the admin panels. One border, radius and padding for all of them.
+const formInput: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 10px',
+  fontSize: '13px',
+  border: '1px solid var(--float-border)',
+  borderRadius: 'var(--float-radius-control)',
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -257,7 +261,7 @@ export default function AdminDashboardPage() {
       <header
         style={{
           background: 'var(--float-surface)',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid var(--float-border)',
           padding: '16px 32px',
           display: 'flex',
           alignItems: 'center',
@@ -272,23 +276,23 @@ export default function AdminDashboardPage() {
               fontWeight: 600,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: '#64748b',
-              background: '#f1f5f9',
+              color: 'var(--float-text-secondary)',
+              background: 'var(--float-surface-sunken)',
               padding: '4px 10px',
-              borderRadius: '999px',
+              borderRadius: 'var(--float-radius-pill)',
             }}
           >
             Admin
           </span>
           <button
             onClick={() => navigate('/admin/content')}
-            style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Content
           </button>
           <button
             onClick={() => navigate('/admin/reviews')}
-            style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Reviews
           </button>
@@ -297,7 +301,7 @@ export default function AdminDashboardPage() {
           onClick={handleLogout}
           style={{
             fontSize: '13px',
-            color: '#64748b',
+            color: 'var(--float-text-secondary)',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -324,10 +328,10 @@ export default function AdminDashboardPage() {
             { label: 'Experiments completed', value: stats?.total_experiments_completed ?? '—' },
           ].map((s) => (
             <div key={s.label} style={cardStyle}>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <p style={{ fontSize: '12px', color: 'var(--float-text-secondary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 {s.label}
               </p>
-              <p style={{ fontSize: '32px', fontWeight: 600, color: '#0f172a', margin: '8px 0 0' }}>
+              <p style={{ fontSize: '32px', fontWeight: 600, color: 'var(--float-text-strong)', margin: '8px 0 0' }}>
                 {s.value}
               </p>
             </div>
@@ -336,7 +340,7 @@ export default function AdminDashboardPage() {
 
         {/* Recent signups */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px', color: '#0f172a' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px', color: 'var(--float-text-strong)' }}>
             Recent signups
           </h2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -365,22 +369,17 @@ export default function AdminDashboardPage() {
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#0f172a' }}>Users</h2>
-              <button
+              <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: 'var(--float-text-strong)' }}>Users</h2>
+              <Button
+                kind="primary"
+                size="sm"
                 onClick={() => {
                   setShowNewClinician((v) => !v)
                   setNewClinicianError(null)
                 }}
-                style={{
-                  ...smallBtn,
-                  background: 'var(--float-primary)',
-                  color: '#fff',
-                  borderColor: 'var(--float-primary)',
-                  marginRight: 0,
-                }}
               >
                 + New clinician
-              </button>
+              </Button>
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {(['all', 'practitioner', 'patient', 'admin'] as const).map((f) => (
@@ -388,11 +387,10 @@ export default function AdminDashboardPage() {
                   key={f}
                   onClick={() => setUserFilter(f)}
                   style={{
-                    ...smallBtn,
-                    background: userFilter === f ? 'var(--float-primary)' : '#fff',
-                    color: userFilter === f ? '#fff' : '#334155',
-                    borderColor: userFilter === f ? 'var(--float-primary)' : '#e2e8f0',
-                    marginRight: 0,
+                    ...btn('secondary', 'sm'),
+                    background: userFilter === f ? 'var(--float-primary)' : 'var(--float-surface)',
+                    color: userFilter === f ? '#fff' : 'var(--float-text)',
+                    borderColor: userFilter === f ? 'var(--float-primary)' : 'var(--float-border)',
                     textTransform: 'capitalize',
                   }}
                 >
@@ -403,28 +401,18 @@ export default function AdminDashboardPage() {
           </div>
 
           {clinicianCreatedMsg && (
-            <div
-              style={{
-                background: '#ecfdf5',
-                border: '1px solid #a7f3d0',
-                color: '#047857',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                marginBottom: '12px',
-              }}
-            >
+            <Banner tone="success" style={{ marginBottom: '12px' }}>
               {clinicianCreatedMsg}
-            </div>
+            </Banner>
           )}
 
           {showNewClinician && (
             <form
               onSubmit={handleCreateClinician}
               style={{
-                background: '#f8fafc',
+                background: 'var(--float-surface-muted)',
                 padding: '16px',
-                borderRadius: '8px',
+                borderRadius: 'var(--float-radius-card)',
                 marginBottom: '16px',
                 display: 'flex',
                 gap: '12px',
@@ -433,24 +421,18 @@ export default function AdminDashboardPage() {
               }}
             >
               <div style={{ flex: '1 1 180px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--float-text-secondary)', marginBottom: '4px' }}>
                   Name
                 </label>
                 <input
                   value={newClinicianName}
                   onChange={(e) => setNewClinicianName(e.target.value)}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    fontSize: '13px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                  }}
+                  style={formInput}
                 />
               </div>
               <div style={{ flex: '1 1 200px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--float-text-secondary)', marginBottom: '4px' }}>
                   Email
                 </label>
                 <input
@@ -458,31 +440,18 @@ export default function AdminDashboardPage() {
                   value={newClinicianEmail}
                   onChange={(e) => setNewClinicianEmail(e.target.value)}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    fontSize: '13px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                  }}
+                  style={formInput}
                 />
               </div>
               <div style={{ flex: '1 1 200px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--float-text-secondary)', marginBottom: '4px' }}>
                   Organization
                 </label>
                 <select
                   value={newClinicianOrgId}
                   onChange={(e) => setNewClinicianOrgId(e.target.value)}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    fontSize: '13px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    background: '#fff',
-                  }}
+                  style={{ ...formInput, background: 'var(--float-surface)' }}
                 >
                   <option value="">Select an organization</option>
                   {orgs.map((o) => (
@@ -491,34 +460,23 @@ export default function AdminDashboardPage() {
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="submit"
-                  disabled={newClinicianSubmitting}
-                  style={{
-                    ...smallBtn,
-                    background: 'var(--float-primary)',
-                    color: '#fff',
-                    borderColor: 'var(--float-primary)',
-                    marginRight: 0,
-                    padding: '8px 14px',
-                    opacity: newClinicianSubmitting ? 0.6 : 1,
-                  }}
-                >
+                <Button type="submit" kind="primary" size="sm" disabled={newClinicianSubmitting}>
                   {newClinicianSubmitting ? 'Creating...' : 'Create clinician'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  kind="quiet"
+                  size="sm"
                   onClick={() => {
                     setShowNewClinician(false)
                     setNewClinicianError(null)
                   }}
-                  style={{ ...smallBtn, marginRight: 0, padding: '8px 14px' }}
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
               {newClinicianError && (
-                <div style={{ flexBasis: '100%', fontSize: '13px', color: '#b91c1c' }}>
+                <div style={{ flexBasis: '100%', fontSize: '13px', color: 'var(--float-danger)' }}>
                   {newClinicianError}
                 </div>
               )}
@@ -543,36 +501,40 @@ export default function AdminDashboardPage() {
                   <td style={tdStyle}>{formatDate(u.created_at)}</td>
                   <td style={tdStyle}>
                     {confirmDeleteUserId === u.id ? (
-                      <div style={{ fontSize: '12px', color: '#b91c1c' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--float-danger)' }}>
                         Delete {u.email} and all their data? This cannot be undone.{' '}
-                        <button
+                        <Button
+                          kind="danger"
+                          size="sm"
                           onClick={() => handleDeleteUser(u.id)}
-                          style={{ ...dangerBtn, marginLeft: '6px' }}
+                          style={{ marginRight: '6px', marginLeft: '6px' }}
                         >
                           Confirm delete
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          kind="quiet"
+                          size="sm"
                           onClick={() => setConfirmDeleteUserId(null)}
-                          style={smallBtn}
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     ) : resetSentFor === u.id ? (
-                      <span style={{ fontSize: '12px', color: '#059669' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--float-success)' }}>
                         {u.awaiting_setup ? '✓ Setup link sent' : '✓ Reset email sent'}
                       </span>
                     ) : (
                       <>
-                        <button onClick={() => handleSendPasswordEmail(u)} style={smallBtn}>
+                        <Button kind="secondary" size="sm" onClick={() => handleSendPasswordEmail(u)} style={{ marginRight: '6px' }}>
                           {u.awaiting_setup ? 'Resend setup link' : 'Reset password'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          kind="danger"
+                          size="sm"
                           onClick={() => setConfirmDeleteUserId(u.id)}
-                          style={dangerBtn}
                         >
                           Delete
-                        </button>
+                        </Button>
                       </>
                     )}
                   </td>
@@ -585,30 +547,21 @@ export default function AdminDashboardPage() {
         {/* Organizations */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#0f172a' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: 'var(--float-text-strong)' }}>
               Organizations
             </h2>
-            <button
-              onClick={() => setShowNewOrg((v) => !v)}
-              style={{
-                ...smallBtn,
-                background: 'var(--float-primary)',
-                color: '#fff',
-                borderColor: 'var(--float-primary)',
-                marginRight: 0,
-              }}
-            >
+            <Button kind="primary" size="sm" onClick={() => setShowNewOrg((v) => !v)}>
               + New organization
-            </button>
+            </Button>
           </div>
 
           {showNewOrg && (
             <form
               onSubmit={handleCreateOrg}
               style={{
-                background: '#f8fafc',
+                background: 'var(--float-surface-muted)',
                 padding: '16px',
-                borderRadius: '8px',
+                borderRadius: 'var(--float-radius-card)',
                 marginBottom: '16px',
                 display: 'flex',
                 gap: '12px',
@@ -617,52 +570,30 @@ export default function AdminDashboardPage() {
               }}
             >
               <div style={{ flex: '1 1 200px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--float-text-secondary)', marginBottom: '4px' }}>
                   Organization name
                 </label>
                 <input
                   value={newOrgName}
                   onChange={(e) => setNewOrgName(e.target.value)}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    fontSize: '13px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                  }}
+                  style={formInput}
                 />
               </div>
               <div style={{ flex: '1 1 200px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--float-text-secondary)', marginBottom: '4px' }}>
                   Admin email (optional, gets a setup link)
                 </label>
                 <input
                   type="email"
                   value={newOrgAdminEmail}
                   onChange={(e) => setNewOrgAdminEmail(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    fontSize: '13px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                  }}
+                  style={formInput}
                 />
               </div>
-              <button
-                type="submit"
-                style={{
-                  ...smallBtn,
-                  background: 'var(--float-primary)',
-                  color: '#fff',
-                  borderColor: 'var(--float-primary)',
-                  marginRight: 0,
-                  padding: '8px 14px',
-                }}
-              >
+              <Button type="submit" kind="primary" size="sm">
                 Create
-              </button>
+              </Button>
             </form>
           )}
 
@@ -689,48 +620,48 @@ export default function AdminDashboardPage() {
                     <td style={tdStyle}>{o.patient_count}</td>
                     <td style={tdStyle}>{formatDate(o.created_at)}</td>
                     <td style={tdStyle}>
-                      <button onClick={() => handleExpandOrg(o.id)} style={smallBtn}>
+                      <Button kind="secondary" size="sm" onClick={() => handleExpandOrg(o.id)} style={{ marginRight: '6px' }}>
                         {expandedOrgId === o.id ? 'Hide' : 'View'}
-                      </button>
-                      <button onClick={() => handleOrgSuspended(o)} style={o.suspended ? smallBtn : dangerBtn}>
+                      </Button>
+                      <Button kind={o.suspended ? 'secondary' : 'danger'} size="sm" onClick={() => handleOrgSuspended(o)}>
                         {o.suspended ? 'Let back in' : 'Suspend'}
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                   {expandedOrgId === o.id && (
                     <tr>
-                      <td colSpan={6} style={{ ...tdStyle, background: '#f8fafc' }}>
+                      <td colSpan={6} style={{ ...tdStyle, background: 'var(--float-surface-muted)' }}>
                         {!expandedOrgDetail ? (
-                          <span style={{ color: '#94a3b8' }}>Loading...</span>
+                          <span style={{ color: 'var(--float-text-hint)' }}>Loading...</span>
                         ) : (
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                             <div>
-                              <p style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', margin: '0 0 8px' }}>
+                              <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-text-secondary)', margin: '0 0 8px' }}>
                                 Clinicians ({expandedOrgDetail.clinicians.length})
                               </p>
                               {expandedOrgDetail.clinicians.length === 0 ? (
-                                <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>None</p>
+                                <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0 }}>None</p>
                               ) : (
                                 <ul style={{ margin: 0, paddingLeft: '18px' }}>
                                   {expandedOrgDetail.clinicians.map((c) => (
-                                    <li key={c.id} style={{ fontSize: '13px', color: '#334155' }}>
-                                      {c.name} {c.email ? <span style={{ color: '#94a3b8' }}>· {c.email}</span> : null}
+                                    <li key={c.id} style={{ fontSize: '13px', color: 'var(--float-text)' }}>
+                                      {c.name} {c.email ? <span style={{ color: 'var(--float-text-hint)' }}>· {c.email}</span> : null}
                                     </li>
                                   ))}
                                 </ul>
                               )}
                             </div>
                             <div>
-                              <p style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', margin: '0 0 8px' }}>
+                              <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--float-text-secondary)', margin: '0 0 8px' }}>
                                 Patients ({expandedOrgDetail.patients.length})
                               </p>
                               {expandedOrgDetail.patients.length === 0 ? (
-                                <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>None</p>
+                                <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0 }}>None</p>
                               ) : (
                                 <ul style={{ margin: 0, paddingLeft: '18px' }}>
                                   {expandedOrgDetail.patients.map((p) => (
-                                    <li key={p.id} style={{ fontSize: '13px', color: '#334155' }}>
-                                      {p.name} {p.age !== null ? <span style={{ color: '#94a3b8' }}>· {p.age}</span> : null}
+                                    <li key={p.id} style={{ fontSize: '13px', color: 'var(--float-text)' }}>
+                                      {p.name} {p.age !== null ? <span style={{ color: 'var(--float-text-hint)' }}>· {p.age}</span> : null}
                                     </li>
                                   ))}
                                 </ul>
@@ -749,7 +680,7 @@ export default function AdminDashboardPage() {
 
         {/* Patients */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px', color: '#0f172a' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px', color: 'var(--float-text-strong)' }}>
             Patients
           </h2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -777,22 +708,24 @@ export default function AdminDashboardPage() {
                   <td style={tdStyle}>{formatDate(p.last_activity)}</td>
                   <td style={tdStyle}>
                     {confirmDeletePatientId === p.id ? (
-                      <div style={{ fontSize: '12px', color: '#b91c1c' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--float-danger)' }}>
                         Delete {p.name} and all their data?{' '}
-                        <button
+                        <Button
+                          kind="danger"
+                          size="sm"
                           onClick={() => handleDeletePatient(p.id)}
-                          style={{ ...dangerBtn, marginLeft: '6px' }}
+                          style={{ marginRight: '6px', marginLeft: '6px' }}
                         >
                           Confirm
-                        </button>
-                        <button onClick={() => setConfirmDeletePatientId(null)} style={smallBtn}>
+                        </Button>
+                        <Button kind="quiet" size="sm" onClick={() => setConfirmDeletePatientId(null)}>
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     ) : (
-                      <button onClick={() => setConfirmDeletePatientId(p.id)} style={dangerBtn}>
+                      <Button kind="danger" size="sm" onClick={() => setConfirmDeletePatientId(p.id)}>
                         Delete
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>
@@ -803,11 +736,11 @@ export default function AdminDashboardPage() {
 
         {/* Waitlist */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px', color: '#0f172a' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px', color: 'var(--float-text-strong)' }}>
             Waitlist
           </h2>
           {waitlist.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>No waitlist entries yet.</p>
+            <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No waitlist entries yet.</p>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>

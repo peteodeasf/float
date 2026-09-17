@@ -34,7 +34,7 @@ export default function ParentProgressSection({ planId }: { planId: string }) {
   if (accommodations.length === 0 && experiments.length === 0 && checkins.length === 0) return null
 
   const card: React.CSSProperties = {
-    background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1',
+    background: 'var(--float-surface)', borderRadius: 'var(--float-radius-card)', border: '1px solid var(--float-border-strong)',
     boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '16px 20px',
     display: 'flex', flexDirection: 'column', gap: '16px',
   }
@@ -88,7 +88,7 @@ export default function ParentProgressSection({ planId }: { planId: string }) {
               const info = answerInfo(c.answer)
               return (
                 <div key={c.id} style={row}>
-                  <span style={{ flex: 'none', width: '104px', textAlign: 'center', fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '2px 8px', background: info?.bg, color: info?.color }}>
+                  <span style={{ flex: 'none', width: '104px', textAlign: 'center', fontSize: '11px', fontWeight: 700, borderRadius: 'var(--float-radius-pill)', padding: '2px 8px', background: info?.bg, color: info?.color }}>
                     {info?.clinicianLabel ?? c.answer}
                   </span>
                   <span style={{ flex: 1, minWidth: 0, color: 'var(--float-text)' }}>
@@ -116,7 +116,7 @@ function ExperimentLine({ e }: { e: ParentExperiment }) {
   const planned = e.status === 'planned'
   const outcome = planned ? 'Planned' : e.did_it ? DID_IT_LABEL[e.did_it] : 'Recorded'
   const tone = planned
-    ? { bg: '#f1f5f9', fg: '#475569' }
+    ? { bg: 'var(--float-surface-sunken)', fg: '#475569' }
     : e.did_it === 'not_this_time' ? { bg: '#fef2f2', fg: '#b91c1c' } : { bg: '#f0fdf4', fg: '#166534' }
   const numbers = !planned && e.did_it !== 'not_this_time'
     ? `Upset: expected ${Math.round(e.expected_fear)}, was ${e.actual_fear != null ? Math.round(e.actual_fear) : '—'} · belief ${Math.round(e.belief_before)}% → ${e.belief_after != null ? `${Math.round(e.belief_after)}%` : '—'}`
@@ -124,7 +124,7 @@ function ExperimentLine({ e }: { e: ParentExperiment }) {
   return (
     <div style={{ background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-sm)', padding: '8px 12px', fontSize: '13px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ flex: 'none', width: '96px', textAlign: 'center', fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '2px 8px', background: tone.bg, color: tone.fg }}>
+        <span style={{ flex: 'none', width: '96px', textAlign: 'center', fontSize: '11px', fontWeight: 700, borderRadius: 'var(--float-radius-pill)', padding: '2px 8px', background: tone.bg, color: tone.fg }}>
           {outcome}
         </span>
         <span style={{ flex: 1, minWidth: 0, color: 'var(--float-text)' }}>{e.accommodation_name}</span>

@@ -31,8 +31,8 @@ export default function ChildRatingSheet({
       style={{ position: 'fixed', inset: 0, zIndex: 1000, overflowY: 'auto' }}>
       <Chrome onExit={onClose} exitLabel="← Back to the plan">
         <div style={{ background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em' }}>ASK THE CHILD · TYPE WHAT THEY SAY</div>
-          <div style={{ fontSize: 21, fontWeight: 800, color: '#0d3d3a' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--float-text-hint)', letterSpacing: '.04em' }}>ASK THE CHILD · TYPE WHAT THEY SAY</div>
+          <div style={{ fontSize: 21, fontWeight: 800, color: 'var(--float-primary-dark)' }}>
             If your parent stopped doing these, how hard would it be for you?
           </div>
           <p style={{ fontSize: 13.5, color: '#4b5a59', margin: 0 }}>A Fear Level for each, or two if it depends.</p>
@@ -44,9 +44,9 @@ export default function ChildRatingSheet({
             return (
               <div key={a.id} role="group" aria-label={a.name}
                 style={{ border: '1px solid #dde8e6', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#0d3d3a' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--float-primary-dark)' }}>
                   {a.name}
-                  {lo != null && <b style={{ color: '#135450' }}> · {lo === hi ? lo : `${lo}–${hi}`}</b>}
+                  {lo != null && <b style={{ color: 'var(--float-primary)' }}> · {lo === hi ? lo : `${lo}–${hi}`}</b>}
                 </div>
                 <FearRangeScale lo={lo} hi={hi} onChange={(l, h) => rateMut.mutate({ id: a.id, lo: l, hi: h })} />
               </div>

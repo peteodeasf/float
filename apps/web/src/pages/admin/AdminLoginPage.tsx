@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
+import { Button } from '../../components/ui/primitives'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
@@ -54,10 +55,10 @@ export default function AdminLoginPage() {
               fontWeight: 600,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: '#94a3b8',
-              background: '#f1f5f9',
+              color: 'var(--float-text-hint)',
+              background: 'var(--float-surface-sunken)',
               padding: '4px 10px',
-              borderRadius: '999px',
+              borderRadius: 'var(--float-radius-pill)',
             }}
           >
             Admin
@@ -83,7 +84,7 @@ export default function AdminLoginPage() {
               style={{
                 color: 'var(--float-text)',
                 border: '1px solid var(--float-border)',
-                borderRadius: 'var(--float-radius-sm)',
+                borderRadius: 'var(--float-radius-control)',
                 '--tw-ring-color': 'var(--float-primary)',
               } as React.CSSProperties}
               placeholder="you@example.com"
@@ -106,7 +107,7 @@ export default function AdminLoginPage() {
               style={{
                 color: 'var(--float-text)',
                 border: '1px solid var(--float-border)',
-                borderRadius: 'var(--float-radius-sm)',
+                borderRadius: 'var(--float-radius-control)',
                 '--tw-ring-color': 'var(--float-primary)',
               } as React.CSSProperties}
               placeholder="••••••••"
@@ -120,18 +121,15 @@ export default function AdminLoginPage() {
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
+            kind="primary"
             disabled={isLoading}
-            className="w-full py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
-            style={{
-              background: 'var(--float-primary)',
-              borderRadius: 'var(--float-radius-sm)',
-              border: 'none',
-            }}
+            className="w-full"
+            style={{ width: '100%' }}
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

@@ -8,13 +8,13 @@ export const thStyle: CSSProperties = {
   fontWeight: 600,
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
-  color: '#64748b',
-  borderBottom: '1px solid #e2e8f0',
+  color: 'var(--float-text-secondary)',
+  borderBottom: '1px solid var(--float-border)',
 }
 
 export const tdStyle: CSSProperties = {
   padding: '12px',
   fontSize: '13px',
-  color: '#334155',
-  borderBottom: '1px solid #f1f5f9',
+  color: 'var(--float-text)',
+  borderBottom: '1px solid var(--float-surface-sunken)',
 }

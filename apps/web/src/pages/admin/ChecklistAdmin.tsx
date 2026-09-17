@@ -9,9 +9,9 @@
  * (`consultation_checklists.checked_items`). The API refuses to change a key for that reason, and
  * deleting an item leaves any tick already recorded against it orphaned but harmless.
  */
-import { btn } from '../../components/ui/buttons'
 import { useEffect, useState } from 'react'
 import { adminApiClient } from '../../context/AdminAuthContext'
+import { Button, Banner } from '../../components/ui/primitives'
 
 type Item = {
   id: string
@@ -23,15 +23,13 @@ type Item = {
 type Org = { id: string; name: string }
 
 const card: React.CSSProperties = {
-  background: 'var(--float-surface)', border: '1px solid #e2e8f0', borderRadius: '12px',
+  background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)',
   padding: '24px', marginBottom: '24px',
 }
 const input: React.CSSProperties = {
-  border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 10px', fontSize: '13px',
+  border: '1px solid var(--float-border-strong)', borderRadius: 'var(--float-radius-control)', padding: '8px 10px', fontSize: '13px',
   fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
 }
-const ghostBtn: React.CSSProperties = btn('secondary', 'sm')
-const primaryBtn: React.CSSProperties = btn('primary', 'md')
 
 export default function ChecklistAdmin() {
   const [orgs, setOrgs] = useState<Org[]>([])
@@ -106,8 +104,8 @@ export default function ChecklistAdmin() {
 
   return (
     <section style={card}>
-      <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 4px', color: '#0f172a' }}>Process checklist</h2>
-      <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>
+      <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 4px', color: 'var(--float-text-strong)' }}>Process checklist</h2>
+      <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', margin: '0 0 16px' }}>
         The checklist clinicians see under <strong>Process</strong>, configured per organization.
         Float team only — organizations cannot edit their own.
       </p>
@@ -117,51 +115,51 @@ export default function ChecklistAdmin() {
           style={{ ...input, width: 'auto', minWidth: '220px', cursor: 'pointer' }}>
           {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
-        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{items.length} item{items.length === 1 ? '' : 's'}</span>
+        <span style={{ fontSize: '12px', color: 'var(--float-text-hint)' }}>{items.length} item{items.length === 1 ? '' : 's'}</span>
       </div>
 
       {err && (
-        <p style={{ fontSize: '12.5px', color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 11px' }}>{err}</p>
+        <Banner tone="danger" style={{ fontSize: '12.5px' }}>{err}</Banner>
       )}
 
-      {loading ? <p style={{ color: '#94a3b8', fontSize: '13px' }}>Loading…</p> : (
+      {loading ? <p style={{ color: 'var(--float-text-hint)', fontSize: '13px' }}>Loading…</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
           {items.map((item, i) => (
             <div key={item.id}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', opacity: item.is_active ? 1 : 0.5 }}>
-              <span style={{ fontSize: '11px', color: '#cbd5e1', width: '20px', flexShrink: 0 }}>{i + 1}</span>
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', padding: '8px 10px', opacity: item.is_active ? 1 : 0.5 }}>
+              <span style={{ fontSize: '11px', color: 'var(--float-border-strong)', width: '20px', flexShrink: 0 }}>{i + 1}</span>
               {editingId === item.id ? (
                 <>
                   <input style={{ ...input, flex: 1 }} value={editText} autoFocus
                     onChange={e => setEditText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveEdit(item); if (e.key === 'Escape') setEditingId(null) }} />
-                  <button style={ghostBtn} onClick={() => saveEdit(item)}>Save</button>
-                  <button style={ghostBtn} onClick={() => setEditingId(null)}>Cancel</button>
+                  <Button kind="secondary" size="sm" onClick={() => saveEdit(item)}>Save</Button>
+                  <Button kind="secondary" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: '13px', color: '#334155', flex: 1, minWidth: 0 }}>{item.text}</span>
-                  <span style={{ fontSize: '10.5px', color: '#cbd5e1', flexShrink: 0 }}>{item.key}</span>
-                  <button style={ghostBtn} onClick={() => move(i, -1)} disabled={i === 0} title="Move up">↑</button>
-                  <button style={ghostBtn} onClick={() => move(i, 1)} disabled={i === items.length - 1} title="Move down">↓</button>
-                  <button style={ghostBtn} onClick={() => { setEditingId(item.id); setEditText(item.text) }}>Edit</button>
-                  <button style={ghostBtn}
+                  <span style={{ fontSize: '13px', color: 'var(--float-text)', flex: 1, minWidth: 0 }}>{item.text}</span>
+                  <span style={{ fontSize: '10.5px', color: 'var(--float-border-strong)', flexShrink: 0 }}>{item.key}</span>
+                  <Button kind="secondary" size="sm" onClick={() => move(i, -1)} disabled={i === 0} title="Move up">↑</Button>
+                  <Button kind="secondary" size="sm" onClick={() => move(i, 1)} disabled={i === items.length - 1} title="Move down">↓</Button>
+                  <Button kind="secondary" size="sm" onClick={() => { setEditingId(item.id); setEditText(item.text) }}>Edit</Button>
+                  <Button kind="secondary" size="sm"
                     onClick={() => void guard(() => adminApiClient.put(`/admin/checklist-items/${item.id}`, { is_active: !item.is_active }))}>
                     {item.is_active ? 'Hide' : 'Show'}
-                  </button>
-                  <button style={{ ...ghostBtn, color: '#b91c1c', borderColor: '#fecaca' }} onClick={() => remove(item)}>Delete</button>
+                  </Button>
+                  <Button kind="danger" size="sm" onClick={() => remove(item)}>Delete</Button>
                 </>
               )}
             </div>
           ))}
-          {items.length === 0 && <p style={{ fontSize: '13px', color: '#94a3b8' }}>No items yet.</p>}
+          {items.length === 0 && <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>No items yet.</p>}
         </div>
       )}
 
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <input style={{ ...input, flex: 1 }} value={newText} onChange={e => setNewText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && add()} placeholder="Add a checklist item…" />
-        <button style={primaryBtn} onClick={add} disabled={!newText.trim()}>Add</button>
+        <Button kind="primary" size="md" onClick={add} disabled={!newText.trim()}>Add</Button>
       </div>
     </section>
   )

@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import FloatLogo from '../../components/ui/FloatLogo'
-import { btn } from '../../components/ui/buttons'
-import { ERROR_BOX, Field, INPUT, SECTION_NOTE, errorMessage } from '../../components/ui/form'
+import { Button, Banner } from '../../components/ui/primitives'
+import { Field, INPUT, SECTION_NOTE, errorMessage } from '../../components/ui/form'
 
 /**
  * Request access: how a practice asks to use Float. Public.
@@ -75,7 +75,7 @@ export default function RequestAccessPage() {
               Float is used by clinicians treating children&rsquo;s anxiety. Tell us about your practice and
               we&rsquo;ll be in touch.
             </p>
-            {error && <div style={ERROR_BOX}>{error}</div>}
+            {error && <Banner tone="danger" style={{ marginTop: '14px' }}>{error}</Banner>}
 
             <div style={{ display: 'grid', gap: '14px', marginTop: '20px' }}>
               <Field label="Your name">
@@ -107,9 +107,9 @@ export default function RequestAccessPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '24px' }}>
-              <button type="submit" disabled={!ready || sending} style={btn('primary', 'md')}>
+              <Button kind="primary" type="submit" disabled={!ready || sending}>
                 {sending ? 'Sending…' : 'Request access'}
-              </button>
+              </Button>
               <Link to="/login" style={{ fontSize: '13px', color: 'var(--float-text-secondary)' }}>Cancel</Link>
             </div>
           </form>

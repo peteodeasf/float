@@ -15,7 +15,7 @@ import type { Accommodation } from '../../api/accommodations'
 import { CONFIDENCE, TIME_BUCKETS } from '../../lib/setupQuestions'
 import { getNextSchoolDayISO } from '../../pages/practitioner/patient/shared'
 
-const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: '#0d3d3a', marginBottom: 10, display: 'block' }
+const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: 'var(--float-primary-dark)', marginBottom: 10, display: 'block' }
 const section: CSSProperties = { padding: '16px 0', borderTop: '1px solid #e3eeeb' }
 const field: CSSProperties = { width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 12px', borderRadius: 10, border: '1px solid #cfe3de', fontFamily: 'inherit' }
 // The same chip as everywhere else: these three sheets each had their own, and two of
@@ -76,7 +76,7 @@ export default function ParentExperimentSheet({
       style={{ position: 'fixed', inset: 0, zIndex: 1000, overflowY: 'auto' }}>
       <Chrome onExit={onClose} exitLabel="← Back">
         <div style={{ background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: '22px 24px 8px' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 6 }}>ASK THE PARENT · TYPE WHAT THEY SAY</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--float-text-hint)', letterSpacing: '.04em', marginBottom: 6 }}>ASK THE PARENT · TYPE WHAT THEY SAY</div>
 
           <div style={{ ...section, borderTop: 0, paddingTop: 4 }}>
             <label htmlFor="exp-which" style={question}>Which one will you try?</label>
@@ -111,8 +111,8 @@ export default function ParentExperimentSheet({
           <div style={section}>
             <label htmlFor="exp-believe" style={question}>How strongly do you believe that will happen?</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <input id="exp-believe" type="range" min={0} max={100} value={belief} onChange={e => setBelief(Number(e.target.value))} style={{ flex: 1, accentColor: '#135450' }} />
-              <span style={{ fontSize: 22, fontWeight: 800, color: '#135450', width: 60, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{belief}%</span>
+              <input id="exp-believe" type="range" min={0} max={100} value={belief} onChange={e => setBelief(Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--float-primary)' }} />
+              <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--float-primary)', width: 60, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{belief}%</span>
             </div>
           </div>
 

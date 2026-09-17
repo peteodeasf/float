@@ -53,9 +53,9 @@ function RecordingRow({ r, onRetry, onDiscard, busy }: { r: SessionRecording; on
     : r.status === 'recording' ? 'Still recording, or the phone was put away without Stop.'
     : 'Being written up. The draft note will appear here.'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '6px', fontSize: '12px',
-      background: failed ? '#fef2f2' : '#eafaf6', color: failed ? '#991b1b' : '#0d3d3a' }}>
-      <span aria-hidden="true" style={{ width: '8px', height: '8px', borderRadius: '50%', flex: 'none', background: failed ? '#dc2626' : '#135450' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: 'var(--float-radius-sm)', fontSize: '12px',
+      background: failed ? '#fef2f2' : 'var(--float-primary-light)', color: failed ? '#991b1b' : 'var(--float-primary-dark)' }}>
+      <span aria-hidden="true" style={{ width: '8px', height: '8px', borderRadius: '50%', flex: 'none', background: failed ? 'var(--float-danger)' : 'var(--float-primary)' }} />
       <span style={{ flex: 1, minWidth: 0 }}><strong>Recording · {when}</strong> — {text}</span>
       {failed && <button onClick={onRetry} disabled={busy} style={tryAgainBtn}>Try again</button>}
       {r.status !== 'transcribing' && <button onClick={onDiscard} disabled={busy} style={deleteBtn}>Delete</button>}
@@ -100,8 +100,8 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
       </div>
 
       {open && (
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px' }}>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '8px', fontSize: '11.5px', color: '#64748b' }}>
+        <div style={{ background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', padding: '10px 12px' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '8px', fontSize: '11.5px', color: 'var(--float-text-secondary)' }}>
             <span>Speakers:</span>
             {speakers.map(key => (
               renaming === key ? (
@@ -124,7 +124,7 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '420px', overflowY: 'auto' }}>
             {(note.transcript ?? []).map((t, i) => (
               <p key={i} style={{ margin: 0, fontSize: '12.5px', lineHeight: 1.5, color: '#334155' }}>
-                <strong style={{ color: '#0d3d3a' }}>{names[t.speaker] ?? t.speaker}:</strong> {t.text}
+                <strong style={{ color: 'var(--float-primary-dark)' }}>{names[t.speaker] ?? t.speaker}:</strong> {t.text}
               </p>
             ))}
           </div>

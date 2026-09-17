@@ -52,6 +52,7 @@ import {
 import {
   clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink, Chrome,
 } from './sessionKit'
+import { Button } from '../../components/ui/primitives'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
  *  render exactly the same thing without the clinician chrome around it. */
@@ -149,7 +150,7 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
   if (!plan) {
     return shell(
       <div style={{ ...card, textAlign: 'center' }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a' }}>No treatment plan yet</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--float-primary-dark)' }}>No treatment plan yet</div>
         <p style={{ fontSize: 13.5, color: '#6b7a79', marginTop: 8 }}>Create the plan from the patient page first, then start a session.</p>
         <button onClick={onExit} style={primaryBtn}>Back to patient</button>
       </div>
@@ -279,12 +280,12 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
       )}
 
       {adding ? (
-        <div style={{ marginTop: 14, background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: 11, padding: '13px' }}>
+        <div style={{ marginTop: 14, background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '13px' }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <input value={newName} onChange={e => setNewName(e.target.value)} autoFocus
               onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) addMut.mutate(newName.trim()) }}
               placeholder="Add a situation you find hard"
-              style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 11, padding: '11px 13px', fontSize: 14, minWidth: 0, background: '#fff' }} />
+              style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '11px 13px', fontSize: 14, minWidth: 0, background: 'var(--float-surface)' }} />
             <button onClick={() => addMut.mutate(newName.trim())} disabled={!newName.trim() || addMut.isPending}
               style={{ ...primaryBtn, marginTop: 0, opacity: !newName.trim() ? 0.4 : 1 }}>Add</button>
           </div>
@@ -303,9 +304,9 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
                 {(fromMonitoring ?? []).map(item => (
                   // Same chip as the common list. White until it is added — once it is, it shows
                   // as a mint situation row on the ladder above, and that is what green means here.
-                  <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, overflow: 'hidden' }}>
+                  <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', overflow: 'hidden' }}>
                     <button onClick={() => takeMut.mutate(item.id)} disabled={takeMut.isPending}
-                      style={{ fontSize: 13, fontWeight: 600, color: '#135450', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
+                      style={{ fontSize: 13, fontWeight: 600, color: 'var(--float-primary)', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
                       + {item.name}
                       <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
                         {' '}· {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
@@ -333,10 +334,9 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
           </div>
         </div>
       ) : (
-        <button onClick={() => setAdding(true)}
-          style={{ marginTop: 14, fontSize: 13, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '9px 16px', cursor: 'pointer' }}>
+        <Button kind="secondary" onClick={() => setAdding(true)} style={{ marginTop: 14 }}>
           + Add situation
-        </button>
+        </Button>
       )}
 
       {/* Closing puts these steps in front of a child, so the ladder gets looked at first. */}
@@ -346,8 +346,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             Save ladder →
           </button>
         ) : (
-          <div style={{ background: '#fff', border: '1px solid #dbe8e5', borderRadius: 11, padding: '14px 16px' }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0d3d3a' }}>Before you finish</div>
+          <div style={{ background: 'var(--float-surface)', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--float-primary-dark)' }}>Before you finish</div>
 
             {review.isLoading && (
               <p style={{ fontSize: 13, color: '#6b7a79', margin: '8px 0 0' }}>Checking the ladder…</p>
@@ -375,7 +375,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             {/* Said plainly. A clean result here means the arithmetic is fine, not that anyone has
                 read whether a step keeps a safety behaviour or has a way out built into it. */}
             {review.data?.ai_pending && (
-              <p style={{ fontSize: 12, color: '#94a3b8', margin: '12px 0 0', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 12, color: 'var(--float-text-hint)', margin: '12px 0 0', lineHeight: 1.5 }}>
                 This checks the numbers only — how many steps, where it starts, the gaps between
                 them. Nothing yet reads whether a step keeps a safety behaviour or has a way out
                 built into it.
@@ -433,12 +433,12 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-    <div style={{ flex: 1, minWidth: 0, background: '#fff', border: '1px solid #cfe0db', borderRadius: 11, overflow: 'hidden' }}>
+    <div style={{ flex: 1, minWidth: 0, background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-card)', overflow: 'hidden' }}>
       {/* The header carries the mint ground so a situation reads as the heading over its steps
           rather than another row in the same list. */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px',
-        background: '#eafaf6',
+        background: 'var(--float-primary-light)',
         borderBottom: expanded ? '1px solid #cfe0db' : undefined,
       }}>
         <button onClick={onToggle} aria-expanded={expanded} title={expanded ? 'Collapse' : 'Show its steps'}
@@ -454,11 +454,11 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
               if (e.key === 'Enter') rename()
               if (e.key === 'Escape') { setDraft(trigger.name); setEditing(false) }
             }}
-            style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: '#1e293b', padding: '4px 6px', border: '1px solid #cfe3de', borderRadius: 7 }}
+            style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--float-text)', padding: '4px 6px', border: '1px solid #cfe3de', borderRadius: 'var(--float-radius-control)' }}
           />
         ) : (
           <button onClick={() => { setDraft(trigger.name); setEditing(true) }} title="Change the wording"
-            style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14, fontWeight: 800, color: '#0d3d3a' }}>
+            style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14, fontWeight: 800, color: 'var(--float-primary-dark)' }}>
             {trigger.name}
           </button>
         )}
@@ -472,10 +472,9 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
 
         {confirmRemove ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-            <button onClick={() => delMut.mutate()} disabled={delMut.isPending}
-              style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: '#dc2626', border: 0, borderRadius: 6, padding: '4px 9px', cursor: 'pointer' }}>
+            <Button kind="danger" size="sm" onClick={() => delMut.mutate()} disabled={delMut.isPending}>
               Remove
-            </button>
+            </Button>
             <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
           </span>
         ) : (
@@ -490,10 +489,10 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
     {/* Its own thing, beside the situation rather than inside its row of controls. It opens
         straight into THIS situation's chain — there is nothing to pick, because clicking it here
         is the choice. */}
-    <button onClick={onArrow} title="Find the feared outcome behind this situation"
-      style={{ flexShrink: 0, width: 140, textAlign: 'center', marginTop: 6, fontSize: 12, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '7px 0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+    <Button kind="secondary" size="sm" onClick={onArrow} title="Find the feared outcome behind this situation"
+      style={{ flexShrink: 0, width: 140, marginTop: 6, whiteSpace: 'nowrap' }}>
       ↓ Downward Arrow
-    </button>
+    </Button>
     </div>
   )
 }
@@ -550,7 +549,7 @@ function StepList({ planId, trigger, onEdited }: {
     .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
 
   return (
-    <div style={{ background: '#fff', padding: '10px 8px 12px 24px' }}>
+    <div style={{ background: 'var(--float-surface)', padding: '10px 8px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
       <div style={{ fontSize: 12, color: '#8fa5a1', marginBottom: 8 }}>
         What is something you could do in this situation? What would its Fear Level be?
@@ -576,7 +575,7 @@ function StepList({ planId, trigger, onEdited }: {
       {/* Confirm-first, like the arrow probe: tapping one writes it as a step, and the wording can
           be changed afterwards like any other. Nothing is written until a clinician chooses it. */}
       {suggesting && (
-        <div style={{ margin: '0 0 10px', background: '#f4fbf9', border: '1px solid #d7ece5', borderRadius: 10, padding: '10px 12px' }}>
+        <div style={{ margin: '0 0 10px', background: '#f4fbf9', border: '1px solid #d7ece5', borderRadius: 'var(--float-radius-card)', padding: '10px 12px' }}>
           {suggestQuery.isLoading && (
             <div style={{ fontSize: 12.5, color: '#6b7a79' }}>Thinking of smaller versions…</div>
           )}
@@ -596,7 +595,7 @@ function StepList({ planId, trigger, onEdited }: {
                   .filter(sug => !steps.some(st => st.name.trim().toLowerCase() === sug.trim().toLowerCase()))
                   .map(sug => (
                     <button key={sug} onClick={() => addMut.mutate(sug)} disabled={addMut.isPending}
-                      style={{ textAlign: 'left', fontSize: 13, color: '#0d3d3a', background: '#fff', border: '1px solid #d7ece5', borderRadius: 8, padding: '8px 11px', cursor: 'pointer' }}>
+                      style={{ textAlign: 'left', fontSize: 13, color: 'var(--float-primary-dark)', background: 'var(--float-surface)', border: '1px solid #d7ece5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', cursor: 'pointer' }}>
                       + {sug}
                     </button>
                   ))}
@@ -616,11 +615,11 @@ function StepList({ planId, trigger, onEdited }: {
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) addMut.mutate(draft.trim()) }}
           placeholder="e.g. walk to the classroom door with mum"
-          style={{ flex: 1, minWidth: 0, border: '1px solid #dbe8e5', borderRadius: 9, padding: '8px 11px', fontSize: 13, background: '#fff' }} />
-        <button onClick={() => addMut.mutate(draft.trim())} disabled={!draft.trim() || addMut.isPending}
-          style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', background: '#135450', border: 0, borderRadius: 9, padding: '8px 14px', cursor: 'pointer', opacity: !draft.trim() ? 0.35 : 1, flexShrink: 0 }}>
+          style={{ flex: 1, minWidth: 0, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
+        <Button kind="primary" size="sm" onClick={() => addMut.mutate(draft.trim())} disabled={!draft.trim() || addMut.isPending}
+          style={{ flexShrink: 0 }}>
           Add step
-        </button>
+        </Button>
       </div>
 
       {!suggesting && (
@@ -653,7 +652,7 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid #e6efec', borderRadius: 9, padding: '8px 6px 8px 11px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
       {editing ? (
         <input
           value={draft}
@@ -664,11 +663,11 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
             if (e.key === 'Enter') commit()
             if (e.key === 'Escape') { setDraft(name); setEditing(false) }
           }}
-          style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#1e293b', padding: '3px 5px', border: '1px solid #cfe3de', borderRadius: 6 }}
+          style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--float-text)', padding: '3px 5px', border: '1px solid #cfe3de', borderRadius: 'var(--float-radius-control)' }}
         />
       ) : (
         <button onClick={() => { setDraft(name); setEditing(true) }} title="Change the wording"
-          style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
+          style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: 600, color: 'var(--float-text)' }}>
           {name}
         </button>
       )}
@@ -711,7 +710,7 @@ function ScoreBox({ value, onSet }: { value: number | null; onSet: (n: number) =
       onChange={e => commit(clampDtInput(e.target.value))}
       placeholder="–"
       title="Fear Level, 1–10"
-      style={{ width: 46, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#1e293b', padding: '5px 4px', border: '1px solid #dbe8e5', borderRadius: 7, background: '#fff' }}
+      style={{ width: 46, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--float-text)', padding: '5px 4px', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', background: 'var(--float-surface)' }}
     />
   )
 }

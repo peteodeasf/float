@@ -105,15 +105,15 @@ export default function TeenAccessPanel({
   })
 
   const label: React.CSSProperties = {
-    fontSize: '11px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px',
+    fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', display: 'block', marginBottom: '4px',
   }
 
   return (
     <div
       style={{
-        background: '#ffffff',
-        border: '1px solid #cbd5e1',
-        borderRadius: '12px',
+        background: 'var(--float-surface)',
+        border: '1px solid var(--float-border-strong)',
+        borderRadius: 'var(--float-radius-card)',
         boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
         padding: '18px 20px',
         marginBottom: '16px',
@@ -121,13 +121,13 @@ export default function TeenAccessPanel({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-text-hint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {focus === 'teen' ? 'Teen access' : 'Parent access'}
         </span>
         <button
           onClick={onClose}
           aria-label="Close"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '16px', lineHeight: 1, padding: '2px' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--float-text-hint)', fontSize: '16px', lineHeight: 1, padding: '2px' }}
         >
           ×
         </button>
@@ -139,7 +139,7 @@ export default function TeenAccessPanel({
       {/* Status */}
       <div style={{ marginBottom: '14px' }}>
         {invited ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: '8px', padding: '8px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#16a34a', background: '#f0fdf4', borderRadius: 'var(--float-radius-control)', padding: '8px 12px' }}>
             <span>&#10003;</span>
             <span style={{ color: '#166534' }}>
               Invited {new Date(teenInvitedAt!).toLocaleDateString()}
@@ -147,7 +147,7 @@ export default function TeenAccessPanel({
             </span>
           </div>
         ) : (
-          <div style={{ fontSize: '13px', color: '#64748b', background: '#f8fafc', borderRadius: '8px', padding: '8px 12px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', padding: '8px 12px' }}>
             The teen hasn't been invited yet. Invite them so they can sign in and see their ladder once you activate a situation.
           </div>
         )}
@@ -155,7 +155,7 @@ export default function TeenAccessPanel({
 
       {/* Parent-consent gate — a teen can't be invited until consent is on record */}
       {!consentGiven ? (
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px' }}>
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 'var(--float-radius-control)', padding: '10px 12px', marginBottom: '14px' }}>
           <div style={{ fontSize: '13px', color: '#92400e', fontWeight: 600, marginBottom: '2px' }}>Awaiting parent consent</div>
           <p style={{ fontSize: '12px', color: '#b45309', margin: '0 0 8px', lineHeight: 1.5 }}>
             A parent must give permission to connect the child before the teen can be invited. It's captured on the parent monitoring form — or record it here if you obtained it offline.
@@ -163,7 +163,7 @@ export default function TeenAccessPanel({
           <button
             onClick={() => consentMut.mutate()}
             disabled={consentMut.isPending}
-            style={{ fontSize: '12px', fontWeight: 600, color: '#fff', background: '#b45309', border: 'none', borderRadius: '6px', padding: '7px 12px', cursor: 'pointer', opacity: consentMut.isPending ? 0.6 : 1 }}
+            style={{ fontSize: '12px', fontWeight: 600, color: '#fff', background: '#b45309', border: 'none', borderRadius: 'var(--float-radius-sm)', padding: '7px 12px', cursor: 'pointer', opacity: consentMut.isPending ? 0.6 : 1 }}
           >
             {consentMut.isPending ? 'Recording…' : 'Record consent (obtained offline)'}
           </button>
@@ -197,11 +197,11 @@ export default function TeenAccessPanel({
             flex: '1 1 220px',
             padding: '9px 12px',
             fontSize: '13px',
-            color: '#1e293b',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
+            color: 'var(--float-text)',
+            border: '1px solid var(--float-border)',
+            borderRadius: 'var(--float-radius-control)',
             boxSizing: 'border-box',
-            background: consentGiven ? '#fff' : '#f1f5f9',
+            background: consentGiven ? 'var(--float-surface)' : 'var(--float-surface-sunken)',
           }}
         />
         <button
@@ -215,7 +215,7 @@ export default function TeenAccessPanel({
             color: '#fff',
             background: 'var(--float-primary)',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: 'var(--float-radius-control)',
             padding: '9px 16px',
             cursor: 'pointer',
             opacity: !email.trim() || inviteMut.isPending || !consentGiven ? 0.5 : 1,
@@ -225,7 +225,7 @@ export default function TeenAccessPanel({
         </button>
       </div>
       {emailChanged && (
-        <p style={{ fontSize: '12px', color: '#94a3b8', margin: '6px 0 0' }}>
+        <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '6px 0 0' }}>
           Sending will re-invite the teen at the new address with a fresh temporary password.
         </p>
       )}
@@ -242,7 +242,7 @@ export default function TeenAccessPanel({
 
       {/* Communication */}
       {invited && (
-        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--float-surface-sunken)' }}>
           <button
             onClick={onViewMessages}
             style={{ fontSize: '13px', fontWeight: 500, color: 'var(--float-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -260,7 +260,7 @@ export default function TeenAccessPanel({
       <div>
         <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>Parent</div>
 
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px' }}>
+        <div style={{ background: 'var(--float-surface-muted)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', padding: '10px 12px', marginBottom: '14px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -271,7 +271,7 @@ export default function TeenAccessPanel({
             />
             Parents can see the child's progress
           </label>
-          <p style={{ fontSize: '12px', color: '#64748b', margin: '6px 0 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '12px', color: 'var(--float-text-secondary)', margin: '6px 0 0', lineHeight: 1.5 }}>
             The ladder, what's planned and what's done. Not what the child writes, or how they rate each
             exposure. Ask the child first.
             {shared && ` Shared since ${new Date(progressSharedAt!).toLocaleDateString()}.`}
@@ -283,7 +283,7 @@ export default function TeenAccessPanel({
           )}
         </div>
 
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px' }}>
+        <div style={{ background: 'var(--float-surface-muted)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', padding: '10px 12px', marginBottom: '14px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -294,7 +294,7 @@ export default function TeenAccessPanel({
             />
             Parents can see the child's ratings of the accommodations
           </label>
-          <p style={{ fontSize: '12px', color: '#64748b', margin: '6px 0 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '12px', color: 'var(--float-text-secondary)', margin: '6px 0 0', lineHeight: 1.5 }}>
             How hard the child says it would be if the parent stopped each one. The child never sees
             the parent's estimates.
           </p>
@@ -308,15 +308,15 @@ export default function TeenAccessPanel({
         <div style={{ marginBottom: '14px' }}>
           <label style={label}>{parents.length === 1 ? "This child's parent" : "This child's parents"}</label>
           {parents.length === 0 && (
-            <p style={{ fontSize: '12.5px', color: '#94a3b8', margin: '4px 0 0' }}>
+            <p style={{ fontSize: '12.5px', color: 'var(--float-text-hint)', margin: '4px 0 0' }}>
               Nobody yet. Invite a parent below.
             </p>
           )}
           {parents.map(p => (
-            <div key={p.parent_user_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+            <div key={p.parent_user_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid var(--float-surface-sunken)' }}>
               <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: '#334155', overflowWrap: 'anywhere' }}>
                 {p.email}
-                <span style={{ display: 'block', fontSize: '11.5px', color: '#94a3b8' }}>
+                <span style={{ display: 'block', fontSize: '11.5px', color: 'var(--float-text-hint)' }}>
                   {p.has_signed_in ? 'Has signed in' : 'Has not signed in yet'}
                   {p.reminder_emails_off ? ' · reminder emails off' : ''}
                 </span>
@@ -324,7 +324,7 @@ export default function TeenAccessPanel({
               <button
                 onClick={() => { if (confirm(`Remove ${p.email}? Their app stops working for this child. What they have written stays on the record.`)) parentRemoveMut.mutate(p.parent_user_id) }}
                 disabled={parentRemoveMut.isPending}
-                style={{ flex: 'none', fontSize: '12px', fontWeight: 600, color: '#b91c1c', background: 'none', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer' }}
+                style={{ flex: 'none', fontSize: '12px', fontWeight: 600, color: '#b91c1c', background: 'none', border: '1px solid #fecaca', borderRadius: 'var(--float-radius-sm)', padding: '5px 10px', cursor: 'pointer' }}
               >
                 Remove
               </button>
@@ -340,17 +340,17 @@ export default function TeenAccessPanel({
             onChange={e => setParentEmail(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && parentEmail.trim()) parentInviteMut.mutate(parentEmail.trim()) }}
             placeholder="parent@example.com"
-            style={{ flex: '1 1 220px', padding: '9px 12px', fontSize: '13px', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box' }}
+            style={{ flex: '1 1 220px', padding: '9px 12px', fontSize: '13px', color: 'var(--float-text)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', boxSizing: 'border-box' }}
           />
           <button
             onClick={() => parentEmail.trim() && parentInviteMut.mutate(parentEmail.trim())}
             disabled={!parentEmail.trim() || parentInviteMut.isPending}
-            style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: '8px', padding: '9px 16px', cursor: 'pointer', opacity: !parentEmail.trim() || parentInviteMut.isPending ? 0.5 : 1 }}
+            style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: 'var(--float-radius-control)', padding: '9px 16px', cursor: 'pointer', opacity: !parentEmail.trim() || parentInviteMut.isPending ? 0.5 : 1 }}
           >
             {parentInviteMut.isPending ? 'Sending…' : 'Invite parent'}
           </button>
         </div>
-        <p style={{ fontSize: '12px', color: '#94a3b8', margin: '6px 0 0' }}>
+        <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '6px 0 0' }}>
           Emails a temporary password to sign in at /parent/login. A child can have more than one parent.
         </p>
         {alreadyAParent && (

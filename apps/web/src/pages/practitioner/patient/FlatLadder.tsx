@@ -7,6 +7,7 @@
  * Moved out of PatientPage.tsx unchanged.
  */
 import { btn } from '../../../components/ui/buttons'
+import { Button } from '../../../components/ui/primitives'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -94,15 +95,15 @@ export function FlatLadder({
     <div style={{ padding: '16px 20px 20px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px', marginBottom: '12px' }}>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Ladder</div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Ladder</div>
+          <div style={{ fontSize: '11px', color: 'var(--float-text-hint)', marginTop: '2px' }}>
             Start with the easiest
             {' · '}
             <button
               onClick={() => { const next = !showSituations; setShowSituations(next); writeShowSituations(next) }}
               title={showSituations ? 'Stop showing which situation each rung belongs to' : 'Show which situation each rung belongs to'}
               className="cursor-pointer bg-transparent border-none underline"
-              style={{ fontSize: '11px', color: '#94a3b8', padding: 0 }}
+              style={{ fontSize: '11px', color: 'var(--float-text-hint)', padding: 0 }}
             >
               {showSituations ? 'Hide situations' : 'Show situations'}
             </button>
@@ -119,25 +120,24 @@ export function FlatLadder({
             title={!ladderActive && ordered.length === 0 ? 'Add a rung first' : undefined}
             className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
-              fontSize: '12px', fontWeight: 700, borderRadius: '999px', padding: '5px 12px',
-              color: ladderActive ? '#fff' : '#64748b',
+              fontSize: '12px', fontWeight: 700, borderRadius: 'var(--float-radius-pill)', padding: '5px 12px',
+              color: ladderActive ? '#fff' : 'var(--float-text-secondary)',
               background: ladderActive ? 'var(--float-primary)' : '#fff',
-              border: `1px solid ${ladderActive ? 'var(--float-primary)' : '#cbd5e1'}`,
+              border: `1px solid ${ladderActive ? 'var(--float-primary)' : 'var(--float-border-strong)'}`,
             }}
           >
             {ladderActive ? 'Patient can view' : 'Patient cannot view'}
           </button>
           {/* The conversation is how a ladder gets built with the child. It hangs off this view. */}
           {onStartConversation && (
-            <button onClick={onStartConversation} className="cursor-pointer"
-              style={{ fontSize: '12px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '5px 12px' }}>
+            <Button kind="primary" size="sm" onClick={onStartConversation}>
               ▸ Build ladder
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      {isLoading && <p style={{ fontSize: '12.5px', color: '#94a3b8' }}>Loading…</p>}
+      {isLoading && <p style={{ fontSize: '12.5px', color: 'var(--float-text-hint)' }}>Loading…</p>}
 
       <div style={{ position: 'relative', paddingLeft: '22px' }}>
         {ordered.length > 0 && (
@@ -149,7 +149,7 @@ export function FlatLadder({
           {ordered.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', padding: '0 14px', marginBottom: '-2px' }}>
               <span style={{ flex: 1 }} />
-              <span style={{ width: '46px', flexShrink: 0, textAlign: 'center', fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#64748b', lineHeight: 1.15 }}>Fear Level</span>
+              <span style={{ width: '46px', flexShrink: 0, textAlign: 'center', fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--float-text-secondary)', lineHeight: 1.15 }}>Fear Level</span>
               <span style={{ width: '64px', flexShrink: 0 }} />
               <span style={{ width: '16px', flexShrink: 0 }} />
             </div>
@@ -166,7 +166,7 @@ export function FlatLadder({
             />
           ))}
           {!isLoading && ordered.length === 0 && (
-            <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '8px 2px' }}>
+            <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)', padding: '8px 2px' }}>
               Nothing on the ladder yet — use “Build ladder”.
             </div>
           )}
@@ -233,7 +233,7 @@ function LadderRow({
   }
 
   return (
-    <div className="group" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 13px' }}>
+    <div className="group" style={{ background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 13px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       {editingName ? (
         <input
@@ -282,10 +282,10 @@ function LadderRow({
           fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
           // Fixed width so every row's score sits in the same column, under the Fear Level heading.
           width: '64px', textAlign: 'center',
-          borderRadius: '999px', padding: '3px 0',
+          borderRadius: 'var(--float-radius-pill)', padding: '3px 0',
           color: '#3f8a78',
-          background: planned ? '#eef7f4' : '#fff',
-          border: `1px solid ${planned ? '#bcdfd4' : '#e2e8f0'}`,
+          background: planned ? '#eef7f4' : 'var(--float-surface)',
+          border: `1px solid ${planned ? '#bcdfd4' : 'var(--float-border)'}`,
         }}>
         {planned ? 'Set up ✓' : 'Set it up'}
       </button>
@@ -294,11 +294,11 @@ function LadderRow({
           one stray click away from taking it. */}
       {confirmRemove ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, whiteSpace: 'nowrap' }}>
-          <span style={{ fontSize: '11px', color: '#64748b' }}>Remove?</span>
+          <span style={{ fontSize: '11px', color: 'var(--float-text-secondary)' }}>Remove?</span>
           <button onClick={() => delMut.mutate()} disabled={delMut.isPending} style={btn('danger', 'sm')}>Yes, remove</button>
           <button onClick={() => setConfirmRemove(false)}
             className="bg-transparent border-none cursor-pointer"
-            style={{ fontSize: '11px', color: '#94a3b8', padding: 0 }}>Cancel</button>
+            style={{ fontSize: '11px', color: 'var(--float-text-hint)', padding: 0 }}>Cancel</button>
         </span>
       ) : (
         <button onClick={() => setConfirmRemove(true)} title="Remove rung"
@@ -313,7 +313,7 @@ function LadderRow({
       {((sit && showSituation) || isRecommended) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px' }}>
           {isRecommended && (
-            <span style={{ fontSize: '10px', fontWeight: 800, color: '#0d3d3a', background: '#eafaf6', border: '1px solid var(--float-primary)', borderRadius: '999px', padding: '1px 7px', flexShrink: 0 }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--float-primary-dark)', background: 'var(--float-primary-light)', border: '1px solid var(--float-primary)', borderRadius: 'var(--float-radius-pill)', padding: '1px 7px', flexShrink: 0 }}>
               Do this next
             </span>
           )}

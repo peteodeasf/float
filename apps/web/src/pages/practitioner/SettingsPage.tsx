@@ -1,10 +1,10 @@
-import { btn } from '../../components/ui/buttons'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import PracticeMembersPanel from '../../components/practice/PracticeMembersPanel'
-import { CARD, CARD_STYLE, ERROR_BOX, Field, INPUT, SECTION_NOTE, SECTION_TITLE, errorMessage } from '../../components/ui/form'
+import { Banner, Button, Field, TextInput } from '../../components/ui/primitives'
+import { SECTION_NOTE, SECTION_TITLE, errorMessage } from '../../components/ui/form'
 import { changeMyPassword, getMyProfile, updateMyProfile } from '../../api/me_practitioner'
 
 /**
@@ -88,6 +88,13 @@ export default function SettingsPage() {
       credentials !== (profile.credentials ?? '') ||
       phone !== (profile.phone_number ?? ''))
 
+  const cardStyle: CSSProperties = {
+    background: 'var(--float-surface)',
+    border: '1px solid var(--float-border)',
+    borderRadius: 'var(--float-radius-card)',
+    padding: '20px',
+  }
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
       <PractitionerNav activePage="settings" />
@@ -104,72 +111,72 @@ export default function SettingsPage() {
           <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>Loading…</p>
         ) : (
           <>
-            <section className={CARD} style={CARD_STYLE}>
+            <section style={cardStyle}>
               <h2 style={SECTION_TITLE}>Your details</h2>
               <p style={SECTION_NOTE}>
                 Your name and credentials appear on your patients&rsquo; records.
               </p>
 
-              {detailsError && <div style={ERROR_BOX}>{detailsError}</div>}
+              {detailsError && <Banner tone="danger" style={{ marginTop: '14px' }}>{detailsError}</Banner>}
 
               <div style={{ display: 'grid', gap: '14px', marginTop: '16px' }}>
                 <Field label="Name">
-                  <input value={name} onChange={e => setName(e.target.value)} style={INPUT} />
+                  <TextInput block value={name} onChange={e => setName(e.target.value)} />
                 </Field>
                 <Field label="Credentials" hint="For example PsyD, or LCSW.">
-                  <input value={credentials} onChange={e => setCredentials(e.target.value)} style={INPUT} />
+                  <TextInput block value={credentials} onChange={e => setCredentials(e.target.value)} />
                 </Field>
                 <Field label="Phone">
-                  <input value={phone} onChange={e => setPhone(e.target.value)} style={INPUT} />
+                  <TextInput block value={phone} onChange={e => setPhone(e.target.value)} />
                 </Field>
                 <Field label="Email" hint="This is how you sign in. Ask Float to change it.">
-                  <input value={profile?.email ?? ''} readOnly style={{ ...INPUT, background: '#f1f5f9', color: '#64748b' }} />
+                  <TextInput block value={profile?.email ?? ''} readOnly style={{ background: 'var(--float-surface-sunken)', color: 'var(--float-text-secondary)' }} />
                 </Field>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
-                <button
+                <Button
+                  kind="primary"
                   onClick={() => saveDetails.mutate()}
                   disabled={!detailsChanged || !name.trim() || saveDetails.isPending}
-                  style={btn('primary', 'md')}
                 >
                   {saveDetails.isPending ? 'Saving…' : 'Save'}
-                </button>
-                {saved && <span style={{ fontSize: '13px', color: '#0d3d3a' }}>Saved.</span>}
+                </Button>
+                {saved && <span style={{ fontSize: '13px', color: 'var(--float-primary-dark)' }}>Saved.</span>}
               </div>
             </section>
 
-            <section className={CARD} style={{ ...CARD_STYLE, marginTop: '16px' }}>
+            <section style={{ ...cardStyle, marginTop: '16px' }}>
               <h2 style={SECTION_TITLE}>Change your password</h2>
               <p style={SECTION_NOTE}>
                 You need the password you use now. That way a signed-in browser someone else gets
                 hold of cannot lock you out of your own account.
               </p>
 
-              {passwordError && <div style={ERROR_BOX}>{passwordError}</div>}
+              {passwordError && <Banner tone="danger" style={{ marginTop: '14px' }}>{passwordError}</Banner>}
 
               <div style={{ display: 'grid', gap: '14px', marginTop: '16px' }}>
                 <Field label="Current password">
-                  <input type="password" autoComplete="current-password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} style={INPUT} />
+                  <TextInput block type="password" autoComplete="current-password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
                 </Field>
                 <Field label="New password" hint="At least 8 characters.">
-                  <input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={INPUT} />
+                  <TextInput block type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                 </Field>
                 <Field label="New password again">
-                  <input type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} style={INPUT} />
+                  <TextInput block type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                 </Field>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
-                <button
+                <Button
+                  kind="primary"
                   onClick={submitPassword}
                   disabled={!currentPassword || !newPassword || !confirmPassword || savePassword.isPending}
-                  style={btn('primary', 'md')}
                 >
                   {savePassword.isPending ? 'Changing…' : 'Change password'}
-                </button>
+                </Button>
                 {passwordChanged && (
-                  <span style={{ fontSize: '13px', color: '#0d3d3a' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--float-primary-dark)' }}>
                     Password changed. You stay signed in here.
                   </span>
                 )}

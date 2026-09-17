@@ -174,7 +174,7 @@ export default function MonitorLandingPage() {
     try { localStorage.setItem('float-monitor-tip', 'dismissed') } catch { /* shown again next time */ }
   }
   const offBanner = remindersOff && (
-    <div role="status" style={{ background: '#f1f5f9', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', color: '#334155' }}>
+    <div role="status" style={{ background: 'var(--float-surface-sunken)', borderRadius: 'var(--float-radius-card)', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', color: '#334155' }}>
       You won't get the evening emails any more.
     </div>
   )
@@ -197,7 +197,7 @@ export default function MonitorLandingPage() {
     return (
       <Shell>
         <div style={{ textAlign: 'center', padding: '60px 24px' }}>
-          <p style={{ fontSize: '16px', color: '#64748b' }}>{error}</p>
+          <p style={{ fontSize: '16px', color: 'var(--float-text-secondary)' }}>{error}</p>
         </div>
       </Shell>
     )
@@ -224,7 +224,7 @@ export default function MonitorLandingPage() {
       <Shell>
         <div style={{ padding: '40px 24px', textAlign: 'center' }}>
           {offBanner}
-          <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '24px', lineHeight: '1.6' }}>
+          <p style={{ fontSize: '15px', color: 'var(--float-text-secondary)', marginBottom: '24px', lineHeight: '1.6' }}>
             <strong>{practitionerName}</strong> has asked you to complete a monitoring form
             for {childName} before your first appointment.
           </p>
@@ -234,9 +234,9 @@ export default function MonitorLandingPage() {
 
           {/* Tips panel */}
           <div style={{
-            background: '#f8fafc',
+            background: 'var(--float-surface-muted)',
             borderRadius: '16px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--float-border)',
             marginBottom: '32px',
             textAlign: 'left',
             overflow: 'hidden'
@@ -258,7 +258,7 @@ export default function MonitorLandingPage() {
               }}
             >
               What information is gathered?
-              <span style={{ fontSize: '18px', color: '#94a3b8' }}>
+              <span style={{ fontSize: '18px', color: 'var(--float-text-hint)' }}>
                 {showTips ? '\u2212' : '+'}
               </span>
             </button>
@@ -272,7 +272,7 @@ export default function MonitorLandingPage() {
           </div>
 
           {/* Consent to connect the child to the app (unblocks the clinician's teen invite) */}
-          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', textAlign: 'left', background: consentGiven ? '#f0fdf4' : '#f8fafc', border: '1px solid ' + (consentGiven ? '#bbf7d0' : '#e2e8f0'), borderRadius: '14px', padding: '14px 16px', marginBottom: '20px', cursor: consentGiven || consentSaving ? 'default' : 'pointer' }}>
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', textAlign: 'left', background: consentGiven ? '#f0fdf4' : 'var(--float-surface-muted)', border: '1px solid ' + (consentGiven ? '#bbf7d0' : 'var(--float-border)'), borderRadius: '14px', padding: '14px 16px', marginBottom: '20px', cursor: consentGiven || consentSaving ? 'default' : 'pointer' }}>
             <input
               type="checkbox"
               checked={consentGiven}
@@ -283,7 +283,7 @@ export default function MonitorLandingPage() {
                 catch { /* leave unchecked so they can retry */ }
                 finally { setConsentSaving(false) }
               }}
-              style={{ marginTop: '3px', width: '18px', height: '18px', flexShrink: 0, accentColor: '#135450' }}
+              style={{ marginTop: '3px', width: '18px', height: '18px', flexShrink: 0, accentColor: 'var(--float-primary)' }}
             />
             <span style={{ fontSize: '14px', color: '#475569', lineHeight: 1.5 }}>
               I give permission for {childName} to be connected to the Float app, so their clinician can invite them to sign in and use it as part of treatment.
@@ -303,10 +303,10 @@ export default function MonitorLandingPage() {
       <Shell>
         <div style={{ padding: '24px' }}>
           {offBanner}
-          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '4px' }}>
             Your observations
           </h2>
-          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--float-text-secondary)', marginBottom: '20px' }}>
             {entryCount === 0
               ? 'No observations yet — add your first one below.'
               : entryCount < 5
@@ -319,7 +319,7 @@ export default function MonitorLandingPage() {
           {!bookmarkDismissed && !standalone && (
             <div style={{
               background: '#fffbeb',
-              borderRadius: '12px',
+              borderRadius: 'var(--float-radius-card)',
               padding: '14px 16px',
               marginBottom: '16px',
               border: '1px solid #fde68a',
@@ -351,10 +351,10 @@ export default function MonitorLandingPage() {
                 onClick={() => handleEdit(entry)}
                 style={{
                   width: '100%',
-                  background: '#fff',
+                  background: 'var(--float-surface)',
                   borderRadius: '14px',
                   padding: '16px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--float-border)',
                   textAlign: 'left',
                   cursor: 'pointer',
                   display: 'flex',
@@ -364,20 +364,20 @@ export default function MonitorLandingPage() {
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--float-text-secondary)' }}>
                       {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </span>
                     {entry.is_draft && (
-                      <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Draft</span>
+                      <span style={{ fontSize: '11px', color: 'var(--float-text-hint)', fontStyle: 'italic' }}>Draft</span>
                     )}
                     {entry.captured_by === 'voice' && (
-                      <span title="Said out loud" style={{ color: '#135450', display: 'inline-flex' }}><MicIcon size={13} /></span>
+                      <span title="Said out loud" style={{ color: 'var(--float-primary)', display: 'inline-flex' }}><MicIcon size={13} /></span>
                     )}
                   </div>
                   {entry.situation && (
                     <p style={{
                       fontSize: '15px',
-                      color: '#1e293b',
+                      color: 'var(--float-text)',
                       margin: 0,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -414,7 +414,7 @@ export default function MonitorLandingPage() {
           <div style={{ textAlign: 'center', marginBottom: '16px' }}>
             <button
               onClick={() => setShowResend(!showResend)}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', color: 'var(--float-text-hint)', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
             >
               Get the link sent to me again
             </button>
@@ -428,7 +428,7 @@ export default function MonitorLandingPage() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--float-border)',
                     fontSize: '14px',
                     width: '220px'
                   }}
@@ -442,7 +442,7 @@ export default function MonitorLandingPage() {
                   }}
                   style={{
                     padding: '10px 16px',
-                    background: '#135450',
+                    background: 'var(--float-primary)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '10px',
@@ -473,20 +473,20 @@ export default function MonitorLandingPage() {
       <Shell>
         <div style={{
           padding: '8px 24px 0',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid var(--float-border)',
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          background: '#fff',
+          background: 'var(--float-surface)',
           marginTop: '-1px'
         }}>
           <button
             onClick={() => setScreen('home')}
-            style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '8px 4px', color: '#64748b' }}
+            style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '8px 4px', color: 'var(--float-text-secondary)' }}
           >
             &larr;
           </button>
-          <span style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+          <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--float-text)' }}>
             {screen === 'edit' ? 'Edit observation' : 'New observation'}
           </span>
         </div>
@@ -504,8 +504,8 @@ export default function MonitorLandingPage() {
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                borderRadius: 'var(--float-radius-card)',
+                border: '1px solid var(--float-border)',
                 fontSize: '16px',
                 boxSizing: 'border-box'
               }}
@@ -525,8 +525,8 @@ export default function MonitorLandingPage() {
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                borderRadius: 'var(--float-radius-card)',
+                border: '1px solid var(--float-border)',
                 fontSize: '16px',
                 resize: 'vertical',
                 fontFamily: 'inherit',
@@ -548,8 +548,8 @@ export default function MonitorLandingPage() {
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                borderRadius: 'var(--float-radius-card)',
+                border: '1px solid var(--float-border)',
                 fontSize: '16px',
                 resize: 'vertical',
                 fontFamily: 'inherit',
@@ -571,8 +571,8 @@ export default function MonitorLandingPage() {
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                borderRadius: 'var(--float-radius-card)',
+                border: '1px solid var(--float-border)',
                 fontSize: '16px',
                 resize: 'vertical',
                 fontFamily: 'inherit',
@@ -586,7 +586,7 @@ export default function MonitorLandingPage() {
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
               Fear thermometer (1–10)
             </label>
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', marginBottom: '12px' }}>
               Your estimate of {childName}'s level of distress. 1 = little to no distress. 10 = highest distress.
             </p>
             <div style={{
@@ -601,15 +601,15 @@ export default function MonitorLandingPage() {
                   style={{
                     width: '100%',
                     aspectRatio: '1',
-                    borderRadius: '12px',
-                    border: fearThermometer === n ? '2px solid #135450' : '1px solid #e2e8f0',
+                    borderRadius: 'var(--float-radius-card)',
+                    border: fearThermometer === n ? '2px solid var(--float-primary)' : '1px solid var(--float-border)',
                     background: fearThermometer === n
-                      ? '#eafaf6'
+                      ? 'var(--float-primary-light)'
                       : n >= 8 ? '#fef2f2'
                       : n >= 5 ? '#fffbeb'
                       : '#f0fdf4',
                     color: fearThermometer === n
-                      ? '#135450'
+                      ? 'var(--float-primary)'
                       : n >= 8 ? '#dc2626'
                       : n >= 5 ? '#d97706'
                       : '#16a34a',
@@ -626,7 +626,7 @@ export default function MonitorLandingPage() {
                 </button>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#94a3b8' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: 'var(--float-text-hint)' }}>
               <span>Low distress</span>
               <span>Extreme distress</span>
             </div>
@@ -640,7 +640,7 @@ export default function MonitorLandingPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: '#135450',
+                background: 'var(--float-primary)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '14px',
@@ -659,8 +659,8 @@ export default function MonitorLandingPage() {
                 width: '100%',
                 padding: '14px',
                 background: 'transparent',
-                color: '#64748b',
-                border: '1px solid #e2e8f0',
+                color: 'var(--float-text-secondary)',
+                border: '1px solid var(--float-border)',
                 borderRadius: '14px',
                 fontSize: '15px',
                 cursor: 'pointer'
@@ -670,7 +670,7 @@ export default function MonitorLandingPage() {
             </button>
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '13px', color: '#94a3b8', marginTop: '16px' }}>
+          <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--float-text-hint)', marginTop: '16px' }}>
             You can always come back and edit this later.
           </p>
         </div>
@@ -686,21 +686,21 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#f8fafc',
+      background: 'var(--float-bg)',
       maxWidth: '480px',
       margin: '0 auto'
     }}>
       {/* Header */}
       <div style={{
-        background: '#fff',
+        background: 'var(--float-surface)',
         padding: '16px 24px',
-        borderBottom: '1px solid #e2e8f0',
+        borderBottom: '1px solid var(--float-border)',
         display: 'flex',
         alignItems: 'center',
         gap: '10px'
       }}>
         <span style={{ fontSize: '20px' }}>~</span>
-        <span style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Float</span>
+        <span style={{ fontSize: '18px', fontWeight: '600', color: 'var(--float-text)' }}>Float</span>
       </div>
       {children}
     </div>

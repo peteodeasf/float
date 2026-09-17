@@ -35,6 +35,7 @@ import {
   dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink,
   Chrome, DTBadge, Context, Exchange, SayIt,
 } from './sessionKit'
+import { Banner } from '../../components/ui/primitives'
 
 type Phase = 'intro' | 'pick' | 'chain'
 
@@ -138,7 +139,7 @@ export default function ArrowPage() {
     return (
       <Chrome onExit={exit}>
         <div style={{ ...card, textAlign: 'center' }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a' }}>No treatment plan yet</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--float-primary-dark)' }}>No treatment plan yet</div>
           <p style={{ fontSize: 13.5, color: '#6b7a79', marginTop: 8 }}>Create the plan from the patient page first.</p>
           <button onClick={exit} style={primaryBtn}>Back to patient</button>
         </div>
@@ -204,7 +205,7 @@ export function PickPhase({ situations, onOpen }: { situations: TriggerSituation
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 16 }}>
         {ordered.map(t => <PickRow key={t.id} trigger={t} onOpen={onOpen} />)}
         {situations.length === 0 && (
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>No situations yet — add some in session mode first.</div>
+          <div style={{ fontSize: 13, color: 'var(--float-text-hint)' }}>No situations yet — add some in session mode first.</div>
         )}
       </div>
     </div>
@@ -220,9 +221,9 @@ function PickRow({ trigger, onOpen }: { trigger: TriggerSituation; onOpen: (id: 
   })
   return (
     <button onClick={() => onOpen(trigger.id)}
-      style={{ display: 'block', textAlign: 'left', width: '100%', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 11, padding: '11px 13px', cursor: 'pointer' }}>
+      style={{ display: 'block', textAlign: 'left', width: '100%', background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '11px 13px', cursor: 'pointer' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', flex: 1, minWidth: 0 }}>{trigger.name}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--float-text)', flex: 1, minWidth: 0 }}>{trigger.name}</span>
         <DTBadge v={dtOf(trigger.distress_thermometer_rating)} size={24} />
       </div>
       {arrow?.feared_outcome && (
@@ -319,7 +320,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
   // The chain stays visible — unlike session mode's transcript, watching the descent is the point.
   const chain = (startingThought || steps.length > 0) && (
     <div style={{ position: 'relative', paddingLeft: 16, marginBottom: 18 }}>
-      <div style={{ position: 'absolute', left: 3, top: 6, bottom: 6, width: 2, borderRadius: 2, background: 'linear-gradient(#9af6e4,#135450)' }} />
+      <div style={{ position: 'absolute', left: 3, top: 6, bottom: 6, width: 2, borderRadius: 2, background: 'linear-gradient(var(--float-primary-mid),var(--float-primary))' }} />
       {startingThought && <Exchange q="The worry" a={`“${startingThought}”`} />}
       {steps.map((s, i) => <Exchange key={i} q={s.question} a={`“${s.response}”`} />)}
     </div>
@@ -330,7 +331,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
       <Context text={trigger.name} dt={dtOf(trigger.distress_thermometer_rating)} quiet />
 
       {err && (
-        <div style={{ marginBottom: 14, background: '#fff4f2', border: '1px solid #f6c8bd', color: '#b3402a', borderRadius: 8, padding: '8px 11px', fontSize: 12.5 }}>{err}</div>
+        <Banner tone="danger" style={{ marginBottom: 14 }}>{err}</Banner>
       )}
 
       {chain}
@@ -338,7 +339,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
       {/* Bedrock — confirmed by the clinician, never by the model. */}
       {atBottom ? (
         <div>
-          <div style={{ background: '#0d3d3a', borderRadius: 14, padding: '15px 17px' }}>
+          <div style={{ background: 'var(--float-primary-dark)', borderRadius: 'var(--float-radius-card)', padding: '15px 17px' }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: 7 }}>♡ the worry underneath</div>
             <textarea value={fearedDraft} onChange={e => setFearedDraft(e.target.value)} rows={2}
               style={{ width: '100%', border: 'none', outline: 'none', fontSize: 16.5, fontWeight: 800, color: '#fff', background: 'none', resize: 'vertical', fontFamily: 'inherit' }} />

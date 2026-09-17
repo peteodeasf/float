@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom'
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import { Card } from '../../components/ui/primitives'
 import { useQuery } from '@tanstack/react-query'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -10,11 +11,11 @@ import { getPatientProgress } from '../../api/patients'
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
-      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-2xl font-semibold text-slate-800">{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
-    </div>
+    <Card style={{ padding: '20px' }}>
+      <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--float-text-hint)' }}>{label}</p>
+      <p className="text-2xl font-semibold" style={{ color: 'var(--float-text)' }}>{value}</p>
+      {sub && <p className="text-xs mt-0.5" style={{ color: 'var(--float-text-hint)' }}>{sub}</p>}
+    </Card>
   )
 }
 
@@ -50,7 +51,7 @@ export default function ProgressPage() {
   const summary = progress?.summary
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
       <PractitionerNav
         activePage="patients"
         subHeader={{
@@ -64,7 +65,7 @@ export default function ProgressPage() {
       <main className="px-8 py-8 max-w-5xl mx-auto space-y-6">
 
         {isLoading && (
-          <p className="text-slate-400">Loading progress data...</p>
+          <p style={{ color: 'var(--float-text-hint)' }}>Loading progress data...</p>
         )}
 
         {summary && (
@@ -97,11 +98,11 @@ export default function ProgressPage() {
 
         {/* BIP chart */}
         {chartData.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-1">
+          <Card style={{ padding: '24px' }}>
+            <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--float-text)' }}>
               Belief in Prediction
             </h2>
-            <p className="text-sm text-slate-400 mb-6">
+            <p className="text-sm mb-6" style={{ color: 'var(--float-text-hint)' }}>
               How strongly the patient believed their feared outcome would occur — before and after each experiment
             </p>
             <ResponsiveContainer width="100%" height={280}>
@@ -126,8 +127,8 @@ export default function ProgressPage() {
                     name === 'bip_before' ? 'BIP before' : 'BIP after'
                   ]}
                   contentStyle={{
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
+                    border: '1px solid var(--float-border)',
+                    borderRadius: 'var(--float-radius-control)',
                     fontSize: '12px'
                   }}
                 />
@@ -153,16 +154,16 @@ export default function ProgressPage() {
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </Card>
         )}
 
         {/* Distress thermometer chart */}
         {chartData.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-1">
+          <Card style={{ padding: '24px' }}>
+            <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--float-text)' }}>
               Fear Level
             </h2>
-            <p className="text-sm text-slate-400 mb-6">
+            <p className="text-sm mb-6" style={{ color: 'var(--float-text-hint)' }}>
               Expected distress vs actual distress during each experiment
             </p>
             <ResponsiveContainer width="100%" height={280}>
@@ -186,8 +187,8 @@ export default function ProgressPage() {
                     name === 'dt_expected' ? 'Expected' : 'Actual'
                   ]}
                   contentStyle={{
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
+                    border: '1px solid var(--float-border)',
+                    borderRadius: 'var(--float-radius-control)',
                     fontSize: '12px'
                   }}
                 />
@@ -212,50 +213,50 @@ export default function ProgressPage() {
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </Card>
         )}
 
         {/* No data yet */}
         {!isLoading && chartData.length === 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-400">
+          <Card style={{ padding: '48px' }} className="text-center">
+            <p style={{ color: 'var(--float-text-hint)' }}>
               No completed experiments yet — progress charts will appear here
             </p>
-          </div>
+          </Card>
         )}
 
         {/* Rung breakdown */}
         {progress && progress.rung_progress.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+          <Card style={{ padding: '24px' }}>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--float-text)' }}>
               Progress by rung
             </h2>
             <div className="space-y-3">
               {progress.rung_progress.map((rung, i) => (
-                <div key={rung.rung_id} className="flex items-center gap-4 py-3 px-4 bg-slate-50 rounded-lg">
-                  <span className="text-xs font-medium text-slate-400 w-5">{i + 1}</span>
+                <div key={rung.rung_id} className="flex items-center gap-4 py-3 px-4" style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)' }}>
+                  <span className="text-xs font-medium w-5" style={{ color: 'var(--float-text-hint)' }}>{i + 1}</span>
                   <div className="flex-1">
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm" style={{ color: 'var(--float-text-secondary)' }}>
                       {rung.experiments_completed} experiment{rung.experiments_completed !== 1 ? 's' : ''}
                     </p>
                   </div>
                   {rung.latest_bip_before !== null && rung.latest_bip_after !== null && (
                     <div className="text-right">
-                      <p className="text-xs text-slate-400">BIP</p>
-                      <p className="text-sm font-medium text-slate-700">
+                      <p className="text-xs" style={{ color: 'var(--float-text-hint)' }}>BIP</p>
+                      <p className="text-sm font-medium" style={{ color: 'var(--float-text)' }}>
                         {rung.latest_bip_before}% → {rung.latest_bip_after}%
                       </p>
                     </div>
                   )}
                   {rung.distress_thermometer_rating && (
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium" style={{ color: 'var(--float-text-secondary)' }}>
                       Fear Level {rung.distress_thermometer_rating}
                     </span>
                   )}
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
       </main>

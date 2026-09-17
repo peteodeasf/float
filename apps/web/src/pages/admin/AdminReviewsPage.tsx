@@ -60,36 +60,36 @@ export default function AdminReviewsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--float-bg)' }}>
-      <header style={{ background: 'var(--float-surface)', borderBottom: '1px solid #e2e8f0', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+      <header style={{ background: 'var(--float-surface)', borderBottom: '1px solid var(--float-border)', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <FloatLogo size="sm" />
-          <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b', background: '#f1f5f9', padding: '4px 10px', borderRadius: '999px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--float-text-secondary)', background: 'var(--float-surface-sunken)', padding: '4px 10px', borderRadius: 'var(--float-radius-pill)' }}>
             Admin · Reviews
           </span>
-          <button onClick={() => navigate('/admin/dashboard')} style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => navigate('/admin/dashboard')} style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>
             ← Dashboard
           </button>
         </div>
-        <button onClick={() => { logout(); navigate('/admin/login') }} style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <button onClick={() => { logout(); navigate('/admin/login') }} style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>
           Sign out
         </button>
       </header>
 
       <main style={{ maxWidth: '980px', margin: '0 auto', padding: '28px 16px' }}>
-        {error && <p role="alert" style={{ color: '#b91c1c', fontSize: '13px' }}>{error}</p>}
+        {error && <p role="alert" style={{ color: 'var(--float-danger)', fontSize: '13px' }}>{error}</p>}
 
         {!open && (
           <>
-            <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '0 0 16px' }}>Review rounds</h1>
-            {rounds === null && !error && <p style={{ color: '#64748b', fontSize: '13px' }}>Loading…</p>}
-            {rounds?.length === 0 && <p style={{ color: '#64748b', fontSize: '13px' }}>No review rounds yet.</p>}
+            <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--float-text-strong)', margin: '0 0 16px' }}>Review rounds</h1>
+            {rounds === null && !error && <p style={{ color: 'var(--float-text-secondary)', fontSize: '13px' }}>Loading…</p>}
+            {rounds?.length === 0 && <p style={{ color: 'var(--float-text-secondary)', fontSize: '13px' }}>No review rounds yet.</p>}
             {rounds?.map(r => (
               <button key={r.id} onClick={() => openRound(r.id)} style={{ ...card, display: 'block', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer' }}>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{r.title}</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 8px' }}>{r.slug} · {r.to_mark} to mark</div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--float-text-strong)' }}>{r.title}</div>
+                <div style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '2px 0 8px' }}>{r.slug} · {r.to_mark} to mark</div>
                 <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                   {r.reviewers.map(v => (
-                    <span key={v.name} style={{ fontSize: '12.5px', color: '#334155' }}>
+                    <span key={v.name} style={{ fontSize: '12.5px', color: 'var(--float-text)' }}>
                       <strong>{v.name}</strong>: {v.marked} of {r.to_mark} · {when(v.last_seen_at)}
                     </span>
                   ))}
@@ -108,9 +108,9 @@ export default function AdminReviewsPage() {
 export function RoundResults({ round, onBack }: { round: RoundDetail; onBack: () => void }) {
   return (
     <>
-      <button onClick={onBack} style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: '10px' }}>← All rounds</button>
-      <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>{round.title}</h1>
-      <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 18px' }}>
+      <button onClick={onBack} style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: '10px' }}>← All rounds</button>
+      <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--float-text-strong)', margin: '0 0 4px' }}>{round.title}</h1>
+      <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '0 0 18px' }}>
         {round.slug} · {round.reviewers.map(v => `${v.name} (${when(v.last_seen_at)})`).join(', ') || 'no reviewers'}
       </p>
 
@@ -118,12 +118,12 @@ export function RoundResults({ round, onBack }: { round: RoundDetail; onBack: ()
         const said = round.reviewers.filter(v => round.comments[v.id]?.[item.key] || round.additions[v.id]?.[item.key]?.length)
         return (
           <section key={item.key} style={card}>
-            <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>{item.situation}</h2>
+            <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--float-text-strong)', margin: '0 0 8px' }}>{item.situation}</h2>
             {item.log && item.log.length > 0 && (
               <details style={{ marginBottom: '10px' }}>
-                <summary style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer' }}>What the parent wrote</summary>
+                <summary style={{ fontSize: '12px', color: 'var(--float-text-secondary)', cursor: 'pointer' }}>What the parent wrote</summary>
                 {item.log.map((e, i) => (
-                  <p key={i} style={{ fontSize: '12.5px', color: '#475569', margin: '6px 0 0' }}>
+                  <p key={i} style={{ fontSize: '12.5px', color: 'var(--float-text-secondary)', margin: '6px 0 0' }}>
                     <strong>{e.situation}</strong>{e.fear != null && e.fear !== '' ? ` · fear ${e.fear}/10` : ''}. {e.child} {e.parent ? <><em>Parent did:</em> {e.parent}</> : null}
                   </p>
                 ))}
@@ -141,10 +141,10 @@ export function RoundResults({ round, onBack }: { round: RoundDetail; onBack: ()
                   {rowsOf(item).map(row => (
                     <tr key={row.id}>
                       <td style={td}>
-                        <div style={{ color: '#0f172a' }}>{row.text}</div>
-                        {row.detail && <div style={{ color: '#94a3b8', fontSize: '11.5px' }}>{row.detail}</div>}
+                        <div style={{ color: 'var(--float-text-strong)' }}>{row.text}</div>
+                        {row.detail && <div style={{ color: 'var(--float-text-hint)', fontSize: '11.5px' }}>{row.detail}</div>}
                         {row.compare?.map(side => (
-                          <div key={side.label} style={{ color: '#64748b', fontSize: '11.5px' }}><strong>{side.label}:</strong> {side.lines.join('; ')}</div>
+                          <div key={side.label} style={{ color: 'var(--float-text-secondary)', fontSize: '11.5px' }}><strong>{side.label}:</strong> {side.lines.join('; ')}</div>
                         ))}
                       </td>
                       {round.reviewers.map(v => {
@@ -152,7 +152,7 @@ export function RoundResults({ round, onBack }: { round: RoundDetail; onBack: ()
                         const label = row.options.find(o => o.v === choice)?.label
                         const differs = row.proposed && choice && choice !== row.proposed
                         return (
-                          <td key={v.id} style={{ ...td, fontWeight: choice ? 600 : 400, color: differs ? '#b45309' : choice ? '#0f172a' : '#cbd5e1' }}>
+                          <td key={v.id} style={{ ...td, fontWeight: choice ? 600 : 400, color: differs ? 'var(--float-warning)' : choice ? 'var(--float-text-strong)' : 'var(--float-border-strong)' }}>
                             {label ?? '—'}
                           </td>
                         )
@@ -163,7 +163,7 @@ export function RoundResults({ round, onBack }: { round: RoundDetail; onBack: ()
               </table>
             </div>
             {said.map(v => (
-              <div key={v.id} style={{ marginTop: '10px', fontSize: '12.5px', color: '#334155' }}>
+              <div key={v.id} style={{ marginTop: '10px', fontSize: '12.5px', color: 'var(--float-text)' }}>
                 <strong>{v.name}</strong>
                 {round.additions[v.id]?.[item.key]?.map((a, i) => <div key={i}>+ {a}</div>)}
                 {round.comments[v.id]?.[item.key] && <p style={{ margin: '2px 0 0', whiteSpace: 'pre-wrap' }}>{round.comments[v.id][item.key]}</p>}
@@ -176,5 +176,5 @@ export function RoundResults({ round, onBack }: { round: RoundDetail; onBack: ()
   )
 }
 
-const th: React.CSSProperties = { textAlign: 'left', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', padding: '6px 8px', borderBottom: '1px solid #e2e8f0' }
-const td: React.CSSProperties = { padding: '8px', borderBottom: '1px solid #f1f5f9', verticalAlign: 'top' }
+const th: React.CSSProperties = { textAlign: 'left', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--float-text-hint)', padding: '6px 8px', borderBottom: '1px solid var(--float-border)' }
+const td: React.CSSProperties = { padding: '8px', borderBottom: '1px solid var(--float-surface-sunken)', verticalAlign: 'top' }

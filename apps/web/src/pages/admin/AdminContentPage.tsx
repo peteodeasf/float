@@ -1,9 +1,9 @@
-import { btn } from '../../components/ui/buttons'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient } from '../../context/AdminAuthContext'
 import ChecklistAdmin from './ChecklistAdmin'
 import FloatLogo from '../../components/ui/FloatLogo'
+import { Button, Badge } from '../../components/ui/primitives'
 
 type Tag = { id: string; slug: string; label: string; is_active: boolean }
 type Tip = {
@@ -47,28 +47,18 @@ const card: React.CSSProperties = {
 const input: React.CSSProperties = {
   padding: '8px 10px',
   fontSize: '13px',
-  border: '1px solid #cbd5e1',
-  borderRadius: '8px',
-  color: '#0f172a',
-  background: '#fff',
+  border: '1px solid var(--float-border-strong)',
+  borderRadius: 'var(--float-radius-control)',
+  color: 'var(--float-text-strong)',
+  background: 'var(--float-surface)',
 }
-const primaryBtn: React.CSSProperties = btn('primary', 'md')
-const ghostBtn: React.CSSProperties = btn('secondary', 'sm')
 const label: React.CSSProperties = {
   fontSize: '12px',
   fontWeight: 600,
-  color: '#64748b',
+  color: 'var(--float-text-secondary)',
   display: 'block',
   marginBottom: '4px',
 }
-const pill = (active: boolean): React.CSSProperties => ({
-  fontSize: '11px',
-  fontWeight: 600,
-  padding: '3px 8px',
-  borderRadius: '999px',
-  background: active ? '#e1f5ee' : '#f1f5f9',
-  color: active ? '#0f6e56' : '#94a3b8',
-})
 
 export default function AdminContentPage() {
   const { logout } = useAdminAuth()
@@ -179,7 +169,7 @@ export default function AdminContentPage() {
   }
 
   const tipForm = (
-    <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '18px', marginTop: '12px' }}>
+    <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-card)', padding: '18px', marginTop: '12px' }}>
       <div style={{ marginBottom: '12px' }}>
         <span style={label}>Title</span>
         <input
@@ -201,7 +191,7 @@ export default function AdminContentPage() {
       <div style={{ marginBottom: '12px' }}>
         <span style={label}>Tags</span>
         {draft.always_show && (
-          <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 6px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '0 0 6px' }}>
             Always-show tips appear on every exposure regardless of tags.
           </p>
         )}
@@ -216,11 +206,11 @@ export default function AdminContentPage() {
                   fontSize: '12px',
                   fontWeight: 600,
                   padding: '5px 11px',
-                  borderRadius: '999px',
+                  borderRadius: 'var(--float-radius-pill)',
                   cursor: 'pointer',
-                  border: `1px solid ${on ? 'var(--float-primary)' : '#cbd5e1'}`,
-                  background: on ? 'var(--float-primary)' : '#fff',
-                  color: on ? '#fff' : '#475569',
+                  border: `1px solid ${on ? 'var(--float-primary)' : 'var(--float-border-strong)'}`,
+                  background: on ? 'var(--float-primary)' : 'var(--float-surface)',
+                  color: on ? '#fff' : 'var(--float-text-secondary)',
                 }}
               >
                 {tag.label}
@@ -228,12 +218,12 @@ export default function AdminContentPage() {
             )
           })}
           {tags.length === 0 && (
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>No tags yet — add some above.</span>
+            <span style={{ fontSize: '12px', color: 'var(--float-text-hint)' }}>No tags yet — add some above.</span>
           )}
         </div>
       </div>
       <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#334155' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--float-text)' }}>
           <input
             type="checkbox"
             checked={draft.always_show}
@@ -241,7 +231,7 @@ export default function AdminContentPage() {
           />
           Always show
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#334155' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--float-text)' }}>
           <input
             type="checkbox"
             checked={draft.is_active}
@@ -249,7 +239,7 @@ export default function AdminContentPage() {
           />
           Active
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#334155' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--float-text)' }}>
           Audience
           <select
             style={{ ...input, width: '110px' }}
@@ -260,7 +250,7 @@ export default function AdminContentPage() {
             <option value="parent">Parent</option>
           </select>
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#334155' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--float-text)' }}>
           Order
           <input
             type="number"
@@ -271,12 +261,12 @@ export default function AdminContentPage() {
         </label>
       </div>
       <div style={{ display: 'flex', gap: '10px' }}>
-        <button style={primaryBtn} onClick={saveTip} disabled={busy}>
+        <Button kind="primary" size="md" onClick={saveTip} disabled={busy}>
           {busy ? 'Saving…' : editing === 'new' ? 'Add tip' : 'Save changes'}
-        </button>
-        <button style={ghostBtn} onClick={() => setEditing(null)}>
+        </Button>
+        <Button kind="quiet" size="md" onClick={() => setEditing(null)}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -286,7 +276,7 @@ export default function AdminContentPage() {
       <header
         style={{
           background: 'var(--float-surface)',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid var(--float-border)',
           padding: '16px 32px',
           display: 'flex',
           alignItems: 'center',
@@ -301,17 +291,17 @@ export default function AdminContentPage() {
               fontWeight: 600,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: '#64748b',
-              background: '#f1f5f9',
+              color: 'var(--float-text-secondary)',
+              background: 'var(--float-surface-sunken)',
               padding: '4px 10px',
-              borderRadius: '999px',
+              borderRadius: 'var(--float-radius-pill)',
             }}
           >
             Admin · Content
           </span>
           <button
             onClick={() => navigate('/admin/dashboard')}
-            style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             ← Dashboard
           </button>
@@ -321,7 +311,7 @@ export default function AdminContentPage() {
             logout()
             navigate('/admin/login')
           }}
-          style={{ fontSize: '13px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+          style={{ fontSize: '13px', color: 'var(--float-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           Sign out
         </button>
@@ -329,15 +319,15 @@ export default function AdminContentPage() {
 
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '32px' }}>
         {loading ? (
-          <p style={{ color: '#94a3b8' }}>Loading…</p>
+          <p style={{ color: 'var(--float-text-hint)' }}>Loading…</p>
         ) : (
           <>
             <ChecklistAdmin />
 
             {/* Tags */}
             <section style={card}>
-              <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 4px', color: '#0f172a' }}>Tags</h2>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 4px', color: 'var(--float-text-strong)' }}>Tags</h2>
+              <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', margin: '0 0 16px' }}>
                 The vocabulary that connects tips to situations. Clinicians tag each situation; a tip
                 shows when its tags overlap.
               </p>
@@ -350,23 +340,20 @@ export default function AdminContentPage() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '999px',
+                      border: '1px solid var(--float-border)',
+                      borderRadius: 'var(--float-radius-pill)',
                       padding: '4px 6px 4px 12px',
                       opacity: tag.is_active ? 1 : 0.5,
                     }}
                   >
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>{tag.label}</span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>{tag.slug}</span>
-                    <button style={ghostBtn} onClick={() => toggleTag(tag)}>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)' }}>{tag.label}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>{tag.slug}</span>
+                    <Button kind="secondary" size="sm" onClick={() => toggleTag(tag)}>
                       {tag.is_active ? 'Hide' : 'Show'}
-                    </button>
-                    <button
-                      style={{ ...ghostBtn, color: '#b91c1c', borderColor: '#fecaca' }}
-                      onClick={() => deleteTag(tag)}
-                    >
+                    </Button>
+                    <Button kind="danger" size="sm" onClick={() => deleteTag(tag)}>
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -390,23 +377,23 @@ export default function AdminContentPage() {
                     placeholder="social"
                   />
                 </div>
-                <button style={primaryBtn} onClick={addTag} disabled={busy}>
+                <Button kind="primary" size="md" onClick={addTag} disabled={busy}>
                   Add tag
-                </button>
+                </Button>
               </div>
             </section>
 
             {/* Tips */}
             <section style={card}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#0f172a' }}>Tips</h2>
+                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: 'var(--float-text-strong)' }}>Tips</h2>
                 {editing !== 'new' && (
-                  <button style={primaryBtn} onClick={startNew}>
+                  <Button kind="primary" size="md" onClick={startNew}>
                     + New tip
-                  </button>
+                  </Button>
                 )}
               </div>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 8px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', margin: '0 0 8px' }}>
                 Shown on the teen exposure screen under “How to handle it.”
               </p>
 
@@ -417,8 +404,8 @@ export default function AdminContentPage() {
                   <div
                     key={tip.id}
                     style={{
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '10px',
+                      border: '1px solid var(--float-border)',
+                      borderRadius: 'var(--float-radius-card)',
                       padding: '16px',
                       opacity: tip.is_active ? 1 : 0.55,
                     }}
@@ -426,15 +413,15 @@ export default function AdminContentPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--float-text-hint)', fontFamily: 'monospace' }}>
                             #{tip.display_order}
                           </span>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>{tip.title}</span>
-                          {tip.audience === 'parent' && <span style={pill(true)}>Parent</span>}
-                          {tip.always_show && <span style={pill(true)}>Always show</span>}
-                          {!tip.is_active && <span style={pill(false)}>Inactive</span>}
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text-strong)' }}>{tip.title}</span>
+                          {tip.audience === 'parent' && <Badge tone="primary">Parent</Badge>}
+                          {tip.always_show && <Badge tone="primary">Always show</Badge>}
+                          {!tip.is_active && <Badge tone="neutral">Inactive</Badge>}
                         </div>
-                        <p style={{ fontSize: '13px', color: '#475569', margin: '6px 0 0' }}>{tip.body}</p>
+                        <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', margin: '6px 0 0' }}>{tip.body}</p>
                         {tip.tag_ids.length > 0 && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                             {tip.tag_ids.map(id => (
@@ -444,7 +431,7 @@ export default function AdminContentPage() {
                                   fontSize: '11px',
                                   fontWeight: 600,
                                   padding: '3px 8px',
-                                  borderRadius: '999px',
+                                  borderRadius: 'var(--float-radius-pill)',
                                   background: '#eef2ff',
                                   color: '#4338ca',
                                 }}
@@ -456,22 +443,19 @@ export default function AdminContentPage() {
                         )}
                       </div>
                       <div style={{ display: 'flex', gap: '8px', flex: 'none' }}>
-                        <button style={ghostBtn} onClick={() => startEdit(tip)}>
+                        <Button kind="secondary" size="sm" onClick={() => startEdit(tip)}>
                           Edit
-                        </button>
-                        <button
-                          style={{ ...ghostBtn, color: '#b91c1c', borderColor: '#fecaca' }}
-                          onClick={() => deleteTip(tip)}
-                        >
+                        </Button>
+                        <Button kind="danger" size="sm" onClick={() => deleteTip(tip)}>
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
                     {editing === tip.id && tipForm}
                   </div>
                 ))}
                 {tips.length === 0 && (
-                  <p style={{ fontSize: '13px', color: '#94a3b8' }}>No tips yet.</p>
+                  <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>No tips yet.</p>
                 )}
               </div>
             </section>

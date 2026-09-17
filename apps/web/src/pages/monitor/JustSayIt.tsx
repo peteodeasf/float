@@ -544,11 +544,11 @@ const CSS = `
 .jsi-fear button[aria-pressed="true"] { background: #9af6e4; border-color: #9af6e4; color: #0d3d3a; }
 .jsi-fear button:disabled:not([aria-pressed="true"]) { opacity: .45; cursor: default; }
 .jsi-scale { display: flex; justify-content: space-between; font-size: 12.5px; opacity: .7; }
-.jsi-note { width: 100%; background: #fff; border-radius: 14px; padding: 14px 16px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; text-align: left; }
-.jsi-note-date { font-size: 13px; font-weight: 600; color: #64748b; }
-.jsi-note-how { font-size: 12px; font-weight: 600; color: #135450; display: inline-flex; align-items: center; gap: 3px; }
+.jsi-note { width: 100%; background: var(--float-surface); border-radius: 14px; padding: 14px 16px; border: 1px solid var(--float-border); display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.jsi-note-date { font-size: 13px; font-weight: 600; color: var(--float-text-secondary); }
+.jsi-note-how { font-size: 12px; font-weight: 600; color: var(--float-primary); display: inline-flex; align-items: center; gap: 3px; }
 .jsi-note-fear { margin-left: auto; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex: none; }
-.jsi-note-words { margin: 0; font-size: 15px; line-height: 1.5; color: #1e293b; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.jsi-note-words { margin: 0; font-size: 15px; line-height: 1.5; color: var(--float-text); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .jsi-note-btn { background: none; border: 0; padding: 6px 0; font: inherit; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; min-height: 36px; }
 .jsi-note-danger { color: #b91c1c; }
 @keyframes jsi-pop { from { transform: scale(.4); opacity: 0 } to { transform: none; opacity: 1 } }

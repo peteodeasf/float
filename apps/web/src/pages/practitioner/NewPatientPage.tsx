@@ -1,4 +1,4 @@
-import { btn } from '../../components/ui/buttons'
+import { Button, Card, Select, TextInput } from '../../components/ui/primitives'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -44,165 +44,170 @@ export default function NewPatientPage() {
     })
   }
 
+  const labelStyle = { color: 'var(--float-text)' }
+  const optionalStyle = { color: 'var(--float-text-hint)' }
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 px-8 py-4 flex items-center gap-4">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
+    <div className="min-h-screen" style={{ background: 'var(--float-bg)' }}>
+      <nav
+        className="px-8 py-4 flex items-center gap-4"
+        style={{ background: 'var(--float-surface)', borderBottom: '1px solid var(--float-border)' }}
+      >
+        <Button kind="quiet" size="sm" onClick={() => navigate('/dashboard')}>
           ← Back
-        </button>
-        <h1 className="text-xl font-semibold text-slate-800">Add patient</h1>
+        </Button>
+        <h1 className="text-xl font-semibold" style={{ color: 'var(--float-text)' }}>Add patient</h1>
       </nav>
 
       <main className="px-8 py-8 max-w-lg mx-auto">
-        <div className="bg-white rounded-xl border border-slate-200 p-8">
+        <Card style={{ padding: '32px' }}>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Full name
               </label>
-              <input
+              <TextInput
+                block
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="Jamie Smith"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Email
               </label>
-              <input
+              <TextInput
+                block
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="jamie@example.com"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Phone number
-                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
-              <input
+              <TextInput
+                block
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="(555) 123-4567"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Age
-                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
-              <input
+              <TextInput
+                block
                 type="number"
                 min="1"
                 max="99"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="14"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Gender
-                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
-              <select
+              <Select
+                block
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
               >
                 <option value="">Select...</option>
                 <option value="Female">Female</option>
                 <option value="Male">Male</option>
                 <option value="Non-binary">Non-binary</option>
                 <option value="Prefer not to say">Prefer not to say</option>
-              </select>
+              </Select>
             </div>
 
-            <div className="pt-4 border-t border-slate-200">
-              <p className="text-sm font-semibold text-slate-700">Parent / Guardian</p>
+            <div className="pt-4" style={{ borderTop: '1px solid var(--float-border)' }}>
+              <p className="text-sm font-semibold" style={labelStyle}>Parent / Guardian</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Parent / guardian name
-                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
-              <input
+              <TextInput
+                block
                 type="text"
                 value={parentName}
                 onChange={(e) => setParentName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="Sarah Smith"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Parent / guardian email
-                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
-              <input
+              <TextInput
+                block
                 type="email"
                 value={parentEmail}
                 onChange={(e) => setParentEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="parent@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Parent / guardian phone
-                <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
-              <input
+              <TextInput
+                block
                 type="text"
                 value={parentPhone}
                 onChange={(e) => setParentPhone(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 placeholder="(555) 123-4567"
               />
             </div>
 
             {error && (
-              <p className="text-red-500 text-sm">{error}</p>
+              <p className="text-sm" style={{ color: 'var(--float-danger)' }}>{error}</p>
             )}
 
             <div className="flex gap-3 pt-2">
-              <button
+              <Button
                 type="button"
+                kind="secondary"
                 onClick={() => navigate('/dashboard')}
-                style={{ ...btn('secondary', 'md'), flex: 1 }}
+                style={{ flex: 1 }}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                kind="primary"
                 disabled={mutation.isPending}
-                style={{ ...btn('primary', 'md'), flex: 1 }}
+                style={{ flex: 1 }}
               >
                 {mutation.isPending ? 'Creating...' : 'Add patient'}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       </main>
     </div>
   )

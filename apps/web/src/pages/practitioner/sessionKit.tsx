@@ -18,20 +18,20 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 // Fear scores are a fixed 1–10 scale (see docs/solutions — enforced backend + here).
 export const clampDt = (n: number) => Math.min(10, Math.max(1, Math.round(n)))
 export const dtColor = (v: number | null | undefined) =>
-  v == null ? '#cbd5e1' : v >= 7 ? '#ef6b53' : v >= 4 ? '#f2a33f' : '#4bb98a'
+  v == null ? 'var(--float-border-strong)' : v >= 7 ? '#ef6b53' : v >= 4 ? '#f2a33f' : '#4bb98a'
 export const dtOf = (v: number | string | null | undefined) => (v != null ? Number(v) : null)
 export const article = (n: number) => (n === 8 ? 'an' : 'a')
 
 // ── styles ──────────────────────────────────────────────────────
-export const screenSurface: CSSProperties = { background: 'linear-gradient(180deg,#f2fbf8,#ffffff 55%)', border: '1px solid #d7ebe5', borderRadius: 16, padding: '22px 24px' }
-export const card: CSSProperties = { background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: 22, boxShadow: '0 8px 24px rgba(13,61,58,.06)' }
+export const screenSurface: CSSProperties = { background: 'linear-gradient(180deg,#f2fbf8,#ffffff 55%)', border: '1px solid #d7ebe5', borderRadius: 'var(--float-radius-card)', padding: '22px 24px' }
+export const card: CSSProperties = { background: 'var(--float-surface)', border: '1px solid #dde8e6', borderRadius: 'var(--float-radius-card)', padding: 22, boxShadow: '0 8px 24px rgba(13,61,58,.06)' }
 // The session screens' three buttons now come from the one set (components/ui/buttons.ts) rather
 // than being their own shape and weight. Peter, 2026-09-15.
 export const primaryBtn: CSSProperties = { ...btn('primary', 'md'), marginTop: 14 }
 export const ghostBtn: CSSProperties = { ...btn('secondary', 'md'), marginTop: 14 }
-export const bigQ: CSSProperties = { fontSize: 20, fontWeight: 800, color: '#0d3d3a', lineHeight: 1.3 }
+export const bigQ: CSSProperties = { fontSize: 20, fontWeight: 800, color: 'var(--float-primary-dark)', lineHeight: 1.3 }
 export const lead: CSSProperties = { fontSize: 14, color: '#4b5a59', lineHeight: 1.5, marginTop: 6 }
-export const eyebrow: CSSProperties = { fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: '.04em', marginBottom: 4 }
+export const eyebrow: CSSProperties = { fontSize: 11, fontWeight: 800, color: 'var(--float-text-hint)', letterSpacing: '.04em', marginBottom: 4 }
 export const quietLink: CSSProperties = btn('quiet', 'sm')
 
 // Module scope, deliberately: defined inside the page it would get a new identity every render,
@@ -48,7 +48,7 @@ export function Chrome({ onExit, exitLabel = '← Exit session', children }: {
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '20px 20px 48px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <button onClick={onExit}
-            style={{ fontSize: 13, fontWeight: 700, color: '#6b7a79', background: '#fff', border: '1px solid #dbe8e5', borderRadius: 999, padding: '7px 14px', cursor: 'pointer' }}>
+            style={{ fontSize: 13, fontWeight: 700, color: '#6b7a79', background: 'var(--float-surface)', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-pill)', padding: '7px 14px', cursor: 'pointer' }}>
             {exitLabel}
           </button>
         </div>
@@ -68,10 +68,10 @@ export function FearScale({ value, onPick, height = 44, label }: { value: number
           const active = value === n
           return (
             <button key={n} onClick={() => onPick(n)} aria-pressed={active} aria-label={label ? `${label} ${n}` : undefined}
-              style={{ flex: 1, height, borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: height >= 38 ? 13.5 : 12,
-                border: active ? '2px solid #0d3d3a' : '1px solid #e2e8f0',
-                background: active ? dtColor(n) : '#fff',
-                color: active ? '#fff' : '#94a3b8' }}>
+              style={{ flex: 1, height, borderRadius: 'var(--float-radius-control)', cursor: 'pointer', fontWeight: 800, fontSize: height >= 38 ? 13.5 : 12,
+                border: active ? '2px solid var(--float-primary-dark)' : '1px solid var(--float-border)',
+                background: active ? dtColor(n) : 'var(--float-surface)',
+                color: active ? '#fff' : 'var(--float-text-hint)' }}>
               {n}
             </button>
           )
@@ -97,9 +97,9 @@ export function FearRangeScale({ lo, hi, onChange }: { lo: number | null; hi: nu
         const on = lo != null && hi != null && n >= lo && n <= hi
         return (
           <button key={n} aria-label={`Fear Level ${n}`} aria-pressed={on} onClick={() => pick(n)}
-            style={{ flex: 1, height: 36, borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: 13,
-              border: on ? '2px solid #0d3d3a' : '1px solid #e2e8f0', background: on ? '#135450' : '#fff',
-              color: on ? '#fff' : '#94a3b8' }}>
+            style={{ flex: 1, height: 36, borderRadius: 'var(--float-radius-control)', cursor: 'pointer', fontWeight: 800, fontSize: 13,
+              border: on ? '2px solid var(--float-primary-dark)' : '1px solid var(--float-border)', background: on ? 'var(--float-primary)' : 'var(--float-surface)',
+              color: on ? '#fff' : 'var(--float-text-hint)' }}>
             {n}
           </button>
         )
@@ -110,7 +110,7 @@ export function FearRangeScale({ lo, hi, onChange }: { lo: number | null; hi: nu
 
 export const DTBadge = ({ v, size = 26 }: { v: number | null; size?: number }) => (
   v == null ? null : (
-    <span style={{ minWidth: size, height: size, padding: `0 ${Math.round(size / 3.2)}px`, borderRadius: 999, color: '#fff', fontWeight: 800, fontSize: Math.round(size * 0.46), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: dtColor(v), flexShrink: 0 }}>{v}</span>
+    <span style={{ minWidth: size, height: size, padding: `0 ${Math.round(size / 3.2)}px`, borderRadius: 'var(--float-radius-pill)', color: '#fff', fontWeight: 800, fontSize: Math.round(size * 0.46), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: dtColor(v), flexShrink: 0 }}>{v}</span>
   )
 )
 
@@ -127,12 +127,12 @@ export function Context({ text, dt, quiet }: { text: string; dt?: number | null;
       // away for visual hierarchy. Same type size, same colour; only the panel differs.
       background: quiet ? 'transparent' : '#e8f7f1',
       border: quiet ? 'none' : '1px solid #cdeee2',
-      borderLeft: '4px solid #135450',
-      borderRadius: quiet ? 0 : 12,
+      borderLeft: '4px solid var(--float-primary)',
+      borderRadius: quiet ? 0 : 'var(--float-radius-card)',
       padding: quiet ? '1px 0 1px 12px' : '13px 16px',
       marginBottom: quiet ? 16 : 18,
     }}>
-      <span style={{ fontSize: 19, fontWeight: 800, color: '#0d3d3a', minWidth: 0, lineHeight: 1.25 }}>{text}</span>
+      <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--float-primary-dark)', minWidth: 0, lineHeight: 1.25 }}>{text}</span>
       {dt != null && <DTBadge v={dt} size={quiet ? 30 : 34} />}
     </div>
   )
@@ -175,7 +175,7 @@ export function Exchange({ q, a, onReopen, onRename, onRemove }: {
             if (e.key === 'Enter') commit()
             if (e.key === 'Escape') { setDraft(a); setEditing(false) }
           }}
-          style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: '#3d5451', padding: '3px 6px', border: '1px solid #cfe3de', borderRadius: 6, background: '#fff' }}
+          style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: '#3d5451', padding: '3px 6px', border: '1px solid #cfe3de', borderRadius: 'var(--float-radius-control)', background: 'var(--float-surface)' }}
         />
       </div>
     )
@@ -219,9 +219,9 @@ export function SayIt({ value, onChange, onSend, placeholder, pending }: {
       <input autoFocus value={value} onChange={e => onChange(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter' && value.trim()) onSend() }}
         placeholder={placeholder}
-        style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 12, padding: '12px 14px', fontSize: 14.5, minWidth: 0, background: '#fff' }} />
+        style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '12px 14px', fontSize: 14.5, minWidth: 0, background: 'var(--float-surface)' }} />
       <button onClick={onSend} disabled={!value.trim() || pending} aria-label="Send"
-        style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, border: 'none', background: '#135450', color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', opacity: !value.trim() ? 0.35 : 1 }}>→</button>
+        style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, border: 'none', background: 'var(--float-primary)', color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', opacity: !value.trim() ? 0.35 : 1 }}>→</button>
     </div>
   )
 }
@@ -269,9 +269,9 @@ export function SessionProgress({
                 style={{
                   fontSize: 11.5,
                   fontWeight: now ? 800 : 600,
-                  color: now ? '#0d3d3a' : done ? '#6b9a90' : '#b3c4c1',
+                  color: now ? 'var(--float-primary-dark)' : done ? '#6b9a90' : '#b3c4c1',
                   padding: '3px 9px',
-                  borderRadius: 999,
+                  borderRadius: 'var(--float-radius-pill)',
                   background: now ? '#dff3ed' : 'transparent',
                   whiteSpace: 'nowrap',
                 }}

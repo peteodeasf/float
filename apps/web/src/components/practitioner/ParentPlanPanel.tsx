@@ -27,7 +27,7 @@ const num = (v: string): number | null => {
  *  focus was: the parent's home card and weekly check-in follow it. More than one can be.
  *  docs/plans/parent-accommodations-like-the-ladder.md */
 const STATES: { key: AccommodationState; label: string; hint: string; color: string; bg: string }[] = [
-  { key: 'not_started', label: 'Not started', hint: 'Not being worked on yet.', color: '#64748b', bg: '#f1f5f9' },
+  { key: 'not_started', label: 'Not started', hint: 'Not being worked on yet.', color: 'var(--float-text-secondary)', bg: 'var(--float-surface-sunken)' },
   { key: 'started', label: 'Working on it', hint: 'On the parent’s home screen, with a weekly check-in.', color: '#92400e', bg: '#fffbeb' },
   { key: 'stopped', label: 'Stopped', hint: 'The parent doesn’t do this any more.', color: '#166534', bg: '#f0fdf4' },
 ]
@@ -95,16 +95,16 @@ export default function ParentPlanPanel({
   const finish = () => { setEditing(false); setFullScreen(false) }
 
   const panelStyle: React.CSSProperties = {
-    background: '#ffffff',
-    borderRadius: '12px',
-    border: '1px solid #cbd5e1',
+    background: 'var(--float-surface)',
+    borderRadius: 'var(--float-radius-card)',
+    border: '1px solid var(--float-border-strong)',
     boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
     overflow: 'hidden',
     width: '100%',
     boxSizing: 'border-box',
   }
   const quietBtn: React.CSSProperties = {
-    fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', background: '#fff',
+    fontSize: '12px', fontWeight: 600, color: 'var(--float-primary)', background: 'var(--float-surface)',
     border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-sm)', padding: '7px 12px', cursor: 'pointer',
   }
   const primary: React.CSSProperties = {
@@ -185,8 +185,8 @@ export default function ParentPlanPanel({
       {editing && fullScreen && createPortal(
         <div role="dialog" aria-modal="true" aria-label="Build the parent plan" style={{ position: 'fixed', inset: 0, zIndex: 900, overflowY: 'auto' }}>
           <Chrome onExit={() => setFullScreen(false)} exitLabel="⛶ Exit full screen">
-            <div style={{ background: '#fff', border: '1px solid #dde8e6', borderRadius: 18, padding: '20px 22px' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#0d3d3a', marginBottom: 12 }}>Parent Accommodations</div>
+            <div style={{ background: 'var(--float-surface)', border: '1px solid #dde8e6', borderRadius: 18, padding: '20px 22px' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--float-primary-dark)', marginBottom: 12 }}>Parent Accommodations</div>
               {editor}
             </div>
           </Chrome>
@@ -308,9 +308,9 @@ function AddAccommodation({ planId, patientId, triggers, onAdded }: {
               const fromApp = !!item.named_by_parent || item.sources.includes('parent')
               const parentThinks = rangeLabel(item.parent_estimate_min, item.parent_estimate_max)
               return (
-                <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid #cfe0db', borderRadius: '999px', overflow: 'hidden' }}>
+                <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', overflow: 'hidden' }}>
                   <button onClick={() => takeMut.mutate(item.id)} disabled={takeMut.isPending}
-                    style={{ fontSize: '13px', fontWeight: 600, color: '#135450', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
+                    style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-primary)', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
                     + {item.name}
                     <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
                       {item.evidence_count > 0 && ` · ${item.evidence_count} ${item.evidence_count === 1 ? 'entry' : 'entries'}`}
@@ -416,20 +416,20 @@ function AccommodationRow({ accommodation: a, triggers, editing, onSave, onDelet
         <input value={scoreDraft} autoFocus onChange={e => setScoreDraft(e.target.value)} onBlur={saveScore}
           onKeyDown={e => { if (e.key === 'Enter') saveScore(); if (e.key === 'Escape') setEditingScore(false) }}
           title="Type 6, or 6-8 for a range" aria-label={`Fear Level for “${a.name}”`}
-          style={{ flex: 'none', width: '58px', textAlign: 'center', fontSize: '13px', fontWeight: 600, padding: '3px 6px', border: '1px solid var(--float-primary)', borderRadius: '999px' }} />
+          style={{ flex: 'none', width: '58px', textAlign: 'center', fontSize: '13px', fontWeight: 600, padding: '3px 6px', border: '1px solid var(--float-primary)', borderRadius: 'var(--float-radius-pill)' }} />
       ) : editing ? (
         <button onClick={() => { setScoreDraft(score === '—' ? '' : score); setEditingScore(true) }}
           title="Child's Fear Level if the parent stops. Click to change."
-          style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', border: 'none', borderRadius: '999px', padding: '3px 10px', cursor: 'text' }}>
+          style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', border: 'none', borderRadius: 'var(--float-radius-pill)', padding: '3px 10px', cursor: 'text' }}>
           {score}
         </button>
       ) : (
         <span title="Child's Fear Level if the parent stops"
-          style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', borderRadius: '999px', padding: '3px 10px' }}>
+          style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', borderRadius: 'var(--float-radius-pill)', padding: '3px 10px' }}>
           {score}
         </span>
       )}
-      <span style={{ flex: 'none', width: '98px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: state.color, background: state.bg, borderRadius: '999px', padding: '3px 6px' }}>
+      <span style={{ flex: 'none', width: '98px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: state.color, background: state.bg, borderRadius: 'var(--float-radius-pill)', padding: '3px 6px' }}>
         {state.label}
       </span>
       <button onClick={() => { setPicked(a.status); setPlanning(true) }} title="Where the parent is with stopping this"

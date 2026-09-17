@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import FloatLogo from '../../components/ui/FloatLogo'
-import { btn } from '../../components/ui/buttons'
-import { ERROR_BOX, Field, INPUT, SECTION_NOTE, errorMessage } from '../../components/ui/form'
+import { Button, Banner } from '../../components/ui/primitives'
+import { Field, INPUT, SECTION_NOTE, errorMessage } from '../../components/ui/form'
 import { useAuth } from '../../context/AuthContext'
 import {
   acceptAgreements, getAgreements, getSetupState, saveSetupDetails, saveSetupPractice,
@@ -43,11 +43,11 @@ export default function SetupStepsPage() {
       }}>
         <div className="flex items-center justify-between" style={{ marginBottom: '28px' }}>
           <FloatLogo size="md" />
-          <button onClick={logout} style={btn('quiet', 'sm')}>Sign out</button>
+          <Button kind="quiet" size="sm" onClick={logout}>Sign out</Button>
         </div>
 
         {isLoading && <p style={SECTION_NOTE}>Loading…</p>}
-        {isError && <div style={ERROR_BOX}>Could not load your setup. Try reloading the page.</div>}
+        {isError && <Banner tone="danger" style={{ marginTop: '14px' }}>Could not load your setup. Try reloading the page.</Banner>}
 
         {state && step && (
           <>
@@ -76,9 +76,9 @@ function StepFooter({ label, pending, disabled, onClick }: {
 }) {
   return (
     <div style={{ marginTop: '24px' }}>
-      <button onClick={onClick} disabled={disabled || pending} style={btn('primary', 'md')}>
+      <Button kind="primary" onClick={onClick} disabled={disabled || pending}>
         {pending ? 'Saving…' : label}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -103,7 +103,7 @@ function DetailsStep({ state, onSaved }: StepProps) {
           ? 'Your name is shown to the clinicians in your practice.'
           : 'Your name and credentials appear on your patients’ records.'}
       </p>
-      {save.isError && <div style={ERROR_BOX}>{errorMessage(save.error, 'Could not save your details.')}</div>}
+      {save.isError && <Banner tone="danger" style={{ marginTop: '14px' }}>{errorMessage(save.error, 'Could not save your details.')}</Banner>}
       <div style={{ display: 'grid', gap: '14px', marginTop: '20px' }}>
         <Field label="Name">
           <input value={name} onChange={e => setName(e.target.value)} style={INPUT} autoFocus />
@@ -117,7 +117,7 @@ function DetailsStep({ state, onSaved }: StepProps) {
           <input value={phone} onChange={e => setPhone(e.target.value)} style={INPUT} />
         </Field>
         <Field label="Email" hint="This is how you sign in.">
-          <input value={state.email} readOnly style={{ ...INPUT, background: '#f1f5f9', color: '#64748b' }} />
+          <input value={state.email} readOnly style={{ ...INPUT, background: 'var(--float-surface-sunken)', color: 'var(--float-text-secondary)' }} />
         </Field>
       </div>
       <StepFooter label="Continue" pending={save.isPending} disabled={!name.trim()} onClick={() => save.mutate()} />
@@ -138,7 +138,7 @@ function PracticeStep({ state, onSaved }: StepProps) {
     <>
       <h1 style={TITLE}>Your practice</h1>
       <p style={SECTION_NOTE}>You can invite the other people in your practice once setup is finished.</p>
-      {save.isError && <div style={ERROR_BOX}>{errorMessage(save.error, 'Could not save the practice details.')}</div>}
+      {save.isError && <Banner tone="danger" style={{ marginTop: '14px' }}>{errorMessage(save.error, 'Could not save the practice details.')}</Banner>}
       <div style={{ display: 'grid', gap: '14px', marginTop: '20px' }}>
         <Field label="Practice name">
           <input value={name} onChange={e => setName(e.target.value)} style={INPUT} autoFocus />
@@ -177,7 +177,7 @@ function AgreementsStep({ state, onSaved }: StepProps) {
           ? 'Your practice has to accept the Business Associate Agreement (BAA) before any patient information is added. You accept it once, for the whole practice.'
           : 'Please read and accept the terms of use.'}
       </p>
-      {save.isError && <div style={ERROR_BOX}>{errorMessage(save.error, 'Could not save.')}</div>}
+      {save.isError && <Banner tone="danger" style={{ marginTop: '14px' }}>{errorMessage(save.error, 'Could not save.')}</Banner>}
       {isLoading && <p style={SECTION_NOTE}>Loading…</p>}
 
       <div style={{ display: 'grid', gap: '18px', marginTop: '20px' }}>
@@ -186,8 +186,8 @@ function AgreementsStep({ state, onSaved }: StepProps) {
             <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 8px' }}>{d.title}</p>
             <div style={{
               maxHeight: '180px', overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: '13px', lineHeight: 1.6,
-              color: 'var(--float-text-secondary)', border: '1px solid var(--float-border)', borderRadius: '8px',
-              padding: '12px 14px', background: '#f8fafc',
+              color: 'var(--float-text-secondary)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)',
+              padding: '12px 14px', background: 'var(--float-surface-muted)',
             }}>
               {d.body}
             </div>

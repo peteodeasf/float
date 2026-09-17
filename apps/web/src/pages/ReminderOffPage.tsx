@@ -20,9 +20,9 @@ export default function ReminderOffPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#eef4f3', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{ background: '#fff', border: '1px solid #dde8e6', borderRadius: 16, padding: '28px 26px', maxWidth: 420, width: '100%', textAlign: 'center' }}>
+      <div style={{ background: 'var(--float-surface)', border: '1px solid #dde8e6', borderRadius: 16, padding: '28px 26px', maxWidth: 420, width: '100%', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}><FloatLogo /></div>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0d3d3a', margin: '0 0 10px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--float-primary-dark)', margin: '0 0 10px' }}>
           {state === 'working' ? 'Turning off reminder emails…' : state === 'done' ? 'Reminder emails are off' : "This link didn't work"}
         </h1>
         <p style={{ fontSize: 14.5, color: '#4b5a59', lineHeight: 1.55, margin: 0 }}>
