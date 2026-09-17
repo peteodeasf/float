@@ -54,7 +54,7 @@ function RecordingRow({ r, onRetry, onDiscard, busy }: { r: SessionRecording; on
     : 'Being written up. The draft note will appear here.'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: 'var(--float-radius-sm)', fontSize: '12px',
-      background: failed ? '#fef2f2' : 'var(--float-primary-light)', color: failed ? '#991b1b' : 'var(--float-primary-dark)' }}>
+      background: failed ? 'var(--float-danger-bg)' : 'var(--float-primary-light)', color: failed ? 'var(--float-danger)' : 'var(--float-primary-dark)' }}>
       <span aria-hidden="true" style={{ width: '8px', height: '8px', borderRadius: '50%', flex: 'none', background: failed ? 'var(--float-danger)' : 'var(--float-primary)' }} />
       <span style={{ flex: 1, minWidth: 0 }}><strong>Recording · {when}</strong> — {text}</span>
       {failed && <button onClick={onRetry} disabled={busy} style={tryAgainBtn}>Try again</button>}
@@ -123,7 +123,7 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '420px', overflowY: 'auto' }}>
             {(note.transcript ?? []).map((t, i) => (
-              <p key={i} style={{ margin: 0, fontSize: '12.5px', lineHeight: 1.5, color: '#334155' }}>
+              <p key={i} style={{ margin: 0, fontSize: '12.5px', lineHeight: 1.5, color: 'var(--float-text)' }}>
                 <strong style={{ color: 'var(--float-primary-dark)' }}>{names[t.speaker] ?? t.speaker}:</strong> {t.text}
               </p>
             ))}

@@ -142,7 +142,7 @@ export default function ClinicianAccessPanel({
 
               {!canManage ? null : confirmingRemove === g.practitioner_id ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  <span style={{ fontSize: '11px', color: '#991b1b' }}>Remove {g.practitioner_name}?</span>
+                  <span style={{ fontSize: '11px', color: 'var(--float-danger)' }}>Remove {g.practitioner_name}?</span>
                   <button
                     onClick={() => revokeMut.mutate(g.practitioner_id)}
                     disabled={busy}
@@ -155,7 +155,7 @@ export default function ClinicianAccessPanel({
                 </div>
               ) : confirmingOwner === g.practitioner_id ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  <span style={{ fontSize: '11px', color: '#475569' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--float-text-secondary)' }}>
                     Make {g.practitioner_name} this patient&rsquo;s clinician?
                   </span>
                   <button
@@ -230,7 +230,7 @@ export default function ClinicianAccessPanel({
           {/* Say which of the three it is. A failed request must not read as "nobody left to add" —
               that is a wrong answer wearing the same words as a right one. */}
           {colleaguesFailed ? (
-            <span style={{ fontSize: '11px', color: '#991b1b' }}>Could not load who works here.</span>
+            <span style={{ fontSize: '11px', color: 'var(--float-danger)' }}>Could not load who works here.</span>
           ) : loadingColleagues ? (
             <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>Loading…</span>
           ) : canBeAdded.length === 0 ? (

@@ -304,12 +304,12 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
 
       {/* Flags */}
       {openFlags.length > 0 && (
-        <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', marginBottom: '10px' }}>
-          <p style={{ fontSize: '11px', fontWeight: '600', color: '#92400e', margin: '0 0 6px' }}>
+        <div style={{ background: 'var(--float-warning-bg)', border: '1px solid var(--float-warning-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', marginBottom: '10px' }}>
+          <p style={{ fontSize: '11px', fontWeight: '600', color: 'var(--float-warning)', margin: '0 0 6px' }}>
             &#9888; {openFlags.length} item{openFlags.length === 1 ? '' : 's'} need{openFlags.length === 1 ? 's' : ''} attention
           </p>
           {openFlags.map((f: any) => (
-            <p key={f.id} style={{ fontSize: '12px', color: '#78350f', lineHeight: '1.4', margin: '0 0 4px' }}>
+            <p key={f.id} style={{ fontSize: '12px', color: 'var(--float-warning)', lineHeight: '1.4', margin: '0 0 4px' }}>
               {f.description || f.flag_type.replace(/_/g, ' ')}
             </p>
           ))}
@@ -322,7 +322,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
       <div style={{ background: '#f7faf9', border: '1px solid #e6eeec', borderRadius: 'var(--float-radius-card)', padding: '14px 14px 12px', marginBottom: '12px' }}>
         <div style={{ position: 'relative', paddingLeft: '30px' }}>
         {topRungs.length > 0 && (
-          <div style={{ position: 'absolute', left: '10px', top: '12px', bottom: '12px', width: '2px', background: 'linear-gradient(#4bb98a, #f2a33f 55%, #ef6b53)' }} />
+          <div style={{ position: 'absolute', left: '10px', top: '12px', bottom: '12px', width: '2px', background: 'linear-gradient(var(--float-fear-low), var(--float-fear-mid) 55%, var(--float-fear-high))' }} />
         )}
         {topRungs.map((b, i) => (
           <div key={b.id} style={{ position: 'relative', marginBottom: '5px' }}>
@@ -341,7 +341,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   </div>
                 </div>
                 <div style={{ marginBottom: '8px' }}>
-                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
+                  <label style={{ fontSize: '11px', color: 'var(--float-text-secondary)', display: 'block', marginBottom: '4px' }}>Fear level when refraining (1-10)</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     <button type="button" onClick={() => setEditDT(String(Math.max(1, (Number(editDT) || 1) - 1)))} style={iconBtn('sm')}>&minus;</button>
                     <input value={editDT} onChange={e => setEditDT(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
@@ -355,15 +355,15 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
               </div>
             ) : deletingBehaviorId === b.id ? (
               /* Delete confirmation */
-              <div style={{ background: '#fef2f2', borderRadius: 'var(--float-radius-card)', padding: '8px 10px' }}>
+              <div style={{ background: 'var(--float-danger-bg)', borderRadius: 'var(--float-radius-card)', padding: '8px 10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this behavior{sortedBehaviors.some(c => c.parent_behavior_id === b.id) ? ' and its smaller steps' : ''}?</span>
+                  <span style={{ fontSize: '12px', color: 'var(--float-danger)' }}>Delete this behavior{sortedBehaviors.some(c => c.parent_behavior_id === b.id) ? ' and its smaller steps' : ''}?</span>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button onClick={() => delMut.mutate(b.id)} disabled={delMut.isPending} style={btn('danger', 'sm')}>{delMut.isPending ? 'Deleting…' : 'Yes, delete'}</button>
                     <button onClick={() => { setDeletingBehaviorId(null); setDelError(null) }} style={btn('quiet', 'sm')}>Cancel</button>
                   </div>
                 </div>
-                {delError && <p style={{ fontSize: '11px', color: '#b91c1c', margin: '6px 0 0' }}>{delError}</p>}
+                {delError && <p style={{ fontSize: '11px', color: 'var(--float-danger)', margin: '6px 0 0' }}>{delError}</p>}
               </div>
             ) : (
               <>
@@ -413,11 +413,11 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   <div style={{ position: 'relative', marginTop: '5px' }}>
                     <div style={{ position: 'absolute', left: '-25px', top: '15px', width: '12px', height: '12px', borderRadius: '50%', background: '#fff', border: '2px solid var(--float-border-strong)', zIndex: 2 }} />
                     <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', border: '1px solid var(--float-border)' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Smaller step under &ldquo;{b.name}&rdquo;</div>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', marginBottom: '6px' }}>Smaller step under &ldquo;{b.name}&rdquo;</div>
                       <input value={subName} onChange={e => setSubName(e.target.value)} placeholder="More specific, easier version" className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '8px' }} autoFocus
                         onKeyDown={e => e.key === 'Enter' && subName.trim() && subMut.mutate(b)} />
                       <div style={{ marginBottom: '8px' }}>
-                        <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear level (lower than {b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : '—'})</label>
+                        <label style={{ fontSize: '11px', color: 'var(--float-text-secondary)', display: 'block', marginBottom: '4px' }}>Fear level (lower than {b.distress_thermometer_when_refraining != null ? Number(b.distress_thermometer_when_refraining) : '—'})</label>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <button type="button" onClick={() => setSubDt(String(Math.max(1, (Number(subDt) || 1) - 1)))} style={iconBtn('sm')}>&minus;</button>
                           <input value={subDt} onChange={e => setSubDt(clampDtInput(e.target.value))} type="number" min="1" max="10" className="text-sm border border-slate-200 rounded" style={{ width: '80px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
@@ -458,13 +458,13 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                 <Button kind="secondary" size="sm" onClick={() => { const rung = topRungs.find(x => x.id === effectiveRungId); if (rung) startPlanning(rung) }}
                   disabled={!effectiveRungId}>&#9656; Plan an experiment</Button>
                 {expSavedFor && (
-                  <span style={{ fontSize: '12px', color: '#16a34a', marginLeft: 'auto' }}>&#10003; Experiment planned for {fmtDate(expSavedFor.date + 'T00:00:00')}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--float-success)', marginLeft: 'auto' }}>&#10003; Experiment planned for {fmtDate(expSavedFor.date + 'T00:00:00')}</span>
                 )}
               </div>
             ) : planningBehavior && (
               <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #dbe6e3' }}>
                 <div style={{ background: '#fff', borderRadius: 'var(--float-radius-card)', padding: '12px', border: '1px solid #dbe6e3' }}>
-                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '0 0 9px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', margin: '0 0 9px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     Plan experiment for
                     <select value={planningBehaviorId ?? ''} onChange={e => { setSelectedRungId(e.target.value); const rung = topRungs.find(x => x.id === e.target.value); if (rung) startPlanning(rung) }}
                       style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--float-primary-dark)', border: '1px solid #bfe9dc', background: '#fff', borderRadius: 'var(--float-radius-control)', padding: '4px 6px', maxWidth: '230px', cursor: 'pointer' }}>
@@ -496,16 +496,16 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                     <input type="date" value={expDate} onChange={e => setExpDate(e.target.value)} className="text-sm border border-slate-200 rounded" style={{ padding: '6px 8px' }} />
                   </div>
                   {expWarning && (
-                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', marginBottom: '10px' }}>
-                      <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px', lineHeight: '1.4' }}>
+                    <div style={{ background: 'var(--float-warning-bg)', border: '1px solid var(--float-warning-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', marginBottom: '10px' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--float-warning)', margin: '0 0 8px', lineHeight: '1.4' }}>
                         &#9888; Confidence is {expConfidence === 'low' ? 'Low' : 'Medium'} &mdash; consider simplifying this experiment before the teen attempts it.
                       </p>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button onClick={() => planExpMut.mutate({ behaviorId: planningBehavior.id, force: true })} disabled={planExpMut.isPending}
                           className="text-[11px] font-medium border-none cursor-pointer disabled:opacity-50"
-                          style={{ background: '#d97706', color: '#fff', padding: '5px 10px', borderRadius: 'var(--float-radius-control)' }}>Save anyway</button>
+                          style={{ background: 'var(--float-warning)', color: '#fff', padding: '5px 10px', borderRadius: 'var(--float-radius-control)' }}>Save anyway</button>
                         <button onClick={() => { setPlanningBehaviorId(null); setExpWarning(false) }}
-                          className="text-[11px] bg-white cursor-pointer" style={{ border: '1px solid #fde68a', color: '#78350f', padding: '5px 10px', borderRadius: 'var(--float-radius-control)' }}>Cancel</button>
+                          className="text-[11px] bg-white cursor-pointer" style={{ border: '1px solid var(--float-warning-border)', color: 'var(--float-warning)', padding: '5px 10px', borderRadius: 'var(--float-radius-control)' }}>Cancel</button>
                       </div>
                     </div>
                   )}
@@ -546,7 +546,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
               <div style={{ position: 'absolute', top: '34px', left: 0, right: 0, zIndex: 30, background: '#fff', border: '1px solid var(--float-border-strong)', borderRadius: 'var(--float-radius-card)', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', maxHeight: '160px', overflowY: 'auto' }}>
                 {behSuggestions!.map(s => (
                   <button key={s.id} type="button" onClick={() => { setName(s.name); if (s.behavior_type) setType(s.behavior_type); setBehaviorLibraryId(s.id); setShowBehSuggest(false) }}
-                    className="cursor-pointer" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f1f5f9', padding: '7px 10px', fontSize: '13px', color: '#334155' }}>
+                    className="cursor-pointer" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid #f1f5f9', padding: '7px 10px', fontSize: '13px', color: 'var(--float-text)' }}>
                     {s.name}{s.behavior_type ? <span style={{ color: 'var(--float-text-hint)', fontSize: '11px' }}> · {s.behavior_type}</span> : null}
                   </button>
                 ))}
@@ -577,7 +577,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
             </div>
           </div>
           <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--float-text-secondary)', display: 'block', marginBottom: '4px' }}>
               {type === BEHAVIOR_TYPE_SCENARIO ? 'Fear Level (1–10)' : 'Fear Level when refraining (1–10)'}
             </label>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>

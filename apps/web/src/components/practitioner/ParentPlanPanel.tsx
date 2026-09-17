@@ -28,8 +28,8 @@ const num = (v: string): number | null => {
  *  docs/plans/parent-accommodations-like-the-ladder.md */
 const STATES: { key: AccommodationState; label: string; hint: string; color: string; bg: string }[] = [
   { key: 'not_started', label: 'Not started', hint: 'Not being worked on yet.', color: 'var(--float-text-secondary)', bg: 'var(--float-surface-sunken)' },
-  { key: 'started', label: 'Working on it', hint: 'On the parent’s home screen, with a weekly check-in.', color: '#92400e', bg: '#fffbeb' },
-  { key: 'stopped', label: 'Stopped', hint: 'The parent doesn’t do this any more.', color: '#166534', bg: '#f0fdf4' },
+  { key: 'started', label: 'Working on it', hint: 'On the parent’s home screen, with a weekly check-in.', color: 'var(--float-warning)', bg: 'var(--float-warning-bg)' },
+  { key: 'stopped', label: 'Stopped', hint: 'The parent doesn’t do this any more.', color: 'var(--float-success)', bg: 'var(--float-success-bg)' },
 ]
 
 /** "5" for a single value, "5–9" for a range, null when there is none. */

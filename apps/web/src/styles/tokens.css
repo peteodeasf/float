@@ -96,6 +96,28 @@
 
   /* One transition timing for hovers and small state changes. */
   --float-transition: 150ms ease;
+
+  /* Status tints — the pale background and border behind a success / warning / danger message. The
+     text colour is the matching --float-success/-warning/-danger above. Named from the values the
+     app already uses so error and note boxes stop carrying their own hex. */
+  --float-success-bg: #ecfdf5;
+  --float-success-border: #a7f3d0;
+  --float-warning-bg: #fffbeb;
+  --float-warning-border: #fde68a;
+  --float-danger-bg: #fef2f2;
+  --float-danger-border: #fecaca;
+
+  /* Fear-level (distress thermometer) scale — one defined set for how a fear rating is coloured,
+     low to high. Clinically meaningful, so it lives here rather than being retyped per screen. */
+  --float-fear-low: #4bb98a;
+  --float-fear-mid: #f2a33f;
+  --float-fear-high: #ef6b53;
+
+  /* Purple accent — used to tell the child apart from the parent in the session notes (parent uses
+     the brand teal, child uses this). */
+  --float-accent-purple: #7f77dd;
+  --float-accent-purple-bg: #ede9fe;
+  --float-accent-purple-text: #5b21b6;
 }
 
 /* Every button in the app fades the same way when it cannot be used, and shows the same ring when

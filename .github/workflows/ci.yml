@@ -82,6 +82,11 @@ jobs:
         working-directory: apps/web
         run: npm test
 
+      - name: Design-token guard
+        working-directory: apps/web
+        # Fails if a clinician/admin screen hand-sets a colour instead of using a token.
+        run: npm run check:tokens
+
       - name: Build
         working-directory: apps/web
         run: npx vite build

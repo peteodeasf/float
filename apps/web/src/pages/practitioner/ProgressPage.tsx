@@ -6,6 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine
 } from 'recharts'
+import { CHART } from '../../styles/chartColors'
 import { getPatient } from '../../api/patients'
 import { getPatientProgress } from '../../api/patients'
 
@@ -107,16 +108,16 @@ export default function ProgressPage() {
             </p>
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  tick={{ fontSize: 12, fill: CHART.axis }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 100]}
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  tick={{ fontSize: 12, fill: CHART.axis }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={v => `${v}%`}
@@ -136,21 +137,21 @@ export default function ProgressPage() {
                   formatter={(value) => value === 'bip_before' ? 'Before' : 'After'}
                   wrapperStyle={{ fontSize: '12px' }}
                 />
-                <ReferenceLine y={50} stroke="#e2e8f0" strokeDasharray="4 4" />
+                <ReferenceLine y={50} stroke={CHART.grid} strokeDasharray="4 4" />
                 <Line
                   type="monotone"
                   dataKey="bip_before"
-                  stroke="#94a3b8"
+                  stroke={CHART.axis}
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#94a3b8' }}
+                  dot={{ r: 4, fill: CHART.axis }}
                   strokeDasharray="4 4"
                 />
                 <Line
                   type="monotone"
                   dataKey="bip_after"
-                  stroke="#135450"
+                  stroke={CHART.primary}
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#135450' }}
+                  dot={{ r: 4, fill: CHART.primary }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -168,16 +169,16 @@ export default function ProgressPage() {
             </p>
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  tick={{ fontSize: 12, fill: CHART.axis }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 10]}
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  tick={{ fontSize: 12, fill: CHART.axis }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -199,17 +200,17 @@ export default function ProgressPage() {
                 <Line
                   type="monotone"
                   dataKey="dt_expected"
-                  stroke="#94a3b8"
+                  stroke={CHART.axis}
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#94a3b8' }}
+                  dot={{ r: 4, fill: CHART.axis }}
                   strokeDasharray="4 4"
                 />
                 <Line
                   type="monotone"
                   dataKey="dt_actual"
-                  stroke="#16a34a"
+                  stroke={CHART.positive}
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#16a34a' }}
+                  dot={{ r: 4, fill: CHART.positive }}
                 />
               </LineChart>
             </ResponsiveContainer>

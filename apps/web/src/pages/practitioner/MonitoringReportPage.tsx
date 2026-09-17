@@ -99,7 +99,7 @@ export default function MonitoringReportPage() {
             </thead>
             <tbody>
               {report.entries.map((entry) => (
-                <tr key={entry.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={entry.id} style={{ borderBottom: '1px solid var(--float-surface-sunken)' }}>
                   <td className="py-3 px-3" style={{ whiteSpace: 'nowrap', color: 'var(--float-text-secondary)' }}>
                     {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </td>

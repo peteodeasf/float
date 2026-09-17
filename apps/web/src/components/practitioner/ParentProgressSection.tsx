@@ -116,8 +116,8 @@ function ExperimentLine({ e }: { e: ParentExperiment }) {
   const planned = e.status === 'planned'
   const outcome = planned ? 'Planned' : e.did_it ? DID_IT_LABEL[e.did_it] : 'Recorded'
   const tone = planned
-    ? { bg: 'var(--float-surface-sunken)', fg: '#475569' }
-    : e.did_it === 'not_this_time' ? { bg: '#fef2f2', fg: '#b91c1c' } : { bg: '#f0fdf4', fg: '#166534' }
+    ? { bg: 'var(--float-surface-sunken)', fg: 'var(--float-text-secondary)' }
+    : e.did_it === 'not_this_time' ? { bg: 'var(--float-danger-bg)', fg: 'var(--float-danger)' } : { bg: 'var(--float-success-bg)', fg: 'var(--float-success)' }
   const numbers = !planned && e.did_it !== 'not_this_time'
     ? `Upset: expected ${Math.round(e.expected_fear)}, was ${e.actual_fear != null ? Math.round(e.actual_fear) : '—'} · belief ${Math.round(e.belief_before)}% → ${e.belief_after != null ? `${Math.round(e.belief_after)}%` : '—'}`
     : null

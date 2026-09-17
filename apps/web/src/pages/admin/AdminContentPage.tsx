@@ -432,8 +432,8 @@ export default function AdminContentPage() {
                                   fontWeight: 600,
                                   padding: '3px 8px',
                                   borderRadius: 'var(--float-radius-pill)',
-                                  background: '#eef2ff',
-                                  color: '#4338ca',
+                                  background: 'var(--float-accent-purple-bg)',
+                                  color: 'var(--float-accent-purple-text)',
                                 }}
                               >
                                 {tagLabel(id)}

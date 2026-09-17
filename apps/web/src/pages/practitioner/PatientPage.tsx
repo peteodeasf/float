@@ -6,6 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
+import { CHART } from '../../styles/chartColors'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanNickname, updateTrigger, deleteTrigger,
@@ -68,7 +69,7 @@ function ReportSection({ label, items }: { label: string; items: string[] }) {
       <div style={reportSectionHeaderStyle}>{label}</div>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {items.map((it, i) => (
-          <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>
+          <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}>
             <span style={{ color: 'var(--float-primary)', flexShrink: 0 }}>·</span>
             <span>{it}</span>
           </li>
@@ -338,7 +339,7 @@ function trendArrow(seq: number[]): { symbol: string; color: string } {
   if (seq.length < 2) return { symbol: '', color: '' }
   const first = seq[0]
   const last = seq[seq.length - 1]
-  if (last < first) return { symbol: '↓', color: '#16a34a' }
+  if (last < first) return { symbol: '↓', color: 'var(--float-success)' }
   if (last > first) return { symbol: '↑', color: 'var(--float-danger)' }
   return { symbol: '→', color: 'var(--float-text-hint)' }
 }
@@ -448,7 +449,7 @@ function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, 
                 style={{ accentColor: 'var(--float-primary)', width: '15px', height: '15px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: '12.5px', lineHeight: 1.4, color: isChecked ? 'var(--float-text-hint)' : '#334155' }}>{item.text}</span>
+                <span style={{ display: 'block', fontSize: '12.5px', lineHeight: 1.4, color: isChecked ? 'var(--float-text-hint)' : 'var(--float-text)' }}>{item.text}</span>
                 {item.link && (
                   <div style={{ position: 'relative', marginTop: '3px' }}>
                     <button
@@ -1153,8 +1154,8 @@ export default function PatientPage() {
     return first || (pt === 'patient' ? 'Patient' : 'Parent')
   }
   const participantChipColors = (pt: SessionParticipant) => pt === 'parent'
-    ? { bg: 'var(--float-primary-light)', text: 'var(--float-primary-dark)', avatar: '#1d9e75' }
-    : { bg: '#ede9fe', text: '#5b21b6', avatar: '#7f77dd' }
+    ? { bg: 'var(--float-primary-light)', text: 'var(--float-primary-dark)', avatar: 'var(--float-primary)' }
+    : { bg: 'var(--float-accent-purple-bg)', text: 'var(--float-accent-purple-text)', avatar: 'var(--float-accent-purple)' }
 
   const sessionNotesList = (
     <div style={cardStyle}>
@@ -1263,13 +1264,13 @@ export default function PatientPage() {
                         </span>
                       )
                     })}
-                    {n.is_draft && <span className="px-1 py-0.5 rounded" style={{ fontSize: '11px', background: '#fff4d6', color: '#8a5a00', fontWeight: 700 }}>Draft · from a recording</span>}
+                    {n.is_draft && <span className="px-1 py-0.5 rounded" style={{ fontSize: '11px', background: 'var(--float-warning-bg)', color: 'var(--float-warning)', fontWeight: 700 }}>Draft · from a recording</span>}
                     {(n.tags ?? []).map(t => <span key={t} style={{ fontSize: '11px', color: 'var(--float-text-secondary)', background: 'var(--float-surface-sunken)', border: '0.5px solid var(--float-border)', padding: '2px 8px', borderRadius: 'var(--float-radius-control)' }}>{t}</span>)}
                   </div>
                   {/* Two lines when collapsed, cut on a line rather than mid-word; full text when opened. */}
                   <p style={expanded
-                    ? { whiteSpace: 'pre-wrap', margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.5 }
-                    : { margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    ? { whiteSpace: 'pre-wrap', margin: 0, fontSize: '12px', color: 'var(--float-text-secondary)', lineHeight: 1.5 }
+                    : { margin: 0, fontSize: '12px', color: 'var(--float-text-secondary)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {n.content}
                   </p>
                   <div onClick={e => e.stopPropagation()}>
@@ -1284,7 +1285,7 @@ export default function PatientPage() {
                     <>
                       <div onClick={() => setOpenNoteMenuId(null)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
                       <div style={{ position: 'absolute', right: 0, top: '26px', zIndex: 11, background: 'var(--float-surface)', border: '0.5px solid var(--float-border-strong)', borderRadius: 'var(--float-radius-control)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '132px', overflow: 'hidden' }}>
-                        <button onClick={() => { setOpenNoteMenuId(null); beginEditNote(n) }} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '9px 12px', fontSize: '12px', color: '#334155', cursor: 'pointer' }}>Edit</button>
+                        <button onClick={() => { setOpenNoteMenuId(null); beginEditNote(n) }} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '9px 12px', fontSize: '12px', color: 'var(--float-text)', cursor: 'pointer' }}>Edit</button>
                         <button onClick={() => { setOpenNoteMenuId(null); if (confirm('Delete this note?')) deleteNoteMut.mutate(n.id) }} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', borderTop: '0.5px solid var(--float-surface-sunken)', background: 'transparent', padding: '9px 12px', fontSize: '12px', color: 'var(--float-danger)', cursor: 'pointer' }}>Delete</button>
                       </div>
                     </>
@@ -1357,7 +1358,7 @@ export default function PatientPage() {
       {reportLoading && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
           <div className="animate-spin" style={{ width: '20px', height: '20px', border: '3px solid var(--float-border)', borderTopColor: 'var(--float-primary)', borderRadius: '50%' }} />
-          <span style={{ fontSize: '13px', color: '#475569' }}>Analyzing monitoring data…</span>
+          <span style={{ fontSize: '13px', color: 'var(--float-text-secondary)' }}>Analyzing monitoring data…</span>
         </div>
       )}
       {reportError && <p style={{ fontSize: '13px', color: 'var(--float-danger)', margin: '0 0 4px' }}>{reportError}</p>}
@@ -1369,7 +1370,7 @@ export default function PatientPage() {
               {[...preliminaryReport.situations].sort((a, b) => a.fear_thermometer - b.fear_thermometer).map((s, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text-hint)', width: '18px', textAlign: 'right', flexShrink: 0, lineHeight: 1.6 }}>{i + 1}.</span>
-                  <span style={{ flex: 1, fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>{s.name}</span>
+                  <span style={{ flex: 1, fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}>{s.name}</span>
                   <span style={{ flexShrink: 0, marginTop: '1px' }}><DTBadge value={s.fear_thermometer} /></span>
                 </div>
               ))}
@@ -1676,12 +1677,12 @@ export default function PatientPage() {
                 onClick={() => { if (editingTriggerId !== t.id && deletingTriggerId !== t.id) setSelectedTriggerId(t.id) }}>
                 {deletingTriggerId === t.id ? (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                    <span style={{ fontSize: '11px', color: '#991b1b', lineHeight: '1.4' }}>Delete this situation and all its behaviors?</span>
+                    <span style={{ fontSize: '11px', color: 'var(--float-danger)', lineHeight: '1.4' }}>Delete this situation and all its behaviors?</span>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button onClick={() => deleteTriggerMut.mutate(t.id)} disabled={deleteTriggerMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: 'var(--float-danger)', padding: '3px 8px', borderRadius: 'var(--float-radius-control)' }}>{deleteTriggerMut.isPending ? 'Deleting…' : 'Yes'}</button>
                       <button onClick={() => { setDeletingTriggerId(null); setDeleteTriggerError(null) }} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
                     </div>
-                    {deleteTriggerError && <span style={{ fontSize: '11px', color: '#b91c1c', lineHeight: '1.4' }}>{deleteTriggerError}</span>}
+                    {deleteTriggerError && <span style={{ fontSize: '11px', color: 'var(--float-danger)', lineHeight: '1.4' }}>{deleteTriggerError}</span>}
                   </div>
                 ) : editingTriggerId === t.id ? (
                   <input
@@ -1745,7 +1746,7 @@ export default function PatientPage() {
                     <div style={{ position: 'absolute', top: '38px', left: 0, right: 0, zIndex: 30, background: 'var(--float-surface)', border: '1px solid var(--float-border-strong)', borderRadius: 'var(--float-radius-control)', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', maxHeight: '180px', overflowY: 'auto' }}>
                       {sitSuggestions!.map(s => (
                         <button key={s.id} type="button" onClick={() => { setNewTriggerName(s.name); setNewTriggerLibraryId(s.id); setShowSitSuggest(false) }}
-                          className="cursor-pointer" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid var(--float-surface-sunken)', padding: '8px 10px', fontSize: '13px', color: '#334155' }}>
+                          className="cursor-pointer" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid var(--float-surface-sunken)', padding: '8px 10px', fontSize: '13px', color: 'var(--float-text)' }}>
                           {s.name}
                         </button>
                       ))}
@@ -1753,7 +1754,7 @@ export default function PatientPage() {
                   )}
                 </div>
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>Fear Level — one value, or a range with an optional max:</label>
+                  <label style={{ fontSize: '11px', color: 'var(--float-text-secondary)', display: 'block', marginBottom: '4px' }}>Fear Level — one value, or a range with an optional max:</label>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     <button type="button" onClick={() => setNewTriggerDT(String(Math.max(1, (Number(newTriggerDT) || 1) - 1)))} style={iconBtn('sm')}>−</button>
                     <input value={newTriggerDT} onChange={e => setNewTriggerDT(clampDtInput(e.target.value))} type="number" min="1" max="10" placeholder="min" className="text-sm border border-slate-200 rounded" style={{ width: '70px', padding: '6px 8px', textAlign: 'center', height: '32px', boxSizing: 'border-box' }} />
@@ -1809,14 +1810,14 @@ export default function PatientPage() {
                   <span style={{ fontSize: '13px', color: 'var(--float-border-strong)' }}>·</span>
                 </>
               )}
-              <span style={{ fontSize: '14px', color: '#475569' }}>{recentExperiment.behavior_name || 'Experiment'}</span>
+              <span style={{ fontSize: '14px', color: 'var(--float-text-secondary)' }}>{recentExperiment.behavior_name || 'Experiment'}</span>
             </div>
             {focusBipSequence.length > 0 || focusDtSequence.length > 0 ? (
               <>
                 {focusBipSequence.length > 0 && (() => {
                   const t = trendArrow(focusBipSequence)
                   return (
-                    <div style={{ fontSize: '13px', color: '#475569', marginBottom: '6px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', marginBottom: '6px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <span style={{ fontWeight: 700, color: 'var(--float-text-secondary)', minWidth: '34px' }}>BIP:</span>
                       <span>{focusBipSequence.map(v => `${v}%`).join('  →  ')}</span>
                       {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
@@ -1826,7 +1827,7 @@ export default function PatientPage() {
                 {focusDtSequence.length > 0 && (() => {
                   const t = trendArrow(focusDtSequence)
                   return (
-                    <div style={{ fontSize: '13px', color: '#475569', marginBottom: '14px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', marginBottom: '14px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <span style={{ fontWeight: 700, color: 'var(--float-text-secondary)', minWidth: '34px' }}>Fear Level:</span>
                       <span>{focusDtSequence.map(v => `${v}`).join('  →  ')}</span>
                       {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
@@ -1843,7 +1844,7 @@ export default function PatientPage() {
                 ? new Date(focusNextUpcoming.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
                 : ''
               return (
-                <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                   <span style={{ fontWeight: 700, color: 'var(--float-text-secondary)' }}>Next experiment:</span>
                   <span>{dateStr}</span>
                   {conf.label && (
@@ -1867,13 +1868,13 @@ export default function PatientPage() {
           (app/services/attention_service.py) so the two cannot disagree. Problems first, then what
           is new to look at. docs/plans/clinician-notifications.md */}
       {attention.length > 0 && (
-        <div style={{ background: attentionProblems ? '#fffbeb' : '#f0fdfa', border: `1px solid ${attentionProblems ? '#fde68a' : '#99f6e4'}`, borderRadius: 'var(--float-radius-card)', padding: '16px 20px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: attentionProblems ? '#78350f' : '#0f766e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
+        <div style={{ background: attentionProblems ? 'var(--float-warning-bg)' : 'var(--float-primary-light)', border: `1px solid ${attentionProblems ? 'var(--float-warning-border)' : 'var(--float-primary-mid)'}`, borderRadius: 'var(--float-radius-card)', padding: '16px 20px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: attentionProblems ? 'var(--float-warning)' : 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
             {attentionProblems ? 'Needs attention' : 'New to look at'}
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {attention.map(r => (
-              <li key={r.kind} style={{ fontSize: '13px', color: r.tone === 'new' ? '#0f766e' : '#78350f' }}>
+              <li key={r.kind} style={{ fontSize: '13px', color: r.tone === 'new' ? 'var(--float-primary)' : 'var(--float-warning)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                   <span style={{ fontWeight: 700 }}>·</span>
                   <span>{r.tone === 'new' && <strong>New: </strong>}{r.text}</span>
@@ -1941,12 +1942,12 @@ export default function PatientPage() {
             <p style={legendNote}>Dashed: before &middot; Solid: after</p>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
                 <Tooltip formatter={(value, name) => [`${value}%`, name === 'bip_before' ? 'Before' : 'After']} contentStyle={{ border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', fontSize: '12px' }} />
                 <Legend formatter={(value) => value === 'bip_before' ? 'Before' : 'After'} wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" dataKey="bip_before" stroke="#3f817b" strokeWidth={2} dot={{ r: 3, fill: '#3f817b' }} strokeDasharray="4 4" />
-                <Line type="monotone" dataKey="bip_after" stroke="#135450" strokeWidth={2} dot={{ r: 3, fill: '#135450' }} />
+                <Line type="monotone" dataKey="bip_before" stroke={CHART.primarySoft} strokeWidth={2} dot={{ r: 3, fill: CHART.primarySoft }} strokeDasharray="4 4" />
+                <Line type="monotone" dataKey="bip_after" stroke={CHART.primary} strokeWidth={2} dot={{ r: 3, fill: CHART.primary }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -1955,14 +1956,14 @@ export default function PatientPage() {
             <p style={legendNote}>Dashed: expected &middot; Solid: what happened</p>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} />
                 <Tooltip
                   formatter={(value, name) => [value, name === 'dt_expected' ? 'Expected' : 'Actual']}
                   contentStyle={{ border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', fontSize: '12px' }}
                 />
-                <Line type="monotone" dataKey="dt_expected" stroke="#3f817b" strokeWidth={2} dot={{ r: 3, fill: '#3f817b' }} strokeDasharray="4 4" />
-                <Line type="monotone" dataKey="dt_actual" stroke="#135450" strokeWidth={2} dot={{ r: 3, fill: '#135450' }} />
+                <Line type="monotone" dataKey="dt_expected" stroke={CHART.primarySoft} strokeWidth={2} dot={{ r: 3, fill: CHART.primarySoft }} strokeDasharray="4 4" />
+                <Line type="monotone" dataKey="dt_actual" stroke={CHART.primary} strokeWidth={2} dot={{ r: 3, fill: CHART.primary }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -2003,17 +2004,17 @@ export default function PatientPage() {
                   }}
                 >
                   {completed && (
-                    <span style={{ width: '18px', height: '18px', borderRadius: 'var(--float-radius-pill)', background: '#dcfce7', color: '#16a34a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
+                    <span style={{ width: '18px', height: '18px', borderRadius: 'var(--float-radius-pill)', background: 'var(--float-success-bg)', color: 'var(--float-success)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
                   )}
-                  {overdue && <span style={{ color: '#d97706', fontSize: '14px', flexShrink: 0 }}>⚠</span>}
+                  {overdue && <span style={{ color: 'var(--float-warning)', fontSize: '14px', flexShrink: 0 }}>⚠</span>}
                   {upcoming && <span style={{ color: 'var(--float-text-hint)', fontSize: '14px', flexShrink: 0 }}>📅</span>}
-                  <span style={{ fontWeight: 600, color: overdue ? '#92400e' : 'var(--float-text)', flexShrink: 0 }}>{dateStr}</span>
+                  <span style={{ fontWeight: 600, color: overdue ? 'var(--float-warning)' : 'var(--float-text)', flexShrink: 0 }}>{dateStr}</span>
                   <span style={{ color: 'var(--float-border-strong)' }}>·</span>
                   <span
                     title={behaviorLabel}
                     style={{
                       fontSize: '13px',
-                      color: overdue ? '#92400e' : '#475569',
+                      color: overdue ? 'var(--float-warning)' : 'var(--float-text-secondary)',
                       minWidth: '200px',
                       maxWidth: '300px',
                       overflow: 'hidden',
@@ -2024,19 +2025,19 @@ export default function PatientPage() {
                   {completed && bipBefore != null && bipAfter != null && (
                     <>
                       <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: '#475569' }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
+                      <span style={{ color: 'var(--float-text-secondary)' }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
                     </>
                   )}
                   {completed && dtActual != null && (
                     <>
                       <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}>Fear Level <DTBadge value={dtActual} /></span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--float-text-secondary)' }}>Fear Level <DTBadge value={dtActual} /></span>
                     </>
                   )}
                   {completed && e.feared_outcome_occurred != null && (
                     <>
                       <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: e.feared_outcome_occurred ? '#b91c1c' : '#16a34a', fontWeight: 600 }}>
+                      <span style={{ color: e.feared_outcome_occurred ? 'var(--float-danger)' : 'var(--float-success)', fontWeight: 600 }}>
                         {e.feared_outcome_occurred ? '✗ Yes' : '✓ No'}
                       </span>
                     </>
@@ -2044,18 +2045,18 @@ export default function PatientPage() {
                   {overdue && (
                     <>
                       <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: '#92400e', fontWeight: 600 }}>not recorded</span>
+                      <span style={{ color: 'var(--float-warning)', fontWeight: 600 }}>not recorded</span>
                     </>
                   )}
                   {upcoming && conf.label && (
                     <>
                       <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: '#475569' }}>{conf.emoji} {conf.label} confidence</span>
+                      <span style={{ color: 'var(--float-text-secondary)' }}>{conf.emoji} {conf.label} confidence</span>
                     </>
                   )}
                 </div>
                 {canExpand && expanded && (
-                  <div style={{ margin: '4px 0 4px 30px', padding: '8px 12px', background: 'var(--float-surface-sunken)', borderRadius: 'var(--float-radius-control)', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                  <div style={{ margin: '4px 0 4px 30px', padding: '8px 12px', background: 'var(--float-surface-sunken)', borderRadius: 'var(--float-radius-control)', fontSize: '12px', color: 'var(--float-text-secondary)', lineHeight: '1.5' }}>
                     <span style={{ color: 'var(--float-text-hint)', fontWeight: 600 }}>What they learned: </span>{e.what_learned}
                   </div>
                 )}
@@ -2182,16 +2183,16 @@ export default function PatientPage() {
               ? m.sender_type === 'parent'
               : !!(patient && m.sender_user_id === patient.user_id)
             const special = m.message_type === 'experiment_completed'
-              ? { bg: '#f0fdf4', border: '#bbf7d0', label: '✓ Experiment completed', labelColor: '#15803d' }
+              ? { bg: 'var(--float-success-bg)', border: 'var(--float-success-border)', label: '✓ Experiment completed', labelColor: 'var(--float-success)' }
               : m.message_type === 'too_hard'
-                ? { bg: '#fffbeb', border: '#fde68a', label: '⚠ Too hard', labelColor: 'var(--float-warning)' }
+                ? { bg: 'var(--float-warning-bg)', border: 'var(--float-warning-border)', label: '⚠ Too hard', labelColor: 'var(--float-warning)' }
                 : null
             const clinician = !isFamily && !special
             return (
               <div key={m.id} style={{ display: 'flex', justifyContent: clinician ? 'flex-end' : 'flex-start' }}>
                 <div style={{ maxWidth: '62%', background: clinician ? 'var(--float-primary)' : special ? special.bg : 'var(--float-surface-sunken)', border: special ? `1px solid ${special.border}` : clinician ? 'none' : '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 13px' }}>
                   {special && <div style={{ fontSize: '11px', fontWeight: 600, color: special.labelColor, marginBottom: '4px' }}>{special.label}</div>}
-                  <p style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.55, color: clinician ? '#fff' : '#334155', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
+                  <p style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.55, color: clinician ? '#fff' : 'var(--float-text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                   {ts && <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px', textAlign: 'right', color: clinician ? '#fff' : 'var(--float-text-secondary)' }}>{ts}</div>}
                 </div>
               </div>
@@ -2266,11 +2267,11 @@ export default function PatientPage() {
                 </div>
               </div>
               {ap.content && (
-                <div className="prose prose-sm max-w-none" style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: ap.content }} />
+                <div className="prose prose-sm max-w-none" style={{ fontSize: '12px', color: 'var(--float-text-secondary)', marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: ap.content }} />
               )}
               {deletingPlanId === ap.id ? (
-                <div style={{ background: '#fef2f2', borderRadius: 'var(--float-radius-control)', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: '#991b1b' }}>Delete this plan?</span>
+                <div style={{ background: 'var(--float-danger-bg)', borderRadius: 'var(--float-radius-control)', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--float-danger)' }}>Delete this plan?</span>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button onClick={() => deletePlanMut.mutate(ap.id)} disabled={deletePlanMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: 'var(--float-danger)', padding: '4px 10px', borderRadius: 'var(--float-radius-control)' }}>Yes, delete</button>
                     <button onClick={() => setDeletingPlanId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
@@ -2340,14 +2341,14 @@ export default function PatientPage() {
                 record, then the process panel. */}
             <div style={buttonRow}>
               <button onClick={() => openAccess('teen')} style={statusCard(showTeenAccess && accessFocus === 'teen')}>
-                <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.teen_invited_at ? '#22c55e' : 'var(--float-border-strong)', flexShrink: 0 }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.teen_invited_at ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
                 <span>
                   <span style={statusCardTitle}>Teen access</span>
                   <span style={statusCardState}>{patient.teen_invited_at ? 'Set up' : patient.child_connect_consent_at ? 'Ready to invite' : 'Awaiting consent'}</span>
                 </span>
               </button>
               <button onClick={() => openAccess('parent')} style={statusCard(showTeenAccess && accessFocus === 'parent')}>
-                <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.parent_email ? '#22c55e' : 'var(--float-border-strong)', flexShrink: 0 }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.parent_email ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
                 <span>
                   <span style={statusCardTitle}>Parent access</span>
                   <span style={statusCardState}>{patient.parent_email ? 'Invite / manage' : 'Not set up'}</span>
@@ -2452,7 +2453,7 @@ export default function PatientPage() {
               </div>
               <div>
                 <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', display: 'block', marginBottom: '4px' }}>Email (read-only)</label>
-                <div style={{ fontSize: '13px', color: '#475569', padding: '6px 10px', background: 'var(--float-surface-sunken)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}>{patient.email}</div>
+                <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', padding: '6px 10px', background: 'var(--float-surface-sunken)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}>{patient.email}</div>
               </div>
             </div>
             <div style={{ marginBottom: '14px' }}>
@@ -2486,7 +2487,7 @@ export default function PatientPage() {
                 Cancel
               </button>
               {updatePatientMut.isError && (
-                <span style={{ fontSize: '12px', color: '#b91c1c' }}>Save failed. Try again.</span>
+                <span style={{ fontSize: '12px', color: 'var(--float-danger)' }}>Save failed. Try again.</span>
               )}
             </div>
           </div>
@@ -2586,7 +2587,7 @@ export default function PatientPage() {
                   <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Session tips</div>
                   {(Object.keys(SESSION_PREP_CONTENT) as SessionPrepType[]).map(k => (
                     <div key={k} style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>{SESSION_PREP_CONTENT[k].header}</div>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text)', marginBottom: '6px' }}>{SESSION_PREP_CONTENT[k].header}</div>
                       <ul style={{ margin: 0, paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         {SESSION_PREP_CONTENT[k].steps.map((s, i) => <li key={i} style={{ fontSize: '12px', color: 'var(--float-text-secondary)', lineHeight: 1.4 }}>{s}</li>)}
                       </ul>

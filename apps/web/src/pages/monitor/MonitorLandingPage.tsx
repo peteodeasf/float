@@ -174,7 +174,7 @@ export default function MonitorLandingPage() {
     try { localStorage.setItem('float-monitor-tip', 'dismissed') } catch { /* shown again next time */ }
   }
   const offBanner = remindersOff && (
-    <div role="status" style={{ background: 'var(--float-surface-sunken)', borderRadius: 'var(--float-radius-card)', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', color: '#334155' }}>
+    <div role="status" style={{ background: 'var(--float-surface-sunken)', borderRadius: 'var(--float-radius-card)', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', color: 'var(--float-text)' }}>
       You won't get the evening emails any more.
     </div>
   )
@@ -228,7 +228,7 @@ export default function MonitorLandingPage() {
             <strong>{practitionerName}</strong> has asked you to complete a monitoring form
             for {childName} before your first appointment.
           </p>
-          <p style={{ fontSize: '15px', color: '#475569', lineHeight: '1.6', marginBottom: '32px', textAlign: 'left' }}>
+          <p style={{ fontSize: '15px', color: 'var(--float-text-secondary)', lineHeight: '1.6', marginBottom: '32px', textAlign: 'left' }}>
             Monitoring involves watching and observing the situations in which your child experiences anxiety and noting how you respond to your child in these situations. The purpose of monitoring is to accumulate data.
           </p>
 
@@ -254,7 +254,7 @@ export default function MonitorLandingPage() {
                 cursor: 'pointer',
                 fontSize: '15px',
                 fontWeight: '600',
-                color: '#334155'
+                color: 'var(--float-text)'
               }}
             >
               What information is gathered?
@@ -264,7 +264,7 @@ export default function MonitorLandingPage() {
             </button>
             {showTips && (
               <div style={{ padding: '0 20px 20px' }}>
-                <p style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+                <p style={{ fontSize: '14px', color: 'var(--float-text-secondary)', lineHeight: '1.6', margin: 0 }}>
                   The information gathered using the Parent Monitoring Form includes the date, the situation, the behavior observed, your response as a parent, and your child's level of distress (as estimated by you) gauged on a scale from 1 to 10. 1 means little to no distress/anxiety. 10 signifies the highest level of distress/anxiety you have observed your child to experience in this type of situation.
                 </p>
               </div>
@@ -272,7 +272,7 @@ export default function MonitorLandingPage() {
           </div>
 
           {/* Consent to connect the child to the app (unblocks the clinician's teen invite) */}
-          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', textAlign: 'left', background: consentGiven ? '#f0fdf4' : 'var(--float-surface-muted)', border: '1px solid ' + (consentGiven ? '#bbf7d0' : 'var(--float-border)'), borderRadius: '14px', padding: '14px 16px', marginBottom: '20px', cursor: consentGiven || consentSaving ? 'default' : 'pointer' }}>
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', textAlign: 'left', background: consentGiven ? 'var(--float-success-bg)' : 'var(--float-surface-muted)', border: '1px solid ' + (consentGiven ? 'var(--float-success-border)' : 'var(--float-border)'), borderRadius: '14px', padding: '14px 16px', marginBottom: '20px', cursor: consentGiven || consentSaving ? 'default' : 'pointer' }}>
             <input
               type="checkbox"
               checked={consentGiven}
@@ -285,9 +285,9 @@ export default function MonitorLandingPage() {
               }}
               style={{ marginTop: '3px', width: '18px', height: '18px', flexShrink: 0, accentColor: 'var(--float-primary)' }}
             />
-            <span style={{ fontSize: '14px', color: '#475569', lineHeight: 1.5 }}>
+            <span style={{ fontSize: '14px', color: 'var(--float-text-secondary)', lineHeight: 1.5 }}>
               I give permission for {childName} to be connected to the Float app, so their clinician can invite them to sign in and use it as part of treatment.
-              {consentGiven && <span style={{ display: 'block', color: '#16a34a', fontWeight: 600, marginTop: '4px' }}>✓ Thank you — permission recorded.</span>}
+              {consentGiven && <span style={{ display: 'block', color: 'var(--float-success)', fontWeight: 600, marginTop: '4px' }}>✓ Thank you — permission recorded.</span>}
             </span>
           </label>
 
@@ -318,22 +318,22 @@ export default function MonitorLandingPage() {
           {/* Bookmark prompt */}
           {!bookmarkDismissed && !standalone && (
             <div style={{
-              background: '#fffbeb',
+              background: 'var(--float-warning-bg)',
               borderRadius: 'var(--float-radius-card)',
               padding: '14px 16px',
               marginBottom: '16px',
-              border: '1px solid #fde68a',
+              border: '1px solid var(--float-warning-border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between'
             }}>
-              <p style={{ fontSize: '13px', color: '#92400e', margin: 0 }}>
+              <p style={{ fontSize: '13px', color: 'var(--float-warning)', margin: 0 }}>
                 {homeTip}
               </p>
               <button
                 onClick={dismissTip}
                 aria-label="Dismiss"
-                style={{ background: 'none', border: 'none', color: '#92400e', cursor: 'pointer', fontSize: '16px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--float-warning)', cursor: 'pointer', fontSize: '16px' }}
               >
                 x
               </button>
@@ -392,10 +392,10 @@ export default function MonitorLandingPage() {
                     width: '36px',
                     height: '36px',
                     borderRadius: '50%',
-                    background: entry.fear_thermometer >= 7 ? '#fef2f2' :
-                      entry.fear_thermometer >= 4 ? '#fffbeb' : '#f0fdf4',
-                    color: entry.fear_thermometer >= 7 ? '#dc2626' :
-                      entry.fear_thermometer >= 4 ? '#d97706' : '#16a34a',
+                    background: entry.fear_thermometer >= 7 ? 'var(--float-danger-bg)' :
+                      entry.fear_thermometer >= 4 ? 'var(--float-warning-bg)' : 'var(--float-success-bg)',
+                    color: entry.fear_thermometer >= 7 ? 'var(--float-danger)' :
+                      entry.fear_thermometer >= 4 ? 'var(--float-warning)' : 'var(--float-success)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -494,7 +494,7 @@ export default function MonitorLandingPage() {
         <div style={{ padding: '20px 24px 120px' }}>
           {/* Date */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
               Date
             </label>
             <input
@@ -514,7 +514,7 @@ export default function MonitorLandingPage() {
 
           {/* Situation */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
               What was the situation?
             </label>
             <textarea
@@ -537,7 +537,7 @@ export default function MonitorLandingPage() {
 
           {/* Child behavior */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
               What I observed about my child
             </label>
             <textarea
@@ -560,7 +560,7 @@ export default function MonitorLandingPage() {
 
           {/* Parent response */}
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
               How I responded
             </label>
             <textarea
@@ -583,7 +583,7 @@ export default function MonitorLandingPage() {
 
           {/* Fear thermometer */}
           <div style={{ marginBottom: '32px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '4px' }}>
               Fear thermometer (1–10)
             </label>
             <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', marginBottom: '12px' }}>
@@ -605,14 +605,14 @@ export default function MonitorLandingPage() {
                     border: fearThermometer === n ? '2px solid var(--float-primary)' : '1px solid var(--float-border)',
                     background: fearThermometer === n
                       ? 'var(--float-primary-light)'
-                      : n >= 8 ? '#fef2f2'
-                      : n >= 5 ? '#fffbeb'
-                      : '#f0fdf4',
+                      : n >= 8 ? 'var(--float-danger-bg)'
+                      : n >= 5 ? 'var(--float-warning-bg)'
+                      : 'var(--float-success-bg)',
                     color: fearThermometer === n
                       ? 'var(--float-primary)'
-                      : n >= 8 ? '#dc2626'
-                      : n >= 5 ? '#d97706'
-                      : '#16a34a',
+                      : n >= 8 ? 'var(--float-danger)'
+                      : n >= 5 ? 'var(--float-warning)'
+                      : 'var(--float-success)',
                     fontSize: '18px',
                     fontWeight: '700',
                     cursor: 'pointer',
