@@ -291,8 +291,10 @@ export default function TeenRecordPage() {
             </div>
           </div>
 
+          <div style={{ flex: 1, minHeight: 12 }} />
+
           {/* Actual fear level + the expected → actual delta. */}
-          <div style={{ marginTop: 18 }}>
+          <div>
             <div style={{ ...teen.type.label, marginBottom: 10 }}>What was your actual fear level?</div>
             <Thermometer value={actualDT} onChange={setActualDT} height={46} label="Actual Fear Level" />
             {actualDT != null && (
@@ -314,8 +316,10 @@ export default function TeenRecordPage() {
             )}
           </div>
 
+          <div style={{ flex: 1, minHeight: 12 }} />
+
           {/* Believe it now + the was → now delta. */}
-          <div style={{ marginTop: 18 }}>
+          <div>
             <div
               style={{
                 display: 'flex',
