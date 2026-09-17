@@ -64,10 +64,9 @@ export default function TeenRecordPage() {
   const [bipAfterRaw, setBipAfterRaw] = useState<number | null>(null)
   const [fearedOccurred, setFearedOccurred] = useState<boolean | null>(null)
   const [whatHappened, setWhatHappened] = useState<string | null>(null)
-  const [customHappened, setCustomHappened] = useState<string[]>([])
-  const [addingHappened, setAddingHappened] = useState(false)
-  const [happenedDraft, setHappenedDraft] = useState('')
+  const [happenedText, setHappenedText] = useState('')
   const [whatLearned, setWhatLearned] = useState<string | null>(null)
+  const [learnedText, setLearnedText] = useState('')
 
   const [tooHardReason, setTooHardReason] = useState('')
   const [tooHardOpen, setTooHardOpen] = useState(false)
@@ -89,7 +88,6 @@ export default function TeenRecordPage() {
   const bipAfter = bipAfterRaw ?? (bipBefore != null ? Math.round(bipBefore) : 50)
 
   const learnedOptions = fearedOccurred ? WHAT_LEARNED_COPED : WHAT_LEARNED_DISCONFIRMED
-  const happenedOptions = [...WHAT_HAPPENED, ...customHappened]
 
   /** Pulled once we reach the scoreboard, to make its headline claim true. */
   const { data: ladder } = useQuery({
@@ -121,12 +119,13 @@ export default function TeenRecordPage() {
     mutationFn: async () => {
       await teenApiClient.put(`/patient/experiments/${experimentId}/after`, {
         feared_outcome_occurred: fearedOccurred ?? false,
-        what_happened: whatHappened ?? '',
+        // A typed answer wins over a picked chip; either is fine, neither is required.
+        what_happened: happenedText.trim() || whatHappened || '',
         distress_thermometer_actual: actualDT ?? 0,
         bip_after: bipAfter,
         // Genuinely optional — a fabricated learning would pollute the
         // clinician's recent_learnings digest.
-        what_learned: whatLearned ?? '',
+        what_learned: learnedText.trim() || whatLearned || '',
       })
     },
     onSuccess: () => {
@@ -161,16 +160,6 @@ export default function TeenRecordPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startTooHard])
-
-  const commitHappenedDraft = () => {
-    const v = happenedDraft.trim()
-    if (v && !happenedOptions.includes(v)) {
-      setCustomHappened(prev => [...prev, v])
-      setWhatHappened(v)
-    }
-    setHappenedDraft('')
-    setAddingHappened(false)
-  }
 
   // A back affordance for the steps a teen might want to reconsider. The
   // terminal screens (scoreboard, too-hard) deliberately omit it.
@@ -658,76 +647,95 @@ export default function TeenRecordPage() {
       </div>
 
       <div className="teen-sheet">
-        {/* what happened */}
-        <div>
-          <div style={{ ...teen.type.label, marginBottom: 9 }}>What actually happened?</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-            {happenedOptions.map(opt => (
-              <Chip
-                key={opt}
-                label={opt}
-                selected={whatHappened === opt}
-                onClick={() => setWhatHappened(opt)}
-              />
-            ))}
-            {addingHappened ? (
-              <input
-                autoFocus
-                value={happenedDraft}
-                onChange={e => setHappenedDraft(e.target.value)}
-                onBlur={commitHappenedDraft}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') commitHappenedDraft()
-                  if (e.key === 'Escape') {
-                    setHappenedDraft('')
-                    setAddingHappened(false)
-                  }
-                }}
-                placeholder="Something else"
-                style={{
-                  padding: '8px 13px',
-                  borderRadius: teen.radius.pill,
-                  border: `1px solid ${teen.color.mint}`,
-                  background: teen.color.mintSoft,
-                  fontFamily: teen.font.sans,
-                  fontSize: 'var(--teen-text-chip)',
-                  fontWeight: 600,
-                  color: teen.color.ink,
-                  outline: 'none',
-                  minWidth: 120,
-                }}
-              />
-            ) : (
-              <button
-                type="button"
-                className="teen-chip teen-chip--add"
-                onClick={() => setAddingHappened(true)}
-              >
-                <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
-                Add your own
-              </button>
-            )}
+        {/* The two questions sit as one group, centred in the sheet so the empty
+            space is split above and below rather than pooling in one gap. */}
+        <div style={{ flex: 1, minHeight: 12 }} />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+          {/* what happened */}
+          <div>
+            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
+              What actually happened?
+            </h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+              {WHAT_HAPPENED.map(opt => (
+                <Chip
+                  key={opt}
+                  label={opt}
+                  selected={whatHappened === opt}
+                  onClick={() => {
+                    setWhatHappened(whatHappened === opt ? null : opt)
+                    setHappenedText('')
+                  }}
+                />
+              ))}
+            </div>
+            <input
+              value={happenedText}
+              onChange={e => {
+                setHappenedText(e.target.value)
+                if (whatHappened) setWhatHappened(null)
+              }}
+              placeholder="Something else…"
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                marginTop: 10,
+                padding: '11px 13px',
+                borderRadius: teen.radius.card,
+                border: `1px solid ${teen.color.lineChip}`,
+                background: teen.color.cardPure,
+                fontFamily: teen.font.sans,
+                fontSize: 14,
+                color: teen.color.ink,
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* what learned — reframed on the came-true path */}
+          <div>
+            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
+              What'd you learn?
+            </h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+              {learnedOptions.map(opt => (
+                <Chip
+                  key={opt}
+                  label={opt}
+                  selected={whatLearned === opt}
+                  onClick={() => {
+                    setWhatLearned(whatLearned === opt ? null : opt)
+                    setLearnedText('')
+                  }}
+                />
+              ))}
+            </div>
+            <input
+              value={learnedText}
+              onChange={e => {
+                setLearnedText(e.target.value)
+                if (whatLearned) setWhatLearned(null)
+              }}
+              placeholder="Something else…"
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                marginTop: 10,
+                padding: '11px 13px',
+                borderRadius: teen.radius.card,
+                border: `1px solid ${teen.color.lineChip}`,
+                background: teen.color.cardPure,
+                fontFamily: teen.font.sans,
+                fontSize: 14,
+                color: teen.color.ink,
+                outline: 'none',
+              }}
+            />
           </div>
         </div>
 
         <div style={{ flex: 1, minHeight: 12 }} />
-
-        {/* what learned — reframed on the came-true path */}
-        <div>
-          <div style={{ ...teen.type.label, marginBottom: 9 }}>What'd you learn?</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-            {learnedOptions.map(opt => (
-              <Chip
-                key={opt}
-                label={opt}
-                selected={whatLearned === opt}
-                onClick={() => setWhatLearned(whatLearned === opt ? null : opt)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, minHeight: 6 }} />
 
         <div style={{ paddingBottom: 16 }}>
           <button
