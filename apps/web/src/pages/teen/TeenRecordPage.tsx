@@ -255,24 +255,33 @@ export default function TeenRecordPage() {
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
               Did what you feared happen?
             </h2>
-            <div style={{ display: 'flex', gap: 10 }}>
-              {([[false, "No — it didn't"], [true, 'Yeah, it did']] as const).map(([v, label]) => {
+            {/* A segmented control — one "pick one of two", not two action buttons. The chosen
+                half is a light tint; a solid fill is reserved for the main action. */}
+            <div
+              style={{
+                display: 'flex',
+                border: `1.5px solid ${teen.color.lineBtn}`,
+                borderRadius: teen.radius.pill,
+                overflow: 'hidden',
+              }}
+            >
+              {([[false, "No — it didn't"], [true, 'Yeah, it did']] as const).map(([v, label], i) => {
                 const on = fearedOccurred === v
                 return (
                   <button
                     key={label}
-                    className="teen-btn"
                     onClick={() => setFearedOccurred(v)}
                     style={{
                       flex: 1,
-                      padding: '12px 10px',
+                      padding: '13px 10px',
+                      fontFamily: teen.font.sans,
                       fontSize: 15,
-                      borderRadius: teen.radius.btn,
-                      // Selected is a light tint, not a solid fill — a solid fill means "the main
-                      // action", which neither answer is.
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: 'none',
+                      borderRight: i === 0 ? `1.5px solid ${teen.color.lineBtn}` : 'none',
                       background: on ? teen.color.mintSoft : 'transparent',
-                      border: `1.5px solid ${on ? teen.color.teal : teen.color.lineBtn}`,
-                      color: teen.color.ink,
+                      color: on ? teen.color.ink : teen.color.textSecondary,
                     }}
                   >
                     {label}
