@@ -44,7 +44,6 @@ import {
   deleteTrigger,
   getSuggestedSteps,
   getLadderReview,
-  searchSituationLibrary,
   getPatientInsights,
   addInsightToPlan,
   removeInsight,
@@ -201,13 +200,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   // so it should not sit open under the list taking up the room the list needs.
   const [adding, setAdding] = useState(false)
 
-  const { data: starters } = useQuery({
-    queryKey: ['situation-library', ''],
-    queryFn: () => searchSituationLibrary(''),
-  })
-
-  // What the parent's monitoring log says this child finds hard. These come first: they are about
-  // this child, and the common list below is not.
+  // What the parent's monitoring log says this child finds hard — the only suggestions we show,
+  // because they are about this child. A generic starter library was removed: too generic to help.
   const { data: fromMonitoring } = useQuery({
     queryKey: ['insights', patientId, 'situation'],
     queryFn: () => getPatientInsights(patientId, 'situation'),
@@ -243,9 +237,6 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
       setOpen(prev => new Set(prev).add(created.id))
     },
   })
-
-  const taken = new Set(triggers.map(t => t.name.trim().toLowerCase()))
-  const suggestions = (starters ?? []).filter(s => !taken.has(s.name.trim().toLowerCase())).slice(0, 8)
 
   const toggle = (id: string) =>
     setOpen(prev => {
@@ -332,24 +323,14 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               </>)}
           </div>
 
-          {suggestions.length > 0 && (
-            <div style={{ marginTop: 14 }}>
-              <div style={{ ...sectionLabel, color: '#9aa9a8' }}>Common situations</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                {suggestions.map(sug => (
-                  <button key={sug.id} onClick={() => addMut.mutate(sug.name)} disabled={addMut.isPending}
-                    style={{ fontSize: 13, fontWeight: 600, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '8px 14px', cursor: 'pointer' }}>
-                    + {sug.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button onClick={() => { setAdding(false); setNewName('') }}
-            style={{ marginTop: 14, fontSize: 13, fontWeight: 700, color: '#135450', background: '#fff', border: '1px solid #cfe0db', borderRadius: 999, padding: '8px 16px', cursor: 'pointer' }}>
-            Done adding
-          </button>
+          {/* A close action, not a chip — set apart by a rule and styled as a plain link so it does
+              not read as one more situation to add. */}
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e6efec' }}>
+            <button onClick={() => { setAdding(false); setNewName('') }}
+              style={{ fontSize: 13, fontWeight: 600, color: '#6b7a79', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span aria-hidden="true">&larr;</span> Done adding
+            </button>
+          </div>
         </div>
       ) : (
         <button onClick={() => setAdding(true)}
