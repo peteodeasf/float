@@ -255,27 +255,31 @@ export default function TeenRecordPage() {
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
               Did what you feared happen?
             </h2>
-            {([[false, "No — it didn't"], [true, 'Yeah, it did']] as const).map(([v, label]) => {
-              const on = fearedOccurred === v
-              return (
-                <button
-                  key={label}
-                  className="teen-btn"
-                  onClick={() => setFearedOccurred(v)}
-                  style={{
-                    padding: 16,
-                    fontSize: 16,
-                    borderRadius: teen.radius.btnLg,
-                    marginBottom: 10,
-                    background: on ? teen.color.ink : 'transparent',
-                    border: `1.5px solid ${on ? teen.color.ink : teen.color.teal}`,
-                    color: on ? teen.color.white : teen.color.ink,
-                  }}
-                >
-                  {label}
-                </button>
-              )
-            })}
+            <div style={{ display: 'flex', gap: 10 }}>
+              {([[false, "No — it didn't"], [true, 'Yeah, it did']] as const).map(([v, label]) => {
+                const on = fearedOccurred === v
+                return (
+                  <button
+                    key={label}
+                    className="teen-btn"
+                    onClick={() => setFearedOccurred(v)}
+                    style={{
+                      flex: 1,
+                      padding: '12px 10px',
+                      fontSize: 15,
+                      borderRadius: teen.radius.btn,
+                      // Selected is a light tint, not a solid fill — a solid fill means "the main
+                      // action", which neither answer is.
+                      background: on ? teen.color.mintSoft : 'transparent',
+                      border: `1.5px solid ${on ? teen.color.teal : teen.color.lineBtn}`,
+                      color: teen.color.ink,
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Actual fear level + the expected → actual delta. */}
@@ -311,7 +315,7 @@ export default function TeenRecordPage() {
                 marginBottom: 11,
               }}
             >
-              <span style={teen.type.label}>Believe it now?</span>
+              <span style={teen.type.label}>How strong is your belief now?</span>
               <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bipAfter}%</span>
             </div>
             <BeliefSlider
