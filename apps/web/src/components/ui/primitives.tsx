@@ -119,6 +119,29 @@ export function Tabs({ items, value, onChange }: { items: TabItem[]; value: stri
   )
 }
 
+// ── Banner ────────────────────────────────────────────────────────────────────
+// An inline message tied to a section: an error after a failed save, a note, a success. Replaces
+// the hand-rolled error boxes (e.g. form.tsx ERROR_BOX) scattered across screens.
+export type BannerTone = 'info' | 'success' | 'warning' | 'danger'
+const BANNER_TONES: Record<BannerTone, CSSProperties> = {
+  info: { background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af' },
+  success: { background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46' },
+  warning: { background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' },
+  danger: { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' },
+}
+export function Banner({ tone = 'info', style, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: BannerTone }) {
+  return (
+    <div
+      style={{
+        fontSize: 'var(--float-font-sm)', lineHeight: 'var(--float-leading)',
+        padding: '10px 12px', borderRadius: 'var(--float-radius-sm)',
+        ...BANNER_TONES[tone], ...style,
+      }}
+      {...rest}
+    />
+  )
+}
+
 // ── Modal ────────────────────────────────────────────────────────────────────
 // One dialog: a dimmed backdrop and a centred panel that fits the phone. Replaces the hand-rolled
 // position:fixed overlays scattered across screens. Click the backdrop or press Escape to close.
