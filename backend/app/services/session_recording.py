@@ -97,6 +97,7 @@ Rules:
 - note.agreed: what was agreed for the coming week.
 - note.follow_up: anything the clinician said to come back to, or a concern raised.
 - Use "" for any part the session did not cover. Never add anything that was not said, and do not diagnose.
+- Return only the JSON object above and nothing else — no prose, no note to the reader, and never ask for more of the transcript. If the session is short or has no clinical content, still return the JSON, with "" for every part you cannot fill.
 - Plain, short sentences. Say "the child" or use {child_name}'s first name; do not write "the patient"."""
 
 
@@ -115,11 +116,20 @@ async def write_note(turns: list[dict], child_name: str, participants: list[str]
     """The note's text, tags, participants and a name for each speaker. Everything Claude returns is
     checked against what is allowed; a speaker it did not name is left numbered."""
     transcript = "\n".join(f"[{t['speaker']}] {t['text']}" for t in turns)
-    try:
-        data = parse_model_json(await _ask_claude(_prompt(child_name, participants), transcript))
-    except Exception as e:
-        logger.warning("session note write-up failed: %s", type(e).__name__)
-        raise WriteUpFailed from e
+    system = _prompt(child_name, participants)
+    # The model occasionally answers a thin transcript in prose ("send me more") with no JSON at all,
+    # so a good recording fails to write. One retry with a firmer reminder clears the non-deterministic
+    # case; the prompt rule handles most of it.
+    data = None
+    for attempt in range(2):
+        text = transcript if attempt == 0 else transcript + "\n\nReturn only the JSON object described above and nothing else."
+        try:
+            data = parse_model_json(await _ask_claude(system, text))
+            break
+        except Exception as e:
+            if attempt == 1:
+                logger.warning("session note write-up failed: %s", type(e).__name__)
+                raise WriteUpFailed from e
     if not isinstance(data, dict):
         raise WriteUpFailed("not an object")
 
