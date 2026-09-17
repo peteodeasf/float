@@ -104,6 +104,11 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* One hover for every clinician/admin button, so screens don't each re-add their own. A gentle
+   darken works for any kind — solid, outline or tinted — without a per-kind rule. */
+.float-app button:not(:disabled):hover {
+  filter: brightness(0.97);
+}
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
