@@ -654,15 +654,6 @@ export default function TeenRecordPage() {
         >
           ‹
         </button>
-        <span
-          style={{
-            ...teen.type.eyebrow,
-            color: teen.color.tealMid,
-            letterSpacing: 'var(--teen-eyebrow-track-tight)',
-          }}
-        >
-          After · how'd it go
-        </span>
         <span style={{ width: 22 }} />
       </div>
 
@@ -718,6 +709,8 @@ export default function TeenRecordPage() {
             )}
           </div>
         </div>
+
+        <div style={{ flex: 1, minHeight: 12 }} />
 
         {/* what learned — reframed on the came-true path */}
         <div>
