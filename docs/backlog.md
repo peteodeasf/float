@@ -549,6 +549,30 @@ Found while checking, before building:
 
 **Gate:** `/security-review` on anything that reads patients' records out of production.
 
+## AI analysis of session notes
+
+**Raised 2026-09-17.** `M` (plan first if it grows past a summary).
+
+**Today:** the app can write a draft session note from a recording (the Claude write-up), and it
+analyses the parent *monitoring* log ("Analyze with AI"). Nothing reads the *content* of the written
+session notes. A clinician with several sessions on a patient re-reads them by hand.
+
+**What it could do:** read a patient's session notes and surface what's useful across them — recurring
+themes, what changed since the last session, open threads to follow up, a pre-session summary. Which
+of these is worth building is the first question, not a given.
+
+**Open questions (Peter's):** what output actually helps a clinician (a running summary? a pre-session
+brief? follow-up flags?), and whether it writes anything back or is read-only. Note a pre-session
+brief existed and was deliberately removed (see the Session notes item under Clinician) — check why
+before rebuilding that shape.
+
+**How to tell it worked:** a clinician opening a patient with several notes gets something they would
+otherwise have re-read every note to get, and confirms it is right.
+
+**Gate:** `/security-review` — it reads patient records (session notes are PHI). Clinical sign-off
+(Peter's discretion pre-launch) on any clinical wording it produces. Sending note text to the model
+is the same PHI-to-Anthropic path as extraction — covered by the BAA item under Compliance.
+
 ## No way to read a review's results
 
 **BUILT 2026-09-15:** Admin → Reviews (`/admin/reviews`) shows every round, every item, each reviewer's choice, additions and comments. Raised 2026-08-31. `S`
