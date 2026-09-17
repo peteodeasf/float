@@ -329,10 +329,13 @@ function AddAccommodation({ planId, patientId, triggers, onAdded }: {
         </>)}
       </div>
 
-      <button onClick={() => { setAdding(false); setName(''); setSituationId(''); setDmin(''); setDmax('') }}
-        style={{ ...btn('secondary', 'md'), marginTop: '14px' }}>
-        Done adding
-      </button>
+      {/* A close action, not a chip — matches the ladder's "Done adding": a plain link under a rule. */}
+      <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #e6efec' }}>
+        <button onClick={() => { setAdding(false); setName(''); setSituationId(''); setDmin(''); setDmax('') }}
+          style={{ fontSize: 13, fontWeight: 600, color: '#6b7a79', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span aria-hidden="true">&larr;</span> Done adding
+        </button>
+      </div>
     </div>
   )
 }
