@@ -251,7 +251,7 @@ export default function TeenRecordPage() {
 
           {/* Did what you feared happen? — a choice; neither is styled as the
               "right" answer until it's picked. */}
-          <div>
+          <div style={{ marginTop: 14 }}>
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
               Did what you feared happen?
             </h2>
@@ -283,7 +283,7 @@ export default function TeenRecordPage() {
           </div>
 
           {/* Actual fear level + the expected → actual delta. */}
-          <div>
+          <div style={{ marginTop: 18 }}>
             <div style={{ ...teen.type.label, marginBottom: 10 }}>What was your actual fear level?</div>
             <Thermometer value={actualDT} onChange={setActualDT} height={46} label="Actual Fear Level" />
             {actualDT != null && (
@@ -306,7 +306,7 @@ export default function TeenRecordPage() {
           </div>
 
           {/* Believe it now + the was → now delta. */}
-          <div>
+          <div style={{ marginTop: 18 }}>
             <div
               style={{
                 display: 'flex',
