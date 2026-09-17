@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getPatients, PHASES, type Patient, type Phase } from '../../api/patients'
 import PractitionerNav from '../../components/ui/PractitionerNav'
+import { Button, Card, Badge, Select } from '../../components/ui/primitives'
 
 // Relative "last activity" label
 export function relativeActivityLabel(iso: string | null | undefined): string {
@@ -56,25 +57,19 @@ export function PatientRow({ patient, onClick }: { patient: Patient; onClick: ()
   return (
     <tr
       onClick={onClick}
-      className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
+      style={{ borderTop: '1px solid var(--float-border)', cursor: 'pointer', transition: 'background var(--float-transition)' }}
+      onMouseOver={e => { e.currentTarget.style.background = 'var(--float-surface-muted)' }}
+      onMouseOut={e => { e.currentTarget.style.background = 'transparent' }}
     >
       <td className="px-6 py-4">
         <p className="font-medium" style={{ color: 'var(--float-text)' }}>{patient.name}</p>
         <p className="text-sm" style={{ color: 'var(--float-text-hint)' }}>{patient.email}</p>
-        {/* Problems in amber, what is new in teal. Nothing to hover over. */}
+        {/* Problems as a warning tag, what's new as a brand tag. Nothing to hover over. */}
         {attention.length > 0 && (
           <ul aria-label="Needs attention" style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {attention.map(r => (
-              <li
-                key={r.kind}
-                style={{
-                  fontSize: '11.5px', fontWeight: 600, borderRadius: '999px', padding: '2px 8px',
-                  color: r.tone === 'new' ? '#0f766e' : '#92400e',
-                  background: r.tone === 'new' ? '#f0fdfa' : '#fffbeb',
-                  border: `1px solid ${r.tone === 'new' ? '#99f6e4' : '#fde68a'}`,
-                }}
-              >
-                {r.tone === 'new' ? 'New: ' : ''}{r.text}
+              <li key={r.kind}>
+                <Badge tone={r.tone === 'new' ? 'primary' : 'warning'}>{r.tone === 'new' ? 'New: ' : ''}{r.text}</Badge>
               </li>
             ))}
           </ul>
@@ -87,9 +82,7 @@ export function PatientRow({ patient, onClick }: { patient: Patient; onClick: ()
         {relativeActivityLabel(patient.last_activity_at)}
       </td>
       <td className="px-6 py-4 text-right">
-        <span className="text-slate-300 group-hover:text-teal-500 transition-colors text-sm">
-          &rarr;
-        </span>
+        <span className="text-sm" style={{ color: 'var(--float-text-hint)' }}>&rarr;</span>
       </td>
     </tr>
   )
@@ -120,15 +113,10 @@ export default function DashboardPage() {
             <h2 className="text-2xl" style={{ fontWeight: 600, color: 'var(--float-text)' }}>
               My patients
             </h2>
-            <p className="text-sm mt-0.5">
-              <span
-                className="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
-                style={{ background: 'var(--float-primary-light)', color: 'var(--float-primary-text)' }}
-              >
-                {shown.length} patient{shown.length !== 1 ? 's' : ''}
-              </span>
+            <p className="text-sm mt-0.5" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Badge tone="primary">{shown.length} patient{shown.length !== 1 ? 's' : ''}</Badge>
               {phaseFilter === 'all' && closedCount > 0 && (
-                <span className="ml-2 text-xs" style={{ color: 'var(--float-text-hint)' }}>
+                <span className="text-xs" style={{ color: 'var(--float-text-hint)' }}>
                   {closedCount} closed, hidden
                 </span>
               )}
@@ -137,47 +125,21 @@ export default function DashboardPage() {
 
           <label className="flex items-center gap-2 text-sm ml-auto mr-3">
             <span style={{ color: 'var(--float-text-hint)' }}>Phase</span>
-            <select
+            <Select
               value={phaseFilter}
               onChange={e => setPhaseFilter(e.target.value as Phase | 'all')}
               aria-label="Filter by phase"
-              className="px-3 py-2 text-sm cursor-pointer"
-              style={{
-                borderRadius: 'var(--float-radius-sm)',
-                border: '1px solid var(--float-border)',
-                background: '#fff',
-                color: 'var(--float-text)',
-              }}
             >
               <option value="all">All open</option>
               {PHASES.map(p => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
-            </select>
+            </Select>
           </label>
-          <button
-            onClick={() => navigate('/patients/new')}
-            className="text-white px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
-            style={{
-              background: 'var(--float-primary)',
-              borderRadius: 'var(--float-radius-sm)',
-              border: 'none',
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'var(--float-primary-dark)' }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'var(--float-primary)' }}
-          >
-            Add patient
-          </button>
+          <Button kind="primary" onClick={() => navigate('/patients/new')}>Add patient</Button>
         </div>
 
-        <div
-          className="bg-white overflow-hidden"
-          style={{
-            borderRadius: 'var(--float-radius)',
-            border: '1px solid var(--float-border)',
-            boxShadow: 'var(--float-shadow)',
-          }}
-        >
+        <Card pad="none" style={{ overflow: 'hidden' }}>
           {isLoading && (
             <div className="px-6 py-12 text-center" style={{ color: 'var(--float-text-hint)' }}>
               Loading patients...
@@ -198,19 +160,7 @@ export default function DashboardPage() {
               <p className="text-sm mb-5" style={{ color: 'var(--float-text-hint)' }}>
                 Add your first patient to get started
               </p>
-              <button
-                onClick={() => navigate('/patients/new')}
-                className="text-white px-5 py-2.5 text-sm font-medium transition-colors cursor-pointer"
-                style={{
-                  background: 'var(--float-primary)',
-                  borderRadius: 'var(--float-radius-sm)',
-                  border: 'none',
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'var(--float-primary-dark)' }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'var(--float-primary)' }}
-              >
-                Add patient
-              </button>
+              <Button kind="primary" onClick={() => navigate('/patients/new')}>Add patient</Button>
             </div>
           )}
 
@@ -241,7 +191,7 @@ export default function DashboardPage() {
               </tbody>
             </table>
           )}
-        </div>
+        </Card>
       </main>
     </div>
   )
