@@ -187,9 +187,9 @@ export default function TeenExposurePage() {
             </div>
           </div>
 
-          {/* One "how to handle it" tip, in place of a generic line. */}
+          {/* One "how to handle it" tip, in a light card, in place of a generic line. */}
           {chosenTip ? (
-            <div style={{ marginTop: 26, textAlign: 'left', width: '100%' }}>
+            <div style={{ marginTop: 26, width: '100%', textAlign: 'left', background: teen.color.card, border: `1px solid ${teen.color.line}`, borderRadius: teen.radius.cardLg, padding: '16px 18px' }}>
               <div style={{ fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700, color: teen.color.ink }}>{chosenTip.title}</div>
               <div style={{ ...teen.type.body, fontSize: 14, color: teen.color.inkSoft, marginTop: 4 }}>{chosenTip.body}</div>
             </div>
@@ -203,18 +203,8 @@ export default function TeenExposurePage() {
         <div
           style={{ position: 'relative', padding: `0 ${teen.space.padLg} 34px`, textAlign: 'center' }}
         >
-          <p
-            style={{
-              fontFamily: teen.font.sans,
-              fontSize: 14,
-              color: teen.color.textSecondary,
-              margin: '0 0 14px',
-            }}
-          >
-            Come back and tell me how it went.
-          </p>
           <button className="teen-btn teen-btn--primary" onClick={goReport}>
-            I'm through it →
+            I did it
           </button>
           <div style={{ marginTop: 14 }}>
             {/* §2.6 — real tertiary escape hatch: bordered chip, teal, ≥48px tap height */}

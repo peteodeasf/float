@@ -83,7 +83,6 @@ export default function TeenRecordPage() {
   // The situation isn't on the experiment payload; fetch the behavior for it.
   const bipBefore: number | null = experiment?.bip_before ?? null
   const prediction: string | null = experiment?.prediction ?? null
-  const planText: string | null = experiment?.plan_description ?? null
   const dtExpected: number | null = experiment?.distress_thermometer_expected ?? null
 
   // Starts where their belief started, so the slider shows movement they make.
@@ -215,15 +214,6 @@ export default function TeenRecordPage() {
             padding: `0 ${teen.space.pad}`,
           }}
         >
-          <div style={{ marginTop: 16 }}>
-            <span style={teen.type.eyebrow}>How did it go?</span>
-            <div
-              style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '10px 0 0' }}
-            >
-              {planText ?? 'Your experiment'}
-            </div>
-          </div>
-
           <div
             style={{
               marginTop: 24,
@@ -264,7 +254,7 @@ export default function TeenRecordPage() {
           </div>
 
           <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '30px 0 0' }}>
-            Did it happen?
+            Did what you feared happen?
           </h2>
 
           <div style={{ flex: 1, minHeight: 24 }} />
