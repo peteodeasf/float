@@ -111,3 +111,23 @@ Phase 3 locks it. Phase 4 confirms mobile.
 1. **Consolidate-only, keeping the current look?** (Recommended. A refresh can follow, cheaply.)
 2. **Go ahead with Phase 0–1 now** (foundation + primitives, no screen changes), and review the
    `/design` catalog before any screen is migrated?
+
+## Foundation v1 — locked 2026-09-16
+
+Agreed with Peter from a visual review (no hex, everything shown as swatches and samples):
+
+- **Greys:** one set, lightest for page backgrounds through darkest for headings. The lightest grey
+  is for hints only — it's too faint to be body text.
+- **Brand:** the teal stays. The bright mint is a highlight accent only, never a button or text.
+- **Status colours:** red for danger, amber for warnings, green for success. The old blue was
+  dropped.
+- **Corners:** buttons and input boxes get a soft 8px corner, cards and pop-ups a rounder 12px, and
+  the fully-round shape is kept only for small labels. This is what stops a short button turning
+  into a circle.
+- **Text:** base size is 14 (up one step from 13, for readability), two weights only.
+- **Spacing:** everything snaps to a 4px grid.
+- **Shadows:** two only — resting (cards) and floating (pop-ups).
+
+Encoded in `styles/tokens.css`, `components/ui/buttons.ts` and `components/ui/primitives.tsx`. The
+catalog at `/__design` shows the agreed look. Not deployed yet — it ships with the screen migration
+so the app changes all at once, not half-and-half.

@@ -51,7 +51,7 @@ export function btn(kind: ButtonKind = 'secondary', size: ButtonSize = 'md', ext
     fontWeight: 600,
     lineHeight: 1,
     whiteSpace: 'nowrap',
-    borderRadius: '999px',
+    borderRadius: 'var(--float-radius-control)',
     cursor: 'pointer',
     ...SIZES[size],
     ...KINDS[kind],
@@ -103,7 +103,7 @@ export function statusCard(on: boolean): CSSProperties {
     padding: '0 12px',
     background: on ? 'var(--float-primary-light)' : '#fff',
     border: `1px solid ${on ? 'var(--float-primary)' : 'var(--float-border-strong)'}`,
-    borderRadius: '999px',
+    borderRadius: 'var(--float-radius-control)',
     textAlign: 'left',
     cursor: 'pointer',
     fontFamily: 'inherit',
@@ -136,7 +136,7 @@ export function chip(on: boolean, size: ButtonSize = 'sm'): CSSProperties {
     fontWeight: 600,
     lineHeight: 1,
     whiteSpace: 'nowrap',
-    borderRadius: '999px',
+    borderRadius: 'var(--float-radius-pill)',
     cursor: 'pointer',
     ...SIZES[size],
     color: on ? 'var(--float-primary-dark)' : 'var(--float-text-secondary)',
@@ -161,7 +161,7 @@ export function iconBtn(size: ButtonSize = 'sm'): CSSProperties {
     color: 'var(--float-text-secondary)',
     background: '#fff',
     border: '1px solid var(--float-border-strong)',
-    borderRadius: '999px',
+    borderRadius: 'var(--float-radius-control)',
     cursor: 'pointer',
   }
 }
@@ -211,7 +211,7 @@ export function field(size: ButtonSize = 'md'): CSSProperties {
     color: 'var(--float-text)',
     background: '#fff',
     border: '1px solid var(--float-border-strong)',
-    borderRadius: 'var(--float-radius-sm)',
+    borderRadius: 'var(--float-radius-control)',
     boxSizing: 'border-box',
   }
 }

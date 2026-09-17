@@ -32,7 +32,7 @@ export function Card({ pad = 'md', style, ...rest }: CardProps) {
       style={{
         background: 'var(--float-surface)',
         border: '1px solid var(--float-border)',
-        borderRadius: '12px',
+        borderRadius: 'var(--float-radius-card)',
         boxShadow: 'var(--float-shadow)',
         padding: CARD_PAD[pad],
         ...style,
@@ -58,7 +58,7 @@ export function Badge({ tone = 'neutral', style, ...rest }: HTMLAttributes<HTMLS
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '4px',
         fontSize: 'var(--float-font-2xs)', fontWeight: 600, lineHeight: 1.4,
-        padding: '2px 8px', borderRadius: '999px', whiteSpace: 'nowrap',
+        padding: '2px 8px', borderRadius: 'var(--float-radius-pill)', whiteSpace: 'nowrap',
         ...BADGE_TONES[tone], ...style,
       }}
       {...rest}
@@ -134,7 +134,7 @@ export function Banner({ tone = 'info', style, ...rest }: HTMLAttributes<HTMLDiv
     <div
       style={{
         fontSize: 'var(--float-font-sm)', lineHeight: 'var(--float-leading)',
-        padding: '10px 12px', borderRadius: 'var(--float-radius-sm)',
+        padding: '10px 12px', borderRadius: 'var(--float-radius-control)',
         ...BANNER_TONES[tone], ...style,
       }}
       {...rest}
@@ -161,7 +161,7 @@ export function Modal({ open, onClose, title, children, width = 460 }: { open: b
         aria-modal="true"
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'var(--float-surface)', borderRadius: '12px', boxShadow: 'var(--float-shadow-md)',
+          background: 'var(--float-surface)', borderRadius: 'var(--float-radius-card)', boxShadow: 'var(--float-shadow-md)',
           width: '100%', maxWidth: `${width}px`, maxHeight: '90vh', overflow: 'auto',
         }}
       >

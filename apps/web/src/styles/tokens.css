@@ -7,25 +7,35 @@
   --float-primary-mid: #9af6e4;
   --float-primary-text: #0d3d3a;
 
-  /* Neutrals */
-  --float-bg: #fafafa;
+  /* Neutrals — one grey ramp, each step with one job (design foundation v1, locked 2026-09-16).
+     text-hint is ~3:1 on white, so it is for hints and placeholders only, never body text. */
+  --float-bg: #f8fafc;
   --float-surface: #ffffff;
   --float-border: #e2e8f0;
   --float-border-strong: #cbd5e1;
+  --float-text-strong: #0f172a;
   --float-text: #1e293b;
   --float-text-secondary: #64748b;
   --float-text-hint: #94a3b8;
 
-  /* Semantic */
-  --float-success: #059669;
-  --float-warning: #d97706;
+  /* Semantic — three, all chosen to meet AA contrast as text on white. Foundation v1 dropped a blue
+     "info": use neutral or primary instead. */
+  --float-success: #047857;
+  --float-warning: #b45309;
   --float-danger: #dc2626;
+  /* Deprecated: not part of the locked palette. Kept only until its references are migrated out. */
   --float-info: #0ea5e9;
 
   /* Layout */
   --float-radius: 10px;
   --float-radius-sm: 6px;
   --float-radius-lg: 16px;
+  /* Shape language (foundation v1, locked): corners come from what a thing IS, not the screen.
+     Controls and containers get soft corners; the full-round pill is for labels only, so a short
+     button never turns into a circle. */
+  --float-radius-control: 8px;   /* buttons, inputs, selects */
+  --float-radius-card: 12px;     /* cards, modals, panels */
+  --float-radius-pill: 999px;    /* badges, chips, status labels */
   --float-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --float-shadow-md: 0 4px 20px rgba(0,0,0,0.07);
 
@@ -69,6 +79,8 @@
   --float-space-5: 20px;
   --float-space-6: 24px;
   --float-space-8: 32px;
+  --float-space-10: 40px;
+  --float-space-12: 48px;
 
   /* Breakpoints, for reference and for JS that needs them. Match Tailwind's defaults so classes and
      components agree on where phone becomes tablet becomes desktop. */
@@ -108,11 +120,11 @@ select:focus-visible {
 .float-app select,
 .float-app textarea {
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--float-text);
   background: #fff;
   border: 1px solid var(--float-border-strong);
-  border-radius: var(--float-radius-sm);
+  border-radius: var(--float-radius-control);
   padding: 8px 10px;
   box-sizing: border-box;
 }
