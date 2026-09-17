@@ -122,14 +122,14 @@ export function Tabs({ items, value, onChange }: { items: TabItem[]; value: stri
 // ── Banner ────────────────────────────────────────────────────────────────────
 // An inline message tied to a section: an error after a failed save, a note, a success. Replaces
 // the hand-rolled error boxes (e.g. form.tsx ERROR_BOX) scattered across screens.
-export type BannerTone = 'info' | 'success' | 'warning' | 'danger'
+export type BannerTone = 'neutral' | 'success' | 'warning' | 'danger'
 const BANNER_TONES: Record<BannerTone, CSSProperties> = {
-  info: { background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af' },
-  success: { background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46' },
-  warning: { background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' },
-  danger: { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' },
+  neutral: { background: 'var(--float-surface-sunken)', border: '1px solid var(--float-border)', color: 'var(--float-text-secondary)' },
+  success: { background: '#ecfdf5', border: '1px solid #a7f3d0', color: 'var(--float-success)' },
+  warning: { background: '#fffbeb', border: '1px solid #fde68a', color: 'var(--float-warning)' },
+  danger: { background: '#fef2f2', border: '1px solid #fecaca', color: 'var(--float-danger)' },
 }
-export function Banner({ tone = 'info', style, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: BannerTone }) {
+export function Banner({ tone = 'neutral', style, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: BannerTone }) {
   return (
     <div
       style={{

@@ -33,7 +33,7 @@ const KINDS: ButtonKind[] = ['primary', 'secondary', 'on', 'quiet', 'danger']
 const PURPOSE: Record<ButtonKind, string> = { primary: 'Main action', secondary: 'Available', on: 'Open', quiet: 'Cancel', danger: 'Delete' }
 const SIZES: [import('../../components/ui/buttons').ButtonSize, string][] = [['md', 'Normal'], ['sm', 'Small'], ['lg', 'Large']]
 const TONES: BadgeTone[] = ['neutral', 'primary', 'success', 'warning', 'danger']
-const BANNERS: BannerTone[] = ['info', 'success', 'warning', 'danger']
+const BANNERS: BannerTone[] = ['neutral', 'success', 'warning', 'danger']
 
 const SECTIONS: [string, string][] = [
   ['colors', 'Colours'], ['text', 'Text sizes'], ['corners', 'Corners'], ['shadows', 'Shadows'],
