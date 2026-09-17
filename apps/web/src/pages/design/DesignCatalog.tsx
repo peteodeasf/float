@@ -38,7 +38,7 @@ const BANNERS: BannerTone[] = ['neutral', 'success', 'warning', 'danger']
 const SECTIONS: [string, string][] = [
   ['colors', 'Colours'], ['text', 'Text sizes'], ['corners', 'Corners'], ['shadows', 'Shadows'],
   ['spacing', 'Spacing'], ['buttons', 'Buttons'], ['small', 'Small buttons and counts'],
-  ['choices', 'Choices'], ['status', 'Status labels'], ['tabs', 'Tabs'], ['tags', 'Tags'],
+  ['choices', 'Choices'], ['status', 'Status buttons'], ['tabs', 'Tabs'], ['tags', 'Tags'],
   ['messages', 'Messages'], ['fields', 'Form fields'], ['cards', 'Cards'], ['empty', 'Nothing to show'],
   ['popup', 'Pop-up'],
 ]
@@ -152,7 +152,7 @@ export default function DesignCatalog() {
         </div>
       </Section>
 
-      <Section id="status" title="Status labels (state plus a name)">
+      <Section id="status" title="Status buttons (show a state, tap to open a panel)">
         <div style={row}>
           <button style={statusCard(true)}>
             <span><span style={statusCardTitle}>Child access</span><span style={statusCardState}>Connected</span></span>
