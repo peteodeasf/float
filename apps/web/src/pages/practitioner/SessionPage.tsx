@@ -600,11 +600,6 @@ function StepList({ planId, trigger, onEdited }: {
                     </button>
                   ))}
               </div>
-              {suggestQuery.data!.variations && (
-                <div style={{ fontSize: 12, color: '#6b7a79', marginTop: 8 }}>
-                  Other variations: {suggestQuery.data!.variations}
-                </div>
-              )}
             </>
           )}
           <button onClick={() => setSuggesting(false)} style={{ ...quietLink, marginTop: 9 }}>Hide</button>
