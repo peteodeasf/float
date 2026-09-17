@@ -81,9 +81,17 @@ export default function TeenRecordPage() {
   })
 
   // The situation isn't on the experiment payload; fetch the behavior for it.
+  const behaviorId: string | undefined = experiment?.avoidance_behavior_id ?? undefined
+  const { data: behaviorData } = useQuery({
+    queryKey: ['teen-behavior', behaviorId],
+    queryFn: async () => (await teenApiClient.get(`/patient/behaviors/${behaviorId}`)).data,
+    enabled: !!behaviorId,
+  })
+
   const bipBefore: number | null = experiment?.bip_before ?? null
   const prediction: string | null = experiment?.prediction ?? null
   const planText: string | null = experiment?.plan_description ?? null
+  const situationName: string | null = behaviorData?.situation?.name ?? null
   const dtExpected: number | null = experiment?.distress_thermometer_expected ?? null
 
   // Starts where their belief started, so the slider shows movement they make.
@@ -216,12 +224,13 @@ export default function TeenRecordPage() {
           }}
         >
           <div style={{ marginTop: 16 }}>
-            <span style={teen.type.eyebrow}>How did it go?</span>
+            <span style={teen.type.eyebrow}>How it went</span>
             <div
-              style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '10px 0 0' }}
+              style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: '10px 0 0' }}
             >
               {planText ?? 'Your experiment'}
             </div>
+            {situationName && <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{situationName}</div>}
           </div>
 
           <div
@@ -241,8 +250,8 @@ export default function TeenRecordPage() {
             <div
               style={{
                 fontFamily: teen.font.sans,
-                fontSize: 16,
-                color: teen.color.textSecondary,
+                fontSize: 22,
+                color: teen.color.inkSoft,
                 marginTop: 6,
                 lineHeight: 1.35,
                 textWrap: 'balance',
@@ -260,7 +269,7 @@ export default function TeenRecordPage() {
               marginTop: 10,
             }}
           >
-            Your fear strength — {bipBefore ?? '—'}%
+            You put it at {bipBefore ?? '—'}%
           </div>
 
           <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.lg, margin: '30px 0 0' }}>

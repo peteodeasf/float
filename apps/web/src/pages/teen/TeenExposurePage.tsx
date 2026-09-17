@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
@@ -39,12 +39,6 @@ export default function TeenExposurePage() {
       (await teenApiClient.get(`/patient/experiments/${experimentId}/tips`)).data,
     enabled: !!experimentId,
   })
-  // One tip shown on the "Let's do it" screen, in place of a generic line. Picked once the tips
-  // load, so it's steady on this visit and can differ the next time they come to an experiment.
-  const chosenTip = useMemo(
-    () => (tips && tips.length ? tips[Math.floor(Math.random() * tips.length)] : null),
-    [tips],
-  )
 
   const behaviorId: string | undefined = experiment?.avoidance_behavior_id ?? undefined
   const { data: behaviorData } = useQuery({
@@ -130,34 +124,34 @@ export default function TeenExposurePage() {
             padding: `0 ${teen.space.padLg}`,
           }}
         >
-          <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>Let's do it</span>
+          <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>You're in it</span>
 
-          {/* The step is the hero here. */}
-          <div style={{ margin: '14px 0 24px' }}>
-            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
+          {/* The step is what they are doing; the situation is the quiet line under it. */}
+          <div style={{ margin: '14px 0 28px' }}>
+            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.sm, margin: 0 }}>
               {planText ?? 'Your experiment'}
             </h2>
+            {situationName && <div style={{ fontFamily: teen.font.sans, fontSize: 14, fontWeight: 600, color: teen.color.textSecondary, marginTop: 6 }}>{situationName}</div>}
           </div>
 
-          {/* Your fear — kept quiet so the step leads. */}
           <div
             style={{
               width: '100%',
-              background: teen.color.card,
-              border: `1px solid ${teen.color.line}`,
+              background: teen.color.ink,
               borderRadius: teen.radius.cardLg,
-              padding: '18px 20px',
+              padding: '26px 24px',
+              boxShadow: teen.shadow.cardDark,
               textAlign: 'left',
             }}
           >
             <div
               style={{
                 fontFamily: teen.font.sans,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 700,
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                color: teen.color.tealMid,
+                color: teen.color.mint,
               }}
             >
               Your fear
@@ -166,10 +160,10 @@ export default function TeenExposurePage() {
               <div
                 style={{
                   fontFamily: teen.font.sans,
-                  fontSize: 16,
-                  color: teen.color.ink,
+                  fontSize: 20,
+                  color: teen.color.white,
                   lineHeight: 1.35,
-                  marginTop: 6,
+                  marginTop: 8,
                 }}
               >
                 “{prediction}”
@@ -178,26 +172,18 @@ export default function TeenExposurePage() {
             <div
               style={{
                 fontFamily: teen.font.sans,
-                fontSize: 13,
-                color: teen.color.textSecondary,
-                marginTop: 10,
+                fontSize: 14,
+                color: teen.color.onDark,
+                marginTop: 12,
               }}
             >
-              Your fear strength — {bipBefore ?? '—'}%
+              You put it at {bipBefore ?? '—'}%
             </div>
           </div>
 
-          {/* One "how to handle it" tip, in place of a generic line. */}
-          {chosenTip ? (
-            <div style={{ marginTop: 26, textAlign: 'left', width: '100%' }}>
-              <div style={{ fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700, color: teen.color.ink }}>{chosenTip.title}</div>
-              <div style={{ ...teen.type.body, fontSize: 14, color: teen.color.inkSoft, marginTop: 4 }}>{chosenTip.body}</div>
-            </div>
-          ) : (
-            <p style={{ ...teen.type.body, color: teen.color.inkSoft, marginTop: 26 }}>
-              Don’t do anything to feel safer. Just be in it.
-            </p>
-          )}
+          <p style={{ ...teen.type.body, color: teen.color.inkSoft, marginTop: 26 }}>
+            Don’t do anything to feel safer. Just be in it.
+          </p>
         </div>
 
         <div
@@ -313,6 +299,38 @@ export default function TeenExposurePage() {
             </div>
           )}
         </div>
+
+        {tips && tips.length > 0 && (
+          <div style={{ marginTop: 26 }}>
+            <div style={teen.type.eyebrow}>How to handle it</div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {tips.map(tip => (
+                <div key={tip.id} className="teen-card" style={{ padding: '14px 16px' }}>
+                  <div
+                    style={{
+                      fontFamily: teen.font.sans,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: teen.color.ink,
+                    }}
+                  >
+                    {tip.title}
+                  </div>
+                  <div
+                    style={{
+                      ...teen.type.body,
+                      fontSize: 13,
+                      color: teen.color.inkSoft,
+                      marginTop: 4,
+                    }}
+                  >
+                    {tip.body}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ height: 18 }} />
       </div>
