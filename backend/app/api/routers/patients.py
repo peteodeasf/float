@@ -1768,7 +1768,9 @@ async def get_experiment_tips(
         )).scalars().all())
 
     tips = (await db.execute(
-        select(JitTip).where(JitTip.is_active.is_(True)).order_by(
+        # Only tips written for the child's exposure screen — parent-audience tips must never
+        # surface here. The parent app filters the same way (audience == "parent").
+        select(JitTip).where(JitTip.is_active.is_(True), JitTip.audience == "teen").order_by(
             JitTip.display_order, JitTip.created_at
         )
     )).scalars().all()
