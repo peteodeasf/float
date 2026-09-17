@@ -583,6 +583,7 @@ export default function PatientPage() {
   const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
   const [noteContent, setNoteContent] = useState('')
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
+  const [openNoteMenuId, setOpenNoteMenuId] = useState<string | null>(null)
 
   // Flat-tab navigation (replaces the old phase spine + rail + setup-step machine).
   // The tab lives in the URL so other surfaces can land on one — session mode exits back to Plan.
@@ -1141,6 +1142,18 @@ export default function PatientPage() {
     setNoteTagInput('')
   }
   const startNewNote = () => { setEditingNote(null); setNoteParticipants(noteParticipantFilter ? [noteParticipantFilter] : []); setNoteTags([]); setNoteTagInput(''); setNoteDate(new Date().toISOString().split('T')[0]); setNoteContent(''); setShowNoteForm(true) }
+  const beginEditNote = (n: SessionNote) => { setEditingNote(n); setNoteParticipants(n.participants ?? []); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }
+
+  // Who a participant is, for the avatar chip: the patient's or the parent's own first name when we
+  // have it, so a note reads "Leo" / "Rachel" rather than the abstract "Patient" / "Parent".
+  const participantName = (pt: SessionParticipant) => {
+    const full = pt === 'patient' ? patient?.name : patient?.parent_name
+    const first = full?.trim().split(/\s+/)[0]
+    return first || (pt === 'patient' ? 'Patient' : 'Parent')
+  }
+  const participantChipColors = (pt: SessionParticipant) => pt === 'parent'
+    ? { bg: '#eafaf6', text: '#0d3d3a', avatar: '#1d9e75' }
+    : { bg: '#ede9fe', text: '#5b21b6', avatar: '#7f77dd' }
 
   const sessionNotesList = (
     <div style={cardStyle}>
@@ -1164,8 +1177,9 @@ export default function PatientPage() {
       <RecordingsInProgress patientId={patientId!} />
 
       {/* Two filters, two dimensions — who was in the room, and how the note is tagged. They sit
-          in one row but are labelled and divided so they don't read as one list of choices. */}
-      {notesList.length > 0 && !showNoteForm && (
+          in one row but are labelled and divided so they don't read as one list of choices. Hidden
+          until there are enough notes to be worth filtering — with a handful, they just take space. */}
+      {notesList.length > 3 && !showNoteForm && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
           <span style={noteFilterGroupCap}>Who</span>
           <button onClick={() => setNotesWhoFilter(null)} style={noteTagFilterChip(notesWhoFilter === null)}>Anyone</button>
@@ -1217,30 +1231,67 @@ export default function PatientPage() {
       )}
 
       {showNoteForm ? null : filteredNotes.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {filteredNotes.map(n => (
-            <div key={n.id} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  {(n.participants ?? []).length === 0 && <span className="px-1 py-0.5 rounded font-medium" style={{ background: '#f1f5f9', color: '#94a3b8' }}>&mdash;</span>}
-                  {(n.participants ?? []).map(pt => (
-                    <span key={pt} className="px-1 py-0.5 rounded font-medium" style={{ background: pt === 'parent' ? '#eafaf6' : '#ede9fe', color: pt === 'parent' ? '#0d3d3a' : '#5b21b6' }}>{pt === 'parent' ? 'Parent' : 'Patient'}</span>
-                  ))}
-                  {n.is_draft && <span className="px-1 py-0.5 rounded" style={{ background: '#fff4d6', color: '#8a5a00', fontWeight: 700 }}>Draft · from a recording</span>}
-                  {(n.tags ?? []).map(t => <span key={t} className="px-1 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#475569', fontWeight: 500 }}>{t}</span>)}
-                  <span className="text-slate-400">{new Date(n.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {filteredNotes.map(n => {
+            const d = new Date(n.session_date + 'T00:00:00')
+            const expanded = expandedNoteId === n.id
+            return (
+              <div
+                key={n.id}
+                onClick={() => setExpandedNoteId(expanded ? null : n.id)}
+                onMouseOver={e => { e.currentTarget.style.borderColor = '#cbd5e1' }}
+                onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0' }}
+                style={{ display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: '14px', alignItems: 'start', background: '#fff', border: '0.5px solid #e2e8f0', borderRadius: '12px', padding: '12px 12px 12px 14px', cursor: 'pointer' }}
+              >
+                {/* Date column: the timeline reads straight down, newest first. */}
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', lineHeight: 1.1 }}>{d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                 </div>
-                <div style={{ ...buttonRow, flexShrink: 0 }}>
-                  <button onClick={() => { setEditingNote(n); setNoteParticipants(n.participants ?? []); setNoteTags(n.tags ?? []); setNoteTagInput(''); setNoteDate(n.session_date); setNoteContent(n.content); setShowNoteForm(true) }} style={btn('secondary', 'sm')}>Edit</button>
-                  <button onClick={() => { if (confirm('Delete this note?')) deleteNoteMut.mutate(n.id) }} style={btn('danger', 'sm')}>Delete</button>
+
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                    {/* Who was there, as an avatar chip — visually distinct from the grey tags. */}
+                    {(n.participants ?? []).length === 0 && <span className="px-1 py-0.5 rounded font-medium" style={{ fontSize: '11px', background: '#f1f5f9', color: '#94a3b8' }}>&mdash;</span>}
+                    {(n.participants ?? []).map(pt => {
+                      const c = participantChipColors(pt)
+                      return (
+                        <span key={pt} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: c.bg, color: c.text, fontSize: '11px', fontWeight: 500, padding: '2px 8px 2px 3px', borderRadius: '999px' }}>
+                          <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: c.avatar, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px' }}>{participantName(pt).charAt(0).toUpperCase()}</span>
+                          {participantName(pt)}
+                        </span>
+                      )
+                    })}
+                    {n.is_draft && <span className="px-1 py-0.5 rounded" style={{ fontSize: '11px', background: '#fff4d6', color: '#8a5a00', fontWeight: 700 }}>Draft · from a recording</span>}
+                    {(n.tags ?? []).map(t => <span key={t} style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', border: '0.5px solid #e2e8f0', padding: '2px 8px', borderRadius: '6px' }}>{t}</span>)}
+                  </div>
+                  {/* Two lines when collapsed, cut on a line rather than mid-word; full text when opened. */}
+                  <p style={expanded
+                    ? { whiteSpace: 'pre-wrap', margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.5 }
+                    : { margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {n.content}
+                  </p>
+                  <div onClick={e => e.stopPropagation()}>
+                    <RecordedNoteDetails note={n} patientId={patientId!} />
+                  </div>
+                </div>
+
+                {/* Edit and Delete live behind a menu, so Delete is not a red button on every row. */}
+                <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                  <button aria-label="More actions" onClick={() => setOpenNoteMenuId(openNoteMenuId === n.id ? null : n.id)} style={{ border: 'none', background: 'transparent', color: '#94a3b8', fontSize: '18px', lineHeight: 1, padding: '2px 6px', cursor: 'pointer' }}>&hellip;</button>
+                  {openNoteMenuId === n.id && (
+                    <>
+                      <div onClick={() => setOpenNoteMenuId(null)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                      <div style={{ position: 'absolute', right: 0, top: '26px', zIndex: 11, background: '#fff', border: '0.5px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '132px', overflow: 'hidden' }}>
+                        <button onClick={() => { setOpenNoteMenuId(null); beginEditNote(n) }} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '9px 12px', fontSize: '12px', color: '#334155', cursor: 'pointer' }}>Edit</button>
+                        <button onClick={() => { setOpenNoteMenuId(null); if (confirm('Delete this note?')) deleteNoteMut.mutate(n.id) }} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', borderTop: '0.5px solid #f1f5f9', background: 'transparent', padding: '9px 12px', fontSize: '12px', color: '#dc2626', cursor: 'pointer' }}>Delete</button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-              <p className="text-slate-600" style={{ whiteSpace: 'pre-wrap', cursor: 'pointer', margin: 0 }} onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}>
-                {expandedNoteId === n.id ? n.content : n.content.length > 100 ? n.content.slice(0, 100) + '...' : n.content}
-              </p>
-              <RecordedNoteDetails note={n} patientId={patientId!} />
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : !showNoteForm && (
         <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5', margin: 0 }}>
