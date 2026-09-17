@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
@@ -14,7 +14,7 @@ import teen from '../../styles/teenTokens'
  * disconfirmation question (`outcome`) — the app no longer shows a "you're in
  * it" moment here; that now lives on the home's pre-exposure state.
  */
-type Phase = 'outcome' | 'toohard' | 'capture' | 'score'
+type Phase = 'outcome' | 'toohard' | 'capture'
 
 const WHAT_HAPPENED = ['A few glanced', 'Nobody cared', 'Awkward but fine']
 
@@ -33,21 +33,6 @@ const WHAT_LEARNED_COPED = [
   'It passed quicker than I thought',
   'I can handle it happening',
 ]
-
-const ORDINALS = [
-  '',
-  'First',
-  'Second',
-  'Third',
-  'Fourth',
-  'Fifth',
-  'Sixth',
-  'Seventh',
-  'Eighth',
-  'Ninth',
-  'Tenth',
-]
-const ordinal = (n: number) => ORDINALS[n] ?? `${n}th`
 
 export default function TeenRecordPage() {
   const { experimentId } = useParams<{ experimentId: string }>()
@@ -89,32 +74,6 @@ export default function TeenRecordPage() {
 
   const learnedOptions = fearedOccurred ? WHAT_LEARNED_COPED : WHAT_LEARNED_DISCONFIRMED
 
-  /** Pulled once we reach the scoreboard, to make its headline claim true. */
-  const { data: ladder } = useQuery({
-    queryKey: ['teen-ladder-score'],
-    queryFn: async () => (await teenApiClient.get('/patient/ladder')).data,
-    enabled: phase === 'score',
-  })
-
-  const beatThisWeek = useMemo(() => {
-    const situations: Array<{ behaviors: Array<{ experiments: Array<Record<string, unknown>> }> }> =
-      ladder?.situations ?? []
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    let count = 0
-    for (const s of situations) {
-      for (const b of s.behaviors ?? []) {
-        for (const e of b.experiments ?? []) {
-          if (e.feared_outcome_occurred !== false) continue
-          const raw = e.scheduled_date as string | null | undefined
-          const when = raw ? new Date(raw).getTime() : null
-          // If we don't know when it happened, don't claim it was this week.
-          if (when != null && when >= weekAgo) count++
-        }
-      }
-    }
-    return count
-  }, [ladder])
-
   const recordMutation = useMutation({
     mutationFn: async () => {
       await teenApiClient.put(`/patient/experiments/${experimentId}/after`, {
@@ -132,7 +91,18 @@ export default function TeenRecordPage() {
       queryClient.invalidateQueries({ queryKey: ['teen-pending'] })
       queryClient.invalidateQueries({ queryKey: ['teen-ladder'] })
       queryClient.invalidateQueries({ queryKey: ['teen-experiment', experimentId] })
-      setPhase('score')
+      // The result used to be its own screen. Now we hand these numbers to the
+      // progress tab, which shows them once in a dismissible tile at the top.
+      navigate('/teen/progress', {
+        state: {
+          scoreboard: {
+            dtExpected,
+            actualDT: actualDT ?? 0,
+            bipBefore: bipBefore != null ? Math.round(bipBefore) : null,
+            bipAfter,
+          },
+        },
+      })
     },
   })
 
@@ -497,125 +467,6 @@ export default function TeenRecordPage() {
     )
   }
 
-  // ─────────────────────────────── SCORE ────────────────────────────────
-  if (phase === 'score') {
-    const dropped = bipBefore != null ? Math.round(bipBefore) - bipAfter : 0
-    const headline =
-      beatThisWeek >= 2
-        ? `${ordinal(beatThisWeek)} time you beat your prediction this week.`
-        : dropped > 0
-          ? `Your belief dropped ${dropped} points.`
-          : 'You showed up and got the data.'
-
-    return (
-      <TeenScreen variant="dark">
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 280,
-            height: 280,
-            borderRadius: '50%',
-            background: teen.decor.glowMintFaint,
-            pointerEvents: 'none',
-          }}
-        />
-        <div
-          style={{
-            position: 'relative',
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            padding: '0 28px',
-          }}
-        >
-          <span style={{ ...teen.type.eyebrow, color: teen.color.mint }}>The scoreboard</span>
-
-          <div style={{ marginTop: 24, display: 'flex', gap: 14 }}>
-            <div
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.10)',
-                borderRadius: teen.radius.btnLg,
-                padding: '18px 16px',
-              }}
-            >
-              <div
-                style={{ fontFamily: teen.font.sans, fontSize: 13, color: teen.color.mint }}
-              >
-                Fear Level
-              </div>
-              <div
-                style={{
-                  fontFamily: teen.font.mono,
-                  fontSize: teen.dataSize.sm,
-                  color: teen.color.white,
-                  marginTop: 6,
-                }}
-              >
-                {dtExpected ?? '—'}
-                <span style={{ color: teen.color.mint, fontSize: 16 }}> → {actualDT ?? '—'}</span>
-              </div>
-            </div>
-
-            <div
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.10)',
-                borderRadius: teen.radius.btnLg,
-                padding: '18px 16px',
-              }}
-            >
-              <div
-                style={{ fontFamily: teen.font.sans, fontSize: 13, color: teen.color.mint }}
-              >
-                Belief
-              </div>
-              <div
-                style={{
-                  fontFamily: teen.font.mono,
-                  fontSize: teen.dataSize.sm,
-                  color: teen.color.white,
-                  marginTop: 6,
-                }}
-              >
-                {bipBefore != null ? Math.round(bipBefore) : '—'}
-                <span style={{ color: teen.color.mint, fontSize: 16 }}> → {bipAfter}</span>
-              </div>
-            </div>
-          </div>
-
-          <p
-            style={{
-              fontFamily: teen.font.sans,
-              fontSize: 30,
-              fontWeight: 600,
-              lineHeight: 1.25,
-              color: teen.color.white,
-              textWrap: 'balance',
-              marginTop: 26,
-            }}
-          >
-            {headline}
-          </p>
-        </div>
-
-        <div style={{ position: 'relative', padding: `0 ${teen.space.padLg} 34px` }}>
-          <button
-            className="teen-btn teen-btn--mint"
-            onClick={() => navigate('/teen/progress')}
-          >
-            See my progress →
-          </button>
-        </div>
-      </TeenScreen>
-    )
-  }
-
   // ────────────────────────────── CAPTURE ───────────────────────────────
   return (
     <TeenScreen>
@@ -743,7 +594,7 @@ export default function TeenRecordPage() {
             disabled={recordMutation.isPending}
             onClick={() => recordMutation.mutate()}
           >
-            {recordMutation.isPending ? 'Saving…' : 'See the scoreboard →'}
+            {recordMutation.isPending ? 'Submitting…' : 'Submit'}
           </button>
         </div>
       </div>

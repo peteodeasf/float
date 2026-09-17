@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTeenAuth } from '../../context/TeenAuthContext'
 import { teenApiClient } from '../../api/client'
@@ -16,14 +16,6 @@ import {
   type SituationTag,
 } from '../../lib/teenProgress'
 import teen from '../../styles/teenTokens'
-import TodayCard from '../../components/teen/TodayCard'
-import {
-  comingUp,
-  dueToday,
-  waitingOnChild,
-  whenLabel,
-  type PendingExperiment,
-} from '../../lib/teenWork'
 
 const PILL_CLASS: Record<SituationTag, string> = {
   manageable: 'teen-pill teen-pill--manageable',
@@ -42,29 +34,15 @@ const EFFORT_LABEL: Record<string, string> = {
   'situations worked': 'situations',
 }
 
-const workName: React.CSSProperties = {
-  fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700, color: teen.color.ink, lineHeight: 1.3,
-}
-const workSit: React.CSSProperties = { fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textSecondary }
-const workAction: React.CSSProperties = {
-  fontFamily: teen.font.sans, fontSize: 13, fontWeight: 700, color: teen.color.teal, marginTop: 2,
-}
-function workRow(kind: 'setup' | 'started'): React.CSSProperties {
-  return {
-    display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer',
-    padding: '14px 15px', borderRadius: teen.radius.btn,
-    background: kind === 'setup' ? teen.color.mintSoft : teen.color.card,
-    border: kind === 'setup' ? `1.5px solid ${teen.color.mintDeep}` : `1.5px dashed ${teen.color.tealMid}`,
-  }
-}
-function chip(kind: 'setup' | 'started' | 'next'): React.CSSProperties {
-  const base: React.CSSProperties = {
-    alignSelf: 'flex-start', marginTop: 4, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 700,
-    borderRadius: teen.radius.pill, padding: '3px 9px', whiteSpace: 'nowrap',
-  }
-  if (kind === 'setup') return { ...base, background: teen.color.ink, color: teen.color.white }
-  if (kind === 'started') return { ...base, background: teen.color.cardPure, color: teen.color.teal, border: `1px solid ${teen.color.tealMid}` }
-  return { ...base, background: teen.color.mint, color: teen.color.ink }
+const ORDINALS = ['', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth']
+const ordinal = (n: number) => ORDINALS[n] ?? `${n}th`
+
+/** Handed over by the record flow via navigation state — shown once, then dismissed. */
+type Scoreboard = {
+  dtExpected: number | null
+  actualDT: number
+  bipBefore: number | null
+  bipAfter: number
 }
 
 export default function TeenProgressPage() {
@@ -82,34 +60,6 @@ export default function TeenProgressPage() {
     [ladderData]
   )
 
-  // What they're working on now. Peter, 2026-09-10: with the home as the ladder, current
-  // experiments needed a place of their own — so they lead this tab.
-  const navigate = useNavigate()
-  const { data: pendingData } = useQuery({
-    queryKey: ['teen-pending', patientId],
-    queryFn: async () => (await teenApiClient.get('/patient/experiments/pending')).data,
-    enabled: !!patientId,
-  })
-  // Same gate as the home: when the clinician has the ladder switched off, nothing is current.
-  const ladderOn = ladderData?.plan?.ladder_active !== false
-  const pending: PendingExperiment[] = ladderOn ? pendingData ?? [] : []
-  const now = new Date()
-  const today = dueToday(pending, now)
-  const waiting = waitingOnChild(pending)
-  const later = comingUp(pending, now)
-  const nameById: Record<string, string> = {}
-  const situationById: Record<string, string> = {}
-  for (const s of situations) {
-    for (const b of s.behaviors ?? []) {
-      nameById[b.id] = b.name
-      situationById[b.id] = s.name
-    }
-  }
-  const expName = (e: PendingExperiment) =>
-    e.plan_description || (e.avoidance_behavior_id ? nameById[e.avoidance_behavior_id] : '') || 'Your experiment'
-  const expSituation = (e: PendingExperiment) =>
-    (e.avoidance_behavior_id && situationById[e.avoidance_behavior_id]) || null
-  const hasWork = today.length + waiting.length + later.length > 0
   const effort = useMemo(() => deriveEffort(situations), [situations])
   const progress = useMemo(
     () => situations.map(deriveSituationProgress),
@@ -117,6 +67,41 @@ export default function TeenProgressPage() {
   )
 
   const selected = progress.find(p => p.id === selectedId) ?? null
+
+  // The just-finished result, if we arrived here straight from submitting one.
+  // It rides in on navigation state, so a later visit to this tab won't show it.
+  const location = useLocation()
+  const scoreboard = (location.state as { scoreboard?: Scoreboard } | null)?.scoreboard ?? null
+  const [scoreDismissed, setScoreDismissed] = useState(false)
+  const showScore = !!scoreboard && !scoreDismissed
+
+  // How many predictions the child has beaten in the last seven days — makes the
+  // headline's claim true. Reads the raw ladder, which is refetched after a submit.
+  const beatThisWeek = useMemo(() => {
+    const list: Array<{ behaviors?: Array<{ experiments?: Array<Record<string, unknown>> }> }> =
+      ladderData?.situations ?? []
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    let count = 0
+    for (const s of list) {
+      for (const b of s.behaviors ?? []) {
+        for (const e of b.experiments ?? []) {
+          if (e.feared_outcome_occurred !== false) continue
+          const raw = e.scheduled_date as string | null | undefined
+          const when = raw ? new Date(raw).getTime() : null
+          if (when != null && when >= weekAgo) count++
+        }
+      }
+    }
+    return count
+  }, [ladderData])
+
+  const scoreHeadline = useMemo(() => {
+    if (!scoreboard) return ''
+    const dropped = scoreboard.bipBefore != null ? scoreboard.bipBefore - scoreboard.bipAfter : 0
+    if (beatThisWeek >= 2) return `${ordinal(beatThisWeek)} time you beat your prediction this week.`
+    if (dropped > 0) return `Your belief dropped ${dropped} points.`
+    return 'You showed up and got the data.'
+  }, [scoreboard, beatThisWeek])
 
   // ───────────────────────── SITUATION DETAIL ─────────────────────────
   if (selected) {
@@ -264,6 +249,81 @@ export default function TeenProgressPage() {
           gap: 16,
         }}
       >
+        {/* Just-finished result — a compact tile shown once, then dismissed. */}
+        {showScore && scoreboard && (
+          <div
+            style={{
+              position: 'relative',
+              background: teen.color.ink,
+              borderRadius: 20,
+              padding: '16px 16px 15px',
+              color: teen.color.white,
+            }}
+          >
+            <button
+              onClick={() => setScoreDismissed(true)}
+              aria-label="Dismiss"
+              style={{
+                position: 'absolute',
+                top: 8,
+                right: 10,
+                background: 'none',
+                border: 0,
+                cursor: 'pointer',
+                color: teen.color.onDark,
+                font: `400 22px ${teen.font.sans}`,
+                lineHeight: 1,
+                padding: 6,
+              }}
+            >
+              ×
+            </button>
+            <span style={{ ...teen.type.eyebrow, color: teen.color.mint }}>Scoreboard</span>
+            <p
+              style={{
+                fontFamily: teen.font.sans,
+                fontSize: 18,
+                fontWeight: 600,
+                lineHeight: 1.3,
+                color: teen.color.white,
+                textWrap: 'balance',
+                margin: '8px 24px 0 0',
+              }}
+            >
+              {scoreHeadline}
+            </p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+              <div
+                style={{
+                  flex: 1,
+                  background: 'rgba(255,255,255,0.10)',
+                  borderRadius: teen.radius.btn,
+                  padding: '12px 13px',
+                }}
+              >
+                <div style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.mint }}>Fear Level</div>
+                <div style={{ fontFamily: teen.font.mono, fontSize: 20, color: teen.color.white, marginTop: 5 }}>
+                  {scoreboard.dtExpected ?? '—'}
+                  <span style={{ color: teen.color.mint, fontSize: 14 }}> → {scoreboard.actualDT}</span>
+                </div>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  background: 'rgba(255,255,255,0.10)',
+                  borderRadius: teen.radius.btn,
+                  padding: '12px 13px',
+                }}
+              >
+                <div style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.mint }}>Belief</div>
+                <div style={{ fontFamily: teen.font.mono, fontSize: 20, color: teen.color.white, marginTop: 5 }}>
+                  {scoreboard.bipBefore ?? '—'}
+                  <span style={{ color: teen.color.mint, fontSize: 14 }}> → {scoreboard.bipAfter}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* They agreed to this with their clinician. Said here, whatever else is on the tab, so it
             stays true to them. */}
@@ -271,48 +331,6 @@ export default function TeenProgressPage() {
           <p style={{ ...teen.type.body, fontSize: 13, color: teen.color.textSecondary, margin: 0 }}>
             Your parent can see your ladder, what's planned and what you've done. Not what you write.
           </p>
-        )}
-
-        {hasWork && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={teen.type.eyebrow}>What you're working on</div>
-            {today.map(e => (
-              <TodayCard
-                key={e.id}
-                when={whenLabel(e, now)}
-                name={expName(e)}
-                situation={expSituation(e)}
-                onDoItNow={() => navigate(`/teen/exposure/${e.id}?now=1`)}
-                onTellMe={() => navigate(`/teen/record/${e.id}`)}
-              />
-            ))}
-            {waiting.map(e => (
-              <button
-                key={e.id}
-                onClick={() => navigate(`/teen/experiment/${e.avoidance_behavior_id}?experiment=${e.id}`)}
-                style={workRow('started')}
-              >
-                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={workName}>{expName(e)}</span>
-                  {expSituation(e) && <span style={workSit}>{expSituation(e)}</span>}
-                  <span style={chip('started')}>Set up with your clinician</span>
-                  <span style={workAction}>{e.scheduled_date ? 'Finish setting it up' : "Pick when you'll do it"}</span>
-                </span>
-                <span style={{ color: teen.color.chevron, flex: 'none', fontSize: 20 }}>›</span>
-              </button>
-            ))}
-            {later.map(e => (
-              <button key={e.id} onClick={() => navigate(`/teen/exposure/${e.id}`)} style={workRow('setup')}>
-                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={workName}>{expName(e)}</span>
-                  {expSituation(e) && <span style={workSit}>{expSituation(e)}</span>}
-                  <span style={chip('setup')}>{whenLabel(e, now)}</span>
-                </span>
-                <span style={{ color: teen.color.chevron, flex: 'none', fontSize: 20 }}>›</span>
-              </button>
-            ))}
-            <div style={{ ...teen.type.eyebrow, marginTop: 10 }}>How it's going</div>
-          </div>
         )}
 
         {/* Effort leads — never open on a lone red line. */}

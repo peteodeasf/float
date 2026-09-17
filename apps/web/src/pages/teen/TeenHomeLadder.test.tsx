@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom'
 
 // No child can be signed in here, so the child's identity is stubbed and every query is seeded.
 vi.mock('../../context/TeenAuthContext', () => ({
@@ -37,7 +37,7 @@ const PENDING = [
   { id: 'e-later', status: 'committed', scheduled_date: at(3, 19), scheduled_time_bucket: 'evening', avoidance_behavior_id: 'r5', plan_description: 'Stop and ask John a question' },
 ]
 
-function renderWith(ui: React.ReactElement) {
+function renderWith(ui: React.ReactElement, opts?: { entries?: MemoryRouterProps['initialEntries'] }) {
   const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
   qc.setQueryData(['teen-ladder', 'p1'], {
     plan: { id: 'plan', ladder_active: true },
@@ -49,7 +49,7 @@ function renderWith(ui: React.ReactElement) {
   qc.setQueryData(['teen-messages', 'p1'], [])
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={opts?.entries}>{ui}</MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -94,13 +94,30 @@ describe('the child home is the ladder', () => {
   })
 })
 
-describe('Progress leads with what they are working on', () => {
-  it('lists due, waiting and later, above how it is going', () => {
+describe('Progress is how it is going, not what to do next', () => {
+  it('drops the working-on section and leads with effort', () => {
     renderWith(<TeenProgressPage />)
-    expect(screen.getByText("What you're working on")).toBeInTheDocument()
-    expect(screen.getByText('Today · Morning')).toBeInTheDocument()
-    expect(screen.getByText('Set up with your clinician')).toBeInTheDocument()
-    expect(screen.getByText(/· Evening$/)).toBeInTheDocument()
-    expect(screen.getByText("How it's going")).toBeInTheDocument()
+    expect(screen.queryByText("What you're working on")).not.toBeInTheDocument()
+    expect(screen.queryByText('Set up with your clinician')).not.toBeInTheDocument()
+    expect(screen.getByText('Showing up')).toBeInTheDocument()
+  })
+
+  it('shows the scoreboard tile once, from navigation state', () => {
+    renderWith(<TeenProgressPage />, {
+      entries: [
+        {
+          pathname: '/teen/progress',
+          state: { scoreboard: { dtExpected: 7, actualDT: 3, bipBefore: 80, bipAfter: 40 } },
+        },
+      ],
+    })
+    expect(screen.getByText('Scoreboard')).toBeInTheDocument()
+    expect(screen.getByText('Your belief dropped 40 points.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument()
+  })
+
+  it('shows no scoreboard tile on an ordinary visit', () => {
+    renderWith(<TeenProgressPage />)
+    expect(screen.queryByText('Scoreboard')).not.toBeInTheDocument()
   })
 })
