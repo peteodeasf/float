@@ -59,6 +59,7 @@ import EducationModulePage from './pages/practitioner/EducationModulePage'
 import TeenClosedPage from './pages/teen/TeenClosedPage'
 import ParentClosedPage from './pages/parent/ParentClosedPage'
 import { getTeenMe, getParentMe } from './api/me'
+import DesignCatalog from './pages/design/DesignCatalog'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -112,6 +113,7 @@ createRoot(document.getElementById('root')!).render(
               {import.meta.env.DEV && <Route path="/__just-say-it-preview" element={<JustSayItPreview />} />}
               {import.meta.env.DEV && <Route path="/__education-preview" element={<EducationPreview />} />}
               {import.meta.env.DEV && <Route path="/__buttons-preview" element={<ButtonsPreview />} />}
+              {import.meta.env.DEV && <Route path="/__design" element={<DesignCatalog />} />}
               {import.meta.env.DEV && <Route path="/__education-preview/:moduleId" element={<EducationPreview />} />}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

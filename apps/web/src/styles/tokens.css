@@ -28,6 +28,61 @@
   --float-radius-lg: 16px;
   --float-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --float-shadow-md: 0 4px 20px rgba(0,0,0,0.07);
+
+  /* Surfaces beyond plain white — the two muted greys the app already uses for sunken panels and
+     list rows, named so they stop being typed as #f8fafc / #f1f5f9 by hand. */
+  --float-surface-muted: #f8fafc;
+  --float-surface-sunken: #f1f5f9;
+
+  /* Type scale. Named to the sizes the app already clusters around; the one-off 12.5 / 13.5 / 17px
+     values map to the nearest of these. Named --float-font-* so they don't collide with the
+     --float-text* colour tokens above. 13px is the clinician/admin base. */
+  --float-font-2xs: 11px;
+  --float-font-xs: 12px;
+  --float-font-sm: 13px;
+  --float-font-md: 14px;
+  --float-font-lg: 16px;
+  --float-font-xl: 18px;
+  --float-font-2xl: 20px;
+  --float-font-3xl: 24px;
+
+  --float-leading-tight: 1.2;
+  --float-leading: 1.5;
+  --float-leading-relaxed: 1.6;
+
+  --float-weight-normal: 400;
+  --float-weight-medium: 500;
+  --float-weight-semibold: 600;
+
+  /* Control sizing — one height and padding for inputs, selects and buttons, so they line up. */
+  --float-control-h: 34px;
+  --float-control-px: 12px;
+  --float-control-py: 8px;
+  /* Minimum comfortable tap target on touch screens. */
+  --float-touch-min: 44px;
+
+  /* Spacing scale (4px step) for gaps and padding, so they stop being ad-hoc pixel values. */
+  --float-space-1: 4px;
+  --float-space-2: 8px;
+  --float-space-3: 12px;
+  --float-space-4: 16px;
+  --float-space-5: 20px;
+  --float-space-6: 24px;
+  --float-space-8: 32px;
+
+  /* Breakpoints, for reference and for JS that needs them. Match Tailwind's defaults so classes and
+     components agree on where phone becomes tablet becomes desktop. */
+  --float-bp-sm: 640px;
+  --float-bp-md: 768px;
+  --float-bp-lg: 1024px;
+
+  /* Stacking order, named so overlays don't fight with guessed z-index numbers. */
+  --float-z-dropdown: 1000;
+  --float-z-modal: 1100;
+  --float-z-toast: 1200;
+
+  /* One transition timing for hovers and small state changes. */
+  --float-transition: 150ms ease;
 }
 
 /* Every button in the app fades the same way when it cannot be used, and shows the same ring when
