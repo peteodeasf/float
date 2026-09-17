@@ -551,7 +551,7 @@ function StepList({ planId, trigger, onEdited }: {
   return (
     <div style={{ background: 'var(--float-surface)', padding: '10px 8px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
-      <div style={{ fontSize: 12, color: '#8fa5a1', marginBottom: 8 }}>
+      <div style={{ fontSize: 12, color: '#4b5a59', marginBottom: 8 }}>
         What is something you could do in this situation? What would its Fear Level be?
       </div>
 
@@ -577,7 +577,7 @@ function StepList({ planId, trigger, onEdited }: {
       {suggesting && (
         <div style={{ margin: '0 0 10px', background: '#f4fbf9', border: '1px solid #d7ece5', borderRadius: 'var(--float-radius-card)', padding: '10px 12px' }}>
           {suggestQuery.isLoading && (
-            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>Thinking of smaller versions…</div>
+            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>Thinking of easier versions…</div>
           )}
           {suggestQuery.isError && (
             <div style={{ fontSize: 12.5, color: '#991b1b' }}>Could not get suggestions just now.</div>
@@ -624,7 +624,7 @@ function StepList({ planId, trigger, onEdited }: {
 
       {!suggesting && (
         <button onClick={() => setSuggesting(true)} style={{ ...quietLink, marginTop: 9, color: '#4d8478' }}>
-          ✨ Suggest smaller versions
+          ✨ Suggest easier versions
         </button>
       )}
 
