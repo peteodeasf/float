@@ -238,7 +238,7 @@ export default function TeenMessagesPage() {
             minHeight: '44px',
             padding: '0 18px',
             background: teen.color.teal,
-            color: '#fff',
+            color: teen.color.white,
             border: 'none',
             borderRadius: teen.radius.btn,
             fontSize: '15px',

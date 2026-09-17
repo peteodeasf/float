@@ -113,7 +113,7 @@ export default function ParentLoginPage() {
                 <button
                   type="button"
                   onClick={() => setView('forgot')}
-                  style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  style={{ fontSize: '12px', color: 'var(--float-text-hint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   Forgot password?
                 </button>

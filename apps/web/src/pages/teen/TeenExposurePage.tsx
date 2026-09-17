@@ -161,7 +161,7 @@ export default function TeenExposurePage() {
                 style={{
                   fontFamily: teen.font.sans,
                   fontSize: 20,
-                  color: '#fff',
+                  color: teen.color.white,
                   lineHeight: 1.35,
                   marginTop: 8,
                 }}

@@ -313,7 +313,7 @@ export default function TeenExperimentPage() {
                     style={{
                       width: 26, height: 26, flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontFamily: teen.font.sans, fontSize: 13, fontWeight: 700,
-                      background: done[k] ? teen.color.mintDeep : '#fff',
+                      background: done[k] ? teen.color.mintDeep : teen.color.cardPure,
                       border: done[k] ? 0 : `2px solid ${teen.color.teal}`,
                       color: done[k] ? teen.color.ink : teen.color.teal,
                     }}
@@ -355,12 +355,12 @@ export default function TeenExperimentPage() {
         {topBar('Back to your ladder', 'Done')}
         {page(
           <>
-            <div style={{ background: teen.color.ink, color: '#fff', borderRadius: 24, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: teen.shadow.cardDark, marginTop: 12 }}>
+            <div style={{ background: teen.color.ink, color: teen.color.white, borderRadius: 24, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: teen.shadow.cardDark, marginTop: 12 }}>
               <span style={{ ...teen.type.eyebrow, color: teen.color.mint }}>It's on your ladder</span>
-              <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, color: '#fff', margin: 0 }}>{stepName}</h1>
+              <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, color: teen.color.white, margin: 0 }}>{stepName}</h1>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {lockedDays.map(iso => (
-                  <span key={iso} style={{ background: teen.color.mint, color: teen.color.ink, fontFamily: teen.font.sans, fontWeight: 700, fontSize: 13, borderRadius: 999, padding: '5px 12px' }}>
+                  <span key={iso} style={{ background: teen.color.mint, color: teen.color.ink, fontFamily: teen.font.sans, fontWeight: 700, fontSize: 13, borderRadius: teen.radius.pill, padding: '5px 12px' }}>
                     {dayLabel(iso)}
                   </span>
                 ))}
@@ -460,7 +460,7 @@ export default function TeenExperimentPage() {
           {current === 'when' && (
             <>
               {dayFixed && finishing?.scheduled_date ? (
-                <div style={{ alignSelf: 'flex-start', padding: '10px 14px', borderRadius: 14, background: teen.color.ink, color: '#fff', fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700 }}>
+                <div style={{ alignSelf: 'flex-start', padding: '10px 14px', borderRadius: teen.radius.btn, background: teen.color.ink, color: teen.color.white, fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700 }}>
                   {new Date(finishing.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                 </div>
               ) : (
@@ -476,7 +476,7 @@ export default function TeenExperimentPage() {
                           onClick={() => setDays(prev => (prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]))}
                           style={{
                             ...tile(on), padding: '9px 0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                            background: on ? teen.color.ink : teen.color.cardPure, borderColor: on ? teen.color.ink : teen.color.lineChip, color: on ? '#fff' : teen.color.ink,
+                            background: on ? teen.color.ink : teen.color.cardPure, borderColor: on ? teen.color.ink : teen.color.lineChip, color: on ? teen.color.white : teen.color.ink,
                           }}
                         >
                           <span style={{ fontSize: 11, fontWeight: 700, color: on ? teen.color.mint : teen.color.textSecondary }}>

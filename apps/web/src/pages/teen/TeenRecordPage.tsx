@@ -357,7 +357,7 @@ export default function TeenRecordPage() {
               gap: 10,
               background: teen.color.mintSoft,
               border: `1px solid ${teen.color.mint}`,
-              borderRadius: 14,
+              borderRadius: teen.radius.card,
               padding: '14px 16px',
             }}
           >
@@ -519,7 +519,7 @@ export default function TeenRecordPage() {
                 style={{
                   fontFamily: teen.font.mono,
                   fontSize: teen.dataSize.sm,
-                  color: '#fff',
+                  color: teen.color.white,
                   marginTop: 6,
                 }}
               >
@@ -545,7 +545,7 @@ export default function TeenRecordPage() {
                 style={{
                   fontFamily: teen.font.mono,
                   fontSize: teen.dataSize.sm,
-                  color: '#fff',
+                  color: teen.color.white,
                   marginTop: 6,
                 }}
               >
@@ -561,7 +561,7 @@ export default function TeenRecordPage() {
               fontSize: 30,
               fontWeight: 600,
               lineHeight: 1.25,
-              color: '#fff',
+              color: teen.color.white,
               textWrap: 'balance',
               marginTop: 26,
             }}
@@ -627,7 +627,7 @@ export default function TeenRecordPage() {
           style={{
             background: fearedOccurred ? teen.color.card : teen.color.mintSoft,
             border: `1px solid ${fearedOccurred ? teen.color.lineCard : teen.color.mint}`,
-            borderRadius: 14,
+            borderRadius: teen.radius.card,
             padding: '14px 16px',
           }}
         >

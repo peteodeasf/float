@@ -60,10 +60,10 @@ function workRow(kind: 'setup' | 'started'): React.CSSProperties {
 function chip(kind: 'setup' | 'started' | 'next'): React.CSSProperties {
   const base: React.CSSProperties = {
     alignSelf: 'flex-start', marginTop: 4, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 700,
-    borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap',
+    borderRadius: teen.radius.pill, padding: '3px 9px', whiteSpace: 'nowrap',
   }
-  if (kind === 'setup') return { ...base, background: teen.color.ink, color: '#fff' }
-  if (kind === 'started') return { ...base, background: '#fff', color: teen.color.teal, border: `1px solid ${teen.color.tealMid}` }
+  if (kind === 'setup') return { ...base, background: teen.color.ink, color: teen.color.white }
+  if (kind === 'started') return { ...base, background: teen.color.cardPure, color: teen.color.teal, border: `1px solid ${teen.color.tealMid}` }
   return { ...base, background: teen.color.mint, color: teen.color.ink }
 }
 
@@ -321,7 +321,7 @@ export default function TeenProgressPage() {
             background: teen.color.ink,
             borderRadius: 22,
             padding: 20,
-            color: '#fff',
+            color: teen.color.white,
           }}
         >
           <span style={{ ...teen.type.eyebrow, color: teen.color.mint }}>Showing up</span>
@@ -339,7 +339,7 @@ export default function TeenProgressPage() {
                   style={{
                     fontFamily: teen.font.mono,
                     fontSize: teen.dataSize.md,
-                    color: '#fff',
+                    color: teen.color.white,
                     lineHeight: 1,
                   }}
                 >

@@ -165,7 +165,7 @@ export default function TeenHomePage() {
             style={{
               ...teen.type.headline,
               fontSize: teen.headSize.xl,
-              color: '#fff',
+              color: teen.color.white,
               margin: '16px 0 0',
             }}
           >
@@ -391,7 +391,7 @@ function LadderStep({
     fontFamily: teen.font.sans,
     fontSize: 12,
     fontWeight: 700,
-    borderRadius: 999,
+    borderRadius: teen.radius.pill,
     padding: '3px 9px',
     whiteSpace: 'nowrap',
     background: bg,
@@ -437,11 +437,11 @@ function LadderStep({
           </span>
         )}
         {state.kind === 'setup' && state.exp && (
-          <span style={chip(teen.color.ink, '#fff')}>{whenLabel(state.exp, now)}</span>
+          <span style={chip(teen.color.ink, teen.color.white)}>{whenLabel(state.exp, now)}</span>
         )}
         {state.kind === 'started' && (
           <>
-            <span style={chip('#fff', teen.color.teal, teen.color.tealMid)}>
+            <span style={chip(teen.color.cardPure, teen.color.teal, teen.color.tealMid)}>
               Set up with your clinician
             </span>
             <span
