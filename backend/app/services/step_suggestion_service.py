@@ -63,7 +63,7 @@ OUTPUT. Return JSON and nothing else:
 
 {"suggestions": ["...", "..."], "variations": "..."}
 
-Each suggestion is one plain sentence in the second person, as the child would read it.
+Each suggestion is a short phrase in the second person, as the child would read it — a few words, not a full sentence. Keep it under about twelve words, and do not add a clause after a dash explaining or softening it. It should fit on two lines.
 
 `variations` is a single short line naming ways to vary this situation that your suggestions did NOT
 already use, separated by commas — for example "where you sit, how busy it is, whether you buy lunch

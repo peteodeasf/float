@@ -251,8 +251,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     <div style={screenSurface}>
       <div style={bigQ}>What trigger situations do you have trouble with?</div>
       <p style={lead}>
-        Give each one a Fear Level. Then open it up and add the smaller versions you could
-        actually try — those are the steps on the ladder.
+        Give each one a Fear Level. Build the ladder by adding easier and doable versions.
       </p>
 
       {triggers.length > 0 && (
@@ -551,10 +550,6 @@ function StepList({ planId, trigger, onEdited }: {
   return (
     <div style={{ background: 'var(--float-surface)', padding: '10px 8px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
-      <div style={{ fontSize: 12, color: '#4b5a59', marginBottom: 8 }}>
-        What is something you could do in this situation? What would its Fear Level be?
-      </div>
-
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
 
       {steps.length > 0 && (
