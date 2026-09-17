@@ -57,6 +57,7 @@ export default function TeenRecordPage() {
   const [tooHardOpen, setTooHardOpen] = useState(false)
   const [tooHardMarked, setTooHardMarked] = useState(false)
   const [reasonSent, setReasonSent] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const { data: experiment } = useQuery({
     queryKey: ['teen-experiment', experimentId],
@@ -103,6 +104,17 @@ export default function TeenRecordPage() {
           },
         },
       })
+    },
+    onError: (err: unknown) => {
+      // A back-button re-submit lands on an already-completed experiment (400,
+      // "Experiment already completed"). The work is logged, so move them on to
+      // progress rather than leaving them on a button that can only fail.
+      const httpStatus = (err as { response?: { status?: number } })?.response?.status
+      if (httpStatus === 400) {
+        navigate('/teen/progress')
+        return
+      }
+      setSubmitError("Couldn't save that — check your connection and try again.")
     },
   })
 
@@ -589,10 +601,26 @@ export default function TeenRecordPage() {
         <div style={{ flex: 1, minHeight: 12 }} />
 
         <div style={{ paddingBottom: 16 }}>
+          {submitError && (
+            <div
+              style={{
+                ...teen.type.body,
+                fontSize: 13,
+                color: '#b3261e',
+                textAlign: 'center',
+                marginBottom: 10,
+              }}
+            >
+              {submitError}
+            </div>
+          )}
           <button
             className="teen-btn teen-btn--primary"
             disabled={recordMutation.isPending}
-            onClick={() => recordMutation.mutate()}
+            onClick={() => {
+              setSubmitError(null)
+              recordMutation.mutate()
+            }}
           >
             {recordMutation.isPending ? 'Submitting…' : 'Submit'}
           </button>
