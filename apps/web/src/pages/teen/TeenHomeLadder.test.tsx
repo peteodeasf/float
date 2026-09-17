@@ -111,13 +111,13 @@ describe('Progress is how it is going, not what to do next', () => {
         },
       ],
     })
-    expect(screen.getByText('Scoreboard')).toBeInTheDocument()
+    expect(screen.getByText('Nice job')).toBeInTheDocument()
     expect(screen.getByText('Your belief dropped 40 points.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument()
   })
 
-  it('shows no scoreboard tile on an ordinary visit', () => {
+  it('shows no result tile on an ordinary visit', () => {
     renderWith(<TeenProgressPage />)
-    expect(screen.queryByText('Scoreboard')).not.toBeInTheDocument()
+    expect(screen.queryByText('Nice job')).not.toBeInTheDocument()
   })
 })

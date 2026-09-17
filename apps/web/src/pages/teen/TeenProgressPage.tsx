@@ -249,15 +249,17 @@ export default function TeenProgressPage() {
           gap: 16,
         }}
       >
-        {/* Just-finished result — a compact tile shown once, then dismissed. */}
+        {/* Just-finished result — a light, clearly-temporary tile shown once,
+            then dismissed. Deliberately not the dark permanent card. */}
         {showScore && scoreboard && (
           <div
             style={{
               position: 'relative',
-              background: teen.color.ink,
-              borderRadius: 20,
+              background: teen.color.mintSoft,
+              border: `1px solid ${teen.color.mint}`,
+              borderRadius: teen.radius.card,
               padding: '16px 16px 15px',
-              color: teen.color.white,
+              color: teen.color.ink,
             }}
           >
             <button
@@ -270,7 +272,7 @@ export default function TeenProgressPage() {
                 background: 'none',
                 border: 0,
                 cursor: 'pointer',
-                color: teen.color.onDark,
+                color: teen.color.textSecondary,
                 font: `400 22px ${teen.font.sans}`,
                 lineHeight: 1,
                 padding: 6,
@@ -278,14 +280,14 @@ export default function TeenProgressPage() {
             >
               ×
             </button>
-            <span style={{ ...teen.type.eyebrow, color: teen.color.mint }}>Scoreboard</span>
+            <span style={teen.type.eyebrow}>Nice job</span>
             <p
               style={{
                 fontFamily: teen.font.sans,
                 fontSize: 18,
                 fontWeight: 600,
                 lineHeight: 1.3,
-                color: teen.color.white,
+                color: teen.color.ink,
                 textWrap: 'balance',
                 margin: '8px 24px 0 0',
               }}
@@ -296,29 +298,31 @@ export default function TeenProgressPage() {
               <div
                 style={{
                   flex: 1,
-                  background: 'rgba(255,255,255,0.10)',
+                  background: teen.color.cardPure,
+                  border: `1px solid ${teen.color.mintLine}`,
                   borderRadius: teen.radius.btn,
                   padding: '12px 13px',
                 }}
               >
-                <div style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.mint }}>Fear Level</div>
-                <div style={{ fontFamily: teen.font.mono, fontSize: 20, color: teen.color.white, marginTop: 5 }}>
+                <div style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.tealMid }}>Fear Level</div>
+                <div style={{ fontFamily: teen.font.mono, fontSize: 20, color: teen.color.ink, marginTop: 5 }}>
                   {scoreboard.dtExpected ?? '—'}
-                  <span style={{ color: teen.color.mint, fontSize: 14 }}> → {scoreboard.actualDT}</span>
+                  <span style={{ color: teen.color.tealMid, fontSize: 14 }}> → {scoreboard.actualDT}</span>
                 </div>
               </div>
               <div
                 style={{
                   flex: 1,
-                  background: 'rgba(255,255,255,0.10)',
+                  background: teen.color.cardPure,
+                  border: `1px solid ${teen.color.mintLine}`,
                   borderRadius: teen.radius.btn,
                   padding: '12px 13px',
                 }}
               >
-                <div style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.mint }}>Belief</div>
-                <div style={{ fontFamily: teen.font.mono, fontSize: 20, color: teen.color.white, marginTop: 5 }}>
+                <div style={{ fontFamily: teen.font.sans, fontSize: 12, color: teen.color.tealMid }}>Belief</div>
+                <div style={{ fontFamily: teen.font.mono, fontSize: 20, color: teen.color.ink, marginTop: 5 }}>
                   {scoreboard.bipBefore ?? '—'}
-                  <span style={{ color: teen.color.mint, fontSize: 14 }}> → {scoreboard.bipAfter}</span>
+                  <span style={{ color: teen.color.tealMid, fontSize: 14 }}> → {scoreboard.bipAfter}</span>
                 </div>
               </div>
             </div>
