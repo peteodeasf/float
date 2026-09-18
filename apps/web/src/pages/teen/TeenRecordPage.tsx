@@ -179,6 +179,9 @@ export default function TeenRecordPage() {
       <TeenScreen>
         {renderBack(() => navigate(`/teen/exposure/${experimentId}`))}
         <div className="teen-sheet">
+          {/* Content group: even gaps between blocks; slack pools at the bottom above the button
+              (CLAUDE.md screen-layout rule). */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           {/* Your fear — the thing we're checking against. */}
           <div>
             <div
@@ -222,7 +225,7 @@ export default function TeenRecordPage() {
 
           {/* Did what you feared happen? — a choice; neither is styled as the
               "right" answer until it's picked. */}
-          <div style={{ marginTop: 14 }}>
+          <div>
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
               Did what you feared happen?
             </h2>
@@ -262,8 +265,6 @@ export default function TeenRecordPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: 12 }} />
-
           {/* Believe it now + the was → now delta. */}
           <div>
             <div
@@ -301,8 +302,6 @@ export default function TeenRecordPage() {
             )}
           </div>
 
-          <div style={{ flex: 1, minHeight: 12 }} />
-
           {/* Actual fear level + the expected → actual delta. */}
           <div>
             <div style={{ ...teen.type.label, marginBottom: 10 }}>What was your actual fear level?</div>
@@ -326,8 +325,9 @@ export default function TeenRecordPage() {
             )}
           </div>
 
-          <div style={{ flex: 1, minHeight: 6 }} />
-          <div style={{ paddingBottom: 16 }}>
+          </div>{/* end content group */}
+
+          <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 16 }}>
             <button
               className="teen-btn teen-btn--primary"
               disabled={!canNext}
@@ -510,11 +510,9 @@ export default function TeenRecordPage() {
       </div>
 
       <div className="teen-sheet">
-        {/* The two questions sit as one group, centred in the sheet so the empty
-            space is split above and below rather than pooling in one gap. */}
-        <div style={{ flex: 1, minHeight: 12 }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+        {/* Content group: even gaps between blocks; slack pools at the bottom above the button
+            (CLAUDE.md screen-layout rule). */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           {/* what happened */}
           <div>
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
@@ -598,9 +596,7 @@ export default function TeenRecordPage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, minHeight: 12 }} />
-
-        <div style={{ paddingBottom: 16 }}>
+        <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 16 }}>
           {submitError && (
             <div
               style={{
