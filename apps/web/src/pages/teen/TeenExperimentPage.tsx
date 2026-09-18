@@ -413,7 +413,7 @@ export default function TeenExperimentPage() {
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `16px ${teen.space.pad} 0` }}>
           {/* Content flows from the top with one even gap between blocks; slack pools above the
               button. See the screen-layout rule in CLAUDE.md. */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 44 }}>
             {/* What are you afraid will happen? — the feared outcome, and a box to change it. */}
             <div>
               <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
