@@ -16,7 +16,7 @@ export const SETUP_ORDER: SetupKey[] = ['fear', 'believe', 'level', 'when', 'rea
 export const QUESTION: Record<SetupKey, string> = {
   fear: 'What are you afraid will happen?',
   believe: 'How strongly do you believe that will happen?',
-  level: 'Expected Fear Level?',
+  level: 'What fear level do you expect?',
   when: 'When will you do it?',
   ready: 'How ready do you feel?',
 }

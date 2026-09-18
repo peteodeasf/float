@@ -90,7 +90,8 @@ describe('a parent plans an experiment', () => {
     expect(heading('How strongly do you believe that will happen?')).toBeInTheDocument()
     click('Next')
     expect(heading('How upset do you expect Sam to be?')).toBeInTheDocument()
-    expect(screen.getByText('7')).toBeInTheDocument() // from their 6–8 estimate
+    // The big value plus the thermometer's own 1–10 scale numbers both render "7".
+    expect(screen.getAllByText('7').length).toBeGreaterThan(0) // from their 6–8 estimate
     click('Next')
 
     expect(heading('How ready do you feel?')).toBeInTheDocument()

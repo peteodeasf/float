@@ -54,7 +54,7 @@ describe("the child's setup", () => {
     expect(heading('What are you afraid will happen?')).toBeInTheDocument()
     expect(screen.getByText('1 of 3')).toBeInTheDocument()
     expect(screen.getByText(new RegExp(FEAR))).toBeInTheDocument()
-    expect(screen.getByText('How strong is your belief?')).toBeInTheDocument()
+    expect(screen.getByText('How strongly do you believe that will happen?')).toBeInTheDocument()
     expect(screen.getByText('What fear level do you expect?')).toBeInTheDocument()
     click('Next')
 

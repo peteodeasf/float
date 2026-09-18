@@ -439,7 +439,7 @@ export default function TeenExperimentPage() {
             {/* How strong is your belief? */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 11 }}>
-                <span style={teen.type.label}>How strong is your belief?</span>
+                <span style={teen.type.label}>How strongly do you believe that will happen?</span>
                 <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
               </div>
               <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe it will happen" />
@@ -453,10 +453,6 @@ export default function TeenExperimentPage() {
             <div>
               <div style={{ ...teen.type.label, marginBottom: 10 }}>What fear level do you expect?</div>
               <Thermometer value={level} onChange={setLevel} height={46} label="Expected Fear Level" />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textTertiary }}>
-                <span>a little</span>
-                <span>a lot</span>
-              </div>
             </div>
           </div>
 

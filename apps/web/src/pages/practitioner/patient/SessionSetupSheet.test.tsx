@@ -43,7 +43,7 @@ describe("the clinician's Set it up", () => {
   it('asks the same questions as the child app, on one sheet', () => {
     open()
     for (const q of ['What are you afraid will happen?', 'How strongly do you believe that will happen?',
-      'Expected Fear Level?', 'When will you do it?', 'How ready do you feel?']) {
+      'What fear level do you expect?', 'When will you do it?', 'How ready do you feel?']) {
       expect(screen.getByText(q)).toBeInTheDocument()
     }
   })
