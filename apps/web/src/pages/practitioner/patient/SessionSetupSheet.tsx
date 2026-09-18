@@ -13,7 +13,7 @@ import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  getSituationDownwardArrow, setUpInSession, type AvoidanceBehavior,
+  getSituationDownwardArrow, setUpInSession, type AvoidanceBehavior, type PlannedExperiment,
 } from '../../../api/treatment'
 import { Chrome, Context, FearScale, clampDt, dtOf, primaryBtn, quietLink } from '../sessionKit'
 import {
@@ -27,10 +27,22 @@ const section: CSSProperties = { padding: '18px 0', borderTop: '1px solid #e3eee
 // them had already drifted apart in size. components/ui/buttons.ts
 const choice = (on: boolean): CSSProperties => chip(on, 'md')
 
+/** yyyy-mm-dd (local) and the time-of-day bucket for a scheduled ISO, to prefill from an existing setup. */
+const localDay = (iso: string): string => {
+  const d = new Date(iso)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+const bucketOf = (iso: string): BucketKey => {
+  const h = new Date(iso).getHours()
+  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
+}
+
 export function SessionSetupSheet({
   rung,
   situationName,
   isRecommended,
+  existing,
   onRecommend,
   onClose,
   onSaved,
@@ -38,6 +50,8 @@ export function SessionSetupSheet({
   rung: AvoidanceBehavior
   situationName: string | null
   isRecommended: boolean
+  /** A pending exposure already set up on this rung, or null. Prefills the sheet and shows a banner. */
+  existing?: PlannedExperiment | null
   /** Moves "Do this next" to this step, or takes it off. */
   onRecommend: () => void
   onClose: () => void
@@ -55,14 +69,19 @@ export function SessionSetupSheet({
   const fear = typedFear ?? arrow?.feared_outcome ?? ''
 
   const stepDt = dtOf(rung.distress_thermometer_when_refraining)
-  const [bip, setBip] = useState(50)
-  const [level, setLevel] = useState(stepDt != null ? clampDt(stepDt) : 5)
+  // Prefill from an exposure already set up on this rung, when there is one.
+  const [bip, setBip] = useState(existing?.bip_before != null ? Math.round(existing.bip_before) : 50)
+  const [level, setLevel] = useState(
+    existing?.distress_thermometer_expected != null
+      ? clampDt(existing.distress_thermometer_expected)!
+      : stepDt != null ? clampDt(stepDt) : 5,
+  )
   // Left for home unless they pick one now. Peter: picking the day "is more likely to be something
   // done by the child."
-  const [dayNow, setDayNow] = useState(false)
-  const [day, setDay] = useState(getNextSchoolDayISO())
-  const [bucket, setBucket] = useState<BucketKey | null>(null)
-  const [confidence, setConfidence] = useState<ConfidenceKey | null>(null)
+  const [dayNow, setDayNow] = useState(!!existing?.scheduled_date)
+  const [day, setDay] = useState(existing?.scheduled_date ? localDay(existing.scheduled_date) : getNextSchoolDayISO())
+  const [bucket, setBucket] = useState<BucketKey | null>(existing?.scheduled_date ? bucketOf(existing.scheduled_date) : null)
+  const [confidence, setConfidence] = useState<ConfidenceKey | null>((existing?.confidence_level as ConfidenceKey) ?? null)
   const [wantNext, setWantNext] = useState(isRecommended)
 
   const saveMut = useMutation({
@@ -86,6 +105,10 @@ export function SessionSetupSheet({
 
   const canSave = !!fear.trim() && !!confidence && (!dayNow || (!!day && !!bucket)) && !saveMut.isPending
 
+  const existingWhen = existing?.scheduled_date
+    ? `${new Date(existing.scheduled_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ${bucketOf(existing.scheduled_date)}`
+    : null
+
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={`Set up ${rung.name}`}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, overflowY: 'auto' }}>
@@ -94,6 +117,15 @@ export function SessionSetupSheet({
           <Context text={rung.name} dt={stepDt} />
           {situationName && (
             <div style={{ fontSize: 13, color: '#6b7a79', margin: '-8px 0 12px' }}>{situationName}</div>
+          )}
+          {existing && (
+            <div style={{ background: '#eef7f4', border: '1px solid #bcdfd4', borderRadius: 'var(--float-radius-card)', padding: '10px 14px', margin: '0 0 14px', fontSize: 13, color: '#2f5d54', lineHeight: 1.45 }}>
+              <strong style={{ fontWeight: 800 }}>Already set up.</strong>{' '}
+              {existingWhen ? `Scheduled ${existingWhen}` : 'Waiting for a day at home'}
+              {existing.bip_before != null && ` · belief ${Math.round(existing.bip_before)}%`}
+              {existing.distress_thermometer_expected != null && ` · fear level ${Math.round(existing.distress_thermometer_expected)}`}
+              . The fields below are filled in from it — saving sets up another exposure.
+            </div>
           )}
           <p style={{ fontSize: 13.5, color: '#4b5a59', margin: '0 0 6px' }}>
             Ask them each question and type what they say.

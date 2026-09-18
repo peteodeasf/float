@@ -13,9 +13,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
   getPlanRungs, updatePlanRung, deletePlanRung,
-  setLadderActive, setRecommendedRung,
+  setLadderActive, setRecommendedRung, getPatientExperiments,
   type AvoidanceBehavior,
   type TriggerSituation,
+  type PlannedExperiment,
 } from '../../../api/treatment'
 import { clampDt, clampDtInput } from './shared'
 import { SessionSetupSheet } from './SessionSetupSheet'
@@ -67,6 +68,26 @@ export function FlatLadder({
     queryKey: ['plan-rungs', planId],
     queryFn: () => getPlanRungs(planId),
   })
+
+  // Which rungs already have an exposure set up — by the clinician in a past session, or by the
+  // child in their own app. A rung is "set up" when it has a planned/committed experiment that
+  // hasn't been done yet. Keyed with the shared 'experiments' prefix, so the setup sheet's save
+  // (which invalidates ['experiments']) refreshes this too.
+  const { data: experiments } = useQuery({
+    queryKey: ['experiments', patientId],
+    queryFn: () => getPatientExperiments(patientId),
+  })
+  const pendingByBehavior = new Map<string, PlannedExperiment>()
+  for (const e of experiments ?? []) {
+    if (!e.avoidance_behavior_id) continue
+    if (e.status !== 'planned' && e.status !== 'committed') continue
+    const prev = pendingByBehavior.get(e.avoidance_behavior_id)
+    if (!prev) { pendingByBehavior.set(e.avoidance_behavior_id, e); continue }
+    // Keep the soonest scheduled; an undated one sorts last.
+    const at = e.scheduled_date ? Date.parse(e.scheduled_date) : Infinity
+    const pat = prev.scheduled_date ? Date.parse(prev.scheduled_date) : Infinity
+    if (at < pat) pendingByBehavior.set(e.avoidance_behavior_id, e)
+  }
 
   const refreshPlan = () => {
     qc.invalidateQueries({ queryKey: ['plan', patientId] })
@@ -162,6 +183,7 @@ export function FlatLadder({
               triggers={triggers}
               isRecommended={recommendedRungId === r.id}
               showSituation={showSituations}
+              experiment={pendingByBehavior.get(r.id) ?? null}
               onRecommend={() => recommendMut.mutate(recommendedRungId === r.id ? null : r.id)}
             />
           ))}
@@ -185,12 +207,24 @@ export function FlatLadder({
  * own review ladder has to be doable here — including agreeing an exposure with the child in front
  * of you.
  */
+/** A short "when" for a set-up exposure — the scheduled day and time of day, or that the child
+ *  still picks the day at home. */
+function setupWhen(e: PlannedExperiment): string {
+  if (!e.scheduled_date) return 'day at home'
+  const d = new Date(e.scheduled_date)
+  const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  const h = d.getHours()
+  const bucket = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening'
+  return `${day} · ${bucket}`
+}
+
 function LadderRow({
   planId,
   rung,
   triggers,
   isRecommended,
   showSituation,
+  experiment,
   onRecommend,
 }: {
   planId: string
@@ -200,6 +234,8 @@ function LadderRow({
   /** Off hides the second line. The "Do this next" badge still shows — that is not a label, it is
    *  what the patient has been told to do. */
   showSituation: boolean
+  /** A pending exposure already set up on this rung (by the clinician or the child), or null. */
+  experiment: PlannedExperiment | null
   onRecommend: () => void
 }) {
   const qc = useQueryClient()
@@ -209,8 +245,10 @@ function LadderRow({
   // child answers and the clinician types. "Tell them to do this one next" is an option inside it.
   // There is no date-only plan any more: picking the day is more often the child's job.
   const [settingUp, setSettingUp] = useState(false)
-  const [planned, setPlanned] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  // Whether an exposure is already set up on this rung — from real data, so it reflects past
+  // sessions and anything the child set up in their own app, not just this browser session.
+  const isSetUp = !!experiment
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
@@ -276,7 +314,7 @@ function LadderRow({
           hid the main thing you come to this row to do. */}
       <button
         onClick={() => setSettingUp(true)}
-        title={planned ? 'Set up another exposure on this one' : 'Set up an exposure on this one, with them'}
+        title={isSetUp ? 'Already set up — view it, edit it, or set up another' : 'Set up an exposure on this one, with them'}
         className="cursor-pointer"
         style={{
           fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
@@ -284,10 +322,10 @@ function LadderRow({
           width: '64px', textAlign: 'center',
           borderRadius: 'var(--float-radius-pill)', padding: '3px 0',
           color: '#3f8a78',
-          background: planned ? '#eef7f4' : 'var(--float-surface)',
-          border: `1px solid ${planned ? '#bcdfd4' : 'var(--float-border)'}`,
+          background: isSetUp ? '#eef7f4' : 'var(--float-surface)',
+          border: `1px solid ${isSetUp ? '#bcdfd4' : 'var(--float-border)'}`,
         }}>
-        {planned ? 'Set up ✓' : 'Set it up'}
+        {isSetUp ? 'Set up ✓' : 'Set it up'}
       </button>
 
       {/* Asks first. A rung is a sentence somebody wrote with a child in the room, and the × sat
@@ -310,11 +348,16 @@ function LadderRow({
       {/* Underneath, not beside. On the main line the situation was the thing that got truncated,
           and it competed with the step's own wording for the width. Here it has the whole row and
           it reads as part of the step rather than another column. */}
-      {((sit && showSituation) || isRecommended) && (
+      {((sit && showSituation) || isRecommended || isSetUp) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px' }}>
           {isRecommended && (
             <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--float-primary-dark)', background: 'var(--float-primary-light)', border: '1px solid var(--float-primary)', borderRadius: 'var(--float-radius-pill)', padding: '1px 7px', flexShrink: 0 }}>
               Do this next
+            </span>
+          )}
+          {isSetUp && experiment && (
+            <span style={{ fontSize: '10px', fontWeight: 800, color: '#3f8a78', background: '#eef7f4', border: '1px solid #bcdfd4', borderRadius: 'var(--float-radius-pill)', padding: '1px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+              {experiment.scheduled_date ? `Scheduled · ${setupWhen(experiment)}` : 'Set up · day at home'}
             </span>
           )}
           {sit && showSituation && <span style={{ fontSize: '11px', color: '#8fa5a1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sit}</span>}
@@ -326,9 +369,10 @@ function LadderRow({
           rung={rung}
           situationName={sit}
           isRecommended={isRecommended}
+          existing={experiment}
           onRecommend={onRecommend}
           onClose={() => setSettingUp(false)}
-          onSaved={() => { setSettingUp(false); setPlanned(true) }}
+          onSaved={() => setSettingUp(false)}
         />
       )}
     </div>
