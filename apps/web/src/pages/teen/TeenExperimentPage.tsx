@@ -27,6 +27,11 @@ const NOTHING_DONE: Record<SetupKey, boolean> = {
   fear: false, believe: false, level: false, when: false, ready: false,
 }
 
+// The child sets the plan up on one screen — the fear, how much they believe it, and the fear
+// level they expect — laid out like the recording screen. Then when, then how ready. Three steps.
+const STEPS: SetupKey[][] = [['fear', 'believe', 'level'], ['when'], ['ready']]
+const stepIndexOf = (k: SetupKey) => STEPS.findIndex(s => s.includes(k))
+
 /**
  * Setting an exposure up — the child's version.
  *
@@ -82,7 +87,6 @@ export default function TeenExperimentPage() {
   }, [behaviorData, finishingId, pending, finishing, seeded, navigate])
 
   const [fear, setFear] = useState('')
-  const [ownFearOpen, setOwnFearOpen] = useState(false)
   const [bip, setBip] = useState(50)
   const [level, setLevel] = useState<number | null>(null)
   const [days, setDays] = useState<number[]>([])
@@ -111,19 +115,29 @@ export default function TeenExperimentPage() {
   // ── which screens to walk through ──
   const missing = SETUP_ORDER.filter(k => !done[k])
   const [phase, setPhase] = useState<'summary' | 'ask' | 'locked'>(finishingId ? 'summary' : 'ask')
-  const [queue, setQueue] = useState<SetupKey[]>(SETUP_ORDER)
+  const [queue, setQueue] = useState<SetupKey[][]>(STEPS)
   const [pos, setPos] = useState(0)
-  const current = queue[pos]
+  const currentStep = queue[pos]
   const isLast = pos === queue.length - 1
 
-  const answered = new Set<SetupKey>([...SETUP_ORDER.filter(k => done[k]), ...queue.slice(0, pos)])
-  const filled = phase === 'locked' ? 5 : answered.size
+  // Progress is by step now (three), not by answer. A step counts as filled when every answer in
+  // it is done, or once it has been walked past in this queue.
+  const doneStepIdx = new Set<number>()
+  STEPS.forEach((s, i) => { if (s.every(k => done[k])) doneStepIdx.add(i) })
+  queue.slice(0, pos).forEach(s => doneStepIdx.add(STEPS.indexOf(s)))
+  const filled = phase === 'locked' ? STEPS.length : doneStepIdx.size
 
-  const startWith = (first?: SetupKey) => {
-    const rest = missing.filter(k => k !== first)
-    const q = first ? [first, ...rest] : missing
-    if (q.length === 0) return void lockIn()
-    setQueue(q)
+  const startWith = (firstKey?: SetupKey) => {
+    const missingSteps = STEPS.filter(s => s.some(k => !done[k]))
+    if (firstKey) {
+      const first = STEPS[stepIndexOf(firstKey)]
+      setQueue([first, ...missingSteps.filter(s => s !== first)])
+      setPos(0)
+      setPhase('ask')
+      return
+    }
+    if (missingSteps.length === 0) return void lockIn()
+    setQueue(missingSteps)
     setPos(0)
     setPhase('ask')
   }
@@ -238,8 +252,8 @@ export default function TeenExperimentPage() {
         ‹
       </button>
       <div style={{ flex: 1, display: 'flex', gap: 5 }} aria-hidden="true">
-        {SETUP_ORDER.map((k, i) => (
-          <span key={k} style={{ flex: 1, height: 7, borderRadius: 4, background: i < filled ? teen.color.teal : teen.color.track }} />
+        {STEPS.map((_, i) => (
+          <span key={i} style={{ flex: 1, height: 7, borderRadius: 4, background: i < filled ? teen.color.teal : teen.color.track }} />
         ))}
       </div>
       <span style={{ fontFamily: teen.font.sans, fontSize: 13, fontWeight: 700, color: teen.color.textSecondary, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
@@ -255,9 +269,6 @@ export default function TeenExperimentPage() {
   )
 
   const eyebrow = <span style={{ ...teen.type.eyebrow, color: teen.color.tealMid }}>{stepName}</span>
-  const bigNumber = (value: ReactNode) => (
-    <div style={{ ...teen.type.data, fontSize: 60, lineHeight: 1, textAlign: 'center', color: teen.color.teal }}>{value}</div>
-  )
   const tile = (selected: boolean): React.CSSProperties => ({
     border: `2px solid ${selected ? teen.color.teal : teen.color.lineChip}`,
     background: selected ? teen.color.mintSoft : teen.color.cardPure,
@@ -288,7 +299,7 @@ export default function TeenExperimentPage() {
 
     return (
       <TeenScreen>
-        {topBar('Back to your ladder', `${filled} of 5`)}
+        {topBar('Back to your ladder', `${filled} of ${STEPS.length}`)}
         {page(
           <>
             {eyebrow}
@@ -388,74 +399,95 @@ export default function TeenExperimentPage() {
     )
   }
 
-  // ──────────────────────────── ONE QUESTION ────────────────────────────
-  const cta = isLast ? (saving ? 'Locking in…' : 'Lock it in') : current === 'fear' ? "That's it" : 'Next'
+  // ──────────────────────── PLAN (fear + belief + level) ────────────────────────
+  // One screen, spread down the page like the recording screen.
+  const backLabel = pos === 0 && !hasSummary ? 'Back to your ladder' : 'Back'
+  const curIdx = STEPS.indexOf(currentStep)
+  const count = `${doneStepIdx.has(curIdx) ? filled : filled + 1} of ${STEPS.length}`
+
+  if (currentStep.includes('fear')) {
+    const planReady = currentStep.every(k => canNext[k])
+    return (
+      <TeenScreen>
+        {topBar(backLabel, count)}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `8px ${teen.space.pad} 0` }}>
+          {/* What are you afraid will happen? — the feared outcome, and a box to change it. */}
+          <div>
+            <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '6px 0 0' }}>
+              What are you afraid will happen?
+            </h1>
+            {clinicianFear && (
+              <>
+                <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 14 }}>Your fear</div>
+                <div style={{ fontFamily: teen.font.sans, fontSize: 16, color: teen.color.ink, lineHeight: 1.35, marginTop: 6 }}>
+                  “{clinicianFear}”
+                </div>
+              </>
+            )}
+            <input
+              value={clinicianFear ? (fear !== clinicianFear ? fear : '') : fear}
+              onChange={e => { const v = e.target.value; setFear(!v && clinicianFear ? clinicianFear : v) }}
+              placeholder={clinicianFear ? 'Something else…' : 'e.g. Everyone will stare'}
+              aria-label="Say it your own way"
+              style={{ marginTop: 11, width: '100%', boxSizing: 'border-box', background: teen.color.cardPure, border: `1px solid ${teen.color.lineChip}`, borderRadius: teen.radius.card, padding: '11px 13px', fontFamily: teen.font.sans, fontSize: 14, color: teen.color.ink, outline: 'none' }}
+            />
+          </div>
+
+          <div style={{ flex: 1, minHeight: 18 }} />
+
+          {/* How strong is your belief? */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 11 }}>
+              <span style={teen.type.label}>How strong is your belief?</span>
+              <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
+            </div>
+            <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe it will happen" />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 600, color: teen.color.textTertiary }}>
+              <span>Not at all</span>
+              <span>Completely</span>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, minHeight: 18 }} />
+
+          {/* What fear level do you expect? */}
+          <div>
+            <div style={{ ...teen.type.label, marginBottom: 10 }}>What fear level do you expect?</div>
+            <Thermometer value={level} onChange={setLevel} height={46} label="Expected Fear Level" />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textTertiary }}>
+              <span>a little</span>
+              <span>a lot</span>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, minHeight: 10 }} />
+
+          <div style={{ paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {saveFailed && (
+              <p role="alert" style={{ ...teen.type.body, fontSize: 14, color: '#b91c1c', margin: 0 }}>
+                That didn't save. Please try again.
+              </p>
+            )}
+            <button className="teen-btn teen-btn--primary" disabled={!planReady || saving || !seeded} onClick={goNext}>
+              {isLast ? (saving ? 'Locking in…' : 'Lock it in') : 'Next'}
+            </button>
+          </div>
+        </div>
+      </TeenScreen>
+    )
+  }
+
+  // ──────────────────────────── WHEN / READY ────────────────────────────
+  const current = currentStep[0]
+  const cta = isLast ? (saving ? 'Locking in…' : 'Lock it in') : 'Next'
 
   return (
     <TeenScreen>
-      {topBar(pos === 0 && !hasSummary ? 'Back to your ladder' : 'Back', `${answered.has(current) ? filled : filled + 1} of 5`)}
+      {topBar(backLabel, count)}
       {page(
         <>
           {eyebrow}
           <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>{QUESTION[current]}</h1>
-
-          {current === 'fear' && (
-            <>
-              <p style={{ ...teen.type.body, margin: '-8px 0 0', color: teen.color.textSecondary }}>
-                Say it the way it sounds in your head.
-              </p>
-              {clinicianFear && (
-                <button
-                  aria-pressed={fear === clinicianFear}
-                  onClick={() => { setFear(clinicianFear); setOwnFearOpen(false) }}
-                  style={{ ...tile(fear === clinicianFear), padding: 16, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 6 }}
-                >
-                  <span style={{ ...teen.type.eyebrow, fontSize: 11 }}>You said this with your clinician</span>
-                  <span style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3 }}>“{clinicianFear}”</span>
-                </button>
-              )}
-              {ownFearOpen || !clinicianFear || (!!fear && fear !== clinicianFear) ? (
-                <input
-                  autoFocus={ownFearOpen || !clinicianFear}
-                  value={fear === clinicianFear ? '' : fear}
-                  onChange={e => setFear(e.target.value)}
-                  placeholder="e.g. Everyone will stare"
-                  aria-label="Say it your own way"
-                  style={{ ...tile(!!fear && fear !== clinicianFear), padding: '14px 16px', fontSize: 17, fontWeight: 700, outline: 'none' }}
-                />
-              ) : (
-                <button
-                  onClick={() => { setOwnFearOpen(true); if (fear === clinicianFear) setFear('') }}
-                  style={{ border: `2px dashed ${teen.color.lineBtn}`, background: 'transparent', borderRadius: 16, padding: 14, fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700, color: teen.color.teal, cursor: 'pointer' }}
-                >
-                  + Say it my own way
-                </button>
-              )}
-            </>
-          )}
-
-          {current === 'believe' && (
-            <>
-              {bigNumber(<>{bip}<span style={{ fontSize: 28 }}>%</span></>)}
-              <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe it will happen" />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: teen.font.sans, fontSize: 13, fontWeight: 700, color: teen.color.textSecondary }}>
-                <span>Not at all</span>
-                <span>Completely</span>
-              </div>
-            </>
-          )}
-
-          {current === 'level' && (
-            <>
-              <p style={{ ...teen.type.body, margin: '-8px 0 0', color: teen.color.textSecondary }}>Tap how high it'll go.</p>
-              {bigNumber(level ?? '–')}
-              <Thermometer value={level} onChange={setLevel} height={120} label="Expected Fear Level" />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: teen.font.sans, fontSize: 13, color: teen.color.textSecondary }}>
-                <span>a little</span>
-                <span>a lot</span>
-              </div>
-            </>
-          )}
 
           {current === 'when' && (
             <>

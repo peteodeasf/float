@@ -264,31 +264,6 @@ export default function TeenRecordPage() {
 
           <div style={{ flex: 1, minHeight: 12 }} />
 
-          {/* Actual fear level + the expected → actual delta. */}
-          <div>
-            <div style={{ ...teen.type.label, marginBottom: 10 }}>What was your actual fear level?</div>
-            <Thermometer value={actualDT} onChange={setActualDT} height={46} label="Actual Fear Level" />
-            {actualDT != null && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginTop: 8,
-                  fontFamily: teen.font.mono,
-                  fontSize: 14,
-                  color: teen.color.textSecondary,
-                }}
-              >
-                <span>expected {dtExpected ?? '—'}</span>
-                <span style={{ color: teen.color.inkSoft }}>→</span>
-                <span style={{ color: teen.color.teal, fontSize: 15 }}>actual {actualDT}</span>
-              </div>
-            )}
-          </div>
-
-          <div style={{ flex: 1, minHeight: 12 }} />
-
           {/* Believe it now + the was → now delta. */}
           <div>
             <div
@@ -322,6 +297,31 @@ export default function TeenRecordPage() {
                 <span>was {Math.round(bipBefore)}%</span>
                 <span style={{ color: teen.color.inkSoft }}>→</span>
                 <span style={{ color: teen.color.teal, fontSize: 15 }}>now {bipAfter}%</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ flex: 1, minHeight: 12 }} />
+
+          {/* Actual fear level + the expected → actual delta. */}
+          <div>
+            <div style={{ ...teen.type.label, marginBottom: 10 }}>What was your actual fear level?</div>
+            <Thermometer value={actualDT} onChange={setActualDT} height={46} label="Actual Fear Level" />
+            {actualDT != null && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginTop: 8,
+                  fontFamily: teen.font.mono,
+                  fontSize: 14,
+                  color: teen.color.textSecondary,
+                }}
+              >
+                <span>expected {dtExpected ?? '—'}</span>
+                <span style={{ color: teen.color.inkSoft }}>→</span>
+                <span style={{ color: teen.color.teal, fontSize: 15 }}>actual {actualDT}</span>
               </div>
             )}
           </div>

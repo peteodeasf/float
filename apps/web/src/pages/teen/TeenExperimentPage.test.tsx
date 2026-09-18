@@ -46,21 +46,20 @@ beforeEach(() => {
     url.endsWith('/experiments') ? { data: { id: 'new1' } } : { data: {} })
 })
 
-describe("the child's setup, one question per screen", () => {
-  it('walks the five questions and locks it in', async () => {
+describe("the child's setup", () => {
+  it('sets the plan on one screen, then when and ready', async () => {
     open('/teen/experiment/r3')
 
+    // One screen carries the fear (pre-filled from the arrow), belief and expected fear level.
     expect(heading('What are you afraid will happen?')).toBeInTheDocument()
-    expect(screen.getByText('1 of 5')).toBeInTheDocument()
-    click(new RegExp(FEAR))
-    click("That's it")
-
-    expect(heading('How strongly do you believe that will happen?')).toBeInTheDocument()
-    click('Next')
-    expect(heading('Expected Fear Level?')).toBeInTheDocument()
+    expect(screen.getByText('1 of 3')).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(FEAR))).toBeInTheDocument()
+    expect(screen.getByText('How strong is your belief?')).toBeInTheDocument()
+    expect(screen.getByText('What fear level do you expect?')).toBeInTheDocument()
     click('Next')
 
     expect(heading('When will you do it?')).toBeInTheDocument()
+    expect(screen.getByText('2 of 3')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
     click(/^Today/)
     click('Morning')
@@ -90,9 +89,9 @@ describe("the child's setup, one question per screen", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    expect(screen.getByRole('button', { name: "That's it" })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Say it your own way'), { target: { value: 'Everyone will stare' } })
-    expect(screen.getByRole('button', { name: "That's it" })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
   })
 
   it('finishes one set up in session by asking only when', async () => {
@@ -135,8 +134,6 @@ describe("the child's setup, one question per screen", () => {
     expect(screen.queryByText('You and your clinician set this up')).not.toBeInTheDocument()
     expect(heading('What are you afraid will happen?')).toBeInTheDocument()
 
-    click("That's it")
-    click('Next')
     click('Next')
     expect(heading('When will you do it?')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Today/ })).not.toBeInTheDocument()
