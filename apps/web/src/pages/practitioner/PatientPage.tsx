@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { closePatient, reopenPatient, getPatient, getMessages, sendMessage, getOneParentsMessages, listParents, sendParentMessage, getPatientProgress, updatePatient, getPatientAttention } from '../../api/patients'
+import { closePatient, reopenPatient, getPatient, getMessages, markMessageRead, sendMessage, getOneParentsMessages, listParents, sendParentMessage, getPatientProgress, updatePatient, getPatientAttention } from '../../api/patients'
 import {
   LineChart, Line, XAxis, YAxis,
   Tooltip, Legend, ResponsiveContainer
@@ -977,9 +977,33 @@ export default function PatientPage() {
   const legendNote = { fontSize: '11px', color: 'var(--float-text-hint)', margin: '0 0 10px' }
   const cardStyle = { background: 'var(--float-surface)', borderRadius: 'var(--float-radius-card)', border: '1px solid var(--float-border-strong)', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
-  // Tab badge counts
-  const unreadMessageCount = (messages ?? []).filter(m => !m.read_at).length
+  // Tab badge counts. Unread = messages the child sent that the clinician hasn't read — not the
+  // clinician's own outgoing messages the child hasn't opened yet.
+  const unreadMessageCount = (messages ?? []).filter(m => !m.read_at && !!patient && m.sender_user_id === patient.user_id).length
   const draftPlanCount = (actionPlans ?? []).filter(ap => !ap.visible_to_patient).length
+
+  // Opening the Chat tab marks the messages the clinician is now reading as read, so the badge
+  // clears — mirrors what the teen app does when the child opens their thread. Nothing marked the
+  // clinician's side read before, so the count never went down.
+  const markReadMut = useMutation({ mutationFn: (id: string) => markMessageRead(id) })
+  const markedReadRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (activeTab !== 'chat' || !patient) return
+    const inbound = parentThreadId
+      ? (parentMessages ?? []).filter(m => !m.read_at && m.sender_user_id === parentThreadId)
+      : (messages ?? []).filter(m => !m.read_at && m.sender_user_id === patient.user_id)
+    const toMark = inbound.filter(m => !markedReadRef.current.has(m.id))
+    if (toMark.length === 0) return
+    for (const m of toMark) {
+      markedReadRef.current.add(m.id)
+      markReadMut.mutate(m.id, {
+        onSuccess: () => queryClient.invalidateQueries({
+          queryKey: parentThreadId ? ['parent-messages', patientId] : ['messages', patientId],
+        }),
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, parentThreadId, messages, parentMessages, patient, patientId])
 
   // Process-panel checklist progress (setup groups: parent + patient consults)
   const processChecklistKeys = PROCESS_CHECKLIST.map(i => i.key)
@@ -2117,7 +2141,7 @@ export default function PatientPage() {
     </div>
   )
 
-  const parentUnreadCount = (parentMessages ?? []).filter(m => !m.read_at).length
+  const parentUnreadCount = (parentMessages ?? []).filter(m => !m.read_at && m.sender_user_id === parentThreadId).length
   const lastMsgPreview = (arr?: typeof messages) => { const a = arr ?? []; return a.length ? a[a.length - 1].content : '' }
   // One row for the child, then one per parent. The preview and unread count are only loaded for
   // the thread that is open, so the others show nothing until they are opened.

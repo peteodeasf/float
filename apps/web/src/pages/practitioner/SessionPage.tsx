@@ -43,6 +43,7 @@ import {
   deleteBehavior,
   deleteTrigger,
   getSuggestedSteps,
+  getSituationDownwardArrow,
   getLadderReview,
   getPatientInsights,
   addInsightToPlan,
@@ -511,13 +512,24 @@ function StepList({ planId, trigger, onEdited }: {
     queryFn: () => getBehaviors(trigger.id),
   })
 
+  // Whether this situation's downward arrow has landed on a feared outcome — the thing the
+  // suggestions need. Shown as a small status so the clinician can see it's done (or isn't).
+  const { data: arrow } = useQuery({
+    queryKey: ['situation-da', trigger.id],
+    queryFn: () => getSituationDownwardArrow(trigger.id),
+  })
+  const fearedOutcome = (arrow?.feared_outcome ?? '').trim()
+  const arrowDone = fearedOutcome.length > 0
+
   // Asked for, never automatic. It costs a model call and a clinician's attention, and a screen
-  // that suggests before being asked teaches people to stop reading it.
+  // that suggests before being asked teaches people to stop reading it. staleTime 0 so asking
+  // again after finishing the arrow gets a fresh answer rather than a cached "do the arrow first".
   const suggestQuery = useQuery({
     queryKey: ['suggested-steps', trigger.id],
     queryFn: () => getSuggestedSteps(planId, trigger.id),
     enabled: suggesting,
-    staleTime: Infinity,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
     retry: false,
   })
 
@@ -550,6 +562,10 @@ function StepList({ planId, trigger, onEdited }: {
   return (
     <div style={{ background: 'var(--float-surface)', padding: '10px 8px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
+      {/* Whether the downward arrow is done for this situation — the suggestions need it. */}
+      <div style={{ marginBottom: 10, fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: arrowDone ? '#2f9e6f' : '#b47814' }}>
+        {arrowDone ? '✓ Downward arrow done' : '○ Downward arrow not done yet'}
+      </div>
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
 
       {steps.length > 0 && (
@@ -577,8 +593,11 @@ function StepList({ planId, trigger, onEdited }: {
           {suggestQuery.isError && (
             <div style={{ fontSize: 12.5, color: '#991b1b' }}>Could not get suggestions just now.</div>
           )}
-          {suggestQuery.data?.blocked && (
-            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>{suggestQuery.data.blocked}</div>
+          {suggestQuery.data?.blocked && !suggestQuery.isFetching && (
+            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>
+              {suggestQuery.data.blocked}{' '}
+              <button onClick={() => suggestQuery.refetch()} style={{ ...quietLink, color: '#4d8478' }}>Try again</button>
+            </div>
           )}
           {(suggestQuery.data?.suggestions ?? []).length > 0 && (
             <>

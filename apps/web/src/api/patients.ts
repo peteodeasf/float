@@ -243,6 +243,11 @@ export const getMessages = async (patientId: string): Promise<Message[]> => {
   return response.data
 }
 
+/** Mark one message read (clears it from the clinician's unread count). Idempotent. */
+export const markMessageRead = async (messageId: string): Promise<void> => {
+  await apiClient.put(`/messages/${messageId}/read`)
+}
+
 export const sendMessage = async (
   patientId: string,
   recipientUserId: string,
