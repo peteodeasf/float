@@ -181,7 +181,7 @@ export default function TeenRecordPage() {
         <div className="teen-sheet">
           {/* Content group: even gaps between blocks; slack pools at the bottom above the button
               (CLAUDE.md screen-layout rule). */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 44 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
           {/* Your fear — the thing we're checking against. */}
           <div>
             <div
@@ -512,7 +512,7 @@ export default function TeenRecordPage() {
       <div className="teen-sheet">
         {/* Content group: even gaps between blocks; slack pools at the bottom above the button
             (CLAUDE.md screen-layout rule). */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 44 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
           {/* what happened */}
           <div>
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
