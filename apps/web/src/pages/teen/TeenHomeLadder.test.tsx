@@ -59,13 +59,12 @@ beforeEach(() => {
 })
 
 describe('the child home is the ladder', () => {
-  it('lifts out what is due today, with both ways in', () => {
+  it('lifts out what is due today, with a way in', () => {
     renderWith(<TeenHomePage />)
     // Twice on purpose: on the card, and as the chip on that step's row in the ladder.
     expect(screen.getAllByText('Today · Morning')).toHaveLength(2)
     expect(screen.getByRole('heading', { name: 'Make eye contact with Jack' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Do it now' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Tell me how it went' })).toBeInTheDocument()
   })
 
   it('shows each step in its own state', () => {

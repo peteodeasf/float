@@ -272,7 +272,6 @@ export default function TeenHomePage() {
                   name={expName(e)}
                   situation={expSituation(e)}
                   onDoItNow={() => navigate(`/teen/exposure/${e.id}?now=1`)}
-                  onTellMe={() => navigate(`/teen/record/${e.id}`)}
                 />
               ))}
             </div>

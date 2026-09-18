@@ -9,21 +9,19 @@ export default function TodayCard({
   name,
   situation,
   onDoItNow,
-  onTellMe,
 }: {
   when: string
   name: string
   situation?: string | null
   onDoItNow: () => void
-  onTellMe: () => void
 }) {
   return (
     <div
       style={{
         background: teen.color.ink,
         color: '#fff',
-        borderRadius: 22,
-        padding: '20px 20px 18px',
+        borderRadius: 20,
+        padding: '16px 18px',
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
@@ -52,27 +50,13 @@ export default function TodayCard({
           {situation}
         </span>
       )}
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+      <div style={{ marginTop: 12 }}>
         <button
           className="teen-btn teen-btn--mint"
-          style={{ flex: 1, padding: '10px 12px', fontSize: 14 }}
+          style={{ width: 'auto', alignSelf: 'flex-start', padding: '9px 18px', fontSize: 14 }}
           onClick={onDoItNow}
         >
           Do it now
-        </button>
-        <button
-          className="teen-btn"
-          style={{
-            flex: 1,
-            padding: '10px 12px',
-            fontSize: 14,
-            background: 'transparent',
-            border: '1px solid rgba(154, 198, 191, 0.45)',
-            color: '#e6f3f0',
-          }}
-          onClick={onTellMe}
-        >
-          Tell me how it went
         </button>
       </div>
     </div>
