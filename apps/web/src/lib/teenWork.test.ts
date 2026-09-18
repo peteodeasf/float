@@ -52,8 +52,10 @@ describe('what is due', () => {
   const tomorrow = exp({ id: 'tomorrow', scheduled_date: day(11) })
   const planned = exp({ id: 'planned', status: 'planned', scheduled_date: day(10) })
 
-  it('today includes later today and earlier days not yet done, soonest first', () => {
-    expect(dueToday([tomorrow, today, overdue, planned], NOW).map(e => e.id)).toEqual(['overdue', 'today'])
+  it('today is only what is scheduled for today; a missed earlier day drops off', () => {
+    expect(dueToday([tomorrow, today, overdue, planned], NOW).map(e => e.id)).toEqual(['today'])
+    // The overdue one is neither due today nor coming up — it leaves the home entirely.
+    expect(comingUp([tomorrow, today, overdue, planned], NOW).map(e => e.id)).toEqual(['tomorrow'])
   })
 
   it('coming up is committed and from tomorrow on', () => {

@@ -2359,19 +2359,21 @@ export default function PatientPage() {
               <button onClick={() => setShowClinicianAccess(v => !v)} style={btn(showClinicianAccess ? 'on' : 'secondary')}>
                 Clinician access
               </button>
-              {patient.closed_at ? (
-                <button onClick={handleReopen} disabled={closing.isPending} style={btn('secondary')}>
-                  {closing.isPending ? 'Reopening…' : 'Reopen treatment'}
-                </button>
-              ) : (
-                <button onClick={handleClose} disabled={closing.isPending} style={btn('secondary')}>
-                  {closing.isPending ? 'Closing…' : 'Close treatment'}
-                </button>
-              )}
               <button onClick={() => setProcessPanelOpen(v => !v)} style={btn(processPanelOpen ? 'on' : 'secondary')}>
                 Process
                 <span style={countPill(processPanelOpen)}>{processChecklistDone}/{processChecklistTotal}</span>
               </button>
+              {/* End-of-treatment action, pushed to the right and set apart — it isn't used until
+                  treatment is over. */}
+              {patient.closed_at ? (
+                <button onClick={handleReopen} disabled={closing.isPending} style={{ ...btn('secondary'), marginLeft: 'auto' }}>
+                  {closing.isPending ? 'Reopening…' : 'Reopen treatment'}
+                </button>
+              ) : (
+                <button onClick={handleClose} disabled={closing.isPending} style={{ ...btn('secondary'), marginLeft: 'auto' }}>
+                  {closing.isPending ? 'Closing…' : 'Close treatment'}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -2499,7 +2501,7 @@ export default function PatientPage() {
             { id: 'monitoring', label: 'Monitoring' },
             { id: 'sessions', label: 'Sessions' },
             { id: 'plan', label: 'Plan' },
-            { id: 'experiments', label: 'Experiments' },
+            { id: 'experiments', label: 'Exposures' },
             { id: 'chat', label: 'Chat', b: unreadMessageCount },
           ] as const).map(t => {
             const cur = activeTab === t.id

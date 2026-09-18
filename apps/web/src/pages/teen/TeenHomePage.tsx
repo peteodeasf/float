@@ -241,7 +241,7 @@ export default function TeenHomePage() {
               <div className="teen-card" style={{ marginTop: 16, padding: '24px 22px' }}>
                 <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
                   {ladderTurnedOff
-                    ? 'Your steps are turned off right now.'
+                    ? 'Your plan is not visible right now'
                     : "You're just getting started."}
                 </h2>
                 <p style={{ ...teen.type.body, margin: '12px 0 0' }}>

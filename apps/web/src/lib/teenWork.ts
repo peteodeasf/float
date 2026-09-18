@@ -43,6 +43,12 @@ export type StepState = {
 const at = (e: PendingExperiment) =>
   e.scheduled_date ? new Date(e.scheduled_date).getTime() : Number.POSITIVE_INFINITY
 
+function startOfToday(now: Date): number {
+  const d = new Date(now)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
 function startOfTomorrow(now: Date): number {
   const d = new Date(now)
   d.setHours(24, 0, 0, 0)
@@ -63,11 +69,13 @@ export function stepState(rung: LadderRung, pending: PendingExperiment[]): StepS
   return { kind: 'open', timesDone }
 }
 
-/** Committed exposures whose day is today, or earlier and still not done. Soonest first. */
+/** Committed exposures scheduled for today. Once the day has passed a missed one drops off the
+ *  home rather than lingering as "due" forever. Soonest first. */
 export function dueToday(pending: PendingExperiment[], now: Date): PendingExperiment[] {
+  const from = startOfToday(now)
   const cutoff = startOfTomorrow(now)
   return pending
-    .filter(e => e.status === 'committed' && e.scheduled_date && at(e) < cutoff)
+    .filter(e => e.status === 'committed' && e.scheduled_date && at(e) >= from && at(e) < cutoff)
     .sort((a, b) => at(a) - at(b))
 }
 
