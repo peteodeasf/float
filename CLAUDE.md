@@ -10,8 +10,9 @@ Railway hosts the backend and auto-migrates on deploy.
 Peter has flagged this many times. The vertical rhythm of a screen, top to bottom:
 
 1. **A little space between the top bar and the first element.** Never flush to the top.
-2. **Even, consistent spacing between elements** — one gap value, the same between every pair
-   (~24–28px on the teen screens).
+2. **Even, consistent spacing between elements** — one gap value, the same between every pair.
+   On the teen form screens this settled at **80px** between blocks (28–44px looked crammed
+   against the empty space below; Peter chose 80). Err generous, not tight.
 3. **The primary button is pinned to the bottom.**
 4. **Any leftover vertical space pools in one place: the bottom, above the button.** Never a big
    gap at the top, never space split into the gaps between elements, and do not centre the group.
