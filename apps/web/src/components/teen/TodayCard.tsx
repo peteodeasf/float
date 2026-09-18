@@ -31,7 +31,20 @@ export default function TodayCard({
       }}
     >
       <span style={{ ...teen.type.eyebrow, color: teen.color.onDark }}>{when}</span>
-      <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, color: '#fff', margin: 0 }}>
+      {/* Clamp to two lines so a card stays compact — the full step reads on the exposure
+          screen, and the ladder rung below clamps the same way. */}
+      <h2
+        style={{
+          ...teen.type.headline,
+          fontSize: teen.headSize.md,
+          color: '#fff',
+          margin: 0,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
+      >
         {name}
       </h2>
       {situation && (
