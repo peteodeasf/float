@@ -47,25 +47,24 @@ beforeEach(() => {
 })
 
 describe("the child's setup", () => {
-  it('sets the plan on one screen, then when and ready', async () => {
+  it('sets the plan on one screen, then when and ready together', async () => {
     open('/teen/experiment/r3')
 
     // One screen carries the fear (pre-filled from the arrow), belief and expected fear level.
     expect(heading('What are you afraid will happen?')).toBeInTheDocument()
-    expect(screen.getByText('1 of 3')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2')).toBeInTheDocument()
     expect(screen.getByText(new RegExp(FEAR))).toBeInTheDocument()
     expect(screen.getByText('How strongly do you believe that will happen?')).toBeInTheDocument()
     expect(screen.getByText('What fear level do you expect?')).toBeInTheDocument()
     click('Next')
 
+    // When and How-ready are now one screen.
     expect(heading('When will you do it?')).toBeInTheDocument()
-    expect(screen.getByText('2 of 3')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    expect(heading('How ready do you feel?')).toBeInTheDocument()
+    expect(screen.getByText('2 of 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lock it in' })).toBeDisabled()
     click(/^Today/)
     click('Morning')
-    click('Next')
-
-    expect(heading('How ready do you feel?')).toBeInTheDocument()
     click('Kind of')
     click('Lock it in')
 
@@ -138,7 +137,6 @@ describe("the child's setup", () => {
     expect(heading('When will you do it?')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Today/ })).not.toBeInTheDocument()
     click('Afternoon')
-    click('Next')
     click('Ready')
     click('Lock it in')
 

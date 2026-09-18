@@ -29,7 +29,7 @@ const NOTHING_DONE: Record<SetupKey, boolean> = {
 
 // The child sets the plan up on one screen — the fear, how much they believe it, and the fear
 // level they expect — laid out like the recording screen. Then when, then how ready. Three steps.
-const STEPS: SetupKey[][] = [['fear', 'believe', 'level'], ['when'], ['ready']]
+const STEPS: SetupKey[][] = [['fear', 'believe', 'level'], ['when', 'ready']]
 const stepIndexOf = (k: SetupKey) => STEPS.findIndex(s => s.includes(k))
 
 /**
@@ -471,20 +471,19 @@ export default function TeenExperimentPage() {
     )
   }
 
-  // ──────────────────────────── WHEN / READY ────────────────────────────
-  const current = currentStep[0]
-  const cta = isLast ? (saving ? 'Locking in…' : 'Lock it in') : 'Next'
+  // ──────────────────────────── WHEN + READY ────────────────────────────
+  // Both on one screen, same layout rule as the plan step (CLAUDE.md).
+  const stepReady = currentStep.every(k => canNext[k])
 
   return (
     <TeenScreen>
       {topBar(backLabel, count)}
-      {page(
-        <>
-          {eyebrow}
-          <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>{QUESTION[current]}</h1>
-
-          {current === 'when' && (
-            <>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `16px ${teen.space.pad} 0` }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
+          {/* When will you do it? */}
+          <div>
+            <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>{QUESTION.when}</h1>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {dayFixed && finishing?.scheduled_date ? (
                 <div style={{ alignSelf: 'flex-start', padding: '10px 14px', borderRadius: teen.radius.btn, background: teen.color.ink, color: teen.color.white, fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700 }}>
                   {new Date(finishing.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
@@ -523,46 +522,46 @@ export default function TeenExperimentPage() {
                   </button>
                 ))}
               </div>
-            </>
-          )}
-
-          {current === 'ready' && (
-            <>
-              <p style={{ ...teen.type.body, margin: '-8px 0 0', color: teen.color.textSecondary }}>
-                Any answer is fine. It helps your clinician.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                {CONFIDENCE.map((c, i) => (
-                  <button
-                    key={c.key}
-                    aria-pressed={confidence === c.key}
-                    onClick={() => setConfidence(c.key)}
-                    style={{ ...tile(confidence === c.key), display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', fontSize: 18, fontWeight: 700, textAlign: 'left' }}
-                  >
-                    <span aria-hidden="true" style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
-                      {[10, 16, 22].map((h, j) => (
-                        <span key={h} style={{ width: 7, height: h, borderRadius: 2, background: j <= i ? teen.color.teal : teen.color.track }} />
-                      ))}
-                    </span>
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {saveFailed && (
-              <p role="alert" style={{ ...teen.type.body, fontSize: 14, color: '#b91c1c', margin: 0 }}>
-                That didn't save. Please try again.
-              </p>
-            )}
-            <button className="teen-btn teen-btn--primary" disabled={!canNext[current] || saving || !seeded} onClick={goNext}>
-              {cta}
-            </button>
+            </div>
           </div>
-        </>,
-      )}
+
+          {/* How ready do you feel? */}
+          <div>
+            <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 8px' }}>{QUESTION.ready}</h1>
+            <p style={{ ...teen.type.body, margin: '0 0 12px', color: teen.color.textSecondary }}>
+              Any answer is fine. It helps your clinician.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {CONFIDENCE.map((c, i) => (
+                <button
+                  key={c.key}
+                  aria-pressed={confidence === c.key}
+                  onClick={() => setConfidence(c.key)}
+                  style={{ ...tile(confidence === c.key), display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', fontSize: 18, fontWeight: 700, textAlign: 'left' }}
+                >
+                  <span aria-hidden="true" style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
+                    {[10, 16, 22].map((h, j) => (
+                      <span key={h} style={{ width: 7, height: h, borderRadius: 2, background: j <= i ? teen.color.teal : teen.color.track }} />
+                    ))}
+                  </span>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {saveFailed && (
+            <p role="alert" style={{ ...teen.type.body, fontSize: 14, color: '#b91c1c', margin: 0 }}>
+              That didn't save. Please try again.
+            </p>
+          )}
+          <button className="teen-btn teen-btn--primary" disabled={!stepReady || saving || !seeded} onClick={goNext}>
+            {saving ? 'Locking in…' : 'Lock it in'}
+          </button>
+        </div>
+      </div>
     </TeenScreen>
   )
 }
