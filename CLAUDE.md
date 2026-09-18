@@ -5,6 +5,26 @@ distinct experiences: **parent**, **child**, and **clinician**. Backend is FastA
 Postgres (`backend/`); frontend is React + Vite (`apps/web/`), deployed on Netlify;
 Railway hosts the backend and auto-migrates on deploy.
 
+## Screen layout — required, and repeatedly gotten wrong
+
+Peter has flagged this many times. The vertical rhythm of a screen, top to bottom:
+
+1. **A little space between the top bar and the first element.** Never flush to the top.
+2. **Even, consistent spacing between elements** — one gap value, the same between every pair
+   (~24–28px on the teen screens).
+3. **The primary button is pinned to the bottom.**
+4. **Any leftover vertical space pools in one place: the bottom, above the button.** Never a big
+   gap at the top, never space split into the gaps between elements, and do not centre the group.
+
+**Do not put a growing (`flex: 1`) spacer between content elements** — it eats the slack into the
+gaps and stretches the elements apart (one pinned to the top, big gaps below). That is the exact
+mistake being corrected. Use fixed gaps between elements; push the button down with a single
+`margin-top: auto` (or one growing spacer *before the button only*), so the slack lands at the
+bottom.
+
+Before calling a screen done, look at a real screenshot of it and check it against these four
+points — do not eyeball "balanced" from the code.
+
 ## Development process — required
 
 Follow the standard compound-engineering loop (**Ground → Plan → Review → Compound**)

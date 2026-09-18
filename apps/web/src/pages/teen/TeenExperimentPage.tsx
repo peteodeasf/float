@@ -410,59 +410,57 @@ export default function TeenExperimentPage() {
     return (
       <TeenScreen>
         {topBar(backLabel, count)}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `8px ${teen.space.pad} 0` }}>
-          {/* What are you afraid will happen? — the feared outcome, and a box to change it. */}
-          <div>
-            <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '6px 0 0' }}>
-              What are you afraid will happen?
-            </h1>
-            {clinicianFear && (
-              <>
-                <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 14 }}>Your fear</div>
-                <div style={{ fontFamily: teen.font.sans, fontSize: 16, color: teen.color.ink, lineHeight: 1.35, marginTop: 6 }}>
-                  “{clinicianFear}”
-                </div>
-              </>
-            )}
-            <input
-              value={clinicianFear ? (fear !== clinicianFear ? fear : '') : fear}
-              onChange={e => { const v = e.target.value; setFear(!v && clinicianFear ? clinicianFear : v) }}
-              placeholder={clinicianFear ? 'Something else…' : 'e.g. Everyone will stare'}
-              aria-label="Say it your own way"
-              style={{ marginTop: 11, width: '100%', boxSizing: 'border-box', background: teen.color.cardPure, border: `1px solid ${teen.color.lineChip}`, borderRadius: teen.radius.card, padding: '11px 13px', fontFamily: teen.font.sans, fontSize: 14, color: teen.color.ink, outline: 'none' }}
-            />
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `16px ${teen.space.pad} 0` }}>
+          {/* Content flows from the top with one even gap between blocks; slack pools above the
+              button. See the screen-layout rule in CLAUDE.md. */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            {/* What are you afraid will happen? — the feared outcome, and a box to change it. */}
+            <div>
+              <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
+                What are you afraid will happen?
+              </h1>
+              {clinicianFear && (
+                <>
+                  <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 14 }}>Your fear</div>
+                  <div style={{ fontFamily: teen.font.sans, fontSize: 16, color: teen.color.ink, lineHeight: 1.35, marginTop: 6 }}>
+                    “{clinicianFear}”
+                  </div>
+                </>
+              )}
+              <input
+                value={clinicianFear ? (fear !== clinicianFear ? fear : '') : fear}
+                onChange={e => { const v = e.target.value; setFear(!v && clinicianFear ? clinicianFear : v) }}
+                placeholder={clinicianFear ? 'Something else…' : 'e.g. Everyone will stare'}
+                aria-label="Say it your own way"
+                style={{ marginTop: 11, width: '100%', boxSizing: 'border-box', background: teen.color.cardPure, border: `1px solid ${teen.color.lineChip}`, borderRadius: teen.radius.card, padding: '11px 13px', fontFamily: teen.font.sans, fontSize: 14, color: teen.color.ink, outline: 'none' }}
+              />
+            </div>
+
+            {/* How strong is your belief? */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 11 }}>
+                <span style={teen.type.label}>How strong is your belief?</span>
+                <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
+              </div>
+              <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe it will happen" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 600, color: teen.color.textTertiary }}>
+                <span>Not at all</span>
+                <span>Completely</span>
+              </div>
+            </div>
+
+            {/* What fear level do you expect? */}
+            <div>
+              <div style={{ ...teen.type.label, marginBottom: 10 }}>What fear level do you expect?</div>
+              <Thermometer value={level} onChange={setLevel} height={46} label="Expected Fear Level" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textTertiary }}>
+                <span>a little</span>
+                <span>a lot</span>
+              </div>
+            </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: 18 }} />
-
-          {/* How strong is your belief? */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 11 }}>
-              <span style={teen.type.label}>How strong is your belief?</span>
-              <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
-            </div>
-            <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe it will happen" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 600, color: teen.color.textTertiary }}>
-              <span>Not at all</span>
-              <span>Completely</span>
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minHeight: 18 }} />
-
-          {/* What fear level do you expect? */}
-          <div>
-            <div style={{ ...teen.type.label, marginBottom: 10 }}>What fear level do you expect?</div>
-            <Thermometer value={level} onChange={setLevel} height={46} label="Expected Fear Level" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, color: teen.color.textTertiary }}>
-              <span>a little</span>
-              <span>a lot</span>
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minHeight: 10 }} />
-
-          <div style={{ paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {saveFailed && (
               <p role="alert" style={{ ...teen.type.body, fontSize: 14, color: '#b91c1c', margin: 0 }}>
                 That didn't save. Please try again.
