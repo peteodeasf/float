@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { closePatient, reopenPatient, getPatient, getMessages, markMessageRead, sendMessage, getOneParentsMessages, listParents, sendParentMessage, getPatientProgress, updatePatient, getPatientAttention } from '../../api/patients'
-import {
-  LineChart, Line, XAxis, YAxis,
-  Tooltip, Legend, ResponsiveContainer
-} from 'recharts'
-import { CHART } from '../../styles/chartColors'
+import { closePatient, reopenPatient, getPatient, getMessages, markMessageRead, sendMessage, getOneParentsMessages, listParents, sendParentMessage, updatePatient } from '../../api/patients'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanNickname, updateTrigger, deleteTrigger,
@@ -19,9 +14,9 @@ import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNot
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../../lib/checklists'
 import { getChecklistItems } from '../../api/checklist'
-import { CONFIDENCE_OPTIONS } from './patient/shared'
 import { FlatLadder } from './patient/FlatLadder'
 import { BehaviorPanel } from './patient/BehaviorPanel'
+import { ExposuresTab } from './patient/ExposuresTab'
 export { FlatLadder } from './patient/FlatLadder'
 export { BehaviorPanel } from './patient/BehaviorPanel'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
@@ -127,21 +122,6 @@ function clampDtInput(raw: string): string {
   if (Number.isNaN(n)) return raw
   if (n > DT_MAX) return String(DT_MAX)
   return raw
-}
-
-const EXPERIMENT_STATUS_LABEL: Record<string, string> = {
-  planned: 'planned',
-  committed: 'committed',
-  in_progress: 'in progress',
-  completed: 'completed',
-  too_hard: 'too hard',
-  skipped: 'skipped',
-}
-
-function confidenceMeta(level: string | null | undefined) {
-  if (!level) return { emoji: '', label: '' }
-  const m = CONFIDENCE_OPTIONS.find(c => c.key === level)
-  return m ? { emoji: m.emoji, label: m.label } : { emoji: '', label: level }
 }
 
 type SessionPrepType = 'session_1' | 'session_2' | 'session_3' | 'weekly'
@@ -313,37 +293,6 @@ function formatMsgTime(iso: string | null | undefined): string {
   return `${datePart}, ${time}`
 }
 
-// Monday of the week containing `date` (Mon-Sun weeks), at local midnight
-function getMondayOfWeek(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  return d
-}
-
-// e.g. "May 11-17" or "May 30-Jun 5"
-function weekRangeLabel(monday: Date): string {
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  const monStr = monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  if (monday.getMonth() === sunday.getMonth()) {
-    return `${monStr}-${sunday.getDate()}`
-  }
-  const sunStr = sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  return `${monStr}-${sunStr}`
-}
-
-function trendArrow(seq: number[]): { symbol: string; color: string } {
-  if (seq.length < 2) return { symbol: '', color: '' }
-  const first = seq[0]
-  const last = seq[seq.length - 1]
-  if (last < first) return { symbol: '↓', color: 'var(--float-success)' }
-  if (last > first) return { symbol: '↑', color: 'var(--float-danger)' }
-  return { symbol: '→', color: 'var(--float-text-hint)' }
-}
-
 // ── Case Conceptualization (living draft) ──
 // ── Consultation checklists (Steps 3 & 4) ──
 // Definitions live in ../../lib/checklists so the patient list page can share them.
@@ -490,28 +439,6 @@ const SESSION_NOTE_TAGS = ['Initial', 'Consult', 'Weekly', 'Review']
 
 // ── Main Page ──
 /** One number on the experiments summary. */
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div>
-      <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--float-text-hint)', margin: '0 0 4px' }}>
-        {label}
-      </p>
-      <p style={{ fontSize: '22px', fontWeight: 700, color: 'var(--float-text)', margin: 0, lineHeight: 1.1 }}>
-        {value}
-      </p>
-      {hint && <p style={{ fontSize: '11px', color: 'var(--float-text-hint)', margin: '3px 0 0' }}>{hint}</p>}
-    </div>
-  )
-}
-
-/** An average reduction. Null before anything has been recorded, and a rise is worth seeing too. */
-function fmtDrop(v: number | null | undefined): string {
-  if (v == null) return '—'
-  const rounded = Math.round(v * 10) / 10
-  if (rounded === 0) return 'no change'
-  return rounded > 0 ? `${rounded} lower` : `${Math.abs(rounded)} higher`
-}
-
 export default function PatientPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
@@ -721,12 +648,6 @@ export default function PatientPage() {
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
-  // What needs attention: the same list the patient list shows, worked out on the server.
-  const { data: attention = [] } = useQuery({
-    queryKey: ['attention', patientId],
-    queryFn: () => getPatientAttention(patientId!),
-    enabled: !!patientId,
-  })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
   const { data: parents = [] } = useQuery({ queryKey: ['parents', patientId], queryFn: () => listParents(patientId!), enabled: !!patientId })
   // Opening a different patient goes back to the child's thread: a parent id from the last patient
@@ -974,7 +895,6 @@ export default function PatientPage() {
   }, [showPlanEditor, editingPlan, editor])
 
 
-  const legendNote = { fontSize: '11px', color: 'var(--float-text-hint)', margin: '0 0 10px' }
   const cardStyle = { background: 'var(--float-surface)', borderRadius: 'var(--float-radius-card)', border: '1px solid var(--float-border-strong)', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
   // Tab badge counts. Unread = messages the child sent that the clinician hasn't read — not the
@@ -1010,107 +930,6 @@ export default function PatientPage() {
   const processChecklistDone = processChecklistKeys.filter(k => !!(checklistItems ?? {})[k]).length
   const processChecklistTotal = processChecklistKeys.length
 
-  // Experiments tab — overdue helper + tab badge count
-  const todayISO = new Date().toISOString().split('T')[0]
-  const isOverdue = (e: { scheduled_date: string | null; status: string }) =>
-    !!e.scheduled_date && e.scheduled_date.split('T')[0] < todayISO && e.status !== 'completed' && e.status !== 'skipped' && e.status !== 'too_hard'
-
-  // Current focus — most recent experiment activity (by completed_date | scheduled_date | created_at)
-  const recentExperiment = [...(patientExperiments ?? [])]
-    .filter(e => e.avoidance_behavior_id || e.behavior_name)
-    .sort((a, b) => {
-      const ad = a.completed_date || a.scheduled_date || a.created_at
-      const bd = b.completed_date || b.scheduled_date || b.created_at
-      return new Date(bd).getTime() - new Date(ad).getTime()
-    })[0]
-  const focusBehaviorId = recentExperiment?.avoidance_behavior_id ?? null
-  const focusBehaviorName = recentExperiment?.behavior_name ?? null
-  const focusExperiments = recentExperiment
-    ? (patientExperiments ?? []).filter(e =>
-        focusBehaviorId
-          ? e.avoidance_behavior_id === focusBehaviorId
-          : !!focusBehaviorName && e.behavior_name === focusBehaviorName
-      )
-    : []
-  const focusCompletedAsc = focusExperiments
-    .filter(e => e.status === 'completed' && e.completed_date)
-    .sort((a, b) => new Date(a.completed_date!).getTime() - new Date(b.completed_date!).getTime())
-  const focusBipSequence: number[] = [
-    ...focusCompletedAsc.map(e => e.bip_before).filter((v): v is number => v != null).map(v => Math.round(Number(v))),
-  ]
-  const lastFocusBipAfter = focusCompletedAsc[focusCompletedAsc.length - 1]?.bip_after
-  if (lastFocusBipAfter != null) focusBipSequence.push(Math.round(Number(lastFocusBipAfter)))
-  const focusDtSequence: number[] = focusCompletedAsc
-    .map(e => e.distress_thermometer_actual)
-    .filter((v): v is number => v != null)
-    .map(v => Number(v))
-  const focusNextUpcoming = focusExperiments
-    .filter(e => e.status === 'committed' && e.scheduled_date && e.scheduled_date.split('T')[0] >= todayISO)
-    .sort((a, b) => (a.scheduled_date ?? '').localeCompare(b.scheduled_date ?? ''))[0]
-
-  const attentionProblems = attention.some(r => r.tone === 'problem')
-
-  // Timeline — group completed + committed by Mon-Sun week, newest first
-  const timelineItems = (patientExperiments ?? [])
-    .filter(e => (e.status === 'completed' || e.status === 'committed'))
-    .map(e => ({
-      e,
-      displayDate: e.completed_date || e.scheduled_date,
-    }))
-    .filter((x): x is { e: typeof x.e; displayDate: string } => !!x.displayDate)
-  const weekBuckets = new Map<string, { monday: Date; items: typeof timelineItems }>()
-  for (const item of timelineItems) {
-    const monday = getMondayOfWeek(new Date(item.displayDate))
-    const key = monday.toISOString().split('T')[0]
-    if (!weekBuckets.has(key)) weekBuckets.set(key, { monday, items: [] })
-    weekBuckets.get(key)!.items.push(item)
-  }
-  const sortedWeeks = [...weekBuckets.values()]
-    .map(b => ({
-      ...b,
-      items: [...b.items].sort((a, b) => new Date(b.displayDate).getTime() - new Date(a.displayDate).getTime()),
-    }))
-    .sort((a, b) => b.monday.getTime() - a.monday.getTime())
-  const currentWeekMonday = getMondayOfWeek(new Date())
-  const lastWeekMonday = new Date(currentWeekMonday); lastWeekMonday.setDate(currentWeekMonday.getDate() - 7)
-  const recentWeeks = sortedWeeks.filter(w =>
-    w.monday.getTime() === currentWeekMonday.getTime() ||
-    w.monday.getTime() === lastWeekMonday.getTime()
-  )
-  const earlierWeeks = sortedWeeks.filter(w =>
-    w.monday.getTime() !== currentWeekMonday.getTime() &&
-    w.monday.getTime() !== lastWeekMonday.getTime()
-  )
-
-  // Progress charts query (Experiments tab — Progress section)
-  const { data: progress } = useQuery({
-    queryKey: ['progress', patientId],
-    queryFn: () => getPatientProgress(patientId!),
-    enabled: !!patientId && activeTab === 'experiments'
-  })
-  const progressChartData = progress?.recent_experiments
-    .filter(e => e.completed_date)
-    .map((e) => ({
-      date: e.completed_date ? new Date(e.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
-      bip_before: e.bip_before,
-      bip_after: e.bip_after,
-      // Both lines, the same as Belief in Prediction. What they expected against what happened is
-      // the disconfirmation — the chart showing only the actual was hiding half the point, and the
-      // backend has been sending the expected value all along.
-      dt_expected: e.distress_thermometer_expected,
-      dt_actual: e.distress_thermometer_actual,
-    })) ?? []
-
-  // Expanded "what learned" entries
-  const [expandedLearningIds, setExpandedLearningIds] = useState<Set<string>>(new Set())
-  const [showEarlier, setShowEarlier] = useState(false)
-  const toggleLearning = (id: string) => {
-    setExpandedLearningIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
 
   const notesList = sessionNotes ?? []
   const hasPatientDA = !!daStatuses && Object.values(daStatuses).some(da => da?.facilitated_by === 'practitioner')
@@ -1821,322 +1640,9 @@ export default function PatientPage() {
 
   const experimentsContent = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-      {/* Current Focus */}
-      <div style={cardStyle}>
-        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Current focus</div>
-        {recentExperiment ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-              {recentExperiment.situation_name && (
-                <>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)' }}>{recentExperiment.situation_name}</span>
-                  <span style={{ fontSize: '13px', color: 'var(--float-border-strong)' }}>·</span>
-                </>
-              )}
-              <span style={{ fontSize: '14px', color: 'var(--float-text-secondary)' }}>{recentExperiment.behavior_name || 'Experiment'}</span>
-            </div>
-            {focusBipSequence.length > 0 || focusDtSequence.length > 0 ? (
-              <>
-                {focusBipSequence.length > 0 && (() => {
-                  const t = trendArrow(focusBipSequence)
-                  return (
-                    <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', marginBottom: '6px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, color: 'var(--float-text-secondary)', minWidth: '34px' }}>BIP:</span>
-                      <span>{focusBipSequence.map(v => `${v}%`).join('  →  ')}</span>
-                      {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
-                    </div>
-                  )
-                })()}
-                {focusDtSequence.length > 0 && (() => {
-                  const t = trendArrow(focusDtSequence)
-                  return (
-                    <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', marginBottom: '14px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, color: 'var(--float-text-secondary)', minWidth: '34px' }}>Fear Level:</span>
-                      <span>{focusDtSequence.map(v => `${v}`).join('  →  ')}</span>
-                      {t.symbol && <span style={{ color: t.color, fontWeight: 700, fontSize: '15px' }}>{t.symbol}</span>}
-                    </div>
-                  )
-                })()}
-              </>
-            ) : (
-              <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: '0 0 14px' }}>No experiments recorded yet for this behavior</p>
-            )}
-            {focusNextUpcoming && (() => {
-              const conf = confidenceMeta(focusNextUpcoming.confidence_level)
-              const dateStr = focusNextUpcoming.scheduled_date
-                ? new Date(focusNextUpcoming.scheduled_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-                : ''
-              return (
-                <div style={{ fontSize: '13px', color: 'var(--float-text-secondary)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  <span style={{ fontWeight: 700, color: 'var(--float-text-secondary)' }}>Next experiment:</span>
-                  <span>{dateStr}</span>
-                  {conf.label && (
-                    <>
-                      <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span>{conf.emoji} {conf.label} confidence</span>
-                    </>
-                  )}
-                  <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                  <span>{EXPERIMENT_STATUS_LABEL[focusNextUpcoming.status] || focusNextUpcoming.status}</span>
-                </div>
-              )
-            })()}
-          </>
-        ) : (
-          <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No experiments recorded yet for this behavior</p>
-        )}
-      </div>
-
-      {/* Needs attention: the same reasons as the patient list, worked out on the server
-          (app/services/attention_service.py) so the two cannot disagree. Problems first, then what
-          is new to look at. docs/plans/clinician-notifications.md */}
-      {attention.length > 0 && (
-        <div style={{ background: attentionProblems ? 'var(--float-warning-bg)' : 'var(--float-primary-light)', border: `1px solid ${attentionProblems ? 'var(--float-warning-border)' : 'var(--float-primary-mid)'}`, borderRadius: 'var(--float-radius-card)', padding: '16px 20px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: attentionProblems ? 'var(--float-warning)' : 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
-            {attentionProblems ? 'Needs attention' : 'New to look at'}
-          </div>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {attention.map(r => (
-              <li key={r.kind} style={{ fontSize: '13px', color: r.tone === 'new' ? 'var(--float-primary)' : 'var(--float-warning)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                  <span style={{ fontWeight: 700 }}>·</span>
-                  <span>{r.tone === 'new' && <strong>New: </strong>}{r.text}</span>
-                  {r.kind === 'overdue' && (
-                    <button onClick={() => setActiveTab('chat')} className="bg-amber-600 text-white rounded text-xs font-medium border-none cursor-pointer" style={{ padding: '4px 10px' }}>Remind teen</button>
-                  )}
-                </div>
-                {r.items.length > 0 && (
-                  <ul style={{ margin: '4px 0 0 18px', padding: 0, listStyle: 'none', fontSize: '12.5px' }}>
-                    {r.items.map(item => (
-                      <li key={item.id}>
-                        &ldquo;{item.name}&rdquo;
-                        {item.date ? ` · ${new Date(item.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* What the numbers say. Every one of these was already computed by the backend and shown
-          nowhere — including how often the feared outcome actually happened, which is the strongest
-          number in the app. */}
-      {progress?.summary && progress.summary.total_experiments_completed > 0 && (
-        <div style={{ ...cardStyle, marginBottom: '12px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '18px' }}>
-            {/* total_experiments_planned counts the ones STILL open, not the total — so it is a
-                second number, not a denominator. */}
-            <Stat
-              label="Exposures done"
-              value={`${progress.summary.total_experiments_completed}`}
-              hint={
-                progress.summary.total_experiments_planned > 0
-                  ? `${progress.summary.total_experiments_planned} still to do`
-                  : 'None outstanding'
-              }
-            />
-            <Stat
-              label="Fear drop, on average"
-              value={fmtDrop(progress.summary.average_distress_thermometer_reduction)}
-              hint="How much lower the fear was than expected"
-            />
-            <Stat
-              label="Belief drop, on average"
-              value={fmtDrop(progress.summary.average_bip_reduction)}
-              hint="How much less they believed it afterwards"
-            />
-            <Stat
-              label="Feared outcome happened"
-              value={`${progress.summary.experiments_where_feared_outcome_occurred} of ${progress.summary.total_experiments_completed}`}
-              hint="The number worth showing the child"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Progress charts — side by side (hidden when not enough data) */}
-      {progressChartData.length >= 2 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div style={cardStyle}>
-            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Belief in Prediction</h2>
-            <p style={legendNote}>Dashed: before &middot; Solid: after</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-                <Tooltip formatter={(value, name) => [`${value}%`, name === 'bip_before' ? 'Before' : 'After']} contentStyle={{ border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', fontSize: '12px' }} />
-                <Legend formatter={(value) => value === 'bip_before' ? 'Before' : 'After'} wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" dataKey="bip_before" stroke={CHART.primarySoft} strokeWidth={2} dot={{ r: 3, fill: CHART.primarySoft }} strokeDasharray="4 4" />
-                <Line type="monotone" dataKey="bip_after" stroke={CHART.primary} strokeWidth={2} dot={{ r: 3, fill: CHART.primary }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={cardStyle}>
-            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Fear Level</h2>
-            <p style={legendNote}>Dashed: expected &middot; Solid: what happened</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={progressChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  formatter={(value, name) => [value, name === 'dt_expected' ? 'Expected' : 'Actual']}
-                  contentStyle={{ border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', fontSize: '12px' }}
-                />
-                <Line type="monotone" dataKey="dt_expected" stroke={CHART.primarySoft} strokeWidth={2} dot={{ r: 3, fill: CHART.primarySoft }} strokeDasharray="4 4" />
-                <Line type="monotone" dataKey="dt_actual" stroke={CHART.primary} strokeWidth={2} dot={{ r: 3, fill: CHART.primary }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {/* Experiment timeline */}
-      <div style={cardStyle}>
-        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ marginBottom: '12px' }}>Experiment timeline</div>
-        {sortedWeeks.length === 0 ? (
-          <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No experiments recorded yet.</p>
-        ) : (() => {
-          type WeekBucket = typeof sortedWeeks[number]
-          type TimelineItem = WeekBucket['items'][number]
-          const weekHeaderStyle = { fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--float-text-secondary)', marginTop: '16px', marginBottom: '4px', textTransform: 'uppercase' as const }
-          const firstWeekHeaderStyle = { ...weekHeaderStyle, marginTop: 0 }
-          const renderRow = ({ e, displayDate }: TimelineItem) => {
-            const completed = e.status === 'completed'
-            const overdue = e.status === 'committed' && isOverdue(e)
-            const upcoming = e.status === 'committed' && !overdue
-            const expanded = expandedLearningIds.has(e.id)
-            const dateStr = new Date(displayDate.split('T')[0] + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-            const bipBefore = e.bip_before != null ? Math.round(Number(e.bip_before)) : null
-            const bipAfter = e.bip_after != null ? Math.round(Number(e.bip_after)) : null
-            const dtActual = e.distress_thermometer_actual != null ? Number(e.distress_thermometer_actual) : null
-            const conf = confidenceMeta(e.confidence_level)
-            const canExpand = completed && !!e.what_learned
-            const behaviorLabel = e.behavior_name || e.plan_description || 'Experiment'
-            return (
-              <div key={e.id}>
-                <div
-                  onClick={() => { if (canExpand) toggleLearning(e.id) }}
-                  style={{
-                    display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px',
-                    padding: '6px 0', fontSize: '13px',
-                    background: overdue ? 'var(--float-bg)' : 'transparent',
-                    cursor: canExpand ? 'pointer' : 'default',
-                  }}
-                >
-                  {completed && (
-                    <span style={{ width: '18px', height: '18px', borderRadius: 'var(--float-radius-pill)', background: 'var(--float-success-bg)', color: 'var(--float-success)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
-                  )}
-                  {overdue && <span style={{ color: 'var(--float-warning)', fontSize: '14px', flexShrink: 0 }}>⚠</span>}
-                  {upcoming && <span style={{ color: 'var(--float-text-hint)', fontSize: '14px', flexShrink: 0 }}>📅</span>}
-                  <span style={{ fontWeight: 600, color: overdue ? 'var(--float-warning)' : 'var(--float-text)', flexShrink: 0 }}>{dateStr}</span>
-                  <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                  <span
-                    title={behaviorLabel}
-                    style={{
-                      fontSize: '13px',
-                      color: overdue ? 'var(--float-warning)' : 'var(--float-text-secondary)',
-                      minWidth: '200px',
-                      maxWidth: '300px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >{behaviorLabel}</span>
-                  {completed && bipBefore != null && bipAfter != null && (
-                    <>
-                      <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: 'var(--float-text-secondary)' }}>BIP {bipBefore}%&rarr;{bipAfter}%</span>
-                    </>
-                  )}
-                  {completed && dtActual != null && (
-                    <>
-                      <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--float-text-secondary)' }}>Fear Level <DTBadge value={dtActual} /></span>
-                    </>
-                  )}
-                  {completed && e.feared_outcome_occurred != null && (
-                    <>
-                      <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: e.feared_outcome_occurred ? 'var(--float-danger)' : 'var(--float-success)', fontWeight: 600 }}>
-                        {e.feared_outcome_occurred ? '✗ Yes' : '✓ No'}
-                      </span>
-                    </>
-                  )}
-                  {overdue && (
-                    <>
-                      <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: 'var(--float-warning)', fontWeight: 600 }}>not recorded</span>
-                    </>
-                  )}
-                  {upcoming && conf.label && (
-                    <>
-                      <span style={{ color: 'var(--float-border-strong)' }}>·</span>
-                      <span style={{ color: 'var(--float-text-secondary)' }}>{conf.emoji} {conf.label} confidence</span>
-                    </>
-                  )}
-                </div>
-                {canExpand && expanded && (
-                  <div style={{ margin: '4px 0 4px 30px', padding: '8px 12px', background: 'var(--float-surface-sunken)', borderRadius: 'var(--float-radius-control)', fontSize: '12px', color: 'var(--float-text-secondary)', lineHeight: '1.5' }}>
-                    <span style={{ color: 'var(--float-text-hint)', fontWeight: 600 }}>What they learned: </span>{e.what_learned}
-                  </div>
-                )}
-              </div>
-            )
-          }
-          const renderWeek = (week: WeekBucket, isFirst: boolean) => {
-            const isCurrent = week.monday.getTime() === currentWeekMonday.getTime()
-            const isLast = week.monday.getTime() === lastWeekMonday.getTime()
-            const range = weekRangeLabel(week.monday)
-            const label = isCurrent
-              ? `THIS WEEK (${range})`
-              : isLast
-                ? `LAST WEEK (${range})`
-                : range.toUpperCase()
-            return (
-              <div key={week.monday.toISOString()}>
-                <div style={isFirst ? firstWeekHeaderStyle : weekHeaderStyle}>{label}</div>
-                <div>{week.items.map(renderRow)}</div>
-              </div>
-            )
-          }
-          return (
-            <>
-              {recentWeeks.length === 2 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
-                  {recentWeeks.map(w => renderWeek(w, true))}
-                </div>
-              ) : recentWeeks.length === 1 ? (
-                <div style={{ marginBottom: earlierWeeks.length > 0 ? '16px' : 0 }}>
-                  {renderWeek(recentWeeks[0], true)}
-                </div>
-              ) : null}
-              {earlierWeeks.length > 0 && (
-                <div>
-                  <button
-                    onClick={() => setShowEarlier(!showEarlier)}
-                    className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer"
-                    style={{ padding: 0 }}
-                  >
-                    {showEarlier ? 'Hide earlier experiments ↓' : 'Show earlier experiments →'}
-                  </button>
-                  {showEarlier && (
-                    <div style={{ marginTop: '4px' }}>
-                      {earlierWeeks.map((w, i) => renderWeek(w, i === 0 && recentWeeks.length === 0))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )
-        })()}
-      </div>
-
-      {/* The parent's progress: their experiments and weekly check-ins. Peter, 2026-09-13: tracking
-          is here, the plan is on the Plan tab. */}
+      <ExposuresTab experiments={patientExperiments ?? []} />
+      {/* The parent's progress: their experiments and weekly check-ins. Peter, 2026-09-13:
+          tracking is here, the plan is on the Plan tab. */}
       {plan?.id && <ParentProgressSection planId={plan.id} />}
     </div>
   )

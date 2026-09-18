@@ -118,6 +118,13 @@
   --float-accent-purple: #7f77dd;
   --float-accent-purple-bg: #ede9fe;
   --float-accent-purple-text: #5b21b6;
+
+  /* Categorical series colours for multi-line charts — one line per situation. The overall trend
+     line uses --float-primary; these are the per-situation lines, distinct and on-brand. */
+  --float-series-a: #5fa89b;
+  --float-series-b: #7f77dd;
+  --float-series-c: #d98a3d;
+  --float-series-d: #6b93c9;
 }
 
 /* Every button in the app fades the same way when it cannot be used, and shows the same ring when
