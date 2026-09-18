@@ -53,13 +53,19 @@ export default function TodayCard({
         </span>
       )}
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button className="teen-btn teen-btn--mint" style={{ flex: 1 }} onClick={onDoItNow}>
+        <button
+          className="teen-btn teen-btn--mint"
+          style={{ flex: 1, padding: '10px 12px', fontSize: 14 }}
+          onClick={onDoItNow}
+        >
           Do it now
         </button>
         <button
           className="teen-btn"
           style={{
             flex: 1,
+            padding: '10px 12px',
+            fontSize: 14,
             background: 'transparent',
             border: '1px solid rgba(154, 198, 191, 0.45)',
             color: '#e6f3f0',
