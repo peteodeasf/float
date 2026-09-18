@@ -45,15 +45,28 @@ export default function TodayCard({
       >
         {name}
       </h2>
-      {situation && (
-        <span style={{ fontFamily: teen.font.sans, fontSize: 13, color: teen.color.onDark }}>
-          {situation}
-        </span>
-      )}
-      <div style={{ marginTop: 12 }}>
+      {/* Situation and the action share one row, so the button adds no vertical height. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 10 }}>
+        {situation ? (
+          <span
+            style={{
+              fontFamily: teen.font.sans,
+              fontSize: 13,
+              color: teen.color.onDark,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {situation}
+          </span>
+        ) : (
+          <span />
+        )}
         <button
           className="teen-btn teen-btn--mint"
-          style={{ width: 'auto', alignSelf: 'flex-start', padding: '9px 18px', fontSize: 14 }}
+          style={{ width: 'auto', flex: 'none', padding: '9px 18px', fontSize: 14 }}
           onClick={onDoItNow}
         >
           Do it now
