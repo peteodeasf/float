@@ -763,7 +763,14 @@ export default function PatientPage() {
     })
   }
 
-  const handleSendLinkOnly = () => {
+  const handleSendLinkOnly = async () => {
+    // Once the form exists, copying its link is a local copy of the existing token — no re-send.
+    // The re-send response didn't include the link, so the button quietly did nothing the 2nd time.
+    if (monitoringForm?.access_token) {
+      await handleCopyLink()
+      setShowSendForm(false)
+      return
+    }
     sendFormMutation.mutate({})
   }
 
