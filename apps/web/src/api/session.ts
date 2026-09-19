@@ -20,7 +20,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 /** How long a surface may sit idle before we sign it out. null = do not sign out on idle. */
 export const IDLE_LIMIT_MS: Record<string, number | null> = {
   // A shared clinic machine left open on a patient's record. 15 minutes is the healthcare norm.
-  practitioner: 15 * 60 * 1000,
+  // TEMPORARY (pre-launch testing): raised from 15 to 60 minutes because window-switching during
+  // testing tripped the auto-logoff constantly. This is a HIPAA auto-logoff control — RESTORE TO
+  // 15 * 60 * 1000 BEFORE LAUNCH.
+  practitioner: 60 * 60 * 1000,
   admin: 15 * 60 * 1000,
   // Their own phone, their own data. Signing a child out in the middle of an exposure makes them
   // less likely to come back, and protects nothing — the refresh token still expires after seven
