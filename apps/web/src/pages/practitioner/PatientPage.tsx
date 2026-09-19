@@ -743,7 +743,13 @@ export default function PatientPage() {
       setParentEmail('')
       setParentName('')
       setParentPhone('')
-    }
+    },
+    onError: () => {
+      // A form already exists (the server refuses a second send), or the network failed. Don't fail
+      // silently — the link is still copyable from the existing form.
+      if (monitoringForm?.access_token) { handleCopyLink(); setShowSendForm(false) }
+      else alert('That could not be sent. Please try again.')
+    },
   })
 
   const handleCopyLink = async () => {
