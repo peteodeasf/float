@@ -371,19 +371,19 @@ export default function MonitorLandingPage() {
               <label style={flabel}>What was the situation?</label>
               <textarea value={situation} onChange={e => setSituation(e.target.value)} rows={2}
                 placeholder={`e.g. Getting ready for school, hearing about a sick classmate`}
-                style={boxStyle('var(--float-primary)', 'var(--float-primary-light)')} />
+                style={boxStyle('var(--float-primary)', 'var(--float-surface-muted)')} />
             </div>
             <div style={{ marginBottom: '14px' }}>
               <label style={flabel}>What I observed about my child</label>
               <textarea value={childBehavior} onChange={e => setChildBehavior(e.target.value)} rows={3}
                 placeholder={`What did ${childName} do or say? How did they seem?`}
-                style={boxStyle('var(--float-accent-purple)', 'var(--float-accent-purple-bg)')} />
+                style={boxStyle('var(--float-info)', 'var(--float-surface-muted)')} />
             </div>
             <div style={{ marginBottom: '20px' }}>
               <label style={flabel}>How I responded</label>
               <textarea value={parentResponse} onChange={e => setParentResponse(e.target.value)} rows={3}
                 placeholder="What did you do or say in the moment?"
-                style={boxStyle('var(--float-success)', 'var(--float-success-bg)')} />
+                style={boxStyle('var(--float-primary-mid)', 'var(--float-surface-muted)')} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px' }}>

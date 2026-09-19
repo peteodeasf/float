@@ -220,14 +220,7 @@ export default function JustSayIt({
   }
 
   const rec = useRecorder(blob =>
-    send(() => api.sayIt(blob), 'talk', "We couldn't send that. Try again, or type it."))
-
-  const toTyping = () => {
-    rec.cancel()
-    setProblem(null)
-    setTyping(true)
-    setStep('note')
-  }
+    send(() => api.sayIt(blob), 'talk', "We couldn't send that. Please try again."))
 
   // ── Got it ──
   if (step === 'done' && sent) {
@@ -315,7 +308,6 @@ export default function JustSayIt({
 
       {!listening && !sending && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <button className="jsi-link" onClick={toTyping}>Type it instead</button>
           <p className="jsi-small">Your recording is turned into text and then deleted. Only the text is kept.</p>
         </div>
       )}
