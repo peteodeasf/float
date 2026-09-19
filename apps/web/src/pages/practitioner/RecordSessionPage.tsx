@@ -274,8 +274,9 @@ export default function RecordSessionPage() {
   const back = () => navigate(`/patients/${patientId}?tab=sessions`)
 
   return (
-    <div className="rs">
+    <div className="rs-page">
       <style>{CSS}</style>
+      <div className="rs">
       <div className="rs-top">
         {step === 'recording' || step === 'saving' || step === 'interrupted'
           ? <span className="rs-top-note">{patient?.name}</span>
@@ -382,6 +383,7 @@ export default function RecordSessionPage() {
           </>
         )}
       </main>
+      </div>
     </div>
   )
 }
@@ -424,4 +426,11 @@ const CSS = `
 .rs-check-big { width: 72px; height: 72px; border-radius: 50%; background: var(--float-primary-mid); color: var(--float-primary-dark); font-size: 38px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 20px; }
 @keyframes rs-pulse { 0% { box-shadow: 0 0 0 0 rgba(255,107,107,.6) } 70% { box-shadow: 0 0 0 12px rgba(255,107,107,0) } 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0) } }
 @media (prefers-reduced-motion: reduce) { .rs-live { animation: none; } .rs-bar { transition: none; } }
+
+/* On a wider screen this is not a phone — sit it in the middle as a bounded card rather than a
+   full-height stripe with the button a whole viewport away. */
+@media (min-width: 700px) {
+  .rs-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 16px; background: #e9eef0; }
+  .rs { min-height: 0; height: 680px; max-height: calc(100vh - 64px); width: 100%; border-radius: 24px; box-shadow: 0 18px 50px rgba(13,61,58,.30); overflow: hidden; }
+}
 `
