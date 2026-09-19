@@ -92,7 +92,7 @@ async def send_monitoring_form(
         select(MonitoringForm).where(
             MonitoringForm.patient_id == patient_id,
             MonitoringForm.status.in_(["pending", "in_progress"])
-        )
+        ).limit(1)
     )
     if existing.scalar_one_or_none():
         raise HTTPException(
@@ -172,10 +172,12 @@ async def get_monitoring_form(
 ):
     _, practitioner = context
 
+    # Newest form. A patient can end up with more than one (e.g. resent over time), so take the
+    # latest rather than assuming exactly one — scalar_one_or_none() threw a 500 on duplicates.
     result = await db.execute(
         select(MonitoringForm).where(
             MonitoringForm.patient_id == patient_id
-        ).order_by(MonitoringForm.created_at.desc())
+        ).order_by(MonitoringForm.created_at.desc()).limit(1)
     )
     form = result.scalar_one_or_none()
     if not form:
@@ -217,7 +219,7 @@ async def get_monitoring_situations(
     form_result = await db.execute(
         select(MonitoringForm).where(
             MonitoringForm.patient_id == patient_id
-        ).order_by(MonitoringForm.created_at.desc())
+        ).order_by(MonitoringForm.created_at.desc()).limit(1)
     )
     form = form_result.scalar_one_or_none()
     if not form:
@@ -269,7 +271,7 @@ async def get_monitoring_report(
     form_result = await db.execute(
         select(MonitoringForm).where(
             MonitoringForm.patient_id == patient_id
-        ).order_by(MonitoringForm.created_at.desc())
+        ).order_by(MonitoringForm.created_at.desc()).limit(1)
     )
     form = form_result.scalar_one_or_none()
     if not form:

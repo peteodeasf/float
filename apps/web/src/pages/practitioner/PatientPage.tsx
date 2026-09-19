@@ -762,6 +762,13 @@ export default function PatientPage() {
   }
 
   const handleSendAll = () => {
+    // Once a form exists, don't create a second one — copy the existing link. The first send (no
+    // form yet) is the only time this actually creates and emails.
+    if (monitoringForm?.access_token) {
+      handleCopyLink()
+      setShowSendForm(false)
+      return
+    }
     sendFormMutation.mutate({
       parent_email: parentEmail || undefined,
       parent_name: parentName || undefined,
