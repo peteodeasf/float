@@ -469,210 +469,95 @@ export default function MonitorLandingPage() {
 
   // ── Add / Edit screen ──
   if (screen === 'add' || screen === 'edit') {
+    const modeBtn = (label: string, active: boolean, onClick?: () => void) => (
+      <button
+        onClick={onClick}
+        aria-pressed={active}
+        style={{
+          font: 'inherit', fontSize: '12.5px', fontWeight: 700, border: 'none', borderRadius: '7px',
+          padding: '6px 11px', cursor: active ? 'default' : 'pointer', whiteSpace: 'nowrap',
+          background: active ? 'var(--float-primary)' : 'transparent',
+          color: active ? '#fff' : 'var(--float-text-secondary)',
+        }}
+      >
+        {label}
+      </button>
+    )
+    const fieldLabel: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '5px' }
+    const fieldBox: React.CSSProperties = {
+      width: '100%', padding: '11px 12px', borderRadius: 'var(--float-radius-card)',
+      border: '1px solid var(--float-border)', fontSize: '15px', fontFamily: 'inherit',
+      boxSizing: 'border-box', resize: 'none',
+    }
     return (
-      <Shell>
-        <div style={{
-          padding: '8px 24px 0',
-          borderBottom: '1px solid var(--float-border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          background: 'var(--float-surface)',
-          marginTop: '-1px'
-        }}>
-          <button
-            onClick={() => setScreen('home')}
-            style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '8px 4px', color: 'var(--float-text-secondary)' }}
-          >
-            &larr;
-          </button>
-          <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--float-text)' }}>
-            {screen === 'edit' ? 'Edit observation' : 'New observation'}
-          </span>
+      <Shell wide>
+        {/* Back to the entries list, plus a switch to any capture mode — talk is always one tap away. */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '10px 20px', borderBottom: '1px solid var(--float-border)', background: 'var(--float-surface)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button onClick={() => setScreen('home')} aria-label="Back" style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '6px 4px', color: 'var(--float-text-secondary)' }}>&larr;</button>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--float-text)' }}>{screen === 'edit' ? 'Edit observation' : 'New observation'}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--float-surface-muted)', borderRadius: '10px', padding: '4px' }}>
+            {voice && modeBtn('\u{1F3A4} Tap and talk', false, () => startCapture('talk'))}
+            {modeBtn('✎ Quick note', false, () => startCapture('note'))}
+            {modeBtn('☰ Form', true)}
+          </div>
         </div>
 
-        <div style={{ padding: '20px 24px 120px' }}>
-          {/* Date */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
-              Date
-            </label>
-            <input
-              type="date"
-              value={entryDate}
-              onChange={e => setEntryDate(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--float-radius-card)',
-                border: '1px solid var(--float-border)',
-                fontSize: '16px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Situation */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
-              What was the situation?
-            </label>
-            <textarea
-              value={situation}
-              onChange={e => setSituation(e.target.value)}
-              placeholder={`e.g. Getting ready for school, hearing about a sick classmate`}
-              rows={3}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--float-radius-card)',
-                border: '1px solid var(--float-border)',
-                fontSize: '16px',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Child behavior */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
-              What I observed about my child
-            </label>
-            <textarea
-              value={childBehavior}
-              onChange={e => setChildBehavior(e.target.value)}
-              placeholder={`What did ${childName} do or say? How did they seem?`}
-              rows={3}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--float-radius-card)',
-                border: '1px solid var(--float-border)',
-                fontSize: '16px',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Parent response */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '6px' }}>
-              How I responded
-            </label>
-            <textarea
-              value={parentResponse}
-              onChange={e => setParentResponse(e.target.value)}
-              placeholder="What did you do or say in the moment?"
-              rows={3}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--float-radius-card)',
-                border: '1px solid var(--float-border)',
-                fontSize: '16px',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Fear thermometer */}
-          <div style={{ marginBottom: '32px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', marginBottom: '4px' }}>
-              Fear thermometer (1–10)
-            </label>
-            <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', marginBottom: '12px' }}>
-              Your estimate of {childName}'s level of distress. 1 = little to no distress. 10 = highest distress.
-            </p>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              gap: '8px'
-            }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setFearThermometer(n)}
-                  style={{
-                    width: '100%',
-                    aspectRatio: '1',
-                    borderRadius: 'var(--float-radius-card)',
-                    border: fearThermometer === n ? '2px solid var(--float-primary)' : '1px solid var(--float-border)',
-                    background: fearThermometer === n
-                      ? 'var(--float-primary-light)'
-                      : n >= 8 ? 'var(--float-danger-bg)'
-                      : n >= 5 ? 'var(--float-warning-bg)'
-                      : 'var(--float-success-bg)',
-                    color: fearThermometer === n
-                      ? 'var(--float-primary)'
-                      : n >= 8 ? 'var(--float-danger)'
-                      : n >= 5 ? 'var(--float-warning)'
-                      : 'var(--float-success)',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: '48px'
-                  }}
-                >
-                  {n}
-                </button>
-              ))}
+        <div style={{ padding: '16px 20px 22px' }}>
+          {/* Date + fear on one row; wraps to two lines on a narrow phone. */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '14px' }}>
+            <div style={{ flex: '0 0 150px' }}>
+              <label style={fieldLabel}>Date</label>
+              <input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} style={fieldBox} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: 'var(--float-text-hint)' }}>
-              <span>Low distress</span>
-              <span>Extreme distress</span>
+            <div style={{ flex: '1 1 280px', minWidth: 0 }}>
+              <label style={fieldLabel}>Fear level (1&ndash;10)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '5px' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setFearThermometer(n)}
+                    style={{
+                      minHeight: '42px', borderRadius: '9px',
+                      border: fearThermometer === n ? '2px solid var(--float-primary)' : '1px solid var(--float-border)',
+                      background: fearThermometer === n ? 'var(--float-primary-light)' : n >= 8 ? 'var(--float-danger-bg)' : n >= 5 ? 'var(--float-warning-bg)' : 'var(--float-success-bg)',
+                      color: fearThermometer === n ? 'var(--float-primary)' : n >= 8 ? 'var(--float-danger)' : n >= 5 ? 'var(--float-warning)' : 'var(--float-success)',
+                      fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: 'var(--float-text-hint)' }}>
+                <span>Low distress</span><span>Extreme distress</span>
+              </div>
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <button
-              onClick={() => handleSave(false)}
-              disabled={saving}
-              style={{
-                width: '100%',
-                padding: '16px',
-                background: 'var(--float-primary)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '14px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                opacity: saving ? 0.6 : 1
-              }}
-            >
-              {saving ? 'Saving...' : 'Save observation'}
-            </button>
-            <button
-              onClick={() => handleSave(true)}
-              disabled={saving}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: 'transparent',
-                color: 'var(--float-text-secondary)',
-                border: '1px solid var(--float-border)',
-                borderRadius: '14px',
-                fontSize: '15px',
-                cursor: 'pointer'
-              }}
-            >
-              Save as draft
-            </button>
+          <div style={{ marginBottom: '14px' }}>
+            <label style={fieldLabel}>What was the situation?</label>
+            <textarea value={situation} onChange={e => setSituation(e.target.value)} placeholder={`e.g. Getting ready for school, hearing about a sick classmate`} rows={2} style={fieldBox} />
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--float-text-hint)', marginTop: '16px' }}>
-            You can always come back and edit this later.
-          </p>
+          {/* The two observations side by side on desktop, stacked on a phone. */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <div>
+              <label style={fieldLabel}>What I observed about my child</label>
+              <textarea value={childBehavior} onChange={e => setChildBehavior(e.target.value)} placeholder={`What did ${childName} do or say? How did they seem?`} rows={3} style={fieldBox} />
+            </div>
+            <div>
+              <label style={fieldLabel}>How I responded</label>
+              <textarea value={parentResponse} onChange={e => setParentResponse(e.target.value)} placeholder="What did you do or say in the moment?" rows={3} style={fieldBox} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+            <span style={{ marginRight: 'auto', fontSize: '13px', color: 'var(--float-text-hint)' }}>You can edit this later.</span>
+            <button onClick={() => handleSave(true)} disabled={saving} style={{ background: 'transparent', color: 'var(--float-text-secondary)', border: '1px solid var(--float-border)', borderRadius: '12px', padding: '11px 18px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Save as draft</button>
+            <button onClick={() => handleSave(false)} disabled={saving} style={{ background: 'var(--float-primary)', color: '#fff', border: 'none', borderRadius: '12px', padding: '11px 22px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save observation'}</button>
+          </div>
         </div>
       </Shell>
     )
@@ -682,12 +567,12 @@ export default function MonitorLandingPage() {
 }
 
 // ── Shell wrapper ──
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
   return (
     <div style={{
       minHeight: '100vh',
       background: 'var(--float-bg)',
-      maxWidth: '480px',
+      maxWidth: wide ? '760px' : '480px',
       margin: '0 auto'
     }}>
       {/* Header */}
