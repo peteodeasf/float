@@ -126,7 +126,7 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
       {/* ── DASHBOARD BAND ── */}
-      <div style={{ ...card, padding: '12px 18px' }}>
+      <div style={{ ...card, padding: '12px 18px', background: 'var(--float-primary-light)', border: '1px solid var(--float-success-border)' }}>
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <Stat k="Completed Exposures" v={String(done)} first />
           <Stat k="Completed / Scheduled" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} />
