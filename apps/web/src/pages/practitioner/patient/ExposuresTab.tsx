@@ -34,7 +34,7 @@ const fullDate = (key: string) =>
   new Date(key + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 const card: React.CSSProperties = {
-  background: '#fff', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '16px 18px',
+  background: '#fff', border: '1px solid var(--float-border-strong)', borderRadius: 'var(--float-radius-card)', padding: '16px 18px',
 }
 const eyebrow: React.CSSProperties = {
   fontSize: 10.5, fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--float-text-secondary)',
@@ -129,12 +129,12 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
       {/* ── DASHBOARD BAND ── */}
       <div style={{ ...card, padding: '12px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
-          <Stat k="Completed" v={String(done)} caption="all time" accent="var(--float-primary)" first />
-          <Stat k="This week" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} caption="done / scheduled" accent="var(--float-primary)" />
-          <Stat k="Best streak" v={longestStreak === 0 ? '—' : String(longestStreak)} caption={longestStreak === 1 ? 'day' : 'days'} accent="var(--float-primary)" />
+          <Stat k="Completed" v={String(done)} caption="all time" first />
+          <Stat k="This week" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} caption="done / scheduled" />
+          <Stat k="Best streak" v={longestStreak === 0 ? '—' : String(longestStreak)} caption={longestStreak === 1 ? 'day' : 'days'} />
           <Stat k="Avg belief change" v={beliefDelta == null ? '—' : mag(beliefDelta, '%')} caption="vs predicted"
             trend={trendOf(beliefDelta)} groupStart />
-          <Stat k="Avg fear change" v={fearDelta == null ? '—' : mag(fearDelta)} caption="of 10"
+          <Stat k="Avg fear change" v={fearDelta == null ? '—' : mag(fearDelta)} caption="points"
             trend={trendOf(fearDelta)} last />
         </div>
       </div>
@@ -232,8 +232,8 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
   )
 }
 
-function Stat({ k, v, caption, trend, accent, first, last, groupStart }: {
-  k: string; v: string; caption?: string; trend?: 'down' | 'up'; accent?: string; first?: boolean; last?: boolean; groupStart?: boolean
+function Stat({ k, v, caption, trend, first, last, groupStart }: {
+  k: string; v: string; caption?: string; trend?: 'down' | 'up'; first?: boolean; last?: boolean; groupStart?: boolean
 }) {
   const trendColor = trend === 'down' ? 'var(--float-success)' : trend === 'up' ? 'var(--float-danger)' : undefined
   const arrow = trend === 'down' ? '▼' : trend === 'up' ? '▲' : null
@@ -245,11 +245,11 @@ function Stat({ k, v, caption, trend, accent, first, last, groupStart }: {
       ...(first ? { borderLeft: 0, paddingLeft: 2 } : {}),
     }}>
       <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1.25, minHeight: 26, color: 'var(--float-text-secondary)' }}>{k}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 19, fontWeight: 800, lineHeight: 1, color: trendColor ?? accent ?? 'var(--float-text)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 19, fontWeight: 800, lineHeight: 1, color: trendColor ?? 'var(--float-text)' }}>
         {arrow && <span style={{ fontSize: 11 }} aria-hidden>{arrow}</span>}
         <span>{v}</span>
       </div>
-      {caption && <div style={{ fontSize: 10.5, marginTop: 3, color: 'var(--float-text-hint)' }}>{caption}</div>}
+      {caption && <div style={{ fontSize: 11, marginTop: 3, color: 'var(--float-text-secondary)' }}>{caption}</div>}
     </div>
   )
 }
