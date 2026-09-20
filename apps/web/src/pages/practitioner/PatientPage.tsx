@@ -1873,9 +1873,11 @@ export default function PatientPage() {
           (Peter, 2026-09-05). Content column + the process panel + the gap between them. */}
       <div style={{ padding: '24px', maxWidth: LADDER_MAX_WIDTH + PROCESS_PANEL_WIDTH + 24 + 48 }}>
 
-        {/* Patient header — identity + access + actions */}
+        {/* Patient header — identity + access + actions. On its own white band (pulled to the
+            padded container's edges, bottom border + soft shadow) so it reads as a toolbar,
+            separate from the tabs and content on the grey page below. */}
         {patient && !editingProfile && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', background: 'var(--float-surface)', margin: '-24px -24px 20px', padding: '20px 24px', borderBottom: '1px solid var(--float-border-strong)', boxShadow: 'var(--float-shadow-md)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: 'var(--float-radius-pill)', background: 'var(--float-primary-light)', color: 'var(--float-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px', fontWeight: 700, flexShrink: 0 }}>
                 {(patient.name || '?').split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase()}

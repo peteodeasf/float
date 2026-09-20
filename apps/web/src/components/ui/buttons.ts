@@ -181,9 +181,10 @@ export function tab(on: boolean): CSSProperties {
     padding: '10px 18px',
     fontFamily: 'inherit',
     fontSize: '14px',
-    fontWeight: on ? 800 : 500,
-    // Active tab carries the brand colour, not near-black, so it reads clearly as selected.
-    color: on ? 'var(--float-primary)' : 'var(--float-text-hint)',
+    fontWeight: on ? 800 : 600,
+    // Active tab carries the brand colour; inactive stays readable (text-secondary), not the
+    // near-invisible text-hint, which the tokens file reserves for hints/placeholders.
+    color: on ? 'var(--float-primary)' : 'var(--float-text-secondary)',
     background: 'transparent',
     border: 'none',
     borderBottom: `3px solid ${on ? 'var(--float-primary)' : 'transparent'}`,
