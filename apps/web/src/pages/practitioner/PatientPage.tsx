@@ -478,7 +478,7 @@ export default function PatientPage() {
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
   const [smsSentTo, setSmsSentTo] = useState<string | null>(null)
   // Monitoring panel: which tab is showing — the raw entries table or the Case Summary.
-  const [monitoringSubTab, setMonitoringSubTab] = useState<'report' | 'summary'>('summary')
+  const [monitoringSubTab, setMonitoringSubTab] = useState<'report' | 'summary'>('report')
   const [msgContent, setMsgContent] = useState('')
   // 'teen', or a parent's user id: a child can have two parents and each has their own thread
   // (docs/plans/two-parent-accounts.md).
