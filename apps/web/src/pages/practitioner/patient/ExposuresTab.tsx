@@ -160,13 +160,13 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
           <p style={{ fontSize: 13, color: 'var(--float-text-hint)', margin: '18px 0' }}>No completed exposures yet — the trend appears once they've done a few.</p>
         ) : (
           <div style={{ marginTop: 10 }}>
-            <ResponsiveContainer width="100%" height={210}>
+            <ResponsiveContainer width="100%" height={240}>
               <LineChart data={chartData} margin={{ top: 6, right: 16, bottom: 2, left: -8 }}>
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--float-text-hint)' }} tickLine={false} axisLine={{ stroke: 'var(--float-border)' }} />
                 <YAxis domain={yDomain} tick={{ fontSize: 11, fill: 'var(--float-text-hint)' }} tickLine={false} axisLine={false} width={38}
                   tickFormatter={v => metric === 'belief' ? `${v}%` : `${v}`} />
                 <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 12.5, fontWeight: 600, paddingTop: 8, lineHeight: 1.5 }} />
+                <Legend iconSize={14} wrapperStyle={{ fontSize: 14.5, fontWeight: 700, paddingTop: 12, lineHeight: 1.6 }} />
                 {situations.length === 0 ? (
                   <Line type="monotone" dataKey="overall" name={metric === 'belief' ? 'Belief in Prediction' : 'Fear Level'}
                     stroke="var(--float-primary)" strokeWidth={3} dot={{ r: 3 }} isAnimationActive={false} />
