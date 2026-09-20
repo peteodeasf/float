@@ -281,7 +281,7 @@ async def get_monitoring_report(
         select(MonitoringEntry).where(
             MonitoringEntry.monitoring_form_id == form.id,
             MonitoringEntry.is_draft == False  # noqa: E712
-        ).order_by(MonitoringEntry.entry_date.asc())
+        ).order_by(MonitoringEntry.entry_date.desc(), MonitoringEntry.created_at.desc())
     )
     entries = entries_result.scalars().all()
 

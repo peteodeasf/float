@@ -13,7 +13,7 @@ import logging
 import re
 import time
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 
 import anthropic
 import httpx
@@ -30,7 +30,6 @@ MAX_AUDIO_BYTES = 10 * 1024 * 1024  # Google's limit for a quick request; a minu
 DAILY_LIMIT = 40                    # recordings and notes, per form per day
 MAX_NOTE_CHARS = 5000
 MAX_OBSERVATIONS = 10
-OLDEST_DAYS = 14                    # a date further back than this is taken as a mistake: today
 
 GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token"
 GOOGLE_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
@@ -110,23 +109,22 @@ async def transcribe(audio: bytes) -> str:
 
 # ── Writing it up ────────────────────────────────────────────────────────────
 
-def _prompt(today: date) -> str:
+def _prompt() -> str:
     return f"""You turn a parent's spoken or typed note into monitoring observations for their child's anxiety clinician.
 
 The parent is keeping a monitoring diary before treatment starts. Each observation records one moment when their child was anxious: the situation, what the child did or said, and how the parent responded.
 
 Return JSON only, in this shape:
-{{"observations": [{{"date": "YYYY-MM-DD", "situation": "", "child": "", "parent": "", "fear": null}}]}}
+{{"observations": [{{"situation": "", "child": "", "parent": "", "fear": null}}]}}
 
 Rules:
 - One observation for each separate moment. One moment told in several sentences is one observation.
-- situation: where and when it happened, and what was going on.
+- situation: where and when it happened, and what was going on. Keep any day the parent mentions ("on Friday evening") in these words — but it is not a separate date field.
 - child: what the child did or said, and how they seemed.
 - parent: what the parent did or said in response.
 - Keep the parent's own words. Tidy them into short sentences in the parent's voice ("I sat with her until she calmed down"). Do not add anything, soften it, explain it or diagnose it.
 - Use "" for anything the parent did not say. Never fill a gap with a guess.
 - fear: the child's Fear Level from 1 to 10, only when the parent said a number for it. Otherwise null. Words like "terrified" or "a bit nervous" are not a number.
-- date: today is {today.strftime("%A")} {today.isoformat()}. Work out each moment's date from what the parent said: "this morning" is today, "last night" is yesterday, "on Tuesday" is the most recent Tuesday. If they did not say, use today.
 - If nothing in the note is a moment when the child was anxious, return {{"observations": []}}."""
 
 
@@ -166,14 +164,11 @@ def _clean(o, text: str, today: date) -> dict | None:
     fear = o.get("fear")
     if isinstance(fear, bool) or not isinstance(fear, int) or not 1 <= fear <= 10 or not _said(text, fear):
         fear = None
-    try:
-        day = date.fromisoformat(str(o.get("date")))
-    except ValueError:
-        day = today
-    if day > today or day < today - timedelta(days=OLDEST_DAYS):
-        day = today
     return {
-        "entry_date": day,
+        # Dated to the day the parent recorded it, not a date inferred from the words (Peter,
+        # 2026-09-20): a note logged Sunday about Friday should still file under Sunday, so the
+        # parent finds it where they left it.
+        "entry_date": today,
         "situation": situation,
         "child_behavior_observed": child,
         "parent_response": parent,
@@ -184,7 +179,7 @@ def _clean(o, text: str, today: date) -> dict | None:
 async def write_up(text: str, today: date) -> list[dict]:
     """The observations in a parent's note, ready to save as drafts. [] when there are none."""
     try:
-        data = parse_model_json(await _ask_claude(_prompt(today), text))
+        data = parse_model_json(await _ask_claude(_prompt(), text))
     except Exception as e:
         logger.warning("monitoring write-up failed: %s", type(e).__name__)
         raise CaptureFailed from e

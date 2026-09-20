@@ -121,8 +121,8 @@ async def test_a_recording_goes_straight_in_as_observations_with_no_form_to_chec
     [note] = await _notes(db, form)
     assert all(e.note_id == note.id for e in entries) and note.written_up_at is not None
     assert form.status == "in_progress"
-    # Claude was told the parent's date, to work out "this morning" and "last night".
-    assert TODAY.isoformat() in claude["asked"][0][0]
+    # Entries are filed under the day the parent recorded them, not a date read from the words.
+    assert all(e.entry_date == TODAY for e in entries)
 
 
 async def test_a_typed_note_goes_the_same_way(api, db, claude):
@@ -179,18 +179,17 @@ async def test_a_tap_that_lands_before_the_write_up_still_counts(db, claude):
     assert entry.fear_thermometer == 5
 
 
-async def test_dates_come_from_the_parent_and_stay_sensible(api, db, claude):
+async def test_entries_are_dated_to_the_recording_day_not_the_words(api, db, claude):
+    # Peter, 2026-09-20: a note logged today about something that happened on Friday still files
+    # under today, so the parent finds it where they left it. The words keep any day mentioned.
     _, _, form = await _form(db)
-    yesterday = TODAY - timedelta(days=1)
     claude["answer"] = {"observations": [
-        _obs(date=yesterday.isoformat(), situation="a"),
-        _obs(date=(TODAY + timedelta(days=3)).isoformat(), situation="b"),
-        _obs(date=(TODAY - timedelta(days=60)).isoformat(), situation="c"),
-        _obs(date="last week", situation="d"),
+        _obs(situation="a"),
+        _obs(situation="b"),
     ]}
-    await _write(api, form, "Last night and some other times.")
+    await _write(api, form, "On Friday evening, and also last week.")
     dates = {e.situation: e.entry_date for e in await _entries(db, form)}
-    assert dates == {"a": yesterday, "b": TODAY, "c": TODAY, "d": TODAY}
+    assert dates == {"a": TODAY, "b": TODAY}
 
 
 async def test_nothing_the_parent_said_is_lost_when_claude_finds_nothing_or_fails(api, db, claude):
