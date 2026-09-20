@@ -24,3 +24,4 @@ backend/scripts/
 AI-dev/**/cases_review.json
 AI-dev/**/review_sheet_source.json
 AI-dev/**/harvested_*.json
+.claude/settings.local.json
