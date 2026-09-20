@@ -2,16 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const api = vi.hoisted(() => ({ updateAccommodation: vi.fn() }))
+const api = vi.hoisted(() => ({ updateAccommodation: vi.fn(), createAccommodation: vi.fn() }))
 vi.mock('../../api/accommodations', async importOriginal => ({
   ...(await importOriginal<typeof import('../../api/accommodations')>()),
   updateAccommodation: api.updateAccommodation,
+  createAccommodation: api.createAccommodation,
 }))
 
 import ParentPlanPanel from './ParentPlanPanel'
 
 const acc = (id: string, name: string, status: string, lo: number | null) => ({
-  id, name, status, treatment_plan_id: 'plan1', trigger_situation_id: null,
+  id, name, status, treatment_plan_id: 'plan1', trigger_situation_id: 's1',
   parent_user_id: null, description: null, distress_min: lo, distress_max: lo, display_order: 0,
   accommodator: 'parent', created_at: '2026-09-01T00:00:00Z',
 })
@@ -26,9 +27,10 @@ function open() {
   qc.setQueryData(['insights', 'pt1', 'accommodation'], [
     { id: 'i1', kind: 'accommodation', name: 'Leaves the hall light on', evidence_count: 0, sources: ['parent'], added: false, named_by_parent: true },
   ])
+  // The situation name avoids the words the row matcher looks for, so it isn't counted as a row.
   render(
     <QueryClientProvider client={qc}>
-      <ParentPlanPanel planId="plan1" patientId="pt1" triggers={[]} />
+      <ParentPlanPanel planId="plan1" patientId="pt1" triggers={[{ id: 's1', name: 'School mornings' }]} />
     </QueryClientProvider>,
   )
 }
@@ -37,19 +39,18 @@ const rowNames = () => screen.getAllByText(/bedtime|doctor's|sleepover/).map(el 
 
 beforeEach(() => {
   api.updateAccommodation.mockReset().mockResolvedValue({})
+  api.createAccommodation.mockReset().mockResolvedValue({})
 })
 
 describe('the parent plan', () => {
-  it('shows the plan easiest first, with nothing to add or sort until Build plan', () => {
+  it('shows the plan easiest first, with nothing to add until Build plan', () => {
     open()
     expect(rowNames()).toEqual(["Answers for them at the doctor's", 'Lies down with them at bedtime', 'Texts them every hour at a sleepover'])
     expect(screen.getByText('Working on it')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Add accommodation/ })).not.toBeInTheDocument()
+    expect(screen.getByText('School mornings')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Add an accommodation the parent does here…')).not.toBeInTheDocument()
     expect(screen.queryByText('Suggestions from monitoring')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Sort by Fear Level/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /child's app/ })).not.toBeInTheDocument()
-    expect(screen.queryByText("The parent's experiments")).not.toBeInTheDocument()
-    expect(screen.queryByText('Weekly check-ins')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ask the parent' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Remove/ })).not.toBeInTheDocument()
   })
 
@@ -62,19 +63,34 @@ describe('the parent plan', () => {
     await waitFor(() => expect(api.updateAccommodation).toHaveBeenCalledWith('plan1', 'a3', { status: 'started' }))
   })
 
-  it('Build plan opens the editor: add, suggestions from monitoring, the child ratings and the parent questions', () => {
+  it('Build plan opens the editor: inline add, suggestions, child ratings — no conversation', () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: '▸ Build plan' }))
-    expect(screen.getByRole('button', { name: 'Ask the parent' })).toBeInTheDocument()
+    // The old "ask the parent" conversation is gone.
+    expect(screen.queryByRole('button', { name: 'Ask the parent' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Child ratings' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Remove “Lies down with them at bedtime”' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /Add accommodation/ }))
+    // Suggestions and the inline add show without a further click.
     expect(screen.getByText('Suggestions from monitoring')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Leaves the hall light on/ })).toHaveTextContent('from the parent’s app')
+    expect(screen.getByPlaceholderText('Add an accommodation the parent does here…')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Save plan →' }))
     expect(screen.getByRole('button', { name: '▸ Build plan' })).toBeInTheDocument()
+  })
+
+  it('adds an accommodation under its situation with a required 1–10 difficulty', async () => {
+    open()
+    fireEvent.click(screen.getByRole('button', { name: '▸ Build plan' }))
+    fireEvent.change(screen.getByPlaceholderText('Add an accommodation the parent does here…'),
+      { target: { value: 'Stays in the room until asleep' } })
+    // Difficulty is required — Add stays disabled until a 1–10 is entered.
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
+    fireEvent.change(screen.getByPlaceholderText('1–10'), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(api.createAccommodation).toHaveBeenCalledWith('plan1', {
+      name: 'Stays in the room until asleep', trigger_situation_id: 's1', distress_min: 6, distress_max: 6,
+    }))
   })
 
   it('while building, the Fear Level can be changed', async () => {

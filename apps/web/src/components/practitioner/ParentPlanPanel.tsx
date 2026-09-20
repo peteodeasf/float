@@ -1,5 +1,5 @@
 import { btn } from '../../components/ui/buttons'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -12,16 +12,9 @@ import {
 } from '../../api/accommodations'
 import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/treatment'
 import { Chrome } from '../../pages/practitioner/sessionKit'
-import ParentConversationSheet from './ParentConversationSheet'
 import ChildRatingSheet from './ChildRatingSheet'
 
 type TriggerLite = { id: string; name: string }
-
-const num = (v: string): number | null => {
-  if (v.trim() === '') return null
-  const n = Number(v)
-  return Number.isFinite(n) ? n : null
-}
 
 /** Where the parent has got to with each one. Peter, 2026-09-13: "Working on it" is what the weekly
  *  focus was: the parent's home card and weekly check-in follow it. More than one can be.
@@ -54,10 +47,9 @@ function byFearLevel(a: Accommodation, b: Accommodation): number {
 }
 
 /**
- * The parent's accommodation plan, on the Plan tab. Works like the exposure ladder (Peter,
- * 2026-09-13): the plan, easiest first, with Plan it on each; Build plan turns the same place into
- * the editor, where accommodations are added, rated with the child, changed and removed.
- * Tracking the parent's progress is on the Experiments tab (ParentProgressSection).
+ * The parent's accommodation plan, on the Plan tab. Built to work like the child's exposure ladder
+ * (Peter, 2026-09-20): the situations (shared with the ladder) each with their accommodations under
+ * them, added inline. The old "ask the parent" conversation stepper is gone.
  * docs/plans/parent-accommodations-like-the-ladder.md
  */
 export default function ParentPlanPanel({
@@ -76,12 +68,11 @@ export default function ParentPlanPanel({
     queryFn: () => listAccommodations(planId),
     enabled: !!planId,
   })
-  const ordered = [...accommodations].sort(byFearLevel)
+  const ordered = useMemo(() => [...accommodations].sort(byFearLevel), [accommodations])
   const invalidate = () => qc.invalidateQueries({ queryKey: key })
 
   const [editing, setEditing] = useState(false)
   const [fullScreen, setFullScreen] = useState(false)
-  const [askingParent, setAskingParent] = useState(false)
   const [ratingWithChild, setRatingWithChild] = useState(false)
 
   const save = (id: string, data: Parameters<typeof updateAccommodation>[2]) =>
@@ -93,6 +84,19 @@ export default function ParentPlanPanel({
   })
 
   const finish = () => { setEditing(false); setFullScreen(false) }
+
+  // One section per situation (situations are shared with the ladder). In view mode only situations
+  // that have accommodations show; in the editor every situation shows so you can add under each.
+  // Anything whose situation is missing goes in "Other" so nothing is lost.
+  const sections = useMemo(() => {
+    const known = new Set(triggers.map(t => t.id))
+    const groups: { id: string | null; name: string; items: Accommodation[] }[] =
+      triggers.map(t => ({ id: t.id, name: t.name, items: ordered.filter(a => a.trigger_situation_id === t.id) }))
+    const orphans = ordered.filter(a => !a.trigger_situation_id || !known.has(a.trigger_situation_id))
+    if (orphans.length) groups.push({ id: null, name: 'Other', items: orphans })
+    return groups
+  }, [ordered, triggers])
+  const visibleSections = editing ? sections : sections.filter(s => s.items.length > 0)
 
   const panelStyle: React.CSSProperties = {
     background: 'var(--float-surface)',
@@ -111,44 +115,59 @@ export default function ParentPlanPanel({
     fontSize: '12px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)',
     border: '1px solid var(--float-primary)', borderRadius: 'var(--float-radius-sm)', padding: '7px 12px', cursor: 'pointer',
   }
+  const sectionHeader: React.CSSProperties = {
+    fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.03em', color: 'var(--float-primary-dark)',
+  }
 
-  const list = isLoading ? (
+  const body = isLoading ? (
     <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>Loading…</p>
-  ) : ordered.length === 0 ? (
+  ) : triggers.length === 0 ? (
+    <div style={{ fontSize: '13px', color: 'var(--float-text-hint)', padding: '6px 0', lineHeight: 1.5 }}>
+      No situations yet. Add situations on the exposure ladder first — they appear here automatically.
+    </div>
+  ) : visibleSections.length === 0 ? (
     <div style={{ fontSize: '13px', color: 'var(--float-text-hint)', padding: '6px 0' }}>
-      {editing ? 'Nothing on the plan yet. Add an accommodation below.' : 'Nothing on the plan yet — use “Build plan”.'}
+      Nothing on the plan yet — use “Build plan”.
     </div>
   ) : (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {ordered.map(a => (
-        <AccommodationRow
-          key={a.id}
-          accommodation={a}
-          triggers={triggers}
-          editing={editing}
-          onSave={data => save(a.id, data)}
-          onDelete={() => deleteMut.mutate(a.id)}
-        />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      {visibleSections.map(sec => (
+        <div key={sec.id ?? 'other'}>
+          <div style={sectionHeader}>{sec.name}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+            {sec.items.map(a => (
+              <AccommodationRow
+                key={a.id}
+                accommodation={a}
+                editing={editing}
+                onSave={data => save(a.id, data)}
+                onDelete={() => deleteMut.mutate(a.id)}
+              />
+            ))}
+            {sec.items.length === 0 && (
+              <p style={{ fontSize: '12.5px', color: 'var(--float-text-hint)', margin: '2px 0 0' }}>No accommodations here yet.</p>
+            )}
+          </div>
+          {editing && sec.id && (
+            <AddAccommodationInline planId={planId} situationId={sec.id} onAdded={invalidate} />
+          )}
+        </div>
       ))}
+      {editing && <MonitoringSuggestions planId={planId} patientId={patientId} onAdded={invalidate} />}
     </div>
   )
 
   const editor = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        <button onClick={() => setAskingParent(true)} style={quietBtn}
-          title="Ask the parent what they do, situation by situation, and type their answers">
-          Ask the parent
-        </button>
-        {accommodations.length > 0 && (
+      {accommodations.length > 0 && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button onClick={() => setRatingWithChild(true)} style={quietBtn}
             title="The child says how hard it would be if the parent stopped each one">
             Child ratings
           </button>
-        )}
-      </div>
-      {list}
-      <AddAccommodation planId={planId} patientId={patientId} triggers={triggers} onAdded={invalidate} />
+        </div>
+      )}
+      {body}
       <button onClick={finish} style={{ ...primary, alignSelf: 'flex-start', fontSize: '13px', padding: '9px 16px' }}>
         Save plan →
       </button>
@@ -161,7 +180,7 @@ export default function ParentPlanPanel({
         <div>
           <div className="text-sm font-semibold text-slate-700">Parent Accommodations</div>
           <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '2px 0 0', lineHeight: 1.5 }}>
-            {editing ? 'Building the plan' : 'The plan for the parent to stop, easiest first'}
+            {editing ? 'Building the plan — accommodations under each situation' : 'What the parent does in each situation, easiest to stop first'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flex: 'none' }}>
@@ -176,7 +195,6 @@ export default function ParentPlanPanel({
         </div>
       </div>
 
-      {askingParent && <ParentConversationSheet patientId={patientId} onClose={() => setAskingParent(false)} />}
       {ratingWithChild && (
         <ChildRatingSheet planId={planId} accommodations={ordered}
           onClose={() => { setRatingWithChild(false); invalidate() }} />
@@ -195,42 +213,67 @@ export default function ParentPlanPanel({
       )}
 
       <div style={{ padding: '16px 20px 20px' }}>
-        {editing ? editor : list}
+        {editing ? editor : body}
       </div>
     </div>
   )
 }
 
-/** + Add accommodation, and inside it the suggestions from monitoring. The same shape as the
- *  ladder's Add situation. */
-function AddAccommodation({ planId, patientId, triggers, onAdded }: {
+/** Add one accommodation under a situation. A required 1–10 difficulty, like a ladder rung's Fear
+ *  Level. Stored as distress_min == distress_max. */
+function AddAccommodationInline({ planId, situationId, onAdded }: {
+  planId: string
+  situationId: string
+  onAdded: () => void
+}) {
+  const [name, setName] = useState('')
+  const [level, setLevel] = useState('')
+  const valid = name.trim() !== '' && /^([1-9]|10)$/.test(level.trim())
+
+  const createMut = useMutation({
+    mutationFn: () => {
+      const v = Number(level)
+      return createAccommodation(planId, { name: name.trim(), trigger_situation_id: situationId, distress_min: v, distress_max: v })
+    },
+    onSuccess: () => { setName(''); setLevel(''); onAdded() },
+  })
+
+  const inputStyle: React.CSSProperties = {
+    padding: '8px 10px', fontSize: '13px', color: 'var(--float-text)',
+    border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-sm)', boxSizing: 'border-box',
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginTop: '10px' }}>
+      <input value={name} onChange={e => setName(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && valid) createMut.mutate() }}
+        placeholder="Add an accommodation the parent does here…"
+        style={{ ...inputStyle, flex: '1 1 260px' }} />
+      <input type="number" min={1} max={10} value={level} onChange={e => setLevel(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && valid) createMut.mutate() }}
+        title="How hard it would be for the child if the parent stopped, 1–10"
+        placeholder="1–10" style={{ ...inputStyle, flex: 'none', width: '72px' }} />
+      <button onClick={() => createMut.mutate()} disabled={!valid || createMut.isPending}
+        style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: 'var(--float-radius-sm)', padding: '9px 16px', cursor: 'pointer', opacity: !valid || createMut.isPending ? 0.5 : 1 }}>
+        {createMut.isPending ? 'Adding…' : 'Add'}
+      </button>
+    </div>
+  )
+}
+
+/** Accommodations mined from the parent's monitoring log, offered to add to the plan. Tapping one
+ *  promotes it (it lands under its situation); × takes it off the list. Kept as one area. */
+function MonitoringSuggestions({ planId: _planId, patientId, onAdded }: {
   planId: string
   patientId: string
-  triggers: TriggerLite[]
   onAdded: () => void
 }) {
   const qc = useQueryClient()
-  const [adding, setAdding] = useState(false)
-  const [name, setName] = useState('')
-  const [situationId, setSituationId] = useState('')
-  const [dmin, setDmin] = useState('')
-  const [dmax, setDmax] = useState('')
-
   const insightsKey = ['insights', patientId, 'accommodation']
   const { data: suggestions = [] } = useQuery({
     queryKey: insightsKey,
     queryFn: () => getPatientInsights(patientId, 'accommodation'),
     enabled: !!patientId,
-  })
-  const createMut = useMutation({
-    mutationFn: () => createAccommodation(planId, {
-      name: name.trim(),
-      trigger_situation_id: situationId || null,
-      distress_min: num(dmin),
-      // A single value entered as min is stored as min == max.
-      distress_max: num(dmax) ?? num(dmin),
-    }),
-    onSuccess: () => { setName(''); setSituationId(''); setDmin(''); setDmax(''); onAdded() },
   })
   const takeMut = useMutation({
     mutationFn: (insightId: string) => addInsightToPlan(patientId, insightId),
@@ -241,100 +284,37 @@ function AddAccommodation({ planId, patientId, triggers, onAdded }: {
     onSuccess: () => qc.invalidateQueries({ queryKey: insightsKey }),
   })
 
-  const labelStyle: React.CSSProperties = { fontSize: '12px', fontWeight: 600, color: 'var(--float-text-secondary)', marginBottom: '4px', display: 'block' }
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 10px', fontSize: '13px', color: 'var(--float-text)',
-    border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-sm)', boxSizing: 'border-box',
-  }
-
-  if (!adding) {
-    return (
-      <button onClick={() => setAdding(true)}
-        style={{ ...btn('secondary', 'md'), alignSelf: 'flex-start' }}>
-        + Add accommodation
-        {suggestions.length > 0 && (
-          <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · {suggestions.length} {suggestions.length === 1 ? 'suggestion' : 'suggestions'}</span>
-        )}
-      </button>
-    )
-  }
+  if (suggestions.length === 0) return null
 
   return (
     <div style={{ background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: '11px', padding: '14px 16px' }}>
-      <label style={labelStyle} htmlFor="new-accommodation">New accommodation</label>
-      <input id="new-accommodation" value={name} onChange={e => setName(e.target.value)} autoFocus
-        onKeyDown={e => { if (e.key === 'Enter' && name.trim()) createMut.mutate() }}
-        placeholder="e.g. Lies down with them at bedtime" style={{ ...inputStyle, marginBottom: '10px' }} />
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ flex: '2 1 200px' }}>
-          <label style={labelStyle}>Situation (optional)</label>
-          <select value={situationId} onChange={e => setSituationId(e.target.value)} style={inputStyle}>
-            <option value="">No situation</option>
-            {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-        </div>
-        <div style={{ flex: '1 1 80px' }}>
-          <label style={labelStyle}>Fear Level min</label>
-          <input type="number" min={0} max={10} value={dmin} onChange={e => setDmin(e.target.value)} placeholder="—" style={inputStyle} />
-        </div>
-        <div style={{ flex: '1 1 80px' }}>
-          <label style={labelStyle}>Fear Level max</label>
-          <input type="number" min={0} max={10} value={dmax} onChange={e => setDmax(e.target.value)} placeholder="—" style={inputStyle} />
-        </div>
-        <button onClick={() => createMut.mutate()} disabled={!name.trim() || createMut.isPending}
-          style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: 'var(--float-radius-sm)', padding: '9px 16px', cursor: 'pointer', opacity: !name.trim() || createMut.isPending ? 0.5 : 1 }}>
-          {createMut.isPending ? 'Adding…' : 'Add'}
-        </button>
+      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '2px' }}>
+        Suggestions from monitoring
       </div>
-      <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '8px 0 0' }}>
-        Leave Fear Level blank if unrated. Enter one value, or both for a range (e.g. 5–9).
-      </p>
-
-      {/* What the parent did, in their own words: from the monitoring log, and what they named in
-          their app. Nothing reworded, nothing invented. Always shown, empty or not: an absent
-          section reads as broken; "No suggestions" reads as an answer. */}
-      <div style={{ marginTop: '16px', borderTop: '1px solid #e6efec', paddingTop: '14px' }}>
-        <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '2px' }}>
-          Suggestions from monitoring
-        </div>
-        {suggestions.length === 0 ? (
-          <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)' }}>No suggestions.</div>
-        ) : (<>
-          <div style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', marginBottom: '8px' }}>
-            Tap to add it to the plan. Delete it there and it comes back here.
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
-            {suggestions.map(item => {
-              const fromApp = !!item.named_by_parent || item.sources.includes('parent')
-              const parentThinks = rangeLabel(item.parent_estimate_min, item.parent_estimate_max)
-              return (
-                <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', overflow: 'hidden' }}>
-                  <button onClick={() => takeMut.mutate(item.id)} disabled={takeMut.isPending}
-                    style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-primary)', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
-                    + {item.name}
-                    <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
-                      {item.evidence_count > 0 && ` · ${item.evidence_count} ${item.evidence_count === 1 ? 'entry' : 'entries'}`}
-                      {fromApp && ' · from the parent’s app'}
-                      {item.parent_name ? ` · ${item.parent_name}` : ''}
-                      {item.still_does === false ? ' · parent says not any more' : ''}
-                      {parentThinks ? ` · parent thinks ${parentThinks}` : ''}
-                    </span>
-                  </button>
-                  <button onClick={() => dropMut.mutate(item.id)} disabled={dropMut.isPending} title="Not relevant — take it off the list"
-                    style={{ fontSize: '14px', color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 12px 0 4px' }}>&times;</button>
+      <div style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', marginBottom: '8px' }}>
+        Tap to add it to the plan under its situation. Delete it there and it comes back here.
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+        {suggestions.map(item => {
+          const fromApp = !!item.named_by_parent || item.sources.includes('parent')
+          const parentThinks = rangeLabel(item.parent_estimate_min, item.parent_estimate_max)
+          return (
+            <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', overflow: 'hidden' }}>
+              <button onClick={() => takeMut.mutate(item.id)} disabled={takeMut.isPending}
+                style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-primary)', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
+                + {item.name}
+                <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
+                  {item.evidence_count > 0 && ` · ${item.evidence_count} ${item.evidence_count === 1 ? 'entry' : 'entries'}`}
+                  {fromApp && ' · from the parent’s app'}
+                  {item.parent_name ? ` · ${item.parent_name}` : ''}
+                  {parentThinks ? ` · parent thinks ${parentThinks}` : ''}
                 </span>
-              )
-            })}
-          </div>
-        </>)}
-      </div>
-
-      {/* A close action, not a chip — matches the ladder's "Done adding": a plain link under a rule. */}
-      <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #e6efec' }}>
-        <button onClick={() => { setAdding(false); setName(''); setSituationId(''); setDmin(''); setDmax('') }}
-          style={{ fontSize: 13, fontWeight: 600, color: '#6b7a79', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span aria-hidden="true">&larr;</span> Done adding
-        </button>
+              </button>
+              <button onClick={() => dropMut.mutate(item.id)} disabled={dropMut.isPending} title="Not relevant — take it off the list"
+                style={{ fontSize: '14px', color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 12px 0 4px' }}>&times;</button>
+            </span>
+          )
+        })}
       </div>
     </div>
   )
@@ -342,9 +322,8 @@ function AddAccommodation({ planId, patientId, triggers, onAdded }: {
 
 /** One accommodation. On the plan: what it is, where the parent is with it, and Plan it. While
  *  building: its Fear Level can be changed and it can be removed. */
-function AccommodationRow({ accommodation: a, triggers, editing, onSave, onDelete }: {
+function AccommodationRow({ accommodation: a, editing, onSave, onDelete }: {
   accommodation: Accommodation
-  triggers: TriggerLite[]
   editing: boolean
   onSave: (data: { distress_min?: number | null; distress_max?: number | null; status?: AccommodationState }) => Promise<unknown>
   onDelete: () => void
@@ -355,7 +334,6 @@ function AccommodationRow({ accommodation: a, triggers, editing, onSave, onDelet
   const [editingScore, setEditingScore] = useState(false)
   const [scoreDraft, setScoreDraft] = useState('')
 
-  const situationName = triggers.find(t => t.id === a.trigger_situation_id)?.name ?? null
   const state = STATES.find(s => s.key === a.status) ?? STATES[0]
   const score = rangeLabel(a.distress_min, a.distress_max) ?? '—'
   const parentThinks = rangeLabel(a.parent_estimate_min, a.parent_estimate_max)
@@ -408,12 +386,14 @@ function AccommodationRow({ accommodation: a, triggers, editing, onSave, onDelet
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--float-text)' }}>{a.name}</div>
-        <div style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>
-          {[situationName, parentThinks && `Parent thinks ${parentThinks}`].filter(Boolean).join(' · ')}
-          {a.child_rated_at && (
-            <span style={{ color: '#3f8a78', fontWeight: 600 }}>{situationName || parentThinks ? ' · ' : ''}rated by the child</span>
-          )}
-        </div>
+        {(parentThinks || a.child_rated_at) && (
+          <div style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>
+            {parentThinks && `Parent thinks ${parentThinks}`}
+            {a.child_rated_at && (
+              <span style={{ color: '#3f8a78', fontWeight: 600 }}>{parentThinks ? ' · ' : ''}rated by the child</span>
+            )}
+          </div>
+        )}
       </div>
       {editing && editingScore ? (
         <input value={scoreDraft} autoFocus onChange={e => setScoreDraft(e.target.value)} onBlur={saveScore}

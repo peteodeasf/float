@@ -66,3 +66,29 @@ Removed routes: `POST /plans/{id}/accommodations/ask-child`, `GET /patient/accom
 `is_weekly_focus` and `child_rating_requested_at` stay in the database, unread. Not changed: the
 reorder and re-sort routes remain on the server, unused by the clinician app.
 `/security-review` for the removed child routes and the focus merge.
+
+## 2026-09-20 — group by situation, drop the conversation
+
+Peter: the accommodation flow is still confusing. Make it work and look like the child's ladder
+builder — situations with their accommodations under them, not a flat list plus a separate
+"ask the parent" stepper.
+
+Decisions (confirmed with Peter):
+- **Situations stay unified.** A ladder situation and an accommodation situation are the same
+  `trigger_situations` rows. Situations are added/confirmed on the ladder; they appear here
+  automatically. No separate add-situation and no confirm here.
+- **Group the plan by situation.** Each situation is a section; its accommodations sit under it,
+  easiest first. Accommodations with no situation go in an "Other" section so none are lost.
+- **Add accommodations inline under each situation** (like the ladder's "Add step"). Difficulty is
+  a **required 1–10** on add (stored as `distress_min == distress_max`).
+- **Drop the "Ask the parent · type what they say" conversation** (`ParentConversationSheet`) from
+  the therapist portal, and the "Do they still do this? Yes / Not any more" question — you only add
+  what the parent actually does. The parent app's own accommodation conversation is unchanged.
+- **Keep suggest-then-promote.** Monitoring-mined accommodations still show as "Suggestions from
+  monitoring" chips; tapping one promotes it onto the plan (lands under its situation). Kept as one
+  area, not per-situation, to avoid a backend change.
+- **Keep** the per-accommodation status ("Working on it" = the parent's weekly focus) and Child
+  ratings.
+
+Clinical note (Dr. Walker queue): accommodation capture changed — dropped "do they still do this",
+therapist sets the 1–10 difficulty directly. Pre-launch, Peter's call.
