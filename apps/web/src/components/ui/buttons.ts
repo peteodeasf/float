@@ -250,7 +250,7 @@ export const menuPanel: CSSProperties = {
   borderRadius: 'var(--float-radius-control)',
   boxShadow: 'var(--float-shadow-md)',
   padding: '4px',
-  zIndex: 30,
+  zIndex: 'var(--float-z-dropdown)',
   display: 'flex',
   flexDirection: 'column',
 }

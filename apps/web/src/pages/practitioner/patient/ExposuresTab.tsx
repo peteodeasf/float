@@ -17,6 +17,7 @@ import type { PlannedExperiment } from '../../../api/treatment'
 
 const SERIES = ['var(--float-series-a)', 'var(--float-series-b)', 'var(--float-series-c)', 'var(--float-series-d)']
 const num = (v: number | null | undefined): number | null => (v == null ? null : Math.round(Number(v)))
+const metricLabel = (m: 'belief' | 'fear') => (m === 'belief' ? 'Belief in Prediction' : 'Fear Level')
 
 // Dates are handled as UTC day-strings ("2026-09-18"), the same way the rest of the app compares
 // scheduled/completed dates — so the week lines up with the stored values.
@@ -151,7 +152,7 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
                   background: metric === m ? 'var(--float-primary)' : '#fff',
                   color: metric === m ? '#fff' : 'var(--float-text-secondary)',
                 }}>
-                {m === 'belief' ? 'Belief in Prediction' : 'Fear Level'}
+                {metricLabel(m)}
               </button>
             ))}
           </div>
@@ -168,7 +169,7 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
                 <Tooltip />
                 <Legend iconSize={14} wrapperStyle={{ fontSize: 14.5, fontWeight: 700, paddingTop: 12, lineHeight: 1.6 }} />
                 {situations.length === 0 ? (
-                  <Line type="monotone" dataKey="overall" name={metric === 'belief' ? 'Belief in Prediction' : 'Fear Level'}
+                  <Line type="monotone" dataKey="overall" name={metricLabel(metric)}
                     stroke="var(--float-primary)" strokeWidth={3} dot={{ r: 3 }} isAnimationActive={false} />
                 ) : situations.map((s, i) => (
                   <Line key={s} type="monotone" dataKey={s} name={s} stroke={SERIES[i % SERIES.length]}
@@ -237,10 +238,11 @@ function Stat({ k, v, caption, trend, accent, first, last, groupStart }: {
 }) {
   const trendColor = trend === 'down' ? 'var(--float-success)' : trend === 'up' ? 'var(--float-danger)' : undefined
   const arrow = trend === 'down' ? '▼' : trend === 'up' ? '▲' : null
+  const padX = groupStart ? 22 : 16 // wider gutter before the first stat of the "change" group
   return (
     <div style={{
       flex: 1,
-      padding: last ? '2px 2px 2px 16px' : `2px ${groupStart ? 22 : 16}px 2px ${groupStart ? 22 : 16}px`,
+      padding: last ? `2px 2px 2px ${padX}px` : `2px ${padX}px`,
       borderLeft: '1px solid var(--float-border)',
       ...(first ? { borderLeft: 0, paddingLeft: 2 } : {}),
     }}>
