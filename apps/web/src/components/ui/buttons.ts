@@ -181,13 +181,95 @@ export function tab(on: boolean): CSSProperties {
     padding: '10px 18px',
     fontFamily: 'inherit',
     fontSize: '14px',
-    fontWeight: on ? 700 : 500,
-    color: on ? 'var(--float-text)' : 'var(--float-text-hint)',
+    fontWeight: on ? 800 : 500,
+    // Active tab carries the brand colour, not near-black, so it reads clearly as selected.
+    color: on ? 'var(--float-primary)' : 'var(--float-text-hint)',
     background: 'transparent',
     border: 'none',
     borderBottom: `3px solid ${on ? 'var(--float-primary)' : 'transparent'}`,
     marginBottom: '-1px',
     cursor: 'pointer',
+  }
+}
+
+/**
+ * A joined group of small controls that read as one thing — the header Access control
+ * (Teen / Parent / Clinician). Same height as the buttons beside it, with one leading label so it
+ * is clear the group is about who can log in.
+ */
+export const segGroup: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'stretch',
+  height: '36px',
+  background: '#fff',
+  border: '1px solid var(--float-border-strong)',
+  borderRadius: 'var(--float-radius-control)',
+  overflow: 'hidden',
+}
+
+/** The leading, non-clickable label inside a seg group ("Access"). */
+export const segLabel: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '0 10px',
+  fontSize: '10px',
+  fontWeight: 800,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: 'var(--float-text-hint)',
+  background: 'var(--float-surface-muted)',
+}
+
+/** One cell of a seg group; `on` tints it like an open panel. Every cell carries a left divider. */
+export function segItem(on: boolean): CSSProperties {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '0 12px',
+    fontFamily: 'inherit',
+    fontSize: '12.5px',
+    fontWeight: 600,
+    color: on ? 'var(--float-primary-dark)' : 'var(--float-text)',
+    background: on ? 'var(--float-primary-light)' : '#fff',
+    border: 'none',
+    borderLeft: '1px solid var(--float-border)',
+    cursor: 'pointer',
+  }
+}
+
+/** A small dropdown of rarely-used actions, opened from a ⋯ button in a header. */
+export const menuPanel: CSSProperties = {
+  position: 'absolute',
+  top: 'calc(100% + 6px)',
+  right: 0,
+  minWidth: '170px',
+  background: '#fff',
+  border: '1px solid var(--float-border-strong)',
+  borderRadius: 'var(--float-radius-control)',
+  boxShadow: 'var(--float-shadow-md)',
+  padding: '4px',
+  zIndex: 30,
+  display: 'flex',
+  flexDirection: 'column',
+}
+
+/** One row in a menuPanel. `danger` for a destructive action like Close treatment. */
+export function menuItem(danger = false): CSSProperties {
+  return {
+    display: 'block',
+    width: '100%',
+    textAlign: 'left',
+    padding: '8px 10px',
+    fontFamily: 'inherit',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: danger ? 'var(--float-danger)' : 'var(--float-text)',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 'var(--float-radius-control)',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   }
 }
 

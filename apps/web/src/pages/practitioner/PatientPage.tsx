@@ -28,7 +28,7 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
-import { btn, buttonRow, countPill, liveDot, statusCard, statusCardState, statusCardTitle, chip, iconBtn, tab, tabCount } from '../../components/ui/buttons'
+import { btn, buttonRow, countPill, liveDot, chip, iconBtn, tab, tabCount, segGroup, segLabel, segItem, menuPanel, menuItem } from '../../components/ui/buttons'
 import { Button } from '../../components/ui/primitives'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
@@ -530,6 +530,17 @@ export default function PatientPage() {
   const [showClinicianAccess, setShowClinicianAccess] = useState(false)
   const [processPanelOpen, setProcessPanelOpen] = useState(false)
   const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
+  // The ⋯ menu in the header holds the rare actions (Edit profile, Close treatment).
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const moreMenuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!moreMenuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) setMoreMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [moreMenuOpen])
   // An explicit ?tab= is the clinician's intent — don't let the default-tab effect override it.
   const stepInitializedRef = useRef(hasTabParam)
 
@@ -1886,44 +1897,47 @@ export default function PatientPage() {
               </div>
             </div>
 
-            {/* Every control here is the same height, radius and type size, from
-                components/ui/buttons. Who can get in comes first, then what you can do to the
-                record, then the process panel. */}
+            {/* Who can log in is one grouped control; then the setup checklist; then the rare
+                actions tucked into a ⋯ menu so the terminal Close treatment isn't a stray click. */}
             <div style={buttonRow}>
-              <button onClick={() => openAccess('teen')} style={statusCard(showTeenAccess && accessFocus === 'teen')}>
-                <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.teen_invited_at ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
-                <span>
-                  <span style={statusCardTitle}>Teen access</span>
-                  <span style={statusCardState}>{patient.teen_invited_at ? 'Set up' : patient.child_connect_consent_at ? 'Ready to invite' : 'Awaiting consent'}</span>
-                </span>
-              </button>
-              <button onClick={() => openAccess('parent')} style={statusCard(showTeenAccess && accessFocus === 'parent')}>
-                <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.parent_email ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
-                <span>
-                  <span style={statusCardTitle}>Parent access</span>
-                  <span style={statusCardState}>{patient.parent_email ? 'Invite / manage' : 'Not set up'}</span>
-                </span>
-              </button>
-              <span aria-hidden="true" style={{ width: '1px', height: '24px', background: 'var(--float-border)' }} />
-              <button onClick={openProfileEdit} style={btn('secondary')}>Edit profile</button>
-              <button onClick={() => setShowClinicianAccess(v => !v)} style={btn(showClinicianAccess ? 'on' : 'secondary')}>
-                Clinician access
-              </button>
+              <div style={segGroup}>
+                <span style={segLabel}>Access</span>
+                <button onClick={() => openAccess('teen')} style={segItem(showTeenAccess && accessFocus === 'teen')}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.teen_invited_at ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
+                  Teen
+                </button>
+                <button onClick={() => openAccess('parent')} style={segItem(showTeenAccess && accessFocus === 'parent')}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.parent_email ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
+                  Parent
+                </button>
+                <button onClick={() => setShowClinicianAccess(v => !v)} style={segItem(showClinicianAccess)}>
+                  Clinician
+                </button>
+              </div>
+
               <button onClick={() => setProcessPanelOpen(v => !v)} style={btn(processPanelOpen ? 'on' : 'secondary')}>
-                Process
+                Checklist
                 <span style={countPill(processPanelOpen)}>{processChecklistDone}/{processChecklistTotal}</span>
               </button>
-              {/* End-of-treatment action, pushed to the right and set apart — it isn't used until
-                  treatment is over. */}
-              {patient.closed_at ? (
-                <button onClick={handleReopen} disabled={closing.isPending} style={{ ...btn('secondary'), marginLeft: 'auto' }}>
-                  {closing.isPending ? 'Reopening…' : 'Reopen treatment'}
-                </button>
-              ) : (
-                <button onClick={handleClose} disabled={closing.isPending} style={{ ...btn('secondary'), marginLeft: 'auto' }}>
-                  {closing.isPending ? 'Closing…' : 'Close treatment'}
-                </button>
-              )}
+
+              <div ref={moreMenuRef} style={{ position: 'relative', marginLeft: 'auto' }}>
+                <button onClick={() => setMoreMenuOpen(v => !v)} aria-label="More actions" aria-haspopup="menu" aria-expanded={moreMenuOpen}
+                  style={btn(moreMenuOpen ? 'on' : 'secondary', 'md', { fontSize: '18px', letterSpacing: '2px' })}>⋯</button>
+                {moreMenuOpen && (
+                  <div style={menuPanel} role="menu">
+                    <button role="menuitem" style={menuItem()} onClick={() => { setMoreMenuOpen(false); openProfileEdit() }}>Edit profile</button>
+                    {patient.closed_at ? (
+                      <button role="menuitem" style={menuItem()} disabled={closing.isPending} onClick={() => { setMoreMenuOpen(false); handleReopen() }}>
+                        {closing.isPending ? 'Reopening…' : 'Reopen treatment'}
+                      </button>
+                    ) : (
+                      <button role="menuitem" style={menuItem(true)} disabled={closing.isPending} onClick={() => { setMoreMenuOpen(false); handleClose() }}>
+                        {closing.isPending ? 'Closing…' : 'Close treatment'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
