@@ -262,7 +262,7 @@ function DayRow({ e, selectedDay, todayKey }: { e: PlannedExperiment; selectedDa
   else if (selectedDay < todayKey) tag = { label: 'Missed', bg: 'var(--float-warning-bg)', fg: 'var(--float-warning)' }
 
   return (
-    <div style={{ padding: '12px 13px', border: '1px solid var(--float-border)', borderRadius: 10, marginTop: 8 }}>
+    <div style={{ padding: '12px 13px', background: 'var(--float-surface-sunken)', border: '1px solid var(--float-border)', borderRadius: 10, marginTop: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 5, padding: '2px 7px', background: tag.bg, color: tag.fg, flexShrink: 0 }}>{tag.label}</span>
         <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--float-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
