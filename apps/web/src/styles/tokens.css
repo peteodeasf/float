@@ -9,7 +9,7 @@
 
   /* Neutrals — one grey ramp, each step with one job (design foundation v1, locked 2026-09-16).
      text-hint is ~3:1 on white, so it is for hints and placeholders only, never body text. */
-  --float-bg: #f8fafc;
+  --float-bg: #eaeef4;
   --float-surface: #ffffff;
   --float-border: #e2e8f0;
   --float-border-strong: #cbd5e1;

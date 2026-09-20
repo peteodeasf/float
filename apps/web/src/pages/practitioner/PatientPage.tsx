@@ -1861,7 +1861,7 @@ export default function PatientPage() {
   // result) are all still on the patient record.
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--float-surface-sunken)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--float-bg)' }}>
       <PractitionerNav activePage="patients" subHeader={{
         backTo: '/dashboard', backLabel: 'Back to patients',
         title: patient?.name ?? 'Loading...',
