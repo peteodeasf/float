@@ -270,13 +270,13 @@ function dayDots(items: PlannedExperiment[], key: string, todayKey: string): { b
 function DayRow({ e, selectedDay, todayKey }: { e: PlannedExperiment; selectedDay: string; todayKey: string }) {
   const name = e.behavior_name || e.plan_description || 'Exposure'
   const done = e.status === 'completed'
-  let tag = { label: 'Scheduled', bg: 'var(--float-primary-light)', fg: 'var(--float-primary)' }
-  if (done) tag = { label: 'Completed', bg: 'var(--float-success-bg)', fg: 'var(--float-success)' }
-  else if (e.status === 'too_hard') tag = { label: 'Too hard', bg: 'var(--float-danger-bg)', fg: 'var(--float-danger)' }
-  else if (selectedDay < todayKey) tag = { label: 'Missed', bg: 'var(--float-warning-bg)', fg: 'var(--float-warning)' }
+  let tag = { label: 'Scheduled', bg: 'var(--float-primary-light)', fg: 'var(--float-primary)', bd: 'var(--float-border-strong)' }
+  if (done) tag = { label: 'Completed', bg: 'var(--float-success-bg)', fg: 'var(--float-success)', bd: 'var(--float-success-border)' }
+  else if (e.status === 'too_hard') tag = { label: 'Too hard', bg: 'var(--float-danger-bg)', fg: 'var(--float-danger)', bd: 'var(--float-danger-border)' }
+  else if (selectedDay < todayKey) tag = { label: 'Missed', bg: 'var(--float-warning-bg)', fg: 'var(--float-warning)', bd: 'var(--float-warning-border)' }
 
   return (
-    <div style={{ padding: '12px 13px', background: 'var(--float-surface-sunken)', border: '1px solid var(--float-border)', borderRadius: 10, marginTop: 8 }}>
+    <div style={{ padding: '12px 13px', background: 'var(--float-surface)', border: `1px solid ${tag.bd}`, borderRadius: 10, marginTop: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 5, padding: '2px 7px', background: tag.bg, color: tag.fg, flexShrink: 0 }}>{tag.label}</span>
         <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--float-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
