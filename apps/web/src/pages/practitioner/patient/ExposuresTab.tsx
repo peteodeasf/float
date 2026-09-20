@@ -129,9 +129,9 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
       {/* ── DASHBOARD BAND ── */}
       <div style={{ ...card, padding: '12px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
-          <Stat k="Exposures completed" v={String(done)} caption="all time" first />
-          <Stat k="Done this week" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} caption="of scheduled" />
-          <Stat k="Longest streak" v={longestStreak === 0 ? '—' : String(longestStreak)} caption={longestStreak === 1 ? 'day in a row' : 'days in a row'} />
+          <Stat k="Exposures" v={String(done)} caption="completed" accent="var(--float-primary)" first />
+          <Stat k="Completed" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} caption="of scheduled" accent="var(--float-primary)" />
+          <Stat k="Longest streak" v={longestStreak === 0 ? '—' : String(longestStreak)} caption={longestStreak === 1 ? 'day in a row' : 'days in a row'} accent="var(--float-primary)" />
           <Stat k="Avg belief change" v={beliefDelta == null ? '—' : mag(beliefDelta, '%')} caption="vs predicted"
             trend={trendOf(beliefDelta)} groupStart />
           <Stat k="Avg fear change" v={fearDelta == null ? '—' : mag(fearDelta)} caption="points"
@@ -232,8 +232,8 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
   )
 }
 
-function Stat({ k, v, caption, trend, first, last, groupStart }: {
-  k: string; v: string; caption?: string; trend?: 'down' | 'up'; first?: boolean; last?: boolean; groupStart?: boolean
+function Stat({ k, v, caption, trend, accent, first, last, groupStart }: {
+  k: string; v: string; caption?: string; trend?: 'down' | 'up'; accent?: string; first?: boolean; last?: boolean; groupStart?: boolean
 }) {
   const trendColor = trend === 'down' ? 'var(--float-success)' : trend === 'up' ? 'var(--float-danger)' : undefined
   const arrow = trend === 'down' ? '▼' : trend === 'up' ? '▲' : null
@@ -245,7 +245,7 @@ function Stat({ k, v, caption, trend, first, last, groupStart }: {
       ...(first ? { borderLeft: 0, paddingLeft: 2 } : {}),
     }}>
       <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1.25, minHeight: 26, color: 'var(--float-text-secondary)' }}>{k}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 19, fontWeight: 800, lineHeight: 1, color: trendColor ?? 'var(--float-text)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 19, fontWeight: 800, lineHeight: 1, color: trendColor ?? accent ?? 'var(--float-text)' }}>
         {arrow && <span style={{ fontSize: 11 }} aria-hidden>{arrow}</span>}
         <span>{v}</span>
       </div>
