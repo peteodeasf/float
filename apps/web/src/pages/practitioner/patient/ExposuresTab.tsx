@@ -242,7 +242,7 @@ function Stat({ k, v, caption, trend, accent, first, last, groupStart }: {
   return (
     <div style={{
       flex: 1,
-      padding: last ? `2px 2px 2px ${padX}px` : `2px ${padX}px`,
+      padding: last ? '2px 2px 2px 16px' : `2px ${padX}px`,
       borderLeft: '1px solid var(--float-border)',
       ...(first ? { borderLeft: 0, paddingLeft: 2 } : {}),
     }}>
