@@ -10,7 +10,7 @@ export default function ParentWords({ entry }: { entry: { parent_words?: string 
     <details style={{ marginTop: 6 }}>
       <summary style={{ cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--float-primary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
         {entry.captured_by === 'voice' && <MicIcon size={13} />}
-        {entry.captured_by === 'voice' ? 'Said out loud' : 'Typed as a note'} · the parent's words
+        {entry.captured_by === 'voice' ? 'Audio recorded' : "Typed as a note · the parent's words"}
       </summary>
       <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--float-text-secondary)', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
         &ldquo;{entry.parent_words}&rdquo;
