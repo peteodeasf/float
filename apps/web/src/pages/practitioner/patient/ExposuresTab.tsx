@@ -81,7 +81,8 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
   const beliefDelta = avg(completed
     .filter(e => e.bip_after != null && e.bip_before != null)
     .map(e => Number(e.bip_after) - Number(e.bip_before)))
-  const signed = (n: number, suffix = '') => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}${suffix}`
+  const mag = (n: number, suffix = '') => `${Math.abs(Math.round(n * 10) / 10)}${suffix}`
+  const trendOf = (n: number | null): 'down' | 'up' | undefined => (n == null || n === 0 ? undefined : n < 0 ? 'down' : 'up')
 
   // Longest run of consecutive calendar days with at least one completed exposure.
   const longestStreak = useMemo(() => {
@@ -128,13 +129,13 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
       {/* ── DASHBOARD BAND ── */}
       <div style={{ ...card, padding: '12px 18px', background: 'var(--float-primary-light)', border: '1px solid var(--float-success-border)' }}>
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
-          <Stat k="Completed Exposures" v={String(done)} first />
-          <Stat k="Completed / Scheduled" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} />
-          <Stat k="Avg BIP Change" v={beliefDelta == null ? '—' : signed(beliefDelta, '%')}
-            color={beliefDelta != null && beliefDelta < 0 ? 'var(--float-success)' : undefined} />
-          <Stat k="Avg Fear Change" v={fearDelta == null ? '—' : signed(fearDelta)}
-            color={fearDelta != null && fearDelta < 0 ? 'var(--float-success)' : undefined} />
-          <Stat k="Longest Streak" v={longestStreak === 0 ? '—' : `${longestStreak}d`} last />
+          <Stat k="Completed" v={String(done)} caption="all time" first />
+          <Stat k="This week" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} caption="done / scheduled" />
+          <Stat k="Best streak" v={longestStreak === 0 ? '—' : String(longestStreak)} caption={longestStreak === 1 ? 'day' : 'days'} />
+          <Stat k="Avg belief change" v={beliefDelta == null ? '—' : mag(beliefDelta, '%')} caption="vs predicted"
+            trend={trendOf(beliefDelta)} groupStart />
+          <Stat k="Avg fear change" v={fearDelta == null ? '—' : mag(fearDelta)} caption="of 10"
+            trend={trendOf(fearDelta)} last />
         </div>
       </div>
 
@@ -231,11 +232,24 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
   )
 }
 
-function Stat({ k, v, color, first, last }: { k: string; v: string; color?: string; first?: boolean; last?: boolean }) {
+function Stat({ k, v, caption, trend, first, last, groupStart }: {
+  k: string; v: string; caption?: string; trend?: 'down' | 'up'; first?: boolean; last?: boolean; groupStart?: boolean
+}) {
+  const trendColor = trend === 'down' ? 'var(--float-success)' : trend === 'up' ? 'var(--float-danger)' : undefined
+  const arrow = trend === 'down' ? '▼' : trend === 'up' ? '▲' : null
   return (
-    <div style={{ flex: 1, padding: last ? '2px 2px 2px 16px' : '2px 16px', borderLeft: '1px solid var(--float-border)', ...(first ? { borderLeft: 0, paddingLeft: 2 } : {}) }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--float-text-hint)' }}>{k}</div>
-      <div style={{ fontSize: 19, fontWeight: 800, marginTop: 3, lineHeight: 1, color: color ?? 'var(--float-text)' }}>{v}</div>
+    <div style={{
+      flex: 1,
+      padding: last ? '2px 2px 2px 16px' : `2px ${groupStart ? 22 : 16}px 2px ${groupStart ? 22 : 16}px`,
+      borderLeft: '1px solid var(--float-success-border)',
+      ...(first ? { borderLeft: 0, paddingLeft: 2 } : {}),
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1.25, minHeight: 26, color: 'var(--float-text-secondary)' }}>{k}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 19, fontWeight: 800, lineHeight: 1, color: trendColor ?? 'var(--float-text)' }}>
+        {arrow && <span style={{ fontSize: 11 }} aria-hidden>{arrow}</span>}
+        <span>{v}</span>
+      </div>
+      {caption && <div style={{ fontSize: 10.5, marginTop: 3, color: 'var(--float-text-hint)' }}>{caption}</div>}
     </div>
   )
 }
