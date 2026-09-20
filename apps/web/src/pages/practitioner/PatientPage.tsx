@@ -181,14 +181,16 @@ const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: str
   },
 }
 
-function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onClose: () => void }) {
+function InlineMonitoringReport({ patientId, onClose, embedded }: { patientId: string; onClose?: () => void; embedded?: boolean }) {
   const { data: report, isLoading } = useQuery({
     queryKey: ['monitoring-report', patientId],
     queryFn: () => getMonitoringReport(patientId),
     enabled: !!patientId,
   })
 
-  const backLink = (
+  // Inside the Report tab there's no back button and the panel already names the patient, so the
+  // heading is dropped; only the date range + entry count line is kept.
+  const backLink = embedded ? null : (
     <button
       onClick={onClose}
       className="text-sm text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer"
@@ -227,8 +229,8 @@ function InlineMonitoringReport({ patientId, onClose }: { patientId: string; onC
     <div>
       {backLink}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-slate-800 mb-1">{report.patient_name}</h1>
-        <h2 className="text-base text-slate-500 font-medium mb-2">Monitoring report</h2>
+        {!embedded && <h1 className="text-xl font-bold text-slate-800 mb-1">{report.patient_name}</h1>}
+        {!embedded && <h2 className="text-base text-slate-500 font-medium mb-2">Monitoring report</h2>}
         <div className="text-sm text-slate-400">
           <span>Dates: {dateFrom} &mdash; {dateTo}</span>
           <span style={{ margin: '0 8px' }}>&middot;</span>
@@ -475,14 +477,13 @@ export default function PatientPage() {
   const [copied, setCopied] = useState(false)
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
   const [smsSentTo, setSmsSentTo] = useState<string | null>(null)
-  const [showEntries, setShowEntries] = useState(false)
+  // Monitoring panel: which tab is showing — the raw entries table or the Case Summary.
+  const [monitoringSubTab, setMonitoringSubTab] = useState<'report' | 'summary'>('summary')
   const [msgContent, setMsgContent] = useState('')
   // 'teen', or a parent's user id: a child can have two parents and each has their own thread
   // (docs/plans/two-parent-accounts.md).
   const [msgThread, setMsgThread] = useState<string>('teen')
 
-  // Inline monitoring report (Step 1)
-  const [showInlineReport, setShowInlineReport] = useState(false)
 
 
   // Persistent access panel, opened from the patient header (any mode).
@@ -1180,85 +1181,71 @@ export default function PatientPage() {
   const situationsExist = (triggers?.length ?? 0) > 0
   const hasNewMonitoring = plan?.has_new_monitoring_entries ?? true
 
-  const monitoringExtractContent = (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Analyze Monitoring Data</h2>
-        {(monitoringForm?.entries_count ?? 0) >= 3 && (
-          <Button
-            kind="primary"
-            size="sm"
-            onClick={handleGenerateReport}
-            disabled={reportLoading}
-            style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-          >
-            {reportLoading ? 'Analyzing…' : (preliminaryReport ? 'Re-analyze with AI' : 'Analyze with AI')}
-          </Button>
-        )}
+  // Open the send/resend form, prefilling what we already know about the parent.
+  const openSendForm = () => {
+    setShowSendForm(true)
+    if (patient?.parent_email) setParentEmail(patient.parent_email)
+    if (patient?.parent_name) setParentName(patient.parent_name)
+    if (patient?.parent_phone) setParentPhone(patient.parent_phone)
+  }
+
+  // The parent-form fields + send buttons, shared by the first send and the resend flow.
+  const sendFormBlock = (
+    <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', padding: '14px' }}>
+      <div style={{ marginBottom: '10px' }}>
+        <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
+        <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
+          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
       </div>
-      {situationsExist && (
-        hasNewMonitoring ? (
-          <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', lineHeight: '1.5', margin: '0 0 12px' }}>
-            New observations have been added since last analysis.
-          </p>
-        ) : (
-          <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', lineHeight: '1.5', margin: '0 0 12px' }}>
-            Last analyzed {plan?.last_extracted_at ? new Date(plan.last_extracted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}. Add new monitoring observations to re-analyze.
-          </p>
-        )
-      )}
-      {!monitoringForm ? (
-        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>Send a parent monitoring form first (Step 1).</p>
-      ) : (monitoringForm.entries_count ?? 0) === 0 ? (
-        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No monitoring entries yet. Once the parent logs observations they'll appear here for extraction.</p>
-      ) : (
-        <div>
-          <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
-            Reads the whole monitoring log and writes the report below. Nothing is added to the
-            treatment plan — you add situations yourself in the ladder builder.
-          </p>
-          {(monitoringForm.entries_count ?? 0) < 3 && (
-            <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0 }}>Add more entries first.</p>
-          )}
-        </div>
-      )}
+      <div style={{ marginBottom: '10px' }}>
+        <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
+        <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
+          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+      </div>
+      <div style={{ marginBottom: '12px' }}>
+        <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
+        <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
+          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {(parentEmail || parentPhone) && (
+          <button onClick={handleSendAll} disabled={sendFormMutation.isPending} style={btn('primary', 'md')}>
+            {sendFormMutation.isPending ? 'Sending...' :
+              parentEmail && parentPhone ? 'Send both + copy link' :
+              parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
+          </button>
+        )}
+        <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending} style={btn((parentEmail || parentPhone) ? 'secondary' : 'primary', 'md')}>
+          {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
+        </button>
+        <button onClick={() => setShowSendForm(false)} style={btn('quiet', 'md')}>Cancel</button>
+      </div>
     </div>
   )
 
-  const preliminaryReportContent = (reportLoading || reportError || preliminaryReport) ? (
-    <div style={cardStyle}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Preliminary Report &amp; Treatment Targets</div>
-      <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '0 0 16px' }}>AI clinical summary synthesized from the parent monitoring data.</p>
-      {reportLoading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
-          <div className="animate-spin" style={{ width: '20px', height: '20px', border: '3px solid var(--float-border)', borderTopColor: 'var(--float-primary)', borderRadius: '50%' }} />
-          <span style={{ fontSize: '13px', color: 'var(--float-text-secondary)' }}>Analyzing monitoring data…</span>
-        </div>
-      )}
-      {reportError && <p style={{ fontSize: '13px', color: 'var(--float-danger)', margin: '0 0 4px' }}>{reportError}</p>}
-      {!reportLoading && preliminaryReport && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <div style={reportSectionHeaderStyle}>Situations</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {[...preliminaryReport.situations].sort((a, b) => a.fear_thermometer - b.fear_thermometer).map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text-hint)', width: '18px', textAlign: 'right', flexShrink: 0, lineHeight: 1.6 }}>{i + 1}.</span>
-                  <span style={{ flex: 1, fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}>{s.name}</span>
-                  <span style={{ flexShrink: 0, marginTop: '1px' }}><DTBadge value={s.fear_thermometer} /></span>
-                </div>
-              ))}
+  // The four Case Summary sections, reused by the Monitoring panel's Case Summary tab and the Plan
+  // tab. Null until a summary has been generated.
+  const caseSummarySections = preliminaryReport ? (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div>
+        <div style={reportSectionHeaderStyle}>Situations</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[...preliminaryReport.situations].sort((a, b) => a.fear_thermometer - b.fear_thermometer).map((s, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text-hint)', width: '18px', textAlign: 'right', flexShrink: 0, lineHeight: 1.6 }}>{i + 1}.</span>
+              <span style={{ flex: 1, fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}>{s.name}</span>
+              <span style={{ flexShrink: 0, marginTop: '1px' }}><DTBadge value={s.fear_thermometer} /></span>
             </div>
-          </div>
-          <ReportSection label="Parental responses" items={preliminaryReport.parental_responses} />
-          <ReportSection label={preliminaryReport.safety_section_label || 'Safety & avoidance behaviors'} items={preliminaryReport.safety_behaviors} />
-          <ReportSection label="Treatment targets" items={preliminaryReport.treatment_targets} />
-          {preliminaryReport.generated_at && (
-            <p style={{ fontSize: '11px', color: 'var(--float-border-strong)', margin: 0 }}>
-              Generated {new Date(preliminaryReport.generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
-            </p>
-          )}
+          ))}
         </div>
+      </div>
+      <ReportSection label="Parental responses" items={preliminaryReport.parental_responses} />
+      <ReportSection label={preliminaryReport.safety_section_label || 'Safety & avoidance behaviors'} items={preliminaryReport.safety_behaviors} />
+      <ReportSection label="Treatment targets" items={preliminaryReport.treatment_targets} />
+      {preliminaryReport.generated_at && (
+        <p style={{ fontSize: '11px', color: 'var(--float-border-strong)', margin: 0 }}>
+          Generated {new Date(preliminaryReport.generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+        </p>
       )}
     </div>
   ) : null
@@ -1275,184 +1262,141 @@ export default function PatientPage() {
     }
   }
 
-  const monitoringCard = (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', margin: '0 0 12px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
-
+  // The Case Summary tab body: the analyze button + state, then the sections or an empty prompt.
+  const caseSummaryTab = (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0, maxWidth: '540px', lineHeight: 1.5 }}>
+          AI summary from the parent monitoring log.
+          {situationsExist && hasNewMonitoring ? ' New observations since the last analysis.' : ''}
+          {situationsExist && !hasNewMonitoring && plan?.last_extracted_at ? ` Last analyzed ${new Date(plan.last_extracted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.` : ''}
+        </p>
+        {(monitoringForm?.entries_count ?? 0) >= 3 && (
+          <Button kind="primary" size="sm" onClick={handleGenerateReport} disabled={reportLoading} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {reportLoading ? 'Analyzing…' : (preliminaryReport ? 'Re-analyze with AI' : 'Analyze with AI')}
+          </Button>
+        )}
       </div>
-
-      {!monitoringForm ? (
-        <div>
-          <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
-            Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
-          </p>
-
-          {(emailSentTo || smsSentTo) && (
-            <div style={{ marginBottom: '12px' }}>
-              {emailSentTo && (
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '4px' }}>
-                  <span>&#10003;</span> Email sent to {emailSentTo}
-                </div>
-              )}
-              {smsSentTo && (
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                  <span>&#10003;</span> SMS sent to {smsSentTo}
-                </div>
-              )}
-            </div>
-          )}
-
-          {!showSendForm ? (
-            <button
-              onClick={() => { setShowSendForm(true); if (patient?.parent_email) setParentEmail(patient.parent_email); if (patient?.parent_name) setParentName(patient.parent_name); if (patient?.parent_phone) setParentPhone(patient.parent_phone) }}
-              style={btn('primary', 'md')}
-            >
-              Send monitoring form
-            </button>
-          ) : (
-            <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', padding: '14px' }}>
-              <div style={{ marginBottom: '10px' }}>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
-                <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-              </div>
-              <div style={{ marginBottom: '10px' }}>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
-                <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
-                <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(parentEmail || parentPhone) && (
-                  <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
-                    style={btn('primary', 'md')}>
-                    {sendFormMutation.isPending ? 'Sending...' :
-                      parentEmail && parentPhone ? 'Send both + copy link' :
-                      parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
-                  </button>
-                )}
-                <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
-                  style={btn((parentEmail || parentPhone) ? 'secondary' : 'primary', 'md')}>
-                  {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
-                </button>
-                <button onClick={() => setShowSendForm(false)} style={btn('quiet', 'md')}>Cancel</button>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          {/* Status row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
-                monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
-                'bg-amber-100 text-amber-700'
-              }`}>
-                {monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}
-              </span>
-              {monitoringForm.entries_count != null && (
-                <span className="text-sm text-slate-500">{monitoringForm.entries_count} {monitoringForm.entries_count === 1 ? 'entry' : 'entries'}</span>
-              )}
-              {daysSinceSent != null && (
-                <span className="text-sm text-slate-400">{daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent}d ago`}</span>
-              )}
-            </div>
-            <button onClick={handleCopyLink} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
-              {copied ? 'Copied!' : 'Copy link'}
-            </button>
-          </div>
-
-          {/* Entries list */}
-          {(monitoringForm.entries_count ?? 0) > 0 && (
-            <div style={{ marginBottom: '12px' }}>
-              <button onClick={() => setShowEntries(!showEntries)} className="text-sm text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
-                {showEntries ? 'Hide entries' : 'View entries'}
-              </button>
-              {showEntries && monitoringForm.entries && (
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {monitoringForm.entries.map((entry: any) => (
-                    <div key={entry.id} style={{ padding: '8px 12px', background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <span className="text-xs font-medium text-slate-400">
-                          {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                        </span>
-                        {entry.fear_thermometer != null && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.fear_thermometer >= 7 ? 'bg-red-100 text-red-700' : entry.fear_thermometer >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                            Fear Level {entry.fear_thermometer}
-                          </span>
-                        )}
-                      </div>
-                      {entry.situation && <p className="text-sm text-slate-700" style={{ margin: 0 }}>{entry.situation}</p>}
-                      {entry.child_behavior_observed && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Observed:</span> {entry.child_behavior_observed}</p>}
-                      {entry.parent_response && <p className="text-xs text-slate-500" style={{ margin: '2px 0 0' }}><span className="font-medium">Response:</span> {entry.parent_response}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Report button */}
-          {(monitoringForm.entries_count ?? 0) > 0 && (
-            <div style={{ marginBottom: '12px' }}>
-              <button onClick={() => setShowInlineReport(true)}
-                style={btn((monitoringForm.entries_count ?? 0) >= 5 ? 'primary' : 'secondary', 'md')}>
-                View monitoring report
-              </button>
-            </div>
-          )}
-
-          {/* Resend form — always available */}
-          <div style={{ borderTop: '1px solid var(--float-surface-sunken)', paddingTop: '12px' }}>
-            {!showSendForm ? (
-              <button onClick={() => { setShowSendForm(true); if (patient?.parent_email) setParentEmail(patient.parent_email); if (patient?.parent_name) setParentName(patient.parent_name); if (patient?.parent_phone) setParentPhone(patient.parent_phone) }}
-                className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">
-                Resend Monitoring form
-              </button>
-            ) : (
-              <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', padding: '14px' }}>
-                <div style={{ marginBottom: '10px' }}>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
-                  <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
-                  <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
-                  <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(parentEmail || parentPhone) && (
-                    <button onClick={handleSendAll} disabled={sendFormMutation.isPending}
-                      style={btn('primary', 'md')}>
-                      {sendFormMutation.isPending ? 'Sending...' :
-                        parentEmail && parentPhone ? 'Send both + copy link' :
-                        parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
-                    </button>
-                  )}
-                  <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending}
-                    style={btn((parentEmail || parentPhone) ? 'secondary' : 'primary', 'md')}>
-                    {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
-                  </button>
-                  <button onClick={() => setShowSendForm(false)} style={btn('quiet', 'md')}>Cancel</button>
-                </div>
-              </div>
-            )}
-          </div>
+      {reportLoading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
+          <div className="animate-spin" style={{ width: '20px', height: '20px', border: '3px solid var(--float-border)', borderTopColor: 'var(--float-primary)', borderRadius: '50%' }} />
+          <span style={{ fontSize: '13px', color: 'var(--float-text-secondary)' }}>Analyzing monitoring data…</span>
         </div>
       )}
+      {reportError && <p style={{ fontSize: '13px', color: 'var(--float-danger)', margin: '0 0 4px' }}>{reportError}</p>}
+      {!reportLoading && (preliminaryReport ? caseSummarySections : (
+        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0, lineHeight: 1.5 }}>
+          {(monitoringForm?.entries_count ?? 0) < 3
+            ? 'Add at least 3 monitoring entries, then Analyze with AI to build the case summary.'
+            : 'No case summary yet. Run Analyze with AI to build it from the monitoring log. Nothing is added to the plan automatically — you add situations yourself in the ladder builder.'}
+        </p>
+      ))}
+    </div>
+  )
+
+  // The whole monitoring section in one panel: a form status strip on top, then Report and Case
+  // Summary tabs. The old separate "view entries" list and "view report" table are the one Report
+  // tab now; send, resend, copy link and analyze are all still here.
+  const monitoringContent = (
+    <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
+      <div style={{ padding: '16px 20px' }}>
+        {!monitoringForm ? (
+          <div>
+            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 8px' }}>Parent monitoring form</h2>
+            <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
+              Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
+            </p>
+            {(emailSentTo || smsSentTo) && (
+              <div style={{ marginBottom: '12px' }}>
+                {emailSentTo && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '4px' }}>
+                    <span>&#10003;</span> Email sent to {emailSentTo}
+                  </div>
+                )}
+                {smsSentTo && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                    <span>&#10003;</span> SMS sent to {smsSentTo}
+                  </div>
+                )}
+              </div>
+            )}
+            {showSendForm ? sendFormBlock : (
+              <button onClick={openSendForm} style={btn('primary', 'md')}>Send monitoring form</button>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="flex items-center gap-3" style={{ flexWrap: 'wrap' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
+                  monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
+                  'bg-amber-100 text-amber-700'
+                }`}>{monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}</span>
+                {monitoringForm.entries_count != null && (
+                  <span className="text-sm text-slate-500">{monitoringForm.entries_count} {monitoringForm.entries_count === 1 ? 'entry' : 'entries'}</span>
+                )}
+                {daysSinceSent != null && (
+                  <span className="text-sm text-slate-400">{daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent}d ago`}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={handleCopyLink} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">{copied ? 'Copied!' : 'Copy link'}</button>
+                <button onClick={openSendForm} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">Resend form</button>
+              </div>
+            </div>
+            {showSendForm && <div style={{ marginTop: '12px' }}>{sendFormBlock}</div>}
+          </div>
+        )}
+      </div>
+
+      {monitoringForm && (
+        <>
+          <div style={{ display: 'flex', gap: '4px', padding: '0 20px', borderTop: '1px solid var(--float-border)', borderBottom: '1px solid var(--float-border)' }}>
+            {(['report', 'summary'] as const).map(t => (
+              <button key={t} onClick={() => setMonitoringSubTab(t)} style={tab(monitoringSubTab === t)}>
+                {t === 'report' ? 'Report' : 'Case Summary'}
+              </button>
+            ))}
+          </div>
+          <div style={{ padding: '18px 20px' }}>
+            {monitoringSubTab === 'report'
+              ? ((monitoringForm.entries_count ?? 0) > 0
+                  ? <InlineMonitoringReport patientId={patientId!} embedded />
+                  : <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No observations recorded yet.</p>)
+              : caseSummaryTab}
+          </div>
+        </>
+      )}
+    </div>
+  )
+
+  // Read-only Case Summary shown on the Plan tab as reference while building the ladder.
+  const caseSummaryPlanCard = (
+    <div style={cardStyle}>
+      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Case Summary</div>
+      {preliminaryReport ? (
+        <>
+          <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '0 0 16px' }}>From the parent monitoring log. Update it on the Monitoring tab.</p>
+          {caseSummarySections}
+        </>
+      ) : (
+        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No case summary yet. Generate it on the Monitoring tab.</p>
+      )}
+    </div>
+  )
+
+  // Placeholder for the future AI session analysis — no logic yet.
+  const sessionAnalysisPlaceholder = (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)' }}>Session analysis</div>
+          <div style={{ fontSize: '12px', color: 'var(--float-text-hint)', marginTop: '2px' }}>Analyze a session with AI to add to the Case Summary. Coming soon.</div>
+        </div>
+        <Button kind="secondary" size="sm" disabled>Analyze session with AI</Button>
+      </div>
     </div>
   )
 
@@ -2093,20 +2037,11 @@ export default function PatientPage() {
           {/* Capped, so the column does not stretch when the process panel is closed. One rule
               for how wide a row gets, rather than each component minding its own. */}
           <div style={{ flex: 1, minWidth: 0, maxWidth: LADDER_MAX_WIDTH, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {activeTab === 'monitoring' && (
-              showInlineReport ? (
-                <InlineMonitoringReport patientId={patientId!} onClose={() => setShowInlineReport(false)} />
-              ) : (
-                <>
-                  {monitoringCard}
-                  {monitoringExtractContent}
-                  {preliminaryReportContent}
-                </>
-              )
-            )}
+            {activeTab === 'monitoring' && monitoringContent}
 
             {activeTab === 'sessions' && (
               <>
+                {sessionAnalysisPlaceholder}
                 {sessionNotesList}
                 {SHOW_ACTION_PLANS && actionPlansContent}
               </>
@@ -2120,6 +2055,7 @@ export default function PatientPage() {
                     <ParentPlanPanel planId={plan.id} patientId={patientId!} triggers={triggers ?? []} />
                   </div>
                 )}
+                {caseSummaryPlanCard}
               </>
             )}
 
