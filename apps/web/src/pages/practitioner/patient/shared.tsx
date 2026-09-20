@@ -20,7 +20,10 @@ export const BEHAVIOR_TYPE_SCENARIO = 'scenario'
 // browser, and on a wide screen a step's name sits at one end of the row with its thermometer
 // score at the other — the two things that belong together, as far apart as the screen allows.
 // Left-aligned, not centred (Peter, 2026-09-05).
-export const LADDER_MAX_WIDTH = 860
+// Widened 860 -> 1060 (Peter, 2026-09-20): the data tabs have room to use it. If the ladder rows
+// on the Plan tab start to spread (name vs thermometer at opposite ends), cap FlatLadder itself
+// rather than shrinking the whole page again.
+export const LADDER_MAX_WIDTH = 1060
 
 /** The process checklist that sits beside the content on the patient page. */
 export const PROCESS_PANEL_WIDTH = 340

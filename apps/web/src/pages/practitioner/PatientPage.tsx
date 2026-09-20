@@ -1871,7 +1871,10 @@ export default function PatientPage() {
           screen a step's name sat at one end of its row and its thermometer score at the other —
           the two things that belong together, as far apart as the screen allows. Left-aligned
           (Peter, 2026-09-05). Content column + the process panel + the gap between them. */}
-      <div style={{ padding: '24px', maxWidth: LADDER_MAX_WIDTH + PROCESS_PANEL_WIDTH + 24 + 48 }}>
+      {/* Reserve the Checklist column's width only when it's open, so the header, tabs and content
+          all share the content width in the normal (closed) state instead of the header looking
+          wider than the panels below it. */}
+      <div style={{ padding: '24px', maxWidth: LADDER_MAX_WIDTH + 48 + (processPanelOpen ? PROCESS_PANEL_WIDTH + 24 : 0) }}>
 
         {/* Patient header — identity + access + actions. On its own white band (pulled to the
             padded container's edges, bottom border + soft shadow) so it reads as a toolbar,
