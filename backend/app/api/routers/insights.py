@@ -52,10 +52,14 @@ class InsightResponse(BaseModel):
     parent_estimate_max: float | None = None
     still_does: bool | None = None
     named_by_parent: bool = False
+    #: The plan situation this belongs to (an accommodation's parent situation), so the add panels
+    #: can group suggestions under each situation. Null when it isn't tied to a plan situation.
+    situation_id: uuid.UUID | None = None
 
 
-def _to_response(row: PatientInsight, parent_name: str | None = None) -> InsightResponse:
+def _to_response(row: PatientInsight, parent_name: str | None = None, situation_id: uuid.UUID | None = None) -> InsightResponse:
     return InsightResponse(
+        situation_id=situation_id,
         id=row.id,
         kind=row.kind,
         name=row.name,
@@ -96,11 +100,14 @@ async def list_insights(
     rows = await get_insights(
         db, patient_id=patient_id, organization_id=practitioner.organization_id, kind=kind
     )
-    names = {r.id: r.name for r in await get_insights(
+    all_rows = await get_insights(
         db, patient_id=patient_id, organization_id=practitioner.organization_id,
         include_removed=True,
-    )}
-    out = [_to_response(r, names.get(r.parent_insight_id)) for r in rows]
+    )
+    names = {r.id: r.name for r in all_rows}
+    # An accommodation's plan situation is its parent situation-insight's trigger_situation_id.
+    situation_of = {r.id: r.trigger_situation_id for r in all_rows if r.kind == KIND_SITUATION}
+    out = [_to_response(r, names.get(r.parent_insight_id), situation_of.get(r.parent_insight_id)) for r in rows]
     if not include_added:
         out = [r for r in out if not r.added]
     return out

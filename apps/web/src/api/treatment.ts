@@ -460,6 +460,8 @@ export interface PatientInsight {
   parent_estimate_max?: number | null
   still_does?: boolean | null
   named_by_parent?: boolean
+  /** The plan situation this suggestion belongs to, so add panels can group by situation. */
+  situation_id?: string | null
 }
 
 export const getPatientInsights = async (

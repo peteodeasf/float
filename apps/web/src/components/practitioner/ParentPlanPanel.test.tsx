@@ -25,7 +25,7 @@ function open() {
     acc('a3', 'Texts them every hour at a sleepover', 'not_started', null),
   ])
   qc.setQueryData(['insights', 'pt1', 'accommodation'], [
-    { id: 'i1', kind: 'accommodation', name: 'Leaves the hall light on', evidence_count: 0, sources: ['parent'], added: false, named_by_parent: true },
+    { id: 'i1', kind: 'accommodation', name: 'Leaves the hall light on', evidence_count: 0, sources: ['parent'], added: false, named_by_parent: true, situation_id: 's1' },
   ])
   // The situation name avoids the words the row matcher looks for, so it isn't counted as a row.
   render(
@@ -49,7 +49,7 @@ describe('the parent plan', () => {
     expect(screen.getByText('Working on it')).toBeInTheDocument()
     expect(screen.getByText('School mornings')).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('Add an accommodation the parent does here…')).not.toBeInTheDocument()
-    expect(screen.queryByText('Suggestions from monitoring')).not.toBeInTheDocument()
+    expect(screen.queryByText('From monitoring — tap to add')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Ask the parent' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Remove/ })).not.toBeInTheDocument()
   })
@@ -70,8 +70,8 @@ describe('the parent plan', () => {
     expect(screen.queryByRole('button', { name: 'Ask the parent' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Child ratings' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Remove “Lies down with them at bedtime”' })).toBeInTheDocument()
-    // Suggestions and the inline add show without a further click.
-    expect(screen.getByText('Suggestions from monitoring')).toBeInTheDocument()
+    // Suggestions (per situation) and the inline add show without a further click.
+    expect(screen.getByText('From monitoring — tap to add')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Leaves the hall light on/ })).toHaveTextContent('from the parent’s app')
     expect(screen.getByPlaceholderText('Add an accommodation the parent does here…')).toBeInTheDocument()
 

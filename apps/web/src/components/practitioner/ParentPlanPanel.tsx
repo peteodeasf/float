@@ -10,7 +10,7 @@ import {
   type Accommodation,
   type AccommodationState,
 } from '../../api/accommodations'
-import { getPatientInsights, addInsightToPlan, removeInsight } from '../../api/treatment'
+import { getPatientInsights, addInsightToPlan, removeInsight, type PatientInsight } from '../../api/treatment'
 import { Chrome } from '../../pages/practitioner/sessionKit'
 import ChildRatingSheet from './ChildRatingSheet'
 
@@ -71,6 +71,13 @@ export default function ParentPlanPanel({
   const ordered = useMemo(() => [...accommodations].sort(byFearLevel), [accommodations])
   const invalidate = () => qc.invalidateQueries({ queryKey: key })
 
+  // Accommodations mined from monitoring, offered under their own situation.
+  const { data: allSuggestions = [] } = useQuery({
+    queryKey: ['insights', patientId, 'accommodation'],
+    queryFn: () => getPatientInsights(patientId, 'accommodation'),
+    enabled: !!patientId,
+  })
+
   const [editing, setEditing] = useState(false)
   const [fullScreen, setFullScreen] = useState(false)
   const [ratingWithChild, setRatingWithChild] = useState(false)
@@ -88,14 +95,20 @@ export default function ParentPlanPanel({
   // One section per situation (situations are shared with the ladder). In view mode only situations
   // that have accommodations show; in the editor every situation shows so you can add under each.
   // Anything whose situation is missing goes in "Other" so nothing is lost.
+  const known = useMemo(() => new Set(triggers.map(t => t.id)), [triggers])
+  // The monitoring suggestions that belong to a situation (null = its situation isn't on the plan).
+  const suggFor = (sid: string | null) =>
+    sid == null
+      ? allSuggestions.filter(s => !s.situation_id || !known.has(s.situation_id))
+      : allSuggestions.filter(s => s.situation_id === sid)
   const sections = useMemo(() => {
-    const known = new Set(triggers.map(t => t.id))
     const groups: { id: string | null; name: string; items: Accommodation[] }[] =
       triggers.map(t => ({ id: t.id, name: t.name, items: ordered.filter(a => a.trigger_situation_id === t.id) }))
-    const orphans = ordered.filter(a => !a.trigger_situation_id || !known.has(a.trigger_situation_id))
-    if (orphans.length) groups.push({ id: null, name: 'Other', items: orphans })
+    const orphanItems = ordered.filter(a => !a.trigger_situation_id || !known.has(a.trigger_situation_id))
+    const orphanSugg = allSuggestions.filter(s => !s.situation_id || !known.has(s.situation_id))
+    if (orphanItems.length || orphanSugg.length) groups.push({ id: null, name: 'Other', items: orphanItems })
     return groups
-  }, [ordered, triggers])
+  }, [ordered, triggers, known, allSuggestions])
   const visibleSections = editing ? sections : sections.filter(s => s.items.length > 0)
 
   const panelStyle: React.CSSProperties = {
@@ -148,12 +161,14 @@ export default function ParentPlanPanel({
               <p style={{ fontSize: '12.5px', color: 'var(--float-text-hint)', margin: '2px 0 0' }}>No accommodations here yet.</p>
             )}
           </div>
-          {editing && sec.id && (
-            <AddAccommodationInline planId={planId} situationId={sec.id} onAdded={invalidate} />
+          {editing && (
+            <>
+              {sec.id && <AddAccommodationInline planId={planId} situationId={sec.id} onAdded={invalidate} />}
+              <SituationSuggestions patientId={patientId} items={suggFor(sec.id)} onAdded={invalidate} />
+            </>
           )}
         </div>
       ))}
-      {editing && <MonitoringSuggestions planId={planId} patientId={patientId} onAdded={invalidate} />}
     </div>
   )
 
@@ -261,20 +276,15 @@ function AddAccommodationInline({ planId, situationId, onAdded }: {
   )
 }
 
-/** Accommodations mined from the parent's monitoring log, offered to add to the plan. Tapping one
- *  promotes it (it lands under its situation); × takes it off the list. Kept as one area. */
-function MonitoringSuggestions({ planId: _planId, patientId, onAdded }: {
-  planId: string
+/** The monitoring suggestions for one situation, offered to add to the plan. Tapping one promotes
+ *  it; × takes it off the list. */
+function SituationSuggestions({ patientId, items, onAdded }: {
   patientId: string
+  items: PatientInsight[]
   onAdded: () => void
 }) {
   const qc = useQueryClient()
   const insightsKey = ['insights', patientId, 'accommodation']
-  const { data: suggestions = [] } = useQuery({
-    queryKey: insightsKey,
-    queryFn: () => getPatientInsights(patientId, 'accommodation'),
-    enabled: !!patientId,
-  })
   const takeMut = useMutation({
     mutationFn: (insightId: string) => addInsightToPlan(patientId, insightId),
     onSuccess: () => { onAdded(); qc.invalidateQueries({ queryKey: insightsKey }) },
@@ -284,18 +294,15 @@ function MonitoringSuggestions({ planId: _planId, patientId, onAdded }: {
     onSuccess: () => qc.invalidateQueries({ queryKey: insightsKey }),
   })
 
-  if (suggestions.length === 0) return null
+  if (items.length === 0) return null
 
   return (
-    <div style={{ background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: '11px', padding: '14px 16px' }}>
-      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#4d8478', marginBottom: '2px' }}>
-        Suggestions from monitoring
-      </div>
-      <div style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', marginBottom: '8px' }}>
-        Tap to add it to the plan under its situation. Delete it there and it comes back here.
+    <div style={{ marginTop: '10px' }}>
+      <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#4d8478', marginBottom: '6px' }}>
+        From monitoring — tap to add
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
-        {suggestions.map(item => {
+        {items.map(item => {
           const fromApp = !!item.named_by_parent || item.sources.includes('parent')
           const parentThinks = rangeLabel(item.parent_estimate_min, item.parent_estimate_max)
           return (
@@ -415,10 +422,13 @@ function AccommodationRow({ accommodation: a, editing, onSave, onDelete }: {
       <span style={{ flex: 'none', width: '98px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: state.color, background: state.bg, borderRadius: 'var(--float-radius-pill)', padding: '3px 6px' }}>
         {state.label}
       </span>
-      <button onClick={() => { setPicked(a.status); setPlanning(true) }} title="Where the parent is with stopping this"
-        style={{ ...btn('secondary', 'sm'), flex: 'none' }}>
-        Plan it
-      </button>
+      {/* Planning the parent's focus happens after the plan is built — not while editing it. */}
+      {!editing && (
+        <button onClick={() => { setPicked(a.status); setPlanning(true) }} title="Where the parent is with stopping this"
+          style={{ ...btn('secondary', 'sm'), flex: 'none' }}>
+          Plan it
+        </button>
+      )}
       {editing && (confirmRemove ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 'none', whiteSpace: 'nowrap' }}>
           <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>Remove?</span>
