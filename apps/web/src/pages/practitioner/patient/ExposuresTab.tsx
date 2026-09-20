@@ -129,9 +129,9 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
       {/* ── DASHBOARD BAND ── */}
       <div style={{ ...card, padding: '12px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
-          <Stat k="Completed" v={String(done)} caption="all time" first />
-          <Stat k="This week" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} caption="done / scheduled" />
-          <Stat k="Best streak" v={longestStreak === 0 ? '—' : String(longestStreak)} caption={longestStreak === 1 ? 'day' : 'days'} />
+          <Stat k="Exposures completed" v={String(done)} caption="all time" first />
+          <Stat k="Done this week" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} caption="of scheduled" />
+          <Stat k="Longest streak" v={longestStreak === 0 ? '—' : String(longestStreak)} caption={longestStreak === 1 ? 'day in a row' : 'days in a row'} />
           <Stat k="Avg belief change" v={beliefDelta == null ? '—' : mag(beliefDelta, '%')} caption="vs predicted"
             trend={trendOf(beliefDelta)} groupStart />
           <Stat k="Avg fear change" v={fearDelta == null ? '—' : mag(fearDelta)} caption="points"
