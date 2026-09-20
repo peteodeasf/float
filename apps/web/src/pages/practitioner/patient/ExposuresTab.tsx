@@ -33,8 +33,6 @@ const shortDate = (iso: string) =>
 const fullDate = (key: string) =>
   new Date(key + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })
 
-const CONFIDENCE_LABEL: Record<string, string> = { low: 'low confidence', medium: 'some confidence', high: 'ready' }
-
 const card: React.CSSProperties = {
   background: '#fff', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '16px 18px',
 }
@@ -76,9 +74,6 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
   const scheduledThisWeek = experiments.filter(e => inThisWeek(e.scheduled_date)).length
   const doneThisWeek = completed.filter(e => inThisWeek(e.completed_date)).length
 
-  const withOutcome = completed.filter(e => e.feared_outcome_occurred != null)
-  const cameTrue = withOutcome.filter(e => e.feared_outcome_occurred === true).length
-
   const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
   const fearDelta = avg(completed
     .filter(e => e.distress_thermometer_actual != null && e.distress_thermometer_expected != null)
@@ -87,6 +82,18 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
     .filter(e => e.bip_after != null && e.bip_before != null)
     .map(e => Number(e.bip_after) - Number(e.bip_before)))
   const signed = (n: number, suffix = '') => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}${suffix}`
+
+  // Longest run of consecutive calendar days with at least one completed exposure.
+  const longestStreak = useMemo(() => {
+    const days = [...new Set(completed.map(e => dayOf(e.completed_date!)))].sort()
+    let best = 0, run = 0, prev: string | null = null
+    for (const d of days) {
+      run = prev && addDays(prev, 1) === d ? run + 1 : 1
+      best = Math.max(best, run)
+      prev = d
+    }
+    return best
+  }, [completed])
 
   // ── week strip ──
   const weekStart = addDays(mondayKey(todayKey), weekOffset * 7)
@@ -118,6 +125,19 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
+      {/* ── DASHBOARD BAND ── */}
+      <div style={{ ...card, padding: '12px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+          <Stat k="Completed Exposures" v={String(done)} first />
+          <Stat k="Completed / Scheduled" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} />
+          <Stat k="Avg BIP Change" v={beliefDelta == null ? '—' : signed(beliefDelta, '%')}
+            color={beliefDelta != null && beliefDelta < 0 ? 'var(--float-success)' : undefined} />
+          <Stat k="Avg Fear Change" v={fearDelta == null ? '—' : signed(fearDelta)}
+            color={fearDelta != null && fearDelta < 0 ? 'var(--float-success)' : undefined} />
+          <Stat k="Longest Streak" v={longestStreak === 0 ? '—' : `${longestStreak}d`} last />
+        </div>
+      </div>
+
       {/* ── ONE GRAPH ── */}
       <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -130,7 +150,7 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
                   background: metric === m ? 'var(--float-primary)' : '#fff',
                   color: metric === m ? '#fff' : 'var(--float-text-secondary)',
                 }}>
-                {m === 'belief' ? 'Belief' : 'Fear'}
+                {m === 'belief' ? 'Belief in Prediction' : 'Fear Level'}
               </button>
             ))}
           </div>
@@ -145,31 +165,18 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
                 <YAxis domain={yDomain} tick={{ fontSize: 11, fill: 'var(--float-text-hint)' }} tickLine={false} axisLine={false} width={38}
                   tickFormatter={v => metric === 'belief' ? `${v}%` : `${v}`} />
                 <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                {situations.map((s, i) => (
+                <Legend wrapperStyle={{ fontSize: 12.5, fontWeight: 600, paddingTop: 8, lineHeight: 1.5 }} />
+                {situations.length === 0 ? (
+                  <Line type="monotone" dataKey="overall" name={metric === 'belief' ? 'Belief in Prediction' : 'Fear Level'}
+                    stroke="var(--float-primary)" strokeWidth={3} dot={{ r: 3 }} isAnimationActive={false} />
+                ) : situations.map((s, i) => (
                   <Line key={s} type="monotone" dataKey={s} name={s} stroke={SERIES[i % SERIES.length]}
-                    strokeWidth={1.8} dot={false} connectNulls isAnimationActive={false} />
+                    strokeWidth={2.4} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
                 ))}
-                <Line type="monotone" dataKey="overall" name="Overall" stroke="var(--float-primary)"
-                  strokeWidth={3.2} dot={{ r: 3 }} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         )}
-      </div>
-
-      {/* ── DASHBOARD BAND ── */}
-      <div style={{ ...card, padding: '12px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'stretch' }}>
-          <Stat k="Done" v={String(done)} />
-          <Stat k="On schedule" v={scheduledThisWeek ? `${doneThisWeek}/${scheduledThisWeek}` : '—'} />
-          <Stat k="Came true" v={withOutcome.length ? `${cameTrue}/${withOutcome.length}` : '—'}
-            color={withOutcome.length && cameTrue === 0 ? 'var(--float-success)' : undefined} />
-          <Stat k="Fear vs expected" v={fearDelta == null ? '—' : signed(fearDelta)}
-            color={fearDelta != null && fearDelta < 0 ? 'var(--float-success)' : undefined} />
-          <Stat k="Belief change" v={beliefDelta == null ? '—' : signed(beliefDelta, '%')}
-            color={beliefDelta != null && beliefDelta < 0 ? 'var(--float-success)' : undefined} last />
-        </div>
       </div>
 
       {/* ── WEEK STRIP + SELECTED DAY ── */}
@@ -224,9 +231,9 @@ export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[]
   )
 }
 
-function Stat({ k, v, color, last }: { k: string; v: string; color?: string; last?: boolean }) {
+function Stat({ k, v, color, first, last }: { k: string; v: string; color?: string; first?: boolean; last?: boolean }) {
   return (
-    <div style={{ flex: 1, padding: last ? '2px 2px 2px 16px' : '2px 16px', borderLeft: '1px solid var(--float-border)', ...(k === 'Done' ? { borderLeft: 0, paddingLeft: 2 } : {}) }}>
+    <div style={{ flex: 1, padding: last ? '2px 2px 2px 16px' : '2px 16px', borderLeft: '1px solid var(--float-border)', ...(first ? { borderLeft: 0, paddingLeft: 2 } : {}) }}>
       <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--float-text-hint)' }}>{k}</div>
       <div style={{ fontSize: 19, fontWeight: 800, marginTop: 3, lineHeight: 1, color: color ?? 'var(--float-text)' }}>{v}</div>
     </div>
@@ -248,26 +255,43 @@ function dayDots(items: PlannedExperiment[], key: string, todayKey: string): { b
 
 function DayRow({ e, selectedDay, todayKey }: { e: PlannedExperiment; selectedDay: string; todayKey: string }) {
   const name = e.behavior_name || e.plan_description || 'Exposure'
+  const done = e.status === 'completed'
   let tag = { label: 'Scheduled', bg: 'var(--float-primary-light)', fg: 'var(--float-primary)' }
-  let detail = `${CONFIDENCE_LABEL[e.confidence_level ?? ''] ?? ''}`
-  if (e.status === 'completed') {
-    tag = { label: 'Done', bg: 'var(--float-success-bg)', fg: 'var(--float-success)' }
-    const belief = e.bip_before != null && e.bip_after != null ? `Belief ${Math.round(Number(e.bip_before))}→${Math.round(Number(e.bip_after))}%` : ''
-    const fear = e.distress_thermometer_expected != null && e.distress_thermometer_actual != null ? `Fear ${Math.round(Number(e.distress_thermometer_expected))}→${Math.round(Number(e.distress_thermometer_actual))}` : ''
-    const outcome = e.feared_outcome_occurred == null ? '' : e.feared_outcome_occurred ? 'came true' : "didn't come true ✓"
-    detail = [belief, fear, outcome].filter(Boolean).join(' · ')
-  } else if (e.status === 'too_hard') {
-    tag = { label: 'Too hard', bg: 'var(--float-danger-bg)', fg: 'var(--float-danger)' }
-    detail = 'Marked too hard'
-  } else if (selectedDay < todayKey) {
-    tag = { label: 'Missed', bg: 'var(--float-warning-bg)', fg: 'var(--float-warning)' }
-    detail = 'Was scheduled, nothing recorded'
-  }
+  if (done) tag = { label: 'Completed', bg: 'var(--float-success-bg)', fg: 'var(--float-success)' }
+  else if (e.status === 'too_hard') tag = { label: 'Too hard', bg: 'var(--float-danger-bg)', fg: 'var(--float-danger)' }
+  else if (selectedDay < todayKey) tag = { label: 'Missed', bg: 'var(--float-warning-bg)', fg: 'var(--float-warning)' }
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', border: '1px solid var(--float-border)', borderRadius: 10, marginTop: 8 }}>
-      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 5, padding: '2px 7px', background: tag.bg, color: tag.fg, flexShrink: 0 }}>{tag.label}</span>
-      <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--float-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-      <span style={{ fontSize: 12, color: 'var(--float-text-secondary)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{detail}</span>
+    <div style={{ padding: '12px 13px', border: '1px solid var(--float-border)', borderRadius: 10, marginTop: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 5, padding: '2px 7px', background: tag.bg, color: tag.fg, flexShrink: 0 }}>{tag.label}</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--float-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 12 }}>
+        <Metric label="Fear level" pred={num(e.distress_thermometer_expected)} act={done ? num(e.distress_thermometer_actual) : null} />
+        <Metric label="Belief in prediction" pred={num(e.bip_before)} act={done ? num(e.bip_after) : null} suffix="%" />
+      </div>
+    </div>
+  )
+}
+
+/** Predicted vs actual for one measure. Actual turns green when it dropped below the prediction. */
+function Metric({ label, pred, act, suffix = '' }: { label: string; pred: number | null; act: number | null; suffix?: string }) {
+  const fmt = (n: number | null) => (n == null ? '—' : `${n}${suffix}`)
+  const good = pred != null && act != null && act < pred
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--float-text-hint)' }}>{label}</div>
+      <div style={{ display: 'flex', gap: 18, marginTop: 5 }}>
+        <div>
+          <div style={{ fontSize: 10.5, color: 'var(--float-text-hint)' }}>Predicted</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--float-text)', fontVariantNumeric: 'tabular-nums' }}>{fmt(pred)}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10.5, color: 'var(--float-text-hint)' }}>Actual</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: act == null ? 'var(--float-text-hint)' : good ? 'var(--float-success)' : 'var(--float-text)', fontVariantNumeric: 'tabular-nums' }}>{fmt(act)}</div>
+        </div>
+      </div>
     </div>
   )
 }
