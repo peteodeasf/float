@@ -8,6 +8,7 @@
  */
 import { btn } from '../../../components/ui/buttons'
 import { Button } from '../../../components/ui/primitives'
+import { Switch } from '../../../components/ui/Switch'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -131,24 +132,18 @@ export function FlatLadder({
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          {/* One switch for the whole ladder. Peter, 2026-09-01: "the clinician can still
-              activate or deactivate a ladder, but it's all or nothing." */}
-          <button
-            onClick={() => activeMut.mutate(!ladderActive)}
+          {/* One switch for the whole ladder — a state, not an action, so it's a switch and not a
+              solid button that would compete with Build ladder. Peter, 2026-09-01: "the clinician
+              can still activate or deactivate a ladder, but it's all or nothing." */}
+          <Switch
+            checked={ladderActive}
+            onChange={next => activeMut.mutate(next)}
+            label="Visible to patient"
             // Only turning it ON needs rungs. An empty ladder that is already on still has to be
             // switchable off, or a clinician who clears it is stuck.
             disabled={activeMut.isPending || (!ladderActive && ordered.length === 0)}
             title={!ladderActive && ordered.length === 0 ? 'Add a rung first' : undefined}
-            className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              fontSize: '12px', fontWeight: 700, borderRadius: 'var(--float-radius-pill)', padding: '5px 12px',
-              color: ladderActive ? '#fff' : 'var(--float-text-secondary)',
-              background: ladderActive ? 'var(--float-primary)' : '#fff',
-              border: `1px solid ${ladderActive ? 'var(--float-primary)' : 'var(--float-border-strong)'}`,
-            }}
-          >
-            {ladderActive ? 'Patient can view' : 'Patient cannot view'}
-          </button>
+          />
           {/* The conversation is how a ladder gets built with the child. It hangs off this view. */}
           {onStartConversation && (
             <Button kind="primary" size="sm" onClick={onStartConversation}>
