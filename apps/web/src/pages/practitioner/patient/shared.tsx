@@ -98,7 +98,8 @@ export function ScoreBox({ value, onSet }: { value: number | null; onSet: (n: nu
     if (raw === '') return
     const parsed = Number(raw)
     if (Number.isNaN(parsed)) return
-    const n = clampDt(parsed)
+    // Fear Level is a whole 1–10; a typed decimal rounds (the ladder's score box always did).
+    const n = clampDt(Math.round(parsed))
     if (n != null && n !== value) onSet(n)
   }
 
