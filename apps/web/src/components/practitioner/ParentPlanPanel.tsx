@@ -1,5 +1,5 @@
 import { Button } from '../../components/ui/primitives'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -11,7 +11,7 @@ import {
   type AccommodationState,
 } from '../../api/accommodations'
 import { getPatientInsights, addInsightToPlan, removeInsight, type PatientInsight } from '../../api/treatment'
-import { clampDtInput, ScoreBox } from '../../pages/practitioner/patient/shared'
+import { clampDtInput } from '../../pages/practitioner/patient/shared'
 import { Chrome } from '../../pages/practitioner/sessionKit'
 import ChildRatingSheet from './ChildRatingSheet'
 
@@ -29,6 +29,63 @@ function rangeLabel(lo: number | null | undefined, hi: number | null | undefined
   if (lo == null && hi == null) return null
   if (lo != null && hi != null) return lo === hi ? `${lo}` : `${lo}–${hi}`
   return `${lo ?? hi}`
+}
+
+/** A typed value as a whole 1–10 Fear Level, or null when blank/invalid. */
+function toDt(raw: string): number | null {
+  if (raw.trim() === '') return null
+  const n = Number(raw)
+  if (Number.isNaN(n)) return null
+  return Math.min(10, Math.max(1, Math.round(n)))
+}
+
+/**
+ * A Fear Level range: from–to, both 1–10. The child's distress if the parent stops can depend on
+ * the context, so an accommodation carries a range, not a single number (Peter, 2026-09-21). "to"
+ * is optional — leave it blank for a single value.
+ */
+function RangeInputs({ lo, hi, setLo, setHi, onCommit, commitOnBlur, labelFrom, labelTo }: {
+  lo: string; hi: string
+  setLo: (v: string) => void; setHi: (v: string) => void
+  onCommit?: () => void
+  /** Save on blur (editing a saved row); off for the add form, which commits on Add/Enter only. */
+  commitOnBlur?: boolean
+  labelFrom: string; labelTo: string
+}) {
+  const box: React.CSSProperties = {
+    width: 42, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--float-text)',
+    padding: '5px 4px', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', background: 'var(--float-surface)',
+  }
+  const onBlur = commitOnBlur ? onCommit : undefined
+  const onKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') onCommit?.() }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+      <input type="number" min={1} max={10} value={lo} onChange={e => setLo(clampDtInput(e.target.value))} onBlur={onBlur} onKeyDown={onKey}
+        aria-label={labelFrom} title="Fear Level from, 1–10" placeholder="–" style={box} />
+      <span aria-hidden="true" style={{ color: 'var(--float-text-hint)', fontWeight: 700 }}>–</span>
+      <input type="number" min={1} max={10} value={hi} onChange={e => setHi(clampDtInput(e.target.value))} onBlur={onBlur} onKeyDown={onKey}
+        aria-label={labelTo} title="Fear Level to (optional), 1–10" placeholder="–" style={box} />
+    </span>
+  )
+}
+
+/** The from–to range for one accommodation, saved as soon as a valid "from" is entered. */
+function RangeScore({ min, max, label, onSet }: {
+  min: number | null; max: number | null; label: string
+  onSet: (lo: number, hi: number) => void
+}) {
+  const [lo, setLo] = useState(min == null ? '' : String(min))
+  const [hi, setHi] = useState(max == null ? '' : String(max))
+  useEffect(() => { setLo(min == null ? '' : String(min)); setHi(max == null ? '' : String(max)) }, [min, max])
+  const commit = () => {
+    const l = toDt(lo)
+    if (l == null) return
+    const h = toDt(hi) ?? l
+    const a = Math.min(l, h), b = Math.max(l, h)
+    if (a !== min || b !== max) onSet(a, b)
+  }
+  return <RangeInputs lo={lo} hi={hi} setLo={setLo} setHi={setHi} onCommit={commit} commitOnBlur
+    labelFrom={`Fear Level from for “${label}”`} labelTo={`Fear Level to for “${label}”`} />
 }
 
 /** Easiest to stop first, like the exposure ladder. No Fear Level goes last. */
@@ -133,7 +190,7 @@ export default function ParentPlanPanel({
       {/* Names the number column, lined up over each row's score box. */}
       <div style={{ display: 'flex', gap: 10, marginBottom: -2, paddingRight: editing ? 24 : 130 }}>
         <span style={{ flex: 1 }} />
-        <span style={{ width: 46, textAlign: 'center', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#4d8478', lineHeight: 1.15 }}>Fear Level</span>
+        <span style={{ width: editing ? 104 : 60, textAlign: 'center', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#4d8478', lineHeight: 1.15 }}>Fear Level</span>
       </div>
       {visibleSections.map(sec => (
         <SituationCard
@@ -256,15 +313,21 @@ function AddAccommodationInline({ planId, situationId, onAdded }: {
   onAdded: () => void
 }) {
   const [name, setName] = useState('')
-  const [level, setLevel] = useState('')
-  const valid = name.trim() !== '' && /^([1-9]|10)$/.test(level.trim())
+  const [lo, setLo] = useState('')
+  const [hi, setHi] = useState('')
+  const minVal = toDt(lo)
+  const valid = name.trim() !== '' && minVal != null
 
   const createMut = useMutation({
     mutationFn: () => {
-      const v = Number(level)
-      return createAccommodation(planId, { name: name.trim(), trigger_situation_id: situationId, distress_min: v, distress_max: v })
+      const l = minVal!
+      const h = toDt(hi) ?? l
+      return createAccommodation(planId, {
+        name: name.trim(), trigger_situation_id: situationId,
+        distress_min: Math.min(l, h), distress_max: Math.max(l, h),
+      })
     },
-    onSuccess: () => { setName(''); setLevel(''); onAdded() },
+    onSuccess: () => { setName(''); setLo(''); setHi(''); onAdded() },
   })
 
   const fieldStyle: React.CSSProperties = {
@@ -278,10 +341,9 @@ function AddAccommodationInline({ planId, situationId, onAdded }: {
         onKeyDown={e => { if (e.key === 'Enter' && valid) createMut.mutate() }}
         placeholder="e.g. lies down with them at bedtime"
         style={{ ...fieldStyle, flex: 1, minWidth: 0 }} />
-      <input type="number" min={1} max={10} value={level} onChange={e => setLevel(clampDtInput(e.target.value))}
-        onKeyDown={e => { if (e.key === 'Enter' && valid) createMut.mutate() }}
-        title="How hard it would be for the child if the parent stopped, 1–10"
-        placeholder="1–10" style={{ ...fieldStyle, width: 62, flexShrink: 0, textAlign: 'center', fontWeight: 700 }} />
+      <RangeInputs lo={lo} hi={hi} setLo={setLo} setHi={setHi}
+        onCommit={() => { if (valid) createMut.mutate() }}
+        labelFrom="New accommodation Fear Level from" labelTo="New accommodation Fear Level to" />
       <Button kind="primary" size="sm" onClick={() => createMut.mutate()} disabled={!valid || createMut.isPending} style={{ flexShrink: 0 }}>
         Add
       </Button>
@@ -403,11 +465,11 @@ function AccommodationRow({ accommodation: a, editing, onSave, onDelete }: {
       <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
 
       {editing ? (
-        <ScoreBox value={a.distress_min ?? a.distress_max ?? null}
-          onSet={n => onSave({ distress_min: n, distress_max: n })} />
+        <RangeScore min={a.distress_min ?? null} max={a.distress_max ?? null} label={a.name}
+          onSet={(loN, hiN) => onSave({ distress_min: loN, distress_max: hiN })} />
       ) : (
-        <span title="Child's Fear Level if the parent stops"
-          style={{ flexShrink: 0, width: 46, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', borderRadius: 'var(--float-radius-pill)', padding: '3px 0' }}>
+        <span title="Child's Fear Level if the parent stops — a range, since it depends on the context"
+          style={{ flexShrink: 0, minWidth: 48, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--float-primary-text)', background: 'var(--float-primary-light)', borderRadius: 'var(--float-radius-pill)', padding: '3px 12px', whiteSpace: 'nowrap' }}>
           {score}
         </span>
       )}

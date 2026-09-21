@@ -92,3 +92,11 @@ Decisions (confirmed with Peter):
 
 Clinical note (Dr. Walker queue): accommodation capture changed — dropped "do they still do this",
 therapist sets the 1–10 difficulty directly. Pre-launch, Peter's call.
+
+## 2026-09-21 — accommodations carry a Fear Level range again
+
+Peter: the child's distress if the parent stops depends on the context, so an accommodation should
+carry a **range** (from–to), not a single number. Restored: add and edit use two 1–10 inputs
+("from" required, "to" optional; blank "to" means a single value). Stored as `distress_min`/
+`distress_max`. The exposure ladder's rungs stay single-value (the shared `ScoreBox`); only the
+accommodation panel uses the range control. Score cells widened so "5–9" shows clearly.

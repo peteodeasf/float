@@ -79,25 +79,28 @@ describe('the parent plan', () => {
     expect(screen.getByRole('button', { name: '▸ Build plan' })).toBeInTheDocument()
   })
 
-  it('adds an accommodation under its situation with a required 1–10 difficulty', async () => {
+  it('adds an accommodation with a required Fear Level range under its situation', async () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: '▸ Build plan' }))
     fireEvent.change(screen.getByPlaceholderText('e.g. lies down with them at bedtime'),
       { target: { value: 'Stays in the room until asleep' } })
-    // Difficulty is required — Add stays disabled until a 1–10 is entered.
+    // "From" is required — Add stays disabled until it's set.
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
-    fireEvent.change(screen.getByPlaceholderText('1–10'), { target: { value: '6' } })
+    fireEvent.change(screen.getByLabelText('New accommodation Fear Level from'), { target: { value: '6' } })
+    fireEvent.change(screen.getByLabelText('New accommodation Fear Level to'), { target: { value: '9' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
     await waitFor(() => expect(api.createAccommodation).toHaveBeenCalledWith('plan1', {
-      name: 'Stays in the room until asleep', trigger_situation_id: 's1', distress_min: 6, distress_max: 6,
+      name: 'Stays in the room until asleep', trigger_situation_id: 's1', distress_min: 6, distress_max: 9,
     }))
   })
 
-  it('while building, the Fear Level can be changed in the score box', async () => {
+  it('while building, an accommodation can be given a Fear Level range', async () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: '▸ Build plan' }))
-    // a1 (bedtime) starts at 7; typing a new value saves it as a single-value range.
-    fireEvent.change(screen.getByDisplayValue('7'), { target: { value: '5' } })
-    await waitFor(() => expect(api.updateAccommodation).toHaveBeenCalledWith('plan1', 'a1', { distress_min: 5, distress_max: 5 }))
+    // a1 (bedtime) starts at 7–7; widening "to" to 9 saves the range.
+    const to = screen.getByLabelText('Fear Level to for “Lies down with them at bedtime”')
+    fireEvent.change(to, { target: { value: '9' } })
+    fireEvent.blur(to)
+    await waitFor(() => expect(api.updateAccommodation).toHaveBeenCalledWith('plan1', 'a1', { distress_min: 7, distress_max: 9 }))
   })
 })
