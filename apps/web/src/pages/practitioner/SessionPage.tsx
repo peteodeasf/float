@@ -28,8 +28,8 @@
  * starting the next. Batching all the naming then all the scoring reads as a form, not a
  * conversation, and was the thing that made the previous version feel like a wall.
  */
-import { useState, useEffect } from 'react'
-import { BEHAVIOR_TYPE_SCENARIO, clampDtInput } from './patient/shared'
+import { useState } from 'react'
+import { BEHAVIOR_TYPE_SCENARIO, ScoreBox } from './patient/shared'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -51,7 +51,7 @@ import {
   type TriggerSituation,
 } from '../../api/treatment'
 import {
-  clampDt, dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink, Chrome,
+  dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink, Chrome,
 } from './sessionKit'
 import { Button } from '../../components/ui/primitives'
 
@@ -688,38 +688,3 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
   )
 }
 
-/**
- * The thermometer score, typed right beside the thing it belongs to.
- *
- * Peter, 2026-09-05: "enter the fear rating right beside the sub-situation. It's not a separate
- * screen for the fear rating." So no tap-to-open scale — a box you type into, and it saves as soon
- * as the number is a number.
- */
-function ScoreBox({ value, onSet }: { value: number | null; onSet: (n: number) => void }) {
-  const [draft, setDraft] = useState(value == null ? '' : String(value))
-
-  // Follow the stored value when it changes underneath (another row saved, a refetch landed).
-  useEffect(() => { setDraft(value == null ? '' : String(value)) }, [value])
-
-  const commit = (raw: string) => {
-    setDraft(raw)
-    if (raw === '') return
-    const parsed = Number(raw)
-    if (Number.isNaN(parsed)) return
-    const n = clampDt(parsed)
-    if (n !== value) onSet(n)
-  }
-
-  return (
-    <input
-      type="number"
-      min={1}
-      max={10}
-      value={draft}
-      onChange={e => commit(clampDtInput(e.target.value))}
-      placeholder="–"
-      title="Fear Level, 1–10"
-      style={{ width: 46, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--float-text)', padding: '5px 4px', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', background: 'var(--float-surface)' }}
-    />
-  )
-}

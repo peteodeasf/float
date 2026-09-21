@@ -1,5 +1,5 @@
 import { Button } from '../../components/ui/primitives'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -11,7 +11,7 @@ import {
   type AccommodationState,
 } from '../../api/accommodations'
 import { getPatientInsights, addInsightToPlan, removeInsight, type PatientInsight } from '../../api/treatment'
-import { clampDt, clampDtInput } from '../../pages/practitioner/patient/shared'
+import { clampDtInput, ScoreBox } from '../../pages/practitioner/patient/shared'
 import { Chrome } from '../../pages/practitioner/sessionKit'
 import ChildRatingSheet from './ChildRatingSheet'
 
@@ -90,15 +90,15 @@ export default function ParentPlanPanel({
   const finish = () => { setEditing(false); setFullScreen(false) }
 
   const known = useMemo(() => new Set(triggers.map(t => t.id)), [triggers])
+  // A suggestion with no plan situation (or one no longer on the plan) belongs to "Other".
+  const isOrphan = (s: PatientInsight) => !s.situation_id || !known.has(s.situation_id)
   const suggFor = (sid: string | null) =>
-    sid == null
-      ? allSuggestions.filter(s => !s.situation_id || !known.has(s.situation_id))
-      : allSuggestions.filter(s => s.situation_id === sid)
+    sid == null ? allSuggestions.filter(isOrphan) : allSuggestions.filter(s => s.situation_id === sid)
   const sections = useMemo(() => {
     const groups: { id: string | null; name: string; items: Accommodation[] }[] =
       triggers.map(t => ({ id: t.id, name: t.name, items: ordered.filter(a => a.trigger_situation_id === t.id) }))
     const orphanItems = ordered.filter(a => !a.trigger_situation_id || !known.has(a.trigger_situation_id))
-    const orphanSugg = allSuggestions.filter(s => !s.situation_id || !known.has(s.situation_id))
+    const orphanSugg = allSuggestions.filter(isOrphan)
     if (orphanItems.length || orphanSugg.length) groups.push({ id: null, name: 'Other', items: orphanItems })
     return groups
   }, [ordered, triggers, known, allSuggestions])
@@ -215,8 +215,10 @@ export default function ParentPlanPanel({
         document.body,
       )}
 
+      {/* When the full-screen editor is open it holds the live editor; don't mount a second copy
+          underneath (it would keep its own input state). */}
       <div style={{ padding: '16px 20px 20px' }}>
-        {editing ? editor : body}
+        {fullScreen ? null : editing ? editor : body}
       </div>
     </div>
   )
@@ -332,25 +334,6 @@ function SituationSuggestions({ patientId, items, onAdded }: {
         })}
       </div>
     </div>
-  )
-}
-
-/** The Fear Level box, typed right beside the accommodation — the ladder's ScoreBox. */
-function ScoreBox({ value, onSet }: { value: number | null; onSet: (n: number) => void }) {
-  const [draft, setDraft] = useState(value == null ? '' : String(value))
-  useEffect(() => { setDraft(value == null ? '' : String(value)) }, [value])
-  const commit = (raw: string) => {
-    setDraft(raw)
-    if (raw === '') return
-    const parsed = Number(raw)
-    if (Number.isNaN(parsed)) return
-    const n = clampDt(parsed)
-    if (n != null && n !== value) onSet(n)
-  }
-  return (
-    <input type="number" min={1} max={10} value={draft} onChange={e => commit(clampDtInput(e.target.value))}
-      placeholder="–" title="Fear Level, 1–10"
-      style={{ width: 46, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--float-text)', padding: '5px 4px', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', background: 'var(--float-surface)' }} />
   )
 }
 

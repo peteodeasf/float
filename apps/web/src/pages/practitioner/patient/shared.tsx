@@ -5,6 +5,8 @@
  * (or two agents) editing it collide on nearly every change. Behaviour is unchanged; this is a
  * move, not a rewrite.
  */
+import { useEffect, useState } from 'react'
+
 // Sub-behaviours ("+ step" under a ladder rung) are hidden pending a decision on sub-SITUATIONS,
 // which is what Dr. Walker's method actually calls for — a sub-situation is a smaller trigger
 // situation with its own distress rating, not a smaller behaviour. Existing sub-behaviour rows
@@ -80,3 +82,32 @@ export const CONFIDENCE_OPTIONS: { key: string; label: string; emoji: string }[]
   { key: 'medium', label: 'Medium', emoji: '\u{1F610}' },
   { key: 'high', label: 'High', emoji: '\u{1F4AA}' },
 ]
+
+/**
+ * The Fear Level score box — a number you type right beside the thing it belongs to (no separate
+ * scale screen). Shared by the exposure ladder builder, the flat ladder and the parent
+ * accommodation plan so the one control can't drift between them.
+ */
+export function ScoreBox({ value, onSet }: { value: number | null; onSet: (n: number) => void }) {
+  const [draft, setDraft] = useState(value == null ? '' : String(value))
+  // Follow the stored value when it changes underneath (another row saved, a refetch landed).
+  useEffect(() => { setDraft(value == null ? '' : String(value)) }, [value])
+
+  const commit = (raw: string) => {
+    setDraft(raw)
+    if (raw === '') return
+    const parsed = Number(raw)
+    if (Number.isNaN(parsed)) return
+    const n = clampDt(parsed)
+    if (n != null && n !== value) onSet(n)
+  }
+
+  return (
+    <input
+      type="number" min={DT_MIN} max={DT_MAX} value={draft}
+      onChange={e => commit(clampDtInput(e.target.value))}
+      placeholder="–" title="Fear Level, 1–10"
+      style={{ width: 46, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--float-text)', padding: '5px 4px', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', background: 'var(--float-surface)' }}
+    />
+  )
+}
