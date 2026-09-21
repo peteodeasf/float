@@ -173,6 +173,17 @@ async def get_me(
     # An office manager also signs in to the clinician app, but only reaches the practice screens.
     is_practice_manager = any(r.role == "practice_manager" for r in roles)
 
+    # The organization (institution) the clinician belongs to, shown in the portal's top bar.
+    # Prefer the practitioner/admin/manager role's org; fall back to any role's.
+    org_role = next((r for r in roles if r.role in ("practitioner", "admin", "practice_manager")), None) \
+        or (roles[0] if roles else None)
+    organization_name = None
+    if org_role is not None:
+        from app.models.organization import Organization
+        organization_name = (await db.execute(
+            select(Organization.name).where(Organization.id == org_role.organization_id)
+        )).scalar_one_or_none()
+
     # Parents link to their child(ren) via parent_patient_links, not user_id.
     # MVP is single-child, but the model returns all links.
     children: list[dict] = []
@@ -205,6 +216,7 @@ async def get_me(
         "is_parent": role == "parent",
         "is_practitioner": is_practitioner,
         "is_practice_manager": is_practice_manager,
+        "organization_name": organization_name,
         # Whether the clinician app should send them to the setup screens first.
         "setup_complete": current_user.setup_completed_at is not None,
         "children": children,

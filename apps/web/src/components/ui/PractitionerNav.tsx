@@ -29,7 +29,7 @@ const navLinks: { label: string; page: ActivePage; path: string; enabled: boolea
 
 export default function PractitionerNav({ activePage, subHeader }: PractitionerNavProps) {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, organizationName } = useAuth()
 
   return (
     <>
@@ -80,15 +80,25 @@ export default function PractitionerNav({ activePage, subHeader }: PractitionerN
             })}
           </div>
         </div>
-        <button
-          onClick={() => { logout(); navigate('/login') }}
-          className="text-sm transition-colors cursor-pointer bg-transparent border-none"
-          style={{ color: 'var(--float-text-secondary)' }}
-          onMouseOver={(e) => { e.currentTarget.style.color = 'var(--float-primary)' }}
-          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--float-text-secondary)' }}
-        >
-          Sign out
-        </button>
+        <div className="flex items-center">
+          {organizationName && (
+            <>
+              <span className="text-sm font-medium" style={{ color: 'var(--float-text)' }}>
+                {organizationName}
+              </span>
+              <span className="mx-4 h-5 w-px" style={{ background: 'var(--float-border)' }} />
+            </>
+          )}
+          <button
+            onClick={() => { logout(); navigate('/login') }}
+            className="text-sm transition-colors cursor-pointer bg-transparent border-none"
+            style={{ color: 'var(--float-text-secondary)' }}
+            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--float-primary)' }}
+            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--float-text-secondary)' }}
+          >
+            Sign out
+          </button>
+        </div>
       </nav>
 
       {/* Sub-header — page context, shown on detail pages */}

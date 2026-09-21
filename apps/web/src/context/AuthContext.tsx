@@ -13,6 +13,8 @@ interface AuthContextType {
   setupComplete: boolean
   /** An office manager: signs in here but only uses the practice screens. */
   isPracticeManager: boolean
+  /** The clinician's organization (institution) name, shown in the top bar. */
+  organizationName: string | null
   /** Re-read the account after finishing setup. */
   refreshAccount: () => Promise<void>
 }
@@ -30,6 +32,7 @@ interface Account {
   is_practitioner: boolean
   is_practice_manager?: boolean
   setup_complete?: boolean
+  organization_name?: string | null
 }
 
 const belongsHere = (a: Account) => !!a.is_practitioner || !!a.is_practice_manager
@@ -57,10 +60,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Assumed done until the server says otherwise, so an offline start does not strand anyone.
   const [setupComplete, setSetupComplete] = useState(true)
   const [isPracticeManager, setIsPracticeManager] = useState(false)
+  const [organizationName, setOrganizationName] = useState<string | null>(null)
 
   const applyAccount = (a: Account) => {
     setSetupComplete(a.setup_complete !== false)
     setIsPracticeManager(!!a.is_practice_manager)
+    setOrganizationName(a.organization_name ?? null)
   }
 
   useEffect(() => {
@@ -97,13 +102,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     clearTokens()
     setIsAuthenticated(false)
+    setOrganizationName(null)
   }
 
   const refreshAccount = async () => applyAccount(await savedAccount())
 
   return (
     <AuthContext.Provider value={{
-      isAuthenticated, login, logout, isLoading, setupComplete, isPracticeManager, refreshAccount,
+      isAuthenticated, login, logout, isLoading, setupComplete, isPracticeManager, organizationName, refreshAccount,
     }}>
       {children}
     </AuthContext.Provider>
