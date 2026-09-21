@@ -299,14 +299,11 @@ function formatMsgTime(iso: string | null | undefined): string {
 // ── Consultation checklists (Steps 3 & 4) ──
 // Definitions live in ../../lib/checklists so the patient list page can share them.
 
-// Stage 1 parent keys — preserved explicitly so the Step 3 completion logic is unchanged
-// by the parent checklist being flattened into a single group.
+// The checklist keys that mean the parent's first meeting is done — the setup "Step 3" heuristic
+// (it also completes when a parent session note exists). Updated 2026-09-21 to the shorter draft
+// checklist's keys; the old long-list keys are gone.
 const STAGE1_PARENT_KEYS = [
-  'parent_review_monitoring',
-  'parent_trigger_list',
-  'parent_behaviors',
-  'parent_responses',
-  'parent_feared_outcome',
+  'parent_first_meeting',
 ]
 
 function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, onNavigate }: {
