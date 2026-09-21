@@ -83,7 +83,7 @@ export default function PractitionerNav({ activePage, subHeader }: PractitionerN
         <div className="flex items-center">
           {organizationName && (
             <>
-              <span className="text-sm font-medium" style={{ color: 'var(--float-text)' }}>
+              <span className="text-sm font-semibold" style={{ color: 'var(--float-primary)' }}>
                 {organizationName}
               </span>
               <span className="mx-4 h-5 w-px" style={{ background: 'var(--float-border)' }} />
