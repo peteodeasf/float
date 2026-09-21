@@ -124,62 +124,6 @@ function clampDtInput(raw: string): string {
   return raw
 }
 
-type SessionPrepType = 'session_1' | 'session_2' | 'session_3' | 'weekly'
-
-const SESSION_PREP_CONTENT: Record<SessionPrepType, { header: string; steps: string[] }> = {
-  session_1: {
-    header: 'STEP GUIDE — SESSION 1: Parent Consultation',
-    steps: [
-      'Review the monitoring form data before the session — identify the most frequent trigger situations',
-      "Build the trigger situation list with DT ratings from the parent's observations",
-      'Identify avoidance and safety behaviors (SABs) and rituals for each situation',
-      "Explore parental accommodation behaviors — what does the parent do to reduce the child's distress?",
-      'Introduce the CBT model — what anxiety is and why avoidance and accommodation maintain it',
-      'Introduce the concept of exposures — what they are and why they work',
-      'Agree on the anxiety nickname with the parent before Session 2',
-      'Ask the parent: "Do you have a sense of what [child\'s name] fears would happen in that situation?" — capture their response in your session notes',
-    ],
-  },
-  session_2: {
-    header: 'STEP GUIDE — SESSION 2: Patient Consultation',
-    steps: [
-      'Allow up to 5 minutes for rapport — school, friends, favourite things. Keep it brief.',
-      'Ask the child what they want help with — use discovery questions from the step guide',
-      'Review trigger situations with the child — confirm the list, ask if anything has changed',
-      'Introduce the Distress Thermometer — practice rating 2-3 situations together',
-      'Introduce the Worry Thermometer nickname — suggest examples, let the child choose',
-      'Identify SABs and rituals with the child for each trigger situation',
-      'Brief the parent at the end — summarise what was covered and agree on next steps',
-    ],
-  },
-  session_3: {
-    header: 'STEP GUIDE — SESSION 3: Worry Hill & Exposure Ladder',
-    steps: [
-      'Check in on nickname and Distress Thermometer use since last session',
-      'Watch the Worry Hill video with the child together',
-      'Draw the Worry Hill — explain the stop sign at the top (SABs) and anxiety jail',
-      'Teach the Candy Jar analogy — red candies (fear memories) vs green candies (safe experiences)',
-      'Build the exposure ladder — start with the trigger situation with the lowest DT',
-      'For each SAB in that situation, ask the child: "What would your DT be without doing this?"',
-      'Aim for a ladder with a nice range from low DT (2-4) to high (8-10)',
-      'Practice the first exposure in session 3-6 times — record DT each time',
-      'Assess confidence before sending child home with the first experiment: High / Medium / Low',
-      'Only proceed if confidence is High — if not, break the exposure into smaller steps',
-    ],
-  },
-  weekly: {
-    header: 'STEP GUIDE — WEEKLY SESSION',
-    steps: [
-      'Check in on nickname use — "Out of 10 times you felt [nickname], how many times did you use it?"',
-      'Review experiment results — check BIP and DT trends since last session',
-      'Note any overdue or incomplete experiments before the session',
-      'Review the last action plan — what was agreed last time? How did it go?',
-      'New experiments for this week — confirm child confidence is High before finalising',
-      'Write and publish the new action plan before the child leaves',
-      'Bring parent in for the last 5-10 minutes to review the plan together',
-    ],
-  },
-}
 
 function InlineMonitoringReport({ patientId, onClose, embedded }: { patientId: string; onClose?: () => void; embedded?: boolean }) {
   const { data: report, isLoading } = useQuery({
@@ -527,7 +471,6 @@ export default function PatientPage() {
   const [sessionTagFilter, setSessionTagFilter] = useState<string | null>(null)
   const [showClinicianAccess, setShowClinicianAccess] = useState(false)
   const [processPanelOpen, setProcessPanelOpen] = useState(false)
-  const [processTab, setProcessTab] = useState<'checklist' | 'tips'>('checklist')
   // The ⋯ menu in the header holds the rare actions (Edit profile, Close treatment).
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const moreMenuRef = useRef<HTMLDivElement>(null)
@@ -2061,43 +2004,14 @@ export default function PatientPage() {
             {activeTab === 'chat' && messagesContent}
           </div>
 
-          {/* Process panel — checklist + tips, available on every tab */}
+          {/* Checklist panel, available on every tab */}
           {processPanelOpen && (
             <div style={{ width: '340px', flexShrink: 0, position: 'sticky', top: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {([{ id: 'checklist', label: 'Checklist' }, { id: 'tips', label: 'Tips' }] as const).map(pt => {
-                    const on = processTab === pt.id
-                    return (
-                      <button
-                        key={pt.id}
-                        onClick={() => setProcessTab(pt.id)}
-                        style={chip(on, 'sm')}
-                      >{pt.label}</button>
-                    )
-                  })}
-                </div>
-                <button onClick={() => setProcessPanelOpen(false)} aria-label="Close process panel" style={iconBtn('sm')}>×</button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                <button onClick={() => setProcessPanelOpen(false)} aria-label="Close checklist panel" style={iconBtn('sm')}>×</button>
               </div>
-
-              {processTab === 'checklist' && patientId && (
-                <>
-                  <ConsultationChecklist patientId={patientId} title="Checklist" collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
-                </>
-              )}
-
-              {processTab === 'tips' && (
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Session tips</div>
-                  {(Object.keys(SESSION_PREP_CONTENT) as SessionPrepType[]).map(k => (
-                    <div key={k} style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text)', marginBottom: '6px' }}>{SESSION_PREP_CONTENT[k].header}</div>
-                      <ul style={{ margin: 0, paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {SESSION_PREP_CONTENT[k].steps.map((s, i) => <li key={i} style={{ fontSize: '12px', color: 'var(--float-text-secondary)', lineHeight: 1.4 }}>{s}</li>)}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+              {patientId && (
+                <ConsultationChecklist patientId={patientId} title="Checklist" collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
               )}
             </div>
           )}
