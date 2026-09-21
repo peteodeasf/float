@@ -48,7 +48,7 @@ describe('the parent plan', () => {
     expect(rowNames()).toEqual(["Answers for them at the doctor's", 'Lies down with them at bedtime', 'Texts them every hour at a sleepover'])
     expect(screen.getByText('Working on it')).toBeInTheDocument()
     expect(screen.getByText('School mornings')).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Add an accommodation the parent does here…')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('e.g. lies down with them at bedtime')).not.toBeInTheDocument()
     expect(screen.queryByText('From monitoring — tap to add')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Ask the parent' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Remove/ })).not.toBeInTheDocument()
@@ -73,7 +73,7 @@ describe('the parent plan', () => {
     // Suggestions (per situation) and the inline add show without a further click.
     expect(screen.getByText('From monitoring — tap to add')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Leaves the hall light on/ })).toHaveTextContent('from the parent’s app')
-    expect(screen.getByPlaceholderText('Add an accommodation the parent does here…')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('e.g. lies down with them at bedtime')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Save plan →' }))
     expect(screen.getByRole('button', { name: '▸ Build plan' })).toBeInTheDocument()
@@ -82,7 +82,7 @@ describe('the parent plan', () => {
   it('adds an accommodation under its situation with a required 1–10 difficulty', async () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: '▸ Build plan' }))
-    fireEvent.change(screen.getByPlaceholderText('Add an accommodation the parent does here…'),
+    fireEvent.change(screen.getByPlaceholderText('e.g. lies down with them at bedtime'),
       { target: { value: 'Stays in the room until asleep' } })
     // Difficulty is required — Add stays disabled until a 1–10 is entered.
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
@@ -93,13 +93,11 @@ describe('the parent plan', () => {
     }))
   })
 
-  it('while building, the Fear Level can be changed', async () => {
+  it('while building, the Fear Level can be changed in the score box', async () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: '▸ Build plan' }))
-    fireEvent.click(screen.getByRole('button', { name: '7' }))
-    const box = screen.getByLabelText('Fear Level for “Lies down with them at bedtime”')
-    fireEvent.change(box, { target: { value: '6-8' } })
-    fireEvent.keyDown(box, { key: 'Enter' })
-    await waitFor(() => expect(api.updateAccommodation).toHaveBeenCalledWith('plan1', 'a1', { distress_min: 6, distress_max: 8 }))
+    // a1 (bedtime) starts at 7; typing a new value saves it as a single-value range.
+    fireEvent.change(screen.getByDisplayValue('7'), { target: { value: '5' } })
+    await waitFor(() => expect(api.updateAccommodation).toHaveBeenCalledWith('plan1', 'a1', { distress_min: 5, distress_max: 5 }))
   })
 })
