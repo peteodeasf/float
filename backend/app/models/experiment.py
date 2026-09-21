@@ -267,3 +267,33 @@ class ParentExperiment(Base):
         DateTime(timezone=True), server_default=text("now()")
     )
 
+
+class AccommodationNote(Base):
+    """A parent's free-text "how did it go?" note about one accommodation. Tied to the accommodation
+    (and, through it, to the situation), so it's clear what it's about. The clinician reads it as a
+    coaching signal. Replaces the structured parent experiments.
+    docs/plans/parent-app-around-childs-work.md"""
+
+    __tablename__ = "accommodation_notes"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
+    treatment_plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("treatment_plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    accommodation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("accommodation_behaviors.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # Who wrote it, or null when a clinician typed it in a parent session (matches ParentExperiment).
+    parent_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False
+    )
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+

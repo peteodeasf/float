@@ -4,8 +4,10 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
+
 from app.core.database import get_db
-from app.models.experiment import AccommodationBehavior
+from app.models.experiment import AccommodationBehavior, AccommodationNote
 from app.services.patient_access_service import assert_belongs_to
 from app.models.treatment import TreatmentPlan
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan
@@ -24,6 +26,7 @@ from app.schemas.accommodation import (
     AccommodationCreate,
     AccommodationUpdate,
     AccommodationResponse,
+    AccommodationNoteResponse,
     ChildRatingIn,
     ReorderRequest,
 )
@@ -42,6 +45,23 @@ async def list_accommodations(
 ):
     _, practitioner = context
     return await get_accommodations_for_plan(db, plan_id, practitioner.organization_id)
+
+
+@router.get("/notes", response_model=list[AccommodationNoteResponse])
+async def list_accommodation_notes(
+    plan_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    """Every parent "how did it go?" note on this plan, newest first, so the clinician can show the
+    latest under each accommodation."""
+    rows = (await db.execute(
+        select(AccommodationNote)
+        .where(AccommodationNote.treatment_plan_id == plan_id)
+        .order_by(AccommodationNote.created_at.desc())
+    )).scalars().all()
+    return rows
 
 
 @router.get("/checkins")

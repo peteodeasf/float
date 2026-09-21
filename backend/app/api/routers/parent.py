@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.patient import PatientProfile, PractitionerProfile
 from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
-from app.models.experiment import Experiment, AccommodationBehavior, AccommodationCheckin
+from app.models.experiment import Experiment, AccommodationBehavior, AccommodationCheckin, AccommodationNote
 from app.models.message import Message
 from app.models.jit_content import JitTip, JitTipTag, TriggerSituationTag
 from app.api.routers.patients import get_parent_context, step_status
@@ -27,7 +27,10 @@ from app.services.parent_experiment_service import list_for_plan, record, set_up
 from app.schemas.parent_experiment import ParentExperimentAfter, ParentExperimentCreate
 from app.core.behavior_types import LADDER_TYPES
 from app.services.accommodation_service import get_accommodations_for_plan
-from app.schemas.accommodation import ParentAccommodationResponse, SuggestionCreate, SuggestionUpdate
+from app.schemas.accommodation import (
+    ParentAccommodationResponse, SuggestionCreate, SuggestionUpdate,
+    AccommodationNoteIn, AccommodationNoteResponse,
+)
 
 parent_router = APIRouter(prefix="/parent", tags=["parent"])
 
@@ -224,11 +227,73 @@ async def parent_accommodations(
     out = []
     for a in rows:
         r = ParentAccommodationResponse.model_validate(a)
+        # The accommodation's Fear Level range, shown to the parent to rank accommodations under
+        # each of the child's exposures (Peter, 2026-09-21).
+        r.fear_min = float(a.distress_min) if a.distress_min is not None else None
+        r.fear_max = float(a.distress_max) if a.distress_max is not None else None
         if show and a.child_rated_at is not None:
             r.child_rating_min = float(a.distress_min) if a.distress_min is not None else None
             r.child_rating_max = float(a.distress_max) if a.distress_max is not None else None
         out.append(r)
     return out
+
+
+async def _accommodation_on_child_plan(db, child, accommodation_id) -> AccommodationBehavior:
+    """The accommodation, only if it belongs to this child's active plan. 404 otherwise, so a parent
+    can't reach another family's accommodation by id."""
+    plan = await _child_plan(db, child)
+    if not plan:
+        raise HTTPException(status_code=404, detail="No plan")
+    acc = (await db.execute(
+        select(AccommodationBehavior).where(
+            AccommodationBehavior.id == accommodation_id,
+            AccommodationBehavior.treatment_plan_id == plan.id,
+        )
+    )).scalar_one_or_none()
+    if acc is None:
+        raise HTTPException(status_code=404, detail="Accommodation not found")
+    return acc
+
+
+@parent_router.get("/accommodations/{accommodation_id}/notes", response_model=list[AccommodationNoteResponse])
+async def list_accommodation_notes(
+    accommodation_id: uuid.UUID,
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The parent's "how did it go?" notes on one accommodation, newest first."""
+    _, children = context
+    acc = await _accommodation_on_child_plan(db, _first_child(children), accommodation_id)
+    rows = (await db.execute(
+        select(AccommodationNote)
+        .where(AccommodationNote.accommodation_id == acc.id)
+        .order_by(AccommodationNote.created_at.desc())
+    )).scalars().all()
+    return rows
+
+
+@parent_router.post("/accommodations/{accommodation_id}/notes", response_model=AccommodationNoteResponse, status_code=status.HTTP_201_CREATED)
+async def create_accommodation_note(
+    accommodation_id: uuid.UUID,
+    data: AccommodationNoteIn,
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """A parent writes how an accommodation went. The clinician sees it as a coaching signal."""
+    user, children = context
+    child = _first_child(children)
+    acc = await _accommodation_on_child_plan(db, child, accommodation_id)
+    note = AccommodationNote(
+        treatment_plan_id=acc.treatment_plan_id,
+        accommodation_id=acc.id,
+        parent_user_id=user.id,
+        organization_id=child.organization_id,
+        body=data.body.strip(),
+    )
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+    return note
 
 
 # ── Situational tips (parent audience) ───────────────────────────────────────

@@ -4,30 +4,35 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 
 // No parent can be signed in here, so their identity is stubbed, every query is seeded, and the
-// save is recorded rather than sent.
+// note save is recorded rather than sent.
 vi.mock('../../context/ParentAuthContext', () => ({ useParentAuth: () => ({ logout: vi.fn() }) }))
-const api = vi.hoisted(() => ({ saveCheckin: vi.fn() }))
+const api = vi.hoisted(() => ({ createAccommodationNote: vi.fn() }))
 vi.mock('../../api/parent', async importOriginal => ({
   ...(await importOriginal<typeof import('../../api/parent')>()),
-  saveCheckin: api.saveCheckin,
+  createAccommodationNote: api.createAccommodationNote,
 }))
 
 import ParentHomePage from './ParentHomePage'
-import { weekStartOf } from '../../lib/checkin'
 
-const FOCUS = {
-  id: 'a1', name: 'Lies down with them at bedtime', description: null, trigger_situation_id: null,
-  distress_min: 6, distress_max: 6, display_order: 0, status: 'started',
+const EXPOSURE = {
+  id: 'e1', situation_id: 's1', situation_name: 'Attending social events with peers',
+  behavior_name: 'Stand at the edge of a group of peers', scheduled_date: '2026-09-25T15:00:00Z',
+  scheduled_time_bucket: 'afternoon', status: 'committed',
 }
+const ACCS = [
+  { id: 'a1', name: "I tell him he doesn't have to go", trigger_situation_id: 's1', fear_min: 6, fear_max: 8, status: 'started', display_order: 0 },
+  { id: 'a2', name: 'I stay right next to him', trigger_situation_id: 's1', fear_min: 4, fear_max: 6, status: 'not_started', display_order: 1 },
+  { id: 'a3', name: 'Something in another situation', trigger_situation_id: 's2', fear_min: 3, fear_max: 3, status: 'not_started', display_order: 0 },
+]
 
-function open(checkins: unknown[] = [], experiments: unknown[] = [], accommodations: unknown[] = [FOCUS]) {
+function open({ shared = true, exposures = [EXPOSURE], accommodations = ACCS }: {
+  shared?: boolean; exposures?: unknown[]; accommodations?: unknown[]
+} = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
-  qc.setQueryData(['parent-me'], { patient_name: 'Sam Child' })
-  qc.setQueryData(['parent-upcoming'], [])
-  qc.setQueryData(['parent-progress'], { shared: false })
+  qc.setQueryData(['parent-me'], { patient_name: 'Leo Bennett' })
+  qc.setQueryData(['parent-upcoming'], exposures)
+  qc.setQueryData(['parent-progress'], { shared })
   qc.setQueryData(['parent-accommodations'], accommodations)
-  qc.setQueryData(['parent-checkins'], checkins)
-  qc.setQueryData(['parent-experiments'], experiments)
   render(
     <QueryClientProvider client={qc}>
       <MemoryRouter><ParentHomePage /></MemoryRouter>
@@ -36,84 +41,44 @@ function open(checkins: unknown[] = [], experiments: unknown[] = [], accommodati
 }
 
 beforeEach(() => {
-  api.saveCheckin.mockReset().mockResolvedValue({})
+  api.createAccommodationNote.mockReset().mockResolvedValue({})
 })
 
-describe("the parent's weekly check-in", () => {
-  it('asks once a week, with three answers of equal weight, and no per-moment buttons', () => {
+describe('the parent home, reoriented around the child', () => {
+  it("shows the child's exposure with its situation's accommodations, hardest first", () => {
     open()
-    expect(screen.getByText('This week, did you hold the line?')).toBeInTheDocument()
-    for (const label of ['Every time', 'Mostly', 'I gave in']) {
-      expect(screen.getByRole('button', { name: label })).toHaveClass('teen-btn--outline')
-    }
-    expect(screen.queryByRole('button', { name: 'I held the line' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Did it just come up?')).not.toBeInTheDocument()
+    expect(screen.getByText('Stand at the edge of a group of peers')).toBeInTheDocument()
+    expect(screen.getByText('Your accommodation behaviors')).toBeInTheDocument()
+    // Both accommodations for s1 show; the one from s2 does not.
+    expect(screen.getByText("I tell him he doesn't have to go")).toBeInTheDocument()
+    expect(screen.getByText('I stay right next to him')).toBeInTheDocument()
+    expect(screen.queryByText('Something in another situation')).not.toBeInTheDocument()
+    // Ranked by fear range, highest first: the 6–8 one comes before the 4–6 one.
+    const harder = screen.getByText("I tell him he doesn't have to go")
+    const easier = screen.getByText('I stay right next to him')
+    expect(harder.compareDocumentPosition(easier) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // The fear-range chips show.
+    expect(screen.getByText('6–8')).toBeInTheDocument()
+    expect(screen.getByText('4–6')).toBeInTheDocument()
   })
 
-  it("saves the answer for this week's Monday", async () => {
+  it('has no weekly check-in and no experiments on Home', () => {
     open()
-    fireEvent.click(screen.getByRole('button', { name: 'Mostly' }))
-    // The save runs after the click returns, so wait for it.
-    await waitFor(() => expect(api.saveCheckin).toHaveBeenCalledWith({
-      accommodation_id: 'a1', answer: 'mostly', week_start: weekStartOf(new Date()),
-    }))
+    expect(screen.queryByText('This week, did you hold the line?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Plan an experiment' })).not.toBeInTheDocument()
   })
 
-  it("shows this week's answer, and it can be changed", () => {
-    open([{ id: 'k1', accommodation_id: 'a1', accommodation_name: FOCUS.name,
-            week_start: weekStartOf(new Date()), answer: 'mostly', updated_at: null }])
-    expect(screen.getByText(/You mostly held the line this week/)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Change' }))
-    expect(screen.getByRole('button', { name: 'Mostly' })).toHaveAttribute('aria-pressed', 'true')
+  it('"How did it go?" opens a note and saves it for that accommodation', async () => {
+    open()
+    fireEvent.click(screen.getAllByRole('button', { name: /How did it go/ })[0])
+    fireEvent.change(screen.getByPlaceholderText('How did it go this time?'), { target: { value: 'Held the line, he was upset but went.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(api.createAccommodationNote).toHaveBeenCalledWith('a1', 'Held the line, he was upset but went.'))
   })
 
-  it('asks about each focus, on its own card, when there is more than one', async () => {
-    const OTHER = { ...FOCUS, id: 'a2', name: "Answers for them at the doctor's", display_order: 1 }
-    open([{ id: 'k1', accommodation_id: 'a1', accommodation_name: FOCUS.name,
-            week_start: weekStartOf(new Date()), answer: 'mostly', updated_at: null }], [], [FOCUS, OTHER])
-    expect(screen.getByRole('heading', { name: FOCUS.name })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: OTHER.name })).toBeInTheDocument()
-    // The first is answered this week; the second still asks.
-    expect(screen.getByText(/You mostly held the line this week/)).toBeInTheDocument()
-    expect(screen.getAllByText('This week, did you hold the line?')).toHaveLength(1)
-    fireEvent.click(screen.getByRole('button', { name: 'Every time' }))
-    await waitFor(() => expect(api.saveCheckin).toHaveBeenCalledWith({
-      accommodation_id: 'a2', answer: 'every_time', week_start: weekStartOf(new Date()),
-    }))
-  })
-
-  it("shows the child's own rating when the clinician has chosen to", () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
-    qc.setQueryData(['parent-me'], { patient_name: 'Sam Child' })
-    qc.setQueryData(['parent-upcoming'], [])
-    qc.setQueryData(['parent-progress'], { shared: false })
-    qc.setQueryData(['parent-accommodations'], [{ ...FOCUS, child_rating_min: 5, child_rating_max: 9 }])
-    qc.setQueryData(['parent-checkins'], [])
-    qc.setQueryData(['parent-experiments'], [])
-    render(
-      <QueryClientProvider client={qc}>
-        <MemoryRouter><ParentHomePage /></MemoryRouter>
-      </QueryClientProvider>,
-    )
-    expect(screen.getByText('Sam said stopping would be a 5–9.')).toBeInTheDocument()
-  })
-
-  it("last week's answer does not count as this week's", () => {
-    const lastWeek = new Date()
-    lastWeek.setDate(lastWeek.getDate() - 7)
-    open([{ id: 'k0', accommodation_id: 'a1', accommodation_name: FOCUS.name,
-            week_start: weekStartOf(lastWeek), answer: 'every_time', updated_at: null }])
-    expect(screen.getByText('This week, did you hold the line?')).toBeInTheDocument()
-  })
-
-  it('lists the experiments coming up, with a way to say how each went', () => {
-    open([], [{ id: 'x1', accommodation_id: 'a1', accommodation_name: 'Lies down with them at bedtime', status: 'planned',
-      set_up_in_session: false, scheduled_date: new Date().toISOString(), scheduled_time_bucket: 'evening', instead: null,
-      prediction: 'She will cry', belief_before: 80, expected_fear: 8, readiness: null, did_it: null, what_happened: null,
-      actual_fear: null, prediction_happened: null, belief_after: null, what_learned: null, too_hard_reason: null,
-      recorded_at: null, created_at: null }])
-    expect(screen.getByText('Your experiments')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'How did it go?' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Plan an experiment' })).toBeInTheDocument()
+  it("tells the parent when the clinician hasn't shared the plan", () => {
+    open({ shared: false })
+    expect(screen.getByText(/hasn't shared Leo's plan/)).toBeInTheDocument()
+    expect(screen.queryByText('Your accommodation behaviors')).not.toBeInTheDocument()
   })
 })

@@ -7,6 +7,7 @@ import {
   createAccommodation,
   updateAccommodation,
   deleteAccommodation,
+  listAccommodationNotes,
   type Accommodation,
   type AccommodationState,
 } from '../../api/accommodations'
@@ -133,6 +134,18 @@ export default function ParentPlanPanel({
     enabled: !!patientId,
   })
 
+  // The parent's "how did it go?" notes, newest first — show the latest under each accommodation.
+  const { data: notes = [] } = useQuery({
+    queryKey: ['accommodation-notes', planId],
+    queryFn: () => listAccommodationNotes(planId),
+    enabled: !!planId,
+  })
+  const latestNote = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const n of notes) if (!m.has(n.accommodation_id)) m.set(n.accommodation_id, n.body)
+    return m
+  }, [notes])
+
   const [editing, setEditing] = useState(false)
   const [fullScreen, setFullScreen] = useState(false)
   const [ratingWithChild, setRatingWithChild] = useState(false)
@@ -204,7 +217,7 @@ export default function ParentPlanPanel({
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {sec.items.map(a => (
-              <AccommodationRow key={a.id} accommodation={a} editing={editing}
+              <AccommodationRow key={a.id} accommodation={a} editing={editing} note={latestNote.get(a.id) ?? null}
                 onSave={data => save(a.id, data)} onDelete={() => deleteMut.mutate(a.id)} />
             ))}
             {sec.items.length === 0 && (
@@ -401,9 +414,11 @@ function SituationSuggestions({ patientId, items, onAdded }: {
 
 /** One accommodation, styled like a ladder step. Building: rename, score, remove. Saved (view):
  *  the score, where the parent is with it, and Plan it. */
-function AccommodationRow({ accommodation: a, editing, onSave, onDelete }: {
+function AccommodationRow({ accommodation: a, editing, note, onSave, onDelete }: {
   accommodation: Accommodation
   editing: boolean
+  /** The parent's latest "how did it go?" note on this accommodation, if any. */
+  note?: string | null
   onSave: (data: { name?: string; distress_min?: number | null; distress_max?: number | null; status?: AccommodationState }) => Promise<unknown>
   onDelete: () => void
 }) {
@@ -448,7 +463,8 @@ function AccommodationRow({ accommodation: a, editing, onSave, onDelete }: {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--float-surface)', border: `1px solid ${a.status === 'started' ? 'var(--float-primary)' : '#e6efec'}`, borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
+    <div style={{ background: 'var(--float-surface)', border: `1px solid ${a.status === 'started' ? 'var(--float-primary)' : '#e6efec'}`, borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       {editing && editingName ? (
         <input value={draft} autoFocus onChange={e => setDraft(e.target.value)} onBlur={rename}
           onKeyDown={e => { if (e.key === 'Enter') rename(); if (e.key === 'Escape') { setDraft(a.name); setEditingName(false) } }}
@@ -498,6 +514,12 @@ function AccommodationRow({ accommodation: a, editing, onSave, onDelete }: {
         <button onClick={() => setConfirmRemove(true)} title="Take this out" aria-label={`Remove “${a.name}”`}
           style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
       ))}
+      </div>
+      {!editing && note && (
+        <div style={{ marginTop: 7, fontSize: 12.5, color: 'var(--float-text-secondary)', lineHeight: 1.4 }}>
+          <span style={{ fontWeight: 700, color: 'var(--float-text-hint)' }}>Parent: </span>“{note}”
+        </div>
+      )}
     </div>
   )
 }

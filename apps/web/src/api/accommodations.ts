@@ -43,6 +43,19 @@ export const listAccommodationCheckins = async (
   return res.data
 }
 
+/** A parent's free-text "how did it go?" note, read by the clinician. */
+export interface AccommodationNote {
+  id: string
+  accommodation_id: string
+  body: string
+  created_at: string
+}
+
+export const listAccommodationNotes = async (planId: string): Promise<AccommodationNote[]> => {
+  const res = await apiClient.get(`/plans/${planId}/accommodations/notes`)
+  return res.data
+}
+
 export interface CreateAccommodationData {
   name: string
   description?: string | null

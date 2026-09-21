@@ -24,10 +24,28 @@ export interface ParentAccommodation {
   /** The parent's own estimate from the accommodation conversation. */
   parent_estimate_min?: number | null
   parent_estimate_max?: number | null
+  /** The accommodation's Fear Level range (how hard for the child if the parent stops), used to
+   *  rank accommodations under each exposure on Home. */
+  fear_min?: number | null
+  fear_max?: number | null
   /** The child's own rating — sent only when the clinician has chosen to show it. */
   child_rating_min?: number | null
   child_rating_max?: number | null
 }
+
+/** A parent's free-text "how did it go?" note about an accommodation. */
+export interface AccommodationNote {
+  id: string
+  accommodation_id: string
+  body: string
+  created_at: string
+}
+
+export const getAccommodationNotes = async (accommodationId: string): Promise<AccommodationNote[]> =>
+  (await parentApiClient.get(`/parent/accommodations/${accommodationId}/notes`)).data
+
+export const createAccommodationNote = async (accommodationId: string, body: string): Promise<AccommodationNote> =>
+  (await parentApiClient.post(`/parent/accommodations/${accommodationId}/notes`, { body })).data
 
 export interface ParentTip {
   id: string

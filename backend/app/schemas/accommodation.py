@@ -59,6 +59,12 @@ class ParentAccommodationResponse(BaseModel):
     # The parent's own estimate, from the accommodation conversation. Theirs to see.
     parent_estimate_min: Optional[float] = None
     parent_estimate_max: Optional[float] = None
+    # The accommodation's Fear Level range — how hard it would be for the child if the parent stops.
+    # Peter, 2026-09-21: shown to the parent on Home to rank accommodations under each exposure. This
+    # can be the child's own number when they rated it, so it is a deliberate widening of what the
+    # parent sees (owner's call, pre-launch). Set by the route.
+    fear_min: Optional[float] = None
+    fear_max: Optional[float] = None
     # The child's own rating, and only when the clinician has chosen to show it to the parent.
     # Filled in by the route, never read off the row.
     child_rating_min: Optional[float] = None
@@ -98,3 +104,18 @@ class SuggestionCreate(BaseModel):
 
 class ReorderRequest(BaseModel):
     ordered_ids: list[uuid.UUID]
+
+
+class AccommodationNoteIn(BaseModel):
+    """A parent's free-text "how did it go?" note about an accommodation."""
+    body: str = Field(min_length=1, max_length=4000)
+
+
+class AccommodationNoteResponse(BaseModel):
+    id: uuid.UUID
+    accommodation_id: uuid.UUID
+    body: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

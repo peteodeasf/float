@@ -9,7 +9,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import ParentProgressPage from './ParentProgressPage'
 import ParentHomePage from './ParentHomePage'
 import ParentAccommodationsPage from './ParentAccommodationsPage'
-import ParentExperimentSetupPage from './ParentExperimentSetupPage'
 
 export default function ParentProgressPreview() {
   const qc = useQueryClient()
@@ -67,6 +66,5 @@ export default function ParentProgressPreview() {
   if (!ready) return null
   const q = new URLSearchParams(window.location.search)
   if (q.has('conversation')) return <ParentAccommodationsPage />
-  if (q.has('experiment')) return <ParentExperimentSetupPage />
   return q.has('home') ? <ParentHomePage /> : <ParentProgressPage />
 }
