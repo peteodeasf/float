@@ -149,7 +149,7 @@ export default function SessionPreview() {
         {view === 'editor' && <LadderEditor planId="p1" patientId="pt1" triggers={TRIGGERS} onDone={noop} onArrow={noop} />}
         {view === 'arrow-intro' && <ArrowIntro onStart={noop} />}
         {view === 'arrow-pick' && <PickPhase situations={TRIGGERS} onOpen={noop} />}
-        {view === 'arrow-chain' && <ChainPhase trigger={TRIGGERS[0]} onBack={noop} onDone={noop} />}
+        {view === 'arrow-chain' && <ChainPhase name={TRIGGERS[0].name} openArrow={() => Promise.resolve({ id: 'preview', arrow_steps: [] } as any)} onBack={noop} onDone={noop} />}
         {view === 'flat-ladder' && (
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12 }}>
             <FlatLadder planId="p1" patientId="preview" triggers={TRIGGERS} ladderActive recommendedRungId={null} />

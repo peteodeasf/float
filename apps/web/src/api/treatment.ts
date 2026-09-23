@@ -271,7 +271,9 @@ export interface ArrowStep {
 
 export interface DownwardArrow {
   id: string
-  trigger_situation_id: string
+  trigger_situation_id: string | null
+  patient_id?: string | null
+  situation_text?: string | null
   arrow_steps: ArrowStep[]
   feared_outcome: string | null
   feared_outcome_approved: boolean
@@ -315,6 +317,16 @@ export const createPatientDownwardArrow = async (patientId: string, firstAnswer?
   const response = await apiClient.post(`/patients/${patientId}/downward-arrows`, {
     facilitated_by: facilitatedBy,
     first_answer: firstAnswer,
+  })
+  return response.data
+}
+
+// Ad-hoc: a standalone downward arrow the therapist runs off the ladder, starting from a typed
+// situation. Always creates a NEW arrow (many per patient), kept in the record but not on the plan.
+export const createPatientAdHocDownwardArrow = async (patientId: string, situationText: string): Promise<DownwardArrow> => {
+  const response = await apiClient.post(`/patients/${patientId}/downward-arrows/ad-hoc`, {
+    facilitated_by: 'practitioner',
+    situation_text: situationText,
   })
   return response.data
 }

@@ -89,6 +89,9 @@ async def get_or_create_patient_downward_arrow(
             DownwardArrow.organization_id == organization_id,
             DownwardArrow.facilitated_by == data.facilitated_by,
             DownwardArrow.trigger_situation_id.is_(None),
+            # Never return an ad-hoc arrow here — those carry a typed situation and there can
+            # be many of them. This anchor is the single situation-less one.
+            DownwardArrow.situation_text.is_(None),
         )
     )
     existing = result.scalar_one_or_none()
@@ -102,6 +105,30 @@ async def get_or_create_patient_downward_arrow(
         arrow_steps=_initial_steps(data),
         facilitated_by=data.facilitated_by,
         feared_outcome_approved=False
+    )
+    db.add(arrow)
+    await db.commit()
+    await db.refresh(arrow)
+    return arrow
+
+
+async def create_patient_downward_arrow(
+    db: AsyncSession,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    data: DownwardArrowCreate
+) -> DownwardArrow:
+    """Create a NEW situation-agnostic arrow for a patient — the ad-hoc downward arrow a
+    therapist runs off the ladder. Always inserts (many per patient), and stores the typed
+    situation. Not part of the exposure plan; trigger_situation_id stays null."""
+    arrow = DownwardArrow(
+        trigger_situation_id=None,
+        patient_id=patient_id,
+        organization_id=organization_id,
+        situation_text=data.situation_text,
+        arrow_steps=_initial_steps(data),
+        facilitated_by=data.facilitated_by,
+        feared_outcome_approved=False,
     )
     db.add(arrow)
     await db.commit()

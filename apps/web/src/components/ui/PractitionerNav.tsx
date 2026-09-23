@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import FloatLogo from './FloatLogo'
 
-type ActivePage = 'patients' | 'education' | 'settings'
+type ActivePage = 'patients' | 'tools' | 'education' | 'settings'
 
 interface SubHeaderProps {
   backTo: string
@@ -20,6 +20,7 @@ interface PractitionerNavProps {
 
 const navLinks: { label: string; page: ActivePage; path: string; enabled: boolean; tooltip?: string }[] = [
   { label: 'My Patients', page: 'patients', path: '/dashboard', enabled: true },
+  { label: 'Tools', page: 'tools', path: '/tools', enabled: true },
   { label: 'Education', page: 'education', path: '/education', enabled: true },
   // No Reports item. Peter, 2026-09-01: pilot data comes straight out of the database, and
   // clinicians get charts on the patient's Experiments tab rather than a reports section. A

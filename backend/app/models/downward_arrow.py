@@ -34,6 +34,9 @@ class DownwardArrow(Base):
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False
     )
+    # The therapist's typed situation for an ad-hoc arrow (run off the ladder). Null for
+    # plan-linked arrows (they get it from the trigger situation) and the parent arrow.
+    situation_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     arrow_steps: Mapped[dict] = mapped_column(JSONB, nullable=False, default=list)
     feared_outcome: Mapped[str | None] = mapped_column(Text, nullable=True)
     feared_outcome_approved: Mapped[bool] = mapped_column(Boolean, default=False)

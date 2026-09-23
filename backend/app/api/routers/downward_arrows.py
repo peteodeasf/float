@@ -11,6 +11,7 @@ from app.api.routers.patients import get_practitioner_context, get_permitted_pat
 from app.services.downward_arrow_service import (
     get_or_create_downward_arrow,
     get_or_create_patient_downward_arrow,
+    create_patient_downward_arrow,
     get_downward_arrow,
     list_patient_downward_arrows,
     update_downward_arrow,
@@ -208,6 +209,33 @@ async def create_patient_arrow(
     # Validates the patient belongs to the practitioner's organization.
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
     return await get_or_create_patient_downward_arrow(
+        db, patient_id, practitioner.organization_id, data
+    )
+
+
+@router.post("/patients/{patient_id}/downward-arrows/ad-hoc",
+             response_model=DownwardArrowResponse,
+             status_code=status.HTTP_201_CREATED)
+async def create_patient_adhoc_arrow(
+    patient_id: uuid.UUID,
+    data: DownwardArrowCreate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
+):
+    """A standalone downward arrow run off the ladder: always a new arrow, with the therapist's
+    typed situation, kept in the patient record but not attached to the exposure plan."""
+    _, practitioner = context
+    # Required: without it this would be a second situation-less arrow, colliding with the
+    # get-or-create pre-ladder anchor (MultipleResultsFound → 500 on that flow).
+    if not (data.situation_text or "").strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="situation_text is required for an ad-hoc downward arrow.",
+        )
+    # Validates the patient belongs to the practitioner's organization.
+    await get_patient_by_id(db, patient_id, practitioner.organization_id)
+    return await create_patient_downward_arrow(
         db, patient_id, practitioner.organization_id, data
     )
 

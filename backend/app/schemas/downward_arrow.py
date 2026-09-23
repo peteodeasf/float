@@ -12,6 +12,8 @@ class ArrowStep(BaseModel):
 class DownwardArrowCreate(BaseModel):
     facilitated_by: str = "practitioner"
     first_answer: Optional[str] = None
+    # The typed situation, for an ad-hoc arrow run off the ladder.
+    situation_text: Optional[str] = None
 
 
 class DownwardArrowUpdate(BaseModel):
@@ -36,6 +38,7 @@ class DownwardArrowResponse(BaseModel):
     id: uuid.UUID
     trigger_situation_id: Optional[uuid.UUID] = None
     patient_id: Optional[uuid.UUID] = None
+    situation_text: Optional[str] = None
     arrow_steps: list[ArrowStep]
     feared_outcome: Optional[str] = None
     feared_outcome_approved: bool

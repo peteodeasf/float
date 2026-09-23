@@ -30,6 +30,7 @@ import {
   getNextProbe,
   type TriggerSituation,
   type ArrowStep,
+  type DownwardArrow,
 } from '../../api/treatment'
 import {
   dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink,
@@ -73,6 +74,7 @@ const worryHint = (name: string) =>
 export default function ArrowPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   // Opened from a situation inside the conversation — go straight to its chain rather than making
   // the pair pick it again from a list they just came from. Peter, 2026-09-01: the arrow folds
   // into the conversation rather than being a second button on the Plan tab.
@@ -161,7 +163,10 @@ export default function ArrowPage() {
       {phase === 'chain' && current && (
         <ChainPhase
           key={current.id}
-          trigger={current}
+          name={current.name}
+          dt={dtOf(current.distress_thermometer_rating)}
+          openArrow={() => createSituationDownwardArrow(current.id, undefined, 'practitioner')}
+          onSaved={() => qc.invalidateQueries({ queryKey: ['situation-da', current.id] })}
           // Opened from a situation in the ladder editor, the situation is not a choice — clicking
           // the arrow there WAS the choice. Both ways out go back, not to a list of situations to
           // pick from again. Peter, 2026-09-05.
@@ -236,7 +241,18 @@ function PickRow({ trigger, onOpen }: { trigger: TriggerSituation; onOpen: (id: 
 }
 
 // ── The descent ────────────────────────────────────────────────
-export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situations' }: { trigger: TriggerSituation; onBack: () => void; onDone: () => void; backLabel?: string }) {
+export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backLabel = '← All situations' }: {
+  // The situation being dug into — a plan situation's name, or an ad-hoc arrow's typed situation.
+  name: string
+  dt?: number | null
+  // Get-or-create (plan) or return the already-created (ad-hoc) arrow to run. Called once on mount.
+  openArrow: () => Promise<DownwardArrow>
+  // Refresh whatever list shows this arrow's outcome (plan: the per-situation query).
+  onSaved?: () => void
+  onBack: () => void
+  onDone: () => void
+  backLabel?: string
+}) {
   const qc = useQueryClient()
   const [arrowId, setArrowId] = useState<string | null>(null)
   const [startingThought, setStartingThought] = useState('')
@@ -253,7 +269,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
     await updateDownwardArrow(arrowId, {
       arrow_steps: [{ question: 'Starting thought', response: thought }, ...chain],
     })
-    qc.invalidateQueries({ queryKey: ['situation-da', trigger.id] })
+    onSaved?.()
   }
 
   const askNext = async (thought: string, chain: ArrowStep[]) => {
@@ -269,7 +285,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
     let cancelled = false
     ;(async () => {
       try {
-        const arrow = await createSituationDownwardArrow(trigger.id, undefined, 'practitioner')
+        const arrow = await openArrow()
         if (cancelled) return
         setArrowId(arrow.id)
         if (arrow.arrow_steps.length > 0) {
@@ -283,8 +299,9 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
       } catch { if (!cancelled) setErr('Could not open this one. Try again.') }
     })()
     return () => { cancelled = true }
+    // Runs once — the parent remounts this component (via key) to switch to a different arrow.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trigger.id])
+  }, [])
 
   const begin = async (thought: string) => {
     setBusy(true)
@@ -310,7 +327,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
     setBusy(true)
     try {
       await updateDownwardArrow(arrowId, { feared_outcome: fearedDraft.trim(), is_approved: true })
-      qc.invalidateQueries({ queryKey: ['situation-da', trigger.id] })
+      onSaved?.()
       qc.invalidateQueries({ queryKey: ['patient-arrows'] })
       onDone()
     } catch { setErr('Could not save. Try again.') }
@@ -328,7 +345,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
 
   return (
     <div style={screenSurface}>
-      <Context text={trigger.name} dt={dtOf(trigger.distress_thermometer_rating)} quiet />
+      <Context text={name} dt={dt} quiet />
 
       {err && (
         <Banner tone="danger" style={{ marginBottom: 14 }}>{err}</Banner>
@@ -353,7 +370,7 @@ export function ChainPhase({ trigger, onBack, onDone, backLabel = '← All situa
         <div>
           <div style={{ ...bigQ, marginBottom: 12 }}>What are you worried will happen in this situation?</div>
           <SayIt value={answer} onChange={setAnswer} onSend={() => { const a = answer.trim(); setAnswer(''); void begin(a) }}
-            placeholder={worryHint(trigger.name)} pending={busy} />
+            placeholder={worryHint(name)} pending={busy} />
         </div>
       ) : (
         <div>

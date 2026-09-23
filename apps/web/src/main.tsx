@@ -23,6 +23,7 @@ import PatientPage from './pages/practitioner/PatientPage'
 import SessionPage from './pages/practitioner/SessionPage'
 import RecordSessionPage from './pages/practitioner/RecordSessionPage'
 import ArrowPage from './pages/practitioner/ArrowPage'
+import ToolsPage from './pages/practitioner/ToolsPage'
 import SessionPreview from './pages/practitioner/__SessionPreview'
 import TeenSetupPreview from './pages/teen/__TeenSetupPreview'
 import ParentProgressPreview from './pages/parent/__ParentProgressPreview'
@@ -125,6 +126,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/dashboard" element={
                 <ProtectedRoute><DashboardPage /></ProtectedRoute>
+              } />
+              <Route path="/tools" element={
+                <ProtectedRoute><ToolsPage /></ProtectedRoute>
               } />
               <Route path="/patients/new" element={
                 <ProtectedRoute><NewPatientPage /></ProtectedRoute>
