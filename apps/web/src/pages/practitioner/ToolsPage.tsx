@@ -33,6 +33,7 @@ export default function ToolsPage() {
   const [phase, setPhase] = useState<Phase>('pick-patient')
   const [patient, setPatient] = useState<Patient | null>(null)
   const [filter, setFilter] = useState('')
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [situation, setSituation] = useState('')
   const [arrow, setArrow] = useState<DownwardArrow | null>(null)
   const [busy, setBusy] = useState(false)
@@ -79,21 +80,29 @@ export default function ToolsPage() {
         <div style={screenSurface}>
           <div style={bigQ}>Downward arrow</div>
           <p style={lead}>Run a downward arrow on its own. Pick a patient to start.</p>
-          <input
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            placeholder="Search patients…"
-            style={{ width: '100%', marginTop: 16, padding: '10px 12px', fontSize: 14, border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}
-          />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 14 }}>
-            {list.map(p => (
-              <button key={p.id} onClick={() => pickPatient(p)}
-                style={{ display: 'block', textAlign: 'left', width: '100%', background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '11px 13px', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--float-text)' }}>
-                {p.name}
-              </button>
-            ))}
-            {list.length === 0 && (
-              <div style={{ fontSize: 13, color: 'var(--float-text-hint)' }}>No patients match.</div>
+          {/* A collapsed dropdown that filters as you type, rather than the whole roster on screen. */}
+          <div style={{ position: 'relative', marginTop: 16 }}>
+            <input
+              value={filter}
+              onChange={e => { setFilter(e.target.value); setPickerOpen(true) }}
+              onFocus={() => setPickerOpen(true)}
+              // Delay so a click on an option registers before the list closes.
+              onBlur={() => setTimeout(() => setPickerOpen(false), 120)}
+              placeholder="Search patients…"
+              style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}
+            />
+            {pickerOpen && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: 4, maxHeight: 280, overflowY: 'auto', background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', boxShadow: '0 8px 24px rgba(13,61,58,.12)' }}>
+                {list.map(p => (
+                  <button key={p.id} onMouseDown={() => pickPatient(p)}
+                    style={{ display: 'block', textAlign: 'left', width: '100%', background: 'none', border: 'none', borderBottom: '1px solid #eef2f1', padding: '10px 13px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>
+                    {p.name}
+                  </button>
+                ))}
+                {list.length === 0 && (
+                  <div style={{ padding: '10px 13px', fontSize: 13, color: 'var(--float-text-hint)' }}>No patients match.</div>
+                )}
+              </div>
             )}
           </div>
         </div>
