@@ -50,10 +50,20 @@ type AdminPatient = {
   age: number | null
   gender: string | null
   organization: string | null
+  organization_id: string | null
   clinician: string | null
+  clinician_id: string | null
   plan_status: string | null
   experiment_count: number
   last_activity: string | null
+}
+
+type AdminClinician = {
+  id: string
+  name: string
+  email: string | null
+  organization_id: string
+  organization_name: string | null
 }
 
 type WaitlistEntry = {
@@ -98,6 +108,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [orgs, setOrgs] = useState<AdminOrg[]>([])
   const [patients, setPatients] = useState<AdminPatient[]>([])
+  const [clinicians, setClinicians] = useState<AdminClinician[]>([])
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([])
   const [userFilter, setUserFilter] = useState<'all' | 'practitioner' | 'patient' | 'admin'>('all')
 
@@ -105,6 +116,11 @@ export default function AdminDashboardPage() {
   const [confirmDeletePatientId, setConfirmDeletePatientId] = useState<string | null>(null)
   const [confirmDeleteWaitlistId, setConfirmDeleteWaitlistId] = useState<string | null>(null)
   const [resetSentFor, setResetSentFor] = useState<string | null>(null)
+
+  // Reassign a patient to another clinician: which row's picker is open, and its chosen target.
+  const [reassignPatientId, setReassignPatientId] = useState<string | null>(null)
+  const [reassignTargetId, setReassignTargetId] = useState<string>('')
+  const [reassigning, setReassigning] = useState(false)
 
   const [showNewOrg, setShowNewOrg] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
@@ -122,17 +138,19 @@ export default function AdminDashboardPage() {
   const [expandedOrgDetail, setExpandedOrgDetail] = useState<AdminOrgDetail | null>(null)
 
   const loadAll = async () => {
-    const [s, u, o, p, w] = await Promise.all([
+    const [s, u, o, p, c, w] = await Promise.all([
       adminApiClient.get('/admin/stats'),
       adminApiClient.get('/admin/users'),
       adminApiClient.get('/admin/organizations'),
       adminApiClient.get('/admin/patients'),
+      adminApiClient.get('/admin/clinicians'),
       adminApiClient.get('/waitlist'),
     ])
     setStats(s.data)
     setUsers(u.data)
     setOrgs(o.data)
     setPatients(p.data)
+    setClinicians(c.data)
     setWaitlist(w.data)
   }
 
@@ -146,15 +164,31 @@ export default function AdminDashboardPage() {
   }
 
   const handleDeleteUser = async (id: string) => {
-    console.log('delete user clicked', id)
     try {
       await adminApiClient.delete(`/admin/users/${id}`)
       setConfirmDeleteUserId(null)
       await loadAll()
-    } catch (err) {
-      console.error('delete user failed', err)
-      alert('Failed to delete user. See console for details.')
+    } catch (err: any) {
+      // Surface the server's reason — e.g. "still has patients, reassign first".
+      alert(err?.response?.data?.detail ?? 'Failed to delete user. Please try again.')
       setConfirmDeleteUserId(null)
+    }
+  }
+
+  const handleReassignPatient = async (patientId: string) => {
+    if (!reassignTargetId) return
+    setReassigning(true)
+    try {
+      await adminApiClient.post(`/admin/patients/${patientId}/reassign`, {
+        clinician_id: reassignTargetId,
+      })
+      setReassignPatientId(null)
+      setReassignTargetId('')
+      await loadAll()
+    } catch (err: any) {
+      alert(err?.response?.data?.detail ?? 'Failed to reassign the patient. Please try again.')
+    } finally {
+      setReassigning(false)
     }
   }
 
@@ -719,8 +753,38 @@ export default function AdminDashboardPage() {
                   <td style={tdStyle}>{p.plan_status ?? '—'}</td>
                   <td style={tdStyle}>{p.experiment_count}</td>
                   <td style={tdStyle}>{formatDate(p.last_activity)}</td>
-                  <td style={tdStyle}>
-                    {confirmDeletePatientId === p.id ? (
+                  <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                    {reassignPatientId === p.id ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <select
+                          value={reassignTargetId}
+                          onChange={(e) => setReassignTargetId(e.target.value)}
+                          style={{ ...formInput, width: 'auto', minWidth: '160px' }}
+                        >
+                          <option value="">Choose clinician…</option>
+                          {clinicians
+                            .filter((c) => c.organization_id === p.organization_id && c.id !== p.clinician_id)
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <Button
+                          kind="primary"
+                          size="sm"
+                          disabled={!reassignTargetId || reassigning}
+                          onClick={() => handleReassignPatient(p.id)}
+                        >
+                          {reassigning ? 'Saving…' : 'Save'}
+                        </Button>
+                        <Button
+                          kind="quiet"
+                          size="sm"
+                          onClick={() => { setReassignPatientId(null); setReassignTargetId('') }}
+                        >
+                          Cancel
+                        </Button>
+                      </span>
+                    ) : confirmDeletePatientId === p.id ? (
                       <div style={{ fontSize: '12px', color: 'var(--float-danger)' }}>
                         Delete {p.name} and all their data?{' '}
                         <Button
@@ -736,9 +800,18 @@ export default function AdminDashboardPage() {
                         </Button>
                       </div>
                     ) : (
-                      <Button kind="danger" size="sm" onClick={() => setConfirmDeletePatientId(p.id)}>
-                        Delete
-                      </Button>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Button
+                          kind="quiet"
+                          size="sm"
+                          onClick={() => { setReassignPatientId(p.id); setReassignTargetId('') }}
+                        >
+                          Reassign
+                        </Button>
+                        <Button kind="danger" size="sm" onClick={() => setConfirmDeletePatientId(p.id)}>
+                          Delete
+                        </Button>
+                      </span>
                     )}
                   </td>
                 </tr>

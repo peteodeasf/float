@@ -317,6 +317,127 @@ async def _delete_patient_cascade(patient_id: uuid.UUID, db: AsyncSession) -> No
     )
 
 
+async def _clinician_patient_count(profile_id: str, db: AsyncSession) -> int:
+    """Distinct patients this clinician is responsible for — as their primary practitioner, the
+    owner of a treatment plan, or the holder of a live access grant. A clinician with any of
+    these must not be deleted: doing so would leave those patients with no clinician."""
+    from sqlalchemy import text as sql_text
+
+    result = await db.execute(
+        sql_text(
+            "SELECT count(*) FROM ("
+            "  SELECT id AS pid FROM patient_profiles WHERE primary_practitioner_id = :pp"
+            "  UNION"
+            "  SELECT patient_id FROM treatment_plans WHERE practitioner_id = :pp"
+            "  UNION"
+            "  SELECT patient_id FROM patient_access_grants"
+            "   WHERE practitioner_id = :pp AND revoked_at IS NULL"
+            ") t"
+        ),
+        {"pp": profile_id},
+    )
+    return int(result.scalar() or 0)
+
+
+async def _delete_practitioner_cascade(user_id: str, db: AsyncSession) -> None:
+    """Delete a clinician account.
+
+    Refuses (409) if the clinician still has patients — the admin must reassign them first.
+    Once they have none, their authored notes are moved to each patient's current clinician
+    (Peter's call: keep the notes rather than delete them), their own access artifacts are
+    cleared, and the account is removed.
+    """
+    from sqlalchemy import text as sql_text
+
+    profile_row = (await db.execute(
+        sql_text("SELECT id FROM practitioner_profiles WHERE user_id = :uid"),
+        {"uid": user_id},
+    )).first()
+    if not profile_row:
+        # No practitioner profile — nothing references it; just remove the role and user.
+        await db.execute(sql_text("DELETE FROM user_roles WHERE user_id = :uid"), {"uid": user_id})
+        await db.execute(sql_text("DELETE FROM users WHERE id = :uid"), {"uid": user_id})
+        return
+    pp = str(profile_row[0])
+
+    if await _clinician_patient_count(pp, db) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This clinician still has patients assigned. Reassign their patients to "
+                "another clinician before deleting the account."
+            ),
+        )
+
+    # Move authored content to each patient's current clinician. These columns are NOT NULL, so
+    # a row can only move if its patient still has a clinician; any that can't are caught below.
+    for table in ("session_notes", "clinical_formulations", "action_plans", "session_recordings"):
+        await db.execute(
+            sql_text(
+                f"UPDATE {table} AS t SET practitioner_id = pp.primary_practitioner_id "
+                "FROM patient_profiles pp "
+                "WHERE t.patient_id = pp.id AND t.practitioner_id = :pp "
+                "AND pp.primary_practitioner_id IS NOT NULL"
+            ),
+            {"pp": pp},
+        )
+
+    # Nullable historical markers on the patient row — clear them.
+    for column in (
+        "recording_consent_practitioner_id",
+        "closed_by_practitioner_id",
+        "progress_shared_by_practitioner_id",
+    ):
+        await db.execute(
+            sql_text(f"UPDATE patient_profiles SET {column} = NULL WHERE {column} = :pp"),
+            {"pp": pp},
+        )
+
+    # If any authored content is left, its patient has no clinician to receive it — stop cleanly
+    # rather than 500 on the NOT NULL foreign key.
+    remaining = (await db.execute(
+        sql_text(
+            "SELECT "
+            "(SELECT count(*) FROM session_notes WHERE practitioner_id = :pp) + "
+            "(SELECT count(*) FROM clinical_formulations WHERE practitioner_id = :pp) + "
+            "(SELECT count(*) FROM action_plans WHERE practitioner_id = :pp) + "
+            "(SELECT count(*) FROM session_recordings WHERE practitioner_id = :pp)"
+        ),
+        {"pp": pp},
+    )).scalar() or 0
+    if int(remaining) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Some of this clinician's notes belong to a patient who has no clinician "
+                "assigned. Assign a clinician to that patient, then delete."
+            ),
+        )
+
+    # The clinician's own access artifacts, and grants they granted/revoked for others.
+    await db.execute(
+        sql_text("DELETE FROM patient_access_log WHERE practitioner_id = :pp OR user_id = :uid"),
+        {"pp": pp, "uid": user_id},
+    )
+    await db.execute(
+        sql_text("DELETE FROM patient_access_grants WHERE practitioner_id = :pp"),
+        {"pp": pp},
+    )
+    for column in ("granted_by_practitioner_id", "revoked_by_practitioner_id"):
+        await db.execute(
+            sql_text(f"UPDATE patient_access_grants SET {column} = NULL WHERE {column} = :pp"),
+            {"pp": pp},
+        )
+    await db.execute(
+        sql_text("DELETE FROM messages WHERE sender_user_id = :uid OR recipient_user_id = :uid"),
+        {"uid": user_id},
+    )
+
+    await db.execute(sql_text("DELETE FROM practitioner_profiles WHERE id = :pp"), {"pp": pp})
+    await db.execute(sql_text("DELETE FROM user_roles WHERE user_id = :uid"), {"uid": user_id})
+    await db.execute(sql_text("DELETE FROM users WHERE id = :uid"), {"uid": user_id})
+
+
 @router.delete("/users/{user_id}")
 async def delete_user(
     user_id: uuid.UUID,
@@ -365,18 +486,7 @@ async def delete_user(
                 {"uid": uid},
             )
     elif role == "practitioner":
-        await db.execute(
-            sql_text("DELETE FROM practitioner_profiles WHERE user_id = :uid"),
-            {"uid": uid},
-        )
-        await db.execute(
-            sql_text("DELETE FROM user_roles WHERE user_id = :uid"),
-            {"uid": uid},
-        )
-        await db.execute(
-            sql_text("DELETE FROM users WHERE id = :uid"),
-            {"uid": uid},
-        )
+        await _delete_practitioner_cascade(uid, db)
     else:
         await db.execute(
             sql_text("DELETE FROM user_roles WHERE user_id = :uid"),
@@ -711,7 +821,9 @@ async def list_patients(
             "age": p.age,
             "gender": p.gender,
             "organization": org.name if org else None,
+            "organization_id": str(p.organization_id) if p.organization_id else None,
             "clinician": practitioner.name if practitioner else None,
+            "clinician_id": str(p.primary_practitioner_id) if p.primary_practitioner_id else None,
             "plan_status": plan_status,
             "experiment_count": exp_count,
             "last_activity": last_activity.isoformat() if last_activity else None,
@@ -737,6 +849,108 @@ async def delete_patient(
         raise HTTPException(status_code=404, detail="Patient not found")
 
     await _delete_patient_cascade(patient_id, db)
+    await db.commit()
+    return {"success": True}
+
+
+@router.get("/clinicians")
+async def list_clinicians(
+    admin: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every clinician, for the reassign-patient picker. Carries the org so the UI can offer
+    only same-org clinicians as targets."""
+    profiles = (await db.execute(select(PractitionerProfile))).scalars().all()
+    users_by_id = {u.id: u for u in (await db.execute(select(User))).scalars().all()}
+    orgs_by_id = {o.id: o for o in (await db.execute(select(Organization))).scalars().all()}
+    out = []
+    for p in profiles:
+        u = users_by_id.get(p.user_id)
+        org = orgs_by_id.get(p.organization_id)
+        out.append({
+            "id": str(p.id),
+            "name": p.name,
+            "email": u.email if u else None,
+            "organization_id": str(p.organization_id),
+            "organization_name": org.name if org else None,
+        })
+    return out
+
+
+class ReassignPatientRequest(BaseModel):
+    clinician_id: str  # target practitioner_profile id
+
+
+@router.post("/patients/{patient_id}/reassign")
+async def reassign_patient(
+    patient_id: uuid.UUID,
+    request: ReassignPatientRequest,
+    admin: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Move a patient's care to another clinician in the same organization: primary practitioner,
+    the patient's treatment plans, and access grants (grant the target, revoke the previous
+    clinician). Same-org only, so this can't move a patient across the org boundary."""
+    from sqlalchemy import text as sql_text
+
+    patient = (await db.execute(
+        select(PatientProfile).where(PatientProfile.id == patient_id)
+    )).scalar_one_or_none()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    try:
+        target_id = uuid.UUID(request.clinician_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid clinician_id")
+
+    target = (await db.execute(
+        select(PractitionerProfile).where(PractitionerProfile.id == target_id)
+    )).scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="Clinician not found")
+    if target.organization_id != patient.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="A patient can only be reassigned to a clinician in the same organization.",
+        )
+
+    previous_id = patient.primary_practitioner_id
+    if previous_id == target_id:
+        return {"success": True}  # already this clinician's patient
+
+    patient.primary_practitioner_id = target_id
+    await db.execute(
+        sql_text("UPDATE treatment_plans SET practitioner_id = :t WHERE patient_id = :pid"),
+        {"t": str(target_id), "pid": str(patient_id)},
+    )
+
+    # Give the target a live grant if it has none; revoke the previous clinician's.
+    existing = (await db.execute(
+        sql_text(
+            "SELECT 1 FROM patient_access_grants WHERE patient_id = :pid "
+            "AND practitioner_id = :t AND revoked_at IS NULL"
+        ),
+        {"pid": str(patient_id), "t": str(target_id)},
+    )).first()
+    if not existing:
+        await db.execute(
+            sql_text(
+                "INSERT INTO patient_access_grants "
+                "(patient_id, practitioner_id, organization_id, created_at) "
+                "VALUES (:pid, :t, :org, now())"
+            ),
+            {"pid": str(patient_id), "t": str(target_id), "org": str(patient.organization_id)},
+        )
+    if previous_id:
+        await db.execute(
+            sql_text(
+                "UPDATE patient_access_grants SET revoked_at = now() "
+                "WHERE patient_id = :pid AND practitioner_id = :prev AND revoked_at IS NULL"
+            ),
+            {"pid": str(patient_id), "prev": str(previous_id)},
+        )
+
     await db.commit()
     return {"success": True}
 
