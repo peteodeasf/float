@@ -1,3 +1,4 @@
+import uuid
 from typing import Literal
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, EmailStr
@@ -57,6 +58,24 @@ async def list_waitlist_entries(
         select(WaitlistEntry).order_by(WaitlistEntry.created_at.desc())
     )
     entries = result.scalars().all()
+    return _entries_out(entries)
+
+
+@router.delete("/{entry_id}")
+async def delete_waitlist_entry(
+    entry_id: uuid.UUID,
+    admin: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a waitlist entry — for clearing out spam that gets past the honeypot."""
+    entry = await db.get(WaitlistEntry, entry_id)
+    if entry is not None:
+        await db.delete(entry)
+        await db.commit()
+    return {"success": True}
+
+
+def _entries_out(entries) -> list[dict]:
     return [
         {
             "id": str(e.id),

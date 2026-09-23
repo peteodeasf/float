@@ -103,6 +103,7 @@ export default function AdminDashboardPage() {
 
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null)
   const [confirmDeletePatientId, setConfirmDeletePatientId] = useState<string | null>(null)
+  const [confirmDeleteWaitlistId, setConfirmDeleteWaitlistId] = useState<string | null>(null)
   const [resetSentFor, setResetSentFor] = useState<string | null>(null)
 
   const [showNewOrg, setShowNewOrg] = useState(false)
@@ -184,6 +185,18 @@ export default function AdminDashboardPage() {
       console.error('delete patient failed', err)
       alert('Failed to delete patient. See console for details.')
       setConfirmDeletePatientId(null)
+    }
+  }
+
+  const handleDeleteWaitlist = async (id: string) => {
+    try {
+      await adminApiClient.delete(`/waitlist/${id}`)
+      setConfirmDeleteWaitlistId(null)
+      await loadAll()
+    } catch (err) {
+      console.error('delete waitlist entry failed', err)
+      alert('Failed to delete the waitlist entry. See console for details.')
+      setConfirmDeleteWaitlistId(null)
     }
   }
 
@@ -749,6 +762,7 @@ export default function AdminDashboardPage() {
                   <th style={thStyle}>Email</th>
                   <th style={thStyle}>Role</th>
                   <th style={thStyle}>Date submitted</th>
+                  <th style={thStyle}></th>
                 </tr>
               </thead>
               <tbody>
@@ -758,6 +772,17 @@ export default function AdminDashboardPage() {
                     <td style={tdStyle}>{w.email}</td>
                     <td style={tdStyle}>{w.role}</td>
                     <td style={tdStyle}>{formatDate(w.created_at)}</td>
+                    <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {confirmDeleteWaitlistId === w.id ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--float-text-secondary)' }}>Delete this entry?</span>
+                          <Button kind="danger" size="sm" onClick={() => handleDeleteWaitlist(w.id)}>Confirm delete</Button>
+                          <Button kind="quiet" size="sm" onClick={() => setConfirmDeleteWaitlistId(null)}>Cancel</Button>
+                        </span>
+                      ) : (
+                        <Button kind="danger" size="sm" onClick={() => setConfirmDeleteWaitlistId(w.id)}>Delete</Button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
