@@ -333,6 +333,29 @@ So either:
 
 Worth putting to Dr. Walker with the parent app open, rather than deciding it in a backlog entry.
 
+## Parent-led mode when the child has no app access
+
+**Logged 2026-09-29, not to be designed yet (Peter's call).** As the three apps sync up — therapist
+portal, child app, parent app — some patients (probably under 13, or where direct app use isn't
+appropriate) may not use the child app at all. When that's the case, the parent app has to carry
+what the child would otherwise get: the right information, at the right time, so the parent can
+guide the child through the exposures and the plan.
+
+- **Today.** The app assumes the child has their own login and does the work in the child app; the
+  parent app shows the child's work and the parent's accommodation part. There is no mode for a
+  patient with no app access — turn off the child login and the exposure side has no home.
+- **What changes.** A parent-led experience: when a patient has no child app, the parent app becomes
+  where the exposure work is set out and supported — what to do, when, and how to run it with the
+  child — not just the accommodation side. Scope and screens to be designed.
+- **How to tell it worked.** A clinician can set up a patient with no child login, and the parent
+  app gives the parent enough to run the child's exposures and see progress without the child ever
+  logging in.
+- **Gate.** `/security-review` when built — it widens what the parent app shows of the child's plan
+  (role/data scoping). Clinical: this is the **under-13 = parent-only** treatment-model decision,
+  which is a leaning that needs Dr. Walker's sign-off; it's in the Dr. Walker log and in
+  [`mobile-app-strategy.md`](plans/mobile-app-strategy.md).
+- **Size.** L — needs a `docs/plans/` plan before code.
+
 # Admin
 
 | Item | Today | Size |
@@ -341,6 +364,26 @@ Worth putting to Dr. Walker with the parent app open, rather than deciding it in
 | **Waitlist** | Read-only; no approve, convert or export. | M |
 | **Data / exports** | Not started. Overlaps the HIPAA patient-rights work. | M |
 | **Feature flags / config** | Not started, and now has a first real use: Float admin deciding which settings each clinic may change — the consultation checklist and the sign-out timer. Needs a screen listing clinics and what each is allowed to control. `organizations.settings` is the column, and nothing reads it today. See [`clinician-settings.md`](plans/clinician-settings.md). | M |
+
+## Demo patients for the therapist pilot
+
+**Logged 2026-10-02 (Peter), not to be built yet.** The first pilot is therapists only — no real
+patients — so they explore the platform with demo data and give feedback on its value. The
+therapist-facing feature set and the agreed demo-patient shape are in
+[`therapist-pilot-feature-review.md`](plans/therapist-pilot-feature-review.md).
+
+- **Today.** One monitoring-only demo patient exists ("Maya Chen"). Nothing staged for planning or
+  in-treatment, and no demo parent/teen logins set up for the pilot.
+- **What changes.** Build the agreed demo set so every feature on the pilot list has something to
+  show: a monitoring-only patient, one in planning (situations + a downward arrow or two + a
+  half-built ladder/accommodations), one in treatment (full ladder + accommodations + a run of
+  completed exposures for the charts + session notes + parent chat), and optionally a closed one.
+  Plus demo parent and teen logins so the therapist can see the family apps (shown as "what's there
+  today" — the family apps are about to be redesigned).
+- **How to tell it worked.** A pilot therapist logs into a demo account and can click through every
+  feature on the review list with realistic data, and open the matching parent/teen demo logins.
+- **Gate.** None clinical — demo data, no real PHI. Keep it clearly marked as test data.
+- **Size.** M — scripted seed data; depends on the feature list being finalised in/out first.
 
 ---
 
