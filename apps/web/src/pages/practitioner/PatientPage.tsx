@@ -42,6 +42,11 @@ import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 const TAB_IDS = ['monitoring', 'sessions', 'plan', 'experiments', 'chat'] as const
 type TabId = typeof TAB_IDS[number]
 
+// SMS (the parent-phone field on the monitoring-form send) is hidden until Twilio is configured.
+// Without credentials send_sms is a no-op, so the field only confuses testers. Flip to true to
+// bring it back once Twilio is set up (A2P 10DLC compliance is the real blocker — see the backlog).
+const SMS_ENABLED = false
+
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
 function DTBadge({ value, max }: { value: number | null | undefined; max?: number | null }) {
@@ -1126,7 +1131,7 @@ export default function PatientPage() {
     setShowSendForm(true)
     if (patient?.parent_email) setParentEmail(patient.parent_email)
     if (patient?.parent_name) setParentName(patient.parent_name)
-    if (patient?.parent_phone) setParentPhone(patient.parent_phone)
+    if (SMS_ENABLED && patient?.parent_phone) setParentPhone(patient.parent_phone)
   }
 
   // The parent-form fields + send buttons, shared by the first send and the resend flow.
@@ -1142,16 +1147,18 @@ export default function PatientPage() {
         <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
           className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
       </div>
-      <div style={{ marginBottom: '12px' }}>
-        <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
-        <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
-          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-      </div>
+      {SMS_ENABLED && (
+        <div style={{ marginBottom: '12px' }}>
+          <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
+          <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
-        {(parentEmail || parentPhone) && (
+        {(parentEmail || (SMS_ENABLED && parentPhone)) && (
           <button onClick={handleSendAll} disabled={sendFormMutation.isPending} style={btn('primary', 'md')}>
             {sendFormMutation.isPending ? 'Sending...' :
-              parentEmail && parentPhone ? 'Send both + copy link' :
+              parentEmail && SMS_ENABLED && parentPhone ? 'Send both + copy link' :
               parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
           </button>
         )}
@@ -1253,7 +1260,7 @@ export default function PatientPage() {
                     <span>&#10003;</span> Email sent to {emailSentTo}
                   </div>
                 )}
-                {smsSentTo && (
+                {SMS_ENABLED && smsSentTo && (
                   <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
                     <span>&#10003;</span> SMS sent to {smsSentTo}
                   </div>
