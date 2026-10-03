@@ -18,6 +18,33 @@ export function Button({ kind = 'secondary', size = 'md', style, ...rest }: Butt
   return <button style={{ ...btn(kind, size), ...style }} {...rest} />
 }
 
+// ── CloseButton ─────────────────────────────────────────────────────────────────
+// The one way to dismiss a pop-out panel or sheet: a subtle × in the top-right. Use this for every
+// dismissible container so close looks and behaves the same everywhere (position, size, aria-label).
+// NOT for "remove this row" — that × belongs on the row itself, not here.
+export function CloseButton({ onClick, label = 'Close', style }: {
+  onClick: () => void
+  label?: string
+  style?: CSSProperties
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: '28px', height: '28px', padding: 0, lineHeight: 1, flexShrink: 0,
+        fontSize: '18px', color: 'var(--float-text-hint)',
+        background: 'none', border: 'none', borderRadius: 'var(--float-radius-control)',
+        cursor: 'pointer', ...style,
+      }}
+    >
+      ×
+    </button>
+  )
+}
+
 // ── Card ────────────────────────────────────────────────────────────────────
 type CardProps = HTMLAttributes<HTMLDivElement> & {
   /** Inner padding. 'md' is the usual card; 'none' when the card lays out its own header/body. */

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { errorMessage } from '../ui/form'
+import { CloseButton } from '../ui/primitives'
 import { inviteTeen, inviteParent, listParents, removeParent, setChildConnectConsent, setParentProgressSharing, setAccommodationRatingsSharing } from '../../api/patients'
 
 /**
@@ -124,13 +125,7 @@ export default function TeenAccessPanel({
         <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-text-hint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {focus === 'teen' ? 'Teen access' : 'Parent access'}
         </span>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--float-text-hint)', fontSize: '16px', lineHeight: 1, padding: '2px' }}
-        >
-          ×
-        </button>
+        <CloseButton onClick={onClose} />
       </div>
 
       {focus === 'teen' && (

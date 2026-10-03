@@ -1,5 +1,5 @@
 import { btn } from '../../components/ui/buttons'
-import { Badge, Banner } from '../../components/ui/primitives'
+import { Badge, Banner, CloseButton } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -107,7 +107,7 @@ export default function ClinicianAccessPanel({
         <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           Who can open this patient
         </span>
-        <button onClick={onClose} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Close</button>
+        <CloseButton onClick={onClose} />
       </div>
       <p style={{ fontSize: '12px', color: 'var(--float-text-secondary)', margin: '0 0 14px' }}>
         {canManage

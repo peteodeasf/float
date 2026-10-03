@@ -29,7 +29,7 @@ import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
 import { btn, buttonRow, countPill, liveDot, chip, iconBtn, tab, tabCount, segGroup, segLabel, segItem, menuPanel, menuItem } from '../../components/ui/buttons'
-import { Button } from '../../components/ui/primitives'
+import { Button, CloseButton } from '../../components/ui/primitives'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
@@ -2015,7 +2015,7 @@ export default function PatientPage() {
           {processPanelOpen && (
             <div style={{ width: '340px', flexShrink: 0, position: 'sticky', top: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                <button onClick={() => setProcessPanelOpen(false)} aria-label="Close checklist panel" style={iconBtn('sm')}>×</button>
+                <CloseButton onClick={() => setProcessPanelOpen(false)} label="Close checklist panel" />
               </div>
               {patientId && (
                 <ConsultationChecklist patientId={patientId} title="Checklist" collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
