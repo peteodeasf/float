@@ -165,7 +165,7 @@ export function Exchange({ q, a, onReopen, onRename, onRemove }: {
   if (editing) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0' }}>
-        <span style={{ fontSize: 12.5, color: '#a8b6b4', flexShrink: 0 }}>{q}</span>
+        <span style={{ fontSize: 13, color: 'var(--float-text-secondary)', flexShrink: 0 }}>{q}</span>
         <input
           value={draft}
           autoFocus
@@ -185,8 +185,8 @@ export function Exchange({ q, a, onReopen, onRename, onRemove }: {
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '5px 0', flexWrap: 'wrap' }}>
       <button onClick={onReopen} disabled={!onReopen}
         style={{ display: 'flex', alignItems: 'baseline', gap: 8, flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: onReopen ? 'pointer' : 'default', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12.5, color: '#a8b6b4', flexShrink: 0 }}>{q}</span>
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#3d5451' }}>{a}</span>
+        <span style={{ fontSize: 13, color: 'var(--float-text-secondary)', flexShrink: 0 }}>{q}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{a}</span>
       </button>
       {onRename && (
         <button onClick={() => { setDraft(a); setEditing(true) }} title="Change the wording"

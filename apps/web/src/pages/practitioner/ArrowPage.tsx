@@ -241,6 +241,24 @@ function PickRow({ trigger, onOpen }: { trigger: TriggerSituation; onOpen: (id: 
 }
 
 // ── The descent ────────────────────────────────────────────────
+// The feared outcome defaults from the child's last answer. Strip the hanging words a child tacks on
+// to the trailing sentence that don't change the fear ("…, obviously", "well, …"), so the saved
+// outcome reads as the fear itself. A light, hand-kept list — the clinician still edits before
+// saving. Add new hanging words here as we find them (per Peter, this list is expected to grow).
+const TRAILING_HEDGES = ['obviously', 'i guess', 'i suppose', 'you know', 'really', 'honestly', 'or something', 'or whatever']
+const LEADING_HEDGES = ['well', 'so', 'like', 'i mean', 'yeah']
+const FEAR_TRAILING = new RegExp(`[\\s,]+(${TRAILING_HEDGES.join('|')})[.!?]*$`, 'i')
+const FEAR_LEADING = new RegExp(`^(${LEADING_HEDGES.join('|')})[\\s,]+`, 'i')
+function cleanFearedOutcome(raw: string): string {
+  let t = (raw || '').trim().replace(/^["“”'']+|["“”'']+$/g, '').trim()
+  let prev = ''
+  while (t !== prev) { prev = t; t = t.replace(FEAR_TRAILING, '').trim() }
+  t = t.replace(FEAR_LEADING, '').trim()
+  if (t) t = t[0].toUpperCase() + t.slice(1)
+  if (t && !/[.!?]$/.test(t)) t += '.'
+  return t
+}
+
 export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backLabel = '← All situations' }: {
   // The situation being dug into — a plan situation's name, or an ad-hoc arrow's typed situation.
   name: string
@@ -318,7 +336,7 @@ export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backL
   }
 
   const reachedBottom = () => {
-    setFearedDraft(steps.length ? steps[steps.length - 1].response : startingThought)
+    setFearedDraft(cleanFearedOutcome(steps.length ? steps[steps.length - 1].response : startingThought))
     setAtBottom(true)
   }
 
@@ -357,7 +375,7 @@ export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backL
       {atBottom ? (
         <div>
           <div style={{ background: 'var(--float-primary-dark)', borderRadius: 'var(--float-radius-card)', padding: '15px 17px' }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: 7 }}>♡ the worry underneath</div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: 7 }}>♡ feared outcome</div>
             <textarea value={fearedDraft} onChange={e => setFearedDraft(e.target.value)} rows={2}
               style={{ width: '100%', border: 'none', outline: 'none', fontSize: 16.5, fontWeight: 800, color: '#fff', background: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
           </div>
