@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
 import JustSayIt, { MicIcon, NoteRow, captureApi, type CapturedNote } from './JustSayIt'
+import FloatLogo from '../../components/ui/FloatLogo'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
@@ -339,7 +340,7 @@ export default function MonitorLandingPage() {
         <div style={{ display: 'flex', borderBottom: '1px solid var(--float-border)', background: 'var(--float-surface)' }}>
           {tabBtn('Form', activeTab === 'form', handleAdd)}
           {tabBtn(<span>🎤 Tap & Talk</span>, false, () => startCapture('talk'))}
-          {tabBtn('Observations', activeTab === 'observations', () => setActiveTab('observations'))}
+          {tabBtn('History', activeTab === 'observations', () => setActiveTab('observations'))}
         </div>
 
         {activeTab === 'form' ? (
@@ -481,8 +482,7 @@ function Shell({ children, wide = false }: { children: React.ReactNode; wide?: b
         alignItems: 'center',
         gap: '10px'
       }}>
-        <span style={{ fontSize: '20px' }}>~</span>
-        <span style={{ fontSize: '18px', fontWeight: '600', color: 'var(--float-text)' }}>Float</span>
+        <FloatLogo size="md" />
       </div>
       {children}
     </div>
