@@ -150,7 +150,7 @@ export default function NewPatientPage() {
 
             <div>
               <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Parent / guardian name
+                Name
                 <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
               <TextInput
@@ -164,7 +164,7 @@ export default function NewPatientPage() {
 
             <div>
               <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Parent / guardian email
+                Email
                 <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
               <TextInput
@@ -178,7 +178,7 @@ export default function NewPatientPage() {
 
             <div>
               <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Parent / guardian phone
+                Phone
                 <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
               <TextInput
@@ -196,7 +196,7 @@ export default function NewPatientPage() {
 
             <div>
               <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Parent / guardian name
+                Name
                 <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
               <TextInput
@@ -210,7 +210,7 @@ export default function NewPatientPage() {
 
             <div>
               <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Parent / guardian email
+                Email
                 <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
               </label>
               <TextInput
