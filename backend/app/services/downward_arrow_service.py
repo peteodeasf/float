@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 
 from app.models.downward_arrow import DownwardArrow
 from app.models.treatment import TriggerSituation, TreatmentPlan
+from app.models.patient import PatientProfile
 from app.schemas.downward_arrow import (
     DownwardArrowCreate,
     DownwardArrowUpdate,
@@ -151,6 +152,29 @@ async def get_downward_arrow(
         query = query.where(DownwardArrow.facilitated_by == facilitated_by)
     result = await db.execute(query.order_by(DownwardArrow.created_at.asc()))
     return result.scalars().first()
+
+
+async def list_adhoc_downward_arrows(
+    db: AsyncSession,
+    organization_id: uuid.UUID,
+    patient_ids: Optional[list[uuid.UUID]],
+) -> list[tuple[DownwardArrow, str]]:
+    """Every ad-hoc arrow (no trigger situation, a typed situation) for the given patients, each with
+    its patient's name, newest-updated first. `patient_ids=None` means every patient in the org (an
+    admin); a list scopes to the patients this clinician may open."""
+    query = (
+        select(DownwardArrow, PatientProfile.name)
+        .join(PatientProfile, PatientProfile.id == DownwardArrow.patient_id)
+        .where(
+            DownwardArrow.organization_id == organization_id,
+            DownwardArrow.trigger_situation_id.is_(None),
+            DownwardArrow.situation_text.isnot(None),
+        )
+        .order_by(DownwardArrow.updated_at.desc())
+    )
+    if patient_ids is not None:
+        query = query.where(DownwardArrow.patient_id.in_(patient_ids))
+    return list((await db.execute(query)).all())
 
 
 async def list_patient_downward_arrows(

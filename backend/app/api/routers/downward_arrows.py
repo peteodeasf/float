@@ -14,8 +14,10 @@ from app.services.downward_arrow_service import (
     create_patient_downward_arrow,
     get_downward_arrow,
     list_patient_downward_arrows,
+    list_adhoc_downward_arrows,
     update_downward_arrow,
 )
+from app.services.patient_access_service import accessible_patient_ids
 from app.services.patient_service import get_patient_by_id
 from app.schemas.downward_arrow import (
     DownwardArrowCreate,
@@ -176,6 +178,24 @@ async def create_arrow(
     return await get_or_create_downward_arrow(
         db, situation_id, practitioner.organization_id, data
     )
+
+
+@router.get("/downward-arrows/ad-hoc")
+async def list_all_adhoc_arrows(
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every ad-hoc downward arrow across this clinician's patients, newest first, each tagged with the
+    patient it's for — the Tools history list. Scoped to the patients the clinician may open."""
+    user, practitioner = context
+    ids = await accessible_patient_ids(db, user.id, practitioner)
+    rows = await list_adhoc_downward_arrows(db, practitioner.organization_id, ids)
+    out = []
+    for arrow, patient_name in rows:
+        d = DownwardArrowResponse.model_validate(arrow).model_dump(mode="json")
+        d["patient_name"] = patient_name
+        out.append(d)
+    return out
 
 
 @router.get("/patients/{patient_id}/downward-arrows",

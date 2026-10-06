@@ -288,6 +288,14 @@ export const getSituationDownwardArrow = async (situationId: string): Promise<Do
   return response.data
 }
 
+// Every ad-hoc arrow across the clinician's patients, newest first, each tagged with who it's for —
+// the Tools downward-arrow history.
+export interface AdHocArrow extends DownwardArrow { patient_name: string }
+export const listAdHocDownwardArrows = async (): Promise<AdHocArrow[]> => {
+  const response = await apiClient.get('/downward-arrows/ad-hoc')
+  return response.data
+}
+
 export const listPatientDownwardArrows = async (patientId: string, facilitatedBy?: string): Promise<DownwardArrow[]> => {
   const response = await apiClient.get(`/patients/${patientId}/downward-arrows`, {
     params: facilitatedBy ? { facilitated_by: facilitatedBy } : undefined,
