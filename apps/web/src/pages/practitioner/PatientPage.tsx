@@ -42,11 +42,6 @@ import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 const TAB_IDS = ['monitoring', 'sessions', 'plan', 'experiments', 'chat'] as const
 type TabId = typeof TAB_IDS[number]
 
-// SMS (the parent-phone field on the monitoring-form send) is hidden until Twilio is configured.
-// Without credentials send_sms is a no-op, so the field only confuses testers. Flip to true to
-// bring it back once Twilio is set up (A2P 10DLC compliance is the real blocker — see the backlog).
-const SMS_ENABLED = false
-
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
 function DTBadge({ value, max }: { value: number | null | undefined; max?: number | null }) {
@@ -416,13 +411,9 @@ export default function PatientPage() {
   const [deleteTriggerError, setDeleteTriggerError] = useState<string | null>(null)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameVal, setNicknameVal] = useState('')
-  const [showSendForm, setShowSendForm] = useState(false)
   const [parentEmail, setParentEmail] = useState('')
-  const [parentName, setParentName] = useState('')
-  const [parentPhone, setParentPhone] = useState('')
   const [copied, setCopied] = useState(false)
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
-  const [smsSentTo, setSmsSentTo] = useState<string | null>(null)
   // Monitoring panel: which tab is showing — the raw entries table or the Case Summary.
   const [monitoringSubTab, setMonitoringSubTab] = useState<'report' | 'summary'>('report')
   const [msgContent, setMsgContent] = useState('')
@@ -602,6 +593,10 @@ export default function PatientPage() {
   // Placeholder situations (e.g. the parent-DA anchor) are filtered out of every situation list/count
   const triggers = useMemo(() => rawTriggers?.filter(t => !t.is_placeholder), [rawTriggers])
   const { data: monitoringForm } = useQuery({ queryKey: ['monitoring-form', patientId], queryFn: () => getMonitoringForm(patientId!), enabled: !!patientId })
+  // Prefill the send form's email from the patient record (only matters before a form exists).
+  useEffect(() => {
+    if (patient?.parent_email && !monitoringForm) setParentEmail(patient.parent_email)
+  }, [patient?.parent_email, monitoringForm])
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
@@ -695,16 +690,11 @@ export default function PatientPage() {
         setTimeout(() => setCopied(false), 2000)
       }
       if (data.email_sent && parentEmail) setEmailSentTo(parentEmail)
-      if (data.sms_sent && parentPhone) setSmsSentTo(parentPhone)
-      setShowSendForm(false)
-      setParentEmail('')
-      setParentName('')
-      setParentPhone('')
     },
     onError: () => {
       // A form already exists (the server refuses a second send), or the network failed. Don't fail
       // silently — the link is still copyable from the existing form.
-      if (monitoringForm?.access_token) { handleCopyLink(); setShowSendForm(false) }
+      if (monitoringForm?.access_token) handleCopyLink()
       else alert('That could not be sent. Please try again.')
     },
   })
@@ -718,31 +708,6 @@ export default function PatientPage() {
     }
   }
 
-  const handleSendAll = () => {
-    // Once a form exists, don't create a second one — copy the existing link. The first send (no
-    // form yet) is the only time this actually creates and emails.
-    if (monitoringForm?.access_token) {
-      handleCopyLink()
-      setShowSendForm(false)
-      return
-    }
-    sendFormMutation.mutate({
-      parent_email: parentEmail || undefined,
-      parent_name: parentName || undefined,
-      parent_phone: parentPhone || undefined
-    })
-  }
-
-  const handleSendLinkOnly = async () => {
-    // Once the form exists, copying its link is a local copy of the existing token — no re-send.
-    // The re-send response didn't include the link, so the button quietly did nothing the 2nd time.
-    if (monitoringForm?.access_token) {
-      await handleCopyLink()
-      setShowSendForm(false)
-      return
-    }
-    sendFormMutation.mutate({})
-  }
 
 
   // Preliminary Report (Step 2) — AI clinical summary, persisted on the formulation
@@ -1126,49 +1091,6 @@ export default function PatientPage() {
   const situationsExist = (triggers?.length ?? 0) > 0
   const hasNewMonitoring = plan?.has_new_monitoring_entries ?? true
 
-  // Open the send/resend form, prefilling what we already know about the parent.
-  const openSendForm = () => {
-    setShowSendForm(true)
-    if (patient?.parent_email) setParentEmail(patient.parent_email)
-    if (patient?.parent_name) setParentName(patient.parent_name)
-    if (SMS_ENABLED && patient?.parent_phone) setParentPhone(patient.parent_phone)
-  }
-
-  // The parent-form fields + send buttons, shared by the first send and the resend flow.
-  const sendFormBlock = (
-    <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', padding: '14px' }}>
-      <div style={{ marginBottom: '10px' }}>
-        <label className="block text-xs font-medium text-slate-500 mb-1">Parent email (optional)</label>
-        <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
-          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-      </div>
-      <div style={{ marginBottom: '10px' }}>
-        <label className="block text-xs font-medium text-slate-500 mb-1">Parent name (optional)</label>
-        <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="e.g. Sarah"
-          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-      </div>
-      {SMS_ENABLED && (
-        <div style={{ marginBottom: '12px' }}>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Parent phone for SMS (optional)</label>
-          <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="+1 (555) 123-4567"
-            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-        </div>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {(parentEmail || (SMS_ENABLED && parentPhone)) && (
-          <button onClick={handleSendAll} disabled={sendFormMutation.isPending} style={btn('primary', 'md')}>
-            {sendFormMutation.isPending ? 'Sending...' :
-              parentEmail && SMS_ENABLED && parentPhone ? 'Send both + copy link' :
-              parentEmail ? 'Send email + copy link' : 'Send SMS + copy link'}
-          </button>
-        )}
-        <button onClick={handleSendLinkOnly} disabled={sendFormMutation.isPending} style={btn((parentEmail || parentPhone) ? 'secondary' : 'primary', 'md')}>
-          {sendFormMutation.isPending ? 'Creating...' : 'Just copy link'}
-        </button>
-        <button onClick={() => setShowSendForm(false)} style={btn('quiet', 'md')}>Cancel</button>
-      </div>
-    </div>
-  )
 
   // The four Case Summary sections, reused by the Monitoring panel's Case Summary tab and the Plan
   // tab. Null until a summary has been generated.
@@ -1253,47 +1175,52 @@ export default function PatientPage() {
             <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
               Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
             </p>
-            {(emailSentTo || smsSentTo) && (
-              <div style={{ marginBottom: '12px' }}>
-                {emailSentTo && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '4px' }}>
-                    <span>&#10003;</span> Email sent to {emailSentTo}
-                  </div>
-                )}
-                {SMS_ENABLED && smsSentTo && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                    <span>&#10003;</span> SMS sent to {smsSentTo}
-                  </div>
-                )}
+            {emailSentTo && (
+              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '12px' }}>
+                <span>&#10003;</span> Email sent to {emailSentTo}
               </div>
             )}
-            {showSendForm ? sendFormBlock : (
-              <button onClick={openSendForm} style={btn('primary', 'md')}>Send monitoring form</button>
-            )}
+            {/* Two clear ways to deliver: email it, or copy the link to send yourself. */}
+            <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', padding: '14px' }}>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Email it to the parent (optional)</label>
+              <div className="flex gap-2" style={{ marginBottom: '12px' }}>
+                <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
+                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <button onClick={() => sendFormMutation.mutate({ parent_email: parentEmail || undefined })}
+                  disabled={!parentEmail || sendFormMutation.isPending} style={btn('primary', 'md')}>
+                  {sendFormMutation.isPending ? 'Sending…' : 'Email it'}
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button onClick={() => sendFormMutation.mutate({})} disabled={sendFormMutation.isPending} style={btn('secondary', 'md')}>
+                  {sendFormMutation.isPending ? 'Creating…' : 'Copy link'}
+                </button>
+                <span className="text-xs text-slate-400">Creates the form and copies the link — paste it into a text, or open it with them.</span>
+              </div>
+            </div>
           </div>
         ) : (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-              <div className="flex items-center gap-3" style={{ flexWrap: 'wrap' }}>
-                <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
-                  monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
-                  'bg-amber-100 text-amber-700'
-                }`}>{monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}</span>
-                {monitoringForm.entries_count != null && (
-                  <span className="text-sm text-slate-500">{monitoringForm.entries_count} {monitoringForm.entries_count === 1 ? 'entry' : 'entries'}</span>
-                )}
-                {daysSinceSent != null && (
-                  <span className="text-sm text-slate-400">{daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent}d ago`}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={handleCopyLink} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">{copied ? 'Copied!' : 'Copy link'}</button>
-                <button onClick={openSendForm} className="text-xs text-teal-600 font-medium hover:underline bg-transparent border-none cursor-pointer">Resend form</button>
-              </div>
+            <div className="flex items-center gap-3" style={{ flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
+                monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
+                'bg-amber-100 text-amber-700'
+              }`}>{monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}</span>
+              <span className="text-sm text-slate-400">
+                {monitoringForm.entries_count ? `${monitoringForm.entries_count} ${monitoringForm.entries_count === 1 ? 'entry' : 'entries'} · ` : ''}
+                {daysSinceSent == null ? '' : daysSinceSent === 0 ? 'sent today' : `sent ${daysSinceSent}d ago`}
+              </span>
             </div>
-            {showSendForm && <div style={{ marginTop: '12px' }}>{sendFormBlock}</div>}
+            <div className="flex gap-2" style={{ marginTop: '12px' }}>
+              <input readOnly value={`${window.location.origin}/monitor/${monitoringForm.access_token}`} onFocus={e => e.currentTarget.select()}
+                className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600" />
+              <button onClick={handleCopyLink} style={btn('secondary', 'md')}>{copied ? 'Copied!' : 'Copy link'}</button>
+            </div>
+            <p className="text-xs text-slate-400" style={{ margin: '8px 0 0' }}>
+              Same link each time — responses are kept. Paste it into a text, or open it with them.
+            </p>
           </div>
         )}
       </div>
