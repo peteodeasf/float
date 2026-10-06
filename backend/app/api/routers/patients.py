@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, delete
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -23,6 +23,7 @@ from app.models.patient import (
     PatientProfile,
     ParentPatientLink,
     PatientAccessLog,
+    PatientParentContact,
 )
 from app.models.experiment import Experiment
 from app.models.message import Message
@@ -32,7 +33,7 @@ from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
 from app.models.formulation import ClinicalFormulation
 from app.models.checklist import ConsultationChecklist
-from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse
+from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse, ParentContactOut
 from app.services.email_service import send_teen_invitation_email, send_parent_invitation_email
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
 from app.models.action_plan import ActionPlan
@@ -504,6 +505,10 @@ async def _patient_response(
     """
     if user is None:
         user = (await db.execute(select(User).where(User.id == patient.user_id))).scalar_one()
+    contacts = (await db.execute(
+        select(PatientParentContact).where(PatientParentContact.patient_id == patient.id)
+        .order_by(PatientParentContact.position.asc(), PatientParentContact.created_at.asc())
+    )).scalars().all()
     return PatientResponse(
         id=patient.id,
         user_id=patient.user_id,
@@ -516,6 +521,7 @@ async def _patient_response(
         parent_name=patient.parent_name,
         parent_email=patient.parent_email,
         parent_phone=patient.parent_phone,
+        parent_contacts=[ParentContactOut.model_validate(c) for c in contacts],
         teen_email=patient.teen_email,
         teen_invited_at=patient.teen_invited_at,
         child_connect_consent_at=patient.child_connect_consent_at,
@@ -540,6 +546,23 @@ async def create_new_patient(
     patient, user = await create_patient(
         db, data, practitioner.id, practitioner.organization_id
     )
+    # Up to two parent contacts, entered at add time. Keep the denormalised single parent in sync
+    # with the first contact for back-compat.
+    contacts = [c for c in (data.parent_contacts or []) if (c.name and c.name.strip()) or (c.email and c.email.strip())]
+    if contacts:
+        for i, c in enumerate(contacts):
+            db.add(PatientParentContact(
+                patient_id=patient.id,
+                name=(c.name or "").strip() or None,
+                email=(c.email or "").strip() or None,
+                position=i,
+            ))
+        if not patient.parent_name and contacts[0].name:
+            patient.parent_name = contacts[0].name.strip() or None
+        if not patient.parent_email and contacts[0].email:
+            patient.parent_email = contacts[0].email.strip() or None
+        await db.commit()
+        await db.refresh(patient)
     return await _patient_response(db, patient, user)
 
 
@@ -570,8 +593,29 @@ async def update_patient(
         db, patient_id, practitioner.organization_id
     )
     update_data = data.model_dump(exclude_unset=True)
+    new_contacts = update_data.pop("parent_contacts", None)  # not an ORM column; handled below
     for field, value in update_data.items():
         setattr(patient, field, value)
+
+    # When given, replace the parent contacts wholesale (edit-later from the patient page).
+    if new_contacts is not None:
+        await db.execute(
+            delete(PatientParentContact).where(PatientParentContact.patient_id == patient.id)
+        )
+        kept = [c for c in new_contacts
+                if (c.get("name") or "").strip() or (c.get("email") or "").strip()]
+        for i, c in enumerate(kept):
+            db.add(PatientParentContact(
+                patient_id=patient.id,
+                name=(c.get("name") or "").strip() or None,
+                email=(c.get("email") or "").strip() or None,
+                position=i,
+            ))
+        # Keep the denormalised single parent in sync with contact #1 (create does this too).
+        if kept:
+            patient.parent_name = (kept[0].get("name") or "").strip() or None
+            patient.parent_email = (kept[0].get("email") or "").strip() or None
+
     await db.commit()
     await db.refresh(patient)
     return await _patient_response(db, patient)

@@ -105,6 +105,11 @@ export default function MonitoringReportPage() {
                   </td>
                   <td className="py-3 px-3" style={{ color: 'var(--float-text)' }}>
                     {entry.situation || '--'}
+                    {entry.recipient_label && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full align-middle" style={{ whiteSpace: 'nowrap', background: 'var(--float-surface-muted)', color: 'var(--float-text-secondary)' }}>
+                        {entry.recipient_label}
+                      </span>
+                    )}
                     <ParentWords entry={entry} />
                   </td>
                   <td className="py-3 px-3" style={{ color: 'var(--float-text-secondary)' }}>

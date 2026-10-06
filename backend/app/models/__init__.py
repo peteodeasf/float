@@ -1,13 +1,13 @@
 from app.models.organization import Organization
 from app.models.user import User, UserRole
-from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink, PatientAccessGrant, PatientAccessLog
+from app.models.patient import PractitionerProfile, PatientProfile, ParentPatientLink, PatientAccessGrant, PatientAccessLog, PatientParentContact
 from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior, SituationLibrary, BehaviorLibrary
 from app.models.ladder import ExposureLadder, LadderRung
 from app.models.experiment import Experiment, AccommodationBehavior, AccommodationCheckin, ParentExperiment
 from app.models.notification import Notification, LadderReviewFlag
 from app.models.downward_arrow import DownwardArrow
 from app.models.message import Message
-from app.models.monitoring import MonitoringForm, MonitoringEntry, MonitoringNote
+from app.models.monitoring import MonitoringForm, MonitoringEntry, MonitoringNote, MonitoringRecipient
 from app.models.session_note import SessionNote, SessionRecording
 from app.models.action_plan import ActionPlan
 from app.models.waitlist import WaitlistEntry

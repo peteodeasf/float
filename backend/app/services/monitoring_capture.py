@@ -221,7 +221,8 @@ async def write_up_note(sessions, note_id: uuid.UUID) -> None:
             for o in observations:
                 if o["fear_thermometer"] is None:
                     o = {**o, "fear_thermometer": note.fear_level}
-                db.add(MonitoringEntry(monitoring_form_id=note.monitoring_form_id, note_id=note.id, is_draft=False,
+                db.add(MonitoringEntry(monitoring_form_id=note.monitoring_form_id, note_id=note.id,
+                                       recipient_id=note.recipient_id, is_draft=False,
                                        parent_words=note.words, captured_by=note.captured_by, **o))
             note.written_up_at = datetime.now(timezone.utc)
             form = await db.get(MonitoringForm, note.monitoring_form_id)

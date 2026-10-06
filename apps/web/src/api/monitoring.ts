@@ -1,9 +1,29 @@
 import { apiClient } from './client'
 
+/** One parent/guardian the monitoring form is sent to. A child can have two. */
+export interface MonitoringRecipientInput {
+  label?: string
+  email?: string
+}
+
 export interface SendMonitoringFormParams {
+  /** One or two recipients (two-parent monitoring). The preferred shape. */
+  recipients?: MonitoringRecipientInput[]
+  /** Back-compat single-parent fields. The server still accepts them; the UI sends `recipients`. */
   parent_email?: string
   parent_name?: string
   parent_phone?: string
+}
+
+/** A recipient as returned by the send/get form endpoints. `email_sent` is only on the send response. */
+export interface MonitoringFormRecipient {
+  id: string
+  label: string
+  email: string | null
+  link: string
+  full_link: string
+  opened_at: string | null
+  email_sent?: boolean
 }
 
 export interface MonitoringFormData {
@@ -21,6 +41,8 @@ export interface MonitoringFormData {
   practitioner_name?: string
   email_sent?: boolean
   sms_sent?: boolean
+  /** One per parent/guardian the form was sent to. */
+  recipients?: MonitoringFormRecipient[]
 }
 
 export interface MonitoringEntryData {
@@ -46,6 +68,8 @@ export interface ReportEntry {
   /** What the parent said or typed, when Float wrote it up. docs/plans/monitoring-just-say-it.md */
   parent_words?: string | null
   captured_by?: string
+  /** Which parent/guardian logged this entry, when two are monitoring. */
+  recipient_label: string | null
 }
 
 export interface MonitoringReport {

@@ -96,6 +96,28 @@ class PatientProfile(Base):
     )
 
 
+class PatientParentContact(Base):
+    """A parent/guardian's name and email on the patient, entered at patient-add and editable later.
+    A child can have two. These are the defaults for the monitoring link labels and emails, and for
+    the parent-account invites — separate from the parent user accounts (ParentPatientLink), which
+    come later. docs/plans/two-parent-accounts.md (§7)."""
+    __tablename__ = "patient_parent_contacts"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("patient_profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    email: Mapped[str | None] = mapped_column(String, nullable=True)
+    #: 0, 1 — stable order for the two parents (rows created together share created_at).
+    position: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+
+
 class ParentPatientLink(Base):
     __tablename__ = "parent_patient_links"
 

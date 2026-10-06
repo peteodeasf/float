@@ -14,6 +14,12 @@ Not built. The database already allows it; the app assumes one parent in several
 - **Both parents get the reminder emails**, and each parent can turn their own off.
 - **A link each for the monitoring week, and the clinician sees which parent wrote each entry.**
 
+**Refined (Peter, 2026-10-06):** the monitoring "link each" is **one form record with two recipient
+links**, not one form per parent — attribution is a per-entry stamp (see §5). The patient carries
+**two parent contacts** (name + email), entered on the patient-add form and editable later; those
+names default the recipient labels, which are free-text-editable before sending, and the edit writes
+back to the contact's name (see §7).
+
 ## What is already true
 
 - `parent_patient_links` is a many-to-many table: the unique constraint is on the pair, not on the
@@ -73,11 +79,23 @@ Today one form per child, one `parent_email`, one token
 (`backend/app/api/routers/monitoring.py:90-101`, `app/models/monitoring.py:37-45`), and nothing on an
 entry says who wrote it.
 
-**Changes:** one form per parent for the same week, each with its own link and evening email; each
-entry records which form it came from, so the clinician sees "Mum" or "Dad" on it. The extraction
-reads all of the week's entries together, as now. Teachers and carers are a later step
+**Changes (refined with Peter, 2026-10-06):** keep **one** monitoring-form record for the child's
+week, and hang **two recipients** off it — each with a label, its own link token, and its own status.
+Each monitoring entry records which recipient it came from, so the clinician sees the parent's name on
+it. The extraction reads all of the week's entries together, as now. One record (not one-per-parent)
+so the status chip, report and completion logic stay single; attribution is the per-entry stamp.
+A recipients table hanging off the form (recipient = label + token + sent/opened status) is the clean
+shape; each monitoring entry gets a `recipient_id`.
+
+**Labels (Peter, 2026-10-06):** each recipient's label defaults from the parent contact's name (§7)
+if set, otherwise "Parent 1 / Parent 2". The send form shows each label as a free-text box the
+clinician edits before sending; editing it **writes back to that parent contact's name** so it sticks.
+
+**Send form:** the redesigned send block becomes one form with **two delivery rows** — each row is
+label + Copy link + optional "Email it" + its own status ("opened, 3 entries" / "not opened"). The
+Report tab tags each entry with the recipient's name. Teachers and carers are a later step
 (docs/backlog.md, "Monitoring by more than one person").
-**Gate:** `/security-review` — a form link is an unguessable token with no login.
+**Gate:** `/security-review` — a form link is an unguessable token with no login, now two per child.
 
 ### 6. The accommodation conversation: an answer per parent `M`
 
@@ -89,10 +107,17 @@ the shared suggestion row, so the second parent overwrites the first, and `named
 Where the two parents disagree, that is worth showing rather than averaging.
 Peter, 2026-09-15: each parent answers separately.
 
-### 7. The patient record's own parent fields `S`
+### 7. The patient record's parent fields → two parent contacts `M`
 
-`PatientProfile.parent_name / parent_email / parent_phone` (`patient.py:50-52`) are separate from the
-link table and will drift. Decide whether they become the invite defaults only, or go.
+`PatientProfile.parent_name / parent_email / parent_phone` (`patient.py:50-52`) are a single parent,
+separate from the link table and drift-prone.
+
+**Decided (Peter, 2026-10-06):** the patient carries **two parent contacts** (name + email each),
+entered on the patient-add form (`NewPatientPage.tsx` gains a second parent block) and editable later
+on the patient page. They are the defaults for three things: the monitoring recipient labels (§5), the
+email prefill on each monitoring link, and the parent-account invites. Store them as a small contacts
+shape per patient (a `patient_parent_contacts` table reads cleaner than doubling the columns and
+leaves room if a third ever matters); migrate the existing single `parent_name/email` into contact #1.
 
 ## Questions, answered
 

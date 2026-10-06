@@ -4,6 +4,20 @@ from datetime import date, datetime
 import uuid
 
 
+class ParentContactIn(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+
+class ParentContactOut(BaseModel):
+    id: uuid.UUID
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class PatientCreate(BaseModel):
     name: str
     email: EmailStr
@@ -13,6 +27,8 @@ class PatientCreate(BaseModel):
     parent_name: Optional[str] = None
     parent_email: Optional[str] = None
     parent_phone: Optional[str] = None
+    # Up to two parents/guardians, entered at add time. Seed the monitoring links and invites.
+    parent_contacts: Optional[List[ParentContactIn]] = None
 
 
 class PatientUpdate(BaseModel):
@@ -24,6 +40,8 @@ class PatientUpdate(BaseModel):
     parent_name: Optional[str] = None
     parent_email: Optional[str] = None
     parent_phone: Optional[str] = None
+    # When present, replaces the patient's parent contacts.
+    parent_contacts: Optional[List[ParentContactIn]] = None
 
 
 class PatientResponse(BaseModel):
@@ -39,6 +57,7 @@ class PatientResponse(BaseModel):
     parent_name: Optional[str] = None
     parent_email: Optional[str] = None
     parent_phone: Optional[str] = None
+    parent_contacts: List[ParentContactOut] = []
     teen_email: Optional[str] = None
     teen_invited_at: Optional[datetime] = None
     child_connect_consent_at: Optional[datetime] = None

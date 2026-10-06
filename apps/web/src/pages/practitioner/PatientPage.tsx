@@ -8,7 +8,7 @@ import {
   getSituationDownwardArrow,
   getPatientExperiments, searchSituationLibrary, type DownwardArrow
 } from '../../api/treatment'
-import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, type PreliminaryReport } from '../../api/monitoring'
+import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, type PreliminaryReport, type SendMonitoringFormParams } from '../../api/monitoring'
 import ParentWords from '../../components/practitioner/ParentWords'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
@@ -201,6 +201,11 @@ function InlineMonitoringReport({ patientId, onClose, embedded }: { patientId: s
                 </td>
                 <td className="py-3 px-3 text-slate-700">
                   {entry.situation || '--'}
+                  {entry.recipient_label && (
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 align-middle" style={{ whiteSpace: 'nowrap' }}>
+                      {entry.recipient_label}
+                    </span>
+                  )}
                   <ParentWords entry={entry} />
                 </td>
                 <td className="py-3 px-3 text-slate-600">
@@ -411,8 +416,14 @@ export default function PatientPage() {
   const [deleteTriggerError, setDeleteTriggerError] = useState<string | null>(null)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameVal, setNicknameVal] = useState('')
-  const [parentEmail, setParentEmail] = useState('')
+  // Two recipient rows for the monitoring form — a label and an email each (two-parent monitoring).
+  const [recipients, setRecipients] = useState<{ label: string; email: string }[]>([
+    { label: '', email: '' },
+    { label: '', email: '' },
+  ])
   const [copied, setCopied] = useState(false)
+  // Which recipient's link was just copied (form-exists state has one Copy button per recipient).
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
   // Monitoring panel: which tab is showing — the raw entries table or the Case Summary.
   const [monitoringSubTab, setMonitoringSubTab] = useState<'report' | 'summary'>('report')
@@ -593,10 +604,16 @@ export default function PatientPage() {
   // Placeholder situations (e.g. the parent-DA anchor) are filtered out of every situation list/count
   const triggers = useMemo(() => rawTriggers?.filter(t => !t.is_placeholder), [rawTriggers])
   const { data: monitoringForm } = useQuery({ queryKey: ['monitoring-form', patientId], queryFn: () => getMonitoringForm(patientId!), enabled: !!patientId })
-  // Prefill the send form's email from the patient record (only matters before a form exists).
+  // Prefill the two recipient rows from the patient's parent contacts (only matters before a form
+  // exists). Label defaults to the parent's name, or "Parent 1" / "Parent 2".
   useEffect(() => {
-    if (patient?.parent_email && !monitoringForm) setParentEmail(patient.parent_email)
-  }, [patient?.parent_email, monitoringForm])
+    if (monitoringForm) return
+    const contacts = patient?.parent_contacts ?? []
+    setRecipients([0, 1].map(i => ({
+      label: contacts[i]?.name || `Parent ${i + 1}`,
+      email: contacts[i]?.email || '',
+    })))
+  }, [patient?.parent_contacts, monitoringForm])
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
@@ -680,7 +697,7 @@ export default function PatientPage() {
   })
 
   const sendFormMutation = useMutation({
-    mutationFn: (params: { parent_email?: string; parent_name?: string; parent_phone?: string } = {}) =>
+    mutationFn: (params: SendMonitoringFormParams = {}) =>
       sendMonitoringForm(patientId!, params),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['monitoring-form', patientId] })
@@ -689,7 +706,8 @@ export default function PatientPage() {
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }
-      if (data.email_sent && parentEmail) setEmailSentTo(parentEmail)
+      const sentEmails = (data.recipients ?? []).filter(r => r.email_sent && r.email).map(r => r.email!)
+      if (sentEmails.length) setEmailSentTo(sentEmails.join(', '))
     },
     onError: () => {
       // A form already exists (the server refuses a second send), or the network failed. Don't fail
@@ -706,6 +724,32 @@ export default function PatientPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  // Copy one recipient's link; `key` is the recipient id so only that row shows "Copied!".
+  const copyRecipientLink = async (url: string, key: string) => {
+    try { await navigator.clipboard.writeText(url) } catch { const el = document.createElement('textarea'); el.value = url; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el) }
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
+  // Create the monitoring form. Recipient 1 is always sent (link-only if it has no email, matching
+  // the old "copy link" path). Recipient 2 is sent whenever there's a second parent at all — an
+  // email, a label the clinician changed from the default, or an existing second parent contact —
+  // so a second parent you'll text (no email) still gets their own link.
+  const handleCreateMonitoringForm = () => {
+    const recips: SendMonitoringFormParams['recipients'] = [
+      { label: recipients[0].label.trim() || 'Parent 1', email: recipients[0].email.trim() || undefined },
+    ]
+    const r2label = recipients[1].label.trim()
+    const hasSecondParent =
+      !!recipients[1].email.trim() ||
+      (patient?.parent_contacts?.length ?? 0) >= 2 ||
+      (!!r2label && r2label !== 'Parent 2')
+    if (hasSecondParent) {
+      recips.push({ label: r2label || 'Parent 2', email: recipients[1].email.trim() || undefined })
+    }
+    sendFormMutation.mutate({ recipients: recips })
   }
 
 
@@ -1173,29 +1217,34 @@ export default function PatientPage() {
           <div>
             <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 8px' }}>Parent monitoring form</h2>
             <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 12px' }}>
-              Send a monitoring form to the parent. They'll observe their child's anxiety for about a week before your first appointment.
+              Send a monitoring form to one or both parents. They'll observe their child's anxiety for about a week before your first appointment.
             </p>
             {emailSentTo && (
               <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg" style={{ marginBottom: '12px' }}>
                 <span>&#10003;</span> Email sent to {emailSentTo}
               </div>
             )}
-            {/* Two clear ways to deliver: email it, or copy the link to send yourself. */}
+            {/* One row per parent: a label and an email. Leave a row's email blank to skip it. */}
             <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', padding: '14px' }}>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Email it to the parent (optional)</label>
-              <div className="flex gap-2" style={{ marginBottom: '12px' }}>
-                <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="parent@email.com"
-                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                <button onClick={() => sendFormMutation.mutate({ parent_email: parentEmail || undefined })}
-                  disabled={!parentEmail || sendFormMutation.isPending} style={btn('primary', 'md')}>
-                  {sendFormMutation.isPending ? 'Sending…' : 'Email it'}
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {recipients.map((r, i) => (
+                  <div key={i} className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+                    <input type="text" value={r.label}
+                      onChange={e => setRecipients(prev => prev.map((p, j) => j === i ? { ...p, label: e.target.value } : p))}
+                      placeholder={`Parent ${i + 1}`} aria-label={`Parent ${i + 1} label`}
+                      className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" style={{ width: '120px' }} />
+                    <input type="email" value={r.email}
+                      onChange={e => setRecipients(prev => prev.map((p, j) => j === i ? { ...p, email: e.target.value } : p))}
+                      placeholder="parent@email.com" aria-label={`Parent ${i + 1} email`}
+                      className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" style={{ minWidth: '160px' }} />
+                  </div>
+                ))}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <button onClick={() => sendFormMutation.mutate({})} disabled={sendFormMutation.isPending} style={btn('secondary', 'md')}>
-                  {sendFormMutation.isPending ? 'Creating…' : 'Copy link'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+                <button onClick={handleCreateMonitoringForm} disabled={sendFormMutation.isPending} style={btn('primary', 'md')}>
+                  {sendFormMutation.isPending ? 'Creating…' : 'Create monitoring form'}
                 </button>
-                <span className="text-xs text-slate-400">Creates the form and copies the link — paste it into a text, or open it with them.</span>
+                <span className="text-xs text-slate-400">Creates the form, emails anyone with an email, and copies the link — or paste it into a text, or open it with them.</span>
               </div>
             </div>
           </div>
@@ -1213,11 +1262,27 @@ export default function PatientPage() {
                 {daysSinceSent == null ? '' : daysSinceSent === 0 ? 'sent today' : `sent ${daysSinceSent}d ago`}
               </span>
             </div>
-            <div className="flex gap-2" style={{ marginTop: '12px' }}>
-              <input readOnly value={`${window.location.origin}/monitor/${monitoringForm.access_token}`} onFocus={e => e.currentTarget.select()}
-                className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600" />
-              <button onClick={handleCopyLink} style={btn('secondary', 'md')}>{copied ? 'Copied!' : 'Copy link'}</button>
-            </div>
+            {(monitoringForm.recipients && monitoringForm.recipients.length > 0) ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                {monitoringForm.recipients.map(rec => (
+                  <div key={rec.id} className="flex gap-2 items-center" style={{ flexWrap: 'wrap' }}>
+                    <span className="text-sm font-medium" style={{ width: '100px', color: 'var(--float-text)', flexShrink: 0 }}>{rec.label}</span>
+                    <input readOnly value={rec.full_link} onFocus={e => e.currentTarget.select()}
+                      className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600" style={{ minWidth: '160px' }} />
+                    <button onClick={() => copyRecipientLink(rec.full_link, rec.id)} style={btn('secondary', 'md')}>{copiedKey === rec.id ? 'Copied!' : 'Copy link'}</button>
+                    <span className="text-xs" style={{ color: rec.opened_at ? 'var(--float-primary)' : 'var(--float-text-hint)', flexShrink: 0 }}>
+                      {rec.opened_at ? 'opened' : 'not opened yet'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-2" style={{ marginTop: '12px' }}>
+                <input readOnly value={`${window.location.origin}/monitor/${monitoringForm.access_token}`} onFocus={e => e.currentTarget.select()}
+                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600" />
+                <button onClick={handleCopyLink} style={btn('secondary', 'md')}>{copied ? 'Copied!' : 'Copy link'}</button>
+              </div>
+            )}
             <p className="text-xs text-slate-400" style={{ margin: '8px 0 0' }}>
               Same link each time — responses are kept. Paste it into a text, or open it with them.
             </p>

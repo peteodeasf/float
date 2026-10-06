@@ -52,6 +52,33 @@ class MonitoringForm(Base):
     )
 
 
+class MonitoringRecipient(Base):
+    """One parent the monitoring form was sent to. The form is one per child; a recipient is one
+    person's way in — their own link token and label — so each entry can say who wrote it. Two
+    parents = two recipients on the same form. docs/plans/two-parent-accounts.md (§5)."""
+    __tablename__ = "monitoring_recipients"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
+    monitoring_form_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("monitoring_forms.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    #: Shown on each entry and in the send form. Defaults from the parent contact's name, free-text
+    #: editable before sending ("Mum", "Dad", a real name, or "Parent 1/2").
+    label: Mapped[str | None] = mapped_column(String, nullable=True)
+    #: This recipient's own unguessable link; no sign-in.
+    access_token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    #: The address this recipient's form was emailed to (the evening emails go here).
+    email: Mapped[str | None] = mapped_column(String, nullable=True)
+    #: 0, 1 — stable order for the two parents (rows created together share created_at).
+    position: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+
+
 class MonitoringEntry(Base):
     __tablename__ = "monitoring_entries"
 
@@ -62,6 +89,10 @@ class MonitoringEntry(Base):
     )
     monitoring_form_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("monitoring_forms.id"), nullable=False
+    )
+    #: Which parent wrote it (null for legacy entries and single-link forms).
+    recipient_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("monitoring_recipients.id", ondelete="SET NULL"), nullable=True, index=True
     )
     entry_date: Mapped[date] = mapped_column(
         Date, nullable=False, server_default=text("CURRENT_DATE")
@@ -106,6 +137,11 @@ class MonitoringNote(Base):
     )
     monitoring_form_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("monitoring_forms.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    #: Which parent said it (null for legacy and single-link forms). Entries written up from this
+    #: note inherit it, so the clinician sees who the observation came from.
+    recipient_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("monitoring_recipients.id", ondelete="SET NULL"), nullable=True, index=True
     )
     words: Mapped[str] = mapped_column(Text, nullable=False)
     #: voice | note

@@ -9,16 +9,25 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, func, select, update
 
+from app.core.config import settings
 from app.core.database import get_db, get_session_factory
-from app.models.monitoring import MonitoringEntry, MonitoringForm, MonitoringNote
-from app.models.patient import PatientProfile, PractitionerProfile
+from app.models.monitoring import MonitoringEntry, MonitoringForm, MonitoringNote, MonitoringRecipient
+from app.models.patient import PatientProfile, PractitionerProfile, PatientParentContact
 from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 from app.services import monitoring_capture as capture
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
+class RecipientIn(BaseModel):
+    label: Optional[str] = None
+    email: Optional[str] = None
+
+
 class SendMonitoringFormRequest(BaseModel):
+    # One row per parent the form goes to (up to two). Each becomes a recipient with its own link.
+    recipients: Optional[list[RecipientIn]] = None
+    # Back-compat single-parent fields, used when `recipients` is not given.
     parent_email: Optional[str] = None
     parent_name: Optional[str] = None
     parent_phone: Optional[str] = None
@@ -55,6 +64,18 @@ def _entry_out(e: MonitoringEntry) -> dict:
         "captured_by": e.captured_by,
         "note_id": str(e.note_id) if e.note_id else None,
         "created_at": e.created_at.isoformat() if e.created_at else None,
+    }
+
+
+def _recipient_out(r: MonitoringRecipient) -> dict:
+    link = f"/monitor/{r.access_token}"
+    return {
+        "id": str(r.id),
+        "label": r.label,
+        "email": r.email,
+        "link": link,
+        "full_link": f"{settings.BASE_URL}{link}",
+        "opened_at": r.opened_at.isoformat() if r.opened_at else None,
     }
 
 
@@ -113,40 +134,63 @@ async def send_monitoring_form(
     await db.refresh(form)
 
     practitioner_name = practitioner.name
-    monitoring_link = f"{settings.BASE_URL}/monitor/{form.access_token}"
 
-    # Store parent phone if provided
     if data.parent_phone:
         form.parent_phone = data.parent_phone
-        await db.commit()
 
-    # The address it went to. The evening emails during the monitoring week go there and nowhere
-    # else (docs/plans/monitoring-just-say-it.md); a form sent by text only gets none.
-    if data.parent_email and data.parent_email.strip():
-        form.parent_email = data.parent_email.strip()
-        await db.commit()
+    # Normalise to a recipient list. New callers send `recipients`; old ones a single parent_*.
+    recips_in = data.recipients if data.recipients is not None else [
+        RecipientIn(label=data.parent_name, email=data.parent_email)
+    ]
+    if not recips_in:
+        recips_in = [RecipientIn()]
 
-    # Send email if parent_email provided
-    email_sent = False
-    if data.parent_email:
-        email_sent = await send_monitoring_form_email(
-            to_email=data.parent_email,
-            clinician_name=practitioner_name,
-            monitoring_link=monitoring_link,
-            child_name=patient.name,
-            parent_name=data.parent_name or ""
+    # The form's own evening-email address stays the first recipient's, for back-compat.
+    first_email = next((r.email.strip() for r in recips_in if r.email and r.email.strip()), None)
+    if first_email:
+        form.parent_email = first_email
+
+    # The patient's parent contacts, in order — edited labels write back to these.
+    contacts = (await db.execute(
+        select(PatientParentContact).where(PatientParentContact.patient_id == patient_id)
+        .order_by(PatientParentContact.position.asc(), PatientParentContact.created_at.asc())
+    )).scalars().all()
+
+    sent_results: list[tuple[MonitoringRecipient, bool]] = []
+    for i, r in enumerate(recips_in):
+        label = (r.label or "").strip() or None
+        email = (r.email or "").strip() or None
+        recipient = MonitoringRecipient(
+            monitoring_form_id=form.id, label=label, access_token=secrets.token_hex(32),
+            email=email, position=i,
         )
+        db.add(recipient)
 
-    # Send SMS if parent_phone provided
-    sms_sent = False
-    if data.parent_phone:
-        from app.services.sms_service import send_monitoring_form_sms
-        sms_sent = await send_monitoring_form_sms(
-            to_number=data.parent_phone,
-            clinician_name=practitioner_name,
-            monitoring_link=monitoring_link,
-            child_name=patient.name
-        )
+        # Write the (possibly edited) label/email back to the matching contact, or add one.
+        if label or email:
+            if i < len(contacts):
+                if label:
+                    contacts[i].name = label
+                if email:
+                    contacts[i].email = email
+            else:
+                db.add(PatientParentContact(patient_id=patient_id, name=label, email=email, position=i))
+
+        email_sent = False
+        if email:
+            email_sent = await send_monitoring_form_email(
+                to_email=email, clinician_name=practitioner_name,
+                monitoring_link=f"{settings.BASE_URL}/monitor/{recipient.access_token}",
+                child_name=patient.name, parent_name=label or "",
+            )
+        sent_results.append((recipient, email_sent))
+
+    await db.commit()
+    for recipient, _ in sent_results:
+        await db.refresh(recipient)
+
+    recipients_out = [{**_recipient_out(rec), "email_sent": es} for rec, es in sent_results]
+    first_full = recipients_out[0]["full_link"] if recipients_out else f"{settings.BASE_URL}/monitor/{form.access_token}"
 
     return {
         "id": str(form.id),
@@ -154,12 +198,12 @@ async def send_monitoring_form(
         "status": form.status,
         "access_token": form.access_token,
         "link": f"/monitor/{form.access_token}",
-        "full_link": monitoring_link,
+        "full_link": first_full,
         "practitioner_name": practitioner_name,
         "sent_at": form.sent_at.isoformat() if form.sent_at else None,
         "created_at": form.created_at.isoformat(),
-        "email_sent": email_sent,
-        "sms_sent": sms_sent
+        "email_sent": any(es for _, es in sent_results),
+        "recipients": recipients_out,
     }
 
 
@@ -190,6 +234,11 @@ async def get_monitoring_form(
     )
     entries = entries_result.scalars().all()
 
+    recipients = (await db.execute(
+        select(MonitoringRecipient).where(MonitoringRecipient.monitoring_form_id == form.id)
+        .order_by(MonitoringRecipient.position.asc(), MonitoringRecipient.created_at.asc())
+    )).scalars().all()
+
     return {
         "id": str(form.id),
         "patient_id": str(form.patient_id),
@@ -200,6 +249,7 @@ async def get_monitoring_form(
         "submitted_at": form.submitted_at.isoformat() if form.submitted_at else None,
         "created_at": form.created_at.isoformat(),
         "entries_count": len(entries),
+        "recipients": [_recipient_out(r) for r in recipients],
         "entries": [
             _entry_out(e)
             for e in entries
@@ -351,6 +401,12 @@ async def get_monitoring_report(
         if e.parent_response
     ]
 
+    # Which parent each entry came from, for the "Mum / Dad" tag.
+    recipients = (await db.execute(
+        select(MonitoringRecipient).where(MonitoringRecipient.monitoring_form_id == form.id)
+    )).scalars().all()
+    label_by_id = {r.id: r.label for r in recipients}
+
     all_entries = [
         {
             "id": str(e.id),
@@ -361,6 +417,7 @@ async def get_monitoring_report(
             "fear_thermometer": e.fear_thermometer,
             "parent_words": e.parent_words,
             "captured_by": e.captured_by,
+            "recipient_label": label_by_id.get(e.recipient_id),
         }
         for e in entries
     ]
@@ -384,18 +441,35 @@ async def get_monitoring_report(
 public_router = APIRouter(tags=["monitoring-public"])
 
 
+async def _resolve_token(
+    access_token: str,
+    db: AsyncSession
+) -> tuple[MonitoringForm, Optional[MonitoringRecipient]]:
+    """Resolve a link token to its form. A recipient's own per-parent token first (new, two-parent),
+    then the form's own token (legacy / single link). Returns the recipient when one matched."""
+    rec = (await db.execute(
+        select(MonitoringRecipient).where(MonitoringRecipient.access_token == access_token)
+    )).scalar_one_or_none()
+    if rec:
+        form = (await db.execute(
+            select(MonitoringForm).where(MonitoringForm.id == rec.monitoring_form_id)
+        )).scalar_one_or_none()
+        if not form:
+            raise HTTPException(status_code=404, detail="Form not found")
+        return form, rec
+    form = (await db.execute(
+        select(MonitoringForm).where(MonitoringForm.access_token == access_token)
+    )).scalar_one_or_none()
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+    return form, None
+
+
 async def get_form_by_token(
     access_token: str,
     db: AsyncSession
 ) -> MonitoringForm:
-    result = await db.execute(
-        select(MonitoringForm).where(
-            MonitoringForm.access_token == access_token
-        )
-    )
-    form = result.scalar_one_or_none()
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
+    form, _ = await _resolve_token(access_token, db)
     return form
 
 
@@ -405,7 +479,10 @@ async def get_public_form(
     tz: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    form = await get_form_by_token(access_token, db)
+    form, recipient = await _resolve_token(access_token, db)
+    if recipient and recipient.opened_at is None:
+        recipient.opened_at = datetime.now(timezone.utc)
+        await db.commit()
 
     # Where the parent lives, for the evening email during the monitoring week. Only a real time
     # zone name is kept. docs/plans/monitoring-just-say-it.md
@@ -476,7 +553,7 @@ async def create_entry(
     data: MonitoringEntryCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    form = await get_form_by_token(access_token, db)
+    form, recipient = await _resolve_token(access_token, db)
 
     if form.status == "submitted":
         raise HTTPException(status_code=400, detail="Form already submitted")
@@ -486,6 +563,7 @@ async def create_entry(
 
     entry = MonitoringEntry(
         monitoring_form_id=form.id,
+        recipient_id=recipient.id if recipient else None,
         entry_date=entry_date,
         situation=data.situation,
         child_behavior_observed=data.child_behavior_observed,
@@ -494,6 +572,10 @@ async def create_entry(
         is_draft=data.is_draft
     )
     db.add(entry)
+
+    # First sign this parent has opened their link.
+    if recipient and recipient.opened_at is None:
+        recipient.opened_at = datetime.now(timezone.utc)
 
     # Update form status
     if form.status == "pending":
@@ -631,9 +713,9 @@ def _note_out(n: MonitoringNote) -> dict:
 
 
 async def _save_note(db: AsyncSession, form: MonitoringForm, words: str, captured_by: str, today: Optional[str],
-                     background: BackgroundTasks, sessions) -> dict:
-    note = MonitoringNote(monitoring_form_id=form.id, words=words, captured_by=captured_by,
-                          entry_date=_parent_today(today))
+                     background: BackgroundTasks, sessions, recipient_id: Optional[uuid.UUID] = None) -> dict:
+    note = MonitoringNote(monitoring_form_id=form.id, recipient_id=recipient_id, words=words,
+                          captured_by=captured_by, entry_date=_parent_today(today))
     db.add(note)
     await db.commit()
     await db.refresh(note)
@@ -653,8 +735,10 @@ async def say_it(
 ):
     """A recording of up to a minute. Turned into text before the parent is told "Got it", so a
     recording with nothing heard can be tried again. The recording is not stored."""
-    form = await get_form_by_token(access_token, db)
+    form, recipient = await _resolve_token(access_token, db)
     _refuse_if_submitted(form)
+    if recipient and recipient.opened_at is None:
+        recipient.opened_at = datetime.now(timezone.utc)
     if not capture.voice_available():
         raise HTTPException(status_code=503, detail="Recording isn't available yet. You can type it instead.")
     if not (audio.content_type or "").startswith("audio/"):
@@ -671,7 +755,8 @@ async def say_it(
         raise HTTPException(status_code=502, detail="We couldn't turn that into text. Try again, or type it.")
     if not words:
         raise HTTPException(status_code=422, detail="We couldn't hear that. Try again, or type it.")
-    return await _save_note(db, form, words[:capture.MAX_NOTE_CHARS], "voice", today, background, sessions)
+    return await _save_note(db, form, words[:capture.MAX_NOTE_CHARS], "voice", today, background, sessions,
+                            recipient_id=recipient.id if recipient else None)
 
 
 class NoteRequest(BaseModel):
@@ -688,13 +773,16 @@ async def write_it(
     sessions=Depends(get_session_factory),
 ):
     """A quick typed note, the same way as a recording."""
-    form = await get_form_by_token(access_token, db)
+    form, recipient = await _resolve_token(access_token, db)
     _refuse_if_submitted(form)
+    if recipient and recipient.opened_at is None:
+        recipient.opened_at = datetime.now(timezone.utc)
     words = data.text.strip()
     if not words:
         raise HTTPException(status_code=422, detail="There's nothing to send.")
     await _count_capture(db, form)
-    return await _save_note(db, form, words, "note", data.today, background, sessions)
+    return await _save_note(db, form, words, "note", data.today, background, sessions,
+                            recipient_id=recipient.id if recipient else None)
 
 
 async def _note_on_form(db: AsyncSession, form: MonitoringForm, note_id: uuid.UUID) -> MonitoringNote:

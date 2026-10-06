@@ -58,6 +58,19 @@ export type Patient = {
 export const getPatientAttention = async (patientId: string): Promise<AttentionReason[]> =>
   (await apiClient.get(`/patients/${patientId}/attention`)).data
 
+/** A parent/guardian on record for a patient. A child can have two. docs/plans/two-parent-accounts.md */
+export interface ParentContact {
+  id: string
+  name: string | null
+  email: string | null
+}
+
+/** Shape sent when creating or updating a patient's parent/guardian contacts. */
+export interface ParentContactInput {
+  name?: string
+  email?: string
+}
+
 export interface PatientDetail {
   id: string
   user_id: string
@@ -70,6 +83,8 @@ export interface PatientDetail {
   parent_name?: string | null
   parent_email?: string | null
   parent_phone?: string | null
+  /** The patient's parent/guardian contacts (one or two). */
+  parent_contacts: ParentContact[]
   teen_email?: string | null
   teen_invited_at?: string | null
   child_connect_consent_at?: string | null
@@ -165,6 +180,8 @@ export interface CreatePatientData {
   parent_name?: string
   parent_email?: string
   parent_phone?: string
+  /** One or two parent/guardian contacts. Preferred over the single parent_* fields. */
+  parent_contacts?: ParentContactInput[]
 }
 
 export const createPatient = async (data: CreatePatientData): Promise<PatientDetail> => {
@@ -178,6 +195,8 @@ export interface UpdatePatientData {
   gender?: string | null
   anxiety_presentations?: string[] | null
   phone_number?: string | null
+  /** Replaces the patient's parent/guardian contacts. */
+  parent_contacts?: ParentContactInput[]
 }
 
 export const updatePatient = async (id: string, data: UpdatePatientData): Promise<PatientDetail> => {

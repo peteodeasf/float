@@ -16,6 +16,8 @@ export default function NewPatientPage() {
   const [parentName, setParentName] = useState('')
   const [parentEmail, setParentEmail] = useState('')
   const [parentPhone, setParentPhone] = useState('')
+  const [parent2Name, setParent2Name] = useState('')
+  const [parent2Email, setParent2Email] = useState('')
   const [error, setError] = useState('')
 
   const mutation = useMutation({
@@ -32,15 +34,19 @@ export default function NewPatientPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    // One or two parent/guardian contacts. Drop a row that has neither a name nor an email.
+    const parentContacts = [
+      { name: parentName.trim() || undefined, email: parentEmail.trim() || undefined },
+      { name: parent2Name.trim() || undefined, email: parent2Email.trim() || undefined },
+    ].filter(c => c.name || c.email)
     mutation.mutate({
       name,
       email,
       age: age ? Number(age) : undefined,
       gender: gender || undefined,
       phone_number: phone || undefined,
-      parent_name: parentName || undefined,
-      parent_email: parentEmail || undefined,
-      parent_phone: parentPhone || undefined
+      parent_phone: parentPhone || undefined,
+      parent_contacts: parentContacts.length ? parentContacts : undefined,
     })
   }
 
@@ -139,7 +145,7 @@ export default function NewPatientPage() {
             </div>
 
             <div className="pt-4" style={{ borderTop: '1px solid var(--float-border)' }}>
-              <p className="text-sm font-semibold" style={labelStyle}>Parent / Guardian</p>
+              <p className="text-sm font-semibold" style={labelStyle}>Parent / guardian 1</p>
             </div>
 
             <div>
@@ -181,6 +187,38 @@ export default function NewPatientPage() {
                 value={parentPhone}
                 onChange={(e) => setParentPhone(e.target.value)}
                 placeholder="(555) 123-4567"
+              />
+            </div>
+
+            <div className="pt-4" style={{ borderTop: '1px solid var(--float-border)' }}>
+              <p className="text-sm font-semibold" style={labelStyle}>Parent / guardian 2</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
+                Parent / guardian name
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
+              </label>
+              <TextInput
+                block
+                type="text"
+                value={parent2Name}
+                onChange={(e) => setParent2Name(e.target.value)}
+                placeholder="Alex Smith"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
+                Parent / guardian email
+                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
+              </label>
+              <TextInput
+                block
+                type="email"
+                value={parent2Email}
+                onChange={(e) => setParent2Email(e.target.value)}
+                placeholder="parent2@example.com"
               />
             </div>
 
