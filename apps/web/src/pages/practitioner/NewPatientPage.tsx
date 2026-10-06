@@ -34,6 +34,9 @@ export default function NewPatientPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    // Age and gender are required for the patient.
+    if (!age.trim()) { setError('Enter the patient’s age.'); return }
+    if (!gender) { setError('Select the patient’s gender.'); return }
     // One or two parent/guardian contacts. Drop a row that has neither a name nor an email.
     const parentContacts = [
       { name: parentName.trim() || undefined, email: parentEmail.trim() || undefined },
@@ -65,182 +68,91 @@ export default function NewPatientPage() {
         <h1 className="text-xl font-semibold" style={{ color: 'var(--float-text)' }}>Add patient</h1>
       </nav>
 
-      <main className="px-8 py-8 max-w-lg mx-auto">
+      <main className="px-8 py-8 max-w-2xl mx-auto">
         <Card style={{ padding: '32px' }}>
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Full name
-              </label>
-              <TextInput
-                block
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jamie Smith"
-                required
-              />
+              <p className="text-sm font-semibold mb-3" style={labelStyle}>Patient</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>Full name</label>
+                  <TextInput block type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jamie Smith" required />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Email</label>
+                    <TextInput block type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jamie@example.com" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>
+                      Phone<span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
+                    </label>
+                    <TextInput block type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Age</label>
+                    <TextInput block type="number" min="1" max="99" value={age} onChange={(e) => setAge(e.target.value)} placeholder="14" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Gender</label>
+                    <Select block value={gender} onChange={(e) => setGender(e.target.value)} required>
+                      <option value="">Select...</option>
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                      <option value="Non-binary">Non-binary</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </Select>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Email
-              </label>
-              <TextInput
-                block
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="jamie@example.com"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Phone number
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <TextInput
-                block
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Age
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <TextInput
-                block
-                type="number"
-                min="1"
-                max="99"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="14"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Gender
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <Select
-                block
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="Female">Female</option>
-                <option value="Male">Male</option>
-                <option value="Non-binary">Non-binary</option>
-                <option value="Prefer not to say">Prefer not to say</option>
-              </Select>
-            </div>
-
-            <div className="pt-4" style={{ borderTop: '1px solid var(--float-border)' }}>
-              <p className="text-sm font-semibold" style={labelStyle}>Parent / guardian 1</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Name
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <TextInput
-                block
-                type="text"
-                value={parentName}
-                onChange={(e) => setParentName(e.target.value)}
-                placeholder="Sarah Smith"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Email
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <TextInput
-                block
-                type="email"
-                value={parentEmail}
-                onChange={(e) => setParentEmail(e.target.value)}
-                placeholder="parent@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Phone
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <TextInput
-                block
-                type="text"
-                value={parentPhone}
-                onChange={(e) => setParentPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
-
-            <div className="pt-4" style={{ borderTop: '1px solid var(--float-border)' }}>
-              <p className="text-sm font-semibold" style={labelStyle}>Parent / guardian 2</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Name
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <TextInput
-                block
-                type="text"
-                value={parent2Name}
-                onChange={(e) => setParent2Name(e.target.value)}
-                placeholder="Alex Smith"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={labelStyle}>
-                Email
-                <span className="font-normal ml-1" style={optionalStyle}>(optional)</span>
-              </label>
-              <TextInput
-                block
-                type="email"
-                value={parent2Email}
-                onChange={(e) => setParent2Email(e.target.value)}
-                placeholder="parent2@example.com"
-              />
+            <div className="pt-5" style={{ borderTop: '1px solid var(--float-border)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
+                <div>
+                  <p className="text-sm font-semibold mb-3" style={labelStyle}>Parent / guardian 1</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>Name<span className="font-normal ml-1" style={optionalStyle}>(optional)</span></label>
+                      <TextInput block type="text" value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Sarah Smith" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>Email<span className="font-normal ml-1" style={optionalStyle}>(optional)</span></label>
+                      <TextInput block type="email" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="parent@example.com" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>Phone<span className="font-normal ml-1" style={optionalStyle}>(optional)</span></label>
+                      <TextInput block type="tel" value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} placeholder="(555) 123-4567" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold mb-3" style={labelStyle}>Parent / guardian 2</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>Name<span className="font-normal ml-1" style={optionalStyle}>(optional)</span></label>
+                      <TextInput block type="text" value={parent2Name} onChange={(e) => setParent2Name(e.target.value)} placeholder="Alex Smith" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>Email<span className="font-normal ml-1" style={optionalStyle}>(optional)</span></label>
+                      <TextInput block type="email" value={parent2Email} onChange={(e) => setParent2Email(e.target.value)} placeholder="parent2@example.com" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {error && (
               <p className="text-sm" style={{ color: 'var(--float-danger)' }}>{error}</p>
             )}
 
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                kind="secondary"
-                onClick={() => navigate('/dashboard')}
-                style={{ flex: 1 }}
-              >
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" kind="secondary" onClick={() => navigate('/dashboard')}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                kind="primary"
-                disabled={mutation.isPending}
-                style={{ flex: 1 }}
-              >
+              <Button type="submit" kind="primary" disabled={mutation.isPending}>
                 {mutation.isPending ? 'Creating...' : 'Add patient'}
               </Button>
             </div>
