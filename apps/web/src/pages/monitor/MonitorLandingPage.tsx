@@ -463,10 +463,26 @@ function Instructions() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <p style={para}>
-        Monitoring involves watching and observing the situations in which your child experiences anxiety and noting how you respond to your child in these situations. The purpose of monitoring is to accumulate data.
+        Monitoring involves watching and observing the situations in which your child experiences anxiety and noting how you respond to your child in these situations. The purpose of monitoring is to gather data.
       </p>
+      <div>
+        <p style={para}>The information gathered using the Parent Monitoring Form includes:</p>
+        <ul style={{ ...para, margin: '6px 0 0', paddingLeft: '22px' }}>
+          <li>the date</li>
+          <li>the situation</li>
+          <li>the behavior observed</li>
+          <li>your response as a parent</li>
+          <li>
+            your child's level of distress (as estimated by you) gauged on a scale from 1 to 10
+            <ul style={{ margin: '4px 0 0', paddingLeft: '20px', listStyleType: 'circle' }}>
+              <li>1 means little to no distress/anxiety.</li>
+              <li>10 signifies the highest level of distress/anxiety you have observed your child to experience in this type of situation.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
       <p style={para}>
-        The information gathered using the Parent Monitoring Form includes the date, the situation, the behavior observed, your response as a parent, and your child's level of distress (as estimated by you) gauged on a scale from 1 to 10. 1 means little to no distress/anxiety. 10 signifies the highest level of distress/anxiety you have observed your child to experience in this type of situation.
+        Add enough observations to show what is happening with your child.
       </p>
     </div>
   )
