@@ -18,7 +18,7 @@ class WaitlistSubmission(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    role: Literal["clinician", "parent", "other"]
+    role: Literal["clinician", "parent", "other", "codesign_teen", "codesign_parent"]
     # Anti-bot. `company` is a honeypot: hidden from people, so a value means a bot filled it.
     # `elapsed_ms` is how long the form was on screen — bots submit near-instantly.
     company: str = ""
