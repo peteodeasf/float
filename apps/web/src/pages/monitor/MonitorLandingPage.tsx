@@ -347,9 +347,9 @@ export default function MonitorLandingPage() {
     return (
       <Shell wide about={form?.patient_first_name}>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--float-border)', background: 'var(--float-surface)' }}>
-          {tabBtn('Form', activeTab === 'form', handleAdd)}
+          {tabBtn('Write', activeTab === 'form', handleAdd)}
           {tabBtn(<span>🎤 Tap & Talk</span>, false, () => startCapture('talk'))}
-          {tabBtn(entryCount > 0 ? `History (${entryCount})` : 'History', activeTab === 'observations', () => { setJustSaved(false); setActiveTab('observations') })}
+          {tabBtn(entryCount > 0 ? `Observations (${entryCount})` : 'Observations', activeTab === 'observations', () => { setJustSaved(false); setActiveTab('observations') })}
         </div>
 
         {activeTab === 'form' ? (
@@ -421,7 +421,7 @@ export default function MonitorLandingPage() {
             {offBanner}
             <p style={{ fontSize: '14px', color: 'var(--float-text-secondary)', margin: '0 0 16px' }}>
               {entryCount === 0
-                ? 'No observations yet — add your first one in the Form tab, or tap and talk.'
+                ? 'No observations yet — add your first one in the Write tab, or tap and talk.'
                 : entryCount < 5
                   ? `You've added ${entryCount} observation${entryCount === 1 ? '' : 's'}. A few more would be really helpful.`
                   : `You've added ${entryCount} observations — that's great! The more you add, the better.`}
