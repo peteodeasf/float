@@ -467,7 +467,7 @@ function Instructions() {
       </p>
       <div>
         <p style={para}>The information gathered using the Parent Monitoring Form includes:</p>
-        <ul style={{ ...para, margin: '6px 0 0', paddingLeft: '22px' }}>
+        <ul style={{ ...para, margin: '6px 0 0', paddingLeft: '22px', listStyleType: 'disc' }}>
           <li>the date</li>
           <li>the situation</li>
           <li>the behavior observed</li>
