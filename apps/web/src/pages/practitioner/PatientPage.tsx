@@ -427,6 +427,9 @@ export default function PatientPage() {
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
   // Monitoring panel: which tab is showing — the raw entries table or the Case Summary.
   const [monitoringSubTab, setMonitoringSubTab] = useState<'report' | 'summary'>('report')
+  // Plan tab: the ladder on its own, with accommodations and the case summary one tab away
+  // (Peter, 2026-10-13: keep the Plan tab clean for building the ladder).
+  const [planSubTab, setPlanSubTab] = useState<'ladder' | 'accommodations' | 'summary'>('ladder')
   const [msgContent, setMsgContent] = useState('')
   // 'teen', or a parent's user id: a child can have two parents and each has their own thread
   // (docs/plans/two-parent-accounts.md).
@@ -1986,13 +1989,22 @@ export default function PatientPage() {
 
             {activeTab === 'plan' && (
               <>
-                {treatmentPlanBuilder}
-                {plan && (
-                  <div style={{ marginTop: '16px' }}>
-                    <ParentPlanPanel planId={plan.id} patientId={patientId!} triggers={triggers ?? []} />
-                  </div>
-                )}
-                {caseSummaryPlanCard}
+                <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid var(--float-border)' }}>
+                  {([
+                    { id: 'ladder', label: 'Ladder' },
+                    { id: 'accommodations', label: 'Accommodations' },
+                    { id: 'summary', label: 'Case Summary' },
+                  ] as const).map(t => (
+                    <button key={t.id} onClick={() => setPlanSubTab(t.id)} aria-pressed={planSubTab === t.id} style={tab(planSubTab === t.id)}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                {planSubTab === 'ladder' && treatmentPlanBuilder}
+                {planSubTab === 'accommodations' && (plan
+                  ? <ParentPlanPanel planId={plan.id} patientId={patientId!} triggers={triggers ?? []} />
+                  : <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>Create the treatment plan on the Ladder tab first.</p>)}
+                {planSubTab === 'summary' && caseSummaryPlanCard}
               </>
             )}
 
