@@ -41,7 +41,8 @@ export default function MonitorLandingPage() {
   const [activeTab, setActiveTab] = useState<Tab>('form')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showTips, setShowTips] = useState(false)
+  // The instructions, opened from the top bar over whatever tab they are on.
+  const [showInstructions, setShowInstructions] = useState(false)
   const [showResend, setShowResend] = useState(false)
   const [resendValue, setResendValue] = useState('')
   const [bookmarkDismissed, setBookmarkDismissed] = useState(() => {
@@ -230,47 +231,8 @@ export default function MonitorLandingPage() {
             <strong>{practitionerName}</strong> has asked you to complete a monitoring form
             for {childName} before your first appointment.
           </p>
-          <p style={{ fontSize: '15px', color: 'var(--float-text-secondary)', lineHeight: '1.6', marginBottom: '32px', textAlign: 'left' }}>
-            Monitoring involves watching and observing the situations in which your child experiences anxiety and noting how you respond to your child in these situations. The purpose of monitoring is to accumulate data.
-          </p>
-
-          {/* Tips panel */}
-          <div style={{
-            background: 'var(--float-surface-muted)',
-            borderRadius: '16px',
-            border: '1px solid var(--float-border)',
-            marginBottom: '32px',
-            textAlign: 'left',
-            overflow: 'hidden'
-          }}>
-            <button
-              onClick={() => setShowTips(!showTips)}
-              style={{
-                width: '100%',
-                padding: '16px 20px',
-                background: 'none',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                fontSize: '15px',
-                fontWeight: '600',
-                color: 'var(--float-text)'
-              }}
-            >
-              What information is gathered?
-              <span style={{ fontSize: '18px', color: 'var(--float-text-hint)' }}>
-                {showTips ? '\u2212' : '+'}
-              </span>
-            </button>
-            {showTips && (
-              <div style={{ padding: '0 20px 20px' }}>
-                <p style={{ fontSize: '14px', color: 'var(--float-text-secondary)', lineHeight: '1.6', margin: 0 }}>
-                  The information gathered using the Parent Monitoring Form includes the date, the situation, the behavior observed, your response as a parent, and your child's level of distress (as estimated by you) gauged on a scale from 1 to 10. 1 means little to no distress/anxiety. 10 signifies the highest level of distress/anxiety you have observed your child to experience in this type of situation.
-                </p>
-              </div>
-            )}
+          <div style={{ textAlign: 'left', marginBottom: '32px' }}>
+            <Instructions />
           </div>
 
           {/* Consent to connect the child to the app (unblocks the clinician's teen invite) */}
@@ -331,7 +293,8 @@ export default function MonitorLandingPage() {
     })
     const flabel: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--float-text)', marginBottom: '6px' }
     return (
-      <Shell wide about={form?.patient_first_name}>
+      <Shell wide about={form?.patient_first_name} onInstructions={() => setShowInstructions(true)}>
+        {showInstructions && <InstructionsOverlay onClose={() => setShowInstructions(false)} />}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--float-border)', background: 'var(--float-surface)' }}>
           {tabBtn('Write', activeTab === 'form', handleAdd)}
           {tabBtn(<span>🎤 Tap & Talk</span>, false, () => startCapture('talk'))}
@@ -342,7 +305,7 @@ export default function MonitorLandingPage() {
           <div style={{ padding: '18px 20px 24px' }}>
             {justSaved && (
               <p role="status" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-success)', background: 'var(--float-success-bg)', border: '1px solid var(--float-success-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 14px', margin: '0 0 16px' }}>
-                Saved. Add another if something else came up.
+                Observation saved. You can add as many as you like.
               </p>
             )}
             <div style={{ marginBottom: '18px' }}>
@@ -382,7 +345,7 @@ export default function MonitorLandingPage() {
             <div style={{ marginBottom: '14px' }}>
               <label style={flabel}>What I observed about my child</label>
               <textarea value={childBehavior} onChange={e => setChildBehavior(e.target.value)} rows={3}
-                placeholder={`What did ${childName} do or say? How did they seem?`}
+                placeholder={`What did ${childName} do or say?`}
                 style={boxStyle('var(--float-info)', 'var(--float-surface-muted)')} />
             </div>
             <div style={{ marginBottom: '20px' }}>
@@ -492,8 +455,48 @@ function dayLabel(iso: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
+// ── Instructions ──
+/** What monitoring is and what to write down. Shown in full on the welcome screen, and again from
+ *  the Instructions link in the top bar. */
+function Instructions() {
+  const para: React.CSSProperties = { fontSize: '15px', color: 'var(--float-text-secondary)', lineHeight: 1.6, margin: 0 }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <p style={para}>
+        Monitoring involves watching and observing the situations in which your child experiences anxiety and noting how you respond to your child in these situations. The purpose of monitoring is to accumulate data.
+      </p>
+      <p style={para}>
+        The information gathered using the Parent Monitoring Form includes the date, the situation, the behavior observed, your response as a parent, and your child's level of distress (as estimated by you) gauged on a scale from 1 to 10. 1 means little to no distress/anxiety. 10 signifies the highest level of distress/anxiety you have observed your child to experience in this type of situation.
+      </p>
+    </div>
+  )
+}
+
+/** The instructions over the page, so a half-written observation underneath is not lost. */
+function InstructionsOverlay({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="instructions-title" onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--float-surface)', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', maxHeight: '100%', overflowY: 'auto', boxSizing: 'border-box' }}>
+        <h2 id="instructions-title" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--float-text)', margin: '0 0 14px' }}>Instructions</h2>
+        <Instructions />
+        <button onClick={onClose} autoFocus
+          style={{ width: '100%', marginTop: '22px', padding: '14px', background: 'var(--float-primary)', color: '#fff', border: 'none', borderRadius: '12px', font: 'inherit', fontSize: '15px', fontWeight: 700, cursor: 'pointer' }}>
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Shell wrapper ──
-function Shell({ children, wide = false, about }: { children: React.ReactNode; wide?: boolean; about?: string | null }) {
+function Shell({ children, wide = false, about, onInstructions }: { children: React.ReactNode; wide?: boolean; about?: string | null; onInstructions?: () => void }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -513,11 +516,19 @@ function Shell({ children, wide = false, about }: { children: React.ReactNode; w
       }}>
         <FloatLogo size="md" />
         {/* Whose form this is, so a link opened for the wrong child is noticed. */}
-        {about && (
-          <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--float-primary)', textAlign: 'right', minWidth: 0 }}>
-            Monitoring for {about}
-          </span>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: 0 }}>
+          {about && (
+            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--float-primary)', textAlign: 'right' }}>
+              Monitoring for {about}
+            </span>
+          )}
+          {onInstructions && (
+            <button onClick={onInstructions}
+              style={{ background: 'none', border: 'none', padding: '4px 0', font: 'inherit', fontSize: '14px', fontWeight: 600, color: 'var(--float-text-secondary)', textDecoration: 'underline', cursor: 'pointer' }}>
+              Instructions
+            </button>
+          )}
+        </div>
       </div>
       {children}
     </div>

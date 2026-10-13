@@ -9,6 +9,7 @@
  */
 import { Fragment, useEffect, useRef, useState } from 'react'
 import axios from 'axios'
+import FloatLogo from '../../components/ui/FloatLogo'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 export const MAX_SECONDS = 60
@@ -386,7 +387,7 @@ function Dark({ children, onBack, backLabel = 'Cancel' }: { children: React.Reac
       <style>{CSS}</style>
       <div className="jsi-top">
         <button className="jsi-quiet" onClick={onBack}>{backLabel}</button>
-        <span className="jsi-mark">float</span>
+        <FloatLogo size="md" reverse />
       </div>
       <div className="jsi-body">{children}</div>
     </div>
@@ -486,7 +487,6 @@ const CSS = `
 .jsi *, .jsi *::before, .jsi *::after, .jsi-start, .jsi-start * { box-sizing: border-box; }
 .jsi-dark { color: #fff; background: radial-gradient(130% 70% at 50% 0%, #1d746e 0%, #135450 45%, #0d3d3a 100%); }
 .jsi-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 0; }
-.jsi-mark { font-weight: 800; letter-spacing: -0.02em; font-size: 19px; opacity: .92; }
 .jsi-quiet { background: none; border: 0; color: inherit; opacity: .85; font: inherit; font-size: 15px; padding: 8px 0; cursor: pointer; min-height: 44px; }
 .jsi-body { flex: 1; display: flex; flex-direction: column; padding: 16px 24px 28px; gap: 18px; }
 .jsi-title { font-size: 28px; line-height: 1.15; font-weight: 750; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
