@@ -584,8 +584,8 @@ async def send_reminder_email(
   </div>
   <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
     <div style="background:#ffffff; border-radius:10px; padding:32px 28px; border:1px solid #e2e8f0;">
-      <p style="font-size:18px; font-weight:600; color:#0f172a; margin:0 0 16px;">{heading}</p>
-      <p style="font-size:15px; color:#475569; line-height:1.6; margin:0 0 24px;">{body}</p>
+      <p style="font-size:18px; font-weight:600; color:#0f172a; margin:0 0 16px;">{html.escape(heading)}</p>
+      <p style="font-size:15px; color:#475569; line-height:1.6; margin:0 0 24px;">{html.escape(body)}</p>
       <div style="text-align:center;">
         <a href="{cta_link}"
            style="display:inline-block; padding:14px 40px; background:#135450;

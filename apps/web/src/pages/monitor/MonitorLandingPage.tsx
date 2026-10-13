@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
-import JustSayIt, { MicIcon, NoteRow, captureApi, type CapturedNote } from './JustSayIt'
+import JustSayIt, { MicIcon, NoteRow, captureApi, localToday, type CapturedNote } from './JustSayIt'
 import FloatLogo from '../../components/ui/FloatLogo'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
@@ -56,12 +56,14 @@ export default function MonitorLandingPage() {
 
   // Entry form state
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null)
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0])
+  const [entryDate, setEntryDate] = useState(localToday)
   const [situation, setSituation] = useState('')
   const [childBehavior, setChildBehavior] = useState('')
   const [parentResponse, setParentResponse] = useState('')
   const [fearThermometer, setFearThermometer] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  // Shown above the cleared form after a save, so it is plain they can add another.
+  const [justSaved, setJustSaved] = useState(false)
 
   const fetchForm = async () => {
     try {
@@ -106,7 +108,7 @@ export default function MonitorLandingPage() {
 
   const resetEntryForm = () => {
     setEditingEntry(null)
-    setEntryDate(new Date().toISOString().split('T')[0])
+    setEntryDate(localToday())
     setSituation('')
     setChildBehavior('')
     setParentResponse('')
@@ -114,12 +116,14 @@ export default function MonitorLandingPage() {
   }
 
   const handleAdd = () => {
+    setJustSaved(false)
     resetEntryForm()
     setActiveTab('form')
     setScreen('main')
   }
 
   const handleEdit = (entry: Entry) => {
+    setJustSaved(false)
     setEditingEntry(entry)
     setEntryDate(entry.entry_date)
     setSituation(entry.situation || '')
@@ -148,10 +152,15 @@ export default function MonitorLandingPage() {
         await axios.post(`${API_URL}/monitor/${token}/entries`, payload)
       }
 
+      const wasEdit = !!editingEntry
       await fetchForm()
       resetEntryForm()
       setScreen('main')
-      setActiveTab('observations')
+      // An edit goes back to the list it was opened from. A new one stays on the form, cleared,
+      // so adding the next is the obvious thing to do (Peter, 2026-10-13).
+      setActiveTab(wasEdit ? 'observations' : 'form')
+      setJustSaved(!wasEdit)
+      if (!wasEdit) window.scrollTo({ top: 0 })
     } catch {
       alert('Something went wrong saving your observation. Please try again.')
     } finally {
@@ -230,7 +239,7 @@ export default function MonitorLandingPage() {
   // ── Welcome screen ──
   if (screen === 'welcome') {
     return (
-      <Shell>
+      <Shell about={form?.patient_first_name}>
         <div style={{ padding: '40px 24px', textAlign: 'center' }}>
           {offBanner}
           <p style={{ fontSize: '15px', color: 'var(--float-text-secondary)', marginBottom: '24px', lineHeight: '1.6' }}>
@@ -336,11 +345,11 @@ export default function MonitorLandingPage() {
     })
     const flabel: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--float-text)', marginBottom: '6px' }
     return (
-      <Shell wide>
+      <Shell wide about={form?.patient_first_name}>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--float-border)', background: 'var(--float-surface)' }}>
           {tabBtn('Form', activeTab === 'form', handleAdd)}
           {tabBtn(<span>🎤 Tap & Talk</span>, false, () => startCapture('talk'))}
-          {tabBtn('History', activeTab === 'observations', () => setActiveTab('observations'))}
+          {tabBtn(entryCount > 0 ? `History (${entryCount})` : 'History', activeTab === 'observations', () => { setJustSaved(false); setActiveTab('observations') })}
         </div>
 
         {activeTab === 'form' ? (
@@ -348,6 +357,19 @@ export default function MonitorLandingPage() {
             {editingEntry && (
               <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: '0 0 14px' }}>Editing an observation.</p>
             )}
+            {justSaved && (
+              <p role="status" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-success)', background: 'var(--float-success-bg)', border: '1px solid var(--float-success-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 14px', margin: '0 0 16px' }}>
+                Saved. Add another if something else came up.
+              </p>
+            )}
+            <div style={{ marginBottom: '18px' }}>
+              <label style={flabel} htmlFor="entry-date">When did it happen?</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <input id="entry-date" type="date" value={entryDate} max={localToday()} onChange={e => setEntryDate(e.target.value)}
+                  style={{ border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '11px 14px', fontSize: '16px', fontWeight: 600, fontFamily: 'inherit', color: 'var(--float-text)', background: 'var(--float-surface)' }} />
+                <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--float-primary)' }}>{dayLabel(entryDate)}</span>
+              </div>
+            </div>
             <div style={{ marginBottom: '18px' }}>
               <label style={flabel}>Fear level (1&ndash;10)</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '6px' }}>
@@ -383,16 +405,11 @@ export default function MonitorLandingPage() {
             <div style={{ marginBottom: '20px' }}>
               <label style={flabel}>How I responded</label>
               <textarea value={parentResponse} onChange={e => setParentResponse(e.target.value)} rows={3}
-                placeholder="What did you do or say in the moment?"
+                placeholder="What did you do or say?"
                 style={boxStyle('var(--float-primary-mid)', 'var(--float-surface-muted)')} />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--float-text-secondary)', marginBottom: '4px' }}>Date</label>
-                <input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)}
-                  style={{ border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', fontSize: '15px', fontFamily: 'inherit' }} />
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => handleSave(false)} disabled={saving}
                 style={{ background: 'var(--float-primary)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px 26px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Saving…' : 'Save observation'}
@@ -464,8 +481,21 @@ export default function MonitorLandingPage() {
   return null
 }
 
+/** "Today", "Yesterday", or the weekday and date — said next to the date box so a wrong date is
+ *  noticed. */
+function dayLabel(iso: string): string {
+  if (!iso) return ''
+  const today = localToday()
+  if (iso === today) return 'Today'
+  const d = new Date(iso + 'T00:00:00')
+  const y = new Date(today + 'T00:00:00')
+  y.setDate(y.getDate() - 1)
+  if (d.getTime() === y.getTime()) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+}
+
 // ── Shell wrapper ──
-function Shell({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
+function Shell({ children, wide = false, about }: { children: React.ReactNode; wide?: boolean; about?: string | null }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -480,9 +510,12 @@ function Shell({ children, wide = false }: { children: React.ReactNode; wide?: b
         borderBottom: '1px solid var(--float-border)',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
         gap: '10px'
       }}>
         <FloatLogo size="md" />
+        {/* Whose form this is, so a link opened for the wrong child is noticed. */}
+        {about && <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text-secondary)' }}>Monitoring for {about}</span>}
       </div>
       {children}
     </div>

@@ -20,7 +20,7 @@ class FormOutbox:
     def __init__(self):
         self.sent = []
 
-    async def __call__(self, form, to_email):
+    async def __call__(self, form, to_email, child):
         self.sent.append((form.id, to_email))
         return True
 
@@ -94,7 +94,7 @@ async def test_no_email_without_any_time_zone(db):
     assert await _run(db, at(11, 23, 10)) == []
 
 
-async def test_the_email_says_nothing_clinical_and_links_back(db, monkeypatch):
+async def test_the_email_names_the_child_by_first_name_only_and_links_back(db, monkeypatch):
     _, _, form = await _monitoring(db, name="Sam Rivera")
     captured = []
 
@@ -106,8 +106,10 @@ async def test_the_email_says_nothing_clinical_and_links_back(db, monkeypatch):
     await run_due(db, at(11, 23, 10), Outbox())
 
     [email] = captured
-    assert email["subject"] == "Anything come up today?"
-    assert not any("Sam" in str(v) or "Rivera" in str(v) for v in email.values())
+    assert email["subject"] == "Anything come up with Sam today?"
+    assert email["heading"] == "Anything come up with Sam today?"
+    assert "with Sam today" in email["body"]
+    assert not any("Rivera" in str(v) for v in email.values())
     assert email["cta_link"].endswith(f"/monitor/{form.access_token}")
     assert email["off_link"].endswith(f"/monitor/{form.access_token}?reminders=off")
 

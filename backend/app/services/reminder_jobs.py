@@ -40,7 +40,9 @@ KIND_PARENT_EXPOSURE = "parent_exposure"
 KIND_PARENT_CHECKIN = "parent_checkin"
 KIND_MONITORING = "monitoring_evening"
 
-# Fixed words. Nothing about the child, the step or the accommodation goes into an email.
+# Fixed words. Nothing about the step or the accommodation goes into an email. The monitoring
+# email alone names the child, by first name (Peter, 2026-10-13): the email that sent the form
+# to the same address already does.
 CONTENT = {
     KIND_CHILD_EXPOSURE: dict(
         subject="Something planned in Float today",
@@ -65,16 +67,16 @@ CONTENT = {
     ),
     # To the address the monitoring form was sent to; its link is the form's own.
     KIND_MONITORING: dict(
-        subject="Anything come up today?",
-        heading="Anything come up today?",
-        body="If something came up today, it takes under a minute to add.",
+        subject="Anything come up with {child} today?",
+        heading="Anything come up with {child} today?",
+        body="If something came up with {child} today, it takes under a minute to add.",
         cta="Add it",
         path=None,
     ),
 }
 
 Send = Callable[[User, str], Awaitable[bool]]
-SendMonitoring = Callable[[MonitoringForm, str], Awaitable[bool]]
+SendMonitoring = Callable[[MonitoringForm, str, str], Awaitable[bool]]
 
 
 # ── The link that turns reminder emails off ──────────────────────────────────
@@ -129,14 +131,14 @@ async def default_send(user: User, kind: str) -> bool:
     )
 
 
-async def default_send_monitoring(form: MonitoringForm, to_email: str) -> bool:
+async def default_send_monitoring(form: MonitoringForm, to_email: str, child: str) -> bool:
     c = CONTENT[KIND_MONITORING]
     link = f"{settings.BASE_URL}/monitor/{form.access_token}"
     return await email_service.send_reminder_email(
         to_email=to_email,
-        subject=c["subject"],
-        heading=c["heading"],
-        body=c["body"],
+        subject=c["subject"].format(child=child),
+        heading=c["heading"].format(child=child),
+        body=c["body"].format(child=child),
         cta_label=c["cta"],
         cta_link=link,
         off_link=f"{link}?reminders=off",
@@ -356,7 +358,8 @@ async def monitoring_evening_reminders(db: AsyncSession, now_utc: datetime, send
         )).first()
         if added is not None:
             continue
-        if not await send(form, form.parent_email):
+        child = (patient.name or "").split()[0] if (patient.name or "").strip() else "your child"
+        if not await send(form, form.parent_email, child):
             continue  # tried again next run
         form.evening_email_sent_on = today
         await db.flush()

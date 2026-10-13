@@ -142,8 +142,11 @@ confirmed on Google's pricing page.
      the parent to a sign-in page instead of their monitoring link. The monitoring page takes those
      settings off while it is open, so the phone uses the page's own address. A tip on their list,
      until dismissed: on iPhone "Tap Share, then Add to Home Screen", on Android the browser's menu.
-   - An evening email during the monitoring week, "Anything come up today?", with the link. It
-     goes to the parent email on the patient's record and says nothing clinical. From 7pm where the
+   - An evening email during the monitoring week, "Anything come up with Sam today?", with the
+     link. It goes to the parent email on the patient's record and says nothing clinical. It names
+     the child by first name only (Peter, 2026-10-13), as the email that sends the form already
+     does; before that it named nobody, so a parent or tester with two forms could not tell the
+     emails apart. From 7pm where the
      parent lives, on the seven evenings after the form was sent; skipped on days they already
      added one; stops once they submit, the patient is closed, or they use the off link in the
      email. Their time zone comes from the monitoring page; before they have opened it, their

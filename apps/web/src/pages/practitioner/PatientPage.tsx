@@ -701,11 +701,9 @@ export default function PatientPage() {
       sendMonitoringForm(patientId!, params),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['monitoring-form', patientId] })
-      if (data.full_link) {
-        try { navigator.clipboard.writeText(data.full_link) } catch { const el = document.createElement('textarea'); el.value = data.full_link; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el) }
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      }
+      // The link is not copied here. Safari refuses a copy that comes after a network request, and
+      // the clipboard then still holds whatever was copied before — which can be another patient's
+      // link. Each recipient's link appears below with its own Copy button.
       const sentEmails = (data.recipients ?? []).filter(r => r.email_sent && r.email).map(r => r.email!)
       if (sentEmails.length) setEmailSentTo(sentEmails.join(', '))
     },
