@@ -323,12 +323,14 @@ export default function MonitorLandingPage() {
   // ── Home screen ──
   // ── Main: three tabs — Form / Tap & Talk / Observations ──
   if (screen === 'main') {
+    // Sized by their words, not in thirds: "Observations (3)" wrapped onto two lines in a third of
+    // a phone's width.
     const tabBtn = (label: React.ReactNode, active: boolean, onClick: () => void) => (
       <button
         onClick={onClick}
         aria-pressed={active}
         style={{
-          flex: 1, font: 'inherit', fontSize: '14px', fontWeight: 700, padding: '13px 8px',
+          flex: '1 1 auto', whiteSpace: 'nowrap', font: 'inherit', fontSize: '14px', fontWeight: 700, padding: '13px 8px',
           border: 'none', background: 'none', cursor: 'pointer',
           color: active ? 'var(--float-primary)' : 'var(--float-text-secondary)',
           borderBottom: `2.5px solid ${active ? 'var(--float-primary)' : 'transparent'}`,
@@ -515,7 +517,11 @@ function Shell({ children, wide = false, about }: { children: React.ReactNode; w
       }}>
         <FloatLogo size="md" />
         {/* Whose form this is, so a link opened for the wrong child is noticed. */}
-        {about && <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text-secondary)' }}>Monitoring for {about}</span>}
+        {about && (
+          <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--float-text)', textAlign: 'right', minWidth: 0 }}>
+            Monitoring for <span style={{ color: 'var(--float-primary)' }}>{about}</span>
+          </span>
+        )}
       </div>
       {children}
     </div>
