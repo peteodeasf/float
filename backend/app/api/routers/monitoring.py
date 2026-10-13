@@ -42,15 +42,6 @@ class MonitoringEntryCreate(BaseModel):
     is_draft: bool = False
 
 
-class MonitoringEntryUpdate(BaseModel):
-    entry_date: Optional[str] = None
-    situation: Optional[str] = None
-    child_behavior_observed: Optional[str] = None
-    parent_response: Optional[str] = None
-    fear_thermometer: Optional[int] = None
-    is_draft: Optional[bool] = None
-
-
 def _entry_out(e: MonitoringEntry) -> dict:
     return {
         "id": str(e.id),
@@ -555,9 +546,9 @@ async def create_entry(
 ):
     form, recipient = await _resolve_token(access_token, db)
 
-    if form.status == "submitted":
-        raise HTTPException(status_code=400, detail="Form already submitted")
-
+    # A form marked submitted still takes new observations (Peter, 2026-10-13). The page has had no
+    # Submit button since Voice Monitoring, and the clinician has no way to send a second form, so
+    # refusing here left the parent with a form that failed on every save.
     from datetime import date as date_type
     entry_date = date_type.fromisoformat(data.entry_date) if data.entry_date else date_type.today()
 
@@ -587,47 +578,8 @@ async def create_entry(
     return _entry_out(entry)
 
 
-@public_router.put("/monitor/{access_token}/entries/{entry_id}")
-async def update_entry(
-    access_token: str,
-    entry_id: uuid.UUID,
-    data: MonitoringEntryUpdate,
-    db: AsyncSession = Depends(get_db)
-):
-    form = await get_form_by_token(access_token, db)
-
-    if form.status == "submitted":
-        raise HTTPException(status_code=400, detail="Form already submitted")
-
-    entry_result = await db.execute(
-        select(MonitoringEntry).where(
-            MonitoringEntry.id == entry_id,
-            MonitoringEntry.monitoring_form_id == form.id
-        )
-    )
-    entry = entry_result.scalar_one_or_none()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entry not found")
-
-    if data.entry_date is not None:
-        from datetime import date as date_type
-        entry.entry_date = date_type.fromisoformat(data.entry_date)
-    if data.situation is not None:
-        entry.situation = data.situation
-    if data.child_behavior_observed is not None:
-        entry.child_behavior_observed = data.child_behavior_observed
-    if data.parent_response is not None:
-        entry.parent_response = data.parent_response
-    if data.fear_thermometer is not None:
-        entry.fear_thermometer = data.fear_thermometer
-    if data.is_draft is not None:
-        entry.is_draft = data.is_draft
-
-    entry.updated_at = datetime.now(timezone.utc)
-    await db.commit()
-    await db.refresh(entry)
-
-    return _entry_out(entry)
+# No route edits an observation. Once saved it can be read, not changed (Peter, 2026-10-13): the
+# clinician may already have read it.
 
 
 @public_router.post("/monitor/{access_token}/submit")
@@ -736,7 +688,6 @@ async def say_it(
     """A recording of up to a minute. Turned into text before the parent is told "Got it", so a
     recording with nothing heard can be tried again. The recording is not stored."""
     form, recipient = await _resolve_token(access_token, db)
-    _refuse_if_submitted(form)
     if recipient and recipient.opened_at is None:
         recipient.opened_at = datetime.now(timezone.utc)
     if not capture.voice_available():
@@ -774,7 +725,6 @@ async def write_it(
 ):
     """A quick typed note, the same way as a recording."""
     form, recipient = await _resolve_token(access_token, db)
-    _refuse_if_submitted(form)
     if recipient and recipient.opened_at is None:
         recipient.opened_at = datetime.now(timezone.utc)
     words = data.text.strip()
@@ -811,7 +761,6 @@ async def note_fear(
     """The one tap after recording: how upset the child was. It fills every moment in the note the
     parent gave no number for. A number they said stays."""
     form = await get_form_by_token(access_token, db)
-    _refuse_if_submitted(form)
     note = await _note_on_form(db, form, note_id)
     note.fear_level = data.fear_level
     await db.execute(

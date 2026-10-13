@@ -92,7 +92,12 @@ one tapped Fear Level applied to every moment in a note the parent gave no numbe
 The routes need no login and call paid services, so a leaked link could run up cost:
 - At most one minute or 10 MB per recording, audio files only.
 - At most 40 recordings or notes per form per day.
-- Refused once the form is submitted, like the other monitoring routes.
+- ~~Refused once the form is submitted.~~ Changed 2026-10-13 (Peter): a submitted form still
+  takes new observations, recordings and notes. The page lost its Submit button with Voice
+  Monitoring and the clinician cannot send a second form, so an old submitted form failed on every
+  save. Deleting a note on a submitted form is still refused.
+- A saved observation cannot be edited (Peter, 2026-10-13). The parent can open it to read it. The
+  route that edited one is gone.
 
 Until Google is set up, the page offers only "Type a quick note" and the form.
 

@@ -72,7 +72,6 @@ PUBLIC = {
     "GET /monitor/{access_token}",
     "POST /monitor/{access_token}/consent",
     "POST /monitor/{access_token}/entries",
-    "PUT /monitor/{access_token}/entries/{entry_id}",
     "POST /monitor/{access_token}/submit",
     # Just say it: a recording or a typed note, the one Fear Level tap after it, and deleting one
     # the parent did not mean to send. The first two call paid services, so each form has a daily

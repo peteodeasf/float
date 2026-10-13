@@ -55,7 +55,9 @@ export default function MonitorLandingPage() {
   const api = useMemo(() => captureApi(token ?? ''), [token])
 
   // Entry form state
-  const [editingEntry, setEditingEntry] = useState<Entry | null>(null)
+  // Which saved observation is open in the list. Saved ones can be read, not changed
+  // (Peter, 2026-10-13).
+  const [openEntryId, setOpenEntryId] = useState<string | null>(null)
   const [entryDate, setEntryDate] = useState(localToday)
   const [situation, setSituation] = useState('')
   const [childBehavior, setChildBehavior] = useState('')
@@ -107,7 +109,6 @@ export default function MonitorLandingPage() {
   }, [])
 
   const resetEntryForm = () => {
-    setEditingEntry(null)
     setEntryDate(localToday())
     setSituation('')
     setChildBehavior('')
@@ -118,18 +119,6 @@ export default function MonitorLandingPage() {
   const handleAdd = () => {
     setJustSaved(false)
     resetEntryForm()
-    setActiveTab('form')
-    setScreen('main')
-  }
-
-  const handleEdit = (entry: Entry) => {
-    setJustSaved(false)
-    setEditingEntry(entry)
-    setEntryDate(entry.entry_date)
-    setSituation(entry.situation || '')
-    setChildBehavior(entry.child_behavior_observed || '')
-    setParentResponse(entry.parent_response || '')
-    setFearThermometer(entry.fear_thermometer)
     setActiveTab('form')
     setScreen('main')
   }
@@ -146,21 +135,16 @@ export default function MonitorLandingPage() {
         is_draft: isDraft
       }
 
-      if (editingEntry) {
-        await axios.put(`${API_URL}/monitor/${token}/entries/${editingEntry.id}`, payload)
-      } else {
-        await axios.post(`${API_URL}/monitor/${token}/entries`, payload)
-      }
+      await axios.post(`${API_URL}/monitor/${token}/entries`, payload)
 
-      const wasEdit = !!editingEntry
       await fetchForm()
       resetEntryForm()
       setScreen('main')
-      // An edit goes back to the list it was opened from. A new one stays on the form, cleared,
-      // so adding the next is the obvious thing to do (Peter, 2026-10-13).
-      setActiveTab(wasEdit ? 'observations' : 'form')
-      setJustSaved(!wasEdit)
-      if (!wasEdit) window.scrollTo({ top: 0 })
+      // Stays on the form, cleared, so adding the next is the obvious thing to do
+      // (Peter, 2026-10-13).
+      setActiveTab('form')
+      setJustSaved(true)
+      window.scrollTo({ top: 0 })
     } catch {
       alert('Something went wrong saving your observation. Please try again.')
     } finally {
@@ -356,9 +340,6 @@ export default function MonitorLandingPage() {
 
         {activeTab === 'form' ? (
           <div style={{ padding: '18px 20px 24px' }}>
-            {editingEntry && (
-              <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: '0 0 14px' }}>Editing an observation.</p>
-            )}
             {justSaved && (
               <p role="status" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-success)', background: 'var(--float-success-bg)', border: '1px solid var(--float-success-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 14px', margin: '0 0 16px' }}>
                 Saved. Add another if something else came up.
@@ -439,7 +420,8 @@ export default function MonitorLandingPage() {
                 {listItems.map(item => item.kind === 'note' ? (
                   <NoteRow key={item.note.id} note={item.note} onDelete={async () => { await api.deleteNote(item.note.id); await fetchForm() }} />
                 ) : ((entry: Entry) => (
-                  <button key={entry.id} onClick={() => handleEdit(entry)}
+                  <button key={entry.id} onClick={() => setOpenEntryId(openEntryId === entry.id ? null : entry.id)}
+                    aria-expanded={openEntryId === entry.id}
                     style={{ width: '100%', background: 'var(--float-surface)', borderRadius: '14px', padding: '16px', border: '1px solid var(--float-border)', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -450,7 +432,21 @@ export default function MonitorLandingPage() {
                           <span title="Said out loud" style={{ color: 'var(--float-primary)', display: 'inline-flex' }}><MicIcon size={13} /></span>
                         )}
                       </div>
-                      {entry.situation && (
+                      {openEntryId === entry.id ? (
+                        // Opened: everything they wrote, to read. There is nothing to save here.
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+                          {([
+                            ['What was the situation?', entry.situation],
+                            ['What I observed about my child', entry.child_behavior_observed],
+                            ['How I responded', entry.parent_response],
+                          ] as const).filter(([, text]) => text).map(([label, text]) => (
+                            <div key={label}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text-secondary)', marginBottom: '2px' }}>{label}</div>
+                              <p style={{ fontSize: '15px', color: 'var(--float-text)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : entry.situation && (
                         <p style={{ fontSize: '15px', color: 'var(--float-text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.situation}</p>
                       )}
                     </div>
@@ -518,8 +514,8 @@ function Shell({ children, wide = false, about }: { children: React.ReactNode; w
         <FloatLogo size="md" />
         {/* Whose form this is, so a link opened for the wrong child is noticed. */}
         {about && (
-          <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--float-text)', textAlign: 'right', minWidth: 0 }}>
-            Monitoring for <span style={{ color: 'var(--float-primary)' }}>{about}</span>
+          <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--float-primary)', textAlign: 'right', minWidth: 0 }}>
+            Monitoring for {about}
           </span>
         )}
       </div>

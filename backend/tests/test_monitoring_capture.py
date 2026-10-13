@@ -273,15 +273,26 @@ async def test_a_daily_limit_on_recordings_and_notes(api, db, google, monkeypatc
     assert (await _write(api, form, "She cried.")).status_code == 200
 
 
-async def test_refused_once_the_form_is_submitted(api, db, google, claude):
+async def test_a_submitted_form_still_takes_new_ones_but_nothing_is_deleted(api, db, google, claude):
+    """Peter, 2026-10-13: the page has no Submit button any more, so a form marked submitted is an
+    old one, and refusing it left the parent with a form that failed on every save."""
     _, _, form = await _form(db)
     note = (await _write(api, form, "She cried.")).json()["note"]
     form.status = "submitted"
     await db.flush()
-    assert (await _say(api, form)).status_code == 400
-    assert (await _write(api, form, "She cried.")).status_code == 400
-    assert (await api.put(f"/monitor/{form.access_token}/notes/{note['id']}/fear", json={"fear_level": 3})).status_code == 400
+    google["text"] = "She would not get in the car."
+    assert (await _say(api, form)).status_code == 200
+    assert (await _write(api, form, "She cried.")).status_code == 200
+    assert (await api.put(f"/monitor/{form.access_token}/notes/{note['id']}/fear", json={"fear_level": 3})).status_code == 200
+    assert (await api.post(f"/monitor/{form.access_token}/entries", json={"situation": "School run"})).status_code == 200
     assert (await api.delete(f"/monitor/{form.access_token}/notes/{note['id']}")).status_code == 400
+
+
+async def test_a_saved_observation_cannot_be_edited(api, db):
+    _, _, form = await _form(db)
+    entry = (await api.post(f"/monitor/{form.access_token}/entries", json={"situation": "School run"})).json()
+    r = await api.put(f"/monitor/{form.access_token}/entries/{entry['id']}", json={"situation": "Changed"})
+    assert r.status_code in (404, 405)
 
 
 async def test_an_unknown_link_finds_nothing(api, db, google):
