@@ -48,3 +48,20 @@ to production data.
 From the mini, as `agent`, each of these should be refused: push to main; merge a PR touching
 a migration without Peter's approval; read a Railway variable; redeploy on Railway. A PR touching
 only app code should merge once CI passes.
+
+## Set up on the mini
+
+- **Postgres 18, from Homebrew.** It runs as two servers. Both start at boot and run as the
+  `agent` user.
+  - `/Library/LaunchDaemons/com.float.postgres-dev.plist`: port 5432, database `float_dev`,
+    data in `~/pg/dev`.
+  - `/Library/LaunchDaemons/com.float.postgres-test.plist`: port 55432, database `float_test`,
+    data in `~/pg/test`.
+- **Each startup file must set `LC_ALL=en_US.UTF-8`.** Without it, Postgres refuses to start with
+  "postmaster became multithreaded during startup".
+- **Why two servers.** `tests/conftest.py` refuses to run if the test database has the same host
+  and port as `DATABASE_URL`.
+- **`DATABASE_URL`** is set in `~/.zshrc`.
+- **Python.** The backend environment is `~/code/float/backend/.venv`, on Python 3.12.
+- **GitHub token.** It is stored in `~/.config/gh/hosts.yml`, not the Keychain. After a restart,
+  the Keychain stays locked until `agent` logs in on screen.
