@@ -90,6 +90,7 @@ If `whoami` prints `agent`, you are on the Mac mini and these rules apply. Setup
   him. Do not work around this by splitting the change, moving the file, or editing CODEOWNERS.
 - **Do not weaken or delete a test to make CI pass.** If a test is wrong, say so in the PR and
   leave it for Peter.
+- **Python:** use the backend environment at `~/code/float/backend/.venv`, from any worktree.
 
 ## How to write to Peter — and this applies to agents too
 
