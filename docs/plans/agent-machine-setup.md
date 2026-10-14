@@ -65,3 +65,10 @@ only app code should merge once CI passes.
 - **Python.** The backend environment is `~/code/float/backend/.venv`, on Python 3.12.
 - **GitHub token.** It is stored in `~/.config/gh/hosts.yml`, not the Keychain. After a restart,
   the Keychain stays locked until `agent` logs in on screen.
+- **Railway CLI.** Run `railway link --project 6f7aa50b-3962-4784-af1d-9419f40ccecb` in
+  `~/code/float/backend`. The Float project is in Peter's workspace, not the agent's, so it does
+  not show in the agent's own project list. The agent account is a member of the project only,
+  with Viewer access.
+- **What Viewer access blocks.** Tested on 2026-10-14: Railway refused to list the backend's
+  variables and refused to redeploy it ("You do not have access to this resource"). Reading
+  deployments and their status works.
