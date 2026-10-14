@@ -65,11 +65,31 @@ defined in the global process. Grounded in this repo's artifacts:
    scoping — a child seeing clinician data (or a parent seeing a child's private log) is a
    serious defect, not a bug. **Not relaxed pre-launch** — the boundaries are structural, and
    retrofitting them after real data arrives is how they get missed.
-3. **Production is close to your keyboard.** The local `.env` points at **production**
+3. **Production is close to your keyboard.** On Peter's laptop the local `.env` points at **production**
    Postgres, and Railway **auto-migrates on deploy**. There is little buffer between "push" and
    "live" — so a broken deploy is immediately visible, and correctness still has to be verified
    before pushing. What this does *not* currently mean is data preciousness: see
    "Current stage" above.
+
+## Agents on the Mac mini
+
+If `whoami` prints `agent`, you are on the Mac mini and these rules apply. Setup is in
+`docs/plans/agent-machine-setup.md`.
+
+- **Work on a branch and open a PR.** One worktree and one branch per task. Never push to main.
+  GitHub blocks it, but do not try.
+- **A merge to main goes live straight away.** Netlify and Railway both deploy from main, and
+  Railway runs the migrations against production first. Run `/verify` before opening the PR.
+- **Never touch production data.** There is no production `.env` on this machine. Do not try to
+  get one: do not read Railway variables, copy a `.env` from anywhere, or ask for the production
+  database URL. Here, `backend/.env` points at the local `float_dev` database and tests use
+  `float_test`.
+- **The read-only production database is for looking, not copying.** Use it to investigate a
+  problem. Do not put what it returns into the repo, a PR, a commit, or a test fixture.
+- **Some paths need Peter's approval** — see `.github/CODEOWNERS`. A PR that touches one waits for
+  him. Do not work around this by splitting the change, moving the file, or editing CODEOWNERS.
+- **Do not weaken or delete a test to make CI pass.** If a test is wrong, say so in the PR and
+  leave it for Peter.
 
 ## How to write to Peter — and this applies to agents too
 

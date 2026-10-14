@@ -1,0 +1,23 @@
+# Changes to these paths need Peter's approval before they can merge to main.
+# Everything else merges once CI passes. See docs/plans/agent-machine-setup.md.
+#
+# GitHub reads this file from main, so a PR that edits it is itself checked against the
+# version on main — that is why .github/ is listed.
+
+# Database migrations — Railway runs them against production on every deploy.
+/backend/migrations/    @peteodeasf
+
+# Deploy configuration
+/backend/railway.toml   @peteodeasf
+/backend/nixpacks.toml  @peteodeasf
+/netlify.toml           @peteodeasf
+
+# CI, and this file
+/.github/               @peteodeasf
+
+# Agent instructions and settings
+/CLAUDE.md              @peteodeasf
+/.claude/               @peteodeasf
+
+# The check that stops tests running against production
+/backend/tests/conftest.py  @peteodeasf
