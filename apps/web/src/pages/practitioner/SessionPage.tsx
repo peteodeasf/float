@@ -52,6 +52,8 @@ import {
   removeInsight,
   getPlanRungs,
   draftCombination,
+  getStepArrows,
+  type DownwardArrow,
   type AvoidanceBehavior,
   type TriggerSituation,
 } from '../../api/treatment'
@@ -171,7 +173,7 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
       triggers={sortedTriggers}
       openSituationId={openSituationId}
       onDone={onExit}
-      onArrow={id => goToArrow(`/patients/${patientId}/arrow?situation=${id}`)}
+      onArrow={(situationId, rungId) => goToArrow(`/patients/${patientId}/arrow?situation=${situationId}&rung=${rungId}`)}
     />
   )
 }
@@ -192,7 +194,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   triggers: TriggerSituation[]
   openSituationId?: string | null
   onDone: () => void
-  onArrow: (situationId: string) => void
+  /** Open the downward arrow on one step. Peter, 2026-10-15: the arrow is done per combination. */
+  onArrow: (situationId: string, rungId: string) => void
 }) {
   const qc = useQueryClient()
   const [newName, setNewName] = useState('')
@@ -275,13 +278,11 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
       {triggers.length > 0 && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {/* Names the column. Every box ends 40px in from its card's edge, and the Downward Arrow
-              beside each card is 140px, so this row reserves both. */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: -4 }}>
+          {/* Names the column. Every box ends 40px in from its card's edge. */}
+          <div style={{ display: 'flex', marginBottom: -4 }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', paddingRight: 40 }}>
               <span style={{ width: 46, textAlign: 'center', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#4d8478', lineHeight: 1.15 }}>Fear Level</span>
             </div>
-            <span style={{ width: 140, flexShrink: 0 }} />
           </div>
           {triggers.map(t => (
             <SituationRow
@@ -292,7 +293,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               startHere={t.id === startHereId}
               expanded={open.has(t.id)}
               onToggle={() => toggle(t.id)}
-              onArrow={() => onArrow(t.id)}
+              onArrow={rungId => onArrow(t.id, rungId)}
               onEdited={markEdited}
             />
           ))}
@@ -422,7 +423,7 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
   startHere: boolean
   expanded: boolean
   onToggle: () => void
-  onArrow: () => void
+  onArrow: (rungId: string) => void
   /** Anything that writes calls this, so Save can skip the review when nothing changed. */
   onEdited: () => void
 }) {
@@ -460,11 +461,14 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
   })
-  const left = whatIsLeft(behaviors ?? [])
+  const { data: stepArrows } = useQuery({
+    queryKey: ['step-arrows', trigger.id],
+    queryFn: () => getStepArrows(trigger.id),
+  })
+  const left = whatIsLeft(behaviors ?? [], stepArrows ?? [])
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-    <div style={{ flex: 1, minWidth: 0, background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-card)', overflow: 'hidden' }}>
+    <div style={{ background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-card)', overflow: 'hidden' }}>
       {/* The header carries the mint ground so a situation reads as the heading over its steps
           rather than another row in the same list. */}
       <div style={{
@@ -530,27 +534,20 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
 
       {expanded && (
         <>
-          <BehaviourList planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []} onEdited={onEdited} />
-          <StepList planId={planId} trigger={trigger} onEdited={onEdited} />
+          <BehaviourList planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []}
+            arrows={stepArrows ?? []} onArrow={onArrow} onEdited={onEdited} />
+          <StepList planId={planId} trigger={trigger} stepArrows={stepArrows ?? []} onEdited={onEdited} />
         </>
       )}
-    </div>
-
-    {/* Its own thing, beside the situation rather than inside its row of controls. It opens
-        straight into THIS situation's chain — there is nothing to pick, because clicking it here
-        is the choice. */}
-    <Button kind="secondary" size="sm" onClick={onArrow} title="Find the feared outcome behind this situation"
-      style={{ flexShrink: 0, width: 140, marginTop: 6, whiteSpace: 'nowrap' }}>
-      ↓ Downward Arrow
-    </Button>
     </div>
   )
 }
 
 /** The steps under one situation. Added, edited, scored and removed in place. */
-function StepList({ planId, trigger, onEdited }: {
+function StepList({ planId, trigger, stepArrows, onEdited }: {
   planId: string
   trigger: TriggerSituation
+  stepArrows: DownwardArrow[]
   onEdited: () => void
 }) {
   const qc = useQueryClient()
@@ -568,8 +565,11 @@ function StepList({ planId, trigger, onEdited }: {
     queryKey: ['situation-da', trigger.id],
     queryFn: () => getSituationDownwardArrow(trigger.id),
   })
+  // The situation's own arrow, from before 2026-10-15, or one done on any of its steps since —
+  // the suggestions can use either.
   const fearedOutcome = (arrow?.feared_outcome ?? '').trim()
   const arrowDone = fearedOutcome.length > 0
+    || stepArrows.some(a => a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim())
 
   // Asked for, never automatic. It costs a model call and a clinician's attention, and a screen
   // that suggests before being asked teaches people to stop reading it. staleTime 0 so asking
@@ -614,7 +614,7 @@ function StepList({ planId, trigger, onEdited }: {
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
       {/* Whether the downward arrow is done for this situation — the suggestions need it. */}
       <div style={{ marginBottom: 10, fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: arrowDone ? '#2f9e6f' : '#b47814' }}>
-        {arrowDone ? '✓ Downward arrow done' : '○ Downward arrow not done yet'}
+        {arrowDone ? '✓ A downward arrow is done for this situation' : '○ No downward arrow done yet. Do one on a step above.'}
       </div>
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
 
@@ -695,7 +695,7 @@ function StepList({ planId, trigger, onEdited }: {
 }
 
 /** What is still to do on a situation, in a few words each. Empty when nothing is. */
-export function whatIsLeft(behaviors: AvoidanceBehavior[]): string[] {
+export function whatIsLeft(behaviors: AvoidanceBehavior[], arrows: DownwardArrow[] = []): string[] {
   const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY)
   const withStep = new Set(
     behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION).map(b => b.without_behavior_id),
@@ -707,10 +707,34 @@ export function whatIsLeft(behaviors: AvoidanceBehavior[]): string[] {
     && !b.parent_behavior_id
     && dtOf(b.distress_thermometer_when_refraining) == null,
   ).length
+  // A combination's arrow is done once it has landed on a feared outcome. It does not all have to
+  // happen in one session (Peter, 2026-10-15), which is why this is counted.
+  const arrowsToDo = behaviors.filter(b =>
+    b.behavior_type === BEHAVIOR_TYPE_COMBINATION && !arrowDoneOn(b.id, arrows),
+  ).length
   const out: string[] = []
   if (noStep) out.push(`${noStep} safety ${noStep === 1 ? 'behaviour has' : 'behaviours have'} no step yet`)
   if (unscored) out.push(`${unscored} ${unscored === 1 ? 'step' : 'steps'} not scored`)
+  if (arrowsToDo) out.push(`${arrowsToDo} downward ${arrowsToDo === 1 ? 'arrow' : 'arrows'} to do`)
   return out
+}
+
+/** Whether this step's downward arrow has reached a feared outcome. */
+export function arrowDoneOn(rungId: string, arrows: DownwardArrow[]): boolean {
+  return arrows.some(a => a.rung_id === rungId && a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim())
+}
+
+/**
+ * The combination to do the downward arrow on next: lowest score first, among those not done.
+ * Dr. Walker, via Peter, 2026-10-15: start with the safety behaviours, lowest first. Every
+ * combination is a safety behaviour's, so this is lowest score first. Advice, not a lock.
+ */
+export function nextArrowOn(behaviors: AvoidanceBehavior[], arrows: DownwardArrow[]): string | null {
+  const todo = behaviors
+    .filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && !arrowDoneOn(b.id, arrows))
+    .sort((a, b) =>
+      (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
+  return todo[0]?.id ?? null
 }
 
 const typeChip = (type: string): React.CSSProperties => ({
@@ -725,11 +749,13 @@ const typeChip = (type: string): React.CSSProperties => ({
  * the situation or feel safer in it, and — for each safety behaviour — the situation without it,
  * scored. An avoidance makes no step. Peter, 2026-10-15: "It's avoiding the situation."
  */
-function BehaviourList({ planId, patientId, trigger, behaviors, onEdited }: {
+function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow, onEdited }: {
   planId: string
   patientId: string
   trigger: TriggerSituation
   behaviors: AvoidanceBehavior[]
+  arrows: DownwardArrow[]
+  onArrow: (rungId: string) => void
   onEdited: () => void
 }) {
   const qc = useQueryClient()
@@ -777,6 +803,7 @@ function BehaviourList({ planId, patientId, trigger, behaviors, onEdited }: {
   const listed = behaviors.filter(b =>
     b.behavior_type === BEHAVIOR_TYPE_SAFETY || b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE,
   )
+  const nextArrowId = nextArrowOn(behaviors, arrows)
   const combinationOf = (id: string) =>
     behaviors.find(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && b.without_behavior_id === id)
 
@@ -793,6 +820,9 @@ function BehaviourList({ planId, patientId, trigger, behaviors, onEdited }: {
                 trigger={trigger}
                 behavior={b}
                 combination={combinationOf(b.id)}
+                arrowDone={!!combinationOf(b.id) && arrowDoneOn(combinationOf(b.id)!.id, arrows)}
+                arrowNext={!!combinationOf(b.id) && combinationOf(b.id)!.id === nextArrowId}
+                onArrow={onArrow}
                 autoDraft={b.id === justAdded}
                 onChanged={invalidate}
               />
@@ -865,14 +895,19 @@ function BehaviourList({ planId, patientId, trigger, behaviors, onEdited }: {
 }
 
 /** One avoidance or safety behaviour, and for a safety behaviour, its step on the ladder. */
-function BehaviourRow({ trigger, behavior, combination, autoDraft, onChanged }: {
+function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, onArrow, autoDraft, onChanged }: {
   trigger: TriggerSituation
   behavior: AvoidanceBehavior
   combination: AvoidanceBehavior | undefined
+  arrowDone: boolean
+  arrowNext: boolean
+  onArrow: (rungId: string) => void
   autoDraft: boolean
   onChanged: () => void
 }) {
   const [confirmRemove, setConfirmRemove] = useState(false)
+  // Taking a step off the ladder also takes its downward arrow, so it asks first.
+  const [confirmStepRemove, setConfirmStepRemove] = useState(false)
   const saveMut = useMutation({
     mutationFn: (v: { id: string; data: Parameters<typeof updateBehavior>[2] }) =>
       updateBehavior(trigger.id, v.id, v.data),
@@ -880,7 +915,7 @@ function BehaviourRow({ trigger, behavior, combination, autoDraft, onChanged }: 
   })
   const delMut = useMutation({
     mutationFn: (id: string) => deleteBehavior(trigger.id, id),
-    onSuccess: () => { setConfirmRemove(false); onChanged() },
+    onSuccess: () => { setConfirmRemove(false); setConfirmStepRemove(false); onChanged() },
   })
   const isSafety = behavior.behavior_type === BEHAVIOR_TYPE_SAFETY
 
@@ -913,11 +948,27 @@ function BehaviourRow({ trigger, behavior, combination, autoDraft, onChanged }: 
               <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
               <ScoreBox value={dtOf(combination.distress_thermometer_when_refraining)}
                 onSet={n => saveMut.mutate({ id: combination.id, data: { distress_thermometer_when_refraining: n } })} />
+              {/* Opens straight into THIS step's chain. Done shows as a tick; the next one to do is
+                  marked, lowest score first. */}
+              <Button kind={arrowNext ? 'primary' : 'secondary'} size="sm" onClick={() => onArrow(combination.id)}
+                title={arrowDone ? 'The downward arrow on this step is done — open it' : 'Find the feared outcome behind this step'}
+                style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                {arrowDone ? '✓ Arrow' : arrowNext ? '↓ Arrow — do this next' : '↓ Arrow'}
+              </Button>
               {/* Takes only the step off the ladder. The safety behaviour stays, so the step can be
-                  made again with better wording. */}
-              <button onClick={() => delMut.mutate(combination.id)} disabled={delMut.isPending}
-                title="Take this step off the ladder (the behaviour stays)"
-                style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
+                  made again. Its downward arrow goes with it, so this asks first. */}
+              {confirmStepRemove ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+                  <Button kind="danger" size="sm" onClick={() => delMut.mutate(combination.id)} disabled={delMut.isPending}>
+                    {arrowDone ? 'Remove step and its arrow' : 'Remove step'}
+                  </Button>
+                  <button onClick={() => setConfirmStepRemove(false)} style={quietLink}>Keep</button>
+                </span>
+              ) : (
+                <button onClick={() => setConfirmStepRemove(true)}
+                  title="Take this step off the ladder (the behaviour stays)"
+                  style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
+              )}
             </>
           ) : (
             <CombinationDraft trigger={trigger} behavior={behavior} auto={autoDraft} onSaved={onChanged} />

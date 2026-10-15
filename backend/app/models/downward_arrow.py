@@ -13,6 +13,10 @@ class DownwardArrow(Base):
             "trigger_situation_id", "facilitated_by",
             name="uq_downward_arrows_situation_facilitated_by"
         ),
+        UniqueConstraint(
+            "rung_id", "facilitated_by",
+            name="uq_downward_arrows_rung_facilitated_by"
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -33,6 +37,12 @@ class DownwardArrow(Base):
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False
+    )
+    # The ladder step this arrow is about — a combination (the situation without one safety
+    # behaviour). Peter, 2026-10-15: the arrow is done per combination. When set,
+    # `trigger_situation_id` is empty. docs/plans/ladder-combinations.md, step 3.
+    rung_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("avoidance_behaviors.id"), nullable=True
     )
     # The therapist's typed situation for an ad-hoc arrow (run off the ladder). Null for
     # plan-linked arrows (they get it from the trigger situation) and the parent arrow.

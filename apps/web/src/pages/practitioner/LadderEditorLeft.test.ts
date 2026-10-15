@@ -5,8 +5,8 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { whatIsLeft } from './SessionPage'
-import type { AvoidanceBehavior } from '../../api/treatment'
+import { nextArrowOn, whatIsLeft } from './SessionPage'
+import type { AvoidanceBehavior, DownwardArrow } from '../../api/treatment'
 
 function row(over: Partial<AvoidanceBehavior>): AvoidanceBehavior {
   return {
@@ -27,8 +27,8 @@ function row(over: Partial<AvoidanceBehavior>): AvoidanceBehavior {
 describe('whatIsLeft', () => {
   it('says nothing when nothing is left', () => {
     const safety = row({ id: 'b1' })
-    const step = row({ behavior_type: 'combination', without_behavior_id: 'b1', distress_thermometer_when_refraining: 5 })
-    expect(whatIsLeft([safety, step])).toEqual([])
+    const step = row({ id: 'c1', behavior_type: 'combination', without_behavior_id: 'b1', distress_thermometer_when_refraining: 5 })
+    expect(whatIsLeft([safety, step], [arrow('c1', 'They will laugh.')])).toEqual([])
   })
 
   it('counts safety behaviours with no step', () => {
@@ -44,9 +44,9 @@ describe('whatIsLeft', () => {
     const safety = row({ id: 'b1' })
     expect(whatIsLeft([
       safety,
-      row({ behavior_type: 'combination', without_behavior_id: 'b1' }),
+      row({ id: 'c1', behavior_type: 'combination', without_behavior_id: 'b1' }),
       row({ behavior_type: 'scenario' }),
-    ])).toEqual(['2 steps not scored'])
+    ], [arrow('c1', 'They will laugh.')])).toEqual(['2 steps not scored'])
   })
 
   it('says one in the singular', () => {
@@ -58,5 +58,44 @@ describe('whatIsLeft', () => {
     // A sub-step under another step, from the older builder. Nothing here can score it, so the
     // header must not ask for it.
     expect(whatIsLeft([row({ behavior_type: 'scenario', parent_behavior_id: 'x' })])).toEqual([])
+  })
+})
+
+function arrow(rungId: string, fear: string | null, by = 'practitioner'): DownwardArrow {
+  return {
+    id: 'a-' + rungId, trigger_situation_id: null, rung_id: rungId, arrow_steps: [],
+    feared_outcome: fear, feared_outcome_approved: false, bip_derived: null, facilitated_by: by,
+    created_at: '', updated_at: '',
+  }
+}
+
+describe('the downward arrow on each step', () => {
+  const low = row({ id: 'low', behavior_type: 'combination', without_behavior_id: 's1', distress_thermometer_when_refraining: 3 })
+  const high = row({ id: 'high', behavior_type: 'combination', without_behavior_id: 's2', distress_thermometer_when_refraining: 7 })
+  const safety = [row({ id: 's1' }), row({ id: 's2' })]
+
+  it('suggests the lowest-scored step first', () => {
+    expect(nextArrowOn([...safety, high, low], [])).toBe('low')
+  })
+
+  it('moves on once that one has a feared outcome', () => {
+    expect(nextArrowOn([...safety, high, low], [arrow('low', 'They will laugh.')])).toBe('high')
+  })
+
+  it('does not count an arrow that never reached a feared outcome', () => {
+    expect(nextArrowOn([...safety, high, low], [arrow('low', null)])).toBe('low')
+  })
+
+  it("does not count the parent's arrow", () => {
+    expect(nextArrowOn([...safety, high, low], [arrow('low', 'They will laugh.', 'parent')])).toBe('low')
+  })
+
+  it('says how many arrows are left', () => {
+    expect(whatIsLeft([...safety, high, low], [arrow('low', 'They will laugh.')]))
+      .toEqual(['1 downward arrow to do'])
+  })
+
+  it('has nothing to suggest when every step is done', () => {
+    expect(nextArrowOn([...safety, low], [arrow('low', 'They will laugh.')])).toBeNull()
   })
 })

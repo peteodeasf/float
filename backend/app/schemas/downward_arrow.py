@@ -37,6 +37,7 @@ class NextProbeResponse(BaseModel):
 class DownwardArrowResponse(BaseModel):
     id: uuid.UUID
     trigger_situation_id: Optional[uuid.UUID] = None
+    rung_id: Optional[uuid.UUID] = None
     patient_id: Optional[uuid.UUID] = None
     situation_text: Optional[str] = None
     arrow_steps: list[ArrowStep]

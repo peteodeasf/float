@@ -28,6 +28,8 @@ import {
   createSituationDownwardArrow,
   updateDownwardArrow,
   getNextProbe,
+  getBehaviors,
+  openStepArrow,
   type TriggerSituation,
   type ArrowStep,
   type DownwardArrow,
@@ -80,6 +82,9 @@ export default function ArrowPage() {
   // into the conversation rather than being a second button on the Plan tab.
   const [searchParams] = useSearchParams()
   const fromSituation = searchParams.get('situation')
+  // Opened from a step in the ladder editor. Peter, 2026-10-15: the arrow is done for each
+  // combination, not the situation as a whole. docs/plans/ladder-combinations.md, step 3.
+  const fromRung = searchParams.get('rung')
 
   const [phase, setPhase] = useState<Phase>(fromSituation ? 'chain' : 'intro')
   const [currentId, setCurrentId] = useState<string | null>(fromSituation)
@@ -118,6 +123,13 @@ export default function ArrowPage() {
     if (anyStarted) setPhase('pick')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrows])
+
+  const { data: situationSteps } = useQuery({
+    queryKey: ['behaviors', fromSituation],
+    queryFn: () => getBehaviors(fromSituation!),
+    enabled: !!fromSituation && !!fromRung,
+  })
+  const rung = fromRung ? (situationSteps ?? []).find(b => b.id === fromRung) ?? null : null
 
   const situations = [...(triggers ?? [])]
     .filter(t => !t.is_placeholder)
@@ -160,7 +172,21 @@ export default function ArrowPage() {
         />
       )}
 
-      {phase === 'chain' && current && (
+      {phase === 'chain' && fromRung && rung && (
+        <ChainPhase
+          key={rung.id}
+          name={rung.name}
+          dt={dtOf(rung.distress_thermometer_when_refraining)}
+          question="What are you worried will happen if you do this?"
+          openArrow={() => openStepArrow(fromSituation!, rung.id)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ['step-arrows', fromSituation] })}
+          onBack={exit}
+          onDone={exit}
+          backLabel="← Back to the steps"
+        />
+      )}
+
+      {phase === 'chain' && !fromRung && current && (
         <ChainPhase
           key={current.id}
           name={current.name}
@@ -259,9 +285,11 @@ function cleanFearedOutcome(raw: string): string {
   return t
 }
 
-export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backLabel = '← All situations' }: {
+export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backLabel = '← All situations', question = 'What are you worried will happen in this situation?' }: {
   // The situation being dug into — a plan situation's name, or an ad-hoc arrow's typed situation.
   name: string
+  // The opening question. A step on the ladder asks about doing that step.
+  question?: string
   dt?: number | null
   // Get-or-create (plan) or return the already-created (ad-hoc) arrow to run. Called once on mount.
   openArrow: () => Promise<DownwardArrow>
@@ -386,7 +414,7 @@ export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backL
         </div>
       ) : !startingThought ? (
         <div>
-          <div style={{ ...bigQ, marginBottom: 12 }}>What are you worried will happen in this situation?</div>
+          <div style={{ ...bigQ, marginBottom: 12 }}>{question}</div>
           <SayIt value={answer} onChange={setAnswer} onSend={() => { const a = answer.trim(); setAnswer(''); void begin(a) }}
             placeholder={worryHint(name)} pending={busy} />
         </div>

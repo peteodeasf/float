@@ -1406,6 +1406,38 @@ async def _feared_outcome_for(db: AsyncSession, situation_id) -> tuple[str | Non
     return ((da.feared_outcome or "").strip() or None), bool(da.feared_outcome_approved)
 
 
+async def _step_feared_outcomes(db: AsyncSession, step_ids: list[str]) -> dict[str, str]:
+    """The feared outcome for each ladder step that has one of its own.
+
+    A combination has its own downward arrow. A sub-situation under a combination takes that
+    combination's. Anything else has none here, and falls back to its situation's.
+    """
+    if not step_ids:
+        return {}
+    ids = [uuid.UUID(i) for i in step_ids]
+    parent_of = dict((await db.execute(
+        select(AvoidanceBehavior.id, AvoidanceBehavior.parent_behavior_id)
+        .where(AvoidanceBehavior.id.in_(ids))
+    )).all())
+    lookup = set(ids) | {p for p in parent_of.values() if p is not None}
+    arrows = (await db.execute(
+        select(DownwardArrow.rung_id, DownwardArrow.feared_outcome)
+        .where(
+            DownwardArrow.rung_id.in_(lookup),
+            # The parent's run is their guess at the child's fear, not something the child said.
+            DownwardArrow.facilitated_by.is_distinct_from("parent"),
+        )
+        .order_by(DownwardArrow.updated_at.asc().nullsfirst())
+    )).all()
+    fear = {rung: (text or "").strip() for rung, text in arrows if (text or "").strip()}
+    out: dict[str, str] = {}
+    for step_id in ids:
+        found = fear.get(step_id) or fear.get(parent_of.get(step_id))
+        if found:
+            out[str(step_id)] = found
+    return out
+
+
 def step_status(completed: list) -> str:
     """Where a step has got to, from its completed exposures in the order they were done.
 
@@ -1565,6 +1597,10 @@ async def get_my_ladder(
     # app/core/behavior_types.py. A safety behaviour is a thing to stop before the exposures, not a
     # step to climb, and an observation was never a behaviour at all.
     flat: list[dict] = []
+    step_fears = await _step_feared_outcomes(db, [
+        step["id"] for group in situations for step in group["behaviors"]
+        if step["behavior_type"] in LADDER_TYPES
+    ])
     for group in situations:
         for step in group["behaviors"]:
             if step["behavior_type"] not in LADDER_TYPES:
@@ -1573,7 +1609,9 @@ async def get_my_ladder(
                 **step,
                 "situation_id": group["id"],
                 "situation_name": None if group["id"] == "ungrouped" else group["name"],
-                "feared_outcome": group["feared_outcome"],
+                # The step's own arrow (or, for a sub-situation, its combination's) before the
+                # situation's. Peter, 2026-10-15: the arrow is done per combination.
+                "feared_outcome": step_fears.get(step["id"]) or group["feared_outcome"],
                 "is_recommended": str(plan.recommended_rung_id or "") == step["id"],
             })
 

@@ -2,7 +2,7 @@ import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import false, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -148,12 +148,19 @@ async def suggested_steps(
 
     # Most recent, and not scalar_one_or_none: a situation is supposed to have one arrow, and a
     # query that raises when it has two would take the feature down over a data quirk.
-    arrow = (await db.execute(
+    #
+    # The arrow is now done on each combination rather than on the situation (Peter, 2026-10-15),
+    # so an arrow on any of this situation's steps counts too. One with a feared outcome first.
+    step_ids = [b.id for b in behaviors]
+    arrows = (await db.execute(
         select(DownwardArrow)
-        .where(DownwardArrow.trigger_situation_id == situation.id)
+        .where(or_(
+            DownwardArrow.trigger_situation_id == situation.id,
+            DownwardArrow.rung_id.in_(step_ids) if step_ids else false(),
+        ))
         .order_by(DownwardArrow.updated_at.desc().nullslast())
-        .limit(1)
-    )).scalar_one_or_none()
+    )).scalars().all()
+    arrow = next((a for a in arrows if (a.feared_outcome or "").strip()), arrows[0] if arrows else None)
 
     # Any recorded feared outcome counts, approved or not. `feared_outcome_approved` is only set
     # when the clinician presses save on the arrow's last screen — walking the whole chain and
