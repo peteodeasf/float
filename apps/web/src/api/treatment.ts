@@ -82,6 +82,8 @@ export interface AvoidanceBehavior {
   distress_thermometer_when_refraining: number | null
   behavior_library_id: string | null
   parent_behavior_id: string | null
+  /** Set only on a combination: the safety behaviour it is "without". */
+  without_behavior_id?: string | null
   created_at: string
 }
 
@@ -175,6 +177,8 @@ export interface CreateBehaviorData {
   distress_thermometer_when_refraining?: number
   behavior_library_id?: string
   parent_behavior_id?: string
+  /** Required for a combination: the safety behaviour it is "without". */
+  without_behavior_id?: string
 }
 
 // ── Library (select-from-list reuse) ──
@@ -215,6 +219,16 @@ export const createBehavior = async (
 
 export const updateBehavior = async (triggerId: string, behaviorId: string, data: Partial<CreateBehaviorData>): Promise<AvoidanceBehavior> => {
   const response = await apiClient.put(`/triggers/${triggerId}/behaviors/${behaviorId}`, data)
+  return response.data
+}
+
+/** A suggested sentence for this situation without this safety behaviour. Saves nothing — the
+ *  clinician edits it and saves it with `createBehavior` as a combination. */
+export const draftCombination = async (
+  triggerId: string,
+  behaviorId: string,
+): Promise<{ sentence: string; drafted_by: 'ai' | 'template' }> => {
+  const response = await apiClient.post(`/triggers/${triggerId}/behaviors/${behaviorId}/combination-draft`)
   return response.data
 }
 
@@ -482,6 +496,8 @@ export interface PatientInsight {
   named_by_parent?: boolean
   /** The plan situation this suggestion belongs to, so add panels can group by situation. */
   situation_id?: string | null
+  /** For a behaviour: what the log said it was, or null when the clinician has to choose. */
+  behavior_type?: 'avoidance' | 'safety' | null
 }
 
 export const getPatientInsights = async (
@@ -493,8 +509,16 @@ export const getPatientInsights = async (
   return data
 }
 
-export const addInsightToPlan = async (patientId: string, insightId: string): Promise<PatientInsight> => {
-  const { data } = await apiClient.post(`/patients/${patientId}/insights/${insightId}/add`)
+export const addInsightToPlan = async (
+  patientId: string,
+  insightId: string,
+  /** Only for a behaviour whose type the log did not give. */
+  behaviorType?: 'avoidance' | 'safety',
+): Promise<PatientInsight> => {
+  const { data } = await apiClient.post(
+    `/patients/${patientId}/insights/${insightId}/add`,
+    behaviorType ? { behavior_type: behaviorType } : undefined,
+  )
   return data
 }
 
