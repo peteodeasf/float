@@ -13,8 +13,9 @@ PASSES="${1:-3}"
 REPO="$HOME/code/float"
 LOG_DIR="$HOME/loop-logs"
 
-# cron does not read ~/.zshrc, so set what the sessions need here.
-export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/opt/postgresql@18/bin:/opt/homebrew/opt/node@22/bin:$PATH"
+# cron does not read ~/.zshrc, so set what the sessions need here. node@22 comes first because
+# /opt/homebrew/bin holds a different Node version.
+export PATH="/opt/homebrew/opt/node@22/bin:/opt/homebrew/opt/postgresql@18/bin:$HOME/.local/bin:/opt/homebrew/bin:$PATH"
 export DATABASE_URL="postgresql+asyncpg://float:float@localhost:5432/float_dev"
 
 mkdir -p "$LOG_DIR"
