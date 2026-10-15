@@ -6,7 +6,15 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import text
 import bcrypt
 
-DATABASE_URL = 'postgresql+asyncpg://postgres:FwINIuaqqfrtXhIZTPgruLqyDEphqcSX@junction.proxy.rlwy.net:51458/railway'
+from seed_local import NotALocalDatabase, database_url, require_local_database
+
+# For a fresh local database use seed_local.py instead: this script needs a practice and clinician
+# that already exist (ORG_ID, PRACTITIONER_USER_ID below).
+DATABASE_URL = database_url()
+try:
+    require_local_database(DATABASE_URL)
+except NotALocalDatabase as e:
+    raise SystemExit(str(e))
 engine = create_async_engine(DATABASE_URL)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
