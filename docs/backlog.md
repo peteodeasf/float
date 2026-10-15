@@ -37,26 +37,7 @@ The agent loop on the Mac mini (`scripts/agent-loop.sh`, `docs/plans/agent-loop.
 from this list only, top first. Peter moves items here when they are written to the standard above
 and need no clinical decision. The agent removes an item in the PR that builds it.
 
-## Fix one parent-app screen that breaks the screen layout rules `S`
-
-**Today.** `CLAUDE.md` ("Screen layout — required") sets four rules: a little space under the top
-bar, one even gap between elements, the main button pinned to the bottom, and leftover space
-pooled above the button. Nobody has checked the parent app's screens against them
-(`apps/web/src/pages/parent/`).
-
-**What changes.**
-- Run the local backend and web app, sign in as the demo parent from `backend/seed_local.py`, and
-  screenshot each parent screen at phone width (375 wide).
-- Check each screenshot against the four rules. Pick the one screen that breaks them most
-  clearly, and fix that screen only. Change spacing and layout only: no wording, no new or
-  removed controls, no change to what happens when a button is pressed.
-- In the PR, show a before and an after screenshot of that screen, and list the other screens
-  that break the rules (without fixing them) so Peter can decide on those.
-
-**How to tell it worked.** Peter looks at the before and after screenshots and the Netlify
-preview. The frontend tests and typecheck still pass.
-
-**Gate.** None clinical. The screen files are in CODEOWNERS, so GitHub waits for Peter's approval.
+*Nothing ready right now.*
 
 ---
 
@@ -385,6 +366,55 @@ guide the child through the exposures and the plan.
   [`mobile-app-strategy.md`](plans/mobile-app-strategy.md).
 - **Size.** L — needs a `docs/plans/` plan before code.
 
+## Parent screens that still break the screen layout rules
+
+**Found 2026-10-15**, while fixing the parent sign-in screen. Checked at phone width (375 wide)
+against "Screen layout" in `CLAUDE.md`, signed in as the demo parent. Peter to decide which to fix.
+
+- **Today.**
+  - **Set password** (`ParentSetPasswordPage.tsx`) and **reset password**
+    (`ParentResetPasswordPage.tsx`): the same centred card the sign-in screen had. Spare space is
+    split above and below the card, and the button sits mid-screen instead of at the bottom.
+  - **Accommodations, situation step** (`ParentAccommodationsPage.tsx`): button pinned and spare
+    space above it, which is right. The gap between blocks is 16px, much tighter than the 80px
+    Peter chose for the teen form screens.
+  - **Home** (`ParentHomePage.tsx`): gaps between the heading, the card and the link are not all
+    the same. Only seen in its empty state (see the demo-data item below).
+  - **Closed treatment** (`ParentClosedPage.tsx`): not seen — the demo family's treatment is open.
+    The code uses four different gaps (30, 16, 12, 20px).
+  - **Progress** and **Messages**: look fine, but only seen empty.
+  - Outside the parent app: the child's sign-in, set-password and reset-password screens use the
+    same centred card.
+- **What changes.** For each screen Peter picks: one even gap, main button pinned with
+  `margin-top: auto`, spare space above it. The sign-in screen's fix
+  (`ParentLoginPage.tsx`) is the pattern.
+- **How to tell it worked.** Before and after screenshots at phone width.
+- **Gate.** None clinical. Screen files are in CODEOWNERS.
+
+## The demo parent cannot see the child's plan or progress
+
+**Found 2026-10-15.** `S`
+
+- **Today.** `backend/seed_local.py` never sets `progress_shared_with_parent_at` on the demo
+  child's `patient_profiles` row. So the demo parent's home says "Your clinician hasn't shared
+  Sarah's plan with you yet" and Progress says the same. Screenshots of those two screens can only
+  show the empty state.
+- **What changes.** Have the seed switch sharing on, the way a clinician does in the Parent access
+  panel (also set `progress_shared_by_practitioner_id` to the demo clinician).
+- **How to tell it worked.** `tests/test_seed_local.py` checks the parent's `/parent/progress`
+  returns `shared: true`; the demo parent's home shows the child's exposures.
+- **Gate.** None — local demo data only. It does not change who can see what in the app.
+
+## Parent messages: the message box cuts off its placeholder at phone width
+
+**Found 2026-10-15.** `S`
+
+- **Today.** In `ParentMessagesPage.tsx` the one-row text box shows "Write a message to your
+  clinician…". At 375 wide it wraps onto a second line that is cut in half.
+- **What changes.** Shorter placeholder, or let the box fit it. Wording is Peter's call.
+- **How to tell it worked.** Screenshot at 375 wide shows the whole placeholder.
+- **Gate.** None.
+
 # Admin
 
 | Item | Today | Size |
@@ -548,6 +578,8 @@ tests; CI on push; this file).
   **What changes:** install Chrome on the mini (or run `npx playwright install chrome`), and add it
   to `docs/plans/agent-machine-setup.md`. **How to tell it worked:** an agent can open
   `http://localhost:5173/login` with the Playwright tool. **Gate:** none.
+  **Update 2026-10-15 (later):** the Playwright tool opened the web app and took screenshots on the
+  mini for the parent sign-in fix, so this may already be done. Check before working on it.
 - **`backend/seed_demo.py` no longer runs.** `S` Found 2026-10-15. **Today:** it writes columns
   that migrations have since removed or renamed (`patient_profiles.date_of_birth`,
   `avoidance_behaviors.distress_thermometer`), and it needs a practice and clinician whose IDs exist

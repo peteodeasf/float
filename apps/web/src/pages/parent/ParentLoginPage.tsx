@@ -4,6 +4,15 @@ import { useParentAuth } from '../../context/ParentAuthContext'
 import { parentApiClient } from '../../api/client'
 import FloatLogo from '../../components/ui/FloatLogo'
 
+// Screen layout rules (CLAUDE.md): a little space above the card, one gap between every block,
+// and the main button pinned to the bottom so any spare height collects just above it.
+const column: React.CSSProperties = { flex: 1, display: 'flex', flexDirection: 'column', gap: '80px' }
+const footer: React.CSSProperties = { marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--float-space-3)' }
+const backLink: React.CSSProperties = {
+  fontSize: '13px', color: 'var(--float-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+  alignSelf: 'flex-start',
+}
+
 export default function ParentLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -59,12 +68,13 @@ export default function ParentLoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ background: 'var(--float-primary-light)' }}
+      className="min-h-screen flex flex-col items-center px-6"
+      style={{ background: 'var(--float-primary-light)', paddingTop: 'var(--float-space-6)', paddingBottom: 'var(--float-space-6)' }}
     >
       <div
         className="w-full"
         style={{
+          ...column,
           maxWidth: '400px',
           background: 'var(--float-surface)',
           borderRadius: 'var(--float-radius-lg)',
@@ -72,7 +82,7 @@ export default function ParentLoginPage() {
           boxShadow: 'var(--float-shadow-md)',
         }}
       >
-        <div className="flex flex-col items-center" style={{ marginBottom: '32px' }}>
+        <div className="flex flex-col items-center">
           <FloatLogo size="lg" />
           <p className="text-sm" style={{ color: 'var(--float-text-hint)', marginTop: '12px' }}>
             Parent sign in
@@ -80,7 +90,7 @@ export default function ParentLoginPage() {
         </div>
 
         {view === 'login' ? (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleSubmit} style={column}>
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--float-text-secondary)' }}>
                 Email
@@ -120,36 +130,42 @@ export default function ParentLoginPage() {
               </div>
             </div>
 
-            {error && <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>}
+            <div style={footer}>
+              {error && <p className="text-sm text-center" style={{ color: 'var(--float-danger)' }}>{error}</p>}
 
-            <button type="submit" disabled={isLoading} className="teen-btn teen-btn--primary">
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
+              <button type="submit" disabled={isLoading} className="teen-btn teen-btn--primary">
+                {isLoading ? 'Signing in...' : 'Sign in'}
+              </button>
+            </div>
           </form>
         ) : (
-          <div>
-            <p style={{ fontSize: '17px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 8px' }}>
-              Reset your password
-            </p>
-            <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: '0 0 20px', lineHeight: '1.5' }}>
-              Enter your email and we'll send you a reset link.
-            </p>
+          <div style={column}>
+            <div>
+              <p style={{ fontSize: '17px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 8px' }}>
+                Reset your password
+              </p>
+              <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0, lineHeight: '1.5' }}>
+                Enter your email and we'll send you a reset link.
+              </p>
+            </div>
 
             {forgotSent ? (
               <>
-                <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: '0 0 20px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: '1.5', margin: 0 }}>
                   If that email is registered, you'll receive a reset link shortly. Check your inbox.
                 </p>
-                <button
-                  type="button"
-                  onClick={backToSignIn}
-                  style={{ fontSize: '13px', color: 'var(--float-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                >
-                  &larr; Back
-                </button>
+                <div style={footer}>
+                  <button
+                    type="button"
+                    onClick={backToSignIn}
+                    style={backLink}
+                  >
+                    &larr; Back
+                  </button>
+                </div>
               </>
             ) : (
-              <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <form onSubmit={handleForgotSubmit} style={column}>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--float-text-secondary)' }}>
                     Email
@@ -165,17 +181,19 @@ export default function ParentLoginPage() {
                   />
                 </div>
 
-                <button type="submit" disabled={forgotLoading} className="teen-btn teen-btn--primary">
-                  {forgotLoading ? 'Sending...' : 'Send reset link'}
-                </button>
+                <div style={footer}>
+                  <button type="submit" disabled={forgotLoading} className="teen-btn teen-btn--primary">
+                    {forgotLoading ? 'Sending...' : 'Send reset link'}
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={backToSignIn}
-                  style={{ fontSize: '13px', color: 'var(--float-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, alignSelf: 'flex-start' }}
-                >
-                  &larr; Back
-                </button>
+                  <button
+                    type="button"
+                    onClick={backToSignIn}
+                    style={backLink}
+                  >
+                    &larr; Back
+                  </button>
+                </div>
               </form>
             )}
           </div>
