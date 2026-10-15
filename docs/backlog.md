@@ -31,6 +31,16 @@ many steps or a screen that confuses.
 
 ---
 
+# Ready for agents
+
+The agent loop on the Mac mini (`scripts/agent-loop.sh`, `docs/plans/agent-loop.md`) takes items
+from this list only, top first. Peter moves items here when they are written to the standard above
+and need no clinical decision. The agent removes an item in the PR that builds it.
+
+_(Empty.)_
+
+---
+
 # Compliance
 
 ## HIPAA — what is actually missing

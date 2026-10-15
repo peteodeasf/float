@@ -82,8 +82,9 @@ If `whoami` prints `agent`, you are on the Mac mini and these rules apply. Setup
   Railway runs the migrations against production first. Run `/verify` before opening the PR.
 - **Never touch production data.** There is no production `.env` on this machine. Do not try to
   get one: do not read Railway variables, copy a `.env` from anywhere, or ask for the production
-  database URL. Here, `backend/.env` points at the local `float_dev` database and tests use
-  `float_test`.
+  database URL. Here, `DATABASE_URL` (set in `~/.zshrc` and in `scripts/agent-loop.sh`) points at
+  the local `float_dev` database, and tests use `float_test`. The web app has no `.env.local` here,
+  so it uses the local backend on port 8000. Do not create one.
 - **The read-only production database is for looking, not copying.** Use it to investigate a
   problem. Do not put what it returns into the repo, a PR, a commit, or a test fixture.
 - **Some paths need Peter's approval** — see `.github/CODEOWNERS`. A PR that touches one waits for
@@ -91,6 +92,24 @@ If `whoami` prints `agent`, you are on the Mac mini and these rules apply. Setup
 - **Do not weaken or delete a test to make CI pass.** If a test is wrong, say so in the PR and
   leave it for Peter.
 - **Python:** use the backend environment at `~/code/float/backend/.venv`, from any worktree.
+- **One task per session, one PR per task.** Do not start a second backlog item in the same
+  session.
+- **Bugs you notice along the way go into `docs/backlog.md`,** in its format, not into the current
+  PR. Do not fix them now.
+- **Write down what you had to work out.** A non-obvious problem and its fix go in
+  `docs/solutions/<slug>.md`, in the same PR. If a rule in this file should change, propose it in
+  a separate PR; Peter approves those.
+- **Clinical and access changes wait for Peter.** If a PR changes clinical logic (what counts as
+  avoidance, safety or escape behaviour, accommodation or fear-rating rules, plan-commit
+  behaviour) or who can see what, request his review with
+  `gh pr edit <number> --add-reviewer peteodeasf` and do not merge it. GitHub does not enforce
+  this. You do.
+- **Screen changes need screenshots.** Run the backend and web app locally against `float_dev`
+  with demo data — never production. Screenshot every screen you changed, at phone width for the
+  child and parent apps. Check each one against "Screen layout" above. Push the images to the
+  `pr-screenshots` branch under `<pr-number>/`, never to main, and show them in the PR description
+  with `![name](https://github.com/peteodeasf/float/blob/pr-screenshots/<pr-number>/<file>.png?raw=true)`.
+  Screen files are in CODEOWNERS, so GitHub holds the merge until Peter approves.
 
 ## How to write to Peter — and this applies to agents too
 
