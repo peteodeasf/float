@@ -5,7 +5,7 @@
 >
 > **Clinical gate:** this changes what counts as a rung, where the downward arrow sits, and the
 > order of the ladder. That is clinical logic. Pre-launch it is Peter's call, made here with
-> Dr. Walker's input. The open questions below go in the Dr. Walker review queue.
+> Dr. Walker's input. His answers below go in the Dr. Walker review queue.
 
 ## Goal
 
