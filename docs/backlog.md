@@ -37,39 +37,7 @@ The agent loop on the Mac mini (`scripts/agent-loop.sh`, `docs/plans/agent-loop.
 from this list only, top first. Peter moves items here when they are written to the standard above
 and need no clinical decision. The agent removes an item in the PR that builds it.
 
-## Demo data for the local database `S`
-
-**Today.** `backend/seed_demo.py` is the only demo-data script. It is hard-wired to a production
-database address and password (line 9, in a public repo), and it adds one patient ("Sarah
-Mitchell") to a practice and clinician whose IDs exist only in production. It writes raw SQL
-written in July, and many migrations have run since. On the Mac mini, `float_dev` is empty, so an
-agent cannot sign in to the local app or take screenshots of real-looking screens.
-(`backend/scripts/` is in `.gitignore`, so scripts there do not reach the mini.)
-
-**What changes.**
-- A new script, `backend/seed_local.py`, that fills an empty local database with: one practice;
-  one clinician; one platform admin; one family with a parent and a child (a teen), linked; and a
-  treatment plan with situations, avoidance behaviours, a downward arrow, experiments and session
-  notes, reusing the example content from `seed_demo.py`.
-- Build the data through the app's models or services, not raw SQL, so it keeps up with
-  migrations.
-- It refuses to run unless the database host is `localhost` or `127.0.0.1`, and says why.
-- Running it twice does not fail or make duplicates.
-- At the end it prints each account's email, password and role. The passwords are for the local
-  database only.
-- Remove the database address and password from `seed_demo.py`: read `DATABASE_URL` from the
-  environment instead, and apply the same localhost check.
-- Do not edit `CLAUDE.md`. Say in the PR description how to run the script, and Peter will add it.
-
-**How to tell it worked.**
-- A test runs the seed against `float_test` and checks each account exists with the right role,
-  and that a second run adds nothing. This fails in CI if a future migration breaks the seed.
-- A test that the localhost check refuses a non-local host.
-- On the mini: `python seed_local.py`, then sign in to the local web app as the clinician, the
-  parent and the child.
-
-**Gate.** None clinical: the content is copied from the existing demo. No change to the app's
-sign-in or access rules.
+Nothing is waiting here right now.
 
 ---
 
@@ -554,6 +522,20 @@ tests; CI on push; this file).
 - **CI does not gate deploys.** `S` It runs on push to `main`; Railway builds from the same push. CI
   tells you a build was broken, it does not stop it reaching production.
 - **`PatientPage.tsx` is 3,150 lines.** `M` Down from 3,931. Matters when two agents edit it at once.
+- **The Mac mini has no browser for screenshots.** `S` Found 2026-10-15. **Today:** the Playwright
+  tool the agents use looks for Google Chrome at `/Applications/Google Chrome.app` and it is not
+  installed, and there is no Playwright browser in `~/Library/Caches/ms-playwright`. So an agent on
+  the mini cannot open the web app or take the screenshots CLAUDE.md requires for a screen change.
+  **What changes:** install Chrome on the mini (or run `npx playwright install chrome`), and add it
+  to `docs/plans/agent-machine-setup.md`. **How to tell it worked:** an agent can open
+  `http://localhost:5173/login` with the Playwright tool. **Gate:** none.
+- **`backend/seed_demo.py` no longer runs.** `S` Found 2026-10-15. **Today:** it writes columns
+  that migrations have since removed or renamed (`patient_profiles.date_of_birth`,
+  `avoidance_behaviors.distress_thermometer`), and it needs a practice and clinician whose IDs exist
+  only in production. `backend/seed_local.py` replaces it for local work and carries the same
+  example content. **What changes:** delete `seed_demo.py`, unless Peter still wants a script that
+  adds the demo family to an existing practice. **How to tell it worked:** nothing imports it.
+  **Gate:** none.
 
 ---
 
