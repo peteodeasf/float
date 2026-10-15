@@ -18,6 +18,9 @@ class AvoidanceBehaviorCreate(BaseModel):
     distress_thermometer_when_refraining: Optional[float] = Field(default=None, ge=DT_MIN, le=DT_MAX)
     behavior_library_id: Optional[uuid.UUID] = None
     parent_behavior_id: Optional[uuid.UUID] = None
+    # Required when behavior_type is "combination", refused otherwise: the safety behaviour this
+    # rung is "without".
+    without_behavior_id: Optional[uuid.UUID] = None
 
 
 class AvoidanceBehaviorUpdate(BaseModel):
@@ -40,7 +43,16 @@ class AvoidanceBehaviorResponse(BaseModel):
     distress_thermometer_when_refraining: Optional[float] = None
     behavior_library_id: Optional[uuid.UUID] = None
     parent_behavior_id: Optional[uuid.UUID] = None
+    without_behavior_id: Optional[uuid.UUID] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class CombinationDraftResponse(BaseModel):
+    """A suggested sentence for a combination. Nothing is saved."""
+    sentence: str
+    #: "ai" or "template". "template" means the AI draft failed and this is the plain fallback,
+    #: so the clinician should expect to reword it.
+    drafted_by: str

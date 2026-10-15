@@ -57,3 +57,20 @@ the path happens to start with. Where a route's identity is a pair, both halves 
 And one trap worth remembering: `rung_id` means `AvoidanceBehavior` under `/plans/` and `LadderRung`
 under `/ladders/`. One dependency name cannot serve both, which is why these checks live in the
 queries rather than only in dependencies.
+
+## The same gap, in the body — 2026-10-15
+
+Found while adding combinations. `POST /plans/{plan_id}/rungs` and both rung update routes take a
+`trigger_situation_id` in the **body**. The access check covers the plan in the path. Nothing
+covered the situation in the body. So a clinician could put a step under, or move one to, another
+patient's situation in the same practice, without access to that patient. The step then showed on
+that child's ladder. The route sweep missed it because it only fills path parameters.
+
+Fixed by tying the body's situation to the path's plan with `assert_belongs_to`. Tests are at the
+end of `tests/test_combinations.py`.
+
+**The general lesson, extended:** an id the handler acts on can arrive in the body as well as the
+path. A body field that names another row needs the same check as a path parameter.
+`parent_behavior_id` on the create body is the same kind of field and is not checked yet. It only
+affects how rows are grouped and deleted, not who sees them, so it is in the backlog rather than
+fixed here.

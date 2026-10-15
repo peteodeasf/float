@@ -19,8 +19,14 @@ from app.services.avoidance_behavior_service import (
 from app.schemas.avoidance_behavior import (
     AvoidanceBehaviorCreate,
     AvoidanceBehaviorUpdate,
-    AvoidanceBehaviorResponse
+    AvoidanceBehaviorResponse,
+    CombinationDraftResponse,
 )
+from app.core.behavior_types import COMBINATION_OF
+from app.models.treatment import TriggerSituation
+from app.services.combination_wording import draft_sentence
+from sqlalchemy import select
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/triggers/{trigger_id}/behaviors", tags=["avoidance-behaviors"])
 
@@ -62,6 +68,10 @@ async def update_avoidance_behavior(
     # clinician could pair a parent they hold with any child row in the institution -
     # including one whose grant was revoked. See docs/solutions/.
     await assert_belongs_to(db, AvoidanceBehavior, behavior_id, trigger_situation_id=trigger_id)
+    plan_id = (await db.execute(
+        select(TriggerSituation.treatment_plan_id).where(TriggerSituation.id == trigger_id)
+    )).scalar_one()
+    await _regroup_target_on_plan(db, data, plan_id)
     return await update_behavior(db, behavior_id, practitioner.organization_id, data)
 
 
@@ -79,6 +89,46 @@ async def delete_avoidance_behavior(
     # including one whose grant was revoked. See docs/solutions/.
     await assert_belongs_to(db, AvoidanceBehavior, behavior_id, trigger_situation_id=trigger_id)
     await delete_behavior(db, behavior_id, practitioner.organization_id)
+
+
+async def _regroup_target_on_plan(db: AsyncSession, data: AvoidanceBehaviorUpdate, plan_id) -> None:
+    """404 unless a regroup moves the rung to a situation on the same plan.
+
+    The new situation comes from the body, not the path, so no access check has looked at it.
+    Moving a rung under another patient's situation would put it on that child's ladder.
+    """
+    target = data.model_dump(exclude_unset=True).get("trigger_situation_id")
+    if target is not None:
+        await assert_belongs_to(db, TriggerSituation, target, treatment_plan_id=plan_id)
+
+
+@router.post("/{behavior_id}/combination-draft", response_model=CombinationDraftResponse)
+async def draft_combination(
+    trigger_id: uuid.UUID,
+    behavior_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_trigger),
+):
+    """A suggested sentence for this situation without this safety behaviour. Writes nothing.
+
+    The clinician edits it and saves it by creating a rung with `behavior_type="combination"` and
+    `without_behavior_id` set to this behaviour.
+    """
+    # The dependency above checked the PARENT id. Nothing tied the child id to it, so a
+    # clinician could pair a parent they hold with any child row in the institution -
+    # including one whose grant was revoked. See docs/solutions/.
+    await assert_belongs_to(db, AvoidanceBehavior, behavior_id, trigger_situation_id=trigger_id)
+    behavior = (await db.execute(
+        select(AvoidanceBehavior).where(AvoidanceBehavior.id == behavior_id)
+    )).scalar_one()
+    if behavior.behavior_type != COMBINATION_OF:
+        raise HTTPException(status_code=400, detail="Only a safety behaviour makes a combination.")
+    situation = (await db.execute(
+        select(TriggerSituation.name).where(TriggerSituation.id == trigger_id)
+    )).scalar_one()
+    sentence, drafted_by = await draft_sentence(situation, behavior.name)
+    return CombinationDraftResponse(sentence=sentence, drafted_by=drafted_by)
 
 
 # ── The ladder, flat ───────────────────────────────────────────────────────────
@@ -111,6 +161,12 @@ async def create_plan_rung(
 ):
     """Add a rung to the ladder. `trigger_situation_id` is optional — group it now or later."""
     _, practitioner = context
+    # The situation comes from the body, so the plan check above says nothing about it. Without
+    # this, a rung could be put under another patient's situation and land on that child's ladder.
+    if data.trigger_situation_id is not None:
+        await assert_belongs_to(
+            db, TriggerSituation, data.trigger_situation_id, treatment_plan_id=plan_id
+        )
     return await create_behavior(
         db, data.trigger_situation_id, practitioner.organization_id, data, plan_id=plan_id
     )
@@ -131,6 +187,7 @@ async def update_plan_rung(
     # clinician could pair a parent they hold with any child row in the institution -
     # including one whose grant was revoked. See docs/solutions/.
     await assert_rung_in_plan(db, rung_id, plan_id)
+    await _regroup_target_on_plan(db, data, plan_id)
     return await update_behavior(db, rung_id, practitioner.organization_id, data)
 
 

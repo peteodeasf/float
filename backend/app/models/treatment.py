@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, text, Numeric, Integer, Boolean
+from sqlalchemy import String, DateTime, ForeignKey, text, Numeric, Integer, Boolean, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -86,6 +86,10 @@ class TriggerSituation(Base):
 
 class AvoidanceBehavior(Base):
     __tablename__ = "avoidance_behaviors"
+    # Named to match migration c3e8a5d1f7b2.
+    __table_args__ = (
+        UniqueConstraint("without_behavior_id", name="uq_avoidance_behaviors_without_behavior_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
@@ -116,6 +120,11 @@ class AvoidanceBehavior(Base):
     )
     # Sub-behaviors (#7): a finer, lower-scored step under a parent behavior (same situation).
     parent_behavior_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("avoidance_behaviors.id"), nullable=True
+    )
+    # Set only on a combination rung: the safety behaviour it is "without". One combination per
+    # safety behaviour, enforced by a unique index. See docs/plans/ladder-combinations.md.
+    without_behavior_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("avoidance_behaviors.id"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(

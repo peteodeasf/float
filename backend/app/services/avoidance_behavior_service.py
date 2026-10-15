@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update, or_
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.treatment import AvoidanceBehavior, TriggerSituation
@@ -8,7 +9,7 @@ from app.models.ladder import LadderRung
 from app.models.experiment import Experiment
 from app.schemas.avoidance_behavior import AvoidanceBehaviorCreate, AvoidanceBehaviorUpdate
 from app.services.library_service import upsert_behavior_library
-from app.core.behavior_types import LADDER_TYPES, coerce_for_write
+from app.core.behavior_types import COMBINATION, COMBINATION_OF, LADDER_TYPES, coerce_for_write
 
 
 async def get_behaviors_for_trigger(
@@ -34,10 +35,22 @@ async def create_behavior(
     data: AvoidanceBehaviorCreate,
     plan_id: uuid.UUID | None = None,
 ) -> AvoidanceBehavior:
-    # Reuse the picked library entry, or find-or-create one from the name + type.
-    library_id = data.behavior_library_id or await upsert_behavior_library(
-        db, data.name, data.behavior_type
-    )
+    behavior_type = coerce_for_write(data.behavior_type)
+    if behavior_type == COMBINATION:
+        await _check_combination(db, trigger_id, organization_id, data.without_behavior_id)
+        # A combination sentence is this child's situation and behaviour put together. It is not
+        # a reusable name, so it stays out of the shared cross-practice library.
+        library_id = None
+    else:
+        if data.without_behavior_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only a combination can say which behaviour it is without.",
+            )
+        # Reuse the picked library entry, or find-or-create one from the name + type.
+        library_id = data.behavior_library_id or await upsert_behavior_library(
+            db, data.name, data.behavior_type
+        )
 
     # A rung always belongs to a plan; the situation is optional grouping. If the caller gave a
     # situation but no plan, take the plan from the situation so the link is never missing.
@@ -52,15 +65,93 @@ async def create_behavior(
         organization_id=organization_id,
         name=data.name,
         description=data.description,
-        behavior_type=coerce_for_write(data.behavior_type),
+        behavior_type=behavior_type,
         distress_thermometer_when_refraining=data.distress_thermometer_when_refraining,
         behavior_library_id=library_id,
         parent_behavior_id=data.parent_behavior_id,
+        without_behavior_id=data.without_behavior_id,
     )
     db.add(behavior)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Two saves of the same combination at once both pass the check above; the unique index
+        # stops the second. Say what happened rather than returning a 500.
+        await db.rollback()
+        if behavior_type == COMBINATION:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This safety behaviour already has a combination.",
+            )
+        raise
     await db.refresh(behavior)
     return behavior
+
+
+async def _check_combination(
+    db: AsyncSession,
+    trigger_id: uuid.UUID | None,
+    organization_id: uuid.UUID,
+    without_behavior_id: uuid.UUID | None,
+) -> None:
+    """A combination needs a safety behaviour, on the same situation, that has no combination yet.
+
+    Only safety behaviours make combinations. Peter, 2026-10-15, on avoidance: "It's avoiding the
+    situation." See docs/plans/ladder-combinations.md.
+    """
+    if trigger_id is None or without_behavior_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A combination needs its situation and the safety behaviour it is without.",
+        )
+    target = (await db.execute(
+        select(AvoidanceBehavior).where(
+            AvoidanceBehavior.id == without_behavior_id,
+            AvoidanceBehavior.organization_id == organization_id,
+            AvoidanceBehavior.trigger_situation_id == trigger_id,
+        )
+    )).scalar_one_or_none()
+    if target is None:
+        # Same answer whether it does not exist or is under another situation, so this cannot be
+        # used to find out whether a row exists somewhere else.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Behavior not found")
+    if target.behavior_type != COMBINATION_OF:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only a safety behaviour makes a combination.",
+        )
+    if await _has_combination(db, without_behavior_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This safety behaviour already has a combination.",
+        )
+
+
+async def _has_combination(db: AsyncSession, behavior_id: uuid.UUID) -> bool:
+    return (await db.execute(
+        select(AvoidanceBehavior.id).where(AvoidanceBehavior.without_behavior_id == behavior_id)
+    )).scalar_one_or_none() is not None
+
+
+async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_type: str) -> None:
+    """Refuse a type change that would break a combination.
+
+    A row cannot become a combination by retyping, because it would have no behaviour to be
+    without. A combination cannot become something else, because it would keep pointing at one. A
+    safety behaviour with a combination cannot stop being safety, because the combination would
+    then be "without" something that is not a safety behaviour.
+    """
+    if new_type == COMBINATION or behavior.behavior_type == COMBINATION:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A combination is made from a safety behaviour, not by changing a type.",
+        )
+    if behavior.behavior_type == COMBINATION_OF:
+        if await _has_combination(db, behavior.id):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This safety behaviour has a combination. Remove the combination first.",
+            )
 
 
 async def update_behavior(
@@ -85,13 +176,31 @@ async def update_behavior(
     if data.description is not None:
         behavior.description = data.description
     if data.behavior_type is not None:
-        behavior.behavior_type = coerce_for_write(data.behavior_type)
+        new_type = coerce_for_write(data.behavior_type)
+        if new_type != behavior.behavior_type:
+            await _check_type_change(db, behavior, new_type)
+        behavior.behavior_type = new_type
     if data.distress_thermometer_when_refraining is not None:
         behavior.distress_thermometer_when_refraining = data.distress_thermometer_when_refraining
     # Regrouping. None is meaningful (ungroup), so this keys off "was the field sent at all".
     fields_sent = data.model_dump(exclude_unset=True)
-    if "trigger_situation_id" in fields_sent:
-        behavior.trigger_situation_id = fields_sent["trigger_situation_id"]
+    new_situation = fields_sent.get("trigger_situation_id", behavior.trigger_situation_id)
+    if new_situation != behavior.trigger_situation_id:
+        if behavior.behavior_type == COMBINATION:
+            # A combination is this situation without one of its behaviours. Under another
+            # situation, or none, the sentence would describe something that is not there.
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A combination stays with its situation.",
+            )
+        if await _has_combination(db, behavior.id):
+            # The other half of the same rule: its combination would be left saying "without"
+            # something that is no longer part of that situation.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This safety behaviour has a combination. Remove the combination first.",
+            )
+        behavior.trigger_situation_id = new_situation
 
     await db.commit()
     await db.refresh(behavior)
@@ -108,7 +217,7 @@ async def cascade_delete_behaviors(
     ``db.delete(behavior)`` raises an IntegrityError as soon as a behavior has a sub-step, a ladder
     rung, or an experiment. Policy:
 
-    * **Sub-behaviors and ladder rungs are structure** — they only exist to describe this behavior,
+    * **Sub-behaviors, combinations and ladder rungs are structure** — they only exist to describe this behavior,
       so they go with it.
     * **Experiments are outcome history** — what the child actually did is not erased by removing a
       rung; the link is nulled instead (both FKs are nullable).
@@ -120,11 +229,15 @@ async def cascade_delete_behaviors(
 
     # Sub-behaviors are a self-FK, so walk down until the tree is exhausted (v1 nests one level,
     # but the walk costs nothing and keeps this correct if that ever changes).
+    # A safety behaviour's combination is structure too: "without X" means nothing once X is gone.
     all_ids: set[uuid.UUID] = set(behavior_ids)
     frontier = list(behavior_ids)
     while frontier:
         rows = await db.execute(
-            select(AvoidanceBehavior.id).where(AvoidanceBehavior.parent_behavior_id.in_(frontier))
+            select(AvoidanceBehavior.id).where(or_(
+                AvoidanceBehavior.parent_behavior_id.in_(frontier),
+                AvoidanceBehavior.without_behavior_id.in_(frontier),
+            ))
         )
         frontier = [bid for bid in rows.scalars().all() if bid not in all_ids]
         all_ids.update(frontier)

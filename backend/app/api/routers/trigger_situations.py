@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.services.patient_access_service import assert_belongs_to
 from app.models.treatment import AvoidanceBehavior, TreatmentPlan, TriggerSituation
 from app.models.downward_arrow import DownwardArrow
-from app.core.behavior_types import OBSERVATION, SCENARIO
+from app.core.behavior_types import COMBINATION, OBSERVATION, SCENARIO
 from app.services.step_suggestion_service import SuggestionUnavailable, suggest_steps
 from app.api.routers.patients import get_practitioner_context, get_permitted_plan
 from app.services.trigger_situation_service import (
@@ -138,10 +138,12 @@ async def suggested_steps(
     behaviors = (await db.execute(
         select(AvoidanceBehavior).where(AvoidanceBehavior.trigger_situation_id == situation.id)
     )).scalars().all()
-    steps = [b.name for b in behaviors if b.behavior_type == SCENARIO]
+    # Both kinds of rung are steps the ladder already has.
+    steps = [b.name for b in behaviors if b.behavior_type in (SCENARIO, COMBINATION)]
     coping = [
         b.name for b in behaviors
-        if b.behavior_type not in (SCENARIO, OBSERVATION)
+        # A combination is a rung, not something the child does to cope.
+        if b.behavior_type not in (SCENARIO, COMBINATION, OBSERVATION)
     ]
 
     # Most recent, and not scalar_one_or_none: a situation is supposed to have one arrow, and a

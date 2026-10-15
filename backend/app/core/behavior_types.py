@@ -9,8 +9,12 @@ a rung apart from a safety behaviour.
 See docs/plans/exposure-ladder-sub-situations.md.
 """
 
-#: A version of the situation, with its own fear rating. THIS is a ladder rung.
+#: A version of the situation, with its own fear rating. A ladder rung. Called a sub-situation in
+#: what people see.
 SCENARIO = "scenario"
+#: Being in the situation without one safety behaviour, written as one sentence. A ladder rung.
+#: `without_behavior_id` points at the safety behaviour. See docs/plans/ladder-combinations.md.
+COMBINATION = "combination"
 #: Staying away from the situation.
 AVOIDANCE = "avoidance"
 #: What the child does so the situation feels safer while they are in it.
@@ -23,7 +27,7 @@ RITUAL = "ritual"
 #: rather than deleted.
 OBSERVATION = "observation"
 
-CANONICAL = {SCENARIO, AVOIDANCE, SAFETY, RITUAL, OBSERVATION}
+CANONICAL = {SCENARIO, COMBINATION, AVOIDANCE, SAFETY, RITUAL, OBSERVATION}
 
 #: Different spellings of the same idea, found in production 2026-09-01.
 ALIASES = {
@@ -43,16 +47,23 @@ NOT_A_BEHAVIOUR = {
 
 #: What the ladder shows.
 #:
-#: A rung is a smaller version of the situation, with its own fear rating — Peter, 2026-09-01, from
-#: Dr. Walker's own ladders. Nothing else belongs on it. A safety behaviour is a thing to stop
-#: before the exposures, and it lives on the situation; an avoidance is what the situation IS; an
-#: observation was never a behaviour at all.
+#: Two kinds of rung, each with its own fear rating (Peter, 2026-10-15, after review with
+#: Dr. Walker — docs/plans/ladder-combinations.md):
 #:
-#: This empties ladders built under the old model, where a rung was a behaviour the child gave up.
-#: Peter, 2026-09-01: "i really don't care about historical data. i'd rather things be clean than
-#: confusing." Those rows are not deleted — they still show against their situation in the
-#: clinician's Situations view.
-LADDER_TYPES = {SCENARIO}
+#: * a combination — the situation without one safety behaviour;
+#: * a sub-situation — an easier version of a combination, or of the situation itself.
+#:
+#: A safety behaviour is not itself a rung; its combination is. An avoidance makes no rung at all —
+#: Peter: "It's avoiding the situation." The situation itself is not a rung either. An observation
+#: was never a behaviour.
+#:
+#: Between 2026-09-01 and 2026-10-15 the ladder was sub-situations only. Rows from before that,
+#: where a rung was a behaviour the child gave up, are still not shown — nothing turns an old
+#: safety row into a combination by itself.
+LADDER_TYPES = {SCENARIO, COMBINATION}
+
+#: The only type a combination can be about.
+COMBINATION_OF = SAFETY
 
 
 def normalise(value: str | None) -> str:
