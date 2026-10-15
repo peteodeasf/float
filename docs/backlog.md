@@ -37,7 +37,26 @@ The agent loop on the Mac mini (`scripts/agent-loop.sh`, `docs/plans/agent-loop.
 from this list only, top first. Peter moves items here when they are written to the standard above
 and need no clinical decision. The agent removes an item in the PR that builds it.
 
-Nothing is waiting here right now.
+## Fix one parent-app screen that breaks the screen layout rules `S`
+
+**Today.** `CLAUDE.md` ("Screen layout — required") sets four rules: a little space under the top
+bar, one even gap between elements, the main button pinned to the bottom, and leftover space
+pooled above the button. Nobody has checked the parent app's screens against them
+(`apps/web/src/pages/parent/`).
+
+**What changes.**
+- Run the local backend and web app, sign in as the demo parent from `backend/seed_local.py`, and
+  screenshot each parent screen at phone width (375 wide).
+- Check each screenshot against the four rules. Pick the one screen that breaks them most
+  clearly, and fix that screen only. Change spacing and layout only: no wording, no new or
+  removed controls, no change to what happens when a button is pressed.
+- In the PR, show a before and an after screenshot of that screen, and list the other screens
+  that break the rules (without fixing them) so Peter can decide on those.
+
+**How to tell it worked.** Peter looks at the before and after screenshots and the Netlify
+preview. The frontend tests and typecheck still pass.
+
+**Gate.** None clinical. The screen files are in CODEOWNERS, so GitHub waits for Peter's approval.
 
 ---
 
