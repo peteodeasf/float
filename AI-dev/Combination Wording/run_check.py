@@ -63,7 +63,10 @@ def pairs() -> list[tuple[str, str, str]]:
                     continue
                 if (rung.get("behavior_type") or "").lower() not in SAFETY_SPELLINGS:
                     continue
-                key = (case["situation"].strip(), rung["name"].strip())
+                situation, name = case.get("situation"), rung.get("name")
+                if not situation or not name:
+                    continue
+                key = (situation.strip(), name.strip())
                 if key not in seen:
                     seen.add(key)
                     out.append((*key, path.name))

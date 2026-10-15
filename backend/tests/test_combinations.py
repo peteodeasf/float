@@ -366,3 +366,34 @@ async def test_a_rung_can_still_move_between_situations_on_the_same_plan(api, db
 
     assert r.status_code == 200
     assert r.json()["trigger_situation_id"] == str(other_of_mine.id)
+
+
+# ── Review fixes ─────────────────────────────────────────────────────────────
+
+
+async def test_a_safety_behaviour_with_a_combination_stays_with_its_situation(api, db):
+    _, _, plan, situation, clinician = await _setup(db)
+    other = await make_situation(db, plan, name="Lunch in the cafeteria")
+    safety = await make_rung(db, situation=situation, name="Sits at the back", behavior_type="safety")
+    api.sign_in_as(clinician.user)
+    await api.post(f"/triggers/{situation.id}/behaviors", json=_combination(safety))
+
+    moved = await api.put(f"/plans/{plan.id}/rungs/{safety.id}", json={"trigger_situation_id": str(other.id)})
+    ungrouped = await api.put(f"/plans/{plan.id}/rungs/{safety.id}", json={"trigger_situation_id": None})
+
+    assert moved.status_code == 409
+    assert ungrouped.status_code == 409
+
+
+async def test_sending_a_combinations_own_situation_back_is_fine(api, db):
+    """A client that sends the whole rung back on edit must still be able to rename it."""
+    _, _, plan, situation, clinician = await _setup(db)
+    safety = await make_rung(db, situation=situation, name="Sits at the back", behavior_type="safety")
+    api.sign_in_as(clinician.user)
+    rung = (await api.post(f"/triggers/{situation.id}/behaviors", json=_combination(safety))).json()
+
+    r = await api.put(f"/plans/{plan.id}/rungs/{rung['id']}", json={
+        "name": "Reworded", "trigger_situation_id": str(situation.id),
+    })
+
+    assert r.status_code == 200

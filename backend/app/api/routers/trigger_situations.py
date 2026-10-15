@@ -138,7 +138,8 @@ async def suggested_steps(
     behaviors = (await db.execute(
         select(AvoidanceBehavior).where(AvoidanceBehavior.trigger_situation_id == situation.id)
     )).scalars().all()
-    steps = [b.name for b in behaviors if b.behavior_type == SCENARIO]
+    # Both kinds of rung are steps the ladder already has.
+    steps = [b.name for b in behaviors if b.behavior_type in (SCENARIO, COMBINATION)]
     coping = [
         b.name for b in behaviors
         # A combination is a rung, not something the child does to cope.

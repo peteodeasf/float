@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update, or_
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.treatment import AvoidanceBehavior, TriggerSituation
@@ -71,7 +72,18 @@ async def create_behavior(
         without_behavior_id=data.without_behavior_id,
     )
     db.add(behavior)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Two saves of the same combination at once both pass the check above; the unique index
+        # stops the second. Say what happened rather than returning a 500.
+        await db.rollback()
+        if behavior_type == COMBINATION:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This safety behaviour already has a combination.",
+            )
+        raise
     await db.refresh(behavior)
     return behavior
 
@@ -108,14 +120,17 @@ async def _check_combination(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only a safety behaviour makes a combination.",
         )
-    existing = (await db.execute(
-        select(AvoidanceBehavior.id).where(AvoidanceBehavior.without_behavior_id == without_behavior_id)
-    )).scalar_one_or_none()
-    if existing is not None:
+    if await _has_combination(db, without_behavior_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This safety behaviour already has a combination.",
         )
+
+
+async def _has_combination(db: AsyncSession, behavior_id: uuid.UUID) -> bool:
+    return (await db.execute(
+        select(AvoidanceBehavior.id).where(AvoidanceBehavior.without_behavior_id == behavior_id)
+    )).scalar_one_or_none() is not None
 
 
 async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_type: str) -> None:
@@ -132,10 +147,7 @@ async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_
             detail="A combination is made from a safety behaviour, not by changing a type.",
         )
     if behavior.behavior_type == COMBINATION_OF:
-        has_combination = (await db.execute(
-            select(AvoidanceBehavior.id).where(AvoidanceBehavior.without_behavior_id == behavior.id)
-        )).scalar_one_or_none()
-        if has_combination is not None:
+        if await _has_combination(db, behavior.id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="This safety behaviour has a combination. Remove the combination first.",
@@ -172,7 +184,8 @@ async def update_behavior(
         behavior.distress_thermometer_when_refraining = data.distress_thermometer_when_refraining
     # Regrouping. None is meaningful (ungroup), so this keys off "was the field sent at all".
     fields_sent = data.model_dump(exclude_unset=True)
-    if "trigger_situation_id" in fields_sent:
+    new_situation = fields_sent.get("trigger_situation_id", behavior.trigger_situation_id)
+    if new_situation != behavior.trigger_situation_id:
         if behavior.behavior_type == COMBINATION:
             # A combination is this situation without one of its behaviours. Under another
             # situation, or none, the sentence would describe something that is not there.
@@ -180,7 +193,14 @@ async def update_behavior(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A combination stays with its situation.",
             )
-        behavior.trigger_situation_id = fields_sent["trigger_situation_id"]
+        if await _has_combination(db, behavior.id):
+            # The other half of the same rule: its combination would be left saying "without"
+            # something that is no longer part of that situation.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This safety behaviour has a combination. Remove the combination first.",
+            )
+        behavior.trigger_situation_id = new_situation
 
     await db.commit()
     await db.refresh(behavior)

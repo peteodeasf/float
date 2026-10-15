@@ -58,10 +58,10 @@ async def draft_sentence(situation: str, behavior: str) -> tuple[str, str]:
     try:
         import anthropic
 
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         # The pinned SDK (0.69) predates `output_config` and `fallbacks`, so they go in the body.
         # `fallbacks: "default"` lets the API re-run a refused request on another model.
-        message = client.messages.create(
+        message = await client.messages.create(
             model=MODEL,
             max_tokens=2000,
             system=SYSTEM_PROMPT,
