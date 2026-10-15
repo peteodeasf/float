@@ -17,14 +17,32 @@ Build the ladder the way Dr. Walker runs the interview. There are seven steps:
    suggests starting with the situation that has the lowest Fear Level.
 3. **List the avoidance and safety behaviours** for a situation. Float suggests them from the log
    and recordings. Any the therapist already confirmed are listed.
-4. **Rate each combination.** A combination means being in the situation without one behaviour.
-   Float shows it as a sentence, and the therapist enters the child's score.
-5. **Downward arrow, for each combination.** Start with the safety behaviours, lowest score first.
-   It is fine not to do them all in one session.
-6. **Add sub-situations.** These are easier versions of a combination, where one is needed. Float
-   suggests them.
+4. **Rate each combination.** A combination means being in the situation without one safety
+   behaviour. Float shows it as a sentence, and the therapist enters the child's score. An avoidance
+   behaviour is not a combination. It is avoiding the situation.
+5. **Downward arrow, for each combination.** Start with the lowest score. It is fine not to do them
+   all in one session.
+6. **Add sub-situations.** These are easier versions of a combination, or of the situation itself,
+   where one is needed. Float suggests them.
 7. **The ladder.** Every combination and every sub-situation is a rung, sorted by score, lowest at
-   the bottom.
+   the top. That order is the same in the clinician app and the child's app.
+
+## Peter's answers, 2026-10-15
+
+1. **An avoidance behaviour is not a combination.** *"It's avoiding the situation."* It is listed on
+   the situation and makes no rung.
+2. **No downward arrow on a sub-situation, for now.** *"My inclination is no, but that could
+   change."* The data allows an arrow on any rung, so adding it later needs no migration.
+3. **A sub-situation can belong to a combination or directly to the situation.** *"Important and to
+   provide flexibility."*
+4. **Lowest at the top, everywhere.** This keeps the 2026-09-01 decision.
+5. **The therapist reading the combination sentence before it is saved is the check** on what the
+   child reads, including when the behaviour was in a parent's words.
+
+These go in the Dr. Walker review queue.
+
+**Still open:** is the situation itself, done with no safety behaviours, a rung? It would be the
+hardest step for that situation. Nothing in the steps above says so either way.
 
 **Worked example**
 
@@ -42,9 +60,9 @@ Build the ladder the way Dr. Walker runs the interview. There are seven steps:
 | What a rung is | A smaller version of the situation, and nothing else | A combination, or a sub-situation of one |
 | Safety behaviours | A list on the situation. Never a rung | Each one makes a combination, which is a rung |
 | Downward arrow | One per situation | One per combination |
-| Sub-situations | Belong to a situation | Belong to a combination (see open question 3) |
+| Sub-situations | Belong to a situation | Belong to a combination or to the situation |
 | Suggested sub-situations | Come from the situation's feared outcome | Come from the combination's feared outcome |
-| Ladder order | Lowest at the top | Lowest at the bottom |
+| Ladder order | Lowest at the top | Unchanged |
 
 The one-screen editor stays. Peter rejected step-per-screen versions twice (2026-09-01 and
 2026-09-05). The seven steps are the order things appear on that screen, not seven screens.
@@ -77,19 +95,26 @@ Participating in class verbally                       Fear Level [6]   1 arrow t
     Safety      Pretends to be busy
                 ↳ "Participate in class without pretending to be busy" [ ]   ↓ Arrow
     + Add a behaviour     Suggested: "Asks to go to the bathroom" (from the log)
+  Sub-situations of the situation itself
+    • Answer one question the teacher asked you in advance               [3]
+    + Add an easier version
 ```
+
+The avoidance row has no sentence, no score and no arrow. It is avoiding the situation, not a rung.
 
 - **Situations** are listed lowest Fear Level first. The first one without a ladder is marked
   *"Start here"*. That is step 2's suggestion.
 - **Behaviours** are tagged Avoidance or Safety. Suggestions from the log show as chips, which you
   tap to accept. Nothing is added until the therapist taps it.
-- **Combinations** appear as soon as a behaviour is added, with a drafted sentence and an empty
-  score. The therapist can edit the sentence.
+- **Combinations** appear as soon as a safety behaviour is added, with a drafted sentence and an
+  empty score. The therapist can edit the sentence. Adding an avoidance behaviour makes no
+  combination.
 - **↓ Arrow** opens the existing arrow screen for that combination. *"Do this one next"* marks the
-  next arrow to do: safety behaviours first, lowest score first. This is advice, not a lock.
-- **Sub-situations** sit under a combination. *Suggest easier versions* uses that combination's
-  feared outcome, as it does today for situations.
-- The **ladder** (the Plan tab) shows every rung, lowest at the bottom.
+  combination with the lowest score that has no arrow yet. This is advice, not a lock.
+- **Sub-situations** sit under a combination, or under the situation itself. *Suggest easier
+  versions* on a combination uses that combination's feared outcome. On the situation it works as it
+  does today.
+- The **ladder** (the Plan tab) shows every rung, lowest at the top, as today.
 
 ## Wording a combination
 
@@ -128,24 +153,24 @@ all keyed on that table, so keeping rungs there means none of those have to move
 | Change | How |
 |---|---|
 | New rung type `combination` | Added to the canonical set in `backend/app/core/behavior_types.py` and to `LADDER_TYPES`, alongside `scenario` |
-| A combination knows which behaviour it is about | New nullable column `avoidance_behaviors.without_behavior_id`, pointing at the safety or avoidance row. One combination per behaviour |
-| A sub-situation knows its combination | Uses the existing `parent_behavior_id` column. No new column |
-| The arrow sits on a rung | New nullable column `downward_arrows.rung_id`, pointing at the combination. One per rung per person who led it, like the current situation rule |
+| A combination knows which safety behaviour it is about | New nullable column `avoidance_behaviors.without_behavior_id`, pointing at the safety row. One combination per safety behaviour. Refused for an avoidance row |
+| A sub-situation knows its combination | Uses the existing `parent_behavior_id` column. Empty means it belongs to the situation itself. No new column |
+| The arrow sits on a rung | New nullable column `downward_arrows.rung_id`. One per rung per person who led it, like the current situation rule. Only combinations get one for now, but the column allows any rung, so an arrow on a sub-situation later needs no migration |
 
 The migration only adds things. It drops nothing and is not destructive. It goes on top of
 `f1a2c3d4e5b6`, or whatever is head when the work starts.
 
 **Existing test data:** existing situation arrows stay readable but the editor stops creating them.
-Existing sub-situations that hang off a situation, not a combination, are shown in a group called
-*"Not linked to a behaviour"* under their situation. Nothing is converted or deleted.
+Existing sub-situations become sub-situations of the situation itself, which is allowed. Nothing is
+converted or deleted.
 
 ## The child's app
 
 - `GET /patient/ladder` returns combinations as well as sub-situations in its flat `rungs` list.
   It already sorts by score and labels each rung with its situation.
 - The child sees the rung's sentence. That is the edited wording, so it reads naturally.
-- Experiments, the recommended rung and the on/off switch are unchanged.
-- **Order:** see open question 4.
+- Experiments, the recommended rung, the on/off switch and the order (lowest at the top) are
+  unchanged.
 
 ## Order of work
 
@@ -160,10 +185,8 @@ Each step is its own PR and each can ship on its own.
 3. **The arrow on a combination.** `rung_id` on arrows, the arrow screen opened from a combination,
    and the "Do this one next" marker.
 4. **Sub-situations under a combination.** Adding and suggesting them, and the suggestions read that
-   combination's feared outcome.
-5. **The ladder lowest at the bottom.** On the Plan tab, and in the child's app if question 4 says
-   so.
-6. **Suggestions from session recordings.** Today recordings only write a session note
+   combination's feared outcome. Sub-situations of the situation itself keep working.
+5. **Suggestions from session recordings.** Today recordings only write a session note
    (`backend/app/services/session_recording.py`). This makes them suggest situations, behaviours and
    Fear Levels too. It is the biggest unknown, so it goes last and gets its own plan.
 
@@ -171,36 +194,21 @@ The wording check (above) runs before step 1 ships.
 
 ## Risks and non-negotiables touched
 
-- **Clinical logic.** This changes what counts as a rung, where the arrow sits, and the ladder
-  order. Peter decides. The open questions go to the Dr. Walker queue.
+- **Clinical logic.** This changes what counts as a rung and where the arrow sits. Peter decided
+  on 2026-10-15. His answers go to the Dr. Walker queue.
 - **Who can see what.** The child's ladder endpoint changes what it returns. The child already sees
-  rungs. The question is whether the new sentence could show them something they shouldn't see,
-  such as a parent's wording of a safety behaviour like *"parent asks the teacher not to call on
-  them"*. Run `/security-review` on step 1.
-- **Screens.** Steps 2 to 5 change clinician screens and, at step 5, a child screen. Screenshots go
-  in each PR, and Peter approves.
+  rungs. A combination sentence can come from a parent's words, such as *"parent asks the teacher
+  not to call on them"*. Peter's call: the therapist reading it before saving is the check. Run
+  `/security-review` on step 1 anyway.
+- **Screens.** Steps 2 to 4 change clinician screens. Screenshots go in each PR, and Peter
+  approves.
 - **No web tests cover the editor, the ladder or the arrow screen today.** Step 2 adds them.
-
-## Open questions for Peter
-
-1. **Is an avoidance behaviour a combination?** In the example, *"doesn't participate"* without the
-   avoidance is just *"participate"*, which is the situation itself. Proposed: an avoidance does
-   not make its own rung. The situation at its own Fear Level is the top rung for that situation.
-2. **Does a sub-situation get its own downward arrow,** or only combinations? Proposed: only
-   combinations.
-3. **Can a sub-situation belong to the situation directly,** not to a combination? Dr. Walker's
-   separation-anxiety rungs (*"be in a different room for 30 seconds"*) are versions of the
-   situation, not of a behaviour. Proposed: yes, both are allowed.
-4. **Lowest at the bottom in the child's app too?** It was decided as lowest at the top on
-   2026-09-01. Proposed: the same in both apps, lowest at the bottom, because it is a ladder.
-5. **What does the child see when the sentence came from a parent's words?** For example *"parent
-   asks the teacher not to call on them"*. Proposed: the therapist sees the wording before it is
-   saved, and that is enough.
 
 ## How to tell it worked
 
-- Building the class-participation example above on one screen gives three combinations, one
-  sub-situation and a ladder of four rungs with the lowest at the bottom.
+- Building the class-participation example above on one screen gives three combinations (one per
+  safety behaviour, none for the avoidance), one sub-situation, and a ladder of four rungs with the
+  lowest at the top.
 - A therapist closes the editor after one situation, comes back a week later, and can see what is
   left without remembering.
 - Every combination sentence in the wording check reads like something a therapist would say.
