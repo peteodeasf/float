@@ -53,4 +53,10 @@ describe('whatIsLeft', () => {
     expect(whatIsLeft([row({}), row({ behavior_type: 'scenario' })]))
       .toEqual(['1 safety behaviour has no step yet', '1 step not scored'])
   })
+
+  it('does not count a step this screen does not show', () => {
+    // A sub-step under another step, from the older builder. Nothing here can score it, so the
+    // header must not ask for it.
+    expect(whatIsLeft([row({ behavior_type: 'scenario', parent_behavior_id: 'x' })])).toEqual([])
+  })
 })

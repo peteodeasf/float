@@ -59,6 +59,7 @@ import {
   dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink, Chrome,
 } from './sessionKit'
 import { Button } from '../../components/ui/primitives'
+import { errorMessage } from '../../components/ui/form'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
  *  render exactly the same thing without the clinician chrome around it. */
@@ -453,8 +454,8 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
     saveMut.mutate({ name })
   }
 
-  // Read even when closed, so the header can say what is left on it. Same query the open body
-  // uses, so it costs one request either way.
+  // Read even when closed, so the header can say what is left on it. One request per situation
+  // when the editor opens; the open body reuses it.
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
@@ -700,8 +701,10 @@ export function whatIsLeft(behaviors: AvoidanceBehavior[]): string[] {
     behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION).map(b => b.without_behavior_id),
   )
   const noStep = safety.filter(b => !withStep.has(b.id)).length
+  // Only steps this screen shows, so every one it counts can be found and scored here.
   const unscored = behaviors.filter(b =>
     (b.behavior_type === BEHAVIOR_TYPE_COMBINATION || b.behavior_type === BEHAVIOR_TYPE_SCENARIO)
+    && !b.parent_behavior_id
     && dtOf(b.distress_thermometer_when_refraining) == null,
   ).length
   const out: string[] = []
@@ -757,7 +760,11 @@ function BehaviourList({ planId, patientId, trigger, behaviors, onEdited }: {
     queryKey: ['insights', patientId, 'behavior'],
     queryFn: () => getPatientInsights(patientId, 'behavior'),
   })
-  const fromLog = (suggested ?? []).filter(i => i.situation_id === trigger.id)
+  // Not one already typed in by hand under the same words, or it would be added twice.
+  const typed = new Set(behaviors.map(b => b.name.trim().toLowerCase()))
+  const fromLog = (suggested ?? []).filter(i =>
+    i.situation_id === trigger.id && !typed.has(i.name.trim().toLowerCase()),
+  )
   const takeMut = useMutation({
     mutationFn: (v: { id: string; type?: 'safety' | 'avoidance' }) => addInsightToPlan(patientId, v.id, v.type),
     onSuccess: invalidate,
@@ -811,6 +818,12 @@ function BehaviourList({ planId, patientId, trigger, behaviors, onEdited }: {
             Add behaviour
           </Button>
         </div>
+
+        {(addMut.isError || takeMut.isError) && (
+          <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 6 }}>
+            {errorMessage(addMut.error ?? takeMut.error, 'Could not add that just now.')}
+          </div>
+        )}
 
         {/* Always shown, like the situation suggestions: "No suggestions" reads as an answer. */}
         <div style={{ marginTop: 10, marginBottom: 6 }}>
@@ -900,6 +913,11 @@ function BehaviourRow({ trigger, behavior, combination, autoDraft, onChanged }: 
               <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
               <ScoreBox value={dtOf(combination.distress_thermometer_when_refraining)}
                 onSet={n => saveMut.mutate({ id: combination.id, data: { distress_thermometer_when_refraining: n } })} />
+              {/* Takes only the step off the ladder. The safety behaviour stays, so the step can be
+                  made again with better wording. */}
+              <button onClick={() => delMut.mutate(combination.id)} disabled={delMut.isPending}
+                title="Take this step off the ladder (the behaviour stays)"
+                style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
             </>
           ) : (
             <CombinationDraft trigger={trigger} behavior={behavior} auto={autoDraft} onSaved={onChanged} />
@@ -939,6 +957,8 @@ function CombinationDraft({ trigger, behavior, auto, onSaved }: {
       without_behavior_id: behavior.id,
     }),
     onSuccess: onSaved,
+    // A 409 means another tab already saved it; re-reading shows that step instead of this box.
+    onError: onSaved,
   })
 
   if (!asked) {
@@ -962,6 +982,11 @@ function CombinationDraft({ trigger, behavior, auto, onSaved }: {
           Add to ladder
         </Button>
       </div>
+      {saveMut.isError && (
+        <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 4 }}>
+          {errorMessage(saveMut.error, 'Could not add the step just now.')}
+        </div>
+      )}
       <div style={{ fontSize: 11.5, color: '#9aa9a8', marginTop: 4 }}>
         {draftQuery.data?.drafted_by === 'template' || draftQuery.isError
           ? 'Could not draft a sentence. Reword this before adding it.'
@@ -1004,36 +1029,9 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
   onScore: (n: number) => void
   onRemove: () => void
 }) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(name)
-
-  const commit = () => {
-    const next = draft.trim()
-    setEditing(false)
-    if (next && next !== name) onRename(next)
-    else setDraft(name)
-  }
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
-      {editing ? (
-        <input
-          value={draft}
-          autoFocus
-          onChange={e => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === 'Enter') commit()
-            if (e.key === 'Escape') { setDraft(name); setEditing(false) }
-          }}
-          style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--float-text)', padding: '3px 5px', border: '1px solid #cfe3de', borderRadius: 'var(--float-radius-control)' }}
-        />
-      ) : (
-        <button onClick={() => { setDraft(name); setEditing(true) }} title="Change the wording"
-          style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: 600, color: 'var(--float-text)' }}>
-          {name}
-        </button>
-      )}
+      <InlineText value={name} weight={600} onSave={onRename} />
       <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
       <ScoreBox value={score} onSet={onScore} />
       <button onClick={onRemove} title="Take this out"
@@ -1041,4 +1039,3 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
     </div>
   )
 }
-

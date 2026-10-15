@@ -221,7 +221,10 @@ async def add_to_plan(
         # Peter, 2026-10-15: the therapist decides which behaviours go into Float, so this is
         # never automatic. docs/plans/ladder-combinations.md, step 3 of the interview.
         parent = (await db.execute(
-            select(PatientInsight).where(PatientInsight.id == row.parent_insight_id)
+            select(PatientInsight).where(
+                PatientInsight.id == row.parent_insight_id,
+                PatientInsight.patient_id == patient_id,
+            )
         )).scalar_one_or_none() if row.parent_insight_id else None
         situation_id = parent.trigger_situation_id if parent else None
         if situation_id is not None:
@@ -252,6 +255,9 @@ async def add_to_plan(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Say whether this is avoidance or a safety behaviour.",
             )
+        # Written directly rather than through create_behavior, on purpose: that also copies the
+        # name into the behaviour library shared by every practice, and this name is the
+        # family's own words from the log. See the backlog item on rung wording in that library.
         created = AvoidanceBehavior(
             trigger_situation_id=situation_id,
             treatment_plan_id=plan.id,
