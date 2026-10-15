@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.downward_arrow import DownwardArrow
@@ -119,7 +120,18 @@ async def get_or_create_rung_downward_arrow(
         feared_outcome_approved=False,
     )
     db.add(arrow)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Opened twice at once (a double click, or React running the screen's first effect
+        # twice). The unique constraint kept it to one row; return that one.
+        await db.rollback()
+        return (await db.execute(
+            select(DownwardArrow).where(
+                DownwardArrow.rung_id == rung_id,
+                DownwardArrow.facilitated_by == data.facilitated_by,
+            )
+        )).scalar_one()
     await db.refresh(arrow)
     return arrow
 

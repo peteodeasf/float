@@ -2,7 +2,7 @@ import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import false, or_, select
+from sqlalchemy import and_, false, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -156,7 +156,13 @@ async def suggested_steps(
         select(DownwardArrow)
         .where(or_(
             DownwardArrow.trigger_situation_id == situation.id,
-            DownwardArrow.rung_id.in_(step_ids) if step_ids else false(),
+            # A parent's run is their guess at the child's fear. The situation's own arrows are
+            # read as they always were; the new ones on steps leave the parent's out, matching the
+            # editor and the child's app.
+            and_(
+                DownwardArrow.rung_id.in_(step_ids) if step_ids else false(),
+                DownwardArrow.facilitated_by.is_distinct_from("parent"),
+            ),
         ))
         .order_by(DownwardArrow.updated_at.desc().nullslast())
     )).scalars().all()

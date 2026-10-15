@@ -172,6 +172,20 @@ export default function ArrowPage() {
         />
       )}
 
+      {phase === 'chain' && fromRung && !rung && (
+        // Loading, or the step was removed since the link was made.
+        <div style={{ ...card, textAlign: 'center' }}>
+          {situationSteps ? (
+            <>
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--float-primary-dark)' }}>That step is not on the ladder any more</div>
+              <button onClick={exit} style={primaryBtn}>Back to the steps</button>
+            </>
+          ) : (
+            <div style={{ color: '#6b7a79', fontSize: 14, padding: 20 }}>Loading…</div>
+          )}
+        </div>
+      )}
+
       {phase === 'chain' && fromRung && rung && (
         <ChainPhase
           key={rung.id}

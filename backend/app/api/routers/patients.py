@@ -1401,6 +1401,24 @@ async def _feared_outcome_for(db: AsyncSession, situation_id) -> tuple[str | Non
         .order_by(DownwardArrow.updated_at.desc().nullslast())
         .limit(1)
     )).scalar_one_or_none()
+    if da is not None and (da.feared_outcome or "").strip():
+        return da.feared_outcome.strip(), bool(da.feared_outcome_approved)
+
+    # Since 2026-10-15 the arrow is done on each combination rather than on the situation, so a
+    # situation with no arrow of its own takes the latest one done on any of its steps.
+    step_da = (await db.execute(
+        select(DownwardArrow)
+        .join(AvoidanceBehavior, AvoidanceBehavior.id == DownwardArrow.rung_id)
+        .where(
+            AvoidanceBehavior.trigger_situation_id == situation_id,
+            DownwardArrow.facilitated_by.is_distinct_from("parent"),
+            DownwardArrow.feared_outcome.isnot(None),
+        )
+        .order_by(DownwardArrow.updated_at.desc().nullslast())
+        .limit(1)
+    )).scalar_one_or_none()
+    if step_da is not None and (step_da.feared_outcome or "").strip():
+        return step_da.feared_outcome.strip(), bool(step_da.feared_outcome_approved)
     if da is None:
         return None, False
     return ((da.feared_outcome or "").strip() or None), bool(da.feared_outcome_approved)

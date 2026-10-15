@@ -173,3 +173,46 @@ async def test_situation_suggestions_can_use_an_arrow_done_on_one_of_its_steps(a
     body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/suggested-steps")).json()
 
     assert body["suggestions"] == ["A smaller version"]
+
+
+async def test_the_childs_progress_screens_get_a_fear_from_a_step_arrow(api, db):
+    """The progress screens read the fear per situation. With the arrow now done on each step,
+    a situation with no arrow of its own takes its steps'."""
+    org, patient, plan, situation, _, _, combination = await _setup(db)
+    db.add(DownwardArrow(
+        rung_id=combination.id, patient_id=patient.id, organization_id=org.id,
+        arrow_steps=[], feared_outcome="Everyone will laugh at my answer.",
+        facilitated_by="practitioner",
+    ))
+    await db.flush()
+
+    api.sign_in_as(patient.user)
+    groups = (await api.get("/patient/ladder")).json()["situations"]
+
+    assert [g["feared_outcome"] for g in groups if g["id"] == str(situation.id)] == ["Everyone will laugh at my answer."]
+
+
+async def test_a_parent_arrow_on_a_step_does_not_feed_the_suggestions(api, db, monkeypatch):
+    """A parent's run is their guess at the child's fear, not something the child said."""
+    from app.services.step_suggestion_service import SuggestionUnavailable
+    seen = []
+
+    async def fake(**kwargs):
+        seen.append(kwargs["feared_outcome"])
+        if not kwargs["feared_outcome"]:
+            raise SuggestionUnavailable("Do the downward arrow first.")
+        return ["A smaller version"], ""
+
+    monkeypatch.setattr("app.api.routers.trigger_situations.suggest_steps", fake)
+    org, patient, plan, situation, clinician, _, combination = await _setup(db)
+    db.add(DownwardArrow(
+        rung_id=combination.id, patient_id=patient.id, organization_id=org.id,
+        arrow_steps=[], feared_outcome="A parent's guess.", facilitated_by="parent",
+    ))
+    await db.flush()
+    api.sign_in_as(clinician.user)
+
+    body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/suggested-steps")).json()
+
+    assert seen == [""]
+    assert body["suggestions"] == []

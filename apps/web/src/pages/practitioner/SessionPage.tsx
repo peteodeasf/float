@@ -173,7 +173,9 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
       triggers={sortedTriggers}
       openSituationId={openSituationId}
       onDone={onExit}
-      onArrow={(situationId, rungId) => goToArrow(`/patients/${patientId}/arrow?situation=${situationId}&rung=${rungId}`)}
+      onArrow={(situationId, rungId) => goToArrow(
+        `/patients/${patientId}/arrow?situation=${situationId}${rungId ? `&rung=${rungId}` : ''}`,
+      )}
     />
   )
 }
@@ -195,7 +197,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   openSituationId?: string | null
   onDone: () => void
   /** Open the downward arrow on one step. Peter, 2026-10-15: the arrow is done per combination. */
-  onArrow: (situationId: string, rungId: string) => void
+  onArrow: (situationId: string, rungId?: string) => void
 }) {
   const qc = useQueryClient()
   const [newName, setNewName] = useState('')
@@ -423,7 +425,8 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
   startHere: boolean
   expanded: boolean
   onToggle: () => void
-  onArrow: (rungId: string) => void
+  /** No step means the situation itself — only offered when it has no arrow at all. */
+  onArrow: (rungId?: string) => void
   /** Anything that writes calls this, so Save can skip the review when nothing changed. */
   onEdited: () => void
 }) {
@@ -536,7 +539,8 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
         <>
           <BehaviourList planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []}
             arrows={stepArrows ?? []} onArrow={onArrow} onEdited={onEdited} />
-          <StepList planId={planId} trigger={trigger} stepArrows={stepArrows ?? []} onEdited={onEdited} />
+          <StepList planId={planId} trigger={trigger} stepArrows={stepArrows ?? []} onEdited={onEdited}
+            onSituationArrow={() => onArrow()} />
         </>
       )}
     </div>
@@ -544,11 +548,12 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
 }
 
 /** The steps under one situation. Added, edited, scored and removed in place. */
-function StepList({ planId, trigger, stepArrows, onEdited }: {
+function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
   planId: string
   trigger: TriggerSituation
   stepArrows: DownwardArrow[]
   onEdited: () => void
+  onSituationArrow: () => void
 }) {
   const qc = useQueryClient()
   const [draft, setDraft] = useState('')
@@ -615,6 +620,14 @@ function StepList({ planId, trigger, stepArrows, onEdited }: {
       {/* Whether the downward arrow is done for this situation — the suggestions need it. */}
       <div style={{ marginBottom: 10, fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: arrowDone ? '#2f9e6f' : '#b47814' }}>
         {arrowDone ? '✓ A downward arrow is done for this situation' : '○ No downward arrow done yet. Do one on a step above.'}
+        {/* A situation with no safety behaviours has no step to do it on, and its own easier
+            versions need a feared outcome. So the situation itself is offered, only while there is
+            no arrow anywhere on it. */}
+        {!arrowDone && (
+          <button onClick={onSituationArrow} style={{ ...quietLink, color: '#4d8478', padding: '0 0 0 6px', fontSize: 11.5 }}>
+            Or do one on the situation itself
+          </button>
+        )}
       </div>
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
 
@@ -755,7 +768,7 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
   trigger: TriggerSituation
   behaviors: AvoidanceBehavior[]
   arrows: DownwardArrow[]
-  onArrow: (rungId: string) => void
+  onArrow: (rungId?: string) => void
   onEdited: () => void
 }) {
   const qc = useQueryClient()
@@ -814,19 +827,22 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
 
         {listed.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-            {listed.map(b => (
-              <BehaviourRow
-                key={b.id}
-                trigger={trigger}
-                behavior={b}
-                combination={combinationOf(b.id)}
-                arrowDone={!!combinationOf(b.id) && arrowDoneOn(combinationOf(b.id)!.id, arrows)}
-                arrowNext={!!combinationOf(b.id) && combinationOf(b.id)!.id === nextArrowId}
-                onArrow={onArrow}
-                autoDraft={b.id === justAdded}
-                onChanged={invalidate}
-              />
-            ))}
+            {listed.map(b => {
+              const step = combinationOf(b.id)
+              return (
+                <BehaviourRow
+                  key={b.id}
+                  trigger={trigger}
+                  behavior={b}
+                  combination={step}
+                  arrowDone={!!step && arrowDoneOn(step.id, arrows)}
+                  arrowNext={!!step && step.id === nextArrowId}
+                  onArrow={onArrow}
+                  autoDraft={b.id === justAdded}
+                  onChanged={invalidate}
+                />
+              )
+            })}
           </div>
         )}
 
@@ -901,7 +917,7 @@ function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, on
   combination: AvoidanceBehavior | undefined
   arrowDone: boolean
   arrowNext: boolean
-  onArrow: (rungId: string) => void
+  onArrow: (rungId?: string) => void
   autoDraft: boolean
   onChanged: () => void
 }) {
@@ -928,7 +944,7 @@ function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, on
         {confirmRemove ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
             <Button kind="danger" size="sm" onClick={() => delMut.mutate(behavior.id)} disabled={delMut.isPending}>
-              {combination ? 'Remove it and its step' : 'Remove'}
+              {combination ? (arrowDone ? 'Remove it, its step and its arrow' : 'Remove it and its step') : 'Remove'}
             </Button>
             <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
           </span>
@@ -946,15 +962,16 @@ function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, on
               <InlineText value={combination.name} weight={700}
                 onSave={name => saveMut.mutate({ id: combination.id, data: { name } })} />
               <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
-              <ScoreBox value={dtOf(combination.distress_thermometer_when_refraining)}
-                onSet={n => saveMut.mutate({ id: combination.id, data: { distress_thermometer_when_refraining: n } })} />
               {/* Opens straight into THIS step's chain. Done shows as a tick; the next one to do is
-                  marked, lowest score first. */}
+                  marked, lowest score first. Before the score box, so every score box keeps the same
+                  place at the end of its row. */}
               <Button kind={arrowNext ? 'primary' : 'secondary'} size="sm" onClick={() => onArrow(combination.id)}
                 title={arrowDone ? 'The downward arrow on this step is done — open it' : 'Find the feared outcome behind this step'}
                 style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                 {arrowDone ? '✓ Arrow' : arrowNext ? '↓ Arrow — do this next' : '↓ Arrow'}
               </Button>
+              <ScoreBox value={dtOf(combination.distress_thermometer_when_refraining)}
+                onSet={n => saveMut.mutate({ id: combination.id, data: { distress_thermometer_when_refraining: n } })} />
               {/* Takes only the step off the ladder. The safety behaviour stays, so the step can be
                   made again. Its downward arrow goes with it, so this asks first. */}
               {confirmStepRemove ? (

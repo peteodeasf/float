@@ -140,20 +140,6 @@ async def _combination_on(db: AsyncSession, trigger_id: uuid.UUID, behavior_id: 
     return step
 
 
-@router.get("/{behavior_id}/downward-arrow", response_model=DownwardArrowResponse | None)
-async def get_step_arrow(
-    trigger_id: uuid.UUID,
-    behavior_id: uuid.UUID,
-    context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db),
-    _access: None = Depends(get_permitted_trigger),
-):
-    _, practitioner = context
-    await _combination_on(db, trigger_id, behavior_id)
-    arrows = await get_rung_downward_arrows(db, [behavior_id], practitioner.organization_id)
-    return next((a for a in arrows if a.facilitated_by != "parent"), None)
-
-
 @router.post("/{behavior_id}/downward-arrow", response_model=DownwardArrowResponse,
              status_code=status.HTTP_201_CREATED)
 async def open_step_arrow(
