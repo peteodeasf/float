@@ -21,3 +21,12 @@
 
 # The check that stops tests running against production
 /backend/tests/conftest.py  @peteodeasf
+
+# Screens — anything that changes how the app looks waits for Peter to see it
+/apps/web/src/pages/        @peteodeasf
+/apps/web/src/components/   @peteodeasf
+/apps/web/src/styles/       @peteodeasf
+/apps/web/src/index.css     @peteodeasf
+
+# The agent loop's own script and prompt
+/scripts/agent-loop*        @peteodeasf
