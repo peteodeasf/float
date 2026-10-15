@@ -41,8 +41,8 @@ Build the ladder the way Dr. Walker runs the interview. There are seven steps:
 
 These go in the Dr. Walker review queue.
 
-**Still open:** is the situation itself, done with no safety behaviours, a rung? It would be the
-hardest step for that situation. Nothing in the steps above says so either way.
+6. **The situation itself is not a rung.** Its Fear Level is used to order situations and to
+   suggest where to start. Only combinations and sub-situations go on the ladder.
 
 **Worked example**
 
