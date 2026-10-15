@@ -45,6 +45,19 @@ Distress itself is **not** a behavior type — it's the fear rating, not a categ
 
 _(add: child home/exposure screens, clinician case-file & sessions IA, parent log-a-moment, etc.)_
 
+## Rungs on the exposure ladder
+
+Peter, 2026-10-15, after review with Dr. Walker. See
+[`docs/plans/ladder-combinations.md`](docs/plans/ladder-combinations.md).
+
+- **Combination** — being in a situation without one safety behaviour, written as one sentence with
+  its own Fear Level. A rung. Stored as `behavior_type = "combination"`, with `without_behavior_id`
+  pointing at the safety behaviour.
+- **Sub-situation** — an easier version of a combination, or of the situation itself. A rung.
+  Stored as `behavior_type = "scenario"`.
+- An **avoidance** makes no rung: *"It's avoiding the situation."* The **situation** itself is not
+  a rung either.
+
 ## Fear Level
 
 The 1–10 number for how frightening something is: a step on the ladder, a situation, what the child

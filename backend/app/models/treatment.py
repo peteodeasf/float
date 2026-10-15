@@ -118,6 +118,11 @@ class AvoidanceBehavior(Base):
     parent_behavior_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("avoidance_behaviors.id"), nullable=True
     )
+    # Set only on a combination rung: the safety behaviour it is "without". One combination per
+    # safety behaviour, enforced by a unique index. See docs/plans/ladder-combinations.md.
+    without_behavior_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("avoidance_behaviors.id"), nullable=True, unique=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()")

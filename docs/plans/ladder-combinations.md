@@ -179,6 +179,14 @@ Each step is its own PR and each can ship on its own.
 1. **Combinations exist.** The migration, the new type, and creating a combination with a drafted
    sentence when a behaviour is added. The child's ladder includes them. Backend tests for the type,
    the sentence fallback, and the child's ladder.
+   **BUILT 2026-10-15, backend only.** `combination` type, `without_behavior_id`, and
+   `POST /triggers/{id}/behaviors/{id}/combination-draft`. The draft writes nothing: the clinician
+   saves the sentence by creating the rung. A combination stays with its situation and keeps its
+   type, and removing the safety behaviour removes its combination. The sentence stays out of the
+   shared behaviour library. Nothing on screen creates one yet; that is step 2. **The wording check
+   has not been run:** this machine has no Anthropic key. `AI-dev/Combination Wording/run_check.py`
+   writes a reading sheet from 17 pairs, which is fewer than the 30 planned. Those are all the
+   safety rows in the existing cases plus Dr. Walker's file, and no more were made up.
 2. **Behaviours and combinations in the editor.** Steps 3 and 4 on the one-screen editor. Accepting
    a behaviour suggested from the log works. It is refused today
    (`backend/app/api/routers/insights.py:200`). Add the "what's left" line on each situation.

@@ -187,7 +187,7 @@ code, that is at least:
 
 | Vendor | What reaches it |
 |---|---|
-| **Anthropic** | The extraction and downward-arrow prompts send a child's clinical text to the API |
+| **Anthropic** | The extraction, downward-arrow and combination-wording prompts send a child's clinical text to the API |
 | **Railway** | The application and the Postgres database |
 | **Netlify** | The frontends |
 | **Twilio** | Phone numbers and message content |
@@ -233,6 +233,9 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **"Plan an experiment" missing from the flat ladder** | Exists only in the situations view (`BehaviorPanel`), so an ungrouped rung cannot be reached. See [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | S |
 | **Session mode cannot add a version-of-this-situation rung** | It only asks "what do you do so it feels safer?". Phase 3 of the flat-ladder plan. | M |
 | **The exposure ladder is a list of sub-situations** | **Planned 2026-09-01, not started** — [`exposure-ladder-sub-situations.md`](plans/exposure-ladder-sub-situations.md). A rung stops being a safety behaviour the child gives up and becomes a smaller version of the situation with its own fear rating. Safety behaviours attach to the situation instead. The conversation becomes the Plan tab's primary view; the current builder stays one switch away. Changes the child's exposure setup too, and simplifies it. | L |
+| **Building the ladder from combinations and sub-situations** | **Planned 2026-10-15**, [`ladder-combinations.md`](plans/ladder-combinations.md). Replaces part of the line above: a rung can again come from a safety behaviour, as the situation without it. Step 1 (combinations exist, backend) built 2026-10-15; the wording check waits on someone with an Anthropic key. Steps 2 to 5 to come. | L |
+| **`parent_behavior_id` on a new step is not checked** | Noticed 2026-10-15. The create body can name any row as the parent, including another patient's. It changes how rows are grouped and deleted, not who sees them. Same kind of gap as the one fixed in [`access-checks-on-the-wrong-id.md`](solutions/access-checks-on-the-wrong-id.md). | S |
+| **Rung wording goes into the shared behaviour library** | Noticed 2026-10-15, not fixed. `create_behavior` copies every new row's name into `behavior_library`, which is shared across practices and is meant to hold generic names only. A sub-situation is often a child's own words, such as *"view 3 of diana's posts on my own"*. So one practice's patient wording can be offered to another practice. Combinations are already kept out. | S |
 | **Monitoring by more than one person** | Not built. From Dr. Walker's consultation guidance (Peter, 2026-09-15): both parents should monitor for the week, and sometimes a teacher or caregiver. Today a patient can have only one open monitoring form, sent to one address (`send_monitoring_form` in `monitoring.py` refuses a second). Related to two-parent accounts under Parent. | M |
 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
 
