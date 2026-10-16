@@ -839,7 +839,7 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
   const [draft, setDraft] = useState('')
   const [suggesting, setSuggesting] = useState(false)
   // Asked for, never automatic: it costs a model call. staleTime 0 so asking again after a
-  // downward arrow is done gets a fresh answer rather than a cached "do the arrow first".
+  // downward arrow is done gets a fresh answer that uses its feared outcome.
   const suggestQuery = useQuery({
     queryKey: ['suggested-steps', trigger.id, null],
     queryFn: () => getSuggestedSteps(planId, trigger.id),

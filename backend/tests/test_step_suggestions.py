@@ -5,8 +5,8 @@ and returns None, and the handler passed `plan_id` positionally and then used th
 failed on every request and neither the import check nor the route sweep noticed — the sweep only
 proves a route does not LEAK, not that it works.
 
-These tests exercise the handler without reaching the model. The no-arrow path is the one that
-returns before any model call, which is exactly what makes it a usable test of the plumbing.
+These tests exercise the handler without reaching the model: `suggest_steps` is replaced with a
+fake that records what it was given.
 """
 from app.models.downward_arrow import DownwardArrow
 from app.models.treatment import AvoidanceBehavior
@@ -22,9 +22,16 @@ async def _clinician_on(db, org, plan):
     return clinician
 
 
-async def test_a_situation_with_no_arrow_is_told_to_do_the_arrow(api, db):
-    """Dr. Walker, twice: the feared outcome decides the sub-situations. So no arrow, no
-    suggestions — and the reason is shown rather than an error."""
+async def test_a_situation_with_no_arrow_still_gets_suggestions(api, db, monkeypatch):
+    """Peter, 2026-10-16: suggestions no longer wait for the downward arrow. Before, a situation
+    with no arrow was told to do one first."""
+    seen = []
+
+    async def fake(**kwargs):
+        seen.append(kwargs["feared_outcome"])
+        return ["A smaller version"], ""
+
+    monkeypatch.setattr("app.api.routers.trigger_situations.suggest_steps", fake)
     org = await make_org(db)
     plan = await make_plan(db, org)
     situation = await make_situation(db, plan, name="Talking to people")
@@ -35,8 +42,9 @@ async def test_a_situation_with_no_arrow_is_told_to_do_the_arrow(api, db):
 
     assert r.status_code == 200
     body = r.json()
-    assert body["suggestions"] == []
-    assert "downward arrow" in (body["blocked"] or "").lower()
+    assert seen == [""]
+    assert body["blocked"] is None
+    assert body["suggestions"] == ["A smaller version"]
 
 
 async def test_an_unapproved_feared_outcome_still_counts(api, db, monkeypatch):
@@ -69,8 +77,16 @@ async def test_an_unapproved_feared_outcome_still_counts(api, db, monkeypatch):
     assert body["suggestions"] == ["A smaller version"]
 
 
-async def test_a_half_finished_arrow_says_so(api, db):
-    """Started the chain, never named the fear. "Do the arrow" is the wrong thing to tell them."""
+async def test_a_half_finished_arrow_still_gets_suggestions(api, db, monkeypatch):
+    """Started the chain, never named the fear. Before 2026-10-16 this was told to finish the
+    arrow; now it goes ahead without a feared outcome."""
+    seen = []
+
+    async def fake(**kwargs):
+        seen.append(kwargs["feared_outcome"])
+        return ["A smaller version"], ""
+
+    monkeypatch.setattr("app.api.routers.trigger_situations.suggest_steps", fake)
     org = await make_org(db)
     plan = await make_plan(db, org)
     situation = await make_situation(db, plan, name="Talking to people")
@@ -85,7 +101,8 @@ async def test_a_half_finished_arrow_says_so(api, db):
     api.sign_in_as(clinician.user)
     body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/suggested-steps")).json()
 
-    assert "started but never landed" in body["blocked"]
+    assert seen == [""]
+    assert body["suggestions"] == ["A smaller version"]
 
 
 async def test_a_situation_on_another_plan_is_refused(api, db):
@@ -148,3 +165,14 @@ async def test_the_handler_gathers_what_the_prompt_needs(api, db, monkeypatch):
     # The safety behaviour goes, because the model has to know what NOT to keep. The observation
     # does not — it was never a behaviour.
     assert seen["coping"] == ["Ask a friend to answer"]
+
+
+def test_the_model_is_told_when_the_fear_is_not_known():
+    """With no downward arrow, the model must not make up a fear to fit."""
+    from app.services.step_suggestion_service import _context_block
+
+    without = _context_block(situation="Talking to people", score=6, feared_outcome="", steps=[], coping=[])
+    with_fear = _context_block(situation="Talking to people", score=6, feared_outcome="They will laugh", steps=[], coping=[])
+
+    assert "not known yet. Do not guess" in without
+    assert "What they are afraid will happen: They will laugh" in with_fear
