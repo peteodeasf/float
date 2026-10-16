@@ -3,20 +3,6 @@
 
 import type { DownwardArrow } from '../../api/treatment'
 
-/** What removing a step takes with it, said on the button. */
-export function removeStepLabel(arrowDone: boolean, easier: number): string {
-  const also = [
-    ...(easier ? [`${easier} easier ${easier === 1 ? 'version' : 'versions'}`] : []),
-    ...(arrowDone ? ['its arrow'] : []),
-  ]
-  return also.length ? `Remove step, ${also.join(' and ')}` : 'Remove step'
-}
-
-/** What removing a safety behaviour takes with it: its step, and whatever the step takes. */
-export function removeBehaviourLabel(arrowDone: boolean, easier: number): string {
-  return removeStepLabel(arrowDone, easier).replace(/^Remove step/, 'Remove it, its step')
-}
-
 /** Whether this step's downward arrow has reached a feared outcome. */
 export function arrowDoneOn(rungId: string, arrows: DownwardArrow[]): boolean {
   return arrows.some(a => a.rung_id === rungId && a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim())

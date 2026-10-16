@@ -63,7 +63,7 @@ import {
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, avoidsTheSituation, removeBehaviourLabel,
+  arrowDoneOn, avoidsTheSituation,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -701,7 +701,6 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
     const step = stepOf(b.id)
     if (step) {
       const done = !!arrows && arrowDoneOn(step.id, arrows)
-      const nested = behaviors.filter(x => x.parent_behavior_id === step.id).length
       rows.push({
         key: b.id,
         score: dtOf(step.distress_thermometer_when_refraining),
@@ -712,8 +711,9 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
             score={dtOf(step.distress_thermometer_when_refraining)}
             onScore={n => saveMutRow.mutate({ id: step.id, data: { distress_thermometer_when_refraining: n } })}
             arrow={saved ? { done, open: () => onArrow(step.id) } : undefined}
-            // Takes the behaviour, and its step with it, so it asks first.
-            removeLabel={removeBehaviourLabel(done, nested)}
+            // Takes the behaviour, its step and its downward arrow, so it asks first. Peter,
+            // 2026-10-16: the button just says Remove.
+            confirmRemove
             onRemove={() => delMut.mutate(b.id)}
           />
         ),
@@ -950,7 +950,7 @@ function SuggestionChip({ text, disabled, onAdd, onDismiss }: {
  * One row in a situation's list: the wording, its Fear Level, the DA link once the behaviours are
  * saved, and remove. Peter, 2026-10-16: nothing else on the row.
  */
-function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, arrowSlot, removeLabel, onRemove }: {
+function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, arrowSlot, confirmRemove, onRemove }: {
   text: string
   placeholder?: string
   warning?: string
@@ -961,8 +961,8 @@ function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, 
   arrow?: { done: boolean; open: () => void }
   /** Keep the DA link's room on a row without one, so every Fear Level box lines up. */
   arrowSlot?: boolean
-  /** Set when removing loses work, so it asks first and says what goes. */
-  removeLabel?: string
+  /** Removing loses work, so it asks first. */
+  confirmRemove?: boolean
   onRemove: () => void
 }) {
   const [confirm, setConfirm] = useState(false)
@@ -987,11 +987,11 @@ function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, 
       {!arrow && arrowSlot && onScore && <span aria-hidden="true" style={{ flexShrink: 0, width: 40 }} />}
       {confirm ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-          <Button kind="danger" size="sm" onClick={() => { setConfirm(false); onRemove() }}>{removeLabel}</Button>
+          <Button kind="danger" size="sm" onClick={() => { setConfirm(false); onRemove() }}>Remove</Button>
           <button onClick={() => setConfirm(false)} style={quietLink}>Keep</button>
         </span>
       ) : (
-        <button onClick={() => (removeLabel ? setConfirm(true) : onRemove())} title="Take this out"
+        <button onClick={() => (confirmRemove ? setConfirm(true) : onRemove())} title="Take this out"
           style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
       )}
     </div>
