@@ -150,3 +150,34 @@ async def test_suggestions_refuse_another_situations_step(api, db):
     r = await api.post(f"/plans/{plan.id}/triggers/{other.id}/steps/{combination.id}/suggested-steps")
 
     assert r.status_code == 404
+
+
+async def test_an_easier_version_cannot_be_retyped(api, db):
+    _, _, plan, situation, clinician, _, combination = await _setup(db)
+    api.sign_in_as(clinician.user)
+    sub = (await api.post(f"/triggers/{situation.id}/behaviors", json=_easier(combination))).json()
+
+    r = await api.put(f"/plans/{plan.id}/rungs/{sub['id']}", json={"behavior_type": "safety"})
+
+    assert r.status_code == 400
+
+
+async def test_a_done_arrow_with_nothing_to_suggest_says_so(api, db, monkeypatch):
+    """Not "do the arrow" when the arrow is done and the model simply had nothing worth showing."""
+    from app.services.step_suggestion_service import SuggestionUnavailable
+
+    async def fake(**kwargs):
+        raise SuggestionUnavailable("Nothing came back that was worth showing.")
+
+    monkeypatch.setattr("app.api.routers.trigger_situations.suggest_steps", fake)
+    org, patient, plan, situation, clinician, _, combination = await _setup(db)
+    db.add(DownwardArrow(
+        rung_id=combination.id, patient_id=patient.id, organization_id=org.id, arrow_steps=[],
+        feared_outcome="Everyone will laugh at my answer.", facilitated_by="practitioner",
+    ))
+    await db.flush()
+    api.sign_in_as(clinician.user)
+
+    body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/steps/{combination.id}/suggested-steps")).json()
+
+    assert body["blocked"] == "Nothing came back that was worth showing."
