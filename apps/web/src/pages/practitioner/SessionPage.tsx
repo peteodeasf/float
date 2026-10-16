@@ -62,6 +62,9 @@ import {
 } from './sessionKit'
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
+import {
+  arrowDoneOn, fromASession, nextArrowOn, removeBehaviourLabel, removeStepLabel, whatIsLeft,
+} from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
  *  render exactly the same thing without the clinician chrome around it. */
@@ -180,9 +183,6 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
   )
 }
 
-/** A suggestion read out of an approved session note, rather than (or as well as) the monitoring
- *  log. docs/plans/session-suggestions.md */
-export const fromASession = (item: { sources?: string[] }) => (item.sources ?? []).includes('session_note')
 
 /** The heading over a group of situations you can tap to add. Both groups use it — the one from
  *  this child's monitoring log, and the common list — so they read as two of the same thing. */
@@ -336,7 +336,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
                       style={{ fontSize: 13, fontWeight: 600, color: 'var(--float-primary)', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
                       + {item.name}
                       <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
-                        {' '}· {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
+                        {' '}· {item.evidence_count} {item.evidence_count === 1 ? 'mention' : 'mentions'}
                         {item.fear_rating != null ? `, rated ${item.fear_rating}` : ''}
                         {fromASession(item) ? ', from a session' : ''}
                       </span>
@@ -746,66 +746,6 @@ function StepList({ planId, trigger, stepArrows = [], onEdited, onSituationArrow
   )
 }
 
-/** What is still to do on a situation, in a few words each. Empty when nothing is. */
-export function whatIsLeft(behaviors: AvoidanceBehavior[], arrows?: DownwardArrow[]): string[] {
-  const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY)
-  const withStep = new Set(
-    behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION).map(b => b.without_behavior_id),
-  )
-  const noStep = safety.filter(b => !withStep.has(b.id)).length
-  // Only steps this screen shows, so every one it counts can be found and scored here: those on
-  // the situation itself, and easier versions under a combination.
-  const combinationIds = new Set(
-    behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION).map(b => b.id),
-  )
-  const unscored = behaviors.filter(b =>
-    (b.behavior_type === BEHAVIOR_TYPE_COMBINATION || b.behavior_type === BEHAVIOR_TYPE_SCENARIO)
-    && (!b.parent_behavior_id || combinationIds.has(b.parent_behavior_id))
-    && dtOf(b.distress_thermometer_when_refraining) == null,
-  ).length
-  // A combination's arrow is done once it has landed on a feared outcome. It does not all have to
-  // happen in one session (Peter, 2026-10-15), which is why this is counted.
-  const arrowsToDo = arrows === undefined ? 0 : behaviors.filter(b =>
-    b.behavior_type === BEHAVIOR_TYPE_COMBINATION && !arrowDoneOn(b.id, arrows),
-  ).length
-  const out: string[] = []
-  if (noStep) out.push(`${noStep} safety ${noStep === 1 ? 'behaviour has' : 'behaviours have'} no step yet`)
-  if (unscored) out.push(`${unscored} ${unscored === 1 ? 'step' : 'steps'} not scored`)
-  if (arrowsToDo) out.push(`${arrowsToDo} downward ${arrowsToDo === 1 ? 'arrow' : 'arrows'} to do`)
-  return out
-}
-
-/** What removing a step takes with it, said on the button. */
-export function removeStepLabel(arrowDone: boolean, easier: number): string {
-  const also = [
-    ...(easier ? [`${easier} easier ${easier === 1 ? 'version' : 'versions'}`] : []),
-    ...(arrowDone ? ['its arrow'] : []),
-  ]
-  return also.length ? `Remove step, ${also.join(' and ')}` : 'Remove step'
-}
-
-/** What removing a safety behaviour takes with it: its step, and whatever the step takes. */
-export function removeBehaviourLabel(arrowDone: boolean, easier: number): string {
-  return removeStepLabel(arrowDone, easier).replace(/^Remove step/, 'Remove it, its step')
-}
-
-/** Whether this step's downward arrow has reached a feared outcome. */
-export function arrowDoneOn(rungId: string, arrows: DownwardArrow[]): boolean {
-  return arrows.some(a => a.rung_id === rungId && a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim())
-}
-
-/**
- * The combination to do the downward arrow on next: lowest score first, among those not done.
- * Dr. Walker, via Peter, 2026-10-15: start with the safety behaviours, lowest first. Every
- * combination is a safety behaviour's, so this is lowest score first. Advice, not a lock.
- */
-export function nextArrowOn(behaviors: AvoidanceBehavior[], arrows: DownwardArrow[]): string | null {
-  const todo = behaviors
-    .filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && !arrowDoneOn(b.id, arrows))
-    .sort((a, b) =>
-      (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
-  return todo[0]?.id ?? null
-}
 
 const typeChip = (type: string): React.CSSProperties => ({
   flexShrink: 0, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',

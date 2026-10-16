@@ -117,7 +117,10 @@ async def upsert_insight(
         # Never overwrite wording a clinician changed. Everything else is the record catching up.
         if not row.is_edited and clean != row.name:
             row.name = clean
-        if fear_rating is not None:
+        # A session's Fear Level only fills a gap. It does not replace one from the monitoring log,
+        # or the two would overwrite each other every time either is read. A clinical rule for
+        # Peter to confirm: docs/plans/session-suggestions.md.
+        if fear_rating is not None and (source != SOURCE_SESSION_NOTE or row.fear_rating is None):
             row.fear_rating = fear_rating
         if attributes:
             row.attributes = {**(row.attributes or {}), **attributes}
@@ -193,7 +196,8 @@ async def rebuild_from_monitoring(
     source: str = SOURCE_MONITORING,
     session_note_id: uuid.UUID | None = None,
 ) -> list[PatientInsight]:
-    """Fold one extraction result into the list.
+    """Fold one extraction result into the list — from the monitoring log, or (with `source` and
+    `session_note_id`) from an approved session note.
 
     `extraction` is what the monitoring extractor returns: situations, each with behaviours and
     accommodations under it. `entry_ids_by_situation` maps a situation's normalised name to the
@@ -201,6 +205,8 @@ async def rebuild_from_monitoring(
     """
     existing = await _existing(db, patient_id)
     touched: list[PatientInsight] = []
+    notes = [session_note_id] if session_note_id else None
+    from_session = source == SOURCE_SESSION_NOTE
 
     for sit in extraction.get("situations", []) or []:
         situation = await upsert_insight(
@@ -215,7 +221,7 @@ async def rebuild_from_monitoring(
             ),
             existing=existing,
             source=source,
-            session_note_ids=[session_note_id] if session_note_id else None,
+            session_note_ids=notes,
         )
         if situation is None:
             continue
@@ -230,10 +236,12 @@ async def rebuild_from_monitoring(
                 name=b.get("description") or "",
                 parent=situation,
                 attributes={"behavior_type": b.get("type")} if b.get("type") else None,
-                monitoring_entry_ids=situation.monitoring_entry_ids,
+                # From a session, the evidence is the note. The situation's log entries did not
+                # mention this behaviour or accommodation.
+                monitoring_entry_ids=[] if from_session else situation.monitoring_entry_ids,
                 existing=existing,
                 source=source,
-                session_note_ids=[session_note_id] if session_note_id else None,
+                session_note_ids=notes,
             )
             if child is not None:
                 touched.append(child)
@@ -246,10 +254,12 @@ async def rebuild_from_monitoring(
                 kind=KIND_ACCOMMODATION,
                 name=a.get("description") or "",
                 parent=situation,
-                monitoring_entry_ids=situation.monitoring_entry_ids,
+                # From a session, the evidence is the note. The situation's log entries did not
+                # mention this behaviour or accommodation.
+                monitoring_entry_ids=[] if from_session else situation.monitoring_entry_ids,
                 existing=existing,
                 source=source,
-                session_note_ids=[session_note_id] if session_note_id else None,
+                session_note_ids=notes,
             )
             if child is not None:
                 touched.append(child)
@@ -329,7 +339,7 @@ async def get_insights(
     # matters. Unrated and unseen fall to the end rather than counting as zero.
     return sorted(
         rows,
-        key=lambda r: (-len(r.monitoring_entry_ids), r.first_seen_at),
+        key=lambda r: (-(len(r.monitoring_entry_ids) + len(r.session_note_ids or [])), r.first_seen_at),
     )
 
 
