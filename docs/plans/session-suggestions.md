@@ -39,8 +39,13 @@ clinician taps it, the same as the monitoring suggestions.
 
 - How well the extractor does on session notes. It has only been measured on monitoring notes. The
   first few real sessions should be read against what it suggests before trusting it.
-- Whether a session's Fear Level should replace one from the monitoring log. Today the latest one
-  wins, the same as when the log is analysed again.
+- **For Peter:** a session's Fear Level only fills a gap. If the monitoring log already gave the
+  situation a number, the session's does not replace it. Otherwise the two would overwrite each
+  other each time either was read. Is that the right way round?
+- **No retry yet.** The note is read once, when it is approved. If the model fails at that moment,
+  that session's suggestions are lost. A retry needs somewhere to record "read", which is a new
+  column; not done in this first version.
+- An editor already open when the note is approved does not refresh its suggestions by itself.
 
 ## Checks
 

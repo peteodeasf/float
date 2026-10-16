@@ -106,3 +106,38 @@ async def test_nothing_is_put_on_the_plan(api, db, monkeypatch):
     assert items and all(
         i.trigger_situation_id is None and i.avoidance_behavior_id is None for i in items
     )
+
+
+async def test_a_session_fear_level_does_not_replace_the_logs(api, db, monkeypatch):
+    """Peter to confirm: the log's number stands; the session's only fills a gap."""
+    from app.services.insight_service import upsert_insight
+    org, patient, clinician, note, _ = await _setup(db, monkeypatch)
+    await upsert_insight(db, patient_id=patient.id, organization_id=org.id, kind=KIND_SITUATION,
+                         name="Answering a question in class", fear_rating=4)
+    await db.flush()
+    api.sign_in_as(clinician.user)
+
+    await api.put(f"/notes/{note.id}", json={"is_draft": False})
+
+    situation = next(i for i in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+                     if i.kind == KIND_SITUATION)
+    assert float(situation.fear_rating) == 4
+    assert SOURCE_SESSION_NOTE in situation.sources
+
+
+async def test_a_behaviour_from_a_session_does_not_borrow_the_logs_evidence(api, db, monkeypatch):
+    import uuid
+    from app.services.insight_service import upsert_insight
+    org, patient, clinician, note, _ = await _setup(db, monkeypatch)
+    log_entries = [uuid.uuid4(), uuid.uuid4()]
+    await upsert_insight(db, patient_id=patient.id, organization_id=org.id, kind=KIND_SITUATION,
+                         name="Answering a question in class", monitoring_entry_ids=log_entries)
+    await db.flush()
+    api.sign_in_as(clinician.user)
+
+    await api.put(f"/notes/{note.id}", json={"is_draft": False})
+
+    behaviour = next(i for i in await get_insights(db, patient_id=patient.id, organization_id=org.id)
+                     if i.kind == KIND_BEHAVIOR)
+    assert behaviour.monitoring_entry_ids == []
+    assert behaviour.session_note_ids == [note.id]

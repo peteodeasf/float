@@ -134,6 +134,8 @@ async def update_session_note(
             SessionNote.id == note_id,
             SessionNote.organization_id == practitioner.organization_id
         )
+        # Locked, so two approvals at once cannot both see it as a draft and both read it.
+        .with_for_update()
     )
     note = result.scalar_one_or_none()
     if not note:
