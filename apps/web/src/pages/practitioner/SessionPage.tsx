@@ -33,7 +33,7 @@ import {
   BEHAVIOR_TYPE_AVOIDANCE, BEHAVIOR_TYPE_COMBINATION, BEHAVIOR_TYPE_SAFETY, BEHAVIOR_TYPE_SCENARIO, ScoreBox,
 } from './patient/shared'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getTreatmentPlan,
   getTriggers,
@@ -45,7 +45,6 @@ import {
   deleteBehavior,
   deleteTrigger,
   getSuggestedSteps,
-  getSituationDownwardArrow,
   getLadderReview,
   getPatientInsights,
   addInsightToPlan,
@@ -55,6 +54,7 @@ import {
   getStepArrows,
   type DownwardArrow,
   type AvoidanceBehavior,
+  type PatientInsight,
   type TriggerSituation,
 } from '../../api/treatment'
 import {
@@ -63,7 +63,7 @@ import {
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, fromASession, nextArrowOn, removeBehaviourLabel, removeStepLabel, whatIsLeft,
+  arrowDoneOn, avoidsTheSituation, fromASession, removeBehaviourLabel,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -278,8 +278,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     <div style={screenSurface}>
       <div style={bigQ}>What trigger situations do you have trouble with?</div>
       <p style={lead}>
-        Give each one a Fear Level. Open one to list what the child does to avoid it or feel safer,
-        then score being in it without each safety behaviour.
+        Give each one a Fear Level. Open one to add what the child does to avoid it or feel safer.
       </p>
 
       {triggers.length > 0 && (
@@ -430,7 +429,6 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
   startHere: boolean
   expanded: boolean
   onToggle: () => void
-  /** No step means the situation itself — only offered when it has no arrow at all. */
   onArrow: (rungId?: string) => void
   /** Anything that writes calls this, so Save can skip the review when nothing changed. */
   onEdited: () => void
@@ -439,6 +437,7 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(trigger.name)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [pending, setPending] = useState<PendingSteps>({})
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['triggers', planId] })
   const saveMut = useMutation({
@@ -463,19 +462,17 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
     saveMut.mutate({ name })
   }
 
-  // Read even when closed, so the header can say what is left on it. One request per situation
-  // when the editor opens; the open body reuses it.
+  // Only read once the situation is opened.
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
+    enabled: expanded,
   })
   const { data: stepArrows } = useQuery({
     queryKey: ['step-arrows', trigger.id],
     queryFn: () => getStepArrows(trigger.id),
+    enabled: expanded,
   })
-  // `stepArrows` is undefined until it loads; until then nothing is said about arrows, rather than
-  // briefly calling a finished one "to do".
-  const left = whatIsLeft(behaviors ?? [], stepArrows)
 
   return (
     <div style={{ background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-card)', overflow: 'hidden' }}>
@@ -534,90 +531,134 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
         )}
       </div>
 
-      {/* What is left on this situation, so a ladder built over several sessions can be picked up
-          without remembering. Says nothing when nothing is left. */}
-      {left.length > 0 && (
-        <div style={{ padding: '5px 13px 6px 35px', fontSize: 11.5, color: '#b47814', background: 'var(--float-primary-light)', borderBottom: expanded ? '1px solid #cfe0db' : undefined }}>
-          {left.join(' · ')}
-        </div>
-      )}
-
       {expanded && (
-        <>
-          <BehaviourList planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []}
-            arrows={stepArrows} onArrow={onArrow} onEdited={onEdited} />
-          <StepList planId={planId} trigger={trigger} stepArrows={stepArrows ?? []} onEdited={onEdited}
-            onSituationArrow={() => onArrow()} />
-        </>
+        <SituationBody planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []}
+          arrows={stepArrows} pending={pending} setPending={setPending} onArrow={onArrow} onEdited={onEdited} />
       )}
     </div>
   )
 }
 
-/** The steps under one situation. Added, edited, scored and removed in place. */
-function StepList({ planId, trigger, stepArrows = [], onEdited, onSituationArrow, under }: {
+type PendingSteps = Record<string, { text?: string; score?: number }>
+
+/**
+ * An opened situation. docs/plans/situation-editor-behaviours-first.md
+ *
+ * Peter, 2026-10-16: hide things until the clinician has to decide on them. So it opens on one
+ * question — what does the child do to avoid it or feel safer — with the list at the top, the add
+ * box under it, and the suggestions under that. Save behaviours closes all of that, and only then
+ * do the downward arrow links and + Add rung appear.
+ *
+ * Nothing goes on the ladder until Save behaviours. A safety behaviour is saved as soon as it is
+ * added, but its step (the combination) is only written on Save. Until then the drafted sentence
+ * and its score live on this screen. Peter, 2026-10-15: the therapist reading the sentence before
+ * it is saved is the check on what the child will read.
+ */
+function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending, setPending, onArrow, onEdited }: {
   planId: string
+  patientId: string
   trigger: TriggerSituation
-  /** The situation's step arrows. Not needed under a step, which shows its own arrow on its row. */
-  stepArrows?: DownwardArrow[]
+  behaviors: AvoidanceBehavior[]
+  /** Undefined while loading. */
+  arrows: DownwardArrow[] | undefined
+  /** Steps not written yet: the clinician's own wording and score, where they changed them. Held
+   *  by the situation row, so closing the situation and opening it again keeps them. */
+  pending: PendingSteps
+  setPending: React.Dispatch<React.SetStateAction<PendingSteps>>
+  onArrow: (rungId?: string) => void
   onEdited: () => void
-  onSituationArrow?: () => void
-  /** Easier versions of this combination, rather than of the situation itself. Step 6 of the
-   *  interview: docs/plans/ladder-combinations.md. */
-  under?: AvoidanceBehavior
 }) {
   const qc = useQueryClient()
   const [draft, setDraft] = useState('')
-  const [suggesting, setSuggesting] = useState(false)
-  // Under a step, the add row stays folded behind one link until it is wanted. Most steps will not
-  // need an easier version, and an input under every one of them crowds the screen.
-  const [adding, setAdding] = useState(false)
-
-  const { data: behaviors, isLoading } = useQuery({
-    queryKey: ['behaviors', trigger.id],
-    queryFn: () => getBehaviors(trigger.id),
-  })
-
-  // Whether this situation's downward arrow has landed on a feared outcome — the thing the
-  // suggestions need. Shown as a small status so the clinician can see it's done (or isn't).
-  const { data: arrow } = useQuery({
-    queryKey: ['situation-da', trigger.id],
-    queryFn: () => getSituationDownwardArrow(trigger.id),
-    enabled: !under,
-  })
-  // The situation's own arrow, from before 2026-10-15, or one done on any of its steps since —
-  // the suggestions can use either.
-  const fearedOutcome = (arrow?.feared_outcome ?? '').trim()
-  const arrowDone = fearedOutcome.length > 0
-    || stepArrows.some(a => a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim())
-
-  // Asked for, never automatic. It costs a model call and a clinician's attention, and a screen
-  // that suggests before being asked teaches people to stop reading it. staleTime 0 so asking
-  // again after finishing the arrow gets a fresh answer rather than a cached "do the arrow first".
-  const suggestQuery = useQuery({
-    queryKey: ['suggested-steps', trigger.id, under?.id ?? null],
-    queryFn: () => getSuggestedSteps(planId, trigger.id, under?.id),
-    enabled: suggesting,
-    staleTime: 0,
-    refetchOnWindowFocus: false,
-    retry: false,
-  })
+  const [showSuggested, setShowSuggested] = useState(true)
+  // Which view the clinician chose: Save behaviours, or Edit behaviours. Until they choose, it is
+  // read from the rows, so coming back to a finished situation opens it finished.
+  const [mode, setMode] = useState<'edit' | 'saved' | null>(null)
+  const [addingRung, setAddingRung] = useState(false)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
+    qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] })
     onEdited()
   }
-  const addMut = useMutation({
-    mutationFn: (name: string) =>
-      createBehavior(trigger.id, {
-        name,
-        behavior_type: BEHAVIOR_TYPE_SCENARIO,
-        ...(under ? { parent_behavior_id: under.id } : {}),
-      }),
-    onSuccess: () => { invalidate(); setDraft('') },
+
+  const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY)
+  const avoidance = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE)
+  const stepOf = (id: string) =>
+    behaviors.find(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && b.without_behavior_id === id)
+  const noStep = safety.filter(b => !stepOf(b.id))
+  // A step waiting to be written always means the behaviours are not saved. Otherwise a situation
+  // with something on the ladder already opens saved.
+  const saved = noStep.length === 0 && (mode
+    ? mode === 'saved'
+    : behaviors.some(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION || b.behavior_type === BEHAVIOR_TYPE_SCENARIO))
+
+  // The sentence for each safety behaviour without a step, drafted as soon as it is on the list.
+  // Cached for good, so reopening the situation does not draft it again.
+  const drafts = useQueries({
+    queries: noStep.map(b => ({
+      queryKey: ['combination-draft', b.id],
+      queryFn: () => draftCombination(trigger.id, b.id),
+      staleTime: Infinity,
+      refetchOnWindowFocus: false,
+      retry: false,
+    })),
   })
+  // If the draft call itself fails, the same plain wording the backend falls back to.
+  const sentenceFor = (b: AvoidanceBehavior, i: number) =>
+    pending[b.id]?.text ?? drafts[i]?.data?.sentence ?? (drafts[i]?.isError ? `${trigger.name} — without: ${b.name}` : '')
+  // Float could not word it, so the row asks for it to be reworded before it is saved.
+  const needsWording = (b: AvoidanceBehavior, i: number) =>
+    pending[b.id]?.text == null && (drafts[i]?.isError || drafts[i]?.data?.drafted_by === 'template')
+  const drafting = drafts.some(d => d.isLoading)
+
+  const addMut = useMutation({
+    mutationFn: (v: { name: string; type: 'safety' | 'avoidance' }) =>
+      createBehavior(trigger.id, { name: v.name, behavior_type: v.type }),
+    onSuccess: () => { invalidate(); setDraft(''); setMode('edit') },
+  })
+
+  // What the log and sessions say the child does in THIS situation, not yet added, and one
+  // avoidance — staying away from the situation — while there is none on the list.
+  const { data: suggested } = useQuery({
+    queryKey: ['insights', patientId, 'behavior'],
+    queryFn: () => getPatientInsights(patientId, 'behavior'),
+  })
+  const listedNames = new Set(behaviors.map(b => b.name.trim().toLowerCase()))
+  const fromLog = (suggested ?? []).filter(i =>
+    i.situation_id === trigger.id && !listedNames.has(i.name.trim().toLowerCase()),
+  )
+  const avoidsIt = avoidsTheSituation(trigger.name)
+  const offerAvoidance = avoidance.length === 0
+    && !fromLog.some(i => i.behavior_type === BEHAVIOR_TYPE_AVOIDANCE)
+  const suggestionCount = fromLog.length + (offerAvoidance ? 1 : 0)
+
+  const takeMut = useMutation({
+    // The log did not always say which kind it is. Peter, 2026-10-16: one added by hand is a
+    // safety behaviour, so one the log did not type is too.
+    mutationFn: (item: PatientInsight) =>
+      addInsightToPlan(patientId, item.id, item.behavior_type ? undefined : 'safety'),
+    onSuccess: () => { invalidate(); setMode('edit') },
+  })
+  const dropMut = useMutation({
+    mutationFn: (id: string) => removeInsight(patientId, id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] }),
+  })
+
   const saveMut = useMutation({
+    mutationFn: () => Promise.all(noStep.map((b, i) => createBehavior(trigger.id, {
+      name: sentenceFor(b, i).trim(),
+      behavior_type: BEHAVIOR_TYPE_COMBINATION,
+      without_behavior_id: b.id,
+      ...(pending[b.id]?.score != null ? { distress_thermometer_when_refraining: pending[b.id]!.score } : {}),
+    }))),
+    onSuccess: () => { setPending({}); setMode('saved'); invalidate() },
+    // A 409 means another tab already wrote that step. Re-reading shows it.
+    onError: invalidate,
+  })
+
+  const saveMutRow = useMutation({
     mutationFn: (v: { id: string; data: Parameters<typeof updateBehavior>[2] }) =>
       updateBehavior(trigger.id, v.id, v.data),
     onSuccess: invalidate,
@@ -627,190 +668,90 @@ function StepList({ planId, trigger, stepArrows = [], onEdited, onSituationArrow
     onSuccess: invalidate,
   })
 
-  // Only the steps. A rung is a smaller version of the situation; anything else on this row was
-  // captured under the old model and is not part of this flow.
-  const steps = (behaviors ?? [])
-    .filter(b => b.behavior_type === BEHAVIOR_TYPE_SCENARIO
-      && (under ? b.parent_behavior_id === under.id : !b.parent_behavior_id))
-    .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
+  // One flat list. Peter, 2026-10-16: lowest Fear Level at the top; added rungs are rows in the
+  // same list, not nested under a behaviour. Unscored rows come next, and avoidance last — it is
+  // not a rung.
+  type Row = { key: string; score: number | null; last?: boolean; node: React.ReactNode }
+  const rows: Row[] = []
+  safety.forEach(b => {
+    const step = stepOf(b.id)
+    if (step) {
+      const done = !!arrows && arrowDoneOn(step.id, arrows)
+      const nested = behaviors.filter(x => x.parent_behavior_id === step.id).length
+      rows.push({
+        key: b.id,
+        score: dtOf(step.distress_thermometer_when_refraining),
+        node: (
+          <ListRow
+            text={step.name}
+            onRename={name => saveMutRow.mutate({ id: step.id, data: { name } })}
+            score={dtOf(step.distress_thermometer_when_refraining)}
+            onScore={n => saveMutRow.mutate({ id: step.id, data: { distress_thermometer_when_refraining: n } })}
+            arrow={saved ? { done, open: () => onArrow(step.id) } : undefined}
+            // Takes the behaviour, and its step with it, so it asks first.
+            removeLabel={removeBehaviourLabel(done, nested)}
+            onRemove={() => delMut.mutate(b.id)}
+          />
+        ),
+      })
+    } else {
+      const i = noStep.indexOf(b)
+      rows.push({
+        key: b.id,
+        score: pending[b.id]?.score ?? null,
+        node: (
+          <ListRow
+            text={sentenceFor(b, i)}
+            placeholder={drafts[i]?.isLoading ? 'Drafting…' : undefined}
+            warning={needsWording(b, i) ? 'Float could not word this. Reword it before saving.' : undefined}
+            onRename={text => setPending(p => ({ ...p, [b.id]: { ...p[b.id], text } }))}
+            score={pending[b.id]?.score ?? null}
+            onScore={score => setPending(p => ({ ...p, [b.id]: { ...p[b.id], score } }))}
+            onRemove={() => delMut.mutate(b.id)}
+          />
+        ),
+      })
+    }
+  })
+  // Easier versions, whether added to the situation or (before 2026-10-16) under one step.
+  behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SCENARIO).forEach(b => rows.push({
+    key: b.id,
+    score: dtOf(b.distress_thermometer_when_refraining),
+    node: (
+      <ListRow
+        text={b.name}
+        onRename={name => saveMutRow.mutate({ id: b.id, data: { name } })}
+        score={dtOf(b.distress_thermometer_when_refraining)}
+        onScore={n => saveMutRow.mutate({ id: b.id, data: { distress_thermometer_when_refraining: n } })}
+        arrowSlot={saved}
+        onRemove={() => delMut.mutate(b.id)}
+      />
+    ),
+  }))
+  avoidance.forEach(b => rows.push({
+    key: b.id,
+    score: null,
+    last: true,
+    node: (
+      <ListRow
+        text={b.name}
+        onRename={name => saveMutRow.mutate({ id: b.id, data: { name } })}
+        onRemove={() => delMut.mutate(b.id)}
+      />
+    ),
+  }))
+  const rank = (r: Row) => (r.last ? 2e9 : r.score ?? 1e9)
+  rows.sort((a, b) => rank(a) - rank(b))
+
+  const error = addMut.error ?? takeMut.error ?? saveMut.error ?? saveMutRow.error ?? delMut.error ?? dropMut.error
 
   return (
-    <div style={under
-      ? { padding: '6px 0 2px 22px' }
-      : { background: 'var(--float-surface)', padding: '10px 8px 12px 24px' }}>
-      <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
-      {/* Whether the downward arrow is done for this situation — the suggestions need it. A step
-          shows its own arrow on its row, so this is only for the situation itself. */}
-      {!under && <>
-      <div style={{ marginBottom: 10, fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: arrowDone ? '#2f9e6f' : '#b47814' }}>
-        {arrowDone ? '✓ A downward arrow is done for this situation' : '○ No downward arrow done yet. Do one on a step above.'}
-        {/* A situation with no safety behaviours has no step to do it on, and its own easier
-            versions need a feared outcome. So the situation itself is offered, only while there is
-            no arrow anywhere on it. */}
-        {!arrowDone && (
-          <button onClick={onSituationArrow} style={{ ...quietLink, color: '#4d8478', padding: '0 0 0 6px', fontSize: 11.5 }}>
-            Or do one on the situation itself
-          </button>
-        )}
-      </div>
-      {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
-
-      </>}
-
-      {under && steps.length === 0 && !adding && !suggesting ? (
-        <button onClick={() => setAdding(true)} style={{ ...quietLink, color: '#4d8478', padding: '2px 0', fontSize: 12 }}>
-          + Add an easier version of this step
-        </button>
-      ) : (<>
-      <div style={{ ...sectionLabel, marginBottom: 6, ...(under ? { fontSize: 11.5 } : {}) }}>
-        {under ? 'Easier versions of this step' : 'Easier versions of the situation itself'}
-      </div>
-
-      {steps.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-          {steps.map(b => (
-            <StepRow
-              key={b.id}
-              name={b.name}
-              score={dtOf(b.distress_thermometer_when_refraining)}
-              onRename={name => saveMut.mutate({ id: b.id, data: { name } })}
-              onScore={n => saveMut.mutate({ id: b.id, data: { distress_thermometer_when_refraining: n } })}
-              onRemove={() => delMut.mutate(b.id)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Confirm-first, like the arrow probe: tapping one writes it as a step, and the wording can
-          be changed afterwards like any other. Nothing is written until a clinician chooses it. */}
-      {suggesting && (
-        <div style={{ margin: '0 0 10px', background: '#f4fbf9', border: '1px solid #d7ece5', borderRadius: 'var(--float-radius-card)', padding: '10px 12px' }}>
-          {suggestQuery.isLoading && (
-            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>Thinking of easier versions…</div>
-          )}
-          {suggestQuery.isError && (
-            <div style={{ fontSize: 12.5, color: '#991b1b' }}>Could not get suggestions just now.</div>
-          )}
-          {suggestQuery.data?.blocked && !suggestQuery.isFetching && (
-            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>
-              {suggestQuery.data.blocked}{' '}
-              <button onClick={() => suggestQuery.refetch()} style={{ ...quietLink, color: '#4d8478' }}>Try again</button>
-            </div>
-          )}
-          {(suggestQuery.data?.suggestions ?? []).length > 0 && (
-            <>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 7 }}>
-                Tap one to add it. Change the wording after if it is not quite right.
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {suggestQuery.data!.suggestions
-                  .filter(sug => !steps.some(st => st.name.trim().toLowerCase() === sug.trim().toLowerCase()))
-                  .map(sug => (
-                    <button key={sug} onClick={() => addMut.mutate(sug)} disabled={addMut.isPending}
-                      style={{ textAlign: 'left', fontSize: 13, color: 'var(--float-primary-dark)', background: 'var(--float-surface)', border: '1px solid #d7ece5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', cursor: 'pointer' }}>
-                      + {sug}
-                    </button>
-                  ))}
-              </div>
-            </>
-          )}
-          <button onClick={() => { setSuggesting(false); setAdding(false) }} style={{ ...quietLink, marginTop: 9 }}>Hide</button>
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-        <input value={draft} onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) addMut.mutate(draft.trim()) }}
-          placeholder={under ? 'e.g. answer a question sitting in the middle row' : 'e.g. walk to the classroom door with mum'}
-          autoFocus={!!under && adding}
-          style={{ flex: 1, minWidth: 0, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
-        <Button kind="primary" size="sm" onClick={() => addMut.mutate(draft.trim())} disabled={!draft.trim() || addMut.isPending}
-          style={{ flexShrink: 0 }}>
-          {under ? 'Add' : 'Add step'}
-        </Button>
-        {/* Back to the single link, if nothing was added. */}
-        {under && steps.length === 0 && (
-          <button onClick={() => { setAdding(false); setSuggesting(false); setDraft('') }} style={quietLink}>Cancel</button>
-        )}
-      </div>
-
-      {!suggesting && (
-        <button onClick={() => setSuggesting(true)} style={{ ...quietLink, marginTop: 9, color: '#4d8478' }}>
-          ✨ Suggest easier versions
-        </button>
-      )}
-      </>)}
-
-      </div>
-    </div>
-  )
-}
-
-
-const typeChip = (type: string): React.CSSProperties => ({
-  flexShrink: 0, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
-  borderRadius: 'var(--float-radius-pill)', padding: '2px 7px',
-  color: type === BEHAVIOR_TYPE_SAFETY ? '#9a5b00' : '#5b6b6a',
-  background: type === BEHAVIOR_TYPE_SAFETY ? '#fdf1dc' : '#eef2f1',
-})
-
-/**
- * Step 3 and 4 of the interview (docs/plans/ladder-combinations.md): what the child does to avoid
- * the situation or feel safer in it, and — for each safety behaviour — the situation without it,
- * scored. An avoidance makes no step. Peter, 2026-10-15: "It's avoiding the situation."
- */
-function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow, onEdited }: {
-  planId: string
-  patientId: string
-  trigger: TriggerSituation
-  behaviors: AvoidanceBehavior[]
-  /** Undefined while loading. */
-  arrows: DownwardArrow[] | undefined
-  onArrow: (rungId?: string) => void
-  onEdited: () => void
-}) {
-  const qc = useQueryClient()
-  const [draft, setDraft] = useState('')
-  const [type, setType] = useState<'safety' | 'avoidance'>('safety')
-  // A safety behaviour just added gets its sentence drafted straight away. Older ones wait for a
-  // tap, so opening a situation does not fire a model call per behaviour.
-  const [justAdded, setJustAdded] = useState<string | null>(null)
-
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
-    qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
-    qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] })
-    onEdited()
-  }
-  const addMut = useMutation({
-    mutationFn: (v: { name: string; type: 'safety' | 'avoidance' }) =>
-      createBehavior(trigger.id, { name: v.name, behavior_type: v.type }),
-    onSuccess: (created: AvoidanceBehavior) => {
-      invalidate()
-      setDraft('')
-      if (created.behavior_type === BEHAVIOR_TYPE_SAFETY) setJustAdded(created.id)
-    },
-  })
-
-  // What the monitoring log says the child does in THIS situation, not yet added.
-  const { data: suggested } = useQuery({
-    queryKey: ['insights', patientId, 'behavior'],
-    queryFn: () => getPatientInsights(patientId, 'behavior'),
-  })
-  // Not one already typed in by hand under the same words, or it would be added twice.
-  const typed = new Set(behaviors.map(b => b.name.trim().toLowerCase()))
-  const fromLog = (suggested ?? []).filter(i =>
-    i.situation_id === trigger.id && !typed.has(i.name.trim().toLowerCase()),
-  )
-  const takeMut = useMutation({
-    mutationFn: (v: { id: string; type?: 'safety' | 'avoidance' }) => addInsightToPlan(patientId, v.id, v.type),
-    onSuccess: invalidate,
-  })
-  const dropMut = useMutation({
-    mutationFn: (id: string) => removeInsight(patientId, id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] }),
-  })
-
+    <div style={{ background: 'var(--float-surface)', padding: '16px 14px 16px 35px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div>
+        <div style={{ ...sectionLabel, marginBottom: 8 }}>What does the child do to avoid it or feel safer?</div>
+        {rows.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {rows.map(r => <div key={r.key}>{r.node}</div>)}
   const listed = behaviors.filter(b =>
     b.behavior_type === BEHAVIOR_TYPE_SAFETY || b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE,
   )
@@ -845,32 +786,33 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
             })}
           </div>
         )}
+      </div>
 
-        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div role="radiogroup" aria-label="Kind of behaviour" style={{ display: 'flex', flexShrink: 0, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', overflow: 'hidden' }}>
-            {(['safety', 'avoidance'] as const).map(k => (
-              <button key={k} role="radio" aria-checked={type === k} onClick={() => setType(k)}
-                style={{ fontSize: 12, fontWeight: 700, padding: '7px 10px', border: 0, cursor: 'pointer', background: type === k ? 'var(--float-primary-light)' : 'var(--float-surface)', color: type === k ? 'var(--float-primary-dark)' : '#6b7a79' }}>
-                {k === 'safety' ? 'Safety' : 'Avoidance'}
+      {!saved && (<>
+        <div>
+          <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+            <input value={draft} onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate({ name: draft.trim(), type: 'safety' }) }}
+              placeholder="e.g. sits at the back so the teacher does not call on them"
+              aria-label="A safety behaviour"
+              style={{ flex: 1, minWidth: 0, border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '9px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
+            <Button kind="primary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type: 'safety' })}
+              disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
+              Add behaviour
+            </Button>
+          </div>
+
+          {suggestionCount > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <button onClick={() => setShowSuggested(v => !v)} aria-expanded={showSuggested}
+                style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
+                {showSuggested ? '▾ Hide' : '▸ Show'} suggested behaviours ({suggestionCount})
               </button>
-            ))}
-          </div>
-          <input value={draft} onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) addMut.mutate({ name: draft.trim(), type }) }}
-            placeholder={type === 'safety' ? 'e.g. sits at the back so the teacher does not call on them' : "e.g. doesn't put their hand up"}
-            style={{ flex: 1, minWidth: 180, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
-          <Button kind="primary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type })}
-            disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
-            Add behaviour
-          </Button>
-        </div>
-
-        {(addMut.isError || takeMut.isError) && (
-          <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 6 }}>
-            {errorMessage(addMut.error ?? takeMut.error, 'Could not add that just now.')}
-          </div>
-        )}
-
+              {showSuggested && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
+                  {offerAvoidance && (
+                    <SuggestionChip text={avoidsIt} disabled={addMut.isPending}
+                      onAdd={() => addMut.mutate({ name: avoidsIt, type: 'avoidance' })} />
         {/* Always shown, like the situation suggestions: "No suggestions" reads as an answer. */}
         <div style={{ marginTop: 10, marginBottom: 6 }}>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 5 }}>From the monitoring log and sessions</div>
@@ -900,19 +842,59 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
                       </button>
                     ))
                   )}
-                  <button onClick={() => dropMut.mutate(item.id)} disabled={dropMut.isPending}
-                    title="Not relevant — take it off the list"
-                    style={{ fontSize: 14, color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 6px' }}>×</button>
-                </span>
-              ))}
+                  {fromLog.map(item => (
+                    <SuggestionChip key={item.id} text={item.name} disabled={takeMut.isPending}
+                      onAdd={() => takeMut.mutate(item)}
+                      // Taken off the list for good, or the same one comes back every week.
+                      onDismiss={() => dropMut.mutate(item.id)} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, alignItems: 'center' }}>
+          {mode === 'edit' && noStep.length === 0 && (
+            <button onClick={() => setMode('saved')} style={quietLink}>Cancel</button>
+          )}
+          <Button kind="primary" size="sm" onClick={() => saveMut.mutate()}
+            disabled={rows.length === 0 || drafting || saveMut.isPending}>
+            Save behaviours
+          </Button>
+        </div>
+      </>)}
+
+      {saved && !addingRung && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={() => setMode('edit')} style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
+            Edit behaviours
+          </button>
+          <Button kind="secondary" size="sm" onClick={() => setAddingRung(true)}>+ Add rung</Button>
+        </div>
+      )}
+
+      {saved && addingRung && (
+        <AddRung planId={planId} trigger={trigger} behaviors={behaviors}
+          onAdded={invalidate} onClose={() => setAddingRung(false)} />
+      )}
+
+      {error && (
+        <div role="alert" style={{ fontSize: 12, color: '#991b1b' }}>
+          {errorMessage(error, 'Could not save that just now.')}
+        </div>
+      )}
     </div>
   )
 }
 
+/** A rung on the situation itself: typed, or picked from Float's suggestions. */
+function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
+  planId: string
+  trigger: TriggerSituation
+  behaviors: AvoidanceBehavior[]
+  onAdded: () => void
+  onClose: () => void
 /** One avoidance or safety behaviour, and for a safety behaviour, its step on the ladder. */
 function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arrowDone, arrowNext, onArrow, autoDraft, onChanged }: {
   planId: string
@@ -927,21 +909,54 @@ function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arr
   autoDraft: boolean
   onChanged: () => void
 }) {
-  const [confirmRemove, setConfirmRemove] = useState(false)
-  // Taking a step off the ladder also takes its downward arrow, so it asks first.
-  const [confirmStepRemove, setConfirmStepRemove] = useState(false)
-  const saveMut = useMutation({
-    mutationFn: (v: { id: string; data: Parameters<typeof updateBehavior>[2] }) =>
-      updateBehavior(trigger.id, v.id, v.data),
-    onSuccess: onChanged,
+  const [draft, setDraft] = useState('')
+  const [suggesting, setSuggesting] = useState(false)
+  // Asked for, never automatic: it costs a model call. staleTime 0 so asking again after a
+  // downward arrow is done gets a fresh answer rather than a cached "do the arrow first".
+  const suggestQuery = useQuery({
+    queryKey: ['suggested-steps', trigger.id, null],
+    queryFn: () => getSuggestedSteps(planId, trigger.id),
+    enabled: suggesting,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    retry: false,
   })
-  const delMut = useMutation({
-    mutationFn: (id: string) => deleteBehavior(trigger.id, id),
-    onSuccess: () => { setConfirmRemove(false); setConfirmStepRemove(false); onChanged() },
+  const addMut = useMutation({
+    mutationFn: (name: string) => createBehavior(trigger.id, { name, behavior_type: BEHAVIOR_TYPE_SCENARIO }),
+    onSuccess: () => { onAdded(); setDraft('') },
   })
-  const isSafety = behavior.behavior_type === BEHAVIOR_TYPE_SAFETY
+  const taken = new Set(behaviors.map(b => b.name.trim().toLowerCase()))
+  const options = (suggestQuery.data?.suggestions ?? []).filter(s => !taken.has(s.trim().toLowerCase()))
 
   return (
+    <div>
+      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+        <input value={draft} onChange={e => setDraft(e.target.value)} autoFocus
+          onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate(draft.trim()) }}
+          placeholder="e.g. walk to the classroom door with mum"
+          aria-label="A rung"
+          style={{ flex: 1, minWidth: 0, border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '9px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
+        <Button kind="primary" size="sm" onClick={() => addMut.mutate(draft.trim())}
+          disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
+          Add
+        </Button>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 12 }}>
+        <button onClick={() => setSuggesting(v => !v)} aria-expanded={suggesting}
+          style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
+          {suggesting ? '▾ Hide suggestions' : '✨ Suggestions'}
+        </button>
+        <button onClick={onClose} style={quietLink}>Close</button>
+      </div>
+
+      {/* Nothing is written until the clinician picks one. */}
+      {suggesting && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
+          {suggestQuery.isLoading && <div style={{ fontSize: 12.5, color: '#6b7a79' }}>Thinking of easier versions…</div>}
+          {suggestQuery.isError && <div style={{ fontSize: 12.5, color: '#991b1b' }}>Could not get suggestions just now.</div>}
+          {suggestQuery.data?.blocked && !suggestQuery.isFetching && (
+            <div style={{ fontSize: 12.5, color: '#6b7a79' }}>{suggestQuery.data.blocked}</div>
     <div style={{ background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={typeChip(behavior.behavior_type)}>{isSafety ? 'Safety' : 'Avoidance'}</span>
@@ -996,6 +1011,15 @@ function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arr
           ) : (
             <CombinationDraft trigger={trigger} behavior={behavior} auto={autoDraft} onSaved={onChanged} />
           )}
+          {options.map(s => (
+            <SuggestionChip key={s} text={s} disabled={addMut.isPending} onAdd={() => addMut.mutate(s)} />
+          ))}
+        </div>
+      )}
+
+      {addMut.isError && (
+        <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 6 }}>
+          {errorMessage(addMut.error, 'Could not add that just now.')}
         </div>
       )}
 
@@ -1007,70 +1031,75 @@ function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arr
   )
 }
 
-/**
- * The step for a safety behaviour that does not have one yet. Float drafts the sentence; nothing is
- * saved until the clinician reads it and adds it. Peter, 2026-10-15: the clinician reading the
- * sentence before it is saved is the check on what the child will read.
- */
-function CombinationDraft({ trigger, behavior, auto, onSaved }: {
-  trigger: TriggerSituation
-  behavior: AvoidanceBehavior
-  auto: boolean
-  onSaved: () => void
+/** One suggestion you tap to add. */
+function SuggestionChip({ text, disabled, onAdd, onDismiss }: {
+  text: string
+  disabled: boolean
+  onAdd: () => void
+  onDismiss?: () => void
 }) {
-  const [asked, setAsked] = useState(auto)
-  const [text, setText] = useState<string | null>(null)
-  const draftQuery = useQuery({
-    queryKey: ['combination-draft', behavior.id],
-    queryFn: () => draftCombination(trigger.id, behavior.id),
-    enabled: asked,
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-    retry: false,
-  })
-  const sentence = text ?? draftQuery.data?.sentence ?? ''
-  const saveMut = useMutation({
-    mutationFn: () => createBehavior(trigger.id, {
-      name: sentence.trim(),
-      behavior_type: BEHAVIOR_TYPE_COMBINATION,
-      without_behavior_id: behavior.id,
-    }),
-    onSuccess: onSaved,
-    // A 409 means another tab already saved it; re-reading shows that step instead of this box.
-    onError: onSaved,
-  })
-
-  if (!asked) {
-    return (
-      <button onClick={() => setAsked(true)} style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
-        + Make the step without this behaviour
-      </button>
-    )
-  }
-  if (draftQuery.isLoading) {
-    return <span style={{ fontSize: 12.5, color: '#6b7a79' }}>Drafting the step…</span>
-  }
   return (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-        <input value={sentence} onChange={e => setText(e.target.value)} aria-label="The step, as the child will read it"
-          onKeyDown={e => { if (e.key === 'Enter' && sentence.trim()) saveMut.mutate() }}
-          style={{ flex: 1, minWidth: 0, border: '1.5px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '7px 10px', fontSize: 13, fontWeight: 600, background: 'var(--float-surface)' }} />
-        <Button kind="primary" size="sm" onClick={() => saveMut.mutate()} disabled={!sentence.trim() || saveMut.isPending}
-          style={{ flexShrink: 0 }}>
-          Add to ladder
-        </Button>
-      </div>
-      {saveMut.isError && (
-        <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 4 }}>
-          {errorMessage(saveMut.error, 'Could not add the step just now.')}
-        </div>
+    <span style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', maxWidth: '100%' }}>
+      <button onClick={onAdd} disabled={disabled}
+        style={{ fontSize: 13, fontWeight: 600, color: 'var(--float-primary-dark)', background: 'transparent', border: 'none', padding: '7px 8px 7px 13px', cursor: 'pointer', textAlign: 'left' }}>
+        <span style={{ color: '#4d8478', marginRight: 6 }}>+</span>{text}
+      </button>
+      {onDismiss && (
+        <button onClick={onDismiss} title="Not relevant — take it off the list"
+          style={{ fontSize: 14, color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 11px 0 2px' }}>×</button>
       )}
-      <div style={{ fontSize: 11.5, color: '#9aa9a8', marginTop: 4 }}>
-        {draftQuery.data?.drafted_by === 'template' || draftQuery.isError
-          ? 'Could not draft a sentence. Reword this before adding it.'
-          : 'Drafted for you. This is what the child will read, so change it if it is not right.'}
-      </div>
+    </span>
+  )
+}
+
+/**
+ * One row in a situation's list: the wording, its Fear Level, the DA link once the behaviours are
+ * saved, and remove. Peter, 2026-10-16: nothing else on the row.
+ */
+function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, arrowSlot, removeLabel, onRemove }: {
+  text: string
+  placeholder?: string
+  warning?: string
+  onRename: (next: string) => void
+  /** Leave both out for a row with no Fear Level — the avoidance behaviour. */
+  score?: number | null
+  onScore?: (n: number) => void
+  arrow?: { done: boolean; open: () => void }
+  /** Keep the DA link's room on a row without one, so every Fear Level box lines up. */
+  arrowSlot?: boolean
+  /** Set when removing loses work, so it asks first and says what goes. */
+  removeLabel?: string
+  onRemove: () => void
+}) {
+  const [confirm, setConfirm] = useState(false)
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 8px 8px 12px', minHeight: 46 }}>
+      {placeholder
+        ? <span style={{ flex: 1, fontSize: 13, color: '#9aa9a8' }}>{placeholder}</span>
+        : (
+          <span style={{ flex: '0 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <InlineText value={text} weight={600} onSave={onRename} />
+            {warning && <span style={{ fontSize: 11.5, color: '#b47814' }}>{warning}</span>}
+          </span>
+        )}
+      <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 9, borderBottom: '1px dotted #dde8e6' }} />
+      {onScore && <ScoreBox value={score ?? null} onSet={onScore} />}
+      {arrow && (
+        <button onClick={arrow.open} title={arrow.done ? 'Downward arrow done — open it' : 'Downward arrow'}
+          style={{ ...quietLink, flexShrink: 0, width: 40, fontSize: 12, fontWeight: 700, color: arrow.done ? '#4d8478' : '#9aa9a8', padding: '4px 2px' }}>
+          {arrow.done ? '✓ DA' : 'DA'}
+        </button>
+      )}
+      {!arrow && arrowSlot && onScore && <span aria-hidden="true" style={{ flexShrink: 0, width: 40 }} />}
+      {confirm ? (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+          <Button kind="danger" size="sm" onClick={() => { setConfirm(false); onRemove() }}>{removeLabel}</Button>
+          <button onClick={() => setConfirm(false)} style={quietLink}>Keep</button>
+        </span>
+      ) : (
+        <button onClick={() => (removeLabel ? setConfirm(true) : onRemove())} title="Take this out"
+          style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
+      )}
     </div>
   )
 }
@@ -1097,24 +1126,5 @@ function InlineText({ value, weight, onSave }: { value: string; weight: number; 
       style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: weight, color: 'var(--float-text)' }}>
       {value}
     </button>
-  )
-}
-
-/** One step: wording, score, remove. */
-function StepRow({ name, score, onRename, onScore, onRemove }: {
-  name: string
-  score: number | null
-  onRename: (next: string) => void
-  onScore: (n: number) => void
-  onRemove: () => void
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
-      <InlineText value={name} weight={600} onSave={onRename} />
-      <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
-      <ScoreBox value={score} onSet={onScore} />
-      <button onClick={onRemove} title="Take this out"
-        style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
-    </div>
   )
 }
