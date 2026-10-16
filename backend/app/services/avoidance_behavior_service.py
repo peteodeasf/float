@@ -9,7 +9,7 @@ from app.models.ladder import LadderRung
 from app.models.experiment import Experiment
 from app.schemas.avoidance_behavior import AvoidanceBehaviorCreate, AvoidanceBehaviorUpdate
 from app.services.library_service import upsert_behavior_library
-from app.core.behavior_types import COMBINATION, COMBINATION_OF, LADDER_TYPES, coerce_for_write
+from app.core.behavior_types import COMBINATION, COMBINATION_OF, LADDER_TYPES, SCENARIO, coerce_for_write
 
 
 async def get_behaviors_for_trigger(
@@ -42,6 +42,8 @@ async def create_behavior(
         # a reusable name, so it stays out of the shared cross-practice library.
         library_id = None
     else:
+        if data.parent_behavior_id is not None:
+            await _check_parent(db, trigger_id, organization_id, data.parent_behavior_id, behavior_type)
         if data.without_behavior_id is not None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -86,6 +88,36 @@ async def create_behavior(
         raise
     await db.refresh(behavior)
     return behavior
+
+
+async def _check_parent(
+    db: AsyncSession,
+    trigger_id: uuid.UUID | None,
+    organization_id: uuid.UUID,
+    parent_id: uuid.UUID,
+    behavior_type: str,
+) -> None:
+    """A sub-situation hangs under a combination on the same situation, and nothing else does.
+
+    Peter, 2026-10-15: a sub-situation belongs to a combination or to the situation itself. The
+    parent comes from the request body, so it is also checked to be on the same situation —
+    otherwise a step could be hung under another patient's row. See
+    docs/solutions/access-checks-on-the-wrong-id.md.
+    """
+    parent = (await db.execute(
+        select(AvoidanceBehavior).where(
+            AvoidanceBehavior.id == parent_id,
+            AvoidanceBehavior.organization_id == organization_id,
+            AvoidanceBehavior.trigger_situation_id == trigger_id,
+        )
+    )).scalar_one_or_none() if trigger_id is not None else None
+    if parent is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Behavior not found")
+    if parent.behavior_type != COMBINATION or behavior_type != SCENARIO:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only an easier version can go under a step, and only under a combination.",
+        )
 
 
 async def _check_combination(
@@ -186,6 +218,12 @@ async def update_behavior(
     fields_sent = data.model_dump(exclude_unset=True)
     new_situation = fields_sent.get("trigger_situation_id", behavior.trigger_situation_id)
     if new_situation != behavior.trigger_situation_id:
+        if behavior.parent_behavior_id is not None:
+            # An easier version of a step stays under that step, on that step's situation.
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An easier version of a step stays with its step.",
+            )
         if behavior.behavior_type == COMBINATION:
             # A combination is this situation without one of its behaviours. Under another
             # situation, or none, the sentence would describe something that is not there.
