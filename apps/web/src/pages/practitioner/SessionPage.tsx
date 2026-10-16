@@ -180,6 +180,10 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
   )
 }
 
+/** A suggestion read out of an approved session note, rather than (or as well as) the monitoring
+ *  log. docs/plans/session-suggestions.md */
+export const fromASession = (item: { sources?: string[] }) => (item.sources ?? []).includes('session_note')
+
 /** The heading over a group of situations you can tap to add. Both groups use it — the one from
  *  this child's monitoring log, and the common list — so they read as two of the same thing. */
 const sectionLabel: React.CSSProperties = {
@@ -316,7 +320,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
           {/* Always shown, empty or not. An absent section reads as broken; "No suggestions" reads
               as an answer. */}
           <div style={{ marginTop: 14 }}>
-              <div style={{ ...sectionLabel, marginBottom: 2 }}>From the monitoring log</div>
+              <div style={{ ...sectionLabel, marginBottom: 2 }}>From the monitoring log and sessions</div>
               {(fromMonitoring ?? []).length === 0 ? (
                 <div style={{ fontSize: 12.5, color: '#9aa9a8' }}>No suggestions.</div>
               ) : (<>
@@ -334,6 +338,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
                       <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
                         {' '}· {item.evidence_count} {item.evidence_count === 1 ? 'entry' : 'entries'}
                         {item.fear_rating != null ? `, rated ${item.fear_rating}` : ''}
+                        {fromASession(item) ? ', from a session' : ''}
                       </span>
                     </button>
                     {/* Taken off the list for good — it does not come back next time the log is
@@ -928,14 +933,17 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
 
         {/* Always shown, like the situation suggestions: "No suggestions" reads as an answer. */}
         <div style={{ marginTop: 10, marginBottom: 6 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 5 }}>From the monitoring log</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 5 }}>From the monitoring log and sessions</div>
           {fromLog.length === 0 ? (
             <div style={{ fontSize: 12, color: '#9aa9a8' }}>No suggestions.</div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {fromLog.map(item => (
                 <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', padding: '2px 4px 2px 10px' }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--float-primary)' }}>{item.name}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--float-primary)' }}>
+                    {item.name}
+                    {fromASession(item) && <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · from a session</span>}
+                  </span>
                   {item.behavior_type ? (
                     <button onClick={() => takeMut.mutate({ id: item.id })} disabled={takeMut.isPending}
                       title={`Add as ${item.behavior_type === 'safety' ? 'a safety behaviour' : 'avoidance'}`}
