@@ -132,14 +132,22 @@ async def test_suggestions_for_a_combination_use_its_own_arrow(api, db, monkeypa
     assert "Sits at the back" in seen["coping"]
 
 
-async def test_suggestions_for_a_combination_wait_for_its_arrow(api, db):
+async def test_suggestions_for_a_combination_do_not_wait_for_its_arrow(api, db, monkeypatch):
+    """Peter, 2026-10-16. Before, a step with no arrow was told to do one first."""
+    seen = []
+
+    async def fake(**kwargs):
+        seen.append(kwargs["feared_outcome"])
+        return ["A smaller version"], ""
+
+    monkeypatch.setattr("app.api.routers.trigger_situations.suggest_steps", fake)
     _, _, plan, situation, clinician, _, combination = await _setup(db)
     api.sign_in_as(clinician.user)
 
     body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/steps/{combination.id}/suggested-steps")).json()
 
-    assert body["suggestions"] == []
-    assert "downward arrow on this step" in body["blocked"]
+    assert seen == [""]
+    assert body["suggestions"] == ["A smaller version"]
 
 
 async def test_suggestions_refuse_another_situations_step(api, db):

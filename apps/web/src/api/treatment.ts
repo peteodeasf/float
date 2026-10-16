@@ -465,8 +465,8 @@ export const deletePlanRung = async (planId: string, rungId: string): Promise<vo
 
 // ── Suggested steps ──
 // Smaller versions of a situation, for the clinician to choose from. Confirm-first: nothing is
-// written until they tap one. `blocked` carries a sentence rather than an error — the usual reason
-// is a real instruction, "do the downward arrow first".
+// written until they tap one. `blocked` carries a sentence rather than an error, when nothing worth
+// showing came back.
 export interface SuggestedSteps {
   suggestions: string[]
   variations: string

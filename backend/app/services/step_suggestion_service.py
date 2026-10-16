@@ -10,8 +10,10 @@ docs/plans/ladder-generation.md — read that before changing anything here. The
 2. **A built-in way out is an escape.** "Stay at the sleepover until bedtime, then get picked up" is
    not a smaller sleepover — it removes the sleeping, and the child knows it. Short is fine; a way
    out is not.
-3. **You cannot write these without the feared outcome.** Said twice. So the downward arrow is a
-   precondition, and a situation without one gets no suggestions rather than guesses.
+3. **You cannot write these without the feared outcome.** Said twice. Until 2026-10-16 the downward
+   arrow was a precondition. Peter removed that on 2026-10-16, to test suggestions without it: her
+   approach here has changed more than once. The feared outcome is still used when there is one.
+   When there is none, the model is told it is not known and not to guess it.
 4. **Start far lower than we did.** Her own ladder starts at imagining it and watching videos of
    other people doing it.
 5. **As many as the child has actually told you** — two to five, and fewer when the ladder is empty,
@@ -82,7 +84,15 @@ def _context_block(
     lines = [f"Situation: {situation}"]
     if score is not None:
         lines.append(f"The child rates it {score:g} out of 10.")
-    lines.append(f"What they are afraid will happen: {feared_outcome}")
+    if feared_outcome.strip():
+        lines.append(f"What they are afraid will happen: {feared_outcome}")
+    else:
+        # No downward arrow yet (Peter, 2026-10-16: suggest anyway). Said outright, so the model
+        # does not fill the gap with a fear nobody named.
+        lines.append(
+            "What they are afraid will happen is not known yet. Do not guess at it or name one. "
+            "Vary the situation itself."
+        )
     if steps:
         lines.append("Steps already on the ladder for this situation:")
         lines += [f"  - {s}" for s in steps]
@@ -110,15 +120,12 @@ async def suggest_steps(
 ) -> tuple[list[str], str]:
     """Smaller versions of a situation, and a line of other ways to vary it.
 
-    Raises SuggestionUnavailable when the downward arrow has not been done. Dr. Walker, twice:
-    "What is feared outcome of raising hand? That will determine sub situations." Offering
-    suggestions without it is guessing at the fear.
+    Works with or without a feared outcome. Dr. Walker, twice: "What is feared outcome of raising
+    hand? That will determine sub situations." So it is used whenever there is one. Peter,
+    2026-10-16: suggest without it too, and test whether the suggestions are good enough.
+
+    Raises SuggestionUnavailable when nothing worth showing comes back.
     """
-    if not (feared_outcome or "").strip():
-        raise SuggestionUnavailable(
-            "Do the downward arrow on this situation first and you can get suggested "
-            "sub-situations."
-        )
 
     import json
     import anthropic
@@ -133,7 +140,7 @@ async def suggest_steps(
             "content": _context_block(
                 situation=situation,
                 score=score,
-                feared_outcome=feared_outcome,
+                feared_outcome=feared_outcome or "",
                 steps=steps,
                 coping=coping,
             ),

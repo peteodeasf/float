@@ -154,8 +154,8 @@ async def test_the_child_sees_each_steps_own_feared_outcome(api, db):
 
 
 async def test_situation_suggestions_can_use_an_arrow_done_on_one_of_its_steps(api, db, monkeypatch):
-    """The situation no longer gets its own arrow, so "Suggest easier versions" on the situation
-    would otherwise be blocked for good."""
+    """The situation no longer gets its own arrow, so its suggestions use the feared outcome from
+    an arrow done on one of its steps."""
     async def fake(**kwargs):
         assert kwargs["feared_outcome"] == "Everyone will laugh at my answer."
         return ["A smaller version"], ""
@@ -194,13 +194,10 @@ async def test_the_childs_progress_screens_get_a_fear_from_a_step_arrow(api, db)
 
 async def test_a_parent_arrow_on_a_step_does_not_feed_the_suggestions(api, db, monkeypatch):
     """A parent's run is their guess at the child's fear, not something the child said."""
-    from app.services.step_suggestion_service import SuggestionUnavailable
     seen = []
 
     async def fake(**kwargs):
         seen.append(kwargs["feared_outcome"])
-        if not kwargs["feared_outcome"]:
-            raise SuggestionUnavailable("Do the downward arrow first.")
         return ["A smaller version"], ""
 
     monkeypatch.setattr("app.api.routers.trigger_situations.suggest_steps", fake)
@@ -214,5 +211,6 @@ async def test_a_parent_arrow_on_a_step_does_not_feed_the_suggestions(api, db, m
 
     body = (await api.post(f"/plans/{plan.id}/triggers/{situation.id}/suggested-steps")).json()
 
+    # Asked without a feared outcome, not with the parent's.
     assert seen == [""]
-    assert body["suggestions"] == []
+    assert body["suggestions"] == ["A smaller version"]

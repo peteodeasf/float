@@ -219,6 +219,11 @@ without it.
 **Implication for the product:** a situation with no arrow should probably not get suggestions at
 all. Offering them anyway is guessing at the fear.
 
+> **Changed 2026-10-16 (Peter).** Suggestions no longer wait for the downward arrow. Peter: her
+> approach here has changed more than once, and the way to find out is to test it. The feared
+> outcome is still used when there is one. When there is none, the model is told the fear is not
+> known and not to guess one. In the Dr. Walker review queue.
+
 ### 4. Start far lower than we did.
 
 Her ladder for the oral report, in her order:

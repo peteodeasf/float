@@ -104,8 +104,8 @@ async def delete_trigger_situation(
 class SuggestedStepsResponse(BaseModel):
     """Suggestions, or the reason there are none.
 
-    `blocked` carries a sentence for the clinician rather than an error, because the usual reason is
-    a real instruction: do the downward arrow first.
+    `blocked` carries a sentence for the clinician rather than an error: nothing worth showing came
+    back.
     """
     suggestions: list[str] = []
     variations: str = ""
@@ -172,7 +172,6 @@ async def _suggest(
 
     subject_name = situation.name
     subject_score = situation.distress_thermometer_rating
-    where = "situation"
 
     if rung_id is None:
         # Most recent, and not scalar_one_or_none: a situation is supposed to have one arrow, and a
@@ -223,14 +222,13 @@ async def _suggest(
         # One with a feared outcome first, as on the situation.
         arrow = next((a for a in rung_arrows if (a.feared_outcome or "").strip()),
                      rung_arrows[0] if rung_arrows else None)
-        where = "step"
 
     # Any recorded feared outcome counts, approved or not. `feared_outcome_approved` is only set
     # when the clinician presses save on the arrow's last screen — walking the whole chain and
     # leaving does not set it, so requiring it blocked people who had done the work. The
     # suggestions are confirm-first anyway: nothing is written until the clinician picks one.
+    # No arrow, or one that never named a fear, still gets suggestions. Peter, 2026-10-16.
     feared = (arrow.feared_outcome or "").strip() if arrow else ""
-    started = bool(arrow and (arrow.arrow_steps or feared))
 
     try:
         suggestions, variations = await suggest_steps(
@@ -241,17 +239,6 @@ async def _suggest(
             coping=coping,
         )
     except SuggestionUnavailable as e:
-        # Say which of the two it is. "Do the arrow" is wrong advice for someone who has started
-        # one and stopped before naming what they are afraid of.
-        if started and not feared:
-            return SuggestedStepsResponse(blocked=(
-                f"The downward arrow on this {where} was started but never landed on what they "
-                "are afraid will happen. Finish it and the suggestions can use it."
-            ))
-        if where == "step" and not feared:
-            return SuggestedStepsResponse(blocked=(
-                "Do the downward arrow on this step first and you can get suggested easier versions."
-            ))
         return SuggestedStepsResponse(blocked=str(e))
     except Exception as e:
         logger.exception("suggested_steps failed for situation %s", situation.id)
