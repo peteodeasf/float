@@ -550,10 +550,11 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
 }
 
 /** The steps under one situation. Added, edited, scored and removed in place. */
-function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow, under }: {
+function StepList({ planId, trigger, stepArrows = [], onEdited, onSituationArrow, under }: {
   planId: string
   trigger: TriggerSituation
-  stepArrows: DownwardArrow[]
+  /** The situation's step arrows. Not needed under a step, which shows its own arrow on its row. */
+  stepArrows?: DownwardArrow[]
   onEdited: () => void
   onSituationArrow?: () => void
   /** Easier versions of this combination, rather than of the situation itself. Step 6 of the
@@ -577,6 +578,7 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow, und
   const { data: arrow } = useQuery({
     queryKey: ['situation-da', trigger.id],
     queryFn: () => getSituationDownwardArrow(trigger.id),
+    enabled: !under,
   })
   // The situation's own arrow, from before 2026-10-15, or one done on any of its steps since —
   // the suggestions can use either.
@@ -707,7 +709,7 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow, und
               </div>
             </>
           )}
-          <button onClick={() => setSuggesting(false)} style={{ ...quietLink, marginTop: 9 }}>Hide</button>
+          <button onClick={() => { setSuggesting(false); setAdding(false) }} style={{ ...quietLink, marginTop: 9 }}>Hide</button>
         </div>
       )}
 
@@ -715,11 +717,16 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow, und
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) addMut.mutate(draft.trim()) }}
           placeholder={under ? 'e.g. answer a question sitting in the middle row' : 'e.g. walk to the classroom door with mum'}
+          autoFocus={!!under && adding}
           style={{ flex: 1, minWidth: 0, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
         <Button kind="primary" size="sm" onClick={() => addMut.mutate(draft.trim())} disabled={!draft.trim() || addMut.isPending}
           style={{ flexShrink: 0 }}>
-          Add step
+          {under ? 'Add' : 'Add step'}
         </Button>
+        {/* Back to the single link, if nothing was added. */}
+        {under && steps.length === 0 && (
+          <button onClick={() => { setAdding(false); setSuggesting(false); setDraft('') }} style={quietLink}>Cancel</button>
+        )}
       </div>
 
       {!suggesting && (
@@ -770,6 +777,11 @@ export function removeStepLabel(arrowDone: boolean, easier: number): string {
     ...(arrowDone ? ['its arrow'] : []),
   ]
   return also.length ? `Remove step, ${also.join(' and ')}` : 'Remove step'
+}
+
+/** What removing a safety behaviour takes with it: its step, and whatever the step takes. */
+export function removeBehaviourLabel(arrowDone: boolean, easier: number): string {
+  return removeStepLabel(arrowDone, easier).replace(/^Remove step/, 'Remove it, its step')
 }
 
 /** Whether this step's downward arrow has reached a feared outcome. */
@@ -990,7 +1002,7 @@ function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arr
         {confirmRemove ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
             <Button kind="danger" size="sm" onClick={() => delMut.mutate(behavior.id)} disabled={delMut.isPending}>
-              {combination ? (arrowDone ? 'Remove it, its step and its arrow' : 'Remove it and its step') : 'Remove'}
+              {combination ? removeBehaviourLabel(arrowDone, easierCount) : 'Remove'}
             </Button>
             <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
           </span>
@@ -1041,7 +1053,7 @@ function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arr
 
       {/* Easier versions of this step, where one is needed. Step 6 of the interview. */}
       {combination && (
-        <StepList planId={planId} trigger={trigger} stepArrows={[]} onEdited={onChanged} under={combination} />
+        <StepList planId={planId} trigger={trigger} onEdited={onChanged} under={combination} />
       )}
     </div>
   )

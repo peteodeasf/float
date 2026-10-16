@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { nextArrowOn, removeStepLabel, whatIsLeft } from './SessionPage'
+import { nextArrowOn, removeBehaviourLabel, removeStepLabel, whatIsLeft } from './SessionPage'
 import type { AvoidanceBehavior, DownwardArrow } from '../../api/treatment'
 
 function row(over: Partial<AvoidanceBehavior>): AvoidanceBehavior {
@@ -112,6 +112,11 @@ describe('easier versions under a step', () => {
     expect(removeStepLabel(false, 0)).toBe('Remove step')
     expect(removeStepLabel(true, 0)).toBe('Remove step, its arrow')
     expect(removeStepLabel(true, 2)).toBe('Remove step, 2 easier versions and its arrow')
+  })
+
+  it('says the same when the safety behaviour itself is removed', () => {
+    expect(removeBehaviourLabel(false, 0)).toBe('Remove it, its step')
+    expect(removeBehaviourLabel(true, 1)).toBe('Remove it, its step, 1 easier version and its arrow')
   })
 })
 

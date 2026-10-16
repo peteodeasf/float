@@ -173,6 +173,12 @@ async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_
     safety behaviour with a combination cannot stop being safety, because the combination would
     then be "without" something that is not a safety behaviour.
     """
+    if behavior.parent_behavior_id is not None and new_type != SCENARIO:
+        # An easier version of a step stays an easier version.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An easier version of a step stays an easier version.",
+        )
     if new_type == COMBINATION or behavior.behavior_type == COMBINATION:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
