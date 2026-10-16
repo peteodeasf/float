@@ -752,6 +752,38 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
         {rows.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {rows.map(r => <div key={r.key}>{r.node}</div>)}
+  const listed = behaviors.filter(b =>
+    b.behavior_type === BEHAVIOR_TYPE_SAFETY || b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE,
+  )
+  const nextArrowId = arrows ? nextArrowOn(behaviors, arrows) : null
+  const combinationOf = (id: string) =>
+    behaviors.find(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && b.without_behavior_id === id)
+
+  return (
+    <div style={{ background: 'var(--float-surface)', padding: '12px 8px 4px 24px' }}>
+      <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
+        <div style={{ ...sectionLabel, marginBottom: 6 }}>Avoidance and safety behaviours</div>
+
+        {listed.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            {listed.map(b => {
+              const step = combinationOf(b.id)
+              return (
+                <BehaviourRow
+                  key={b.id}
+                  planId={planId}
+                  trigger={trigger}
+                  easierCount={step ? behaviors.filter(x => x.parent_behavior_id === step.id).length : 0}
+                  behavior={b}
+                  combination={step}
+                  arrowDone={!!step && !!arrows && arrowDoneOn(step.id, arrows)}
+                  arrowNext={!!step && step.id === nextArrowId}
+                  onArrow={onArrow}
+                  autoDraft={b.id === justAdded}
+                  onChanged={invalidate}
+                />
+              )
+            })}
           </div>
         )}
       </div>
@@ -781,6 +813,34 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
                   {offerAvoidance && (
                     <SuggestionChip text={avoidsIt} disabled={addMut.isPending}
                       onAdd={() => addMut.mutate({ name: avoidsIt, type: 'avoidance' })} />
+        {/* Always shown, like the situation suggestions: "No suggestions" reads as an answer. */}
+        <div style={{ marginTop: 10, marginBottom: 6 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 5 }}>From the monitoring log and sessions</div>
+          {fromLog.length === 0 ? (
+            <div style={{ fontSize: 12, color: '#9aa9a8' }}>No suggestions.</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {fromLog.map(item => (
+                <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', padding: '2px 4px 2px 10px' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--float-primary)' }}>
+                    {item.name}
+                    {fromASession(item) && <span style={{ fontWeight: 500, color: '#9aa9a8' }}> · from a session</span>}
+                  </span>
+                  {item.behavior_type ? (
+                    <button onClick={() => takeMut.mutate({ id: item.id })} disabled={takeMut.isPending}
+                      title={`Add as ${item.behavior_type === 'safety' ? 'a safety behaviour' : 'avoidance'}`}
+                      style={{ ...quietLink, fontSize: 12, color: '#4d8478', padding: '4px 6px' }}>
+                      + {item.behavior_type === 'safety' ? 'Safety' : 'Avoidance'}
+                    </button>
+                  ) : (
+                    // The log did not say which, or said something still open clinically, like
+                    // escape. The clinician picks.
+                    (['safety', 'avoidance'] as const).map(k => (
+                      <button key={k} onClick={() => takeMut.mutate({ id: item.id, type: k })} disabled={takeMut.isPending}
+                        style={{ ...quietLink, fontSize: 12, color: '#4d8478', padding: '4px 5px' }}>
+                        + {k === 'safety' ? 'Safety' : 'Avoidance'}
+                      </button>
+                    ))
                   )}
                   {fromLog.map(item => (
                     <SuggestionChip key={item.id} text={item.name} disabled={takeMut.isPending}
@@ -835,6 +895,19 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
   behaviors: AvoidanceBehavior[]
   onAdded: () => void
   onClose: () => void
+/** One avoidance or safety behaviour, and for a safety behaviour, its step on the ladder. */
+function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arrowDone, arrowNext, onArrow, autoDraft, onChanged }: {
+  planId: string
+  trigger: TriggerSituation
+  /** How many easier versions hang under this behaviour's step — they go if the step goes. */
+  easierCount: number
+  behavior: AvoidanceBehavior
+  combination: AvoidanceBehavior | undefined
+  arrowDone: boolean
+  arrowNext: boolean
+  onArrow: (rungId?: string) => void
+  autoDraft: boolean
+  onChanged: () => void
 }) {
   const [draft, setDraft] = useState('')
   const [suggesting, setSuggesting] = useState(false)
@@ -884,6 +957,59 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
           {suggestQuery.isError && <div style={{ fontSize: 12.5, color: '#991b1b' }}>Could not get suggestions just now.</div>}
           {suggestQuery.data?.blocked && !suggestQuery.isFetching && (
             <div style={{ fontSize: 12.5, color: '#6b7a79' }}>{suggestQuery.data.blocked}</div>
+    <div style={{ background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={typeChip(behavior.behavior_type)}>{isSafety ? 'Safety' : 'Avoidance'}</span>
+        <InlineText value={behavior.name} weight={600} onSave={name => saveMut.mutate({ id: behavior.id, data: { name } })} />
+        <span style={{ flex: 1 }} />
+        {confirmRemove ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+            <Button kind="danger" size="sm" onClick={() => delMut.mutate(behavior.id)} disabled={delMut.isPending}>
+              {combination ? removeBehaviourLabel(arrowDone, easierCount) : 'Remove'}
+            </Button>
+            <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
+          </span>
+        ) : (
+          <button onClick={() => setConfirmRemove(true)} title="Take this behaviour out"
+            style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
+        )}
+      </div>
+
+      {isSafety && (
+        <div style={{ marginTop: 7, paddingLeft: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span aria-hidden="true" style={{ color: '#a9cfc4', flexShrink: 0 }}>↳</span>
+          {combination ? (
+            <>
+              <InlineText value={combination.name} weight={700}
+                onSave={name => saveMut.mutate({ id: combination.id, data: { name } })} />
+              <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
+              {/* Opens straight into THIS step's chain. Done shows as a tick; the next one to do is
+                  marked, lowest score first. Before the score box, so every score box keeps the same
+                  place at the end of its row. */}
+              <Button kind={arrowNext ? 'primary' : 'secondary'} size="sm" onClick={() => onArrow(combination.id)}
+                title={arrowDone ? 'The downward arrow on this step is done — open it' : 'Find the feared outcome behind this step'}
+                style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                {arrowDone ? '✓ Arrow' : arrowNext ? '↓ Arrow — do this next' : '↓ Arrow'}
+              </Button>
+              <ScoreBox value={dtOf(combination.distress_thermometer_when_refraining)}
+                onSet={n => saveMut.mutate({ id: combination.id, data: { distress_thermometer_when_refraining: n } })} />
+              {/* Takes only the step off the ladder. The safety behaviour stays, so the step can be
+                  made again. Its downward arrow goes with it, so this asks first. */}
+              {confirmStepRemove ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+                  <Button kind="danger" size="sm" onClick={() => delMut.mutate(combination.id)} disabled={delMut.isPending}>
+                    {removeStepLabel(arrowDone, easierCount)}
+                  </Button>
+                  <button onClick={() => setConfirmStepRemove(false)} style={quietLink}>Keep</button>
+                </span>
+              ) : (
+                <button onClick={() => setConfirmStepRemove(true)}
+                  title="Take this step off the ladder (the behaviour stays)"
+                  style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
+              )}
+            </>
+          ) : (
+            <CombinationDraft trigger={trigger} behavior={behavior} auto={autoDraft} onSaved={onChanged} />
           )}
           {options.map(s => (
             <SuggestionChip key={s} text={s} disabled={addMut.isPending} onAdd={() => addMut.mutate(s)} />
@@ -895,6 +1021,11 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
         <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 6 }}>
           {errorMessage(addMut.error, 'Could not add that just now.')}
         </div>
+      )}
+
+      {/* Easier versions of this step, where one is needed. Step 6 of the interview. */}
+      {combination && (
+        <StepList planId={planId} trigger={trigger} onEdited={onChanged} under={combination} />
       )}
     </div>
   )
