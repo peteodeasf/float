@@ -1387,14 +1387,8 @@ export default function PatientPage() {
           to the ladder when it is done. */}
       {planView === 'conversation' ? (
         <div style={{ padding: '4px 20px 16px', borderTop: '1px solid var(--float-border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '4px 0 8px' }}>
-            <button
-              onClick={() => setPlanView('ladder')}
-              className="text-xs font-medium bg-transparent border-none cursor-pointer"
-              style={{ color: 'var(--float-text-secondary)' }}
-            >
-              ← Back to the ladder
-            </button>
+          {/* No "Back to the ladder": Save ladder is the way out. Peter, 2026-10-16. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', padding: '4px 0 8px' }}>
             {/* Same interview, no clinician chrome — for when the child is looking at the screen. */}
             <Button kind="secondary" size="sm" onClick={() => navigate(`/patients/${patientId}/session${searchParams.get('situation') ? `?situation=${searchParams.get('situation')}` : ''}`)}>
               ⛶ Full screen

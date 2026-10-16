@@ -36,7 +36,7 @@ const TONES: BadgeTone[] = ['neutral', 'primary', 'success', 'warning', 'danger'
 const BANNERS: BannerTone[] = ['neutral', 'success', 'warning', 'danger']
 
 const SECTIONS: [string, string][] = [
-  ['colors', 'Colours'], ['text', 'Text sizes'], ['corners', 'Corners'], ['shadows', 'Shadows'],
+  ['colors', 'Colors'], ['text', 'Text sizes'], ['corners', 'Corners'], ['shadows', 'Shadows'],
   ['spacing', 'Spacing'], ['buttons', 'Buttons'], ['small', 'Small buttons and counts'],
   ['choices', 'Choices'], ['status', 'Status buttons'], ['tabs', 'Tabs'], ['tags', 'Tags'],
   ['messages', 'Messages'], ['fields', 'Form fields'], ['cards', 'Cards'], ['empty', 'Nothing to show'],
@@ -73,7 +73,7 @@ export default function DesignCatalog() {
         ))}
       </nav>
 
-      <Section id="colors" title="Colours">
+      <Section id="colors" title="Colors">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '10px' }}>
           {COLORS.map(([v, name]) => (
             <div key={v} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -213,7 +213,7 @@ export default function DesignCatalog() {
       <Section id="popup" title="Pop-up">
         <Button kind="primary" onClick={() => setModal(true)}>Open pop-up</Button>
         <Modal open={modal} onClose={() => setModal(false)} title="Example pop-up">
-          <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', margin: 0 }}>One pop-up for the whole app: dimmed background, centred panel, closes when you click outside.</p>
+          <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', margin: 0 }}>One pop-up for the whole app: dimmed background, centered panel, closes when you click outside.</p>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
             <Button kind="quiet" onClick={() => setModal(false)}>Cancel</Button>
             <Button kind="primary" onClick={() => setModal(false)}>Confirm</Button>

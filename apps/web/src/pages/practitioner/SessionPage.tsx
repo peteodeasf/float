@@ -58,7 +58,7 @@ import {
   type TriggerSituation,
 } from '../../api/treatment'
 import {
-  dtOf, screenSurface, card, primaryBtn, bigQ, lead, quietLink, Chrome,
+  dtOf, screenSurface, card, primaryBtn, bigQ, quietLink, Chrome,
 } from './sessionKit'
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
@@ -195,11 +195,11 @@ const sectionLabel: React.CSSProperties = {
 
 /**
  * The editor's controls, one look each. Peter, 2026-10-16:
- * - Green: the one button that finishes a panel (Save behaviours, Done, Save ladder, Finish).
- * - White: opens something (Add situation, Edit behaviours, Add rung), or sits beside a text box
- *   (Add).
- * - Text: show/hide links, DA, and the Cancel or Keep beside a green button.
- * Every panel ends bottom right, with the button that opened it in the same place.
+ * - Green: only Edit ladder (on the Plan tab) and Save ladder. Green is kept rare.
+ * - White: everything else that is a button. Add, Done, Add situation, Add behavior, Add rung.
+ * - Text: show/hide links, DA, and Keep beside Remove.
+ * A panel's Done is where the button that opened it was. Add behavior and Add rung sit on the
+ * right inside a situation; Add situation sits on the left under the list, a level up.
  */
 const panelFooter: React.CSSProperties = {
   display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, flexWrap: 'wrap',
@@ -316,10 +316,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
   return (
     <div style={screenSurface}>
-      <div style={bigQ}>What trigger situations do you have trouble with?</div>
-      <p style={lead}>
-        Give each one a Fear Level. Open one to add what the child does to avoid it or feel safer.
-      </p>
+      <div style={bigQ}>What are your trigger situations?</div>
 
       {triggers.length > 0 && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -382,12 +379,15 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             )}
           </div>
 
-          <div style={panelFooter}>
-            <Button kind="primary" size="sm" onClick={() => { setAdding(false); setNewName('') }}>Done</Button>
+          {/* On the left, where Add situation was pressed. */}
+          <div style={{ ...panelFooter, justifyContent: 'flex-start' }}>
+            <Button kind="secondary" size="sm" onClick={() => { setAdding(false); setNewName('') }}>Done</Button>
           </div>
         </div>
       ) : (
-        <div style={{ ...panelFooter, marginTop: 14 }}>
+        // On the left, apart from the buttons inside a situation, which are on the right. Peter,
+        // 2026-10-16: they are a different level and must not read as one group of four.
+        <div style={{ marginTop: 16 }}>
           <Button kind="secondary" size="sm" onClick={() => { setOpen(new Set()); setAdding(true) }}>
             Add situation
           </Button>
@@ -424,18 +424,18 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             )}
 
             {/* Said plainly. A clean result here means the arithmetic is fine, not that anyone has
-                read whether a step keeps a safety behaviour or has a way out built into it. */}
+                read whether a step keeps a safety behavior or has a way out built into it. */}
             {review.data?.ai_pending && (
               <p style={{ fontSize: 12, color: 'var(--float-text-hint)', margin: '12px 0 0', lineHeight: 1.5 }}>
                 This checks the numbers only — how many steps, where it starts, the gaps between
-                them. Nothing yet reads whether a step keeps a safety behaviour or has a way out
+                them. Nothing yet reads whether a step keeps a safety behavior or has a way out
                 built into it.
               </p>
             )}
 
             <div style={{ ...panelFooter, marginTop: 14 }}>
               <button onClick={() => setReviewing(false)} style={quietLink}>Keep editing</button>
-              <Button kind="primary" size="sm" onClick={onDone}>Finish</Button>
+              <Button kind="primary" onClick={onDone}>Save ladder</Button>
             </div>
           </div>
         )}
@@ -570,10 +570,10 @@ type PendingSteps = Record<string, { text?: string; score?: number }>
  *
  * Peter, 2026-10-16: hide things until the clinician has to decide on them. So it opens on one
  * question — what does the child do to avoid it or feel safer — with the list at the top, the add
- * box under it, and the suggestions under that. Save behaviours closes all of that, and only then
+ * box under it, and the suggestions under that. Done closes all of that, and only then
  * do the downward arrow links and Add rung appear.
  *
- * Nothing goes on the ladder until Save behaviours. A safety behaviour is saved as soon as it is
+ * Nothing goes on the ladder until Done. A safety behavior is saved as soon as it is
  * added, but its step (the combination) is only written on Save. Until then the drafted sentence
  * and its score live on this screen. Peter, 2026-10-15: the therapist reading the sentence before
  * it is saved is the check on what the child will read.
@@ -595,7 +595,7 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
   const qc = useQueryClient()
   const [draft, setDraft] = useState('')
   const [showSuggested, setShowSuggested] = useState(true)
-  // Which view the clinician chose: Save behaviours, or Edit behaviours. Until they choose, it is
+  // Which view the clinician chose: Done, or Add behavior. Until they choose, it is
   // read from the rows, so coming back to a finished situation opens it finished.
   const [mode, setMode] = useState<'edit' | 'saved' | null>(null)
   const [addingRung, setAddingRung] = useState(false)
@@ -786,7 +786,7 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
             <input value={draft} onChange={e => setDraft(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate({ name: draft.trim(), type: 'safety' }) }}
               placeholder="e.g. sits at the back so the teacher does not call on them"
-              aria-label="A safety behaviour"
+              aria-label="A safety behavior"
               style={textBox} />
             <Button kind="secondary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type: 'safety' })}
               disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
@@ -798,7 +798,7 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
             <div style={{ marginTop: 12 }}>
               <button onClick={() => setShowSuggested(v => !v)} aria-expanded={showSuggested}
                 style={showHideLink}>
-                {showSuggested ? '▾ Hide' : '▸ Show'} suggested behaviours ({suggestionCount})
+                {showSuggested ? '▾ Hide' : '▸ Show'} suggested behaviors ({suggestionCount})
               </button>
               {showSuggested && (
                 <div style={chipList}>
@@ -818,21 +818,20 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
           )}
         </div>
 
+        {/* No Cancel: a behavior is saved as soon as it is added, so there is nothing to undo.
+            Done writes the steps for any new safety behaviors and closes the panel. */}
         <div style={panelFooter}>
-          {mode === 'edit' && noStep.length === 0 && (
-            <button onClick={() => setMode('saved')} style={quietLink}>Cancel</button>
-          )}
-          <Button kind="primary" size="sm" onClick={() => saveMut.mutate()}
-            disabled={rows.length === 0 || drafting || saveMut.isPending}>
-            Save behaviours
+          <Button kind="secondary" size="sm" onClick={() => saveMut.mutate()}
+            disabled={drafting || saveMut.isPending}>
+            Done
           </Button>
         </div>
       </>)}
 
       {saved && !addingRung && (
-        // Where the panel's own Cancel/Save or Done will appear, so nothing jumps across.
+        // Where the panel's own Done will appear, so nothing jumps across.
         <div style={panelFooter}>
-          <Button kind="secondary" size="sm" onClick={() => setMode('edit')}>Edit behaviours</Button>
+          <Button kind="secondary" size="sm" onClick={() => setMode('edit')}>Add behavior</Button>
           <Button kind="secondary" size="sm" onClick={() => setAddingRung(true)}>Add rung</Button>
         </div>
       )}
@@ -883,7 +882,7 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
       <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
         <input value={draft} onChange={e => setDraft(e.target.value)} autoFocus
           onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate(draft.trim()) }}
-          placeholder="e.g. walk to the classroom door with mum"
+          placeholder="e.g. walk to the classroom door with mom"
           aria-label="A rung"
           style={textBox} />
         <Button kind="secondary" size="sm" onClick={() => addMut.mutate(draft.trim())}
@@ -919,7 +918,7 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
       )}
 
       <div style={{ ...panelFooter, marginTop: 14 }}>
-        <Button kind="primary" size="sm" onClick={onClose}>Done</Button>
+        <Button kind="secondary" size="sm" onClick={onClose}>Done</Button>
       </div>
     </div>
   )

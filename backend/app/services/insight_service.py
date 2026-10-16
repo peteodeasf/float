@@ -470,7 +470,7 @@ def summarise_for_report(insights: list[PatientInsight]) -> str:
         lines.append(f"Situation: {s.name}{rating} (recorded {seen} time{'s' if seen != 1 else ''})")
         children = by_parent.get(s.id, [])
         for b in [c for c in children if c.kind == KIND_BEHAVIOR]:
-            kind = (b.attributes or {}).get("behavior_type") or "behaviour"
+            kind = (b.attributes or {}).get("behavior_type") or "behavior"
             lines.append(f"  What the child does ({kind}): {b.name}")
         for a in [c for c in children if c.kind == KIND_ACCOMMODATION]:
             lines.append(f"  What an adult does: {a.name}")

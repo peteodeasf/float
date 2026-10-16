@@ -22,8 +22,8 @@ MODEL = "claude-opus-5-5"
 
 SYSTEM_PROMPT = """You help a clinician write one step of a child's exposure ladder.
 
-You are given a situation the child finds hard, and one safety behaviour the child uses to get
-through it. The step is: being in that situation WITHOUT that safety behaviour.
+You are given a situation the child finds hard, and one safety behavior the child uses to get
+through it. The step is: being in that situation WITHOUT that safety behavior.
 
 Write that step as one short sentence the child will read.
 
@@ -31,8 +31,9 @@ Write that step as one short sentence the child will read.
 - Write it as something to do, addressed to the child, like "Answer a question in class without
   sitting at the back".
 - Keep the child's own words where you can.
-- Never add anything that is not in the situation or the behaviour. No new people, places, times
+- Never add anything that is not in the situation or the behavior. No new people, places, times
   or details.
+- Use American spelling and words: "mom", not "mum".
 - Do not explain, soften or add a reason.
 
 Return the sentence and nothing else. No quotation marks."""
@@ -67,7 +68,7 @@ async def draft_sentence(situation: str, behavior: str) -> tuple[str, str]:
             system=SYSTEM_PROMPT,
             messages=[{
                 "role": "user",
-                "content": f"Situation: {situation.strip()}\nSafety behaviour: {behavior.strip()}",
+                "content": f"Situation: {situation.strip()}\nSafety behavior: {behavior.strip()}",
             }],
             extra_headers={"anthropic-beta": "server-side-fallback-2026-07-01"},
             extra_body={"fallbacks": "default", "output_config": {"effort": "low"}},
