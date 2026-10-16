@@ -227,6 +227,9 @@ Each step is its own PR and each can ship on its own.
 5. **Suggestions from session recordings.** Today recordings only write a session note
    (`backend/app/services/session_recording.py`). This makes them suggest situations, behaviours and
    Fear Levels too. It is the biggest unknown, so it goes last and gets its own plan.
+   **BUILT 2026-10-15** — [`session-suggestions.md`](session-suggestions.md). When a clinician
+   approves a recorded session's note, the monitoring extractor reads the note and adds what it
+   finds to the suggestion list, marked "from a session". Nothing goes on the plan by itself.
 
 The wording check (above) runs before step 1 ships.
 

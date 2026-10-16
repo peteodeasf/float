@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { nextArrowOn, removeBehaviourLabel, removeStepLabel, whatIsLeft } from './SessionPage'
+import { nextArrowOn, removeBehaviourLabel, removeStepLabel, whatIsLeft } from './ladderEditor'
 import type { AvoidanceBehavior, DownwardArrow } from '../../api/treatment'
 
 function row(over: Partial<AvoidanceBehavior>): AvoidanceBehavior {

@@ -1,13 +1,14 @@
 import uuid
 from datetime import date
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
-from app.core.database import get_db
+from app.core.database import get_db, get_session_factory
+from app.services.insight_service import suggest_from_session_note
 from app.models.session_note import SessionNote
 from app.models.user import User
 from app.models.patient import PractitionerProfile, PatientProfile
@@ -121,9 +122,11 @@ async def create_session_note(
 async def update_session_note(
     note_id: uuid.UUID,
     data: SessionNoteUpdate,
+    background: BackgroundTasks,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
     _access: None = Depends(get_permitted_note),
+    sessions=Depends(get_session_factory),
 ):
     _, practitioner = context
     result = await db.execute(
@@ -131,6 +134,8 @@ async def update_session_note(
             SessionNote.id == note_id,
             SessionNote.organization_id == practitioner.organization_id
         )
+        # Locked, so two approvals at once cannot both see it as a draft and both read it.
+        .with_for_update()
     )
     note = result.scalar_one_or_none()
     if not note:
@@ -158,6 +163,11 @@ async def update_session_note(
     if data.is_draft is not None:
         if data.is_draft:
             raise HTTPException(status_code=422, detail="A note can be approved, not made a draft again.")
+        if note.is_draft:
+            # Approved now. Its situations and behaviours go on the suggestion list, after the
+            # response so approving never waits on the model. Once only: approving again does
+            # nothing. docs/plans/session-suggestions.md
+            background.add_task(suggest_from_session_note, sessions, note.id)
         note.is_draft = False
 
     await db.commit()

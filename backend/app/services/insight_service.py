@@ -15,6 +15,7 @@ happens on real logs before building anything cleverer.
 
 See docs/plans/patient-specific-suggestions.md.
 """
+import logging
 import re
 import uuid
 from datetime import datetime, timezone
@@ -24,8 +25,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.insight import (
     KIND_ACCOMMODATION, KIND_BEHAVIOR, KIND_SITUATION, KINDS,
-    SOURCE_MONITORING, SOURCE_PARENT, PatientInsight,
+    SOURCE_MONITORING, SOURCE_PARENT, SOURCE_SESSION_NOTE, PatientInsight,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def normalise_name(value: str) -> str:
@@ -46,7 +49,10 @@ async def _existing(db: AsyncSession, patient_id: uuid.UUID) -> dict:
     return {(r.kind, r.normalized_name, r.parent_insight_id): r for r in rows}
 
 
-def _merge_evidence(row: PatientInsight, entry_ids: list[uuid.UUID], source: str) -> None:
+def _merge_evidence(
+    row: PatientInsight, entry_ids: list[uuid.UUID], source: str,
+    session_note_ids: list[uuid.UUID] | None = None,
+) -> None:
     """Add evidence without duplicating it. Arrays, not a join table — an item's evidence is read
     all at once or not at all, and this keeps the whole item in one row."""
     if source not in row.sources:
@@ -55,6 +61,10 @@ def _merge_evidence(row: PatientInsight, entry_ids: list[uuid.UUID], source: str
     new = [e for e in entry_ids if e not in seen]
     if new:
         row.monitoring_entry_ids = [*row.monitoring_entry_ids, *new]
+    seen_notes = set(row.session_note_ids or [])
+    new_notes = [n for n in (session_note_ids or []) if n not in seen_notes]
+    if new_notes:
+        row.session_note_ids = [*(row.session_note_ids or []), *new_notes]
 
 
 async def upsert_insight(
@@ -70,6 +80,7 @@ async def upsert_insight(
     monitoring_entry_ids: list[uuid.UUID] | None = None,
     source: str = SOURCE_MONITORING,
     existing: dict | None = None,
+    session_note_ids: list[uuid.UUID] | None = None,
 ) -> PatientInsight | None:
     """Add the item, or fold it into the one already there. Returns the row, or None for a blank
     name — the model does occasionally return one and it is not worth a row."""
@@ -106,12 +117,15 @@ async def upsert_insight(
         # Never overwrite wording a clinician changed. Everything else is the record catching up.
         if not row.is_edited and clean != row.name:
             row.name = clean
-        if fear_rating is not None:
+        # A session's Fear Level only fills a gap. It does not replace one from the monitoring log,
+        # or the two would overwrite each other every time either is read. A clinical rule for
+        # Peter to confirm: docs/plans/session-suggestions.md.
+        if fear_rating is not None and (source != SOURCE_SESSION_NOTE or row.fear_rating is None):
             row.fear_rating = fear_rating
         if attributes:
             row.attributes = {**(row.attributes or {}), **attributes}
 
-    _merge_evidence(row, monitoring_entry_ids or [], source)
+    _merge_evidence(row, monitoring_entry_ids or [], source, session_note_ids)
     return row
 
 
@@ -179,8 +193,11 @@ async def rebuild_from_monitoring(
     organization_id: uuid.UUID,
     extraction: dict,
     entry_ids_by_situation: dict[str, list[uuid.UUID]],
+    source: str = SOURCE_MONITORING,
+    session_note_id: uuid.UUID | None = None,
 ) -> list[PatientInsight]:
-    """Fold one extraction result into the list.
+    """Fold one extraction result into the list — from the monitoring log, or (with `source` and
+    `session_note_id`) from an approved session note.
 
     `extraction` is what the monitoring extractor returns: situations, each with behaviours and
     accommodations under it. `entry_ids_by_situation` maps a situation's normalised name to the
@@ -188,6 +205,8 @@ async def rebuild_from_monitoring(
     """
     existing = await _existing(db, patient_id)
     touched: list[PatientInsight] = []
+    notes = [session_note_id] if session_note_id else None
+    from_session = source == SOURCE_SESSION_NOTE
 
     for sit in extraction.get("situations", []) or []:
         situation = await upsert_insight(
@@ -201,6 +220,8 @@ async def rebuild_from_monitoring(
                 normalise_name(sit.get("name") or ""), []
             ),
             existing=existing,
+            source=source,
+            session_note_ids=notes,
         )
         if situation is None:
             continue
@@ -215,8 +236,12 @@ async def rebuild_from_monitoring(
                 name=b.get("description") or "",
                 parent=situation,
                 attributes={"behavior_type": b.get("type")} if b.get("type") else None,
-                monitoring_entry_ids=situation.monitoring_entry_ids,
+                # From a session, the evidence is the note. The situation's log entries did not
+                # mention this behaviour or accommodation.
+                monitoring_entry_ids=[] if from_session else situation.monitoring_entry_ids,
                 existing=existing,
+                source=source,
+                session_note_ids=notes,
             )
             if child is not None:
                 touched.append(child)
@@ -229,14 +254,68 @@ async def rebuild_from_monitoring(
                 kind=KIND_ACCOMMODATION,
                 name=a.get("description") or "",
                 parent=situation,
-                monitoring_entry_ids=situation.monitoring_entry_ids,
+                # From a session, the evidence is the note. The situation's log entries did not
+                # mention this behaviour or accommodation.
+                monitoring_entry_ids=[] if from_session else situation.monitoring_entry_ids,
                 existing=existing,
+                source=source,
+                session_note_ids=notes,
             )
             if child is not None:
                 touched.append(child)
 
     await db.flush()
     return touched
+
+
+def format_session_note(note) -> str:
+    """An approved session note as text for the extractor. It reads monitoring notes, so it is told
+    what this is. docs/plans/session-suggestions.md"""
+    return (
+        "This is a clinician's session note, written from a therapy session and approved by the "
+        "clinician. It is not a parent's monitoring note. Treat a Fear Level as given only where the "
+        "note states a number.\n\n"
+        f"[1] Date: {note.session_date.isoformat() if note.session_date else 'unknown'}\n"
+        f"{(note.content or '').strip()}"
+    )
+
+
+async def suggest_from_session_note(sessions, note_id: uuid.UUID) -> None:
+    """Read one approved session note and add what it finds to the suggestion list.
+
+    Runs after the response, with a session of its own. A failure is logged and changes nothing: the
+    note stays approved. docs/plans/session-suggestions.md
+    """
+    import asyncio
+    import anthropic
+    from app.core.config import settings
+    from app.models.session_note import SessionNote
+    from app.api.routers.patients import EXTRACTION_SYSTEM_PROMPT
+
+    if not settings.ANTHROPIC_API_KEY:
+        return
+    try:
+        async with sessions() as db:
+            note = (await db.execute(select(SessionNote).where(SessionNote.id == note_id))).scalar_one_or_none()
+            if note is None or not (note.content or "").strip():
+                return
+            client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+            raw = await asyncio.to_thread(
+                request_extraction, client, EXTRACTION_SYSTEM_PROMPT, format_session_note(note),
+            )
+            extraction = parse_model_json(raw)
+            await rebuild_from_monitoring(
+                db,
+                patient_id=note.patient_id,
+                organization_id=note.organization_id,
+                extraction=extraction,
+                entry_ids_by_situation={},
+                source=SOURCE_SESSION_NOTE,
+                session_note_id=note.id,
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("session suggestions failed for note %s", note_id)
 
 
 async def get_insights(
@@ -260,7 +339,7 @@ async def get_insights(
     # matters. Unrated and unseen fall to the end rather than counting as zero.
     return sorted(
         rows,
-        key=lambda r: (-len(r.monitoring_entry_ids), r.first_seen_at),
+        key=lambda r: (-(len(r.monitoring_entry_ids) + len(r.session_note_ids or [])), r.first_seen_at),
     )
 
 
