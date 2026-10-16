@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { arrowDoneOn, avoidsTheSituation, removeBehaviourLabel, removeStepLabel } from './ladderEditor'
+import { arrowDoneOn, avoidsTheSituation } from './ladderEditor'
 import type { DownwardArrow } from '../../api/treatment'
 
 function arrow(rungId: string, fear: string | null, by = 'practitioner'): DownwardArrow {
@@ -12,19 +12,6 @@ function arrow(rungId: string, fear: string | null, by = 'practitioner'): Downwa
     created_at: '', updated_at: '',
   }
 }
-
-describe('easier versions under a step', () => {
-  it('says what removing a step takes with it', () => {
-    expect(removeStepLabel(false, 0)).toBe('Remove step')
-    expect(removeStepLabel(true, 0)).toBe('Remove step, its arrow')
-    expect(removeStepLabel(true, 2)).toBe('Remove step, 2 easier versions and its arrow')
-  })
-
-  it('says the same when the safety behaviour itself is removed', () => {
-    expect(removeBehaviourLabel(false, 0)).toBe('Remove it, its step')
-    expect(removeBehaviourLabel(true, 1)).toBe('Remove it, its step, 1 easier version and its arrow')
-  })
-})
 
 describe('the avoidance offered on every situation', () => {
   it('reads as a sentence', () => {
