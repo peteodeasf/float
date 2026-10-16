@@ -22,7 +22,12 @@ from app.schemas.avoidance_behavior import (
     AvoidanceBehaviorResponse,
     CombinationDraftResponse,
 )
-from app.core.behavior_types import COMBINATION_OF
+from app.core.behavior_types import COMBINATION, COMBINATION_OF
+from app.models.treatment import TreatmentPlan
+from app.schemas.downward_arrow import DownwardArrowCreate, DownwardArrowResponse
+from app.services.downward_arrow_service import (
+    get_or_create_rung_downward_arrow, get_rung_downward_arrows,
+)
 from app.models.treatment import TriggerSituation
 from app.services.combination_wording import draft_sentence
 from sqlalchemy import select
@@ -100,6 +105,62 @@ async def _regroup_target_on_plan(db: AsyncSession, data: AvoidanceBehaviorUpdat
     target = data.model_dump(exclude_unset=True).get("trigger_situation_id")
     if target is not None:
         await assert_belongs_to(db, TriggerSituation, target, treatment_plan_id=plan_id)
+
+
+# ── The downward arrow on a step ──────────────────────────────────────────────
+# Peter, 2026-10-15: the arrow is done for each combination, not for the situation as a whole.
+# Only combinations for now; on a sub-situation, "my inclination is no, but that could change".
+# docs/plans/ladder-combinations.md, step 3.
+
+
+@router.get("/downward-arrows", response_model=list[DownwardArrowResponse])
+async def list_step_arrows(
+    trigger_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_trigger),
+):
+    """Every arrow on this situation's steps, so the editor can show which are done in one call."""
+    _, practitioner = context
+    step_ids = list((await db.execute(
+        select(AvoidanceBehavior.id).where(AvoidanceBehavior.trigger_situation_id == trigger_id)
+    )).scalars().all())
+    return await get_rung_downward_arrows(db, step_ids, practitioner.organization_id)
+
+
+async def _combination_on(db: AsyncSession, trigger_id: uuid.UUID, behavior_id: uuid.UUID) -> AvoidanceBehavior:
+    # The dependency checked the situation in the path; this ties the step to it. See
+    # docs/solutions/access-checks-on-the-wrong-id.md.
+    await assert_belongs_to(db, AvoidanceBehavior, behavior_id, trigger_situation_id=trigger_id)
+    step = (await db.execute(
+        select(AvoidanceBehavior).where(AvoidanceBehavior.id == behavior_id)
+    )).scalar_one()
+    if step.behavior_type != COMBINATION:
+        raise HTTPException(status_code=400, detail="The downward arrow is done on a combination.")
+    return step
+
+
+@router.post("/{behavior_id}/downward-arrow", response_model=DownwardArrowResponse,
+             status_code=status.HTTP_201_CREATED)
+async def open_step_arrow(
+    trigger_id: uuid.UUID,
+    behavior_id: uuid.UUID,
+    data: DownwardArrowCreate,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: None = Depends(get_permitted_trigger),
+):
+    """Get-or-create the arrow on this combination."""
+    _, practitioner = context
+    await _combination_on(db, trigger_id, behavior_id)
+    patient_id = (await db.execute(
+        select(TreatmentPlan.patient_id)
+        .join(TriggerSituation, TriggerSituation.treatment_plan_id == TreatmentPlan.id)
+        .where(TriggerSituation.id == trigger_id)
+    )).scalar_one()
+    return await get_or_create_rung_downward_arrow(
+        db, behavior_id, patient_id, practitioner.organization_id, data,
+    )
 
 
 @router.post("/{behavior_id}/combination-draft", response_model=CombinationDraftResponse)

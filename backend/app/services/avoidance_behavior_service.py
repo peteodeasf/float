@@ -262,6 +262,11 @@ async def cascade_delete_behaviors(
         )
         await db.execute(delete(LadderRung).where(LadderRung.id.in_(rung_ids)))
 
+    # A step's downward arrow goes with the step, the same as a situation's arrow goes with the
+    # situation: the feared outcome has no meaning without what it was about.
+    from app.models.downward_arrow import DownwardArrow
+    await db.execute(delete(DownwardArrow).where(DownwardArrow.rung_id.in_(ids)))
+
     await db.execute(delete(AvoidanceBehavior).where(AvoidanceBehavior.id.in_(ids)))
 
 

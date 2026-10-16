@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.downward_arrow import DownwardArrow
@@ -75,6 +76,66 @@ async def get_or_create_downward_arrow(
     return arrow
 
 
+async def get_rung_downward_arrows(
+    db: AsyncSession,
+    rung_ids: list[uuid.UUID],
+    organization_id: uuid.UUID,
+) -> list[DownwardArrow]:
+    """Every arrow on these ladder steps."""
+    if not rung_ids:
+        return []
+    result = await db.execute(
+        select(DownwardArrow).where(
+            DownwardArrow.rung_id.in_(rung_ids),
+            DownwardArrow.organization_id == organization_id,
+        ).order_by(DownwardArrow.created_at.asc())
+    )
+    return list(result.scalars().all())
+
+
+async def get_or_create_rung_downward_arrow(
+    db: AsyncSession,
+    rung_id: uuid.UUID,
+    patient_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    data: DownwardArrowCreate,
+) -> DownwardArrow:
+    """Get-or-create the arrow on one ladder step, scoped by facilitated_by."""
+    existing = (await db.execute(
+        select(DownwardArrow).where(
+            DownwardArrow.rung_id == rung_id,
+            DownwardArrow.organization_id == organization_id,
+            DownwardArrow.facilitated_by == data.facilitated_by,
+        )
+    )).scalar_one_or_none()
+    if existing:
+        return existing
+    arrow = DownwardArrow(
+        rung_id=rung_id,
+        trigger_situation_id=None,
+        patient_id=patient_id,
+        organization_id=organization_id,
+        arrow_steps=_initial_steps(data),
+        facilitated_by=data.facilitated_by,
+        feared_outcome_approved=False,
+    )
+    db.add(arrow)
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Opened twice at once (a double click, or React running the screen's first effect
+        # twice). The unique constraint kept it to one row; return that one.
+        await db.rollback()
+        return (await db.execute(
+            select(DownwardArrow).where(
+                DownwardArrow.rung_id == rung_id,
+                DownwardArrow.facilitated_by == data.facilitated_by,
+            )
+        )).scalar_one()
+    await db.refresh(arrow)
+    return arrow
+
+
 async def get_or_create_patient_downward_arrow(
     db: AsyncSession,
     patient_id: uuid.UUID,
@@ -90,6 +151,8 @@ async def get_or_create_patient_downward_arrow(
             DownwardArrow.organization_id == organization_id,
             DownwardArrow.facilitated_by == data.facilitated_by,
             DownwardArrow.trigger_situation_id.is_(None),
+            # Nor an arrow on a ladder step, which also has no situation.
+            DownwardArrow.rung_id.is_(None),
             # Never return an ad-hoc arrow here — those carry a typed situation and there can
             # be many of them. This anchor is the single situation-less one.
             DownwardArrow.situation_text.is_(None),

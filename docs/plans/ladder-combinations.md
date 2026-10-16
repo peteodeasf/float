@@ -199,6 +199,17 @@ Each step is its own PR and each can ship on its own.
    until step 3.
 3. **The arrow on a combination.** `rung_id` on arrows, the arrow screen opened from a combination,
    and the "Do this one next" marker.
+   **BUILT 2026-10-15.** Migration `d7f2b4e9a1c6` adds `downward_arrows.rung_id`. An arrow on a
+   step leaves `trigger_situation_id` empty, so the one-arrow-per-situation rule and every lookup
+   of a situation's arrow are untouched. Each combination in the editor has its own Arrow button,
+   a tick once it reaches a feared outcome, and "do this next" on the lowest-scored one not done.
+   The situation's own arrow button is gone. Removing a step removes its arrow, and asks first.
+   The child's app shows each step's own feared outcome; a sub-situation under a combination shows
+   the combination's. "Suggest easier versions" on the situation itself can now use an arrow done
+   on any of its steps.
+
+   **Still creates situation arrows:** the arrow screen opened on its own (from the checklist), where
+   you pick a situation from a list. Whether that list should offer steps instead is open.
 4. **Sub-situations under a combination.** Adding and suggesting them, and the suggestions read that
    combination's feared outcome. Sub-situations of the situation itself keep working.
 5. **Suggestions from session recordings.** Today recordings only write a session note

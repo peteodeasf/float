@@ -13,7 +13,8 @@ import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  getSituationDownwardArrow, setUpInSession, type AvoidanceBehavior, type PlannedExperiment,
+  getSituationDownwardArrow,
+  getStepArrows, setUpInSession, type AvoidanceBehavior, type PlannedExperiment,
 } from '../../../api/treatment'
 import { Chrome, Context, FearScale, clampDt, dtOf, primaryBtn, quietLink } from '../sessionKit'
 import {
@@ -59,14 +60,24 @@ export function SessionSetupSheet({
 }) {
   const qc = useQueryClient()
 
-  // The fear starts as the one from this situation's downward arrow, when there is one.
+  // The fear starts as the one from this step's downward arrow (or, for a sub-situation, its
+  // combination's), then the situation's. Peter, 2026-10-15: the arrow is done per combination.
   const { data: arrow } = useQuery({
     queryKey: ['situation-da', rung.trigger_situation_id],
     queryFn: () => getSituationDownwardArrow(rung.trigger_situation_id!),
     enabled: !!rung.trigger_situation_id,
   })
+  const { data: stepArrows } = useQuery({
+    queryKey: ['step-arrows', rung.trigger_situation_id],
+    queryFn: () => getStepArrows(rung.trigger_situation_id!),
+    enabled: !!rung.trigger_situation_id,
+  })
+  const stepFear = (stepArrows ?? []).find(a =>
+    (a.rung_id === rung.id || (!!rung.parent_behavior_id && a.rung_id === rung.parent_behavior_id))
+    && a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim(),
+  )?.feared_outcome
   const [typedFear, setTypedFear] = useState<string | null>(null)
-  const fear = typedFear ?? arrow?.feared_outcome ?? ''
+  const fear = typedFear ?? stepFear ?? arrow?.feared_outcome ?? ''
 
   const stepDt = dtOf(rung.distress_thermometer_when_refraining)
   // Prefill from an exposure already set up on this rung, when there is one.

@@ -286,6 +286,8 @@ export interface ArrowStep {
 export interface DownwardArrow {
   id: string
   trigger_situation_id: string | null
+  /** Set when the arrow is on a ladder step (a combination) rather than a situation. */
+  rung_id?: string | null
   patient_id?: string | null
   situation_text?: string | null
   arrow_steps: ArrowStep[]
@@ -321,6 +323,20 @@ export const createSituationDownwardArrow = async (situationId: string, firstAns
   const response = await apiClient.post(`/trigger-situations/${situationId}/downward-arrow`, {
     facilitated_by: facilitatedBy,
     first_answer: firstAnswer
+  })
+  return response.data
+}
+
+/** Every arrow on this situation's steps — the editor shows which combinations are done. */
+export const getStepArrows = async (triggerId: string): Promise<DownwardArrow[]> => {
+  const response = await apiClient.get(`/triggers/${triggerId}/behaviors/downward-arrows`)
+  return response.data
+}
+
+/** Get-or-create the arrow on one combination. docs/plans/ladder-combinations.md, step 3. */
+export const openStepArrow = async (triggerId: string, behaviorId: string): Promise<DownwardArrow> => {
+  const response = await apiClient.post(`/triggers/${triggerId}/behaviors/${behaviorId}/downward-arrow`, {
+    facilitated_by: 'practitioner',
   })
   return response.data
 }
