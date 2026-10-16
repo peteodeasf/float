@@ -47,7 +47,7 @@ async def create_behavior(
         if data.without_behavior_id is not None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only a combination can say which behaviour it is without.",
+                detail="Only a combination can say which behavior it is without.",
             )
         # Reuse the picked library entry, or find-or-create one from the name + type.
         library_id = data.behavior_library_id or await upsert_behavior_library(
@@ -83,7 +83,7 @@ async def create_behavior(
         if behavior_type == COMBINATION:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This safety behaviour already has a combination.",
+                detail="This safety behavior already has a combination.",
             )
         raise
     await db.refresh(behavior)
@@ -134,7 +134,7 @@ async def _check_combination(
     if trigger_id is None or without_behavior_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A combination needs its situation and the safety behaviour it is without.",
+            detail="A combination needs its situation and the safety behavior it is without.",
         )
     target = (await db.execute(
         select(AvoidanceBehavior).where(
@@ -150,12 +150,12 @@ async def _check_combination(
     if target.behavior_type != COMBINATION_OF:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only a safety behaviour makes a combination.",
+            detail="Only a safety behavior makes a combination.",
         )
     if await _has_combination(db, without_behavior_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="This safety behaviour already has a combination.",
+            detail="This safety behavior already has a combination.",
         )
 
 
@@ -182,13 +182,13 @@ async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_
     if new_type == COMBINATION or behavior.behavior_type == COMBINATION:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A combination is made from a safety behaviour, not by changing a type.",
+            detail="A combination is made from a safety behavior, not by changing a type.",
         )
     if behavior.behavior_type == COMBINATION_OF:
         if await _has_combination(db, behavior.id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This safety behaviour has a combination. Remove the combination first.",
+                detail="This safety behavior has a combination. Remove the combination first.",
             )
 
 
@@ -242,7 +242,7 @@ async def update_behavior(
             # something that is no longer part of that situation.
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This safety behaviour has a combination. Remove the combination first.",
+                detail="This safety behavior has a combination. Remove the combination first.",
             )
         behavior.trigger_situation_id = new_situation
 

@@ -100,5 +100,5 @@ def coerce_for_write(value: str | None) -> str:
         return ALIASES[v]
     raise HTTPException(
         status_code=http_status.HTTP_400_BAD_REQUEST,
-        detail=f"Unknown behaviour type {value!r}.",
+        detail=f"Unknown behavior type {value!r}.",
     )

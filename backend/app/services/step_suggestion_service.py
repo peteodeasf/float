@@ -38,7 +38,7 @@ not the thing with a way out attached.
 
 RULES. These come from the supervising psychologist and they are not negotiable.
 
-1. Never keep a safety behaviour, an avoidance, or an escape. If the child copes by carrying a fan,
+1. Never keep a safety behavior, an avoidance, or an escape. If the child copes by carrying a fan,
    sitting with one friend, having a parent watch, or leaving early, a suggestion must not contain
    it. An exposure that keeps the thing they use to cope is not an exposure. Vary the situation
    itself instead — where it happens, who else is there because they happen to be, how much of it,
@@ -55,11 +55,13 @@ RULES. These come from the supervising psychologist and they are not negotiable.
    a circumstance that is not in the information below.
 
 5. Write between two and five suggestions. The number follows from what you actually know, not from
-   a target. If the situation already has steps or coping behaviours recorded, those tell you what
+   a target. If the situation already has steps or coping behaviors recorded, those tell you what
    to vary and four comes easily. If almost nothing is recorded, write two — if you cannot write a
    third without inventing a detail nobody mentioned, do not write it.
 
 6. Do not propose a fear rating. The clinician and the child decide those together.
+
+7. Use American spelling and words: "mom", not "mum".
 
 OUTPUT. Return JSON and nothing else:
 

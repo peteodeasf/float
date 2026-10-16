@@ -245,7 +245,7 @@ async def add_to_plan(
         if chosen and chosen not in (AVOIDANCE, SAFETY):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A behaviour is avoidance or safety.",
+                detail="A behavior is avoidance or safety.",
             )
         behavior_type = chosen or _behaviour_type_of(row)
         if behavior_type is None:
@@ -253,7 +253,7 @@ async def add_to_plan(
             # question. The clinician says which it is rather than us guessing.
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Say whether this is avoidance or a safety behaviour.",
+                detail="Say whether this is avoidance or a safety behavior.",
             )
         # Written directly rather than through create_behavior, on purpose: that also copies the
         # name into the behaviour library shared by every practice, and this name is the
