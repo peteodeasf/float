@@ -29,7 +29,9 @@
  * conversation, and was the thing that made the previous version feel like a wall.
  */
 import { useState } from 'react'
-import { BEHAVIOR_TYPE_SCENARIO, ScoreBox } from './patient/shared'
+import {
+  BEHAVIOR_TYPE_AVOIDANCE, BEHAVIOR_TYPE_COMBINATION, BEHAVIOR_TYPE_SAFETY, BEHAVIOR_TYPE_SCENARIO, ScoreBox,
+} from './patient/shared'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -48,12 +50,16 @@ import {
   getPatientInsights,
   addInsightToPlan,
   removeInsight,
+  getPlanRungs,
+  draftCombination,
+  type AvoidanceBehavior,
   type TriggerSituation,
 } from '../../api/treatment'
 import {
   dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink, Chrome,
 } from './sessionKit'
 import { Button } from '../../components/ui/primitives'
+import { errorMessage } from '../../components/ui/form'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
  *  render exactly the same thing without the clinician chrome around it. */
@@ -240,6 +246,17 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     },
   })
 
+  // Every rung on the plan, to see which situations have anything on the ladder yet.
+  const { data: rungs } = useQuery({
+    queryKey: ['plan-rungs', planId],
+    queryFn: () => getPlanRungs(planId),
+  })
+  // Step 2 of the interview: start with the situation with the lowest Fear Level. The list is
+  // already sorted that way, so it is the first one with nothing on the ladder. Advice, not a lock.
+  const startHereId = rungs
+    ? triggers.find(t => !rungs.some(r => r.trigger_situation_id === t.id))?.id ?? null
+    : null
+
   const toggle = (id: string) =>
     setOpen(prev => {
       const next = new Set(prev)
@@ -252,7 +269,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     <div style={screenSurface}>
       <div style={bigQ}>What trigger situations do you have trouble with?</div>
       <p style={lead}>
-        Give each one a Fear Level. Build the ladder by adding easier and doable versions.
+        Give each one a Fear Level. Open one to list what the child does to avoid it or feel safer,
+        then score being in it without each safety behaviour.
       </p>
 
       {triggers.length > 0 && (
@@ -269,7 +287,9 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             <SituationRow
               key={t.id}
               planId={planId}
+              patientId={patientId}
               trigger={t}
+              startHere={t.id === startHereId}
               expanded={open.has(t.id)}
               onToggle={() => toggle(t.id)}
               onArrow={() => onArrow(t.id)}
@@ -394,9 +414,12 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 }
 
 /** One situation: its name, its score, and — opened up — the steps underneath it. */
-function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }: {
+function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggle, onArrow, onEdited }: {
   planId: string
+  patientId: string
   trigger: TriggerSituation
+  /** The suggested place to begin: lowest Fear Level with nothing on the ladder yet. */
+  startHere: boolean
   expanded: boolean
   onToggle: () => void
   onArrow: () => void
@@ -431,6 +454,14 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
     saveMut.mutate({ name })
   }
 
+  // Read even when closed, so the header can say what is left on it. One request per situation
+  // when the editor opens; the open body reuses it.
+  const { data: behaviors } = useQuery({
+    queryKey: ['behaviors', trigger.id],
+    queryFn: () => getBehaviors(trigger.id),
+  })
+  const left = whatIsLeft(behaviors ?? [])
+
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
     <div style={{ flex: 1, minWidth: 0, background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-card)', overflow: 'hidden' }}>
@@ -463,6 +494,12 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
           </button>
         )}
 
+        {startHere && (
+          <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: '#fff', background: '#4d8478', borderRadius: 'var(--float-radius-pill)', padding: '2px 8px' }}>
+            Start here
+          </span>
+        )}
+
         <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #a9cfc4' }} />
 
         <ScoreBox
@@ -483,7 +520,20 @@ function SituationRow({ planId, trigger, expanded, onToggle, onArrow, onEdited }
         )}
       </div>
 
-      {expanded && <StepList planId={planId} trigger={trigger} onEdited={onEdited} />}
+      {/* What is left on this situation, so a ladder built over several sessions can be picked up
+          without remembering. Says nothing when nothing is left. */}
+      {left.length > 0 && (
+        <div style={{ padding: '5px 13px 6px 35px', fontSize: 11.5, color: '#b47814', background: 'var(--float-primary-light)', borderBottom: expanded ? '1px solid #cfe0db' : undefined }}>
+          {left.join(' · ')}
+        </div>
+      )}
+
+      {expanded && (
+        <>
+          <BehaviourList planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []} onEdited={onEdited} />
+          <StepList planId={planId} trigger={trigger} onEdited={onEdited} />
+        </>
+      )}
     </div>
 
     {/* Its own thing, beside the situation rather than inside its row of controls. It opens
@@ -568,6 +618,8 @@ function StepList({ planId, trigger, onEdited }: {
       </div>
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
 
+      <div style={{ ...sectionLabel, marginBottom: 6 }}>Easier versions of the situation itself</div>
+
       {steps.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
           {steps.map(b => (
@@ -642,6 +694,333 @@ function StepList({ planId, trigger, onEdited }: {
   )
 }
 
+/** What is still to do on a situation, in a few words each. Empty when nothing is. */
+export function whatIsLeft(behaviors: AvoidanceBehavior[]): string[] {
+  const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY)
+  const withStep = new Set(
+    behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION).map(b => b.without_behavior_id),
+  )
+  const noStep = safety.filter(b => !withStep.has(b.id)).length
+  // Only steps this screen shows, so every one it counts can be found and scored here.
+  const unscored = behaviors.filter(b =>
+    (b.behavior_type === BEHAVIOR_TYPE_COMBINATION || b.behavior_type === BEHAVIOR_TYPE_SCENARIO)
+    && !b.parent_behavior_id
+    && dtOf(b.distress_thermometer_when_refraining) == null,
+  ).length
+  const out: string[] = []
+  if (noStep) out.push(`${noStep} safety ${noStep === 1 ? 'behaviour has' : 'behaviours have'} no step yet`)
+  if (unscored) out.push(`${unscored} ${unscored === 1 ? 'step' : 'steps'} not scored`)
+  return out
+}
+
+const typeChip = (type: string): React.CSSProperties => ({
+  flexShrink: 0, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+  borderRadius: 'var(--float-radius-pill)', padding: '2px 7px',
+  color: type === BEHAVIOR_TYPE_SAFETY ? '#9a5b00' : '#5b6b6a',
+  background: type === BEHAVIOR_TYPE_SAFETY ? '#fdf1dc' : '#eef2f1',
+})
+
+/**
+ * Step 3 and 4 of the interview (docs/plans/ladder-combinations.md): what the child does to avoid
+ * the situation or feel safer in it, and — for each safety behaviour — the situation without it,
+ * scored. An avoidance makes no step. Peter, 2026-10-15: "It's avoiding the situation."
+ */
+function BehaviourList({ planId, patientId, trigger, behaviors, onEdited }: {
+  planId: string
+  patientId: string
+  trigger: TriggerSituation
+  behaviors: AvoidanceBehavior[]
+  onEdited: () => void
+}) {
+  const qc = useQueryClient()
+  const [draft, setDraft] = useState('')
+  const [type, setType] = useState<'safety' | 'avoidance'>('safety')
+  // A safety behaviour just added gets its sentence drafted straight away. Older ones wait for a
+  // tap, so opening a situation does not fire a model call per behaviour.
+  const [justAdded, setJustAdded] = useState<string | null>(null)
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
+    qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
+    qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] })
+    onEdited()
+  }
+  const addMut = useMutation({
+    mutationFn: (v: { name: string; type: 'safety' | 'avoidance' }) =>
+      createBehavior(trigger.id, { name: v.name, behavior_type: v.type }),
+    onSuccess: (created: AvoidanceBehavior) => {
+      invalidate()
+      setDraft('')
+      if (created.behavior_type === BEHAVIOR_TYPE_SAFETY) setJustAdded(created.id)
+    },
+  })
+
+  // What the monitoring log says the child does in THIS situation, not yet added.
+  const { data: suggested } = useQuery({
+    queryKey: ['insights', patientId, 'behavior'],
+    queryFn: () => getPatientInsights(patientId, 'behavior'),
+  })
+  // Not one already typed in by hand under the same words, or it would be added twice.
+  const typed = new Set(behaviors.map(b => b.name.trim().toLowerCase()))
+  const fromLog = (suggested ?? []).filter(i =>
+    i.situation_id === trigger.id && !typed.has(i.name.trim().toLowerCase()),
+  )
+  const takeMut = useMutation({
+    mutationFn: (v: { id: string; type?: 'safety' | 'avoidance' }) => addInsightToPlan(patientId, v.id, v.type),
+    onSuccess: invalidate,
+  })
+  const dropMut = useMutation({
+    mutationFn: (id: string) => removeInsight(patientId, id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] }),
+  })
+
+  const listed = behaviors.filter(b =>
+    b.behavior_type === BEHAVIOR_TYPE_SAFETY || b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE,
+  )
+  const combinationOf = (id: string) =>
+    behaviors.find(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && b.without_behavior_id === id)
+
+  return (
+    <div style={{ background: 'var(--float-surface)', padding: '12px 8px 4px 24px' }}>
+      <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
+        <div style={{ ...sectionLabel, marginBottom: 6 }}>Avoidance and safety behaviours</div>
+
+        {listed.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            {listed.map(b => (
+              <BehaviourRow
+                key={b.id}
+                trigger={trigger}
+                behavior={b}
+                combination={combinationOf(b.id)}
+                autoDraft={b.id === justAdded}
+                onChanged={invalidate}
+              />
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div role="radiogroup" aria-label="Kind of behaviour" style={{ display: 'flex', flexShrink: 0, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', overflow: 'hidden' }}>
+            {(['safety', 'avoidance'] as const).map(k => (
+              <button key={k} role="radio" aria-checked={type === k} onClick={() => setType(k)}
+                style={{ fontSize: 12, fontWeight: 700, padding: '7px 10px', border: 0, cursor: 'pointer', background: type === k ? 'var(--float-primary-light)' : 'var(--float-surface)', color: type === k ? 'var(--float-primary-dark)' : '#6b7a79' }}>
+                {k === 'safety' ? 'Safety' : 'Avoidance'}
+              </button>
+            ))}
+          </div>
+          <input value={draft} onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) addMut.mutate({ name: draft.trim(), type }) }}
+            placeholder={type === 'safety' ? 'e.g. sits at the back so the teacher does not call on them' : "e.g. doesn't put their hand up"}
+            style={{ flex: 1, minWidth: 180, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
+          <Button kind="primary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type })}
+            disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
+            Add behaviour
+          </Button>
+        </div>
+
+        {(addMut.isError || takeMut.isError) && (
+          <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 6 }}>
+            {errorMessage(addMut.error ?? takeMut.error, 'Could not add that just now.')}
+          </div>
+        )}
+
+        {/* Always shown, like the situation suggestions: "No suggestions" reads as an answer. */}
+        <div style={{ marginTop: 10, marginBottom: 6 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 5 }}>From the monitoring log</div>
+          {fromLog.length === 0 ? (
+            <div style={{ fontSize: 12, color: '#9aa9a8' }}>No suggestions.</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {fromLog.map(item => (
+                <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', padding: '2px 4px 2px 10px' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--float-primary)' }}>{item.name}</span>
+                  {item.behavior_type ? (
+                    <button onClick={() => takeMut.mutate({ id: item.id })} disabled={takeMut.isPending}
+                      title={`Add as ${item.behavior_type === 'safety' ? 'a safety behaviour' : 'avoidance'}`}
+                      style={{ ...quietLink, fontSize: 12, color: '#4d8478', padding: '4px 6px' }}>
+                      + {item.behavior_type === 'safety' ? 'Safety' : 'Avoidance'}
+                    </button>
+                  ) : (
+                    // The log did not say which, or said something still open clinically, like
+                    // escape. The clinician picks.
+                    (['safety', 'avoidance'] as const).map(k => (
+                      <button key={k} onClick={() => takeMut.mutate({ id: item.id, type: k })} disabled={takeMut.isPending}
+                        style={{ ...quietLink, fontSize: 12, color: '#4d8478', padding: '4px 5px' }}>
+                        + {k === 'safety' ? 'Safety' : 'Avoidance'}
+                      </button>
+                    ))
+                  )}
+                  <button onClick={() => dropMut.mutate(item.id)} disabled={dropMut.isPending}
+                    title="Not relevant — take it off the list"
+                    style={{ fontSize: 14, color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 6px' }}>×</button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** One avoidance or safety behaviour, and for a safety behaviour, its step on the ladder. */
+function BehaviourRow({ trigger, behavior, combination, autoDraft, onChanged }: {
+  trigger: TriggerSituation
+  behavior: AvoidanceBehavior
+  combination: AvoidanceBehavior | undefined
+  autoDraft: boolean
+  onChanged: () => void
+}) {
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const saveMut = useMutation({
+    mutationFn: (v: { id: string; data: Parameters<typeof updateBehavior>[2] }) =>
+      updateBehavior(trigger.id, v.id, v.data),
+    onSuccess: onChanged,
+  })
+  const delMut = useMutation({
+    mutationFn: (id: string) => deleteBehavior(trigger.id, id),
+    onSuccess: () => { setConfirmRemove(false); onChanged() },
+  })
+  const isSafety = behavior.behavior_type === BEHAVIOR_TYPE_SAFETY
+
+  return (
+    <div style={{ background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={typeChip(behavior.behavior_type)}>{isSafety ? 'Safety' : 'Avoidance'}</span>
+        <InlineText value={behavior.name} weight={600} onSave={name => saveMut.mutate({ id: behavior.id, data: { name } })} />
+        <span style={{ flex: 1 }} />
+        {confirmRemove ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+            <Button kind="danger" size="sm" onClick={() => delMut.mutate(behavior.id)} disabled={delMut.isPending}>
+              {combination ? 'Remove it and its step' : 'Remove'}
+            </Button>
+            <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
+          </span>
+        ) : (
+          <button onClick={() => setConfirmRemove(true)} title="Take this behaviour out"
+            style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
+        )}
+      </div>
+
+      {isSafety && (
+        <div style={{ marginTop: 7, paddingLeft: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span aria-hidden="true" style={{ color: '#a9cfc4', flexShrink: 0 }}>↳</span>
+          {combination ? (
+            <>
+              <InlineText value={combination.name} weight={700}
+                onSave={name => saveMut.mutate({ id: combination.id, data: { name } })} />
+              <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
+              <ScoreBox value={dtOf(combination.distress_thermometer_when_refraining)}
+                onSet={n => saveMut.mutate({ id: combination.id, data: { distress_thermometer_when_refraining: n } })} />
+              {/* Takes only the step off the ladder. The safety behaviour stays, so the step can be
+                  made again with better wording. */}
+              <button onClick={() => delMut.mutate(combination.id)} disabled={delMut.isPending}
+                title="Take this step off the ladder (the behaviour stays)"
+                style={{ fontSize: 14, lineHeight: 1, color: '#cbd8d6', background: 'none', border: 0, cursor: 'pointer', flexShrink: 0, width: 16, padding: 0, textAlign: 'center' }}>×</button>
+            </>
+          ) : (
+            <CombinationDraft trigger={trigger} behavior={behavior} auto={autoDraft} onSaved={onChanged} />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The step for a safety behaviour that does not have one yet. Float drafts the sentence; nothing is
+ * saved until the clinician reads it and adds it. Peter, 2026-10-15: the clinician reading the
+ * sentence before it is saved is the check on what the child will read.
+ */
+function CombinationDraft({ trigger, behavior, auto, onSaved }: {
+  trigger: TriggerSituation
+  behavior: AvoidanceBehavior
+  auto: boolean
+  onSaved: () => void
+}) {
+  const [asked, setAsked] = useState(auto)
+  const [text, setText] = useState<string | null>(null)
+  const draftQuery = useQuery({
+    queryKey: ['combination-draft', behavior.id],
+    queryFn: () => draftCombination(trigger.id, behavior.id),
+    enabled: asked,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
+  const sentence = text ?? draftQuery.data?.sentence ?? ''
+  const saveMut = useMutation({
+    mutationFn: () => createBehavior(trigger.id, {
+      name: sentence.trim(),
+      behavior_type: BEHAVIOR_TYPE_COMBINATION,
+      without_behavior_id: behavior.id,
+    }),
+    onSuccess: onSaved,
+    // A 409 means another tab already saved it; re-reading shows that step instead of this box.
+    onError: onSaved,
+  })
+
+  if (!asked) {
+    return (
+      <button onClick={() => setAsked(true)} style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
+        + Make the step without this behaviour
+      </button>
+    )
+  }
+  if (draftQuery.isLoading) {
+    return <span style={{ fontSize: 12.5, color: '#6b7a79' }}>Drafting the step…</span>
+  }
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+        <input value={sentence} onChange={e => setText(e.target.value)} aria-label="The step, as the child will read it"
+          onKeyDown={e => { if (e.key === 'Enter' && sentence.trim()) saveMut.mutate() }}
+          style={{ flex: 1, minWidth: 0, border: '1.5px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '7px 10px', fontSize: 13, fontWeight: 600, background: 'var(--float-surface)' }} />
+        <Button kind="primary" size="sm" onClick={() => saveMut.mutate()} disabled={!sentence.trim() || saveMut.isPending}
+          style={{ flexShrink: 0 }}>
+          Add to ladder
+        </Button>
+      </div>
+      {saveMut.isError && (
+        <div role="alert" style={{ fontSize: 12, color: '#991b1b', marginTop: 4 }}>
+          {errorMessage(saveMut.error, 'Could not add the step just now.')}
+        </div>
+      )}
+      <div style={{ fontSize: 11.5, color: '#9aa9a8', marginTop: 4 }}>
+        {draftQuery.data?.drafted_by === 'template' || draftQuery.isError
+          ? 'Could not draft a sentence. Reword this before adding it.'
+          : 'Drafted for you. This is what the child will read, so change it if it is not right.'}
+      </div>
+    </div>
+  )
+}
+
+/** Text you click to reword in place. Enter or leaving the box saves; Escape puts it back. */
+function InlineText({ value, weight, onSave }: { value: string; weight: number; onSave: (next: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const commit = () => {
+    const next = draft.trim()
+    setEditing(false)
+    if (next && next !== value) onSave(next)
+    else setDraft(value)
+  }
+  return editing ? (
+    <input value={draft} autoFocus onChange={e => setDraft(e.target.value)} onBlur={commit}
+      onKeyDown={e => {
+        if (e.key === 'Enter') commit()
+        if (e.key === 'Escape') { setDraft(value); setEditing(false) }
+      }}
+      style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: weight, color: 'var(--float-text)', padding: '3px 5px', border: '1px solid #cfe3de', borderRadius: 'var(--float-radius-control)' }} />
+  ) : (
+    <button onClick={() => { setDraft(value); setEditing(true) }} title="Change the wording"
+      style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: weight, color: 'var(--float-text)' }}>
+      {value}
+    </button>
+  )
+}
+
 /** One step: wording, score, remove. */
 function StepRow({ name, score, onRename, onScore, onRemove }: {
   name: string
@@ -650,36 +1029,9 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
   onScore: (n: number) => void
   onRemove: () => void
 }) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(name)
-
-  const commit = () => {
-    const next = draft.trim()
-    setEditing(false)
-    if (next && next !== name) onRename(next)
-    else setDraft(name)
-  }
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--float-surface)', border: '1px solid #e6efec', borderRadius: 'var(--float-radius-card)', padding: '8px 6px 8px 11px' }}>
-      {editing ? (
-        <input
-          value={draft}
-          autoFocus
-          onChange={e => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === 'Enter') commit()
-            if (e.key === 'Escape') { setDraft(name); setEditing(false) }
-          }}
-          style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--float-text)', padding: '3px 5px', border: '1px solid #cfe3de', borderRadius: 'var(--float-radius-control)' }}
-        />
-      ) : (
-        <button onClick={() => { setDraft(name); setEditing(true) }} title="Change the wording"
-          style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 13, fontWeight: 600, color: 'var(--float-text)' }}>
-          {name}
-        </button>
-      )}
+      <InlineText value={name} weight={600} onSave={onRename} />
       <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #dde8e6' }} />
       <ScoreBox value={score} onSet={onScore} />
       <button onClick={onRemove} title="Take this out"
@@ -687,4 +1039,3 @@ function StepRow({ name, score, onRename, onScore, onRemove }: {
     </div>
   )
 }
-

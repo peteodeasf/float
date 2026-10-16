@@ -17,6 +17,10 @@ export const SUB_BEHAVIOR_ADD_ENABLED = false
 // that describes a VERSION OF THE SITUATION rather than a thing the child does needs no migration.
 // See docs/plans/ladder-rung-shape.md.
 export const BEHAVIOR_TYPE_SCENARIO = 'scenario'
+// The situation without one safety behaviour. Also a rung. docs/plans/ladder-combinations.md
+export const BEHAVIOR_TYPE_COMBINATION = 'combination'
+export const BEHAVIOR_TYPE_SAFETY = 'safety'
+export const BEHAVIOR_TYPE_AVOIDANCE = 'avoidance'
 
 // One reading width for the ladder and the editor that builds it. Without it they stretch to the
 // browser, and on a wide screen a step's name sits at one end of the row with its thermometer

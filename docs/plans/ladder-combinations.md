@@ -190,6 +190,13 @@ Each step is its own PR and each can ship on its own.
 2. **Behaviours and combinations in the editor.** Steps 3 and 4 on the one-screen editor. Accepting
    a behaviour suggested from the log works. It is refused today
    (`backend/app/api/routers/insights.py:200`). Add the "what's left" line on each situation.
+   **BUILT 2026-10-15.** An opened situation now shows "Avoidance and safety behaviours" above
+   "Easier versions of the situation itself". Each safety behaviour has its step underneath: a
+   drafted sentence the clinician edits and adds, then scores. A behaviour from the monitoring log
+   is added with one tap; when the log did not say avoidance or safety (or said escape), the
+   clinician picks. Each situation says what is left on it, and the lowest-scored situation with
+   nothing on the ladder is marked "Start here". The situation's own downward arrow is unchanged
+   until step 3.
 3. **The arrow on a combination.** `rung_id` on arrows, the arrow screen opened from a combination,
    and the "Do this one next" marker.
 4. **Sub-situations under a combination.** Adding and suggesting them, and the suggestions read that

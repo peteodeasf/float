@@ -23,7 +23,8 @@ from app.models.insight import (
     KIND_ACCOMMODATION, KIND_BEHAVIOR, KIND_SITUATION, SOURCE_PARENT, PatientInsight,
 )
 from app.models.patient import PatientProfile
-from app.models.treatment import TriggerSituation
+from app.models.treatment import AvoidanceBehavior, TriggerSituation
+from app.core.behavior_types import AVOIDANCE, SAFETY, normalise
 from app.schemas.accommodation import SuggestionCreate, SuggestionUpdate
 from app.services.accommodation_conversation import answer, conversation, name_one, suggestion_out
 from app.services.insight_service import get_insights
@@ -55,11 +56,28 @@ class InsightResponse(BaseModel):
     #: The plan situation this belongs to (an accommodation's parent situation), so the add panels
     #: can group suggestions under each situation. Null when it isn't tied to a plan situation.
     situation_id: uuid.UUID | None = None
+    #: For a behaviour: "avoidance" or "safety" when the log said so, otherwise null and the
+    #: clinician picks when adding it.
+    behavior_type: str | None = None
+
+
+class AddToPlan(BaseModel):
+    """Only for a behaviour, and only when the clinician is choosing its type."""
+    behavior_type: str | None = None
+
+
+def _behaviour_type_of(row: PatientInsight) -> str | None:
+    if row.kind != KIND_BEHAVIOR:
+        return None
+    raw = (row.attributes or {}).get("behavior_type")
+    t = normalise(raw) if raw else None
+    return t if t in (AVOIDANCE, SAFETY) else None
 
 
 def _to_response(row: PatientInsight, parent_name: str | None = None, situation_id: uuid.UUID | None = None) -> InsightResponse:
     return InsightResponse(
         situation_id=situation_id,
+        behavior_type=_behaviour_type_of(row),
         id=row.id,
         kind=row.kind,
         name=row.name,
@@ -130,6 +148,7 @@ async def _get_item(db, patient_id, organization_id, insight_id) -> PatientInsig
 async def add_to_plan(
     patient_id: uuid.UUID,
     insight_id: uuid.UUID,
+    body: AddToPlan | None = None,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
@@ -197,9 +216,62 @@ async def add_to_plan(
         await db.flush()
         row.accommodation_behavior_id = created.id
 
+    elif row.kind == KIND_BEHAVIOR:
+        # A behaviour belongs to its situation, so that situation has to be on the plan first.
+        # Peter, 2026-10-15: the therapist decides which behaviours go into Float, so this is
+        # never automatic. docs/plans/ladder-combinations.md, step 3 of the interview.
+        parent = (await db.execute(
+            select(PatientInsight).where(
+                PatientInsight.id == row.parent_insight_id,
+                PatientInsight.patient_id == patient_id,
+            )
+        )).scalar_one_or_none() if row.parent_insight_id else None
+        situation_id = parent.trigger_situation_id if parent else None
+        if situation_id is not None:
+            # On THIS plan. A situation from an older plan of the same child is not where a new
+            # behaviour should land.
+            situation_id = (await db.execute(
+                select(TriggerSituation.id).where(
+                    TriggerSituation.id == situation_id,
+                    TriggerSituation.treatment_plan_id == plan.id,
+                )
+            )).scalar_one_or_none()
+        if situation_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Add its situation to the ladder first.",
+            )
+        chosen = (body.behavior_type or "").strip().lower() if body else ""
+        if chosen and chosen not in (AVOIDANCE, SAFETY):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A behaviour is avoidance or safety.",
+            )
+        behavior_type = chosen or _behaviour_type_of(row)
+        if behavior_type is None:
+            # The log did not say, or said something like "escape" that is still an open clinical
+            # question. The clinician says which it is rather than us guessing.
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Say whether this is avoidance or a safety behaviour.",
+            )
+        # Written directly rather than through create_behavior, on purpose: that also copies the
+        # name into the behaviour library shared by every practice, and this name is the
+        # family's own words from the log. See the backlog item on rung wording in that library.
+        created = AvoidanceBehavior(
+            trigger_situation_id=situation_id,
+            treatment_plan_id=plan.id,
+            organization_id=org_id,
+            name=row.name,
+            behavior_type=behavior_type,
+        )
+        db.add(created)
+        await db.flush()
+        row.avoidance_behavior_id = created.id
+
     else:
-        # Behaviours and sub-situations belong to a situation on the ladder, and the ladder editor
-        # writes those itself. Nothing to do here yet.
+        # Sub-situations belong to a situation on the ladder, and the ladder editor writes those
+        # itself. Nothing to do here yet.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot add a {row.kind} to the plan from here.",
