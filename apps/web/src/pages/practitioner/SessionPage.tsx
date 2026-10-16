@@ -242,6 +242,27 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     staleTime: 0,
     retry: false,
   })
+  // Peter, 2026-10-16: if the check finds nothing, just save and close. The panel is only for
+  // findings, or for a check that could not run.
+  const [checking, setChecking] = useState(false)
+  const save = async () => {
+    if (!edited) return onDone()
+    setChecking(true)
+    try {
+      const result = await qc.fetchQuery({
+        queryKey: ['ladder-review', planId],
+        queryFn: () => getLadderReview(planId),
+        staleTime: 0,
+        retry: false,
+      })
+      if (result.findings.length === 0) return onDone()
+    } catch {
+      // Shown in the panel as "Could not check it just now", with Finish still offered.
+    } finally {
+      setChecking(false)
+    }
+    setReviewing(true)
+  }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['triggers', planId] })
   const addMut = useMutation({
@@ -369,8 +390,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
       {/* Closing puts these steps in front of a child, so the ladder gets looked at first. */}
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #eef2f1' }}>
         {!reviewing ? (
-          <button onClick={() => (edited ? setReviewing(true) : onDone())} style={{ ...primaryBtn, marginTop: 0 }}>
-            Save ladder →
+          <button onClick={save} disabled={checking} style={{ ...primaryBtn, marginTop: 0, opacity: checking ? 0.6 : 1 }}>
+            {checking ? 'Checking the ladder…' : 'Save ladder →'}
           </button>
         ) : (
           <div style={{ background: 'var(--float-surface)', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '14px 16px' }}>
@@ -381,12 +402,6 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             )}
             {review.isError && (
               <p style={{ fontSize: 13, color: '#991b1b', margin: '8px 0 0' }}>Could not check it just now.</p>
-            )}
-
-            {review.data && review.data.findings.length === 0 && (
-              <p style={{ fontSize: 13, color: '#4d8478', margin: '8px 0 0' }}>
-                Nothing to flag — enough steps, a low enough place to start, and no big jumps.
-              </p>
             )}
 
             {(review.data?.findings ?? []).length > 0 && (
