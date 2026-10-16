@@ -475,9 +475,15 @@ export interface SuggestedSteps {
 
 export const getSuggestedSteps = async (
   planId: string,
-  triggerId: string
+  triggerId: string,
+  /** Easier versions of this combination rather than of the situation itself. */
+  rungId?: string,
 ): Promise<SuggestedSteps> =>
-  (await apiClient.post(`/plans/${planId}/triggers/${triggerId}/suggested-steps`)).data
+  (await apiClient.post(
+    rungId
+      ? `/plans/${planId}/triggers/${triggerId}/steps/${rungId}/suggested-steps`
+      : `/plans/${planId}/triggers/${triggerId}/suggested-steps`,
+  )).data
 
 // ── Ladder review ──
 // Checked before the editor closes. `findings` are arithmetic against Dr. Walker's parameters —
