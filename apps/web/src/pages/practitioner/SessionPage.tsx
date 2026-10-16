@@ -58,12 +58,12 @@ import {
   type TriggerSituation,
 } from '../../api/treatment'
 import {
-  dtOf, screenSurface, card, primaryBtn, ghostBtn, bigQ, lead, quietLink, Chrome,
+  dtOf, screenSurface, card, primaryBtn, bigQ, lead, quietLink, Chrome,
 } from './sessionKit'
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, avoidsTheSituation, fromASession, removeBehaviourLabel,
+  arrowDoneOn, avoidsTheSituation, removeBehaviourLabel,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -193,6 +193,26 @@ const sectionLabel: React.CSSProperties = {
   marginBottom: 7,
 }
 
+/**
+ * The editor's controls, one look each. Peter, 2026-10-16:
+ * - Green: the one button that finishes a panel (Save behaviours, Done, Save ladder, Finish).
+ * - White: opens something (Add situation, Edit behaviours, Add rung), or sits beside a text box
+ *   (Add).
+ * - Text: show/hide links, DA, and the Cancel or Keep beside a green button.
+ * Every panel ends bottom right, with the button that opened it in the same place.
+ */
+const panelFooter: React.CSSProperties = {
+  display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+}
+const textBox: React.CSSProperties = {
+  flex: 1, minWidth: 0, border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-control)',
+  padding: '7px 11px', fontSize: 13, background: 'var(--float-surface)',
+}
+const showHideLink: React.CSSProperties = { ...quietLink, color: '#4d8478', padding: '2px 0' }
+const chipList: React.CSSProperties = {
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, marginTop: 8,
+}
+
 // ── The editor ────────────────────────────────────────────────────────────────
 export function LadderEditor({ planId, patientId, triggers, openSituationId, onDone, onArrow }: {
   planId: string
@@ -216,6 +236,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   // Collapsed behind a button. Adding situations is the first thing you do and then rarely again,
   // so it should not sit open under the list taking up the room the list needs.
   const [adding, setAdding] = useState(false)
+  const [showSuggestedSituations, setShowSuggestedSituations] = useState(true)
 
   // What the parent's monitoring log says this child finds hard — the only suggestions we show,
   // because they are about this child. A generic starter library was removed: too generic to help.
@@ -267,12 +288,11 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   const invalidate = () => qc.invalidateQueries({ queryKey: ['triggers', planId] })
   const addMut = useMutation({
     mutationFn: (name: string) => createTrigger(planId, { name }),
-    // A situation you have just named is one you are about to put steps under, so it opens.
-    onSuccess: (created: TriggerSituation) => {
+    // The panel stays open for the next one. Situations are listed first, then opened one by one.
+    onSuccess: () => {
       invalidate()
       markEdited()
       setNewName('')
-      setOpen(prev => new Set(prev).add(created.id))
     },
   })
 
@@ -287,13 +307,12 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     ? triggers.find(t => !rungs.some(r => r.trigger_situation_id === t.id))?.id ?? null
     : null
 
-  const toggle = (id: string) =>
-    setOpen(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  // One thing open at a time. Peter, 2026-10-16: opening a situation closes any other, and the
+  // Add situation panel; opening Add situation closes the situations.
+  const toggle = (id: string) => {
+    setAdding(false)
+    setOpen(prev => (prev.has(id) ? new Set() : new Set([id])))
+  }
 
   return (
     <div style={screenSurface}>
@@ -327,72 +346,62 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
       )}
 
       {adding ? (
-        <div style={{ marginTop: 14, background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '13px' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input value={newName} onChange={e => setNewName(e.target.value)} autoFocus
-              onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) addMut.mutate(newName.trim()) }}
-              placeholder="Add a situation you find hard"
-              style={{ flex: 1, border: '1.5px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '11px 13px', fontSize: 14, minWidth: 0, background: 'var(--float-surface)' }} />
-            <button onClick={() => addMut.mutate(newName.trim())} disabled={!newName.trim() || addMut.isPending}
-              style={{ ...primaryBtn, marginTop: 0, opacity: !newName.trim() ? 0.4 : 1 }}>Add</button>
+        <div style={{ marginTop: 14, background: '#f8fbfa', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+              <input value={newName} onChange={e => setNewName(e.target.value)} autoFocus
+                onKeyDown={e => { if (e.key === 'Enter' && newName.trim() && !addMut.isPending) addMut.mutate(newName.trim()) }}
+                placeholder="Add a situation the child finds hard"
+                aria-label="A situation"
+                style={textBox} />
+              <Button kind="secondary" size="sm" onClick={() => addMut.mutate(newName.trim())}
+                disabled={!newName.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
+                Add
+              </Button>
+            </div>
+
+            {/* The same show/hide and chips as the suggested behaviours and rungs. Not shown at all
+                when there are none. */}
+            {(fromMonitoring ?? []).length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <button onClick={() => setShowSuggestedSituations(v => !v)} aria-expanded={showSuggestedSituations}
+                  style={showHideLink}>
+                  {showSuggestedSituations ? '▾ Hide' : '▸ Show'} suggested situations ({(fromMonitoring ?? []).length})
+                </button>
+                {showSuggestedSituations && (
+                  <div style={chipList}>
+                    {(fromMonitoring ?? []).map(item => (
+                      <SuggestionChip key={item.id} text={item.name} disabled={takeMut.isPending}
+                        onAdd={() => takeMut.mutate(item.id)}
+                        // Taken off the list for good, or the same one comes back every week.
+                        onDismiss={() => dropMut.mutate(item.id)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Always shown, empty or not. An absent section reads as broken; "No suggestions" reads
-              as an answer. */}
-          <div style={{ marginTop: 14 }}>
-              <div style={{ ...sectionLabel, marginBottom: 2 }}>From the monitoring log and sessions</div>
-              {(fromMonitoring ?? []).length === 0 ? (
-                <div style={{ fontSize: 12.5, color: '#9aa9a8' }}>No suggestions.</div>
-              ) : (<>
-              <div style={{ fontSize: 11.5, color: '#9aa9a8', marginBottom: 7 }}>
-                Tap to add it to the ladder. Delete it there and it comes back here.
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                {(fromMonitoring ?? []).map(item => (
-                  // Same chip as the common list. White until it is added — once it is, it shows
-                  // as a mint situation row on the ladder above, and that is what green means here.
-                  <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-pill)', overflow: 'hidden' }}>
-                    <button onClick={() => takeMut.mutate(item.id)} disabled={takeMut.isPending}
-                      style={{ fontSize: 13, fontWeight: 600, color: 'var(--float-primary)', background: 'transparent', border: 'none', padding: '8px 6px 8px 14px', cursor: 'pointer', textAlign: 'left' }}>
-                      + {item.name}
-                      <span style={{ fontWeight: 500, color: '#9aa9a8' }}>
-                        {' '}· {item.evidence_count} {item.evidence_count === 1 ? 'mention' : 'mentions'}
-                        {item.fear_rating != null ? `, rated ${item.fear_rating}` : ''}
-                        {fromASession(item) ? ', from a session' : ''}
-                      </span>
-                    </button>
-                    {/* Taken off the list for good — it does not come back next time the log is
-                        analysed, or they would remove the same thing every week. */}
-                    <button onClick={() => dropMut.mutate(item.id)} disabled={dropMut.isPending}
-                      title="Not relevant — take it off the list"
-                      style={{ fontSize: 14, color: '#c3d0cd', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 12px 0 4px' }}>×</button>
-                  </span>
-                ))}
-              </div>
-              </>)}
-          </div>
-
-          {/* A close action, not a chip — set apart by a rule and styled as a plain link so it does
-              not read as one more situation to add. */}
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e6efec' }}>
-            <button onClick={() => { setAdding(false); setNewName('') }}
-              style={{ fontSize: 13, fontWeight: 600, color: '#6b7a79', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span aria-hidden="true">&larr;</span> Done adding
-            </button>
+          <div style={panelFooter}>
+            <Button kind="primary" size="sm" onClick={() => { setAdding(false); setNewName('') }}>Done</Button>
           </div>
         </div>
       ) : (
-        <Button kind="secondary" onClick={() => setAdding(true)} style={{ marginTop: 14 }}>
-          + Add situation
-        </Button>
+        <div style={{ ...panelFooter, marginTop: 14 }}>
+          <Button kind="secondary" size="sm" onClick={() => { setOpen(new Set()); setAdding(true) }}>
+            Add situation
+          </Button>
+        </div>
       )}
 
       {/* Closing puts these steps in front of a child, so the ladder gets looked at first. */}
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #eef2f1' }}>
         {!reviewing ? (
-          <button onClick={save} disabled={checking} style={{ ...primaryBtn, marginTop: 0, opacity: checking ? 0.6 : 1 }}>
-            {checking ? 'Checking the ladder…' : 'Save ladder →'}
-          </button>
+          <div style={panelFooter}>
+            <Button kind="primary" onClick={save} disabled={checking}>
+              {checking ? 'Checking the ladder…' : 'Save ladder'}
+            </Button>
+          </div>
         ) : (
           <div style={{ background: 'var(--float-surface)', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '14px 16px' }}>
             <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--float-primary-dark)' }}>Before you finish</div>
@@ -424,9 +433,9 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               </p>
             )}
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-              <button onClick={onDone} style={{ ...primaryBtn, marginTop: 0 }}>Finish — see the ladder →</button>
-              <button onClick={() => setReviewing(false)} style={{ ...ghostBtn, marginTop: 0 }}>← Keep editing</button>
+            <div style={{ ...panelFooter, marginTop: 14 }}>
+              <button onClick={() => setReviewing(false)} style={quietLink}>Keep editing</button>
+              <Button kind="primary" size="sm" onClick={onDone}>Finish</Button>
             </div>
           </div>
         )}
@@ -562,7 +571,7 @@ type PendingSteps = Record<string, { text?: string; score?: number }>
  * Peter, 2026-10-16: hide things until the clinician has to decide on them. So it opens on one
  * question — what does the child do to avoid it or feel safer — with the list at the top, the add
  * box under it, and the suggestions under that. Save behaviours closes all of that, and only then
- * do the downward arrow links and + Add rung appear.
+ * do the downward arrow links and Add rung appear.
  *
  * Nothing goes on the ladder until Save behaviours. A safety behaviour is saved as soon as it is
  * added, but its step (the combination) is only written on Save. Until then the drafted sentence
@@ -778,21 +787,21 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
               onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate({ name: draft.trim(), type: 'safety' }) }}
               placeholder="e.g. sits at the back so the teacher does not call on them"
               aria-label="A safety behaviour"
-              style={{ flex: 1, minWidth: 0, border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '9px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
-            <Button kind="primary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type: 'safety' })}
+              style={textBox} />
+            <Button kind="secondary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type: 'safety' })}
               disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
-              Add behaviour
+              Add
             </Button>
           </div>
 
           {suggestionCount > 0 && (
             <div style={{ marginTop: 12 }}>
               <button onClick={() => setShowSuggested(v => !v)} aria-expanded={showSuggested}
-                style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
+                style={showHideLink}>
                 {showSuggested ? '▾ Hide' : '▸ Show'} suggested behaviours ({suggestionCount})
               </button>
               {showSuggested && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
+                <div style={chipList}>
                   {offerAvoidance && (
                     <SuggestionChip text={avoidsIt} disabled={addMut.isPending}
                       onAdd={() => addMut.mutate({ name: avoidsIt, type: 'avoidance' })} />
@@ -809,7 +818,7 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
           )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, alignItems: 'center' }}>
+        <div style={panelFooter}>
           {mode === 'edit' && noStep.length === 0 && (
             <button onClick={() => setMode('saved')} style={quietLink}>Cancel</button>
           )}
@@ -821,11 +830,10 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
       </>)}
 
       {saved && !addingRung && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <button onClick={() => setMode('edit')} style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
-            Edit behaviours
-          </button>
-          <Button kind="secondary" size="sm" onClick={() => setAddingRung(true)}>+ Add rung</Button>
+        // Where the panel's own Cancel/Save or Done will appear, so nothing jumps across.
+        <div style={panelFooter}>
+          <Button kind="secondary" size="sm" onClick={() => setMode('edit')}>Edit behaviours</Button>
+          <Button kind="secondary" size="sm" onClick={() => setAddingRung(true)}>Add rung</Button>
         </div>
       )}
 
@@ -877,24 +885,22 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
           onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate(draft.trim()) }}
           placeholder="e.g. walk to the classroom door with mum"
           aria-label="A rung"
-          style={{ flex: 1, minWidth: 0, border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-control)', padding: '9px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
-        <Button kind="primary" size="sm" onClick={() => addMut.mutate(draft.trim())}
+          style={textBox} />
+        <Button kind="secondary" size="sm" onClick={() => addMut.mutate(draft.trim())}
           disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
           Add
         </Button>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 12 }}>
-        <button onClick={() => setSuggesting(v => !v)} aria-expanded={suggesting}
-          style={{ ...quietLink, color: '#4d8478', padding: '2px 0' }}>
-          {suggesting ? '▾ Hide suggestions' : '✨ Suggestions'}
+      {/* Asked for rather than shown straight away, because it costs a model call. Nothing is
+          written until the clinician picks one. */}
+      <div style={{ marginTop: 12 }}>
+        <button onClick={() => setSuggesting(v => !v)} aria-expanded={suggesting} style={showHideLink}>
+          {suggesting ? '▾ Hide' : '▸ Show'} suggested rungs
         </button>
-        <button onClick={onClose} style={quietLink}>Close</button>
       </div>
-
-      {/* Nothing is written until the clinician picks one. */}
       {suggesting && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
+        <div style={chipList}>
           {suggestQuery.isLoading && <div style={{ fontSize: 12.5, color: '#6b7a79' }}>Thinking of easier versions…</div>}
           {suggestQuery.isError && <div style={{ fontSize: 12.5, color: '#991b1b' }}>Could not get suggestions just now.</div>}
           {suggestQuery.data?.blocked && !suggestQuery.isFetching && (
@@ -911,6 +917,10 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
           {errorMessage(addMut.error, 'Could not add that just now.')}
         </div>
       )}
+
+      <div style={{ ...panelFooter, marginTop: 14 }}>
+        <Button kind="primary" size="sm" onClick={onClose}>Done</Button>
+      </div>
     </div>
   )
 }
