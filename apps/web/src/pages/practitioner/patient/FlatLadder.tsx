@@ -144,10 +144,11 @@ export function FlatLadder({
             disabled={activeMut.isPending || (!ladderActive && ordered.length === 0)}
             title={!ladderActive && ordered.length === 0 ? 'Add a rung first' : undefined}
           />
-          {/* The conversation is how a ladder gets built with the child. It hangs off this view. */}
+          {/* The conversation is how a ladder gets built with the child. It hangs off this view.
+              Peter, 2026-10-16: once there is a rung on it, the same button says Edit ladder. */}
           {onStartConversation && (
             <Button kind="primary" size="sm" onClick={onStartConversation}>
-              ▸ Build ladder
+              {ordered.length > 0 ? '▸ Edit ladder' : '▸ Build ladder'}
             </Button>
           )}
         </div>
