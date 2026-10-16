@@ -120,6 +120,30 @@ async def suggested_steps(
     db: AsyncSession = Depends(get_db),
     _access: TreatmentPlan = Depends(get_permitted_plan),
 ):
+    """Easier versions of the situation itself."""
+    return await _suggest(plan_id, trigger_id, None, context, db)
+
+
+@router.post("/{trigger_id}/steps/{rung_id}/suggested-steps", response_model=SuggestedStepsResponse)
+async def suggested_steps_for_a_step(
+    plan_id: uuid.UUID,
+    trigger_id: uuid.UUID,
+    rung_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: TreatmentPlan = Depends(get_permitted_plan),
+):
+    """Easier versions of one combination, from its own downward arrow."""
+    return await _suggest(plan_id, trigger_id, rung_id, context, db)
+
+
+async def _suggest(
+    plan_id: uuid.UUID,
+    trigger_id: uuid.UUID,
+    rung_id: uuid.UUID | None,
+    context: tuple,
+    db: AsyncSession,
+) -> SuggestedStepsResponse:
     """Smaller versions of this situation, for the clinician to choose from.
 
     Confirm-first, like the arrow probe: nothing is written. The clinician taps a suggestion to add
@@ -146,27 +170,60 @@ async def suggested_steps(
         if b.behavior_type not in (SCENARIO, COMBINATION, OBSERVATION)
     ]
 
-    # Most recent, and not scalar_one_or_none: a situation is supposed to have one arrow, and a
-    # query that raises when it has two would take the feature down over a data quirk.
-    #
-    # The arrow is now done on each combination rather than on the situation (Peter, 2026-10-15),
-    # so an arrow on any of this situation's steps counts too. One with a feared outcome first.
-    step_ids = [b.id for b in behaviors]
-    arrows = (await db.execute(
-        select(DownwardArrow)
-        .where(or_(
-            DownwardArrow.trigger_situation_id == situation.id,
-            # A parent's run is their guess at the child's fear. The situation's own arrows are
-            # read as they always were; the new ones on steps leave the parent's out, matching the
-            # editor and the child's app.
-            and_(
-                DownwardArrow.rung_id.in_(step_ids) if step_ids else false(),
+    subject_name = situation.name
+    subject_score = situation.distress_thermometer_rating
+    where = "situation"
+
+    if rung_id is None:
+        # Most recent, and not scalar_one_or_none: a situation is supposed to have one arrow, and a
+        # query that raises when it has two would take the feature down over a data quirk.
+        #
+        # The arrow is now done on each combination rather than on the situation (Peter, 2026-10-15),
+        # so an arrow on any of this situation's steps counts too. One with a feared outcome first.
+        step_ids = [b.id for b in behaviors]
+        arrows = (await db.execute(
+            select(DownwardArrow)
+            .where(or_(
+                DownwardArrow.trigger_situation_id == situation.id,
+                # A parent's run is their guess at the child's fear. The situation's own arrows are
+                # read as they always were; the new ones on steps leave the parent's out, matching the
+                # editor and the child's app.
+                and_(
+                    DownwardArrow.rung_id.in_(step_ids) if step_ids else false(),
+                    DownwardArrow.facilitated_by.is_distinct_from("parent"),
+                ),
+            ))
+            .order_by(DownwardArrow.updated_at.desc().nullslast())
+        )).scalars().all()
+        arrow = next((a for a in arrows if (a.feared_outcome or "").strip()), arrows[0] if arrows else None)
+
+    else:
+        # Easier versions of one combination (step 6 of the interview, docs/plans/
+        # ladder-combinations.md). Its own downward arrow is the feared outcome to work from, and
+        # its own sub-situations are the steps it already has.
+        rung = next((b for b in behaviors if b.id == rung_id), None)
+        if rung is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+        if rung.behavior_type != COMBINATION:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Easier versions are suggested for a combination or the situation itself.",
+            )
+        subject_name = rung.name
+        subject_score = rung.distress_thermometer_when_refraining
+        steps = [b.name for b in behaviors if b.parent_behavior_id == rung.id]
+        rung_arrows = (await db.execute(
+            select(DownwardArrow)
+            .where(
+                DownwardArrow.rung_id == rung.id,
                 DownwardArrow.facilitated_by.is_distinct_from("parent"),
-            ),
-        ))
-        .order_by(DownwardArrow.updated_at.desc().nullslast())
-    )).scalars().all()
-    arrow = next((a for a in arrows if (a.feared_outcome or "").strip()), arrows[0] if arrows else None)
+            )
+            .order_by(DownwardArrow.updated_at.desc().nullslast())
+        )).scalars().all()
+        # One with a feared outcome first, as on the situation.
+        arrow = next((a for a in rung_arrows if (a.feared_outcome or "").strip()),
+                     rung_arrows[0] if rung_arrows else None)
+        where = "step"
 
     # Any recorded feared outcome counts, approved or not. `feared_outcome_approved` is only set
     # when the clinician presses save on the arrow's last screen — walking the whole chain and
@@ -177,8 +234,8 @@ async def suggested_steps(
 
     try:
         suggestions, variations = await suggest_steps(
-            situation=situation.name,
-            score=float(situation.distress_thermometer_rating) if situation.distress_thermometer_rating is not None else None,
+            situation=subject_name,
+            score=float(subject_score) if subject_score is not None else None,
             feared_outcome=feared,
             steps=steps,
             coping=coping,
@@ -188,8 +245,12 @@ async def suggested_steps(
         # one and stopped before naming what they are afraid of.
         if started and not feared:
             return SuggestedStepsResponse(blocked=(
-                "The downward arrow on this situation was started but never landed on what they "
+                f"The downward arrow on this {where} was started but never landed on what they "
                 "are afraid will happen. Finish it and the suggestions can use it."
+            ))
+        if where == "step" and not feared:
+            return SuggestedStepsResponse(blocked=(
+                "Do the downward arrow on this step first and you can get suggested easier versions."
             ))
         return SuggestedStepsResponse(blocked=str(e))
     except Exception as e:

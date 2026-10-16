@@ -212,6 +212,18 @@ Each step is its own PR and each can ship on its own.
    you pick a situation from a list. Whether that list should offer steps instead is open.
 4. **Sub-situations under a combination.** Adding and suggesting them, and the suggestions read that
    combination's feared outcome. Sub-situations of the situation itself keep working.
+   **BUILT 2026-10-15.** Under each combination in the editor: its easier versions, scored, and
+   "+ Add an easier version of this step" folded into one link until wanted. "Suggest easier
+   versions" there works from that combination's own downward arrow, and asks for it first if it
+   is not done. A sub-situation can only hang under a combination on the same situation; the
+   parent comes from the request and is now checked, which closes the backlog item about it.
+   Moving one to another situation is refused. Removing a combination removes its easier versions
+   and says so on the button.
+
+   **For Peter:** the suggestion rules say never keep a safety behaviour. Your middle-row example
+   is a partway version of the safety behaviour itself (back row, then middle row). The suggestions
+   will not offer that kind of step; the clinician types it. Whether they should is a prompt change
+   and a clinical call.
 5. **Suggestions from session recordings.** Today recordings only write a session note
    (`backend/app/services/session_recording.py`). This makes them suggest situations, behaviours and
    Fear Levels too. It is the biggest unknown, so it goes last and gets its own plan.

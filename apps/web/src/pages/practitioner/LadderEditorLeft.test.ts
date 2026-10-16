@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { nextArrowOn, whatIsLeft } from './SessionPage'
+import { nextArrowOn, removeBehaviourLabel, removeStepLabel, whatIsLeft } from './SessionPage'
 import type { AvoidanceBehavior, DownwardArrow } from '../../api/treatment'
 
 function row(over: Partial<AvoidanceBehavior>): AvoidanceBehavior {
@@ -97,5 +97,33 @@ describe('the downward arrow on each step', () => {
 
   it('has nothing to suggest when every step is done', () => {
     expect(nextArrowOn([...safety, low], [arrow('low', 'They will laugh.')])).toBeNull()
+  })
+})
+
+describe('easier versions under a step', () => {
+  it('counts an unscored easier version under a combination', () => {
+    const safety = row({ id: 's1' })
+    const step = row({ id: 'c1', behavior_type: 'combination', without_behavior_id: 's1', distress_thermometer_when_refraining: 5 })
+    const easier = row({ behavior_type: 'scenario', parent_behavior_id: 'c1' })
+    expect(whatIsLeft([safety, step, easier], [arrow('c1', 'They will laugh.')])).toEqual(['1 step not scored'])
+  })
+
+  it('says what removing a step takes with it', () => {
+    expect(removeStepLabel(false, 0)).toBe('Remove step')
+    expect(removeStepLabel(true, 0)).toBe('Remove step, its arrow')
+    expect(removeStepLabel(true, 2)).toBe('Remove step, 2 easier versions and its arrow')
+  })
+
+  it('says the same when the safety behaviour itself is removed', () => {
+    expect(removeBehaviourLabel(false, 0)).toBe('Remove it, its step')
+    expect(removeBehaviourLabel(true, 1)).toBe('Remove it, its step, 1 easier version and its arrow')
+  })
+})
+
+describe('while the arrows are loading', () => {
+  it('says nothing about arrows rather than calling a finished one "to do"', () => {
+    const safety = row({ id: 's1' })
+    const step = row({ id: 'c1', behavior_type: 'combination', without_behavior_id: 's1', distress_thermometer_when_refraining: 5 })
+    expect(whatIsLeft([safety, step], undefined)).toEqual([])
   })
 })

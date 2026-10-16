@@ -468,7 +468,9 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
     queryKey: ['step-arrows', trigger.id],
     queryFn: () => getStepArrows(trigger.id),
   })
-  const left = whatIsLeft(behaviors ?? [], stepArrows ?? [])
+  // `stepArrows` is undefined until it loads; until then nothing is said about arrows, rather than
+  // briefly calling a finished one "to do".
+  const left = whatIsLeft(behaviors ?? [], stepArrows)
 
   return (
     <div style={{ background: 'var(--float-surface)', border: '1px solid #cfe0db', borderRadius: 'var(--float-radius-card)', overflow: 'hidden' }}>
@@ -538,7 +540,7 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
       {expanded && (
         <>
           <BehaviourList planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []}
-            arrows={stepArrows ?? []} onArrow={onArrow} onEdited={onEdited} />
+            arrows={stepArrows} onArrow={onArrow} onEdited={onEdited} />
           <StepList planId={planId} trigger={trigger} stepArrows={stepArrows ?? []} onEdited={onEdited}
             onSituationArrow={() => onArrow()} />
         </>
@@ -548,16 +550,23 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
 }
 
 /** The steps under one situation. Added, edited, scored and removed in place. */
-function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
+function StepList({ planId, trigger, stepArrows = [], onEdited, onSituationArrow, under }: {
   planId: string
   trigger: TriggerSituation
-  stepArrows: DownwardArrow[]
+  /** The situation's step arrows. Not needed under a step, which shows its own arrow on its row. */
+  stepArrows?: DownwardArrow[]
   onEdited: () => void
-  onSituationArrow: () => void
+  onSituationArrow?: () => void
+  /** Easier versions of this combination, rather than of the situation itself. Step 6 of the
+   *  interview: docs/plans/ladder-combinations.md. */
+  under?: AvoidanceBehavior
 }) {
   const qc = useQueryClient()
   const [draft, setDraft] = useState('')
   const [suggesting, setSuggesting] = useState(false)
+  // Under a step, the add row stays folded behind one link until it is wanted. Most steps will not
+  // need an easier version, and an input under every one of them crowds the screen.
+  const [adding, setAdding] = useState(false)
 
   const { data: behaviors, isLoading } = useQuery({
     queryKey: ['behaviors', trigger.id],
@@ -569,6 +578,7 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
   const { data: arrow } = useQuery({
     queryKey: ['situation-da', trigger.id],
     queryFn: () => getSituationDownwardArrow(trigger.id),
+    enabled: !under,
   })
   // The situation's own arrow, from before 2026-10-15, or one done on any of its steps since —
   // the suggestions can use either.
@@ -580,8 +590,8 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
   // that suggests before being asked teaches people to stop reading it. staleTime 0 so asking
   // again after finishing the arrow gets a fresh answer rather than a cached "do the arrow first".
   const suggestQuery = useQuery({
-    queryKey: ['suggested-steps', trigger.id],
-    queryFn: () => getSuggestedSteps(planId, trigger.id),
+    queryKey: ['suggested-steps', trigger.id, under?.id ?? null],
+    queryFn: () => getSuggestedSteps(planId, trigger.id, under?.id),
     enabled: suggesting,
     staleTime: 0,
     refetchOnWindowFocus: false,
@@ -595,7 +605,11 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
   }
   const addMut = useMutation({
     mutationFn: (name: string) =>
-      createBehavior(trigger.id, { name, behavior_type: BEHAVIOR_TYPE_SCENARIO }),
+      createBehavior(trigger.id, {
+        name,
+        behavior_type: BEHAVIOR_TYPE_SCENARIO,
+        ...(under ? { parent_behavior_id: under.id } : {}),
+      }),
     onSuccess: () => { invalidate(); setDraft('') },
   })
   const saveMut = useMutation({
@@ -611,13 +625,18 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
   // Only the steps. A rung is a smaller version of the situation; anything else on this row was
   // captured under the old model and is not part of this flow.
   const steps = (behaviors ?? [])
-    .filter(b => b.behavior_type === BEHAVIOR_TYPE_SCENARIO && !b.parent_behavior_id)
+    .filter(b => b.behavior_type === BEHAVIOR_TYPE_SCENARIO
+      && (under ? b.parent_behavior_id === under.id : !b.parent_behavior_id))
     .sort((a, b) => (dtOf(a.distress_thermometer_when_refraining) ?? 99) - (dtOf(b.distress_thermometer_when_refraining) ?? 99))
 
   return (
-    <div style={{ background: 'var(--float-surface)', padding: '10px 8px 12px 24px' }}>
+    <div style={under
+      ? { padding: '6px 0 2px 22px' }
+      : { background: 'var(--float-surface)', padding: '10px 8px 12px 24px' }}>
       <div style={{ borderLeft: '2px solid #dbeee8', paddingLeft: 14 }}>
-      {/* Whether the downward arrow is done for this situation — the suggestions need it. */}
+      {/* Whether the downward arrow is done for this situation — the suggestions need it. A step
+          shows its own arrow on its row, so this is only for the situation itself. */}
+      {!under && <>
       <div style={{ marginBottom: 10, fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: arrowDone ? '#2f9e6f' : '#b47814' }}>
         {arrowDone ? '✓ A downward arrow is done for this situation' : '○ No downward arrow done yet. Do one on a step above.'}
         {/* A situation with no safety behaviours has no step to do it on, and its own easier
@@ -631,7 +650,16 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
       </div>
       {isLoading && <div style={{ fontSize: 12.5, color: '#a9c0bb' }}>Loading…</div>}
 
-      <div style={{ ...sectionLabel, marginBottom: 6 }}>Easier versions of the situation itself</div>
+      </>}
+
+      {under && steps.length === 0 && !adding && !suggesting ? (
+        <button onClick={() => setAdding(true)} style={{ ...quietLink, color: '#4d8478', padding: '2px 0', fontSize: 12 }}>
+          + Add an easier version of this step
+        </button>
+      ) : (<>
+      <div style={{ ...sectionLabel, marginBottom: 6, ...(under ? { fontSize: 11.5 } : {}) }}>
+        {under ? 'Easier versions of this step' : 'Easier versions of the situation itself'}
+      </div>
 
       {steps.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
@@ -681,19 +709,24 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
               </div>
             </>
           )}
-          <button onClick={() => setSuggesting(false)} style={{ ...quietLink, marginTop: 9 }}>Hide</button>
+          <button onClick={() => { setSuggesting(false); setAdding(false) }} style={{ ...quietLink, marginTop: 9 }}>Hide</button>
         </div>
       )}
 
       <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) addMut.mutate(draft.trim()) }}
-          placeholder="e.g. walk to the classroom door with mum"
+          placeholder={under ? 'e.g. answer a question sitting in the middle row' : 'e.g. walk to the classroom door with mum'}
+          autoFocus={!!under && adding}
           style={{ flex: 1, minWidth: 0, border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-control)', padding: '8px 11px', fontSize: 13, background: 'var(--float-surface)' }} />
         <Button kind="primary" size="sm" onClick={() => addMut.mutate(draft.trim())} disabled={!draft.trim() || addMut.isPending}
           style={{ flexShrink: 0 }}>
-          Add step
+          {under ? 'Add' : 'Add step'}
         </Button>
+        {/* Back to the single link, if nothing was added. */}
+        {under && steps.length === 0 && (
+          <button onClick={() => { setAdding(false); setSuggesting(false); setDraft('') }} style={quietLink}>Cancel</button>
+        )}
       </div>
 
       {!suggesting && (
@@ -701,6 +734,7 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
           ✨ Suggest easier versions
         </button>
       )}
+      </>)}
 
       </div>
     </div>
@@ -708,21 +742,25 @@ function StepList({ planId, trigger, stepArrows, onEdited, onSituationArrow }: {
 }
 
 /** What is still to do on a situation, in a few words each. Empty when nothing is. */
-export function whatIsLeft(behaviors: AvoidanceBehavior[], arrows: DownwardArrow[] = []): string[] {
+export function whatIsLeft(behaviors: AvoidanceBehavior[], arrows?: DownwardArrow[]): string[] {
   const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY)
   const withStep = new Set(
     behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION).map(b => b.without_behavior_id),
   )
   const noStep = safety.filter(b => !withStep.has(b.id)).length
-  // Only steps this screen shows, so every one it counts can be found and scored here.
+  // Only steps this screen shows, so every one it counts can be found and scored here: those on
+  // the situation itself, and easier versions under a combination.
+  const combinationIds = new Set(
+    behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION).map(b => b.id),
+  )
   const unscored = behaviors.filter(b =>
     (b.behavior_type === BEHAVIOR_TYPE_COMBINATION || b.behavior_type === BEHAVIOR_TYPE_SCENARIO)
-    && !b.parent_behavior_id
+    && (!b.parent_behavior_id || combinationIds.has(b.parent_behavior_id))
     && dtOf(b.distress_thermometer_when_refraining) == null,
   ).length
   // A combination's arrow is done once it has landed on a feared outcome. It does not all have to
   // happen in one session (Peter, 2026-10-15), which is why this is counted.
-  const arrowsToDo = behaviors.filter(b =>
+  const arrowsToDo = arrows === undefined ? 0 : behaviors.filter(b =>
     b.behavior_type === BEHAVIOR_TYPE_COMBINATION && !arrowDoneOn(b.id, arrows),
   ).length
   const out: string[] = []
@@ -730,6 +768,20 @@ export function whatIsLeft(behaviors: AvoidanceBehavior[], arrows: DownwardArrow
   if (unscored) out.push(`${unscored} ${unscored === 1 ? 'step' : 'steps'} not scored`)
   if (arrowsToDo) out.push(`${arrowsToDo} downward ${arrowsToDo === 1 ? 'arrow' : 'arrows'} to do`)
   return out
+}
+
+/** What removing a step takes with it, said on the button. */
+export function removeStepLabel(arrowDone: boolean, easier: number): string {
+  const also = [
+    ...(easier ? [`${easier} easier ${easier === 1 ? 'version' : 'versions'}`] : []),
+    ...(arrowDone ? ['its arrow'] : []),
+  ]
+  return also.length ? `Remove step, ${also.join(' and ')}` : 'Remove step'
+}
+
+/** What removing a safety behaviour takes with it: its step, and whatever the step takes. */
+export function removeBehaviourLabel(arrowDone: boolean, easier: number): string {
+  return removeStepLabel(arrowDone, easier).replace(/^Remove step/, 'Remove it, its step')
 }
 
 /** Whether this step's downward arrow has reached a feared outcome. */
@@ -767,7 +819,8 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
   patientId: string
   trigger: TriggerSituation
   behaviors: AvoidanceBehavior[]
-  arrows: DownwardArrow[]
+  /** Undefined while loading. */
+  arrows: DownwardArrow[] | undefined
   onArrow: (rungId?: string) => void
   onEdited: () => void
 }) {
@@ -816,7 +869,7 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
   const listed = behaviors.filter(b =>
     b.behavior_type === BEHAVIOR_TYPE_SAFETY || b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE,
   )
-  const nextArrowId = nextArrowOn(behaviors, arrows)
+  const nextArrowId = arrows ? nextArrowOn(behaviors, arrows) : null
   const combinationOf = (id: string) =>
     behaviors.find(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && b.without_behavior_id === id)
 
@@ -832,10 +885,12 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
               return (
                 <BehaviourRow
                   key={b.id}
+                  planId={planId}
                   trigger={trigger}
+                  easierCount={step ? behaviors.filter(x => x.parent_behavior_id === step.id).length : 0}
                   behavior={b}
                   combination={step}
-                  arrowDone={!!step && arrowDoneOn(step.id, arrows)}
+                  arrowDone={!!step && !!arrows && arrowDoneOn(step.id, arrows)}
                   arrowNext={!!step && step.id === nextArrowId}
                   onArrow={onArrow}
                   autoDraft={b.id === justAdded}
@@ -911,8 +966,11 @@ function BehaviourList({ planId, patientId, trigger, behaviors, arrows, onArrow,
 }
 
 /** One avoidance or safety behaviour, and for a safety behaviour, its step on the ladder. */
-function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, onArrow, autoDraft, onChanged }: {
+function BehaviourRow({ planId, trigger, easierCount, behavior, combination, arrowDone, arrowNext, onArrow, autoDraft, onChanged }: {
+  planId: string
   trigger: TriggerSituation
+  /** How many easier versions hang under this behaviour's step — they go if the step goes. */
+  easierCount: number
   behavior: AvoidanceBehavior
   combination: AvoidanceBehavior | undefined
   arrowDone: boolean
@@ -944,7 +1002,7 @@ function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, on
         {confirmRemove ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
             <Button kind="danger" size="sm" onClick={() => delMut.mutate(behavior.id)} disabled={delMut.isPending}>
-              {combination ? (arrowDone ? 'Remove it, its step and its arrow' : 'Remove it and its step') : 'Remove'}
+              {combination ? removeBehaviourLabel(arrowDone, easierCount) : 'Remove'}
             </Button>
             <button onClick={() => setConfirmRemove(false)} style={quietLink}>Keep</button>
           </span>
@@ -977,7 +1035,7 @@ function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, on
               {confirmStepRemove ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
                   <Button kind="danger" size="sm" onClick={() => delMut.mutate(combination.id)} disabled={delMut.isPending}>
-                    {arrowDone ? 'Remove step and its arrow' : 'Remove step'}
+                    {removeStepLabel(arrowDone, easierCount)}
                   </Button>
                   <button onClick={() => setConfirmStepRemove(false)} style={quietLink}>Keep</button>
                 </span>
@@ -991,6 +1049,11 @@ function BehaviourRow({ trigger, behavior, combination, arrowDone, arrowNext, on
             <CombinationDraft trigger={trigger} behavior={behavior} auto={autoDraft} onSaved={onChanged} />
           )}
         </div>
+      )}
+
+      {/* Easier versions of this step, where one is needed. Step 6 of the interview. */}
+      {combination && (
+        <StepList planId={planId} trigger={trigger} onEdited={onChanged} under={combination} />
       )}
     </div>
   )
