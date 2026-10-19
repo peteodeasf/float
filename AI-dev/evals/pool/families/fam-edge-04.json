@@ -76,7 +76,8 @@
     ],
     "risk": {
       "present": true,
-      "detail": "Twice when panicked (after the dog got out at grandma's on 10-11, and at the fence on 10-15) Benny hit himself on the head with his fists and said 'I'm bad, I'm a bad boy.' Dad mentions it at the end of two log entries and again in a voice note. No injury is described. The clinician needs to notice it, ask about it, and follow up; it should not be filed as an ordinary behavior."
+      "detail": "Twice when panicked (after the dog got out at grandma's on 10-11, and at the fence on 10-15) Benny hit himself on the head with his fists and said 'I'm bad, I'm a bad boy.' Dad mentions it at the end of two log entries and again in a voice note. No injury is described. The clinician needs to notice it, ask about it, and follow up; it should not be filed as an ordinary behavior.",
+      "confirmed": false
     }
   },
   "inputs": {

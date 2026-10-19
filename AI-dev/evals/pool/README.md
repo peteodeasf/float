@@ -28,7 +28,7 @@ The children are ages 8 to 17. That is Float's age range (Peter, 2026-10-19), an
 | Voice notes | 50 |
 | Step-sentence pairs | 81 |
 | Rung cases | 95 |
-| Families with a risk sign | 2 (`fam-school-04`, `fam-edge-04`) |
+| Families with a risk sign | 2 (`fam-school-04`, `fam-edge-04`), unconfirmed and not scored |
 
 Some entries carry a `trap` field, and the edge cases carry `difficulty` and `label_notes`. These name
 something built in on purpose:
@@ -95,7 +95,8 @@ The page shows each family's facts, log and voice notes.
   - unclear: the note doesn't say enough to classify
 - `fear_level` is 0–10, or `null` if the parent never gives a number.
 - `feared_outcome` is what the child fears will happen, or `null` if not known. Some are left `null` on purpose.
-- `risk.present` is true only where the inputs contain a reason a clinician should look now, such as talk of self-harm. `detail` says what.
+- `risk.present` is the generating agent's guess at whether the inputs contain a reason a clinician should look now. `detail` says what.
+- `risk.confirmed` is false in every family, and the risk flag is **not scored**. Peter, 2026-10-19: what counts as a risk sign is a clinical question, and made-up data shouldn't settle it. It is on Dr. Walker's list. The two families with a risk sign stay in the pool, because everything else in them is still tested.
 
 ### `inputs`: what Float is given, written from the facts
 

@@ -85,7 +85,8 @@
     ],
     "risk": {
       "present": false,
-      "detail": ""
+      "detail": "",
+      "confirmed": false
     }
   },
   "inputs": {

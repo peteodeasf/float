@@ -74,6 +74,10 @@ def check(path: Path, prompt_shingles: set) -> list[str]:
             ids.add(a["id"])
     if not isinstance(facts.get("risk", {}).get("present"), bool):
         bad("facts.risk.present must be true or false")
+    # Peter, 2026-10-19: what counts as a risk sign is a clinical question for Dr. Walker. Until she
+    # answers, no risk label is confirmed and the risk flag is not scored.
+    if facts.get("risk", {}).get("confirmed") is not False:
+        bad("facts.risk.confirmed must be false until Dr. Walker has said what counts as a risk sign")
 
     inp = f["inputs"]
     log = inp.get("monitoring_log", [])

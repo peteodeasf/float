@@ -119,7 +119,7 @@ function show(id){
   const ids = {}; f.facts.situations.forEach(s => { ids[s.id] = s.name; s.behaviors.forEach(b => ids[b.id] = b.text); s.accommodations.forEach(a => ids[a.id] = a.text) });
   let h = `<div class="head"><h2>${esc(f.facts.child.name)}, ${f.facts.child.age}</h2>
     <div class="meta">${esc(f.facts.anxiety)} · parent writes: ${esc(f.style)} · <span class="muted">${f.id}</span></div>
-    ${f.facts.risk.present ? `<div class="risk"><b>Risk sign.</b> ${esc(f.facts.risk.detail)}</div>` : ''}
+    ${f.facts.risk.present ? `<div class="risk"><b>Risk sign: unconfirmed, not scored.</b> ${esc(f.facts.risk.detail)} <i>What counts as a risk sign is on Dr. Walker's list.</i></div>` : ''}
     ${f.difficulty ? `<div class="diff"><b>Built-in difficulty.</b> ${esc(f.difficulty)}</div>` : ''}
     ${f.label_notes ? `<div class="diff"><b>Label notes.</b> ${esc(typeof f.label_notes === 'string' ? f.label_notes : JSON.stringify(f.label_notes))}</div>` : ''}
   </div>`;
