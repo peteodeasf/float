@@ -19,11 +19,15 @@ and only the cases they disagree on go to a person.
 |---|---|---|---|
 | Monitoring analysis | Yes | Known facts | `backend/app/api/routers/patients.py` (preliminary report), `backend/app/services/insight_service.py` |
 | Parent voice notes | Yes | Known facts | `backend/app/services/monitoring_capture.py` |
-| Session note drafts | Yes | Known facts | `backend/app/services/session_recording.py` |
-| Session note suggestions | Yes | Known facts | `suggest_from_session_note` in `insight_service.py` |
+| Session note drafts | **No, not yet** | — | `backend/app/services/session_recording.py` |
+| Session note suggestions | **No, not yet** | — | `suggest_from_session_note` in `insight_service.py` |
 | Step sentences | Yes | Reviewing agent | `backend/app/services/combination_wording.py` |
 | Suggested rungs | Yes | Reviewing agent | `backend/app/services/step_suggestion_service.py` |
 | Downward arrow questions | **No, left out for now** | — | `backend/app/api/routers/downward_arrows.py` |
+
+**Session notes, not yet.** Peter, 2026-10-19: made-up session transcripts could mislead, because we
+don't yet know what a typical session looks like. He will learn that with Dr. Walker first. Until then
+there are no session cases.
 
 **Downward arrow, recorded so it isn't lost:** the prompt says "You are given the situation", but
 `NextProbeRequest` has no situation field, so it is never sent. Five of the nine `AI-dev/Arrow Eval`
@@ -45,7 +49,7 @@ cases that have target questions are copied into the prompt, so they no longer t
 
 ### Known facts, for the four features that pull facts out of text
 
-Monitoring analysis, voice notes, session drafts and session suggestions.
+Monitoring analysis and voice notes.
 
 The generating agent first writes a made-up family as facts:
 - the child's age
@@ -54,9 +58,8 @@ The generating agent first writes a made-up family as facts:
 - the parent's accommodations
 - whether there is a risk
 
-Then it writes the inputs from those facts: a parent's monitoring log, a voice note, a session
-transcript. It should vary how they are written: terse, rambling, misspelled, out of order, wrong
-speaker labels.
+Then it writes the inputs from those facts: a parent's monitoring log and voice notes. It should vary
+how they are written: terse, rambling, misspelled, out of order.
 
 The facts are the answer key. Scoring whether Float recovered them needs no clinical opinion. Most
 of the compute goes here.
@@ -92,7 +95,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 | When | Job |
 |---|---|
 | Sundays 1am | Generate new candidate families and cases into the waiting pool. They don't join the tests yet, so scores stay comparable night to night. The first 30 were written on 2026-10-19 (`AI-dev/evals/pool/`, #26), so this job adds to them. |
-| Nightly 2am | Run the six features on the fixed cases, several times each. Code checks first, then reviewing agents. |
+| Nightly 2am | Run the four features on the fixed cases, several times each. Code checks first, then reviewing agents. |
 | Nightly 4am | If a prompt-change pull request is open, score it on working and held-out cases, and post the scores on the pull request. |
 | Daily 6am | A short report for Peter: what got better or worse, and any new disagreements. |
 | Mondays | A list of at most 10 disputed cases for Peter. Pool cases he accepts join the fixed set. |
@@ -127,7 +130,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 
 **Known facts**
 
-6. **The family generator.** The first pool was written by hand-run agents on 2026-10-19. The format is in `AI-dev/evals/pool/README.md`, and `validate.py` checks it. Turn what made those 30 into the Sunday job, and add what they don't cover: 30- and 60-minute sessions, and families outside the US.
+6. **The family generator.** The first pool was written by hand-run agents on 2026-10-19. The format is in `AI-dev/evals/pool/README.md`, and `validate.py` checks it. Turn what made those 30 into the Sunday job, and add what they don't cover, such as families outside the US. No session transcripts (see above).
    - Facts first, then the inputs.
    - Kinds of anxiety: social, separation, health, specific fears, school refusal.
    - Ages 8–17, which is Float's age range, and many ways of writing.
@@ -138,10 +141,9 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 8. **Voice notes.**
    - Score how notes are split into observations, and whether the words are kept.
    - Fix `_said` in `monitoring_capture.py`. It counts any number in the text as a Fear Level, so "at 8pm" passes.
-9. **Session drafts and session suggestions.**
-   - Scripted sessions of 10, 30 and 60 minutes, with wrong speaker labels on purpose.
-   - Score what the note includes, what it invents, and the speaker names.
-   - The whole transcript goes in one call with a 3000-token answer limit. Test long sessions first.
+9. **Session drafts and session suggestions: wait.** No session cases until Peter has learned from
+   Dr. Walker what a typical session looks like. Known gap, for when they start: the whole transcript
+   goes in one call with a 3000-token answer limit, so long sessions are the first thing to test.
 
 **Reviewing agents**
 
