@@ -130,7 +130,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 6. **The family generator.** The first pool was written by hand-run agents on 2026-10-19. The format is in `AI-dev/evals/pool/README.md`, and `validate.py` checks it. Turn what made those 30 into the Sunday job, and add what they don't cover: 30- and 60-minute sessions, and families outside the US.
    - Facts first, then the inputs.
    - Kinds of anxiety: social, separation, health, specific fears, school refusal.
-   - Ages 6–17, and many ways of writing.
+   - Ages 8–17, which is Float's age range, and many ways of writing.
 7. **Monitoring analysis at scale.**
    - Score situations found, behavior types, parent actions mistaken for child behaviors, invented triggers and risk flags.
    - Settle the conflict between the two prompts. The report prompt allows triggers the parent never logged (`patients.py`, "you may add them"); extraction forbids it. Bring the result to Peter.
