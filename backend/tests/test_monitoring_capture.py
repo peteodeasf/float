@@ -150,6 +150,56 @@ async def test_the_fear_level_is_never_guessed(api, db, claude):
                         "Honestly an 11.": None}
 
 
+# Why: a number that is a time or a count used to pass as a Fear Level, so "at 8pm" saved an 8 when
+# the model offered one (docs/plans/ai-quality-testing.md, item 8). The parent's words are short
+# examples of the kinds the eval pool marks as traps; none of it is in any prompt.
+@pytest.mark.parametrize("words, n", [
+    ("She melted down at 8pm.", 8),
+    ("We left at 8:15 and she froze at the door.", 8),
+    ("There were three dogs at the park and he wouldn't get out.", 3),
+    ("He washed his hands three times before dinner.", 3),
+    ("She stared at three pages of homework and cried.", 3),
+    ("Left at 7 10, back at 5 30, she wouldn't go in.", 7),
+    ("At 4 he said his stomach hurt and skipped practice.", 4),
+    ("A six-year-old at the party pushed her.", 6),
+    ("It was only a five minute drive but she screamed.", 5),
+    ("Her appointment was an 8:15 one.", 8),
+    ("Seven out of ten mornings she won't eat.", 7),
+    ("She cried for a day or two.", 2),
+])
+def test_a_time_or_a_count_is_not_a_fear_level(words, n):
+    assert not capture._said_as_rating(words, n)
+
+
+# Why: the fix for times and counts must not stop real ratings getting through, in the loose ways
+# parents say them.
+@pytest.mark.parametrize("words, n", [
+    ("She was about a seven out of ten.", 7),
+    ("School run was about an eight. Bedtime was hard too.", 8),
+    ("i think hed say it was like a five maybe", 5),
+    ("she said it's an eight already", 8),
+    ("7/10 at drop off", 7),
+    ("Fear Level: 6", 6),
+    ("He rated it a 4.", 4),
+    ("A solid 8 when the dog barked.", 8),
+    ("Maybe a 6 or 7", 7),
+    ("Honestly a ten", 10),
+    ("She was a 9, and that was at 8pm.", 9),
+])
+def test_a_fear_level_said_as_a_rating_is_kept(words, n):
+    assert capture._said_as_rating(words, n)
+
+
+# Why: end to end, a time in the note is not saved as the Fear Level even when the model offers it.
+async def test_a_time_in_the_note_is_not_saved_as_the_fear_level(api, db, claude):
+    _, _, form = await _form(db)
+    claude["answer"] = {"observations": [_obs(fear=8)]}
+    await _write(api, form, "At 8pm she wouldn't get in the car for school.")
+
+    [entry] = await _entries(db, form)
+    assert entry.fear_thermometer is None
+
+
 async def test_the_tap_after_recording_fills_the_fear_level_the_parent_did_not_say(api, db, claude):
     _, _, form = await _form(db)
     claude["answer"] = {"observations": [_obs(fear=8), _obs(situation="Bedtime")]}
