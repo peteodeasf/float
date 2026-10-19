@@ -37,7 +37,182 @@ The agent loop on the Mac mini (`scripts/agent-loop.sh`, `docs/plans/agent-loop.
 from this list only, top first. Peter moves items here when they are written to the standard above
 and need no clinical decision. The agent removes an item in the PR that builds it.
 
-*Nothing ready right now.*
+### AI quality testing — moved here by Peter, 2026-10-19
+
+All from `docs/plans/ai-quality-testing.md`. Read the whole plan before any of these, especially
+"Rules that keep it honest". For every item:
+
+- **Made-up data and the local databases only.** Cases come from `AI-dev/evals/pool/`. Nothing from
+  production, ever.
+- **API key.** AI calls use `ANTHROPIC_API_KEY` from the environment. If it is missing, do not look
+  for one: open the PR as a draft saying the key was missing, and stop.
+- **Spending.** Keep each session's AI calls under **$10**. The runner must stop when its limit is
+  reached, and the PR says what was spent.
+- **Never put a test case, or text copied from one, in a prompt.**
+- **Report every number with its sample size**, and say what the cases don't cover. A pattern
+  becomes a question for Peter in the PR, never a new prompt rule.
+- **Depends on.** If an item depends on another that is not on main yet, skip it and take the next
+  one. Never build on an unmerged branch.
+
+Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not tonight), scoring the
+risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
+
+#### One test runner for the AI features `L`
+- **Today:** `AI-dev/Extraction Loop/float_harness/` scores monitoring analysis, but from its own
+  copy of the prompt (that is how the old 0.926 score went stale). Step sentences and suggested
+  rungs have no runner. No call sets a temperature.
+- **What changes:** build `AI-dev/evals/runner/`, reusing `float_harness` code where it fits. It
+  imports the app's real prompts and calls from `backend/app/` (no copies). It runs each case N
+  times. It runs code checks first, then reviewing agents (leave a hook for them; the reviewers are
+  a later item). It writes a report with sample sizes and a stability figure (how often the N runs
+  agree). It uses one case format for every feature, read from the pool format in
+  `AI-dev/evals/pool/README.md`. It has a spending limit and stops when reached. Start with one
+  feature wired up end to end: monitoring analysis (`rebuild_from_monitoring`).
+- **How to tell it worked:** tests with a fake AI client cover the case loader, the N-runs loop,
+  the stability figure, and the spending stop. One real run on 5 pool families, with the report
+  in the PR.
+- **Gate:** none. **Depends on:** nothing.
+
+#### Judging folder for the AI tests `S`
+- **Today:** the reviewers' instructions and held-out cases have no home.
+- **What changes:** create `AI-dev/evals/judging/` with a README saying what goes there and that
+  the agents tuning prompts must not edit it or read held-out cases. Add a small script that runs
+  the held-out cases and prints scores only, never the case text or the model's answers.
+- **How to tell it worked:** a test shows the held-out output has scores and counts and no case
+  text.
+- **Gate:** none. **Depends on:** the test runner.
+
+#### Protect the judging folder `S`
+- **Today:** `.github/CODEOWNERS` does not list `AI-dev/evals/judging/`.
+- **What changes:** add `/AI-dev/evals/judging/ @peteodeasf` to `.github/CODEOWNERS`, with a
+  comment saying why: the agents that tune prompts must not be able to change how they are marked.
+  Only this line, in its own PR.
+- **How to tell it worked:** the diff is that one line and its comment.
+- **Gate:** waits for Peter (CODEOWNERS covers `.github/`). Do not try to merge it.
+  **Depends on:** nothing.
+
+#### CI check that no test case is in a prompt `M`
+- **Today:** test cases have been copied into prompts three times
+  (`docs/solutions/eval-cases-burned-by-putting-them-in-the-prompt.md`). Nothing checks for it.
+- **What changes:** a script that collects the prompt text in `backend/app/` and the case text in
+  `AI-dev/evals/`, `AI-dev/Extraction Loop/`, `AI-dev/Ladder Eval/`, `AI-dev/Arrow Eval/` and
+  `backend/evals/`, and fails if a long enough run of words from a case appears in a prompt. Needs
+  no API key. Add it as a step in `.github/workflows/ci.yml`. The downward arrow prompt already
+  contains five cases. Report them, and let the check skip only those five by name, with a comment
+  pointing to the plan. Do not remove them from the prompt.
+- **How to tell it worked:** a test where a planted case in a fake prompt fails the check, and a
+  clean one passes. CI is green on the PR.
+- **Gate:** waits for Peter (it changes `.github/`). **Depends on:** nothing.
+
+#### Family generator for the waiting pool `M`
+- **Today:** the 30 families in `AI-dev/evals/pool/families/` were written by hand-run agents.
+  `validate.py` checks the format.
+- **What changes:** a script, `AI-dev/evals/generator/`, that writes new families into the pool
+  the same way: facts first (age 8–17, situations with Fear Levels, behaviors with types,
+  accommodations, risk label with `confirmed: false`), then the log and voice notes written from
+  the facts, in varied styles (terse, rambling, misspelled, out of order). Every family passes
+  `validate.py`. Spread across social, separation, health, specific fears and school refusal, and
+  add what the README says is missing, such as families outside the US. No session transcripts.
+  American spelling.
+- **How to tell it worked:** one real run of 5 families, all passing `validate.py`, added to the
+  pool in the PR. Tests for the parts that don't call the AI.
+- **Gate:** none. **Depends on:** nothing.
+
+#### Score monitoring analysis on the pool `M`
+- **Today:** the runner (earlier item) can run `rebuild_from_monitoring`. Nothing scores it
+  against the pool's answer keys.
+- **What changes:** score situations found, behavior types, parent actions mistaken for child
+  behaviors, and invented triggers. Do not score the risk flag. Run it on the working cases (odd
+  ids rule from `float_harness`, or the pool's own split if it has one).
+- **How to tell it worked:** a report in the PR with each score, its sample size, and its
+  stability across runs. Tests for the scoring code.
+- **Gate:** none (it changes no prompt). **Depends on:** the test runner.
+
+#### Preliminary report test sends the app's input `S`
+- **Today:** `backend/evals/preliminary_report/run_eval.py` no longer sends what the app sends
+  to the preliminary report prompt in `backend/app/api/routers/patients.py`.
+- **What changes:** make it build its input the way the route does, by calling the same code
+  rather than copying it.
+- **How to tell it worked:** a test that the eval's input and the route's input match for the same
+  log.
+- **Gate:** none. **Depends on:** nothing.
+
+#### The two monitoring prompts disagree about extra triggers `S`
+- **Today:** the preliminary report prompt in `backend/app/api/routers/patients.py` says "you may
+  add them" about triggers the parent never logged. The extraction prompt forbids it.
+- **What changes:** nothing in the prompts. Run both on the working pool families and count how
+  often each adds a trigger that is not in the answer key. Write the result up as a question for
+  Peter in `docs/plans/ai-quality-testing.md`, under item 7.
+- **How to tell it worked:** the PR has the counts, with sample sizes, and the question in plain
+  English.
+- **Gate:** clinical: request Peter's review and do not merge. **Depends on:** the test runner.
+
+#### Score voice notes on the pool `M`
+- **Today:** `backend/app/services/monitoring_capture.py` turns voice notes into observations.
+  Nothing tests it.
+- **What changes:** wire it into the runner. Score how the notes are split into observations and
+  whether the parent's words are kept.
+- **How to tell it worked:** a report in the PR with sample sizes. Tests for the scoring code.
+- **Gate:** none. **Depends on:** the test runner.
+
+#### Voice notes: a time is not a Fear Level `S`
+- **Today:** `_said` in `backend/app/services/monitoring_capture.py` counts any number in the text
+  as a Fear Level, so "at 8pm" passes.
+- **What changes:** only accept a number that is said as a rating. Use the pool's `trap` entries
+  ("at 8:15", "three dogs") as examples in tests, not in any prompt.
+- **How to tell it worked:** tests for "at 8pm" (rejected) and a real rating (accepted).
+- **Gate:** it touches how Fear Levels are read: request Peter's review and do not merge.
+  **Depends on:** nothing.
+
+#### Rung and step-sentence reviewers `L`
+- **Today:** no reviewing agents. Dr. Walker's 2026-08-29 review of 60 suggested rungs is in
+  `docs/plans/ladder-generation.md`.
+- **What changes:** reviewer instructions in `AI-dev/evals/judging/`, quoting her written rules
+  from `ladder-generation.md`. One reviewer per concern: her rules; the child's safety (no way out,
+  no new fear); reads right for the child's age. Each objection must name its rule, or it is
+  reported as the reviewer's own opinion. Reviewers run on a different model from the feature.
+  Run the rung reviewer on her 60 marked suggestions and report how often it agrees with her, with
+  the counts. Say plainly that 60 can show it is badly off but can't show it is right. Mark the
+  step-sentence reviewer's verdicts as unchecked.
+- **How to tell it worked:** the agreement counts in the PR. Tests for the "objection needs a rule"
+  handling.
+- **Gate:** none to merge the tooling. **Depends on:** the test runner, and the judging folder.
+
+#### Suggested rungs: enforce the limits in code `M`
+- **Today:** the 2–5 count, the length limit and removing duplicates are asked for in the prompt
+  in `backend/app/services/step_suggestion_service.py`, not checked. The prompt,
+  `AI-dev/Ladder Eval/checks.py` and `docs/plans/ladder-generation.md` use different numbers.
+- **What changes:** check them in code after the call. Make all three places use one set of
+  numbers. Where they disagree, use `ladder-generation.md` and say in the PR which numbers changed.
+  Also run suggestions with and without a feared outcome on the pool's rung cases and report the
+  difference (Peter dropped that requirement on 2026-10-16 to test exactly this).
+- **How to tell it worked:** tests for too many, too few, too long and duplicate suggestions. The
+  comparison in the PR with sample sizes.
+- **Gate:** changes what clinicians are offered: request Peter's review and do not merge.
+  **Depends on:** the test runner.
+
+#### Step sentences: the 30-pair set `M`
+- **Today:** `AI-dev/Combination Wording/run_check.py` writes a reading sheet from 17 pairs and
+  scores nothing. `docs/plans/ladder-combinations.md` planned about 30, across kinds of anxiety.
+  The pool has 81 step-sentence pairs.
+- **What changes:** build the 30-pair set from the pool and `ladder-combinations.md`, across
+  kinds of anxiety, and run it through the runner and the step-sentence reviewer. Test its open
+  question: should the sentence say what the child does, or what they stop doing? Report it; don't
+  decide it.
+- **How to tell it worked:** a report in the PR with sample sizes, marked unchecked by a clinician.
+- **Gate:** none (no prompt change). **Depends on:** the test runner, and the reviewers.
+
+#### Overnight schedule for the AI tests `M`
+- **Today:** nothing runs on a schedule.
+- **What changes:** one script, `AI-dev/evals/nightly.sh`, that does the schedule in the plan:
+  Sunday new pool families, nightly runs on the fixed cases, scoring any open prompt-change PR, and
+  a short plain-English morning report for Peter in `~/eval-reports/`. A nightly spending limit,
+  checked before each job. Local test database only. **Do not install the crontab.** Put the
+  crontab lines in the PR description for Peter to add.
+- **How to tell it worked:** one dry run, with the morning report it wrote in the PR.
+- **Gate:** none to merge the script. Proposing temperatures from the stability figures is a
+  separate prompt-change PR for Peter. **Depends on:** the test runner, scoring monitoring
+  analysis, and the family generator.
 
 ---
 
