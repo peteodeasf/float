@@ -128,15 +128,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   stability across runs. Tests for the scoring code.
 - **Gate:** none (it changes no prompt). **Depends on:** the test runner.
 
-#### Preliminary report test sends the app's input `S`
-- **Today:** `backend/evals/preliminary_report/run_eval.py` no longer sends what the app sends
-  to the preliminary report prompt in `backend/app/api/routers/patients.py`.
-- **What changes:** make it build its input the way the route does, by calling the same code
-  rather than copying it.
-- **How to tell it worked:** a test that the eval's input and the route's input match for the same
-  log.
-- **Gate:** none. **Depends on:** nothing.
-
 #### The two monitoring prompts disagree about extra triggers `S`
 - **Today:** the preliminary report prompt in `backend/app/api/routers/patients.py` says "you may
   add them" about triggers the parent never logged. The extraction prompt forbids it.
@@ -594,6 +585,23 @@ against "Screen layout" in `CLAUDE.md`, signed in as the demo parent. Peter to d
 - **What changes.** Shorter placeholder, or let the box fit it. Wording is Peter's call.
 - **How to tell it worked.** Screenshot at 375 wide shows the whole placeholder.
 - **Gate.** None.
+
+## The saved list's order is arbitrary among items seen equally often
+
+**Found 2026-10-19.** `S`
+
+- **Today.** `get_insights` in `backend/app/services/insight_service.py` sorts by how often an
+  item was seen, then by `first_seen_at`. `first_seen_at` is filled by Postgres `now()`, which is
+  the same for every row written in one transaction. One press of Analyze with AI writes the whole
+  list in one transaction, so the second key never separates anything. Items seen equally often
+  come out in whatever order Postgres returns them. That order feeds the report call's input and
+  the list the clinician sees.
+- **What changes.** Add a real tiebreak, for example the order the model listed them in, or the
+  fear rating.
+- **How to tell it worked.** A test with two situations seen once each gets the same order every
+  run, whichever is inserted first.
+- **Gate.** None to fix the order. If the tiebreak chosen is the fear rating, ask Peter, since it
+  decides what a clinician sees first.
 
 # Admin
 

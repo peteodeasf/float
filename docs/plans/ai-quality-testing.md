@@ -38,7 +38,7 @@ cases that have target questions are copied into the prompt, so they no longer t
 - **Monitoring analysis.**
   - `AI-dev/Extraction Loop/float_harness/` has 18 cases with answers Dr. Walker confirmed in June. It splits them into tuning cases (odd ids) and held-out cases (even ids).
   - Its last run (`runs/20260915_163743/holdout_report.json`) scored 0.80 on behavior types for the 9 held-out cases. Its own bar is 0.90.
-  - `backend/evals/preliminary_report/` has 14 report cases with draft answers and no saved scores. It no longer sends the input the app sends.
+  - `backend/evals/preliminary_report/` has 14 report cases with draft answers and no saved scores. Since 2026-10-19 it sends the input the app sends (it runs the app's own list and report steps).
 - **Suggested rungs.** About 50 cases across the `AI-dev/Ladder Eval/` rounds, mostly social anxiety. The targets are Claude drafts. There is no runner. Dr. Walker's 2026-08-29 review of 60 suggestions is in `docs/plans/ladder-generation.md`.
 - **Step sentences.** `AI-dev/Combination Wording/run_check.py` builds a sheet to read. It scores nothing.
 - **Voice notes, session drafts, session suggestions.** No test cases.
@@ -138,7 +138,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
    - Score situations found, behavior types, parent actions mistaken for child behaviors and invented triggers.
    - **Do not score the risk flag.** Peter, 2026-10-19: what counts as a risk sign is a clinical question, and made-up data shouldn't settle it. Every family's risk label is marked `confirmed: false`. Score it only once Dr. Walker has answered (item 13).
    - Settle the conflict between the two prompts. The report prompt allows triggers the parent never logged (`patients.py`, "you may add them"); extraction forbids it. Bring the result to Peter.
-   - Fix `backend/evals/preliminary_report` to send the input the app sends.
+   - Fix `backend/evals/preliminary_report` to send the input the app sends. Done 2026-10-19.
 8. **Voice notes.**
    - Score how notes are split into observations, and whether the words are kept.
    - Fix `_said` in `monitoring_capture.py`. It counts any number in the text as a Fear Level, so "at 8pm" passes.
