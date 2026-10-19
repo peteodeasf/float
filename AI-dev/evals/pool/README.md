@@ -7,6 +7,8 @@ Made-up families, written to test Float's AI features. Plan: `docs/plans/ai-qual
 **Waiting pool means not yet a test.** Peter looks at a case before it joins the fixed test set. When
 it joins, it is split into working or held-out, and held-out cases move to `AI-dev/evals/judging/`.
 
+New families are written by the family generator, `AI-dev/evals/generator/` (see its README).
+
 ## What's in the first pool (2026-10-19)
 
 30 families, written by six generating agents in parallel, five per kind of anxiety:
