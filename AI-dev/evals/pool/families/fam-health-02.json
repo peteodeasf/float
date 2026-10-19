@@ -1,0 +1,211 @@
+{
+  "id": "fam-health-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "matter-of-fact nurse dad: terse clinical shorthand, records vitals, no feelings words",
+  "facts": {
+    "child": {
+      "name": "Ezra",
+      "age": 11
+    },
+    "anxiety": "fear of panic-like body sensations (racing heart)",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Running in PE class",
+        "fear_level": 8,
+        "feared_outcome": "My heart will go too fast and I'll pass out on the track",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Says he has a headache and sits out of PE"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Checks his pulse on his watch during laps"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad wrote a note excusing him from the mile run"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "School assembly in the packed gym",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Leaves the assembly partway through to go to the bathroom and doesn't come back"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "Feeling his heart flutter at home in the evening",
+        "fear_level": null,
+        "feared_outcome": "Something is wrong with my heart and nobody has found it yet",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Googles heart symptoms on his tablet"
+          },
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Asks Dad 'am I okay?' and asks him to check his heart"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Dad checks his heart rate and blood pressure with the home equipment"
+          },
+          {
+            "id": "a3",
+            "text": "Dad lets him sleep on the floor of the parents' room"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-08",
+        "situation": "PE - mile run",
+        "child_behavior_observed": "Reported headache AM. Asked for note. Afebrile, no other sx.",
+        "parent_response": "Wrote note excusing from mile. Advised fluids.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-09",
+        "situation": "Evening, c/o heart 'flipping'",
+        "child_behavior_observed": "Was on tablet searching 'heart skipping beats kids.' Asked 'am I okay' x4. Asked me to listen to his chest.",
+        "parent_response": "Checked HR 104, BP 108/66, pulse ox 99%. All WNL. Told him so. Let him sleep on our floor.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3",
+        "trap": "104, 108/66, 99% and x4 are vitals and a count, not fear levels"
+      },
+      {
+        "date": "2026-09-11",
+        "situation": "Assembly, full gym",
+        "child_behavior_observed": "Per teacher, left approx 15 min in for bathroom. Did not return. Found in library.",
+        "parent_response": "Discussed at dinner. Did not push.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-15",
+        "situation": "PE",
+        "child_behavior_observed": "Participated. Per coach, stopped 3x on track to look at his watch. Finished 2 of 4 laps walking.",
+        "parent_response": "Asked how it went. Said 'fine.' Left it.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-16",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "pe again. said headache. no fever. sat out. pretty sure its the running not his head. I'd put him at an 8. I didn't write a note this time, he sat out on his own",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-19",
+        "situation": "Bedtime, palpitations",
+        "child_behavior_observed": "Googled 'chest feels weird 11 year old.' Came to our room. Asked if he was okay.",
+        "parent_response": "Took HR, 96. Reassured. Allowed floor again.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-22",
+        "situation": "Evening after soccer",
+        "child_behavior_observed": "Noticed HR still up after practice. Asked me to check BP. Asked am I okay.",
+        "parent_response": "Checked BP 112/70. Told him post-exercise HR elevation is normal. Physiology explained.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so tonight around eight fifteen ezra comes in says his heart is doing the thing again his rate was like a hundred and two which is fine for him and he asked me am i okay probably four times i checked it and told him normal and he slept on our floor again",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5",
+            "a2",
+            "a3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "eight fifteen is a time, a hundred and two is a heart rate, four is a count; none is a fear level"
+      },
+      {
+        "text": "um assembly today he walked out again bathroom didnt go back teacher found him in the library he said it was a six and um yeah that's it",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": 6
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

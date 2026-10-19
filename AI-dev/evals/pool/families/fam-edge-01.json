@@ -1,0 +1,231 @@
+{
+  "id": "fam-edge-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "Busy mom, writes fast in 'we' and 'I', keeps putting what she did into the 'what he did' box",
+  "difficulty": "Parent actions repeatedly written in the child-behavior field. Three log entries put the mom's own action (lying down with him, staying in the parking lot, coming home early) in child_behavior_observed. A correct reading files those as accommodations, not as child behaviors.",
+  "facts": {
+    "child": {
+      "name": "Rafael",
+      "age": 10
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Falling asleep in his own bed",
+        "fear_level": 7,
+        "feared_outcome": "Someone will break in while everyone is asleep and I won't be able to get to Mom",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Calls out over and over to check that mom is still awake"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Ends up sleeping on the floor of his parents' room instead of his own bed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom lies down with him until he falls asleep"
+          },
+          {
+            "id": "a2",
+            "text": "Dad leaves the hall light on and the bedroom door wide open"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Being dropped off at soccer practice",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Keeps looking over to check mom's car is still in the lot"
+          },
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Walks off the field partway through practice and sits in the car"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom stays in the parking lot for the whole practice"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Mom going out for the evening with a sitter at home",
+        "fear_level": null,
+        "feared_outcome": "Mom will get hurt and not come home",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Texts mom again and again from the sitter's phone asking when she'll be back"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom cuts her evening short and comes home early"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "bedtime",
+        "child_behavior_observed": "I lay down with him till he fell asleep, took about 40 min",
+        "parent_response": "stayed with him",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent action written in child field"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "soccer practice drop off",
+        "child_behavior_observed": "kept looking over at the car the whole warm up, waved at me like 10 times",
+        "parent_response": "I waved back. Stayed in the lot",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "going to sleep",
+        "child_behavior_observed": "kept yelling 'mom are you still up??' every couple minutes. Then at 1am he was on our floor with his pillow",
+        "parent_response": "Answered him each time. Let him stay on the floor, too tired to walk him back",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "soccer",
+        "child_behavior_observed": "We stayed in the parking lot the whole time again",
+        "parent_response": "",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2",
+        "trap": "parent action written in child field"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "date night, sitter",
+        "child_behavior_observed": "Came home early, we left before dessert",
+        "parent_response": "he was texting nonstop from Kayleigh's phone asking when are you coming back",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3",
+        "trap": "parent action written in child field; the child's behavior is in parent_response"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "practice again tonight. he did ok for maybe twenty minutes then just walked off the field mid drill and came and got in the car. coach looked at me like what. i didnt make him go back. he said a 7 i think",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "bedtime",
+        "child_behavior_observed": "Hall light on, door open, he wanted it like that",
+        "parent_response": "Dad set it up that way",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-17",
+        "situation": "falling asleep",
+        "child_behavior_observed": "checking on me again, 'are you awake' x lots. ended up on the floor in our room by midnight",
+        "parent_response": "Lay down with him first for a while. Then let him sleep on our floor",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um bedtime was rough again last night he kept calling out are you awake are you awake and um i ended up just lying down with him again like i know i know we're not supposed to but it was late and i had work and he was at like a seven he said",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        }
+      },
+      {
+        "text": "quick one from the car um soccer tonight and I'm sitting here in the lot again because he made me promise and he keeps looking over like every two minutes and then also on saturday we had the sitter and he basically texted me the whole dinner so we came home early",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "a3",
+            "s3",
+            "b5",
+            "a4"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        },
+        "trap": "'every two minutes' is a count, not a Fear Level"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

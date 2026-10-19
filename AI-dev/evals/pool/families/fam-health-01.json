@@ -1,0 +1,263 @@
+{
+  "id": "fam-health-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "anxious mom who over-explains: long entries, guesses at reasons, apologizes, second-guesses her own response",
+  "facts": {
+    "child": {
+      "name": "Theo",
+      "age": 8
+    },
+    "anxiety": "fear of vomiting",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Eating lunch at school",
+        "fear_level": 7,
+        "feared_outcome": "I'll throw up in front of everybody in the cafeteria",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Doesn't eat his lunch at school and brings the lunchbox home full"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Only eats plain crackers and other foods he calls safe"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom packs only his safe foods so he will eat something"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "A classmate gets sick or says they feel sick",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Runs out of the classroom to the nurse's office after a classmate throws up"
+          },
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Goes to a corner with his hands over his ears and won't talk when a kid says they feel sick"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom leaves work and picks him up early"
+          },
+          {
+            "id": "a3",
+            "text": "Mom asks the teacher to seat him away from any kid who seems sick"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Bedtime when his stomach feels funny",
+        "fear_level": 6,
+        "feared_outcome": "My tummy feels weird so I'm going to throw up in the night",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Asks over and over 'am I going to throw up?'"
+          },
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Keeps a bucket and mints next to his bed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom feels his forehead and promises he won't throw up"
+          },
+          {
+            "id": "a5",
+            "text": "Mom stays in his room until he falls asleep"
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "name": "Long car rides",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b7",
+            "type": "safety",
+            "text": "Keeps the window down and a mint in his mouth the whole ride"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a6",
+            "text": "Mom brings mints and lets him keep the window down even when it's cold"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-14",
+        "situation": "School lunch (he came home with his lunchbox basically full AGAIN)",
+        "child_behavior_observed": "He told me he wasn't hungry and only ate the crackers. I think this is because last spring a boy threw up in the cafeteria and he has honestly never gotten over it, but also he had a big breakfast so maybe he really wasn't hungry? I don't know, I'm probably overthinking it.",
+        "parent_response": "I asked him a lot of questions about it, maybe too many, and then I told him it was fine. I said I'd pack only the stuff he likes tomorrow so at least he eats something. Was that wrong?",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-16",
+        "situation": "Bedtime - his tummy",
+        "child_behavior_observed": "Said his tummy felt weird and asked if he was going to throw up, then asked again, and again. He wanted the bucket right next to the bed and a mint before he would lie down.",
+        "parent_response": "I felt his forehead and told him no, you're not sick, you are not going to throw up, I promise. I stayed with him until he fell asleep which wasn't until almost 9:30, which is so late for a school night, and I know I should have left earlier but he was so upset.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-18",
+        "situation": "A kid in his class got sick (threw up) during reading time",
+        "child_behavior_observed": "He ran out of the room to the nurse and asked her to call me. The nurse said he was pale and shaking and kept saying he didn't want to go back in there.",
+        "parent_response": "I left work and picked him up early because he was so upset, I felt awful. We talked in the car about how he wasn't the one who was sick. I didn't ask him for a number, sorry, I forgot.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-21",
+        "situation": "Lunch",
+        "child_behavior_observed": "Ate the crackers and maybe two bites of apple. Said the sandwich 'smelled weird' so he didn't touch it. I'm not sure if it actually smelled weird, it was turkey from Friday, so maybe it did?",
+        "parent_response": "Told him I was proud of him for the apple. Packed crackers again for tomorrow since that's what works right now.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-23",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "bedtime again. he got himself really worked up about his stomach, kept saying am I going to be sick am I going to be sick. I kept saying no honey you're fine you're fine. he wanted the bucket AND the mints. I'd say he was a 6. I sat with him the whole time until he was asleep, I know, I know",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-25",
+        "situation": "Car ride to his grandma's (about 45 minutes)",
+        "child_behavior_observed": "Sat with his window down the whole way and had a mint in his mouth the entire time. Kept asking how much longer. He didn't get sick at all, which I pointed out after.",
+        "parent_response": "I let him have the window down even though it was pretty cold and I gave him the mints out of my purse. I always keep them now just in case.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-09-28",
+        "situation": "Indoor recess, a boy said he felt sick",
+        "child_behavior_observed": "His teacher said he went to the far corner of the room with his hands over his ears and didn't talk to anyone the rest of recess. She said he wouldn't come out of the corner. I don't know if he was scared or just upset or what, he wouldn't tell me later.",
+        "parent_response": "His teacher called me. I asked her if he could sit far away from any kid who seems sick and she said she'd try her best.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-01",
+        "situation": "School lunch",
+        "child_behavior_observed": "Didn't eat anything at all at lunch. When I asked why he said 'what if I throw up in front of everybody.' That's the first time he's said it out loud like that.",
+        "parent_response": "I told him nobody is going to throw up and that I'd make his favorite pasta for dinner. I packed the crackers again. I feel like I'm doing it wrong but I don't want him starving all day.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um so tonight was bedtime again and he did the whole like am i gonna throw up thing he asked me i swear like twelve times and um i felt his head and i said no youre fine and he had the bucket right there and the mints and then also i forgot to say at lunch today the teacher said he only had the crackers again nothing else so i dont know",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5",
+            "b6",
+            "a4",
+            "s1",
+            "b2"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        },
+        "trap": "'twelve times' is a count, not a fear level"
+      },
+      {
+        "text": "ok quick one the car ride home from soccer he had the window down the whole time and the mints and i think hed say it was like a five maybe",
+        "expected": {
+          "refs": [
+            "s4",
+            "b7",
+            "a6"
+          ],
+          "observations": 1,
+          "fear_level_said": 5
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      },
+      {
+        "situation_ref": "s4",
+        "behavior_ref": "b7"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s4",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

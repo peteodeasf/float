@@ -1,0 +1,211 @@
+{
+  "id": "fam-social-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "dad writes clinically: labels like 'Observed', 'Response', SUDS, durations, his own jargon",
+  "facts": {
+    "child": {
+      "name": "Caleb",
+      "age": 17
+    },
+    "anxiety": "social anxiety",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Interviews with adults (college alumni interview, practice interview with the school counselor)",
+        "fear_level": 7,
+        "feared_outcome": "I'll blank on a question and they'll decide I'm not smart enough",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Has dad sit in the room just off camera during the video interview"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Asks dad again and again afterward whether his answers were okay"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad sits in the room off camera"
+          },
+          {
+            "id": "a2",
+            "text": "Dad answers each of his repeated 'was that okay' questions"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Eating dinner with his girlfriend's family",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Eats a full meal at home first so he barely has to eat at their table"
+          },
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Left the table saying he had to take a call and stayed in the bathroom about ten minutes"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "Working the register at his grocery store job",
+        "fear_level": 5,
+        "feared_outcome": "A customer will get mad at me and I won't know what to say",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Trades shifts so he only stocks shelves and never works the register"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad called his manager to say Caleb is shy and ask about shelf-only shifts"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-14",
+        "situation": "Alumni interview, video call, 30 min scheduled",
+        "child_behavior_observed": "Observed: requested that I remain in the room, seated out of camera frame, for the full duration. Maintained adequate eye contact with the screen. Post-interview, asked approx. six times within the hour whether specific answers were 'okay' or 'weird'.",
+        "parent_response": "Response: complied with the request to remain in the room. Answered each reassurance question in the affirmative.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-16",
+        "situation": "Work schedule, grocery store",
+        "child_behavior_observed": "Observed: traded his Saturday register shift with a coworker for a Sunday stocking shift. Third such trade this month.",
+        "parent_response": "Response: none at the time. Discussed briefly at dinner; he described the register as 'not a big deal' but declined to work it.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-19",
+        "situation": "Dinner at girlfriend's (Nora's) parents' house",
+        "child_behavior_observed": "Observed: ate a full plate of leftovers at home at 5:15 before leaving for a 6:30 dinner. Per his account, ate 'a few bites' there.",
+        "parent_response": "Response: noted it, did not comment.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-21",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Retrospective note, should have logged earlier. Two weeks ago I phoned his store manager and explained that Caleb is shy and asked whether he could be scheduled for stocking rather than register. Manager agreed informally. In light of what we discussed in session I suspect this falls under accommodation. Flagging it for completeness.",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-26",
+        "situation": "Second dinner with Nora's family, at a restaurant",
+        "child_behavior_observed": "Observed: approx. 20 minutes into the meal, stated he needed to take a call and left the table. Nora later told him he was gone about ten minutes; he acknowledged to me he was in the restroom and there was no call. Again ate before leaving the house.",
+        "parent_response": "Response: he raised it himself on the drive home. I listened. Did not problem-solve.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "Practice interview with school counselor, in person, 20 min",
+        "child_behavior_observed": "Observed: asked if I could wait in the counselor's office; counselor said no. Completed it alone. Afterward asked eight or nine times over the evening whether his answer about 'leadership' was adequate.",
+        "parent_response": "Response: answered each time. By the fifth I noted to myself this was the reassurance pattern but continued answering.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "Work, grocery store",
+        "child_behavior_observed": "Observed: scheduled for one register hour due to a staffing gap. Swapped it within the day.",
+        "parent_response": "Response: none.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um observation from this evening caleb had the follow up call with the alumni interviewer at 4:15 it lasted maybe 20 minutes and um i was in the room again off camera at his request and then afterward he asked me i'd estimate eight or nine times whether his answer about the robotics club was adequate and i answered each time he rated it a seven",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1",
+            "b2",
+            "a2"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "4:15 is a time, 20 is minutes, 'eight or nine times' is a count; only seven is a fear level"
+      },
+      {
+        "text": "brief one he swapped his saturday register shift with a coworker again so he's on stocking only this week",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

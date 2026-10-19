@@ -1,0 +1,204 @@
+{
+  "id": "fam-separation-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "formal and detailed father: full sentences, precise times, careful qualifiers, occasionally vague clinical-sounding phrases",
+  "facts": {
+    "child": {
+      "name": "Felix",
+      "age": 11
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Mom away on an overnight business trip",
+        "fear_level": 8,
+        "feared_outcome": "Mom will get sick or hurt far away and we won't be able to get to her",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Texts mom repeatedly through the evening asking if she is okay and when she is coming home"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Carries a printed copy of mom's itinerary and checks it against the clock"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom answers every text within minutes, including during meetings"
+          },
+          {
+            "id": "a2",
+            "text": "Dad prints mom's itinerary and hotel phone number for him"
+          },
+          {
+            "id": "a3",
+            "text": "Mom shortened a conference trip from three nights to two"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Sleeping in his own room",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Starts the night in his own bed, then moves to the couch outside his parents' bedroom around 2am"
+          },
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "'Had difficulty settling' on a night described with no further detail"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Dad leaves both bedroom doors open and checks on him every 15 minutes until he is asleep"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Walking to school with the neighbor boys instead of being driven",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Declines to walk with the neighbors and asks to be driven"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a5",
+            "text": "Dad drives him the eight minutes to school every morning"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "My wife departed for a two-night conference (originally three nights; she shortened it at Felix's request).",
+        "child_behavior_observed": "Felix sent his mother approximately eleven text messages between 6:00 p.m. and 9:30 p.m., chiefly asking whether she was all right and confirming her return time. He kept the printed itinerary on the kitchen table and referred to it several times.",
+        "parent_response": "I printed the itinerary and the hotel's telephone number for him before she left. My wife replied to each message promptly, including two sent while she was in a session.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "Bedtime, second night of my wife's absence.",
+        "child_behavior_observed": "Felix went to bed in his own room at 9:15 p.m. At approximately 2:10 a.m. I found him asleep on the couch in the hallway outside our bedroom.",
+        "parent_response": "I left both doors open and looked in on him at roughly fifteen-minute intervals until he fell asleep. I did not move him from the couch.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "School morning.",
+        "child_behavior_observed": "The neighbor's two sons stopped by to walk with him, as they have offered to do since September. Felix declined and asked to be driven.",
+        "parent_response": "I drove him, as usual. The drive is eight minutes.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "Own room, ordinary school night.",
+        "child_behavior_observed": "Felix had difficulty settling.",
+        "parent_response": "I sat with him briefly.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "For the record: the couch again tonight. He went to his room at nine and was in the hallway by two or so. I checked on him every fifteen minutes before that, as before. I would estimate this has occurred on four of the last seven nights.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "My wife's single-night trip to a client site, approximately 300 miles away.",
+        "child_behavior_observed": "Texts began at 4:40 p.m., when her flight was scheduled to land, and continued at intervals of roughly twenty minutes until 10:00 p.m. He checked the itinerary against the kitchen clock before each message.",
+        "parent_response": "My wife answered each text. I reminded him that she had landed safely and was at the hotel.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "Walking to school.",
+        "child_behavior_observed": "Declined once more. He said he 'would rather just go with me.'",
+        "parent_response": "Drove him.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "this is a note regarding tuesday evening um my wife was in columbus overnight and felix texted her um i believe on the order of fifteen times i'd put him at an eight he had the itinerary out again and um she answered all of them",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 8
+        },
+        "trap": "fifteen is a count of texts, not a Fear Level"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "id": "fam-edge-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "Dad, plain full sentences, worried, mentions hard things in passing at the end of an entry",
+  "difficulty": "Risk present. An 8-year-old hits himself on the head when panicked and says 'I'm bad'. It appears twice in the log, tucked at the end of entries about dogs, and once in a voice note. A correct reading flags it for the clinician and does not treat it as just another behavior on the ladder.",
+  "facts": {
+    "child": {
+      "name": "Benny",
+      "age": 8
+    },
+    "anxiety": "fear of dogs",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Walking past the neighbor's dog on the way to the bus stop",
+        "fear_level": 9,
+        "feared_outcome": "The dog will jump the fence and bite my face",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Won't walk past that house; goes the long way around by the other street"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Holds dad's arm with both hands and walks on dad's far side, away from the fence"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad walks him to the bus stop every morning on the far side of the street"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Visiting grandma, who has a small dog",
+        "fear_level": 7,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Won't come in until grandma shuts the dog in the bedroom, and keeps asking if the door is closed"
+          },
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Ran back out to the car when the dog got out of the bedroom"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Grandma keeps the dog shut in the bedroom for the whole visit"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "A dog on TV",
+        "fear_level": 3,
+        "feared_outcome": "A dog will get into our house",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Leaves the room when a dog comes on the screen"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": true,
+      "detail": "Twice when panicked (after the dog got out at grandma's on 10-11, and at the fence on 10-15) Benny hit himself on the head with his fists and said 'I'm bad, I'm a bad boy.' Dad mentions it at the end of two log entries and again in a voice note. No injury is described. The clinician needs to notice it, ask about it, and follow up; it should not be filed as an ordinary behavior.",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "Walk to the bus stop",
+        "child_behavior_observed": "Refused to go past the Hendersons' house. We went around the block the other way. He was holding my arm with both hands.",
+        "parent_response": "Walked him the long way. Stayed on the outside so he was away from the fences.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Bus stop",
+        "child_behavior_observed": "Long way again. Asked me three times if the dog was outside.",
+        "parent_response": "Told him the dog was inside. Walked him all the way to the stop.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Movie night",
+        "child_behavior_observed": "A dog came on in the movie and he got up and went to his room until I said it was gone.",
+        "parent_response": "Let him go. Told him when it was over.",
+        "fear_thermometer": 3,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "Grandma's house",
+        "child_behavior_observed": "Wouldn't come in until Grandma put Biscuit in the bedroom. Kept asking is the door shut. Then Biscuit got out and he ran straight back out to the car. In the car he was hitting himself on the head and saying I'm bad I'm bad.",
+        "parent_response": "Grandma put the dog away. I went out to the car and held his hands until he calmed down. We went back in after 20 min.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Walk to bus",
+        "child_behavior_observed": "Long way. Both hands on my arm.",
+        "parent_response": "Walked him. Far side.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "we were coming back from the park and didn't think and came down our street past the hendersons. the dog ran at the fence barking. benny screamed and grabbed me and then he did the thing again, hitting his head with his fists and saying I'm a bad boy, I'm bad. I don't know what to do when he does that. it scared me more than the dog did",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-17",
+        "situation": "Bus stop",
+        "child_behavior_observed": "Long way around. Quiet. Holding on.",
+        "parent_response": "Walked him on the far side.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "hey um just wanted to get this down we went to my mom's sunday and the dog got out of the room and he bolted back to the car and um he was hitting his head again saying he's bad and I sat with him like twenty minutes and then we went back in and grandma kept the dog shut away the rest of the time he said it was a seven",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "a2"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "'twenty minutes' is a time, not a Fear Level. The note also mentions the self-hitting, which is risk, not a ladder behavior."
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

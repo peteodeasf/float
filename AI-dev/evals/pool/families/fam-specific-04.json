@@ -1,0 +1,217 @@
+{
+  "id": "fam-specific-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "dad who writes everything as dash bullet lists, clipped, times and floor numbers included",
+  "facts": {
+    "child": {
+      "name": "Wren",
+      "age": 12
+    },
+    "anxiety": "elevators",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Taking the elevator to the orthodontist on the sixth floor",
+        "fear_level": 8,
+        "feared_outcome": "The elevator will get stuck between floors and I won't be able to breathe",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "escape",
+            "text": "Steps into the elevator, then jumps back out before the doors close and takes the stairs"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Heads straight for the stairs without trying the elevator"
+          },
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Stands right by the panel and keeps pressing the door-open button"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad walks the six flights of stairs with her"
+          },
+          {
+            "id": "a2",
+            "text": "Dad calls the front desk to say they will be late"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Riding the elevator at her aunt's apartment building",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Only rides if dad is in the elevator with her"
+          },
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Counts the floors under her breath (could be calming herself, could be habit)"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad always rides up and down with her"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Going through the automatic car wash",
+        "fear_level": null,
+        "feared_outcome": "The doors will lock and we'll be stuck inside",
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Gets out of the car and waits in the lot while dad drives through"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Dad lets her wait outside"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-29",
+        "situation": "- Ortho appt, 4:15\n- 6th floor, Medical Arts bldg",
+        "child_behavior_observed": "- Got in elevator\n- Doors started closing, she jumped back out\n- Took stairs",
+        "parent_response": "- Walked stairs w/ her\n- Called front desk, said 5 min late",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "- Aunt Dee's apt\n- 4th floor",
+        "child_behavior_observed": "- Rode up OK\n- Counting floors quietly",
+        "parent_response": "- Rode w/ her",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "- Car wash on the way home",
+        "child_behavior_observed": "- Asked to get out first\n- Waited by the vacuums",
+        "parent_response": "- Let her. Drove through alone.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "- Ortho, wire adjustment\n- 6th fl",
+        "child_behavior_observed": "- Went straight to stairwell, didn't try",
+        "parent_response": "- Went with her\n- Called ahead again",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "- Aunt Dee's, leaving",
+        "child_behavior_observed": "- Wouldn't go down until I came\n- Counting again, lips moving",
+        "parent_response": "- Rode down w/ her",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "- asked her what she thinks will happen\n- says it gets stuck between floors and she can't breathe\n- she's never been stuck. neither has anyone we know",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "- Ortho, retainer fitting",
+        "child_behavior_observed": "- Rode up!\n- Stood right at panel, held door-open btn every floor",
+        "parent_response": "- Rode with her\n- Told her she did great",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok quick one the four fifteen ortho appointment she rode up to the sixth floor with me which is huge um but she held the door open button like the whole way so it kept stopping and I'd say she was a seven",
+        "expected": {
+          "refs": [
+            "s1",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "'four fifteen' is a time and 'sixth floor' a floor number; the fear level is 7"
+      },
+      {
+        "text": "at dee's tonight she waited for me before she'd get in the elevator and uh counted the floors again two three four under her breath",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "b5",
+            "a3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'two three four' is her counting floors, not a fear level"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

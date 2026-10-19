@@ -1,0 +1,218 @@
+{
+  "id": "fam-social-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom writes terse one-liners, fragments, almost no detail",
+  "facts": {
+    "child": {
+      "name": "Ollie",
+      "age": 9
+    },
+    "anxiety": "social anxiety",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Ordering food at a restaurant",
+        "fear_level": 6,
+        "feared_outcome": "The server will laugh at me if I say it wrong",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Whispers his order to mom so she can say it to the server"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Says he isn't hungry so he doesn't have to order, then eats off mom's plate"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom orders for him"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Saying hello to adults he doesn't know well (neighbors, people at church)",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Steps behind dad when an adult talks to him"
+          },
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Goes quiet and looks at the ground; mom can't tell if he is scared, waiting it out, or just tired of being asked what grade he's in"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Dad answers adults' questions for him and says he's shy"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Classmate's birthday party",
+        "fear_level": 8,
+        "feared_outcome": "Nobody will play with me and everyone will stare at me",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Went into the party, then asked to go home after about 20 minutes"
+          },
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Stayed right next to mom the whole time he was at the party"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom stayed at the party instead of dropping him off like the other parents"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "restaurant",
+        "child_behavior_observed": "whispered order to me",
+        "parent_response": "told waiter for him",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "neighbor said hi",
+        "child_behavior_observed": "behind his dad",
+        "parent_response": "dad answered. said hes shy",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "pizza place",
+        "child_behavior_observed": "\"not hungry.\" ate my crusts after",
+        "parent_response": "ordered for him",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "bday party, kid from class. trampoline place. went in. glued to me. lasted 20 min then wanted home. i stayed, didnt drop off. 8",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-05",
+        "situation": "church. grandma's friend",
+        "child_behavior_observed": "looked at floor. nothing",
+        "parent_response": "nothing",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "diner",
+        "child_behavior_observed": "whispered again",
+        "parent_response": "i ordered",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "mail lady",
+        "child_behavior_observed": "hid behind dad",
+        "parent_response": "dad talked to her",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um tonight at like 6:30 we went to the taco place and there were like 4 people in line behind us and he whispered it to me again so i just said it for him um he said it was a 6 and then on the way out the lady from next door was there and said hi and he just went quiet and looked down at his shoes his dad answered her",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1",
+            "s2",
+            "b4",
+            "a2"
+          ],
+          "observations": 2,
+          "fear_level_said": 6
+        },
+        "trap": "6:30 is a time and 4 is a count of people; only 6 is a fear level"
+      },
+      {
+        "text": "burger place he said he wasnt hungry so he wouldnt have to order um then ate like half my fries",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

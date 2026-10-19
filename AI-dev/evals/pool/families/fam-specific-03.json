@@ -1,0 +1,219 @@
+{
+  "id": "fam-specific-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mother writing in her second language: simple sentences, slightly off grammar and tense, American words",
+  "facts": {
+    "child": {
+      "name": "Arjun",
+      "age": 9
+    },
+    "anxiety": "needles and doctor visits",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Getting a flu shot at the pediatrician",
+        "fear_level": 9,
+        "feared_outcome": "The needle will break off inside my arm",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Refuses to get out of the car in the clinic parking lot"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Asks again and again whether there will be a shot today"
+          },
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Ran out of the exam room when the nurse came in with the tray"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom canceled and rescheduled the flu shot appointment"
+          },
+          {
+            "id": "a2",
+            "text": "Mom promised 'no shot today' to get him into the building"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Dentist cleaning (the trigger is gagging on the tools, not needles)",
+        "fear_level": 5,
+        "feared_outcome": "I will throw up in front of the dentist",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Keeps his hand half raised the whole cleaning, ready to signal stop"
+          },
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Asks for a break every minute or so to sit up and swallow"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom asked the dentist to skip the x-rays"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Health class video showing a blood draw",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "escape",
+            "text": "Left class for the bathroom partway through the video and stayed out until it ended"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom emailed the teacher asking that he be excused from videos like that"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-21",
+        "situation": "Flu shot appointment, children doctor",
+        "child_behavior_observed": "He is not want to get out from the car. He lock the door and cry. We sit in parking lot 25 minutes.",
+        "parent_response": "I call the office and cancel. We make new appointment for October.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-24",
+        "situation": "Dentist for cleaning",
+        "child_behavior_observed": "He go in the chair ok. But all the time his hand is up a little, like he is ready to say stop. He ask for break many times, he sit up and swallow.",
+        "parent_response": "I tell the dentist please no x-ray this time, last time he almost vomit with the x-ray thing.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-26",
+        "situation": "Talking at dinner about the doctor",
+        "child_behavior_observed": "He ask me is there shot next time, is there shot, maybe 10 times in the dinner.",
+        "parent_response": "I say I don't know yet. Then I say ok no shot, to make him stop.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "School - health class",
+        "child_behavior_observed": "Teacher show video of nurse take blood from arm. He go to bathroom and not come back until video is finish. Teacher tell me after.",
+        "parent_response": "I write email to teacher, please he don't need to watch this kind of video.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "Doctor again (new appointment for shot)",
+        "child_behavior_observed": "He come inside the building because I promise him no shot today. In the room the nurse come with the tray and he run out to the hallway and to the waiting room.",
+        "parent_response": "I go after him. Nurse say we can do another day. I feel bad because I lie to him about no shot.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-05",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "In the car he tell me finally why he is so scared. He think the needle will break and stay inside his arm. His friend tell him this happen to somebody. I say this is not true but he don't believe me.",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Before bed",
+        "child_behavior_observed": "He ask again if he have to get shot this week. Ask 3 or 4 times.",
+        "parent_response": "I say we talk with the doctor lady first.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so today um the dentist they call for remind the next cleaning and he hear me on the phone and he say mom tell them no x-ray tell them and um he was ok after but he ask me two times if it is the same dentist",
+        "expected": {
+          "refs": [
+            "s2",
+            "a3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "dentist call is about gagging and x-rays, not needles; 'two times' is a count, not a fear level"
+      },
+      {
+        "text": "this morning he ask me again about the shot is there shot is there shot and I say I don't know and he say it is a nine for him the shot like a nine um and then in the afternoon we drive past the clinic and he don't want to look at the building",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2"
+          ],
+          "observations": 2,
+          "fear_level_said": 9
+        },
+        "trap": "second moment (not looking at the building) is not a listed behavior; do not invent one with a type"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

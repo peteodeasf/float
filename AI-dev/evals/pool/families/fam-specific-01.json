@@ -1,0 +1,233 @@
+{
+  "id": "fam-specific-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "emoji-heavy texting, fragments, no capitals; thinks the problem is the park until the fourth entry",
+  "facts": {
+    "child": {
+      "name": "Teddy",
+      "age": 8
+    },
+    "anxiety": "dogs",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Going to the park playground (the real trigger is off-leash dogs there)",
+        "fear_level": 8,
+        "feared_outcome": "A dog will run at me and bite my face",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Says his legs hurt or he is tired so they go home instead of to the park"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Climbs up mom and wants to be carried whenever a dog is in sight"
+          },
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Asks over and over whether there will be dogs there before going"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom takes him to the indoor trampoline park instead of the park"
+          },
+          {
+            "id": "a2",
+            "text": "Mom tells him she checked and there are no dogs, or that the dog is on a leash"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Visiting Grandpa's house (Grandpa has a big dog, Gus)",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Only gets out of the car and goes inside once Gus is shut in the backyard"
+          },
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Runs back out to the car when Gus barks at the back door"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom texts Grandpa from the driveway to shut Gus out back (or in the garage) before Teddy comes in"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Walking past the neighbor's fenced yard with a barking dog",
+        "fear_level": 6,
+        "feared_outcome": "The dog will jump over the fence",
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Pulls mom across the street so they don't pass the fence"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom crosses the street with him"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "park after school 🙄",
+        "child_behavior_observed": "said his legs hurt 😩 didnt want to go. wanted to go home and play minecraft",
+        "parent_response": "fine whatever we went home 🤷‍♀️",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "playground w cousins 🛝",
+        "child_behavior_observed": "asked like 5x if there would be dogs there 🐶❓❓ then begged for the trampoline park",
+        "parent_response": "took all 3 kids to the indoor trampoline park instead 🙃💸",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "walk to school 🚶‍♂️🎒",
+        "child_behavior_observed": "the big dog behind the fence on the corner started barking 🐕💥 he yanked me to the other side of the street",
+        "parent_response": "crossed with him 🫶",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "grandpa's 👴🏻",
+        "child_behavior_observed": "would NOT unbuckle til Gus was out back 😬 then came in totally fine and played legos",
+        "parent_response": "texted grandpa from the driveway to put Gus out 📱",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "ok I finally get it 💡💡 its not the park its the DOGS. sat morning a yellow lab got off leash by the swings and he screamed and climbed me like a tree 🌳😭 hes way too big for that and I still held him the whole rest of the time. in the car he said the dog was gonna bite his face. he said 9 on the thermometer",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "park 🌳🐕",
+        "child_behavior_observed": "are there dogs are there dogs 🔁🔁 before we even had shoes on. at the park he stayed on top of the climbing thing and yelled when one walked by",
+        "parent_response": "I said I checked and there were none (there was one 😬 sorry dr)",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "grandpa again 👴🏻🐕",
+        "child_behavior_observed": "came in once Gus was out. then Gus barked at the slider and he ran straight back out to the car 🏃‍♂️💨",
+        "parent_response": "sat in the car w him like 20 min 😮‍💨 grandpa moved Gus to the garage and then he came back in",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "park (tried again!!) ☀️",
+        "child_behavior_observed": "went!! 🎉 but tried to climb up on me every time a dog walked past 🐶",
+        "parent_response": "held him up twice then put him down and said he could stand next to me 💪",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um so today at the park there were like three dogs and he did the thing again where he climbs up me so I was holding him basically the whole time and he kept going is it gonna come over here is it gonna come over here and I kept saying no no buddy it's on a leash um and he said it was an eight",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2",
+            "b3",
+            "a2"
+          ],
+          "observations": 1,
+          "fear_level_said": 8
+        },
+        "trap": "'three dogs' is a count, not a fear level; the fear level is 8"
+      },
+      {
+        "text": "ok two things so this morning at grandpa's he stayed in the car til gus was out back like usual I texted my dad from the driveway and then uh later walking home he made me cross the street at the fence house again with the barky dog",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "a3",
+            "s3",
+            "b6",
+            "a4"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

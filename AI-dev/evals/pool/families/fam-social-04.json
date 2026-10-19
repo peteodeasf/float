@@ -1,0 +1,190 @@
+{
+  "id": "fam-social-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom writes long rambling paragraphs with backstory, asides and second-guessing",
+  "facts": {
+    "child": {
+      "name": "Imani",
+      "age": 15
+    },
+    "anxiety": "social anxiety",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Giving a presentation in class",
+        "fear_level": 8,
+        "feared_outcome": "My voice will shake, everyone will see I'm nervous, and someone will film it",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Stayed home sick on the day of her history presentation"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Reads straight from cue cards held up in front of her face, never looks at the class"
+          },
+          {
+            "id": "b6",
+            "type": "unclear",
+            "text": "Stayed up very late the night before rewriting her slides over and over; could be ordinary preparing or could be anxiety-driven"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom emailed the teacher asking if Imani could present to the teacher alone at lunch instead"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Ordering at a coffee shop or drive-thru with friends",
+        "fear_level": 4,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Has a friend order for her and pays her back"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Orders the exact same drink every time so she has the words memorized"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "Asking about a part-time job in person",
+        "fear_level": null,
+        "feared_outcome": "They'll think I'm stupid and laugh about me after I leave",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Rode to the bakery with mom but stayed in the car and never handed in the application"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom offered to go in and ask about the job for her"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "So this was the history presentation, which she has known about for about three weeks, it was on the Industrial Revolution and it was a group thing originally but then the groups got changed and she ended up doing her part by herself",
+        "child_behavior_observed": "She was up until almost 1am the night before redoing her slides, I could see the light under the door, and I don't know if that's just her being a perfectionist (she's always been like that, even in kindergarten with her coloring) or if it's the anxiety thing. Then in the morning she said she had a headache and her stomach was bad and she stayed home. I'm honestly not sure if the headache was real, she did look pale, but she was fine by about 11 and watching shows.",
+        "parent_response": "I let her stay home. I called her in sick. I didn't really push it because I was running late for work and I didn't want a whole fight at 7am, which I know is probably not the right answer.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "History again, the makeup day for the presentation, which the teacher (who is lovely, by the way, very understanding) let her do the next day",
+        "child_behavior_observed": "She did it! But she told me she held her note cards right up in front of her face the whole time and read them word for word and never looked up at anybody, not even once. She said it was over in like three minutes. She said a couple of boys in the back were on their phones and she was sure they were recording her, though I don't think they were, I mean why would they.",
+        "parent_response": "I told her I was proud of her for doing it. And I'll be honest, the night before, I had emailed Mr. Okafor to ask if she could just do it for him at lunch instead of in front of everybody, but he wrote back and said he'd rather she try with the class first, which in hindsight I'm glad about.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "Coffee place after school with her two friends from orchestra, the one by the gas station, she goes there a lot",
+        "child_behavior_observed": "Her friend Tessa ordered for her and Imani paid her back after with her phone. Tessa apparently does this a lot, which I didn't know until tonight. She seemed totally fine about it and was laughing in the car, so maybe this one isn't that big a deal? It's hard to tell what's a big deal and what isn't.",
+        "parent_response": "I didn't say anything about it, I just listened. I wasn't sure if I should.",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "So we drove to the bakery on Linden because they had a sign up for weekend help and she has been saying for weeks she wants a job so she can have her own money, and she had the application all filled out, she'd done it at the kitchen table, very neat. And we parked and she just sat there. Like fifteen minutes. I offered to go in with her, and then I offered to go in and just ask them about it myself and she could come in after, and she said no to both, and then she said can we just go, and we went home. She said they would think she was stupid and laugh about her after she left. I didn't ask her for a number because she was pretty upset and I didn't want to make it into a whole therapy thing in the car.",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Drive-thru, just me and her, getting breakfast before her dentist appointment",
+        "child_behavior_observed": "She ordered for herself through the speaker, which I didn't expect, but it was the same thing she always gets, the vanilla iced coffee and the egg bite, she says it the exact same way every time almost like a little script. When the girl asked if she wanted the large she panicked a little and looked at me.",
+        "parent_response": "I said \"medium\" for her. It just came out. I know.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "Coffee place with orchestra friends again",
+        "child_behavior_observed": "Same as before, Tessa ordered, Imani paid her back. I only know because I picked them up and heard them talking about it.",
+        "parent_response": "Nothing, just drove.",
+        "fear_thermometer": 3,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um two things one she has another presentation coming up in english it's a poem one and she's already asking me if i can email the teacher like she did last time which um i haven't i told her i'd think about it and she said it's like an eight and then the other thing was the bakery um they still have the sign up i drove past it today and i mentioned it and she just said not yet and kind of changed the subject",
+        "expected": {
+          "refs": [
+            "s1",
+            "a1",
+            "s3",
+            "b5"
+          ],
+          "observations": 2,
+          "fear_level_said": 8
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

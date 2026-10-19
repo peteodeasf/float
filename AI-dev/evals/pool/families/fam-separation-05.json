@@ -1,0 +1,265 @@
+{
+  "id": "fam-separation-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom types the log the way she talks into her phone: run-on, 'so like', 'anyway', asides in parentheses, little punctuation",
+  "facts": {
+    "child": {
+      "name": "Lucia",
+      "age": 14
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Parents going out for the evening while Lucia stays home with her younger brother",
+        "fear_level": 6,
+        "feared_outcome": "Something will happen to you on the drive and I'll be the one who has to deal with it",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Texts 'where r u' over and over and keeps checking the location-sharing app"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Has mom call her the moment they leave the restaurant"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom keeps location sharing on and answers every text right away"
+          },
+          {
+            "id": "a2",
+            "text": "Parents are home by 9pm"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Staying the weekend at her grandparents' while parents are away",
+        "fear_level": 7,
+        "feared_outcome": "You won't come back and I'll be stuck there",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Went to her grandparents' on Friday, then texted Saturday afternoon that she felt sick and wanted to be picked up"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "FaceTimes mom at night and keeps the call going until she falls asleep"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom drove 50 minutes back to pick her up early"
+          },
+          {
+            "id": "a4",
+            "text": "Mom stays on FaceTime until Lucia is asleep"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Dad traveling for work",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Stayed up very late on her phone the nights dad was away; mom isn't sure it's about dad"
+          },
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Sleeps in her parents' room on dad's side while he's away"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a5",
+            "text": "Mom lets her sleep in the parents' bed while dad is away"
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "name": "Coming home to an empty house after school",
+        "fear_level": 5,
+        "feared_outcome": "Someone will come to the house and I'll be by myself",
+        "behaviors": [
+          {
+            "id": "b7",
+            "type": "avoidance",
+            "text": "Goes to a friend's house or the public library instead of coming home when nobody is there"
+          },
+          {
+            "id": "b8",
+            "type": "safety",
+            "text": "Calls mom on speaker as she walks in and keeps her on the line until mom gets home"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a6",
+            "text": "Mom leaves work early on Tuesdays so Lucia isn't home alone"
+          },
+          {
+            "id": "a7",
+            "text": "Mom stays on the phone with her, sometimes for an hour, until she gets home"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-02",
+        "situation": "so we went to the steakhouse for my sister's bday and lucia stayed home with her brother",
+        "child_behavior_observed": "so like she was texting where r u where r u the whole time and she had my location up on her phone (her brother told me after) and she made me promise to call the second we left",
+        "parent_response": "answered every text pretty much right away, called when we walked out, we were home by 9 like always",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "weekend at mom and dad's (my parents) while we went to the wedding",
+        "child_behavior_observed": "friday was ok-ish she facetimed me at like 10:30 and wanted me to stay on till she fell asleep. then saturday around 2 she texts me she feels sick and can i come get her. she wasnt sick she had a granola bar and was fine in the car",
+        "parent_response": "stayed on facetime friday till she was out. saturday i left the wedding lunch and drove the 50 min back and got her, anyway my husband stayed for the reception",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "after school, nobody home til 4:45",
+        "child_behavior_observed": "went to priya's again instead of home, texted me she'd be there til i got back",
+        "parent_response": "said ok, picked her up there on my way",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "after school, tues (i leave early tuesdays now)",
+        "child_behavior_observed": "got home before me by like 10 min and called me on speaker walking in, kept me on",
+        "parent_response": "stayed on with her the whole drive (on other days its sometimes like an hour on the phone), honestly i left at 3 on tues so she wouldnt be alone very long",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "so jorge is in phoenix til sunday and she's been up so late on her phone like 1am and i honestly dont know if thats about him being gone or just being 14 and also she asked to sleep in our room on his side and i said fine",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "after school",
+        "child_behavior_observed": "public library till 5 then walked home when she saw on location i was home. she said somebody could come to the door when shes there by herself",
+        "parent_response": "didnt say anything about it, made dinner",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-16",
+        "situation": "date night w jorge, just dinner",
+        "child_behavior_observed": "where r u texts like every 20 min, and at 8:15 she texted what if you get in an accident and i'm the one who has to deal with it like with the police and everything",
+        "parent_response": "texted back every time, said we're fine we're leaving soon, home by 9 again",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um today she went to the library again instead of coming home like i get home at quarter to five she just waits it out there and um then tonight we went out and she was texting the whole time like where are you where are you i'd say six for tonight like she was a six",
+        "expected": {
+          "refs": [
+            "s4",
+            "b7",
+            "s1",
+            "b1"
+          ],
+          "observations": 2,
+          "fear_level_said": 6
+        }
+      },
+      {
+        "text": "um so i don't know if this goes here but she's still sleeping on jorge's side and she's up late on her phone and i don't know if it's about him being gone or what",
+        "expected": {
+          "refs": [
+            "s3",
+            "b6",
+            "b5",
+            "a5"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      },
+      {
+        "situation_ref": "s4",
+        "behavior_ref": "b8"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s4",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

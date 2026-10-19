@@ -1,0 +1,226 @@
+{
+  "id": "fam-social-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "busy mom, plain full sentences; once writes the younger brother's name (Dev) when she means Priya",
+  "facts": {
+    "child": {
+      "name": "Priya",
+      "age": 10
+    },
+    "anxiety": "social anxiety",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Talking to family on the phone (grandma, aunt)",
+        "fear_level": 7,
+        "feared_outcome": "There will be a long silence and they'll think I'm weird",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Won't come to the phone when grandma or her aunt calls; says she's busy or goes to her room"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Writes what she will say on a sticky note and reads it word for word"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom tells the relative Priya is busy or in the shower"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Calling a business on the phone (pizza place, library, dentist)",
+        "fear_level": 8,
+        "feared_outcome": "They'll ask me something I don't know and I'll freeze",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Dials, then hands the phone back to mom before it rings"
+          },
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Hung up as soon as the library worker answered"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Dad does it online instead (orders food, renews library books) so nobody has to call"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Soccer practices and games",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Stays at the back of the line in drills so the coach won't pick her to demonstrate"
+          },
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Keeps looking over to check that mom is still on the sideline"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom asked the coach not to make her demonstrate in front of the team"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-01",
+        "situation": "Grandma called after dinner",
+        "child_behavior_observed": "Priya said she was doing homework and wouldn't come to the phone.",
+        "parent_response": "I told Grandma she was busy and would call back.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "Soccer practice",
+        "child_behavior_observed": "Stayed at the very back of every line during drills. Looked over at me a lot.",
+        "parent_response": "Waved back when she looked.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "Calling in our pizza order",
+        "child_behavior_observed": "I asked her to call it in. She dialed and then handed the phone back to me before it even rang.",
+        "parent_response": "I made the call myself.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Aunt Rina's birthday call",
+        "child_behavior_observed": "Dev wouldn't get on the phone to say happy birthday. Went to her room and shut the door.",
+        "parent_response": "Told Rina she was in the shower.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent wrote the 6-year-old brother's name (Dev) but means Priya; 'her room' and the situation show it is Priya"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "Soccer game Saturday",
+        "child_behavior_observed": "Played okay but kept checking where I was standing. When the coach asked for a volunteer to show the throw-in she moved behind two other girls.",
+        "parent_response": "Cheered for her. We talked about it a little in the car.",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "She tried calling the library to renew her books because I said I wasn't going to do it for her. The lady picked up and Priya just hung up. Then she cried a little and her dad renewed them online. He does that a lot, he orders our food online too so nobody has to call. She said it was an 8 after.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Grandma called again",
+        "child_behavior_observed": "She came to the phone! She had written what she wanted to say on a sticky note and read it off word for word. Got through about two minutes.",
+        "parent_response": "Told her afterward I was proud of her.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "Practice",
+        "child_behavior_observed": "Back of the line again for every drill.",
+        "parent_response": "Before practice I asked Coach Dana not to make her demonstrate anything in front of the team.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "so um priya was supposed to call the dentist to ask what time her appointment is that was the deal we made and she got as far as dialing and then she gave me the phone back before it rang um she said it was like an eight",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": 8
+        }
+      },
+      {
+        "text": "ok two things from today um at practice she was at the back again for the passing drill and kept looking over at me like every minute and then tonight grandma called and she actually talked but she had her little sticky note and she read the whole thing off it",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5",
+            "b6",
+            "s1",
+            "b2"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

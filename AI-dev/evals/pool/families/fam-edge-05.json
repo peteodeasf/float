@@ -1,0 +1,141 @@
+{
+  "id": "fam-edge-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "Mom, very short vague entries, no numbers, words like 'off', 'rough', 'not great'",
+  "difficulty": "A very thin log: only 3 entries, all vague. Almost nothing can be classified. Every behavior is unclear and every fear level is null. The right answer is to extract little, say what is missing, and not invent fears, numbers or behavior types.",
+  "label_notes": {
+    "b1": "Unclear. 'Off' and 'slow getting out the door' says nothing about whether he entered, left or did something to feel safer.",
+    "b2": "Unclear, not escape. He came home at lunch, but no note says he was anxious or why he left. Calling it escape would be guessing.",
+    "b3": "Unclear, not avoidance. He skipped one driving practice and said he was tired. Nothing links it to fear.",
+    "b4": "Unclear. 'Came back early' from a party, no reason given, mentioned once."
+  },
+  "facts": {
+    "child": {
+      "name": "Callum",
+      "age": 16
+    },
+    "anxiety": "unclear, possibly panic",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "School mornings",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "unclear",
+            "text": "Is 'off' and slow getting out the door"
+          },
+          {
+            "id": "b2",
+            "type": "unclear",
+            "text": "Came home at lunch one day; reason not given"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom called the school to excuse him for the afternoon"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Driving practice with dad",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "unclear",
+            "text": "Skipped Sunday's driving practice, said he was tired"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "A friend's party",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Came back early from a friend's party; no reason given"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-06",
+        "situation": "morning",
+        "child_behavior_observed": "off. slow getting out the door",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "Jordan's party",
+        "child_behavior_observed": "came back early",
+        "parent_response": "picked him up",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "rough one. he texted me at lunch to come get him so i did and called the office. not great",
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um yeah so he was supposed to drive with his dad sunday at like 4 and he didn't he said he was tired i don't really know um that's kind of it",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'4' is a time, not a Fear Level. Nothing in the note says why he skipped."
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "id": "fam-school-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "dad who logs mostly what he did; short practical notes, child's side is thin",
+  "facts": {
+    "child": {
+      "name": "Desmond",
+      "age": 13
+    },
+    "anxiety": "worry about being late",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Leaving for school in the morning",
+        "fear_level": 8,
+        "feared_outcome": "If I walk in late everyone will turn around and stare at me",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Makes dad leave half an hour early and keeps checking the clock in the car"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "When they will be a few minutes late, refuses to go in and waits in the car until second period"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad drives him instead of letting him take the bus"
+          },
+          {
+            "id": "a2",
+            "text": "Dad calls the attendance office so he can come in at second period"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Getting to class on time between periods",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "unclear",
+            "text": "Was off all afternoon after he got to math late; school said he seemed checked out"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Carries every book all day and runs between classes so he never has to stop at his locker"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "Waiting to be picked up from soccer practice",
+        "fear_level": 6,
+        "feared_outcome": "Something happened to Dad on the way",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Texts dad over and over asking where he is"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad texts him updates every few minutes and leaves work early to be there first"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "School drop off",
+        "child_behavior_observed": "Wanted to leave at 6:55.",
+        "parent_response": "Drove him. Left at 6:55. We were there 35 min before the doors opened.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Drop off",
+        "child_behavior_observed": "Traffic on the bridge. Kept saying the time out loud.",
+        "parent_response": "Told him we'd make it. Called the office from the car. Took him in at 2nd period.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "note": "child's refusal to go in late (b2) is only implied by dad's actions"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Soccer pickup",
+        "child_behavior_observed": "Texted me 9 times between 5:10 and 5:25.",
+        "parent_response": "Replied to each one. Left the office early.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "School",
+        "child_behavior_observed": "Counselor called me. He got to math late after a fire drill and was off all afternoon. She said checked out.",
+        "parent_response": "Asked him at dinner. He said nothing happened. Left it.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Drop off",
+        "child_behavior_observed": "Drove him at 6:50 because he asked. Also asked the office to let him in early.",
+        "parent_response": "",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent action written in child field (driving him and asking the office are dad's actions, a1)"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Noticed his backpack weighs a ton. He carries every book all day. Says he doesn't have time to stop at the locker, he'd be late. Runs between classes. Didn't say anything to him.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Morning - bus?",
+        "child_behavior_observed": "Asked if he could take the bus like his friend. Then changed his mind at the stop.",
+        "parent_response": "Drove him. Left early again.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "Pickup after practice",
+        "child_behavior_observed": "Texts started at 5:02.",
+        "parent_response": "Texted him at 5:00, 5:05, 5:10 with where I was. Got there 5:12.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so uh today he wanted to leave like 30 minutes early again so we left at 6:50 and then um the bridge was backed up and we got there at 8:04 which is like four minutes late and he wouldn't get out of the car so i called the office and he went in at second period he was at a 9 i'd say",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b2",
+            "a1",
+            "a2"
+          ],
+          "observations": 1,
+          "fear_level_said": 9
+        },
+        "trap": "30 minutes, 6:50, 8:04 and four minutes are times and counts; the fear level is the 9 at the end, and it differs from the 8 in the facts"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

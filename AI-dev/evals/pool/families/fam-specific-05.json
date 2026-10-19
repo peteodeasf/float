@@ -1,0 +1,218 @@
+{
+  "id": "fam-specific-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "detailed storyteller mom: long entries with backstory, asides and her own feelings mixed in",
+  "facts": {
+    "child": {
+      "name": "Dominic",
+      "age": 15
+    },
+    "anxiety": "bugs (wasps and spiders)",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Eating dinner outside on the back deck (wasps and bees)",
+        "fear_level": 6,
+        "feared_outcome": "A wasp will sting me and my throat will close up",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "escape",
+            "text": "Takes his plate inside partway through dinner when a wasp lands near it"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Sits at the table in a hoodie with the hood up and sleeves pulled over his hands, even when it's warm"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom moves the whole family's dinner indoors when he asks"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Going into the garage, especially after dark (spiders)",
+        "fear_level": 8,
+        "feared_outcome": "A spider will crawl on me where I can't see it",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Won't go into the garage to get his bike or take the trash out"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Asks mom to shake out his cleats and check the corners before he'll touch anything in the garage"
+          },
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Looks up every spider he sees on his phone to find out what kind it is"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom takes the trash out to the garage bins for him"
+          },
+          {
+            "id": "a3",
+            "text": "Mom shakes out his cleats before practice"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Cross-country team overnight camping trip",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Told the coach he had a family thing so he wouldn't have to go"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom backed up the 'family thing' excuse to the coach"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-22",
+        "situation": "Dinner on the deck. It was the first nice evening in a while and my husband grilled, so I really wanted us to eat outside like we used to when the kids were little.",
+        "child_behavior_observed": "Dom came out in his gray hoodie with the hood up, which was ridiculous because it was 78 degrees. About ten minutes in a wasp landed right by his corn and he stood up, grabbed his plate and went inside without a word. His little sister thought it was hilarious, which did not help.",
+        "parent_response": "I went in after him and asked if he wanted to come back. He said no, so honestly I just brought everyone's plates inside and we finished at the kitchen table. I know, I know.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-24",
+        "situation": "Trash night. The bins live in the garage and it's his chore, has been since he was eleven.",
+        "child_behavior_observed": "He stood at the door to the garage with the bag and wouldn't go in. Said there was a 'huge one' by the recycling last week. Then he went to his room and I could hear him watching some video about brown recluses, which, we live nowhere near where those live.",
+        "parent_response": "I took the trash out myself. Again. I've done it maybe four weeks running now.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-27",
+        "situation": "Getting ready for Saturday practice. His cleats are kept on the shoe rack in the garage because they're muddy.",
+        "child_behavior_observed": "I went out and shook out both cleats over the trash can and checked the corners of the rack with my phone flashlight before he'd come get them.",
+        "parent_response": "Same as always, I did the check for him.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2",
+        "trap": "parent action written in child field (Mom shaking out the cleats is her action; Dominic's behavior is asking her to)"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "The cross-country team has an overnight camping trip at a state park the second weekend in October. The coach called because Dom told him we had a 'family thing.'",
+        "child_behavior_observed": "We do not have a family thing. When I asked him later he admitted it was the tents and the bugs and sleeping on the ground. He was embarrassed and didn't want to talk about it.",
+        "parent_response": "I didn't want to make him look like a liar to his coach, so I said yes, we have a family commitment. I felt sick about it afterwards.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Long one, sorry. Friday night his bike was in the garage and he needed it for the morning, and he just would not go in, it was after nine and dark and he said at night they come out and you can't see them and one could get on you and you wouldn't know. He asked me to go turn on every light and look around first. I said I would turn on the lights but I wasn't going to do a spider patrol. He stood there for a long time and then texted his friend for a ride instead. He said it was an 8 at least.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Dinner outside again, my mother was visiting and she loves the deck.",
+        "child_behavior_observed": "Hood up again. He sat at the end nearest the door. Kept looking around. A bee went past and he flinched but he stayed this time, the whole meal, which I was surprised by. He did ask me twice whether wasps are worse in October.",
+        "parent_response": "I told him I thought they'd be gone soon once it gets cold. And I didn't move dinner in, partly because my mom was there.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Saw a spider in the bathroom upstairs, not even the garage.",
+        "child_behavior_observed": "He took a picture and spent probably twenty minutes looking it up to see what kind it was. Then announced it was a harmless cellar spider and left it there. I honestly don't know if that is a good sign or a bad sign.",
+        "parent_response": "I didn't say anything, I just let him.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um two things from today first the trash he did go to the garage door but then he like handed me the bag and said can you and I did um I know and then later his cleats I shook them out again before practice he asked me to check the corners too so yeah",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "a2",
+            "b4",
+            "a3"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        }
+      },
+      {
+        "text": "we ate outside tonight it was like seventy degrees and he still had the hood up um no wasps actually so he stayed the whole time he said it was like a four when I asked",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2"
+          ],
+          "observations": 1,
+          "fear_level_said": 4
+        },
+        "trap": "'seventy degrees' is temperature; the fear level is 4"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

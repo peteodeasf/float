@@ -1,0 +1,239 @@
+{
+  "id": "fam-social-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom types fast on her phone: no capitals, frequent misspellings, short run-on lines",
+  "facts": {
+    "child": {
+      "name": "Elias",
+      "age": 13
+    },
+    "anxiety": "social anxiety",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Posting in group chats with classmates",
+        "fear_level": 6,
+        "feared_outcome": "If I send something nobody will reply, and that means they all think I'm annoying",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Drafts messages and asks mom over and over if they sound okay before sending"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Muted the class group chat and doesn't post at all"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom reads his drafts and tells him they're fine"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Eating lunch in front of other kids at school",
+        "fear_level": 7,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Skips lunch, says he isn't hungry, brings it home untouched"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Eats only neat food and sits at the end of the table so nobody watches him eat"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom packs only the neat foods he asks for (crackers and cheese, no sandwiches)"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Basketball tryouts",
+        "fear_level": 9,
+        "feared_outcome": "I'll miss a shot and everyone will see and laugh",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Went to tryouts, then left after warm-ups saying he felt sick"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom picked him up early when he texted"
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "name": "Asking a teacher about a grade",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Won't ask the teacher himself; asks mom to email instead"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom emails the teacher for him"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-21",
+        "situation": "group chat for science projet",
+        "child_behavior_observed": "wrote a msg and showed it to me like 4 times befor sending. kept asking if it sounded wierd",
+        "parent_response": "said it was fine each time",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-22",
+        "situation": "lunch at school",
+        "child_behavior_observed": "lunch came home not touched agian. said he wasnt hungry",
+        "parent_response": "didnt say anything, made him a snack after school",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-24",
+        "situation": "basketbal tryouts",
+        "child_behavior_observed": "went in for warmups then texted me he felt sick, i drove over and got him early",
+        "parent_response": "talked to him in the car, he didnt want to talk",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s3",
+        "trap": "parent action written in child field (\"i drove over and got him early\")"
+      },
+      {
+        "date": "2026-09-26",
+        "situation": "lunch",
+        "child_behavior_observed": "ate the crakers only. he told me he sits at the end so noone watches him eat",
+        "parent_response": "packed only crakers and cheese like he asked, no sandwhich",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "he muted the class group chat. says everybody talks in it exept him. didnt post anythng all week. i asked if he wanted me to look at what hes writing first and he said theres no point hes not writing anything",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-01",
+        "situation": "spanish teacher, quiz grade",
+        "child_behavior_observed": "didnt want to ask her about it, wanted me to do it",
+        "parent_response": "emailed her for him",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "group chat - bday plans for his frend",
+        "child_behavior_observed": "typed reply, deleted, typed agian. finaly asked me if \"sure im in\" was ok",
+        "parent_response": "told him it was good, he sent it",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-05",
+        "situation": "lunch",
+        "child_behavior_observed": "said he ate half. sat at the end agian",
+        "parent_response": "nothing",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um so elias asked me to read his message again before he sent it in the group chat like three times tonight and i kept saying it was fine um he said it was like a five",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 5
+        },
+        "trap": "\"three times\" is a count; only five is a fear level"
+      },
+      {
+        "text": "lunch box came back full again he said he wasnt hungry",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s4",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

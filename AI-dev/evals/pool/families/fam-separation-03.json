@@ -1,0 +1,254 @@
+{
+  "id": "fam-separation-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "very short fragments packed with numbers: clock times, minutes, counts, miles",
+  "facts": {
+    "child": {
+      "name": "Nadia",
+      "age": 9
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Sleepover at a friend's house",
+        "fear_level": 9,
+        "feared_outcome": "Something bad will happen at home while I'm gone and nobody will tell me",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "escape",
+            "text": "Went to the sleepover, then called at 9:40pm to be picked up before bed"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Said no to a birthday sleepover invitation"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad drove over and picked her up at night when she called"
+          },
+          {
+            "id": "a2",
+            "text": "Mom arranged with the other parent that Nadia would only stay until bedtime"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Being dropped off at gymnastics practice",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Has mom stay in the parking lot for the whole practice and keeps checking the window to see the car"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom waits in the car in the lot for the full 90 minutes"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Staying overnight at Grandma's",
+        "fear_level": null,
+        "feared_outcome": "Mom and Dad will forget to come get me",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Calls home three or four times during the evening at Grandma's"
+          },
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Woke at 5am at Grandma's and 'didn't want to talk' at breakfast"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom keeps her phone on loud overnight and answers every call"
+          },
+          {
+            "id": "a5",
+            "text": "Parents pick her up at 7am Sunday instead of noon"
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "name": "Mom leaving the house for an errand while Nadia stays home with Dad",
+        "fear_level": 4,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Asks mom where she's going and when she'll be back, three times, before she leaves"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a6",
+            "text": "Mom texts her when she gets to the store and when she leaves"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-26",
+        "situation": "Sleepover, Lena's. 1.5 mi away.",
+        "child_behavior_observed": "Dropped 6:00. Called 9:40. Crying. Wanted home.",
+        "parent_response": "Dad got her 10:05.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "Gymnastics 4:30-6:00",
+        "child_behavior_observed": "Asked 2x if I'd stay in lot. Looked out window ~every 10 min (coach said).",
+        "parent_response": "Stayed in car 90 min.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "Grandma's overnight. Sat 3pm - Sun.",
+        "child_behavior_observed": "Called 4x. Last one 10:20pm. Each call: 'you won't forget to get me tmrw?'",
+        "parent_response": "Answered all 4. Phone on loud all night.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "Grandma's, morning",
+        "child_behavior_observed": "Up 5:00. Didn't want to talk at breakfast per Grandma.",
+        "parent_response": "Picked up 7:00 instead of 12:00.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Gym, Tues",
+        "child_behavior_observed": "Same. Checked window. Waved at car 3x.",
+        "parent_response": "Waited in lot. 90 min.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Ran to Target 7pm. She asked where, when back, 3 times. Left her w/ Dad. I texted at store + leaving. 35 min total. 4/10.",
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "Bday party invite - sleepover",
+        "child_behavior_observed": "Said no. 0 discussion.",
+        "parent_response": "Texted Ana's mom. She'll come 5-8:30 only, skip overnight.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Gymnastics",
+        "child_behavior_observed": "Asked 1x about lot. Checked window less? 3-4 times.",
+        "parent_response": "Stayed full time.",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so sleepover thing um she was there from six and called at nine forty crying so we got her at like ten oh five that's twice now she was there almost four hours which is honestly the longest ever and um she said it was a nine",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 9
+        },
+        "trap": "six, nine forty, ten oh five and four hours are times and durations; 'twice' is a count; only 'a nine' is a Fear Level"
+      },
+      {
+        "text": "gymnastics today um i stayed in the car again ninety minutes she looked out the window a few times um then sunday at grandmas she called like three times and we got her early",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "a3",
+            "s3",
+            "b4",
+            "a5"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s4",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s4",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,230 @@
+{
+  "id": "fam-separation-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "tired single mom typing late at night: lowercase, run-on sentences, apologetic, the odd typo",
+  "facts": {
+    "child": {
+      "name": "Rosie",
+      "age": 8
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Falling asleep and staying asleep in her own bed",
+        "fear_level": 8,
+        "feared_outcome": "Mom will leave the house while I'm asleep and I won't know where she went",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Calls out 'mommy are you there' over and over from her bed until mom answers"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Will only fall asleep with mom lying next to her, holding a piece of mom's hair"
+          },
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Starts the night in her own bed, then gets up around 1-2am and climbs into mom's bed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom lies down in Rosie's bed until she is fully asleep, starting over if Rosie wakes"
+          },
+          {
+            "id": "a2",
+            "text": "Mom lets her stay in mom's bed for the rest of the night"
+          },
+          {
+            "id": "a3",
+            "text": "Mom leaves the door open and hall light on and answers every call-out"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Morning drop-off at third grade",
+        "fear_level": 7,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Holds onto mom's leg at the classroom door until the teacher takes her hand"
+          },
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Says her stomach hurts in the morning and asks to stay home"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom parks and walks her all the way into the classroom instead of using the car line"
+          },
+          {
+            "id": "a5",
+            "text": "Mom promises to be the very first parent at pickup"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Mom going out for an evening with a babysitter at home",
+        "fear_level": null,
+        "feared_outcome": "Mom won't come back",
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "unclear",
+            "text": "Was 'kind of off' and very quiet the whole evening with the sitter"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a6",
+            "text": "Mom texted the sitter photos to show Rosie and came home an hour early"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "bedtime",
+        "child_behavior_observed": "wouldnt go to sleep unless i laid down with her. holds my hair. tried to sneak out at 9:15 she woke right up and we started over",
+        "parent_response": "laid back down w her till she was out, took like 40 min. left hall light on",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "school drop off",
+        "child_behavior_observed": "my stomach hurts my stomach hurts all through breakfast, asked if she could stay home w me",
+        "parent_response": "told her she had to go. parked and walked her in instead of car line bc i didnt want a scene",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "night time / her room",
+        "child_behavior_observed": "kept yelling mommy are you there mommy are you there, at least every couple min for a while",
+        "parent_response": "i answered every time, yes baby im here. i know im not supposed to maybe? sorry",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "sorry no log last night was too wiped. she ended up in my bed again around 1:30 i think, i just scooted over and let her stay, didnt even really wake up. thats basically every night honestly",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "went out w friends, sitter came",
+        "child_behavior_observed": "sitter said she was kind of off all night, really quiet, didnt want to play. not crying tho. at bedtime she told the sitter she thought i wasnt coming back",
+        "parent_response": "texted the sitter pics of me to show her and came home an hour early",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "classroom door",
+        "child_behavior_observed": "grabbed onto my leg at the door, wouldnt let go. teacher had to take her hand",
+        "parent_response": "promised id be the first mom at pickup. walked her all the way in again",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "going to sleep",
+        "child_behavior_observed": "same thing, needs me laying there. calling out again after i left. in my bed by 2",
+        "parent_response": "laid w her, door open light on, let her stay in my bed. too tired to walk her back",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok um so it's late sorry it was like 11 40 when she came in tonight which is earlier than usual and she called for me um like six times before that i counted and i'd say it's an eight like it's always an eight at night and then also this morning at school she held on to my leg again the teacher had to like take her hand",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b3",
+            "s2",
+            "b4"
+          ],
+          "observations": 2,
+          "fear_level_said": 8
+        },
+        "trap": "11 40 is a time and six is a count of call-outs; only 'an eight' is a Fear Level, and it is about bedtime, not drop-off"
+      },
+      {
+        "text": "um quick one she said her stomach hurt again this morning wanted to stay home i said no but i um walked her in again instead of doing the car line so yeah",
+        "expected": {
+          "refs": [
+            "s2",
+            "b5",
+            "a4"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

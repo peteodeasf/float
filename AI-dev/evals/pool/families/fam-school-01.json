@@ -1,0 +1,228 @@
+{
+  "id": "fam-school-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "frustrated and blaming; blames the school, the dad and the child; run-on sentences",
+  "facts": {
+    "child": {
+      "name": "Rowan",
+      "age": 9
+    },
+    "anxiety": "school refusal",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Getting out the door for school in the morning",
+        "fear_level": 8,
+        "feared_outcome": "I'll throw up in class and everyone will see",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Lies on the floor by the front door, won't put shoes on, and stays home"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Asks mom over and over what happens if he throws up, and whether she'll be home if he needs her"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom lets him stay home and calls the attendance office"
+          },
+          {
+            "id": "a2",
+            "text": "Mom answers each what-if question every time he asks"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Mid-day at school with a stomachache",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Goes to the nurse with a stomachache and asks to call mom to be picked up"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom leaves work and picks him up early"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Friday spelling tests",
+        "fear_level": 6,
+        "feared_outcome": "I'll get words wrong and Mrs. Okafor will be mad at me",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Was off all morning on test day: quiet, barely ate"
+          },
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Asks mom in the car whether the teacher will be mad if he gets some wrong"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "Monday morning",
+        "child_behavior_observed": "Lay on the floor by the front door and would not put his shoes on. Said he was going to puke at school.",
+        "parent_response": "I gave up after 20 min and let him stay home. Again. His dad was zero help, already gone to work like always.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "getting ready for school",
+        "child_behavior_observed": "Asked me probably 15 times what happens if he throws up in class. Did go in eventually.",
+        "parent_response": "Kept answering him, what else am I supposed to do, ignore him? Drove him.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "school called - nurse",
+        "child_behavior_observed": "Went to the nurse around 10 with a stomachache and asked to call me.",
+        "parent_response": "Left work and picked him up. Nurse said no fever. Third time this month and the school just keeps calling ME instead of dealing with it.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "Spelling test Friday",
+        "child_behavior_observed": "Was off all morning. Barely touched breakfast, didn't say a word in the car.",
+        "parent_response": "Told him it's just spelling and he needs to get over it.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-05",
+        "situation": "monday AGAIN",
+        "child_behavior_observed": "Kept him home bc he was sobbing and I had a 9am I could not be late for. Called attendance.",
+        "parent_response": "Same as always.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent action written in child field (keeping him home and calling attendance are the mom's actions, a1; the child's avoidance b1 is only implied)"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "nurse again",
+        "child_behavior_observed": "Made it till after lunch then went to the nurse wanting to go home.",
+        "parent_response": "Told the nurse no this time. He stayed. Cried apparently. His teacher could have handled it better honestly.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "wednesday he got in the car fine then in the drop off line wouldnt get out, kept asking if Id be home all day in case he needed me. I said yes. he finally got out when the aide came over to the car. this is ridiculous for a 4th grader",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "spelling",
+        "child_behavior_observed": "Went to school. In the car asked if Mrs. Okafor would be mad if he got some wrong.",
+        "parent_response": "Said no she won't be mad. Honestly I have no idea, she's pretty strict.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "Monday",
+        "child_behavior_observed": "Said his stomach hurt, asked what if he pukes on the rug, asked if I'd have my phone on. Went in.",
+        "parent_response": "Answered him. Drove him, signed him in late at the office.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so this morning um he was up at like 6 and by 7:40 he's on the floor by the door again saying he's gonna throw up at school and i just i let him stay home i know i know but i had to be at work by 8:15 and his dad was no help so honestly id say he was at an 8 like full meltdown",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 8
+        },
+        "trap": "7:40 and 8:15 are clock times and 6 is a wake-up time; only the 8 at the end is a fear level"
+      },
+      {
+        "text": "two things today um first the nurse called again at like 11 he wanted to come home and i said no you have to stay and then at pickup he asked me like ten times if he has to go tomorrow and what if he throws up and i just kept saying yes you have to go no you wont throw up",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "s1",
+            "b2",
+            "a2"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        },
+        "trap": "11 is a time and ten is a count; no fear level was said"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

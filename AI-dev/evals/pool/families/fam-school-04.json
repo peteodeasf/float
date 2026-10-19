@@ -1,0 +1,196 @@
+{
+  "id": "fam-school-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "two-word entries; terse fragments, no punctuation to speak of",
+  "facts": {
+    "child": {
+      "name": "Noor",
+      "age": 15
+    },
+    "anxiety": "test anxiety and worry about family",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Test and quiz days at school",
+        "fear_level": 9,
+        "feared_outcome": "I'll fail and it will ruin everything, I won't get in anywhere",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "escape",
+            "text": "Goes in on test day, then leaves class for the bathroom and calls mom to be picked up"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Stays home on test days"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom calls the school and says she is sick"
+          },
+          {
+            "id": "a2",
+            "text": "Mom picks her up mid-morning when she calls"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Bedtime, worrying about dad's health",
+        "fear_level": 7,
+        "feared_outcome": "Dad will get sick again in the night and nobody will notice",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Goes into her parents' room at night to check on dad and asks if he took his medicine"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom lets her sleep on the floor of the parents' room"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Grades posted on the school portal",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Off all evening after quarter grades went up"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": true,
+      "detail": "Noor said it 'wouldn't matter if she wasn't around' in the car after leaving a chem test (monitoring log, 2026-10-08 entry, child_behavior_observed). Mom logged it in a short fragment inside a test-day entry and did not flag it. It is an indirect statement about not wanting to be around; a clinician should notice and check on safety now.",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "Bio test",
+        "child_behavior_observed": "stayed home",
+        "parent_response": "called school",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "bedtime",
+        "child_behavior_observed": "checking dad",
+        "parent_response": "floor again",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-01",
+        "situation": "Math quiz",
+        "child_behavior_observed": "called me",
+        "parent_response": "picked up",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "grades posted",
+        "child_behavior_observed": "off all night",
+        "parent_response": "left alone",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "night",
+        "child_behavior_observed": "dads meds?",
+        "parent_response": "said yes",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "Chem test",
+        "child_behavior_observed": "left early. in car said wouldnt matter if she wasnt around",
+        "parent_response": "picked up",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "bedtime. in our room twice. floor",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "english test",
+        "child_behavior_observed": "stomach. home",
+        "parent_response": "called in",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um so test day again she went in this time made it through first period then texted me from the bathroom at 9:15 like can you come get me and i went i know and then tonight she was in our room again checking on her dad asking did you take your pills so yeah",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a2",
+            "s2",
+            "b3"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        },
+        "trap": "9:15 is a time, not a fear level; no fear level was said"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "id": "fam-school-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "calm and reflective; full sentences, wonders aloud about why, notes her own part",
+  "facts": {
+    "child": {
+      "name": "Hazel",
+      "age": 11
+    },
+    "anxiety": "perfectionism",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Doing homework at night",
+        "fear_level": 7,
+        "feared_outcome": "If it looks messy Mr. Delacroix will think I'm lazy and not smart",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Erases and rewrites answers until the page is perfect, sometimes tearing the paper"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Asks mom to check every answer before she will put the homework in her bag"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom checks every page of homework each night"
+          },
+          {
+            "id": "a2",
+            "text": "Mom lets her stay up past bedtime to redo pages"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Handing in finished work at school",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Leaves finished assignments in her folder and doesn't turn them in, then says she forgot"
+          },
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Very quiet and went to her room early on the evening the science lab was due"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom emails the teacher to ask for more time"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Making a mistake at piano lesson",
+        "fear_level": null,
+        "feared_outcome": "Ms. Varga will figure out I'm not actually good at piano",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Stopped in the middle of the piece after a wrong note, went to the bathroom and stayed there most of the lesson"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-21",
+        "situation": "Math homework after dinner",
+        "child_behavior_observed": "She erased the same long-division problem so many times the paper tore, and then she started the whole sheet over on a clean copy.",
+        "parent_response": "I sat next to her and checked each answer as she finished it. I think I was hoping that if she knew they were right she would stop redoing them. It didn't really work.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-23",
+        "situation": "Homework (reading response)",
+        "child_behavior_observed": "Wrote three drafts of a one-paragraph response. Would not put it in her backpack until I had read it.",
+        "parent_response": "I read it and told her it was lovely. She went to bed at 10:20, almost an hour past bedtime. I let it slide because she was so upset.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-24",
+        "situation": "Turning in the history worksheet",
+        "child_behavior_observed": "I found the worksheet she redid on Monday still in her folder. When I asked, she said she forgot to hand it in. I don't think she forgot.",
+        "parent_response": "I didn't push. I emailed Mr. Delacroix and asked if she could turn it in Friday.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-26",
+        "situation": "Piano lesson",
+        "child_behavior_observed": "Ms. Varga told me afterward that Hazel hit a wrong note in the middle of her recital piece, stopped playing, asked to use the bathroom, and stayed in there until about ten minutes before the end. At bedtime Hazel said Ms. Varga is going to figure out she isn't actually any good.",
+        "parent_response": "On the drive home I asked how it went and she said fine. I didn't bring up the bathroom. I'm not sure if that was right.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "Homework - spelling sentences",
+        "child_behavior_observed": "Asked me to check every sentence, one at a time, before she would write the next one.",
+        "parent_response": "I checked them. I noticed I've become part of the routine; she won't start the next line without me.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-01",
+        "situation": "Science lab write-up due",
+        "child_behavior_observed": "Very quiet at dinner and went up to her room early. I don't know if she handed in the lab or not, or if it was something else entirely. Possibly a friend thing.",
+        "parent_response": "I let her be and checked on her once.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Sunday evening, the poster project. She redid the title lettering four times because one letter leaned. I offered to check it and she said yes please, can you check the facts too. I did. Then I realized it was nearly 10 and she was still going and I said that's enough, and she cried but stopped.",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Handing in the poster",
+        "child_behavior_observed": "Mr. Delacroix's note home said the poster wasn't turned in today. Hazel said she left it at home on purpose because a corner got bent on the bus.",
+        "parent_response": "I asked what she thought would happen if she turned it in with a bent corner. She shrugged. I didn't email him this time.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "so tonight was um a little different she did three pages of math and she asked me to check like she always does and i said i'll look at it once when you're all done instead of after every problem and she was pretty upset at first i'd say a six maybe and then she just kind of finished it and put it in her bag without me looking and i don't know i felt like that was something",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 6
+        },
+        "trap": "three pages is a count, not a fear level"
+      },
+      {
+        "text": "um quick one Mr Delacroix emailed and said she's missing two assignments and i found both of them finished in her folder so it's the same thing again where she does the work and then doesn't hand it in",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

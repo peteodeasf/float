@@ -1,0 +1,225 @@
+{
+  "id": "fam-health-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom who gives fear as a range ('6 or 7') instead of one number; puts the lower number in the field and the range in the text; casual, quick entries",
+  "facts": {
+    "child": {
+      "name": "Anika",
+      "age": 16
+    },
+    "anxiety": "panic attacks and fear of fainting",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Driving practice",
+        "fear_level": 7,
+        "fear_level_max": 8,
+        "feared_outcome": "I'll have a panic attack at the wheel and crash the car",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Cancels the driving lesson"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Only drives with Mom in the passenger seat and keeps mints and water in the cup holder"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom rides along and talks her through every turn"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Hot, crowded places (concerts, pep rallies)",
+        "fear_level": 6,
+        "fear_level_max": 7,
+        "feared_outcome": "I'll faint and people will film it",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Left the concert after about twenty minutes"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Stands by the exit and keeps mints and a water bottle on her"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom waits in the parking lot so she can leave early"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Noticing her heartbeat or feeling dizzy when she stands up",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Checks her heart rate on her smartwatch over and over"
+          },
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Googles her symptoms in bed at night"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom booked another doctor's visit to reassure her"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-03",
+        "situation": "Driving lesson w/ instructor",
+        "child_behavior_observed": "Cancelled it an hour before. Said she felt off.",
+        "parent_response": "Called the driving school and rescheduled. Said I'd take her out myself this weekend instead.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent said '7 or 8' when asked; only the first number is in the field"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "Practice driving, me in the car",
+        "child_behavior_observed": "Drove around the neighborhood ok. Had her water and mints in the cup holder, took a mint at every stop sign basically. Wouldn't go on the main road. Maybe a 6 or 7.",
+        "parent_response": "Rode with her and talked her through every turn, told her she was doing great.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "range '6 or 7' in the text; field holds 6"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Got dizzy standing up from the couch",
+        "child_behavior_observed": "Sat right back down and checked her watch. Then checked it again. Then again, like every minute for a while. Said her heart was 'weird.'",
+        "parent_response": "Told her she probably stood up too fast. Got her some juice.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Concert downtown w/ friends",
+        "child_behavior_observed": "Texted me after about 20 min that she needed to leave. Said it was so hot and packed and she felt like she was going to pass out. She'd been standing by the doors the whole time with her water. 6 or 7 she said.",
+        "parent_response": "I was already waiting in the parking garage, I'd told her I'd stay close just in case. Picked her up.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2",
+        "trap": "'20 min' is a time, not a fear level; range '6 or 7' in the text"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "up late again googling. showed me some article about heart arrhythmias in teens. I said ok we'll ask the doctor and I made her an appt for thursday, she already had a checkup in august that was totally normal. she was calmer once it was booked",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-16",
+        "situation": "Pep rally, school gym",
+        "child_behavior_observed": "Went. Stayed the whole time but stood next to the exit door with her water bottle and a pack of mints. Said it was a 6, maybe 7.",
+        "parent_response": "Waited in the school parking lot in case she wanted out. She didn't need me.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-17",
+        "situation": "Driving lesson",
+        "child_behavior_observed": "Cancelled again. I'd say 7 or 8 just thinking about it.",
+        "parent_response": "Told her fine but we're going out Sunday, just us.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so its like eleven thirty and shes still up she came in showing me her watch saying her heart rate was ninety something lying down and she'd been reading stuff online again and um i told her its fine but honestly i dont know what to say anymore",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5",
+            "b6"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'eleven thirty' is a time and 'ninety something' is a heart rate; neither is a fear level"
+      },
+      {
+        "text": "quick update she drove to the grocery store today with me um did the main road for like two blocks and then wanted to turn off she said like a seven or eight and she had her mints",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "range 'seven or eight' said aloud; fear_level_said is the lower number"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

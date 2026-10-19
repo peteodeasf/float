@@ -1,0 +1,225 @@
+{
+  "id": "fam-edge-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "Dad, short clipped notes, abbreviations ('FT' for field trip), calls every bus ride 'the bus'",
+  "difficulty": "Two situations that sound alike but are different triggers. The morning school bus is about being seen sitting alone (social). The field trip bus is about throwing up in front of everyone. The dad labels both 'bus' in several entries. A correct reading keeps them as two situations with different behaviors, fears and numbers, and does not merge them.",
+  "facts": {
+    "child": {
+      "name": "Ines",
+      "age": 12
+    },
+    "anxiety": "social, with fear of vomiting",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Riding the school bus in the morning",
+        "fear_level": 5,
+        "feared_outcome": "Nobody will let me sit with them and everyone will see I'm alone",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Sits in the front seat behind the driver with earbuds in and looks at her phone the whole ride"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Asks to be driven and skips the bus"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad drives her to school on the days she asks"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Bus ride on a class field trip",
+        "fear_level": 8,
+        "feared_outcome": "I'll throw up on the bus in front of everyone",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Packs plastic bags, mints and ginger chews and keeps them in her lap"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Skips breakfast on field trip mornings so there is nothing to throw up"
+          },
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Stayed home from the aquarium trip"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom emailed the teacher asking that Ines sit at the front by a window"
+          },
+          {
+            "id": "a3",
+            "text": "Parents let her stay home on the aquarium trip day"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Ordering at a counter",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "unclear",
+            "text": "Was 'weird about it' when asked to order at the bakery; the note does not say what she did"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "bus",
+        "child_behavior_observed": "Front seat behind driver. Earbuds in, phone out, didn't look up",
+        "parent_response": "Nothing, watched from the porch",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "FT to science museum - bus",
+        "child_behavior_observed": "Packed 3 plastic bags + mints + ginger chews. Wouldn't eat breakfast",
+        "parent_response": "Wife emailed teacher re: seat up front by window",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-01",
+        "situation": "bus",
+        "child_behavior_observed": "Asked for a ride. Said bus 'is the worst'",
+        "parent_response": "Drove her",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "bakery",
+        "child_behavior_observed": "Weird about it when I asked her to order",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "morning bus",
+        "child_behavior_observed": "Rode it. Same seat, earbuds",
+        "parent_response": "Told her good job",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "bus (aquarium FT)",
+        "child_behavior_observed": "Didn't go. Crying night before about getting sick on the bus, it's an hour+ drive",
+        "parent_response": "Let her stay home. Called her in sick",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "wanted a ride again. said the 8th graders take all the back seats and she doesnt want to be the kid sitting alone. i drove her",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "bus",
+        "child_behavior_observed": "Front seat. Phone. OK",
+        "parent_response": "",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um so bus comes at 7 10 and she was up at like 5 30 asking if it was the regular bus or the trip bus because there's the pumpkin farm trip friday and i said regular and she was fine got on sat up front like usual",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "s2"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'7 10' and '5 30' are times, not Fear Levels. The note also names the field trip bus without anything happening on it."
+      },
+      {
+        "text": "so the pumpkin farm one is friday and she's already asking about the bags and the mints and saying she's not eating breakfast she said it's an eight already like two days out",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "b4"
+          ],
+          "observations": 1,
+          "fear_level_said": 8
+        }
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

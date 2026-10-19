@@ -1,0 +1,214 @@
+{
+  "id": "fam-specific-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "very brief; three to six words per field, no detail unless asked",
+  "facts": {
+    "child": {
+      "name": "Pearl",
+      "age": 10
+    },
+    "anxiety": "the dark",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Bedtime in her own room with the lights off",
+        "fear_level": 7,
+        "feared_outcome": "Someone is hiding in my closet and will come out when it's dark",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Needs the hall light on and her door wide open"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Calls out 'are you still there?' to dad again and again after lights out"
+          },
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Gets out of bed after lights out and goes to sleep in her parents' bed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad answers every 'are you still there?' call"
+          },
+          {
+            "id": "a2",
+            "text": "Parents let her finish the night in their bed"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Going down to the basement rec room alone",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "avoidance",
+            "text": "Won't go down to get her craft stuff; asks someone else to fetch it"
+          },
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Sings very loudly on the basement stairs (could be play, could be to feel braver)"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad goes down and brings her craft stuff up for her"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "The power going out during a thunderstorm",
+        "fear_level": 9,
+        "feared_outcome": "The lights will never come back on",
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Holds onto mom's arm and won't let go until the lights come back"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "Bedtime",
+        "child_behavior_observed": "Hall light on, door open.",
+        "parent_response": "Left it on.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Bedtime",
+        "child_behavior_observed": "'You there?' x8.",
+        "parent_response": "Answered each time.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Basement",
+        "child_behavior_observed": "Wouldn't go down for her bead kit.",
+        "parent_response": "Got them for her.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "Night",
+        "child_behavior_observed": "In our bed by 2am.",
+        "parent_response": "Let her stay.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "Storm, power out",
+        "child_behavior_observed": "Glued to mom's arm till lights back.",
+        "parent_response": "Lit candles.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "Basement stairs",
+        "child_behavior_observed": "Went halfway down singing really loud. Came back up.",
+        "parent_response": "Nothing.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Bedtime",
+        "child_behavior_observed": "Told her I'd check closet. Checked closet.",
+        "parent_response": "",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent action written in child field (dad checking the closet is his action, not Pearl's)"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "bedtime again. light on. came to our room midnight. walked her back.",
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "pearl bedtime um light on door open she called out like are you there maybe six times I said yes every time she said seven",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "'six times' is a count of calls, not a fear level; the fear level is 7"
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}
