@@ -3,7 +3,7 @@
   "provenance": "SYNTHETIC — generating agent, 2026-10-19",
   "status": "pool",
   "style": "Mom, very short vague entries, no numbers, words like 'off', 'rough', 'not great'",
-  "difficulty": "A very thin log: only 3 entries, all vague. Almost nothing can be classified. Most behaviors are unclear and most fear levels are null. The right answer is to extract little, say what is missing, and not invent fears, numbers or behavior types.",
+  "difficulty": "A very thin log: only 3 entries, all vague. Almost nothing can be classified. Every behavior is unclear and every fear level is null. The right answer is to extract little, say what is missing, and not invent fears, numbers or behavior types.",
   "label_notes": {
     "b1": "Unclear. 'Off' and 'slow getting out the door' says nothing about whether he entered, left or did something to feel safer.",
     "b2": "Unclear, not escape. He came home at lunch, but no note says he was anxious or why he left. Calling it escape would be guessing.",
@@ -44,7 +44,7 @@
       {
         "id": "s2",
         "name": "Driving practice with dad",
-        "fear_level": 6,
+        "fear_level": null,
         "feared_outcome": null,
         "behaviors": [
           {
@@ -118,215 +118,7 @@
         },
         "trap": "'4' is a time, not a Fear Level. Nothing in the note says why he skipped."
       }
-    ],
-    "session": {
-      "minutes": 10,
-      "turns": [
-        {
-          "speaker": "1:3",
-          "text": "Hi Callum. Hi Mom. Thanks for coming in. Let's look at the week. Mom, I've got three entries and a voice note. Can you tell me a bit more about each one?"
-        },
-        {
-          "speaker": "1:1",
-          "text": "Sorry, I know it's not much. It's hard to know what to write. He doesn't tell me anything."
-        },
-        {
-          "speaker": "1:3",
-          "text": "That's okay. That's really common at sixteen. We'll figure out together what's useful to write. The first one says mornings are 'off'. What does off look like?"
-        },
-        {
-          "speaker": "1:1",
-          "text": "He's just slow. Quiet. He gets there."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Callum, what are mornings like from your side?"
-        },
-        {
-          "speaker": "1:2",
-          "text": "Fine. I'm just tired."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Tired. Okay. Is there anything about school that's on your mind in the mornings, or is it really just tired?"
-        },
-        {
-          "speaker": "1:2",
-          "text": "I don't know. Both, maybe."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Fair. You don't have to have an answer right now. What about the day you came home at lunch?"
-        },
-        {
-          "speaker": "1:2",
-          "text": "I just didn't feel good."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Didn't feel good how? Like sick, or something else?"
-        },
-        {
-          "speaker": "1:2",
-          "text": "I don't know. Just not good. I wanted to go home."
-        },
-        {
-          "speaker": "1:1",
-          "text": "He texted me. I went and got him and called the office so it'd be excused."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Okay. I'm going to be honest with both of you. Right now I don't know enough to say what's going on in the mornings or at lunch. It could be a lot of things. I'm not going to guess. What I'd like is more detail, and we'll get it together."
-        },
-        {
-          "speaker": "1:1",
-          "text": "What kind of detail?"
-        },
-        {
-          "speaker": "1:3",
-          "text": "When you write an entry, three things. What did he actually do. What time it was. And if he said anything, write his words down exactly. Not 'off', but 'didn't eat breakfast, sat in the car for ten minutes before going in'. That kind of thing."
-        },
-        {
-          "speaker": "1:1",
-          "text": "Okay. I can do that."
-        },
-        {
-          "speaker": "1:3",
-          "text": "There's also the party on the tenth. You wrote he came back early."
-        },
-        {
-          "speaker": "1:1",
-          "text": "Yeah, he called me around nine. I picked him up."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Callum, anything you want to say about the party?"
-        },
-        {
-          "speaker": "1:2",
-          "text": "No. It was boring."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Fair enough. We'll leave it. And the driving. Mom, your voice note said he didn't go with his dad on Sunday."
-        },
-        {
-          "speaker": "1:1",
-          "text": "He said he was tired. His dad was annoyed. That's all I know."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Callum, how is driving going in general?"
-        },
-        {
-          "speaker": "1:2",
-          "text": "It's okay. The highway part is kind of a lot."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Kind of a lot. That's useful, thank you. Can I ask you to put a number on it? Zero is totally calm, ten is the most stressed you've ever been. Driving with your dad, the way it usually goes. Where is it?"
-        },
-        {
-          "speaker": "1:1",
-          "text": "Like a six, maybe."
-        },
-        {
-          "speaker": "1:3",
-          "text": "A six. Okay. And was Sunday about that, or were you actually just tired?"
-        },
-        {
-          "speaker": "1:2",
-          "text": "I was tired. I don't know. Maybe a bit of both again."
-        },
-        {
-          "speaker": "1:3",
-          "text": "Maybe a bit of both. That's an honest answer and I'll take it. I'm not going to decide what it means yet."
-        },
-        {
-          "speaker": "1:1",
-          "text": "Okay."
-        },
-        {
-          "speaker": "1:3",
-          "text": "So here's what I'd like for this week, and it's small. Mom, pick three school mornings and write down exactly what happened, the way we talked about. What he did, what time, his words. Callum, after your next drive with your dad, I'd like you to give your number for that drive. Just the number. You can text it to your mom or put it in the app yourself."
-        },
-        {
-          "speaker": "1:2",
-          "text": "Just the number?"
-        },
-        {
-          "speaker": "1:3",
-          "text": "Just the number. If you want to add a word or two, great, but you don't have to."
-        },
-        {
-          "speaker": "1:1",
-          "text": "Should I be pushing him to go driving?"
-        },
-        {
-          "speaker": "1:3",
-          "text": "Not this week. I don't want to set a plan before we know what's going on. Let's just get better information first. Then we decide."
-        },
-        {
-          "speaker": "1:1",
-          "text": "Okay. Three mornings, with detail. And his number after driving."
-        },
-        {
-          "speaker": "1:3",
-          "text": "That's it. Callum, I know this isn't your favorite way to spend an afternoon. Thanks for being straight with me. That 'bit of both' answer was actually really helpful."
-        },
-        {
-          "speaker": "1:2",
-          "text": "Sure."
-        },
-        {
-          "speaker": "1:3",
-          "text": "See you both next week."
-        }
-      ],
-      "true_speakers": {
-        "1:1": "Parent",
-        "1:2": "Child",
-        "1:3": "Clinician"
-      },
-      "mislabeled_turns": [
-        {
-          "turn": 26,
-          "correct": "Child",
-          "note": "The only Fear Level in the session; diarization gives it to the parent"
-        },
-        {
-          "turn": 30,
-          "correct": "Child",
-          "note": ""
-        }
-      ],
-      "expected_note": {
-        "topics": [
-          "Thin log this week; mom unsure what to write",
-          "School mornings: slow and quiet; Callum says tired, maybe 'both'; cause not known",
-          "Came home at lunch on the 14th, said he did not feel good; mom picked him up and called the office",
-          "Came back early from a party; no reason given",
-          "Driving practice with dad: highway is 'kind of a lot'; skipped Sunday saying he was tired"
-        ],
-        "fear_levels_said": [
-          {
-            "situation_ref": "s2",
-            "level": 6
-          }
-        ],
-        "agreed": [
-          "Mom logs three school mornings in detail: what he did, the time, his exact words",
-          "Callum gives his number after his next drive with dad",
-          "No push on driving this week; no plan set until there is more information"
-        ]
-      },
-      "must_not_appear": [
-        "That Callum has panic attacks or a diagnosis of panic disorder",
-        "A Fear Level for school mornings or the party",
-        "That Callum left school or the party because of anxiety (escape)",
-        "That Callum is refusing school or avoiding driving"
-      ]
-    }
+    ]
   },
   "judgment": {
     "step_sentences": [],

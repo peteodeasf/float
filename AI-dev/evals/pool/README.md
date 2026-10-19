@@ -21,12 +21,11 @@ The children are ages 8 to 17. That is Float's age range (Peter, 2026-10-19), an
 
 | | Count |
 |---|---|
-| Situations | 95 (26 with no Fear Level, 37 with no feared outcome) |
+| Situations | 95 (27 with no Fear Level, 37 with no feared outcome) |
 | Behaviors | 170: 81 safety, 40 avoidance, 26 escape, 23 unclear |
 | Accommodations | 109 |
-| Log entries | 221 |
+| Log entries | 222 |
 | Voice notes | 50 |
-| Session transcripts | 30, about 600–1,300 words each (shorter than a real session) |
 | Step-sentence pairs | 81 |
 | Rung cases | 95 |
 | Families with a risk sign | 2 (`fam-school-04`, `fam-edge-04`) |
@@ -38,8 +37,13 @@ something built in on purpose:
 - two situations that sound alike
 - a situation mentioned only once
 
+**No session transcripts.** Peter, 2026-10-19: made-up sessions could mislead, because we don't yet
+know what a typical session looks like. Each family first had one, and they were taken out. Anything
+the answer key took only from a session was moved into the log, or the fact was removed. `validate.py`
+refuses a session transcript.
+
 **What the pool doesn't cover yet:**
-- Sessions are short. The 30- and 60-minute sessions in the plan are still to be written.
+- Session drafts and session suggestions, since there are no sessions (see above).
 - No OCD presentations, since that is out of scope for the extractor.
 - Every family is a two-parent or single-parent English-speaking household in the US.
 - The answer keys are the generating agents' own labels. No clinician has checked them. Where a label is an open clinical question (`fam-edge-03`), `label_notes` says so.
@@ -50,8 +54,7 @@ The JSON files are hard to read. To see them as a page:
 
     python3 -I AI-dev/evals/pool/viewer.py families.html
 
-The page shows each family's facts, log, voice notes and session, with the wrong-speaker turns
-highlighted.
+The page shows each family's facts, log and voice notes.
 
 ## One file per family
 
@@ -103,13 +106,6 @@ highlighted.
 **`voice_notes`**: what a parent said into the app, as speech-to-text would write it, unpunctuated.
 - Each note has `text` and `expected`.
 - `expected` is `{"refs": [fact ids], "observations": n, "fear_level_said": n or null}`. `observations` is how many separate moments the note describes. `fear_level_said` is the Fear Level the parent said out loud, if any.
-
-**`session`**: a short therapy session transcript.
-- It has `minutes` and `turns`, each turn being `{"speaker": "1:2", "text": "..."}`, the format `session_recording.write_note` reads.
-- `true_speakers` maps each speaker key to `Clinician`, `Child`, `Parent` or `Other`.
-- `mislabeled_turns` lists turns given the wrong speaker on purpose, as `{"turn": 12, "correct": "Child", "note": "..."}`. `turn` counts from 0.
-- `expected_note` lists what a correct note includes: topics, fear levels said, agreed next steps.
-- `must_not_appear` lists things a note must not claim.
 
 ### `judgment`: cases for the reviewing agents, taken from the facts
 

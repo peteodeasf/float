@@ -12,7 +12,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 POOL = Path(__file__).resolve().parent / "families"
 TYPES = {"avoidance", "escape", "safety", "unclear"}
-SPEAKERS = {"Clinician", "Child", "Parent", "Other"}
 
 # The prompts a case must never be copied into (docs/solutions/eval-cases-burned-by-putting-them-in-the-prompt.md).
 PROMPT_FILES = [
@@ -90,21 +89,8 @@ def check(path: Path, prompt_shingles: set) -> list[str]:
         for ref in n.get("expected", {}).get("refs", []):
             if ref not in ids:
                 bad(f"voice note {i}: ref {ref!r} is not in the facts")
-    sess = inp.get("session")
-    if sess:
-        keys = {t["speaker"] for t in sess.get("turns", [])}
-        if not keys:
-            bad("session has no turns")
-        for k, role in sess.get("true_speakers", {}).items():
-            if role not in SPEAKERS:
-                bad(f"session speaker {k}: {role!r} is not one of {sorted(SPEAKERS)}")
-        missing = keys - set(sess.get("true_speakers", {}))
-        if missing:
-            bad(f"session speakers with no true role: {sorted(missing)}")
-        for m in sess.get("mislabeled_turns", []):
-            if not (isinstance(m, dict) and isinstance(m.get("turn"), int) and 0 <= m["turn"] < len(sess["turns"])
-                    and m.get("correct") in SPEAKERS):
-                bad(f"mislabeled_turns: {m!r} needs a turn number in the session and a correct role")
+    if "session" in inp:
+        bad("has a session transcript; sessions were taken out on 2026-10-19 (Peter) until we know what a typical one looks like")
 
     j = f["judgment"]
     for p in j.get("step_sentences", []):
