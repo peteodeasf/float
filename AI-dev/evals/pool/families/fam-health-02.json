@@ -151,7 +151,7 @@
     ],
     "voice_notes": [
       {
-        "text": "ok so tonight around eight fifteen owen comes in says his heart is doing the thing again his rate was like a hundred and two which is fine for him and he asked me am i okay probably four times i checked it and told him normal and he slept on our floor again",
+        "text": "ok so tonight around eight fifteen ezra comes in says his heart is doing the thing again his rate was like a hundred and two which is fine for him and he asked me am i okay probably four times i checked it and told him normal and he slept on our floor again",
         "expected": {
           "refs": [
             "s3",

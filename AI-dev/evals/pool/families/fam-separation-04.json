@@ -159,7 +159,7 @@
     ],
     "voice_notes": [
       {
-        "text": "this is a note regarding tuesday evening um my wife was in columbus overnight and owen texted her um i believe on the order of fifteen times i'd put him at an eight he had the itinerary out again and um she answered all of them",
+        "text": "this is a note regarding tuesday evening um my wife was in columbus overnight and felix texted her um i believe on the order of fifteen times i'd put him at an eight he had the itinerary out again and um she answered all of them",
         "expected": {
           "refs": [
             "s1",

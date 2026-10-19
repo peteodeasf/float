@@ -6,7 +6,7 @@
   "facts": {
     "child": {
       "name": "Teddy",
-      "age": 6
+      "age": 8
     },
     "anxiety": "dogs",
     "situations": [
@@ -35,7 +35,7 @@
         "accommodations": [
           {
             "id": "a1",
-            "text": "Mom takes him to the indoor jump place instead of the park"
+            "text": "Mom takes him to the indoor trampoline park instead of the park"
           },
           {
             "id": "a2",
@@ -97,7 +97,7 @@
       {
         "date": "2026-09-28",
         "situation": "park after school 🙄",
-        "child_behavior_observed": "said his legs hurt 😩 didnt want to go. wanted to go home and watch shows",
+        "child_behavior_observed": "said his legs hurt 😩 didnt want to go. wanted to go home and play minecraft",
         "parent_response": "fine whatever we went home 🤷‍♀️",
         "fear_thermometer": null,
         "parent_words": null,
@@ -106,8 +106,8 @@
       {
         "date": "2026-09-30",
         "situation": "playground w cousins 🛝",
-        "child_behavior_observed": "asked like 5x if there would be doggies there 🐶❓❓ then begged for the jumpy place",
-        "parent_response": "took all 3 kids to the indoor jump place instead 🙃💸",
+        "child_behavior_observed": "asked like 5x if there would be dogs there 🐶❓❓ then begged for the trampoline park",
+        "parent_response": "took all 3 kids to the indoor trampoline park instead 🙃💸",
         "fear_thermometer": 7,
         "parent_words": null,
         "situation_ref": "s1"
@@ -116,7 +116,7 @@
         "date": "2026-10-02",
         "situation": "walk to school 🚶‍♂️🎒",
         "child_behavior_observed": "the big dog behind the fence on the corner started barking 🐕💥 he yanked me to the other side of the street",
-        "parent_response": "crossed with him and held his hand 🫶",
+        "parent_response": "crossed with him 🫶",
         "fear_thermometer": 6,
         "parent_words": null,
         "situation_ref": "s3"
@@ -136,7 +136,7 @@
         "child_behavior_observed": "",
         "parent_response": "",
         "fear_thermometer": null,
-        "parent_words": "ok I finally get it 💡💡 its not the park its the DOGS. sat morning a yellow lab got off leash by the swings and he screamed and climbed me like a tree 🌳😭 I carried him the whole rest of the time. in the car he said the dog was gonna bite his face. he said 9 on the thermometer",
+        "parent_words": "ok I finally get it 💡💡 its not the park its the DOGS. sat morning a yellow lab got off leash by the swings and he screamed and climbed me like a tree 🌳😭 hes way too big for that and I still held him the whole rest of the time. in the car he said the dog was gonna bite his face. he said 9 on the thermometer",
         "situation_ref": "s1"
       },
       {
@@ -160,8 +160,8 @@
       {
         "date": "2026-10-11",
         "situation": "park (tried again!!) ☀️",
-        "child_behavior_observed": "went!! 🎉 but wanted up on my hip every time a dog walked past 🐶",
-        "parent_response": "carried him twice then put him down and said he could stand next to me 💪",
+        "child_behavior_observed": "went!! 🎉 but tried to climb up on me every time a dog walked past 🐶",
+        "parent_response": "held him up twice then put him down and said he could stand next to me 💪",
         "fear_thermometer": 7,
         "parent_words": null,
         "situation_ref": "s1"
@@ -203,7 +203,7 @@
       "turns": [
         {
           "speaker": "1:2",
-          "text": "Hi Teddy, hi Mom. Come on in. Teddy, you can have the beanbag if you want it. So this is our third time meeting, and I like to start by looking back at the week. Mom, I can see you've been putting a lot into the log. What stood out to you?"
+          "text": "Hi Teddy, hi Mom. Come on in. Teddy, grab whichever seat you like. So this is our third time meeting, and I like to start by looking back at the week. Mom, I can see you've been putting a lot into the log. What stood out to you?"
         },
         {
           "speaker": "1:1",
@@ -215,15 +215,15 @@
         },
         {
           "speaker": "1:3",
-          "text": "Yeah. Dogs jump on you."
+          "text": "Yeah. Dogs can just run at you and jump on you."
         },
         {
           "speaker": "1:2",
-          "text": "Dogs jump on you. What do you think would happen if a dog jumped on you?"
+          "text": "They can run at you and jump on you. What do you think would happen if a dog jumped on you?"
         },
         {
           "speaker": "1:3",
-          "text": "It would bite me. On my face. Like Owen's cousin."
+          "text": "It would bite me in the face. That's what happened to Owen's cousin."
         },
         {
           "speaker": "1:1",
@@ -231,15 +231,15 @@
         },
         {
           "speaker": "1:2",
-          "text": "Okay. So you heard a story about somebody getting bitten, and now when you see a dog your body says danger, danger. That makes a lot of sense, Teddy. Your brain is trying to keep you safe. What we do here is help your brain figure out which dogs are actually okay. Do you remember the feelings thermometer? Zero at the bottom and ten at the top?"
+          "text": "Okay. So you heard a story about somebody getting bitten, and now when you see a dog your body sets off an alarm. That makes a lot of sense, Teddy. Your brain is trying to keep you safe. What we do here is help your brain learn which dogs are actually okay. Do you remember the fear thermometer? Zero to ten?"
         },
         {
           "speaker": "1:3",
-          "text": "The red part is ten."
+          "text": "Ten is the worst you could ever feel."
         },
         {
           "speaker": "1:2",
-          "text": "The red part is ten, that's right. So if you're at the park and there's a dog walking on a leash, way over on the other side, by the parking lot, where are you on the thermometer?"
+          "text": "Ten is the worst, that's right. So if you're at the park and there's a dog walking on a leash, way over on the other side, by the parking lot, where are you on the thermometer?"
         },
         {
           "speaker": "1:1",
@@ -251,7 +251,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "Ten. A hundred."
+          "text": "Ten. Like a hundred."
         },
         {
           "speaker": "1:1",
@@ -267,7 +267,7 @@
         },
         {
           "speaker": "1:2",
-          "text": "I'm glad you wrote it down, and it is a completely normal thing for a parent to do. Here is what tends to happen, though. When he asks and you answer, he feels better for a minute. Then the worry comes back and he needs to ask again. The asking starts doing the job that his own brave brain should be doing. And when the answer turns out to be wrong, like Tuesday, the next promise counts for less. So I want to help you answer differently, not stop caring."
+          "text": "I'm glad you wrote it down, and it is a completely normal thing for a parent to do. Here is what tends to happen, though. When he asks and you answer, he feels better for a minute. Then the worry comes back and he needs to ask again. The asking starts doing the job that he could be learning to do himself. And when the answer turns out to be wrong, like Tuesday, the next promise counts for less. So I want to help you answer differently, not stop caring."
         },
         {
           "speaker": "1:1",
@@ -283,7 +283,7 @@
         },
         {
           "speaker": "1:2",
-          "text": "I know you don't, buddy. We're not going to make you go pet a big dog. We're going to do tiny steps, and you get to help pick them. Okay? Can I ask Mom about Grandpa's house first, and then we'll pick a step together?"
+          "text": "I know you don't. We're not going to make you go pet a big dog. We're going to do small steps, and you get to help pick them. Okay? Can I ask Mom about Grandpa's house first, and then we'll pick a step together?"
         },
         {
           "speaker": "1:3",
@@ -295,7 +295,7 @@
         },
         {
           "speaker": "1:1",
-          "text": "Right. My dad has a big dog named Gus. He's a sweetheart, honestly, an old shepherd mix, but he's huge. Teddy won't unbuckle until I've texted my dad to put Gus in the backyard. Once Gus is out, he comes in and he's totally fine, he plays Legos for hours. But last Thursday Gus barked at the sliding door, and Teddy bolted straight out to the car. I sat out there with him for, I don't know, twenty minutes, while my dad moved Gus to the garage."
+          "text": "Right. My dad has a big dog named Gus. He's a sweetheart, honestly, an old shepherd mix, but he's huge. Teddy won't unbuckle until I've texted my dad to put Gus in the backyard. Once Gus is out, he comes in and he's totally fine, he builds Legos with my dad for hours. But last Thursday Gus barked at the sliding door, and Teddy bolted straight out to the car. I sat out there with him for, I don't know, twenty minutes, while my dad moved Gus to the garage."
         },
         {
           "speaker": "1:2",
@@ -303,7 +303,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "He's big. He licks. He barks at the door really loud."
+          "text": "He's really big. He's nice to Grandpa. But he barks super loud at the door."
         },
         {
           "speaker": "1:2",
@@ -331,11 +331,11 @@
         },
         {
           "speaker": "1:2",
-          "text": "Okay, we'll come back to that one too. So, Teddy, here is my idea for a first step, and you tell me what you think. At home, you and Mom watch a short video of puppies. Little ones. Just a few minutes. You can hold the tablet, so you're the boss of it. What number would that be?"
+          "text": "Okay, we'll come back to that one too. So, Teddy, here is my idea for a first step, and you tell me what you think. At home, you and Mom watch a short video of puppies. Just a few minutes. You hold the tablet, so you're in charge of it. What number would that be?"
         },
         {
           "speaker": "1:3",
-          "text": "Puppies are two. Little puppies are one."
+          "text": "Puppy videos are like a two. Maybe a one if they're really small."
         },
         {
           "speaker": "1:2",
@@ -347,11 +347,11 @@
         },
         {
           "speaker": "1:2",
-          "text": "Five or six. That's a good number for a brave step. It should feel a bit hard, but not the red part. Can you try it?"
+          "text": "Five or six. That's a good number for a brave step. It should feel a bit hard, but nowhere near a ten. Can you try it?"
         },
         {
           "speaker": "1:3",
-          "text": "If the dog is little."
+          "text": "Only if it's a small dog."
         },
         {
           "speaker": "1:2",
@@ -371,11 +371,11 @@
         },
         {
           "speaker": "1:3",
-          "text": "Can I pick the puppy video?"
+          "text": "Can I be the one who picks the videos?"
         },
         {
           "speaker": "1:2",
-          "text": "You absolutely can pick the puppy video. Good work today, Teddy. I'll see you both next week."
+          "text": "You absolutely can pick the videos. Good work today, Teddy. I'll see you both next week."
         }
       ],
       "true_speakers": {

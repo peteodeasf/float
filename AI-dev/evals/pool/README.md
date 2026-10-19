@@ -17,7 +17,7 @@ it joins, it is split into working or held-out, and held-out cases move to `AI-d
 - school refusal and general worry
 - hard edge cases
 
-The children are ages 6 to 17.
+The children are ages 8 to 17. That is Float's age range (Peter, 2026-10-19), and `validate.py` refuses any other.
 
 | | Count |
 |---|---|
@@ -43,6 +43,15 @@ something built in on purpose:
 - No OCD presentations, since that is out of scope for the extractor.
 - Every family is a two-parent or single-parent English-speaking household in the US.
 - The answer keys are the generating agents' own labels. No clinician has checked them. Where a label is an open clinical question (`fam-edge-03`), `label_notes` says so.
+
+## Reading the families
+
+The JSON files are hard to read. To see them as a page:
+
+    python3 -I AI-dev/evals/pool/viewer.py families.html
+
+The page shows each family's facts, log, voice notes and session, with the wrong-speaker turns
+highlighted.
 
 ## One file per family
 

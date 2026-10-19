@@ -6,7 +6,7 @@
   "facts": {
     "child": {
       "name": "Ollie",
-      "age": 7
+      "age": 9
     },
     "anxiety": "social anxiety",
     "situations": [
@@ -43,12 +43,12 @@
           {
             "id": "b3",
             "type": "safety",
-            "text": "Hides behind dad's legs when an adult talks to him"
+            "text": "Steps behind dad when an adult talks to him"
           },
           {
             "id": "b4",
             "type": "unclear",
-            "text": "Goes quiet and looks at the ground; mom can't tell if he is scared, waiting it out, or just tired of being asked his age"
+            "text": "Goes quiet and looks at the ground; mom can't tell if he is scared, waiting it out, or just tired of being asked what grade he's in"
           }
         ],
         "accommodations": [
@@ -192,7 +192,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "The beanbag."
+          "text": "I'll take the beanbag."
         },
         {
           "speaker": "1:2",
@@ -216,19 +216,19 @@
         },
         {
           "speaker": "1:2",
-          "text": "That makes sense, you were a little bit hungry. Ollie, I'm curious about something. When it's time to tell the server what you want, what happens in your tummy or in your head?"
+          "text": "That makes sense, you were a little bit hungry. Ollie, I'm curious about something. When it's time to tell the server what you want, what happens in your body or in your head?"
         },
         {
           "speaker": "1:3",
-          "text": "My tummy goes funny. Like jumping."
+          "text": "My stomach gets all fluttery. And my face gets hot."
         },
         {
           "speaker": "1:2",
-          "text": "Jumping. Like a frog in there. And what do you think might happen if you said it yourself, out loud, to the server?"
+          "text": "Fluttery stomach, hot face. That's your body's alarm going off. And what do you think might happen if you said it yourself, out loud, to the server?"
         },
         {
           "speaker": "1:3",
-          "text": "They might laugh. If I say it wrong. Like if I say spaghetti wrong."
+          "text": "They might laugh at me. If I say it wrong. Like if I mess up the name of something on the menu."
         },
         {
           "speaker": "1:2",
@@ -236,7 +236,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "No. Because I don't do it."
+          "text": "No. But that's because I never do it."
         },
         {
           "speaker": "1:2",
@@ -264,7 +264,7 @@
         },
         {
           "speaker": "1:2",
-          "text": "Right. And that's exactly why it's so hard to stop doing. It works, in the moment, for both of you. The trouble is that his tummy never gets to learn that it can calm down on its own, with him doing the talking. So the jumping feeling stays at a six."
+          "text": "Right. And that's exactly why it's so hard to stop doing. It works, in the moment, for both of you. The trouble is that his body never gets to learn that it can calm down on its own, with him doing the talking. So the fluttery feeling stays at a six."
         },
         {
           "speaker": "1:1",
@@ -296,11 +296,11 @@
         },
         {
           "speaker": "1:3",
-          "text": "That nobody would play with me. And they would all just stare at me."
+          "text": "That nobody would want to hang out with me. And they'd all just stare at me standing there."
         },
         {
           "speaker": "1:2",
-          "text": "Nobody would play with you, and they'd all stare. How scared were you, on the thermometer?"
+          "text": "Nobody would hang out with you, and they'd all stare. How scared were you, on the thermometer?"
         },
         {
           "speaker": "1:3",
@@ -320,7 +320,7 @@
         },
         {
           "speaker": "1:1",
-          "text": "Yeah. He hides behind his dad. Like literally behind his legs. Or he just goes really quiet and stares at the floor. His dad usually answers for him. He says, oh, he's shy."
+          "text": "Yeah. He hides behind his dad. Like literally steps behind him, at his age. Or he just goes really quiet and stares at the floor. His dad usually answers for him. He says, oh, he's shy."
         },
         {
           "speaker": "1:2",
@@ -328,15 +328,15 @@
         },
         {
           "speaker": "1:1",
-          "text": "Honestly, I don't know. I can't tell. Sometimes I think he's just tired of being asked how old he is."
+          "text": "Honestly, I don't know. I can't tell. Sometimes I think he's just tired of being asked what grade he's in."
         },
         {
           "speaker": "1:3",
-          "text": "Everyone asks how old I am."
+          "text": "Everyone asks what grade I'm in. And then they ask if I like it."
         },
         {
           "speaker": "1:2",
-          "text": "They really do, don't they. Grown-ups love that question. Ollie, when a grown-up you don't know very well says hi, how scary is that?"
+          "text": "They really do, don't they. Adults love those questions. Ollie, when an adult you don't know very well says hi, how scary is that?"
         },
         {
           "speaker": "1:3",
@@ -352,7 +352,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "What if I say it too quiet?"
+          "text": "What if I say it too quiet and they can't hear me?"
         },
         {
           "speaker": "1:2",
@@ -412,7 +412,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "Two. Can one be pancakes?"
+          "text": "Okay, two. Can one be the pancake place?"
         },
         {
           "speaker": "1:1",
@@ -436,11 +436,11 @@
         },
         {
           "speaker": "1:2",
-          "text": "Ollie, you did a really good job talking today. You told me a lot. Do you want to pick a sticker on the way out?"
+          "text": "Ollie, you did a really good job talking today. You told me a lot. Same time next week?"
         },
         {
           "speaker": "1:3",
-          "text": "The shark one."
+          "text": "Okay. Bye."
         }
       ],
       "true_speakers": {

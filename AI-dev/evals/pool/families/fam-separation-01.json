@@ -6,7 +6,7 @@
   "facts": {
     "child": {
       "name": "Rosie",
-      "age": 6
+      "age": 8
     },
     "anxiety": "separation",
     "situations": [
@@ -14,7 +14,7 @@
         "id": "s1",
         "name": "Falling asleep and staying asleep in her own bed",
         "fear_level": 8,
-        "feared_outcome": "Mommy will leave the house while I'm asleep and I won't know where she went",
+        "feared_outcome": "Mom will leave the house while I'm asleep and I won't know where she went",
         "behaviors": [
           {
             "id": "b1",
@@ -49,7 +49,7 @@
       },
       {
         "id": "s2",
-        "name": "Morning drop-off at first grade",
+        "name": "Morning drop-off at third grade",
         "fear_level": 7,
         "feared_outcome": null,
         "behaviors": [
@@ -61,7 +61,7 @@
           {
             "id": "b5",
             "type": "avoidance",
-            "text": "Says her tummy hurts in the morning and asks to stay home"
+            "text": "Says her stomach hurts in the morning and asks to stay home"
           }
         ],
         "accommodations": [
@@ -79,7 +79,7 @@
         "id": "s3",
         "name": "Mom going out for an evening with a babysitter at home",
         "fear_level": null,
-        "feared_outcome": "Mommy won't come back",
+        "feared_outcome": "Mom won't come back",
         "behaviors": [
           {
             "id": "b6",
@@ -114,7 +114,7 @@
       {
         "date": "2026-10-06",
         "situation": "school drop off",
-        "child_behavior_observed": "tummy hurts tummy hurts all through breakfast, asked if she could stay home w me",
+        "child_behavior_observed": "my stomach hurts my stomach hurts all through breakfast, asked if she could stay home w me",
         "parent_response": "told her she had to go. parked and walked her in instead of car line bc i didnt want a scene",
         "fear_thermometer": 7,
         "parent_words": null,
@@ -141,7 +141,7 @@
       {
         "date": "2026-10-10",
         "situation": "went out w friends, sitter came",
-        "child_behavior_observed": "sitter said she was kind of off all night, really quiet, didnt want to play. not crying tho. at bath she told the sitter she thought i wasnt coming back",
+        "child_behavior_observed": "sitter said she was kind of off all night, really quiet, didnt want to play. not crying tho. at bedtime she told the sitter she thought i wasnt coming back",
         "parent_response": "texted the sitter pics of me to show her and came home an hour early",
         "fear_thermometer": null,
         "parent_words": null,
@@ -183,7 +183,7 @@
         "trap": "11 40 is a time and six is a count of call-outs; only 'an eight' is a Fear Level, and it is about bedtime, not drop-off"
       },
       {
-        "text": "um quick one she said her tummy hurt again this morning wanted to stay home i said no but i um walked her in again instead of doing the car line so yeah",
+        "text": "um quick one she said her stomach hurt again this morning wanted to stay home i said no but i um walked her in again instead of doing the car line so yeah",
         "expected": {
           "refs": [
             "s2",
@@ -200,23 +200,23 @@
       "turns": [
         {
           "speaker": "1:2",
-          "text": "Okay, we're recording now. Hi Rosie, hi Mom. This is our check-in, so I want to hear how the week went. Rosie, do you want to show me your drawing first, or should Mom and I talk for a minute?"
+          "text": "Okay, we're recording now. Hi Rosie, hi Mom. This is our check-in, so I want to hear how the week went. Rosie, do you want to show me the comic you were drawing in the waiting room first, or should Mom and I talk for a minute?"
         },
         {
           "speaker": "1:3",
-          "text": "Drawing first."
+          "text": "The comic first."
         },
         {
           "speaker": "1:2",
-          "text": "Deal. Oh, that is a big purple house. Who's in the window?"
+          "text": "Deal. Oh, that's a whole comic strip. What's happening in this last box?"
         },
         {
           "speaker": "1:3",
-          "text": "That's me and that's Mommy and that's the moon."
+          "text": "That's me and my mom at our house, and that's the moon. It's nighttime in that one."
         },
         {
           "speaker": "1:2",
-          "text": "I love it. You can keep coloring while Mom and I talk, and then I want to ask you something with our thermometer, okay? Mom, let's start with nights. Last time we said you would just write down what happens, not change anything yet. How did that go?"
+          "text": "I love it. You can keep working on it while Mom and I talk, and then I want to ask you something with our thermometer, okay? Mom, let's start with nights. Last time we said you would just write down what happens, not change anything yet. How did that go?"
         },
         {
           "speaker": "1:1",
@@ -252,19 +252,19 @@
         },
         {
           "speaker": "1:1",
-          "text": "Better than nights, I think. She still grabs my leg at the classroom door and her teacher has to take her hand. Twice this week she said her tummy hurt and asked to stay home. I sent her both times. But I did park and walk her in instead of doing the car line, because the car line is where it falls apart."
+          "text": "Better than nights, I think. She still grabs my leg at the classroom door and her teacher has to take her hand. Twice this week she said her stomach hurt and asked to stay home. I sent her both times. But I did park and walk her in instead of doing the car line, because the car line is where it falls apart."
         },
         {
           "speaker": "1:2",
-          "text": "That's honest, thank you. Rosie, can I borrow you for a second? Remember our thermometer? Down at the bottom is not scared at all, and way up at the top is the most scared ever. When Mommy says bye at the classroom door, where is your scared?"
+          "text": "That's honest, thank you. Rosie, can I borrow you for a second? Remember our thermometer? Zero is not scared at all, and ten is the most scared you've ever been. When Mom says bye at the classroom door, what number would you give it?"
         },
         {
           "speaker": "1:1",
-          "text": "Here. Five."
+          "text": "Probably a five."
         },
         {
           "speaker": "1:2",
-          "text": "Five, right in the middle. Thank you for showing me. What do you think about when Mommy leaves the door?"
+          "text": "Five, right in the middle. Thank you for telling me. What goes through your head when Mom walks away from the door?"
         },
         {
           "speaker": "1:3",
@@ -276,15 +276,15 @@
         },
         {
           "speaker": "1:3",
-          "text": "That Mommy goes away when I'm sleeping. And I don't know where."
+          "text": "That Mom will leave the house while I'm asleep. And I won't know where she went."
         },
         {
           "speaker": "1:2",
-          "text": "Ah. So when you wake up, you want to check that Mommy is still in the house."
+          "text": "Ah. So when you wake up, you want to check that Mom is still in the house."
         },
         {
           "speaker": "1:3",
-          "text": "Yeah. So I go in her bed."
+          "text": "Yeah. So I go get in her bed. Then I know."
         },
         {
           "speaker": "1:1",
@@ -300,15 +300,15 @@
         },
         {
           "speaker": "1:2",
-          "text": "Then you stay in the chair. You don't climb back into the bed. You can say one calm thing, like 'I'm right here, close your eyes,' and that's it. Rosie, what do you think? Mommy sits in the big chair instead of lying in your bed."
+          "text": "Then you stay in the chair. You don't climb back into the bed. You can say one calm thing, like 'I'm right here, close your eyes,' and that's it. Rosie, what do you think? Mom sits in the big chair instead of lying in your bed."
         },
         {
           "speaker": "1:3",
-          "text": "Can Bunny be in the bed?"
+          "text": "Can I still have Bunny in the bed? I know he's kind of a baby thing."
         },
         {
           "speaker": "1:2",
-          "text": "Bunny can absolutely be in the bed. So the plan is Mommy in the chair, Bunny in the bed, and you in the bed. We're not changing the middle of the night yet. Mom, if she comes into your bed this week, that's okay for now. I just want you to write down what time it happens."
+          "text": "Bunny can absolutely be in the bed. Lots of kids your age keep one. So the plan is Mom in the chair, Bunny in the bed, and you in the bed. We're not changing the middle of the night yet. Mom, if she comes into your bed this week, that's okay for now. I just want you to write down what time it happens."
         },
         {
           "speaker": "1:1",
@@ -348,7 +348,7 @@
         },
         {
           "speaker": "1:2",
-          "text": "Yes. And it probably won't be a disaster. Rosie, Mommy's going to be right there in the chair. You'll be able to see her."
+          "text": "Yes. And it probably won't be a disaster. Rosie, Mom's going to be right there in the chair. You'll be able to see her."
         },
         {
           "speaker": "1:3",
@@ -364,7 +364,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "High five. Can I take my drawing?"
+          "text": "High five. Can I take my comic?"
         },
         {
           "speaker": "1:2",

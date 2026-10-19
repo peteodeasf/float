@@ -54,6 +54,9 @@ def check(path: Path, prompt_shingles: set) -> list[str]:
         bad("status must be 'pool'")
 
     facts = f["facts"]
+    age = facts.get("child", {}).get("age")
+    if not (isinstance(age, int) and 8 <= age <= 17):
+        bad(f"child age {age!r}: Float's patients are 8 to 17 (Peter, 2026-10-19)")
     sits = {s["id"]: s for s in facts.get("situations", [])}
     if not sits:
         bad("no situations")

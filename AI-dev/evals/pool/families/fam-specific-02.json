@@ -6,7 +6,7 @@
   "facts": {
     "child": {
       "name": "Pearl",
-      "age": 7
+      "age": 10
     },
     "anxiety": "the dark",
     "situations": [
@@ -45,14 +45,14 @@
       },
       {
         "id": "s2",
-        "name": "Going down to the basement playroom alone",
+        "name": "Going down to the basement rec room alone",
         "fear_level": null,
         "feared_outcome": null,
         "behaviors": [
           {
             "id": "b4",
             "type": "avoidance",
-            "text": "Won't go down to get her toys; asks someone else to fetch them"
+            "text": "Won't go down to get her craft stuff; asks someone else to fetch it"
           },
           {
             "id": "b5",
@@ -63,7 +63,7 @@
         "accommodations": [
           {
             "id": "a3",
-            "text": "Dad goes down and brings the toys up for her"
+            "text": "Dad goes down and brings her craft stuff up for her"
           }
         ]
       },
@@ -110,7 +110,7 @@
       {
         "date": "2026-10-07",
         "situation": "Basement",
-        "child_behavior_observed": "Wouldn't go down for her dolls.",
+        "child_behavior_observed": "Wouldn't go down for her bead kit.",
         "parent_response": "Got them for her.",
         "fear_thermometer": null,
         "parent_words": null,
@@ -165,7 +165,7 @@
     ],
     "voice_notes": [
       {
-        "text": "lucia bedtime um light on door open she called out like are you there maybe six times I said yes every time she said seven",
+        "text": "pearl bedtime um light on door open she called out like are you there maybe six times I said yes every time she said seven",
         "expected": {
           "refs": [
             "s1",
@@ -184,7 +184,7 @@
       "turns": [
         {
           "speaker": "1:3",
-          "text": "Okay, let's get started. Pearl, I love your sparkly shoes. Dad, thanks for the log this week. It was short, but it had what I needed, so don't worry about writing more. I want to go through it with both of you. Is that okay, Pearl?"
+          "text": "Okay, let's get started. Pearl, I like your soccer jersey. Dad, thanks for the log this week. It was short, but it had what I needed, so don't worry about writing more. I want to go through it with both of you. Is that okay, Pearl?"
         },
         {
           "speaker": "1:1",
@@ -196,27 +196,27 @@
         },
         {
           "speaker": "1:1",
-          "text": "It's dark and the closet is dark too. And sometimes the closet door is a little bit open."
+          "text": "When my light's off I can't see into my closet. And sometimes the door's open a crack."
         },
         {
           "speaker": "1:3",
-          "text": "And when the closet door is a little bit open in the dark, what does your worry tell you?"
+          "text": "And when the closet door is open a crack in the dark, what does your worry tell you?"
         },
         {
           "speaker": "1:1",
-          "text": "That somebody is in there. Hiding. And they come out when it's all the way dark."
+          "text": "That somebody's hiding in there. And they'll come out once it's totally dark. I know it sounds dumb."
         },
         {
           "speaker": "1:3",
-          "text": "That sounds really scary to think about when you're trying to fall asleep. Has anybody ever come out of your closet?"
+          "text": "It doesn't sound dumb. It sounds really scary to think about when you're trying to fall asleep. Has anybody ever come out of your closet?"
         },
         {
           "speaker": "1:1",
-          "text": "No. Just my coats are in there."
+          "text": "No. It's just my clothes and some old stuff in there."
         },
         {
           "speaker": "1:3",
-          "text": "Just your coats. So your worry is telling you something big, and what's actually in there is coats. Dad, what happens on your end at bedtime?"
+          "text": "Just clothes and old stuff. So your worry is telling you something big, and what's actually in there is clothes. Dad, what happens on your end at bedtime?"
         },
         {
           "speaker": "1:2",
@@ -264,11 +264,11 @@
         },
         {
           "speaker": "1:1",
-          "text": "I thought the lights were never coming back. Ever."
+          "text": "I thought the power was never going to come back on. Like ever."
         },
         {
           "speaker": "1:3",
-          "text": "That would be a big scary thought. And they did come back, right?"
+          "text": "That's a really scary thought. And they did come back, right?"
         },
         {
           "speaker": "1:1",
@@ -276,11 +276,11 @@
         },
         {
           "speaker": "1:3",
-          "text": "So that's one we won't practice on purpose, because we can't make a storm happen. But it's good to know about. Now, the basement. Dad, you wrote she won't go down for her toys."
+          "text": "So that's one we won't practice on purpose, because we can't make a storm happen. But it's good to know about. Now, the basement. Dad, you wrote she won't go down for her things."
         },
         {
           "speaker": "1:1",
-          "text": "Right. I go get them. And Sunday she went halfway down singing really loud and came back up."
+          "text": "Right. I go get them for her. And Sunday she went halfway down singing really loud and came back up."
         },
         {
           "speaker": "1:3",
@@ -288,7 +288,7 @@
         },
         {
           "speaker": "1:1",
-          "text": "It's a song from school. About a frog."
+          "text": "It's a song we're doing in chorus at school."
         },
         {
           "speaker": "1:3",
@@ -316,7 +316,7 @@
         },
         {
           "speaker": "1:3",
-          "text": "I understand. So here's the deal. Dad is going to give you three tickets. They're little paper tickets. Each time you call out, are you there, you use one ticket, and Dad answers. When the tickets are used up, Dad doesn't answer, but he's still right there in the house. And if you have any tickets left in the morning, you can trade them for something. Dad, what would be a good trade?"
+          "text": "I understand. So here's the deal. Dad is going to give you three tickets. Little paper ones you keep by your bed. Each time you call out, are you there, you use one ticket, and Dad answers. When the tickets are used up, Dad doesn't answer, but he's still right there in the house. And if you have any tickets left in the morning, you can trade them for something. Dad, what would be a good trade?"
         },
         {
           "speaker": "1:2",
@@ -340,11 +340,11 @@
         },
         {
           "speaker": "1:1",
-          "text": "Five. If I have the tickets I'm okay."
+          "text": "Five. If I know I still have tickets, I think I'm okay."
         },
         {
           "speaker": "1:3",
-          "text": "Five sounds like a good brave step. Not too easy, not too hard. Okay, I think we have our plan. Tickets, walking back to bed, and Dad notices the singing. I'll see you both next week. Bring me a ticket if you have one left."
+          "text": "Five sounds like the right size step. Not too easy, not too hard. Okay, I think we have our plan. Tickets, walking back to bed, and Dad notices the singing. I'll see you both next week. Bring me a ticket if you have one left."
         },
         {
           "speaker": "1:1",
@@ -373,7 +373,7 @@
           "Bedtime: hall light on, door open, calling out 'are you there', ending up in parents' bed",
           "Pearl fears someone is hiding in her closet",
           "Power outage during last Friday's storm; held mom's arm",
-          "Basement: won't go down for toys; sang loudly halfway down and came back up; purpose of singing not known"
+          "Basement: won't go down for her things; sang loudly halfway down and came back up; purpose of singing not known"
         ],
         "fear_levels_said": [
           {
