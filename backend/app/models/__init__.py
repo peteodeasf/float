@@ -11,6 +11,7 @@ from app.models.monitoring import MonitoringForm, MonitoringEntry, MonitoringNot
 from app.models.session_note import SessionNote, SessionRecording
 from app.models.action_plan import ActionPlan
 from app.models.waitlist import WaitlistEntry
+from app.models.codesign import CodesignSession, CodesignSignup
 from app.models.formulation import ClinicalFormulation
 from app.models.checklist import ConsultationChecklist
 from app.models.checklist_item import OrganizationChecklistItem

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient, createClinician } from '../../context/AdminAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
 import AccessRequestsSection from './AccessRequestsSection'
+import CodesignSection from './CodesignSection'
 import { tdStyle, thStyle } from './tableStyles'
 
 type Stats = {
@@ -819,6 +820,8 @@ export default function AdminDashboardPage() {
             </tbody>
           </table>
         </section>
+
+        <CodesignSection cardStyle={cardStyle} />
 
         {/* Waitlist */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>

@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
     RESEND_FROM_NAME: str = "Float"
     BASE_URL: str = "http://localhost:5173"
+    # The public website (floatcbt.com), separate from the app at BASE_URL. Co-design permission
+    # links point here.
+    WEBSITE_URL: str = "https://floatcbt.com"
 
     # How a new practice gets in. "approval": the Request access form saves a request and a Float
     # admin approves it. "open": the same form approves it straight away and sends the setup link.

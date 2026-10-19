@@ -61,6 +61,14 @@ PUBLIC = {
     "POST /auth/forgot-password",
     "POST /auth/reset-password",
     "POST /waitlist",
+    # Teen co-design sign-ups from floatcbt.com/codesign. The dates and seats left; signing up
+    # (anti-bot check, limited per email); and the parent's permission link, guarded by an
+    # unguessable token, which shows only the teen's first name and dates. Holds no patient data.
+    # docs/plans/codesign-signup.md
+    "GET /codesign/sessions",
+    "POST /codesign/signups",
+    "GET /codesign/permission/{token}",
+    "POST /codesign/permission/{token}",
     # Request access for a practice. Always answers the same way and saves only a request; limited
     # per email and per IP address. docs/plans/clinician-practice-onboarding.md
     "POST /access-requests",

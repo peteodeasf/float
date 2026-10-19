@@ -625,3 +625,70 @@ Don't want these emails? Turn off reminder emails: {off_link}
         logger.error(f"Failed to send reminder email: {e}")
         return False
 
+
+
+# ── Co-design sign-ups ───────────────────────────────────────────────────────
+# docs/plans/codesign-signup.md. Plain emails to a teen and their parent; nothing clinical.
+
+def _codesign_html(heading: str, paragraphs: list[str], cta_label: str | None = None,
+                   cta_link: str | None = None) -> str:
+    body = "".join(
+        f'<p style="font-size:15px; color:#475569; line-height:1.6; margin:0 0 16px;">{html.escape(p)}</p>'
+        for p in paragraphs
+    )
+    button = (
+        f'''<div style="text-align:center; margin-top:8px;">
+        <a href="{html.escape(cta_link)}"
+           style="display:inline-block; padding:14px 40px; background:#135450; color:#ffffff;
+                  text-decoration:none; border-radius:6px; font-size:16px; font-weight:600;">{html.escape(cta_label)}</a>
+      </div>''' if cta_label and cta_link else ""
+    )
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background:#fafafa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="background:#135450; padding:24px 32px; text-align:center;">
+    <img src="{settings.BASE_URL}/brand/email-logo.png" width="150" height="50" alt="Float"
+         style="display:block; margin:0 auto; border:0;">
+  </div>
+  <div style="max-width:480px; margin:0 auto; padding:32px 24px;">
+    <div style="background:#ffffff; border-radius:10px; padding:32px 28px; border:1px solid #e2e8f0;">
+      <p style="font-size:18px; font-weight:600; color:#0f172a; margin:0 0 16px;">{html.escape(heading)}</p>
+      {body}
+      {button}
+    </div>
+  </div>
+  <div style="text-align:center; padding:16px 24px 32px;">
+    <p style="font-size:12px; color:#94a3b8; margin:0;">Questions? sally@floatcbt.com</p>
+  </div>
+</body>
+</html>
+"""
+
+
+async def send_codesign_email(to_email: str, subject: str, heading: str, paragraphs: list[str],
+                              cta_label: str | None = None, cta_link: str | None = None) -> bool:
+    if not settings.RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY not configured — skipping co-design email")
+        return False
+    resend.api_key = settings.RESEND_API_KEY
+    text_body = "\n\n".join([heading, *paragraphs] + ([cta_link] if cta_link else [])) \
+        + "\n\n---\nQuestions? sally@floatcbt.com\n"
+    try:
+        resend.Emails.send({
+            "from": f"{settings.RESEND_FROM_NAME} <{settings.RESEND_FROM_EMAIL}>",
+            "to": [to_email],
+            "reply_to": "sally@floatcbt.com",
+            "subject": subject,
+            "html": _codesign_html(heading, paragraphs, cta_label, cta_link),
+            "text": text_body,
+        })
+        logger.info("Co-design email sent")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send co-design email: {e}")
+        return False

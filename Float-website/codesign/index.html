@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="description" content="Float is recruiting teens aged 13–17 to help design an app for exposure-based CBT. Two paid virtual sessions over two weeks.">
+  <meta name="description" content="Teens aged 13–17: help design an app for teens and get paid $60 for two virtual group sessions in November 2026.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 120%27 fill=%27none%27><g transform=%27rotate(-50 60 60)%27><path d=%27M52 97 A38 38 0 1 1 68 97%27 stroke=%27%23135450%27 stroke-width=%2716%27 stroke-linecap=%27round%27/></g><circle cx=%2760%27 cy=%2760%27 r=%2719%27 fill=%27%239af6e4%27/></svg>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="apple-touch-icon" href="https://app.floatcbt.com/brand/apple-touch-icon.png">
   <meta name="theme-color" content="#135450">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Help design Float">
+  <meta property="og:title" content="Help design an app for teens">
   <meta property="og:image" content="https://app.floatcbt.com/brand/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <title>Help design Float</title>
@@ -502,107 +502,64 @@
       opacity: 1;
       transform: translateY(0);
     }
-    /* ── CO-DESIGN PAGE ── */
-    .banner { background: var(--teal-deeper); padding: 116px 48px 32px; }
-    .banner-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 40px;
-    }
-    .banner-label {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--teal-mid);
-      margin-bottom: 8px;
-    }
-    .banner h1 {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(26px, 3vw, 34px);
-      line-height: 1.15;
-      color: var(--white);
-      letter-spacing: -0.01em;
-      margin-bottom: 8px;
-    }
-    .banner p {
-      font-size: 16px;
-      line-height: 1.55;
-      color: rgba(255,255,255,0.72);
-      font-weight: 300;
-      max-width: 720px;
-    }
-    .banner .btn-primary { flex-shrink: 0; padding: 12px 24px; }
+    /* ── CO-DESIGN PAGE ── docs/plans/codesign-signup.md */
+    .banner { background: var(--teal-deeper); padding: 116px 48px 36px; }
+    .banner-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 40px; }
+    .banner-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal-mid); margin-bottom: 8px; }
+    .banner h1 { font-family: 'DM Serif Display', serif; font-size: clamp(28px, 3.4vw, 40px); line-height: 1.12; color: var(--white); letter-spacing: -0.01em; margin-bottom: 10px; }
+    .banner p { font-size: 16px; line-height: 1.55; color: rgba(255,255,255,0.75); font-weight: 300; max-width: 640px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .chip { font-size: 13px; font-weight: 600; color: var(--teal-dark); background: var(--teal-light); border-radius: 100px; padding: 5px 12px; }
+    .pay { flex-shrink: 0; width: 168px; height: 168px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .pay strong { font-family: 'DM Serif Display', serif; font-size: 52px; line-height: 1; color: var(--teal-mid); font-weight: 400; }
+    .pay span { font-size: 14px; color: rgba(255,255,255,0.85); margin-top: 6px; line-height: 1.3; }
 
-    .details { padding: 48px 48px; background: var(--off-white); }
-    .details-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
-    .details .problem-grid, .facts-grid { gap: 24px; }
+    .details { padding: 40px 48px; background: var(--off-white); }
+    .details-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     .details .problem-card { padding: 32px; }
-    .waitlist { padding: 64px 48px; }
-
-    .problem-card p + p { margin-top: 16px; }
     .problem-card p strong { font-weight: 600; color: var(--text); }
+    .chat-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .chat-list li { position: relative; padding-left: 28px; font-size: 16px; line-height: 1.5; color: var(--text); }
+    .chat-list li::before { content: '✓'; position: absolute; left: 0; top: 0; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--teal); color: var(--teal); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
 
-    .does-list { display: grid; grid-template-columns: auto 1fr; column-gap: 24px; }
-    .does-list dt, .does-list dd { padding: 14px 0; font-size: 16px; line-height: 1.6; }
-    .does-list dt { font-weight: 600; color: var(--text); }
-    .does-list dd { color: var(--text-mid); font-weight: 300; }
-    .does-list dt:nth-of-type(n+2), .does-list dd:nth-of-type(n+2) { border-top: 1px solid var(--border); }
-    .does-list dt:first-of-type, .does-list dd:first-of-type { padding-top: 0; }
-
-    .facts-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
-    .fact-figure {
-      font-family: 'DM Serif Display', serif;
-      font-size: 48px;
-      line-height: 1;
-      color: var(--teal);
-      letter-spacing: -0.02em;
-      margin-bottom: 16px;
-    }
-    .fact-figure span {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 15px;
-      font-weight: 500;
-      letter-spacing: 0;
-      color: var(--text);
-      margin-left: 6px;
-    }
-
-    .help-card {
-      background: var(--teal-deeper);
-      border-radius: 16px;
-      padding: 32px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 40px;
-      align-items: center;
-    }
-    .help-card h2 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 26px;
-      line-height: 1.2;
-      color: var(--white);
-      margin-bottom: 12px;
-    }
-    .help-card p { font-size: 16px; line-height: 1.6; color: rgba(255,255,255,0.72); font-weight: 300; max-width: 520px; }
-    .help-contact { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 24px 28px; }
-    .help-contact p { color: rgba(255,255,255,0.85); }
-    .help-contact .help-contact-name { font-weight: 600; color: var(--white); }
-    .help-contact a { color: inherit; text-decoration: none; }
-    .help-contact a:hover { color: var(--teal-mid); }
+    .waitlist { padding: 56px 48px 72px; }
+    .signup-inner { max-width: 640px; margin: 0 auto; }
+    .signup-inner h2 { font-family: 'DM Serif Display', serif; font-size: clamp(30px, 3.6vw, 40px); line-height: 1.1; color: var(--text); letter-spacing: -0.02em; margin-bottom: 8px; }
+    .signup-meta { font-size: 15px; color: var(--text-mid); margin-bottom: 32px; }
+    .signup-section { border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .signup-section h3 { font-size: 16px; font-weight: 600; color: var(--text); }
+    .signup-section h3 .num { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--white); font-size: 14px; align-items: center; justify-content: center; margin-right: 8px; }
+    .signup-section .hint { font-size: 14px; color: var(--text-mid); line-height: 1.5; margin-top: -6px; }
+    .dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .date { position: relative; }
+    .date input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .date label { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--white); font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; text-align: center; }
+    .date label small { font-size: 12px; font-weight: 500; color: var(--text-mid); }
+    .date input:checked + label { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); box-shadow: 0 0 0 1px var(--teal); }
+    .date input:focus-visible + label { outline: 3px solid rgba(19,84,80,0.35); outline-offset: 2px; }
+    .date input:disabled + label { color: var(--text-light); background: var(--off-white); cursor: not-allowed; text-decoration: line-through; }
+    .date input:disabled + label small { text-decoration: none; }
+    .signup-form { display: flex; flex-direction: column; gap: 20px; }
+    .form-group select { font-family: 'DM Sans', sans-serif; font-size: 15px; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--white); color: var(--text); }
+    .form-error { display: none; font-size: 14px; color: #b42318; background: #fef3f2; border: 1px solid #fecdca; border-radius: 10px; padding: 12px 14px; }
+    .form-error.show { display: block; }
+    .signup-closed { display: none; text-align: center; padding: 32px; background: var(--off-white); border-radius: 16px; font-size: 16px; color: var(--text-mid); }
+    .signup-closed.show { display: block; }
+    .questions { text-align: center; font-size: 15px; color: var(--text-mid); margin-top: 28px; }
+    .questions a { color: var(--teal); font-weight: 600; }
 
     @media (max-width: 768px) {
       .banner { padding: 92px 20px 28px; }
       .banner-inner { flex-direction: column; align-items: flex-start; gap: 20px; }
-      .details { padding: 32px 20px; }
-      .waitlist { padding: 48px 20px; }
-      .details-inner, .problem-grid, .facts-grid { gap: 20px; }
-      .problem-card { padding: 28px; }
-      .help-card { grid-template-columns: 1fr; gap: 24px; padding: 28px; }
-      .facts-grid { grid-template-columns: 1fr; }
+      .pay { width: auto; height: auto; border-radius: 14px; flex-direction: row; gap: 10px; padding: 12px 16px; }
+      .pay strong { font-size: 34px; }
+      .pay span { margin-top: 0; text-align: left; }
+      .details { padding: 28px 20px; }
+      .details-inner { grid-template-columns: 1fr; gap: 16px; }
+      .details .problem-card { padding: 24px; }
+      .waitlist { padding: 40px 20px 56px; }
+      .signup-section { padding: 18px; }
+      .dates { gap: 8px; }
     }
   </style>
 </head>
@@ -621,110 +578,111 @@
   <section class="banner">
     <div class="banner-inner">
       <div>
-        <div class="banner-label">Co-design research · Now recruiting</div>
-        <h1>Help make exposure-based CBT more accessible to those who need it.</h1>
-        <p>Float is modernising exposure-based CBT for teens with anxiety problems, and we want to build it with the young individuals who live it.</p>
+        <div class="banner-label">Calling all students · November 2026</div>
+        <h1>Help design an app for teens. Get paid for your ideas.</h1>
+        <p>Join two relaxed, virtual group chats and tell us what you really think about how apps should look, feel and work.</p>
+        <div class="chips"><span class="chip">Ages 13–17</span><span class="chip">Virtual</span><span class="chip">Paid</span></div>
       </div>
-      <a href="#signup" class="btn-primary">Sign up →</a>
+      <div class="pay"><strong>$60</strong><span>for joining<br>both sessions</span></div>
     </div>
   </section>
 
   <!-- DETAILS -->
   <section class="details">
     <div class="details-inner">
-      <div class="problem-grid">
-        <div class="problem-card">
-          <span class="problem-card-tag">Why Float</span>
-          <p><strong>1 in 3 kids</strong> will be diagnosed with an anxiety disorder before they hit adulthood. Exposure-based CBT is the most proven treatment for anxiety problems and yet it is unavailable to most people who need it.</p>
-          <p><strong>Float enables more therapists to deliver that therapy.</strong></p>
-        </div>
-        <div class="problem-card">
-          <span class="problem-card-tag">What Float does</span>
-          <dl class="does-list">
-            <dt>Clinicians</dt><dd>A toolkit and education for the whole treatment journey.</dd>
-            <dt>Teens</dt><dd>A connected app with a plan to follow and a direct line to their therapist.</dd>
-            <dt>Parents</dt><dd>A plan in their own app, synced to their teen's.</dd>
-          </dl>
-        </div>
+      <div class="problem-card">
+        <span class="problem-card-tag">What is Float?</span>
+        <p><strong>Float is a new app that helps teens face anxiety one small step at a time,</strong> working alongside their therapist. We're building it now, and we want teens to help shape it.</p>
       </div>
-
-      <div class="facts-grid">
-        <div class="problem-card">
-          <span class="problem-card-tag">Who</span>
-          <div class="fact-figure">13–17<span>years old</span></div>
-          <p>Teens currently in therapy or interested in learning more about mental health and contributing to product design.</p>
-        </div>
-        <div class="problem-card">
-          <span class="problem-card-tag">What's involved</span>
-          <div class="fact-figure">2<span>virtual sessions</span></div>
-          <p>Small groups, 45–60 min each, over two weeks. Chance to join more.</p>
-        </div>
-        <div class="problem-card">
-          <span class="problem-card-tag">Payment</span>
-          <div class="fact-figure">~$20<span>per session</span></div>
-          <p>Paid for every session, including any additional ones.</p>
-        </div>
-      </div>
-
-      <div class="help-card">
-        <div>
-          <div class="banner-label">How you can help</div>
-          <h2>Know a teen who'd be a great fit?</h2>
-          <p>Share our details with their family so they can reach us. The more voices, the better. Please feel free to reach out with any questions or ideas.</p>
-        </div>
-        <div class="help-contact">
-          <div class="banner-label">Contact</div>
-          <p class="help-contact-name">Sally McCarthy</p>
-          <p>Marketing Associate</p>
-          <p><a href="mailto:sally@floatcbt.com">sally@floatcbt.com</a></p>
-        </div>
+      <div class="problem-card">
+        <span class="problem-card-tag">What we'll chat about</span>
+        <ul class="chat-list">
+          <li>The apps you love, and why</li>
+          <li>What feels supportive, and what feels cringe</li>
+          <li>Your ideas for Float's design</li>
+        </ul>
       </div>
     </div>
   </section>
 
   <!-- SIGN-UP -->
   <section class="waitlist" id="signup">
-    <div class="waitlist-inner">
-      <h2>Want to <em>take part?</em></h2>
-      <p>Leave your details and we'll be in touch about session dates. Signing up here doesn't commit you to anything.</p>
+    <div class="signup-inner">
+      <div class="banner-label" style="color: var(--teal)">Sign up by Friday, October 30</div>
+      <h2>Pick one date from each week</h2>
+      <p class="signup-meta">45–60 min · on video · open discussion · every session starts at 12pm Eastern</p>
 
-      <form class="waitlist-form" id="codesignForm">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="firstName">First name</label>
-            <input type="text" id="firstName" required>
+      <div class="signup-closed" id="signupClosed">Sign-ups have closed. Questions? <a href="mailto:sally@floatcbt.com">sally@floatcbt.com</a></div>
+
+      <form class="signup-form" id="signupForm" novalidate>
+        <div class="signup-section">
+          <h3><span class="num">1</span>Session one · your thoughts</h3>
+          <div class="dates" id="week1" role="radiogroup" aria-label="Session one date"></div>
+        </div>
+        <div class="signup-section">
+          <h3><span class="num">2</span>Session two · your ideas</h3>
+          <div class="dates" id="week2" role="radiogroup" aria-label="Session two date"></div>
+        </div>
+
+        <div class="signup-section">
+          <h3>About you</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="teenFirst">First name</label>
+              <input type="text" id="teenFirst" autocomplete="given-name" required>
+            </div>
+            <div class="form-group">
+              <label for="teenLast">Last name</label>
+              <input type="text" id="teenLast" autocomplete="family-name" required>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="lastName">Last name</label>
-            <input type="text" id="lastName" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="teenAge">Age</label>
+              <select id="teenAge" required>
+                <option value="" disabled selected>Select</option>
+                <option>13</option><option>14</option><option>15</option><option>16</option><option>17</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="teenEmail">Your email</label>
+              <input type="email" id="teenEmail" autocomplete="email" required>
+            </div>
           </div>
         </div>
-        <div class="form-group">
-          <label for="email">Email address</label>
-          <input type="email" id="email" required>
+
+        <div class="signup-section">
+          <h3>Your parent or guardian</h3>
+          <p class="hint">A parent or guardian's permission is needed to take part. We'll email them a link to give it.</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="parentName">Their name</label>
+              <input type="text" id="parentName" required>
+            </div>
+            <div class="form-group">
+              <label for="parentEmail">Their email</label>
+              <input type="email" id="parentEmail" required>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="role">I am a...</label>
-          <select id="role" required>
-            <option value="" disabled selected>Select one</option>
-            <option value="codesign_teen">Teen who wants to take part</option>
-            <option value="codesign_parent">Parent or caregiver of a teen</option>
-          </select>
-        </div>
+
         <!-- Anti-bot honeypot: hidden from people (off-screen, not tabbable, no autofill); bots
              fill every field, so a non-empty value means it's a bot. Real submissions leave it empty. -->
         <div class="hp-field" aria-hidden="true">
           <label for="company">Company</label>
           <input type="text" id="company" name="company" tabindex="-1" autocomplete="off">
         </div>
-        <button type="submit" class="form-submit">Sign me up →</button>
-        <p class="form-note">A parent or guardian will need to agree before a teen takes part.</p>
+
+        <p class="form-error" id="formError" role="alert"></p>
+        <button type="submit" class="form-submit">Sign up →</button>
       </form>
 
-      <div class="form-success" id="formSuccess">
-        <h3>Thanks for signing up.</h3>
-        <p>We'll email you soon about session dates.</p>
+      <div class="form-success" id="formSuccess" role="status">
+        <h3>You're signed up.</h3>
+        <p>We've emailed your parent or guardian to ask for their permission, and sent your dates to your email. Your place is held for 3 days while they reply.</p>
       </div>
+
+      <p class="questions">Questions? <a href="mailto:sally@floatcbt.com">sally@floatcbt.com</a></p>
     </div>
   </section>
 
@@ -740,46 +698,104 @@
   </footer>
 
   <script>
-    // When the form was ready — used to reject instant (bot) submissions.
+    const API = 'https://floatcbt-production.up.railway.app';
     const formLoadedAt = Date.now();
+    const form = document.getElementById('signupForm');
+    const errorBox = document.getElementById('formError');
 
-    document.getElementById('codesignForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.add('show');
+      errorBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
 
-      const btn = this.querySelector('.form-submit');
-      const resetBtn = () => {
-        btn.textContent = 'Sign me up →';
-        btn.disabled = false;
-        alert('Something went wrong. Please try again.');
-      };
-      btn.textContent = 'Submitting...';
-      btn.disabled = true;
+    // "Tue Nov 3", in Eastern time, which is where the sessions are set.
+    function shortDate(iso) {
+      return new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' }).replace(',', '');
+    }
 
+    function renderDates(sessions) {
+      for (const week of [1, 2]) {
+        const box = document.getElementById('week' + week);
+        box.innerHTML = '';
+        for (const s of sessions.filter(x => x.week === week)) {
+          const id = 's-' + s.id;
+          const wrap = document.createElement('div');
+          wrap.className = 'date';
+          const input = document.createElement('input');
+          input.type = 'radio'; input.name = 'week' + week; input.value = s.id; input.id = id; input.disabled = s.full;
+          const label = document.createElement('label');
+          label.htmlFor = id;
+          label.innerHTML = '<span></span><small></small>';
+          label.firstChild.textContent = shortDate(s.starts_at);
+          label.lastChild.textContent = s.full ? 'Full' : '12pm ET';
+          wrap.append(input, label);
+          box.append(wrap);
+        }
+      }
+    }
+
+    async function loadSessions() {
       try {
-        const response = await fetch('https://floatcbt-production.up.railway.app/waitlist', {
+        const r = await fetch(API + '/codesign/sessions');
+        const data = await r.json();
+        if (!data.open) {
+          form.style.display = 'none';
+          document.getElementById('signupClosed').classList.add('show');
+          return;
+        }
+        renderDates(data.sessions);
+      } catch (e) {
+        showError('We could not load the dates. Please refresh the page, or email sally@floatcbt.com.');
+      }
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      errorBox.classList.remove('show');
+      const picked = w => (form.querySelector('input[name="week' + w + '"]:checked') || {}).value;
+      const val = id => document.getElementById(id).value.trim();
+      if (!picked(1) || !picked(2)) return showError('Pick one date from each week.');
+      if (!val('teenFirst') || !val('teenLast') || !val('teenAge') || !val('teenEmail') || !val('parentName') || !val('parentEmail')) {
+        return showError('Please fill in every box.');
+      }
+      for (const id of ['teenEmail', 'parentEmail']) {
+        if (!document.getElementById(id).checkValidity()) return showError('Please check the email addresses.');
+      }
+
+      const btn = form.querySelector('.form-submit');
+      btn.textContent = 'Signing up…';
+      btn.disabled = true;
+      try {
+        const r = await fetch(API + '/codesign/signups', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            first_name: document.getElementById('firstName').value,
-            last_name: document.getElementById('lastName').value,
-            email: document.getElementById('email').value,
-            role: document.getElementById('role').value,
+            teen_first_name: val('teenFirst'), teen_last_name: val('teenLast'), teen_age: Number(val('teenAge')),
+            teen_email: val('teenEmail'), parent_name: val('parentName'), parent_email: val('parentEmail'),
+            session1_id: picked(1), session2_id: picked(2),
             // Anti-bot: the honeypot must be empty, and a real person takes more than a moment.
             company: document.getElementById('company').value,
             elapsed_ms: Date.now() - formLoadedAt
           })
         });
-
-        if (response.ok) {
-          this.style.display = 'none';
+        if (r.ok) {
+          form.style.display = 'none';
           document.getElementById('formSuccess').classList.add('show');
-        } else {
-          resetBtn();
+          document.getElementById('formSuccess').scrollIntoView({ block: 'center', behavior: 'smooth' });
+          return;
         }
+        const detail = (await r.json().catch(() => ({}))).detail;
+        if (r.status === 409) { await loadSessions(); }
+        showError(typeof detail === 'string' ? detail : 'Please check your answers and try again.');
       } catch (err) {
-        resetBtn();
+        showError('Something went wrong. Please try again.');
       }
+      btn.textContent = 'Sign up →';
+      btn.disabled = false;
     });
+
+    loadSessions();
   </script>
 </body>
 </html>

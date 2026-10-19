@@ -11,7 +11,7 @@ from app.api.routers import (
     trigger_situations, avoidance_behaviors,
     ladders, experiments, progress,
     downward_arrows, messages, monitoring,
-    session_notes, session_recordings, action_plans, admin, waitlist,
+    session_notes, session_recordings, action_plans, admin, waitlist, codesign,
     formulation, checklist, accommodations, situation_tags, library,
     insights, admin_reviews, setup, access_requests, practice,
 )
@@ -66,6 +66,7 @@ app.include_router(action_plans.router)
 app.include_router(admin.router)
 app.include_router(admin_reviews.router)
 app.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
+app.include_router(codesign.router)
 
 @app.get("/health")
 async def health_check():
