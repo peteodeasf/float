@@ -91,7 +91,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 
 | When | Job |
 |---|---|
-| Sundays 1am | Generate new candidate families and cases into a waiting pool. They don't join the tests yet, so scores stay comparable night to night. |
+| Sundays 1am | Generate new candidate families and cases into the waiting pool. They don't join the tests yet, so scores stay comparable night to night. The first 30 were written on 2026-10-19 (`AI-dev/evals/pool/`, #26), so this job adds to them. |
 | Nightly 2am | Run the six features on the fixed cases, several times each. Code checks first, then reviewing agents. |
 | Nightly 4am | If a prompt-change pull request is open, score it on working and held-out cases, and post the scores on the pull request. |
 | Daily 6am | A short report for Peter: what got better or worse, and any new disagreements. |
@@ -127,7 +127,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 
 **Known facts**
 
-6. **The family generator.**
+6. **The family generator.** The first pool was written by hand-run agents on 2026-10-19. The format is in `AI-dev/evals/pool/README.md`, and `validate.py` checks it. Turn what made those 30 into the Sunday job, and add what they don't cover: 30- and 60-minute sessions, and families outside the US.
    - Facts first, then the inputs.
    - Kinds of anxiety: social, separation, health, specific fears, school refusal.
    - Ages 6–17, and many ways of writing.
