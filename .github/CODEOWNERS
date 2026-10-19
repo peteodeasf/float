@@ -30,3 +30,6 @@
 
 # The agent loop's own script and prompt
 /scripts/agent-loop*        @peteodeasf
+
+# How the AI tests are marked — the agents that tune prompts must not be able to change it
+/AI-dev/evals/judging/      @peteodeasf
