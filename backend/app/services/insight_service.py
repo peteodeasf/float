@@ -334,9 +334,14 @@ async def get_insights(
         q = q.where(PatientInsight.kind == kind)
     if not include_removed:
         q = q.where(PatientInsight.removed_at.is_(None))
-    rows = (await db.execute(q)).scalars().all()
-    # Most evidence first — how often something came up is the closest thing we have to how much it
-    # matters. Unrated and unseen fall to the end rather than counting as zero.
+    return by_evidence((await db.execute(q)).scalars().all())
+
+
+def by_evidence(rows: list[PatientInsight]) -> list[PatientInsight]:
+    """Most evidence first — how often something came up is the closest thing we have to how much it
+    matters. Unrated and unseen fall to the end rather than counting as zero.
+
+    Its own function so the preliminary report test tool puts the list in the same order."""
     return sorted(
         rows,
         key=lambda r: (-(len(r.monitoring_entry_ids) + len(r.session_note_ids or [])), r.first_seen_at),
@@ -407,6 +412,34 @@ def request_extraction(client, system_prompt: str, entries_text: str) -> str:
         max_tokens=4096,
         system=system_prompt,
         messages=[{"role": "user", "content": entries_text}],
+    )
+    return message.content[0].text
+
+
+REPORT_MODEL = "claude-sonnet-4-6"
+
+
+def report_input(insights: list[PatientInsight], entries_text: str) -> str:
+    """What the preliminary report call is given: the list, then the log it came from."""
+    return (
+        "What is known about this child, from the parent's monitoring log:\n\n"
+        + summarise_for_report(insights)
+        + "\n\nThe log itself, for detail and wording:\n\n"
+        + entries_text
+    )
+
+
+def request_report(client, system_prompt: str, insights: list[PatientInsight], entries_text: str) -> str:
+    """Ask the model for the preliminary report and return its reply as text.
+
+    The one place the call is made: Analyze with AI uses it, and so does the test tool in
+    `backend/evals/preliminary_report`, so what the tool scores is what clinicians get.
+    """
+    message = client.messages.create(
+        model=REPORT_MODEL,
+        max_tokens=3000,
+        system=system_prompt,
+        messages=[{"role": "user", "content": report_input(insights, entries_text)}],
     )
     return message.content[0].text
 

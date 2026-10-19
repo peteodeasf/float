@@ -2,16 +2,20 @@
 
 Measures the accuracy of the Step-2 "Analyze with AI" preliminary-report generation.
 
-It runs the **real, deployed** `PRELIMINARY_REPORT_SYSTEM_PROMPT` (imported from
-`app.api.routers.patients`, so it never drifts) over file-based case fixtures, captures the
-structured output, and gives you a clinician scoring sheet. It does **not** touch the
-database or the API — cases are JSON, the model is called directly.
+It runs each case through the app's own Analyze with AI steps (`app_pipeline.py`): the log is
+written out the way the app writes it, the list call pulls out situations, behaviors and
+accommodations, the list is built by the app's own code, and the report is written from that list
+plus the log. The prompts, model and settings are imported from the app, so they never drift.
+It does **not** touch the database or the API. Each case is treated as a patient analyzed for the
+first time. `backend/tests/test_preliminary_report_eval.py` checks the tool sends the model exactly
+what the real route sends. Two model calls per case.
 
 ## Layout
 ```
 cases/            input fixtures (one JSON per case); _TEMPLATE.json to add more
 rubric.md         clinician scoring rubric (7 criteria) + sample-size guidance
-run_eval.py       runs the prompt over cases -> outputs/<case>.{json,md} + blank scoring_sheet.csv
+app_pipeline.py   one case through the app's list and report steps, without a database
+run_eval.py       runs every case -> outputs/<case>.{json,md} (list + report) + blank scoring_sheet.csv
 summarize_scores.py   filled sheet -> per-criterion pass rates + 95% Wilson CIs (split by held_out)
 outputs/          generated (gitignored)
 ```

@@ -1320,18 +1320,9 @@ async def generate_preliminary_report(
 
     # ── 2. The report, written from the list ──────────────────────────────────
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=3000,
-            system=PRELIMINARY_REPORT_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": (
-                "What is known about this child, from the parent's monitoring log:\n\n"
-                + insight_service.summarise_for_report(insights)
-                + "\n\nThe log itself, for detail and wording:\n\n"
-                + entries_text
-            )}],
+        report = insight_service.parse_model_json(
+            insight_service.request_report(client, PRELIMINARY_REPORT_SYSTEM_PROMPT, insights, entries_text)
         )
-        report = insight_service.parse_model_json(message.content[0].text)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI report generation failed: {type(e).__name__}: {str(e)}")
     except Exception as e:
