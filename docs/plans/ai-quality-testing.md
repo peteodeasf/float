@@ -110,7 +110,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 ## Work items, in order
 
 **Fix first**
-1. **Show the risk flag.** The extraction prompt can return `review_flag`. `rebuild_from_monitoring` never reads it and the route doesn't return it, so it reaches no clinician. Save it and show it. This touches what a clinician sees, so ask Peter how it should look first.
+1. **Show the risk flag.** The extraction prompt can return `review_flag`. `rebuild_from_monitoring` never reads it and the route doesn't return it, so it reaches no clinician. Save it and show it. This touches what a clinician sees, so ask Peter how it should look first. The prompt's rule for raising it has not been checked by a clinician, so don't rely on the flag until Dr. Walker has said what counts as a risk sign (item 13).
 
 **Shared machinery**
 
@@ -135,7 +135,8 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
    - Kinds of anxiety: social, separation, health, specific fears, school refusal.
    - Ages 8–17, which is Float's age range, and many ways of writing.
 7. **Monitoring analysis at scale.**
-   - Score situations found, behavior types, parent actions mistaken for child behaviors, invented triggers and risk flags.
+   - Score situations found, behavior types, parent actions mistaken for child behaviors and invented triggers.
+   - **Do not score the risk flag.** Peter, 2026-10-19: what counts as a risk sign is a clinical question, and made-up data shouldn't settle it. Every family's risk label is marked `confirmed: false`. Score it only once Dr. Walker has answered (item 13).
    - Settle the conflict between the two prompts. The report prompt allows triggers the parent never logged (`patients.py`, "you may add them"); extraction forbids it. Bring the result to Peter.
    - Fix `backend/evals/preliminary_report` to send the input the app sends.
 8. **Voice notes.**
@@ -161,4 +162,5 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 
 13. **A weekly list for Peter,** and for Dr. Walker when possible.
     - The disputed cases, at most 10, through the existing review-link tool (`AI-dev/scripts/seed_review_round.py`).
-    - Put her three open extraction questions first: how broad "safety" is, whether several reassurance actions are one behavior or several, and whether dread is avoidance. They are in `AI-dev/Extraction Loop/Bridget-Extraction-Review.docx`.
+    - Put "what counts as a risk sign that a clinician should see now" first. The risk flag is not tested until she answers.
+    - Then her three open extraction questions: how broad "safety" is, whether several reassurance actions are one behavior or several, and whether dread is avoidance. They are in `AI-dev/Extraction Loop/Bridget-Extraction-Review.docx`.
