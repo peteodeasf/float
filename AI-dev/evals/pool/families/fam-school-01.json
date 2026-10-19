@@ -1,0 +1,434 @@
+{
+  "id": "fam-school-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "frustrated and blaming; blames the school, the dad and the child; run-on sentences",
+  "facts": {
+    "child": {
+      "name": "Rowan",
+      "age": 9
+    },
+    "anxiety": "school refusal",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Getting out the door for school in the morning",
+        "fear_level": 8,
+        "feared_outcome": "I'll throw up in class and everyone will see",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Lies on the floor by the front door, won't put shoes on, and stays home"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Asks mom over and over what happens if he throws up, and whether she'll be home if he needs her"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom lets him stay home and calls the attendance office"
+          },
+          {
+            "id": "a2",
+            "text": "Mom answers each what-if question every time he asks"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Mid-day at school with a stomachache",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Goes to the nurse with a stomachache and asks to call mom to be picked up"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom leaves work and picks him up early"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Friday spelling tests",
+        "fear_level": 6,
+        "feared_outcome": "I'll get words wrong and Mrs. Okafor will be mad at me",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Was off all morning on test day: quiet, barely ate"
+          },
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Asks mom in the car whether the teacher will be mad if he gets some wrong"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "Monday morning",
+        "child_behavior_observed": "Lay on the floor by the front door and would not put his shoes on. Said he was going to puke at school.",
+        "parent_response": "I gave up after 20 min and let him stay home. Again. His dad was zero help, already gone to work like always.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "getting ready for school",
+        "child_behavior_observed": "Asked me probably 15 times what happens if he throws up in class. Did go in eventually.",
+        "parent_response": "Kept answering him, what else am I supposed to do, ignore him? Drove him.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "school called - nurse",
+        "child_behavior_observed": "Went to the nurse around 10 with a stomachache and asked to call me.",
+        "parent_response": "Left work and picked him up. Nurse said no fever. Third time this month and the school just keeps calling ME instead of dealing with it.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "Spelling test Friday",
+        "child_behavior_observed": "Was off all morning. Barely touched breakfast, didn't say a word in the car.",
+        "parent_response": "Told him it's just spelling and he needs to get over it.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-05",
+        "situation": "monday AGAIN",
+        "child_behavior_observed": "Kept him home bc he was sobbing and I had a 9am I could not be late for. Called attendance.",
+        "parent_response": "Same as always.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent action written in child field (keeping him home and calling attendance are the mom's actions, a1; the child's avoidance b1 is only implied)"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "nurse again",
+        "child_behavior_observed": "Made it till after lunch then went to the nurse wanting to go home.",
+        "parent_response": "Told the nurse no this time. He stayed. Cried apparently. His teacher could have handled it better honestly.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "wednesday he got in the car fine then in the drop off line wouldnt get out, kept asking if Id be home all day in case he needed me. I said yes. he finally got out when the aide came over to the car. this is ridiculous for a 4th grader",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "spelling",
+        "child_behavior_observed": "Went to school. In the car asked if Mrs. Okafor would be mad if he got some wrong.",
+        "parent_response": "Said no she won't be mad. Honestly I have no idea, she's pretty strict.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "Monday",
+        "child_behavior_observed": "Said his stomach hurt, asked what if he pukes on the rug, asked if I'd have my phone on. Went in.",
+        "parent_response": "Answered him. Drove him, signed him in late at the office.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so this morning um he was up at like 6 and by 7:40 he's on the floor by the door again saying he's gonna throw up at school and i just i let him stay home i know i know but i had to be at work by 8:15 and his dad was no help so honestly id say he was at an 8 like full meltdown",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 8
+        },
+        "trap": "7:40 and 8:15 are clock times and 6 is a wake-up time; only the 8 at the end is a fear level"
+      },
+      {
+        "text": "two things today um first the nurse called again at like 11 he wanted to come home and i said no you have to stay and then at pickup he asked me like ten times if he has to go tomorrow and what if he throws up and i just kept saying yes you have to go no you wont throw up",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "s1",
+            "b2",
+            "a2"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        },
+        "trap": "11 is a time and ten is a count; no fear level was said"
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:2",
+          "text": "Okay, let's get started. Rowan, thanks for coming in. Mom, thanks for doing the log this week, I can see a lot of entries in here. I want to go through the week first and then we'll pick something to practice. Sound okay?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yeah. I mean it was a bad week. Honestly I don't know if any of this is working. Mondays are the worst. He's on the floor every Monday and I have to get to work, and his dad is gone by seven so it's all on me."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That sounds really hard, doing mornings on your own. Let's look at Monday specifically. Rowan, can you tell me what Monday morning was like for you?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I didn't want to go. My stomach hurt."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Your stomach hurt. What were you worried would happen at school?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "That I'd throw up. In class. And everybody would see it and they'd call me puke boy."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's a really scary thought to have. Do you remember the thermometer we made, zero to ten? If you think about Monday morning on the floor by the door, how big was the worry?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Eight. Maybe eight."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Eight. That's a big one. Thank you for telling me. And Mom, I see in the log you had an eight for that morning too, so you two are seeing it the same way, which is useful."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I mean what am I supposed to do at that point, drag him? I let him stay home. I know you're going to say that's wrong."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I'm not going to say it's wrong. I'm going to say it makes sense. When he's at an eight and you have to be somewhere, staying home ends the worst of it fast, for both of you. The trouble is it also teaches the worry that school is the thing to get away from. So we want to find a smaller step that you can actually do on a weekday morning."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Fine. But it's not just mornings. The nurse calls me like every other day."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Tell me about the nurse calls."
+        },
+        {
+          "speaker": "1:1",
+          "text": "He goes to the nurse with a stomachache, no fever, and asks to call me. Last week I left work to get him. This week I said no and he stayed, but apparently he cried and the teacher just sent him back to his desk. They could handle it better, frankly."
+        },
+        {
+          "speaker": "1:2",
+          "text": "So one day he went home and one day he stayed. Rowan, what happened the day you stayed?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I cried a little. Then we had reading and I forgot about it kind of."
+        },
+        {
+          "speaker": "1:2",
+          "text": "You forgot about it. That's important. The stomachache and the worry went down even though you didn't go home. Did you throw up?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "No."
+        },
+        {
+          "speaker": "1:2",
+          "text": "No. Okay. I want to also ask about Fridays, because I see spelling tests in here twice. Rowan, what's spelling like?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Mrs. Okafor gets mad when you spell stuff wrong. Not like yelling. She does a face."
+        },
+        {
+          "speaker": "1:2",
+          "text": "She does a face. And how big is the spelling worry on the thermometer?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Like a six."
+        },
+        {
+          "speaker": "1:2",
+          "text": "A six. So smaller than Monday mornings but still there. Mom, on the first Friday you wrote that he was off all morning, quiet, didn't eat much. Did he say what it was about?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "No, he just wasn't himself. I assumed it was the test. Could have been anything with him honestly. The second Friday he asked me in the car if she'd be mad, and I said no."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. So for the first Friday we don't really know what was going on, and that's fine, we'll just keep watching. The question in the car, will she be mad, that's a lot like the questions on Monday mornings, what if I throw up, will you be home. Rowan, when you ask Mom those questions, does it help?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "For a little bit. Then I want to ask again."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's exactly how worry questions work. The answer helps for a minute and then the worry wants another answer. Mom, how many times would you guess he asks on a bad morning?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Fifteen? Twenty? I lose count. I answer every single one because if I don't he gets louder."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That makes sense. Here's what I'd like to try this week, and I want to agree on it together, not just hand it to you. When Rowan asks a what-if question about throwing up or about you being home, you answer it once. The second time, you say something like, you already know what I'm going to say, and you're brave enough to handle it. And then you stop answering. Rowan, would that be okay to try?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "What if I really need to ask?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "You can still ask once. Mom will still answer once. The second time she's going to trust that you know the answer. Can we try that?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. I guess."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And the nurse?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "For the nurse, I'd suggest a plan with the school: if there's no fever and no actual vomiting, he rests ten minutes and goes back to class, and they don't call you. Would you be willing to email the nurse about that?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yes. Gladly. I'll do it tonight."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Great. And one small step for mornings. Rowan, I'm not asking you to love Mondays. I'm asking if, this week, on the days you do go, you could walk from the car to the door by yourself, without Mom or the aide coming to get you. Just the walk."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can Mom watch from the car?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Mom can watch from the car. Is that okay with you, Mom?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yes, that's fine."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. So three things. Mom answers a what-if question once and then says the trust line. Mom emails the nurse about the rest-and-return plan. And Rowan walks from the car to the door by himself on school days, with Mom watching from the car. Keep logging, and if you can, put a number on the nurse days too, I didn't have one for those. Good work today, Rowan."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Parent",
+        "1:2": "Clinician",
+        "1:3": "Child"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 9,
+          "correct": "Parent",
+          "note": "mom's turn tagged with the child's key 1:3"
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Monday mornings: lying by the door, staying home, fear of throwing up in class",
+          "Nurse visits with stomachache: one day picked up, one day stayed and settled",
+          "Friday spelling tests and worry about the teacher being upset",
+          "Repeated what-if questions and mom answering each one"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 8
+          },
+          {
+            "situation_ref": "s3",
+            "level": 6
+          }
+        ],
+        "agreed": [
+          "Mom answers a what-if question once, then says he already knows the answer and stops answering",
+          "Mom emails the school nurse about a rest-and-return plan with no call home unless fever or vomiting",
+          "Rowan walks from the car to the school door by himself on school days, mom watching from the car",
+          "Keep logging, and add a number on nurse days"
+        ]
+      },
+      "must_not_appear": [
+        "A Fear Level for the nurse visits (none was said)",
+        "A diagnosis such as separation anxiety disorder or emetophobia",
+        "That Rowan threw up at school",
+        "That mom agreed to stop keeping him home on Mondays"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

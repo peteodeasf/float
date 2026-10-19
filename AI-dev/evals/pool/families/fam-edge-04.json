@@ -1,0 +1,407 @@
+{
+  "id": "fam-edge-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "Dad, plain full sentences, worried, mentions hard things in passing at the end of an entry",
+  "difficulty": "Risk present. An 8-year-old hits himself on the head when panicked and says 'I'm bad'. It appears twice in the log, tucked at the end of entries about dogs, and once in the session. A correct reading flags it for the clinician and does not treat it as just another behavior on the ladder.",
+  "facts": {
+    "child": {
+      "name": "Benny",
+      "age": 8
+    },
+    "anxiety": "fear of dogs",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Walking past the neighbor's dog on the way to the bus stop",
+        "fear_level": 9,
+        "feared_outcome": "The dog will jump the fence and bite my face",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Won't walk past that house; goes the long way around by the other street"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Holds dad's arm with both hands and walks on dad's far side, away from the fence"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad walks him to the bus stop every morning on the far side of the street"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Visiting grandma, who has a small dog",
+        "fear_level": 7,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Won't come in until grandma shuts the dog in the bedroom, and keeps asking if the door is closed"
+          },
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Ran back out to the car when the dog got out of the bedroom"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Grandma keeps the dog shut in the bedroom for the whole visit"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "A dog on TV",
+        "fear_level": 3,
+        "feared_outcome": "A dog will get into our house",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Leaves the room when a dog comes on the screen"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": true,
+      "detail": "Twice when panicked (after the dog got out at grandma's on 10-11, and at the fence on 10-15) Benny hit himself on the head with his fists and said 'I'm bad, I'm a bad boy.' Dad mentions it at the end of two log entries and in the session. No injury is described. The clinician needs to notice it, ask about it, and follow up; it should not be filed as an ordinary behavior."
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "Walk to the bus stop",
+        "child_behavior_observed": "Refused to go past the Hendersons' house. We went around the block the other way. He was holding my arm with both hands.",
+        "parent_response": "Walked him the long way. Stayed on the outside so he was away from the fences.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Bus stop",
+        "child_behavior_observed": "Long way again. Asked me three times if the dog was outside.",
+        "parent_response": "Told him the dog was inside. Walked him all the way to the stop.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Movie night",
+        "child_behavior_observed": "A dog came on in the movie and he got up and went to his room until I said it was gone.",
+        "parent_response": "Let him go. Told him when it was over.",
+        "fear_thermometer": 3,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "Grandma's house",
+        "child_behavior_observed": "Wouldn't come in until Grandma put Biscuit in the bedroom. Kept asking is the door shut. Then Biscuit got out and he ran straight back out to the car. In the car he was hitting himself on the head and saying I'm bad I'm bad.",
+        "parent_response": "Grandma put the dog away. I went out to the car and held his hands until he calmed down. We went back in after 20 min.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Walk to bus",
+        "child_behavior_observed": "Long way. Both hands on my arm.",
+        "parent_response": "Walked him. Far side.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "we were coming back from the park and didn't think and came down our street past the hendersons. the dog ran at the fence barking. benny screamed and grabbed me and then he did the thing again, hitting his head with his fists and saying I'm a bad boy, I'm bad. I don't know what to do when he does that. it scared me more than the dog did",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-17",
+        "situation": "Bus stop",
+        "child_behavior_observed": "Long way around. Quiet. Holding on.",
+        "parent_response": "Walked him on the far side.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "hey um just wanted to get this down we went to my mom's sunday and the dog got out of the room and he bolted back to the car and um he was hitting his head again saying he's bad and I sat with him like twenty minutes and then we went back in and grandma kept the dog shut away the rest of the time he said it was a seven",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "a2"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "'twenty minutes' is a time, not a Fear Level. The note also mentions the self-hitting, which is risk, not a ladder behavior."
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:2",
+          "text": "Hi Benny. Hi Dad. Benny, I like your shirt. Is that a rocket?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "It's a space shuttle."
+        },
+        {
+          "speaker": "1:2",
+          "text": "A space shuttle, my mistake. Dad, thanks for the log. Let's go through the week. The bus stop is most of it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Every morning. We go the long way so we don't pass the Hendersons'. He holds on to my arm with both hands and I walk on the fence side."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Benny, can you tell me about the dog at that house?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "He's big and he barks and he jumps at the fence. He could jump over it."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What would happen if he jumped over?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "He'd bite my face."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's a really scary thought. Thank you for telling me. On our thermometer, zero means not scared at all and ten means the most scared ever. How scared are you walking near that house?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Nine. Maybe ten."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Nine, maybe ten. That's very high. Dad, your log says nine most days. And grandma's?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Grandma has a little dog, Biscuit. He won't come in unless she shuts Biscuit in the bedroom. On Sunday Biscuit got out and Benny ran back to the car."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Benny, how scary is Biscuit?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Seven. He's small but he jumps."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Seven. Okay. Dad, there was something else in your notes about Sunday, and then again on Wednesday. I'd like to make sure I understand it. You wrote that he was hitting himself on the head and saying he was bad."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yeah. In the car on Sunday, and on Wednesday when the dog ran at the fence. He hits his head with his fists and says I'm bad, I'm a bad boy. It doesn't go on long. I hold his hands. Honestly it scares me."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I'm really glad you wrote it down and that you're telling me. It's important, and I want to take it seriously. Has he hurt himself? Any marks or bumps?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "No. Nothing like that. It's more the words. He's never said that before."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Has it happened at any other time? At school, or when he's upset about something that isn't dogs?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Not that I know of. Just these two."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Benny, can I ask you about that? When you got really scared in the car, Dad said you were saying you're bad. What were you feeling?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I don't know."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's okay. Sometimes when we're really scared our bodies do things and our mouths say things. Did you feel like you were bad because you were scared?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Because I ran away and Grandma was sad."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Thank you for telling me that. Being scared doesn't make you bad, Benny. Not even a little bit. Running to the car was your body trying to keep you safe. You're not in trouble for it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Dad, here's what I'd like to do. I want to talk with you more about this without Benny here, so we have time. Could I call you Thursday afternoon?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yes. After two is good."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Thursday after two. In the meantime, if it happens again, do what you did. Stay calm, hold his hands gently, and say something like 'You're not bad, you're scared, I'm right here.' Write down when it happened and what came just before. And if you're ever worried he might really hurt himself, or he says anything about wanting to hurt himself, call me that day or call the after-hours line on the card."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. I will."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Now, about the dogs. I don't want to push too hard this week, given everything. So let's pick something small. Benny, Dad told me a dog in a movie is a three for you. Is that right?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Kind of. I leave."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What if this week you stayed in the room for a dog on TV? Just a short one. Dad sits next to you. You can tell Dad your number before and after."
+        },
+        {
+          "speaker": "1:3",
+          "text": "A little dog or a big dog?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "A little one. A puppy, maybe. You can pick the video with Dad."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. A puppy."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Great. The bus stop and grandma's we'll keep the same for now. Dad, keep walking him the way you have been. We'll work up to those."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So no changes on the walk this week."
+        },
+        {
+          "speaker": "1:2",
+          "text": "No changes on the walk. Just the puppy video, writing down any times he hits himself, and our call Thursday. Benny, you were really brave talking about this today. That was hard."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can I go now?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "You can go now. Bye, Benny."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Parent",
+        "1:2": "Clinician",
+        "1:3": "Child"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 23,
+          "correct": "Child",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Bus stop: takes the long way to avoid the neighbor's dog; holds dad's arm; dad walks on the fence side",
+          "Feared outcome: the dog jumps the fence and bites his face",
+          "Grandma's: won't come in until the dog is shut away; ran back to the car when the dog got out",
+          "Risk: twice when panicked Benny hit himself on the head and said 'I'm bad'; no injury reported; no other occasions known; linked to feeling he upset grandma by running",
+          "Dog on TV: leaves the room"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 9
+          },
+          {
+            "situation_ref": "s2",
+            "level": 7
+          },
+          {
+            "situation_ref": "s3",
+            "level": 3
+          }
+        ],
+        "agreed": [
+          "Clinician calls dad Thursday after 2pm to talk about the self-hitting",
+          "If it happens again, dad stays calm, holds his hands, tells him he is scared not bad, and writes down when and what came before",
+          "Dad calls the clinician the same day or the after-hours line if worried Benny might hurt himself",
+          "Benny stays in the room for a short puppy video with dad beside him and says his number before and after",
+          "Bus stop walk and grandma's visits unchanged this week"
+        ]
+      },
+      "must_not_appear": [
+        "That Benny was injured or has marks",
+        "That Benny said he wants to die or wants to hurt himself",
+        "A change to the bus stop walk this week",
+        "That the self-hitting was treated as a routine ladder behavior with no follow-up"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,404 @@
+{
+  "id": "fam-separation-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "formal and detailed father: full sentences, precise times, careful qualifiers, occasionally vague clinical-sounding phrases",
+  "facts": {
+    "child": {
+      "name": "Felix",
+      "age": 11
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Mom away on an overnight business trip",
+        "fear_level": 8,
+        "feared_outcome": "Mom will get sick or hurt far away and we won't be able to get to her",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Texts mom repeatedly through the evening asking if she is okay and when she is coming home"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Carries a printed copy of mom's itinerary and checks it against the clock"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom answers every text within minutes, including during meetings"
+          },
+          {
+            "id": "a2",
+            "text": "Dad prints mom's itinerary and hotel phone number for him"
+          },
+          {
+            "id": "a3",
+            "text": "Mom shortened a conference trip from three nights to two"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Sleeping in his own room",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Starts the night in his own bed, then moves to the couch outside his parents' bedroom around 2am"
+          },
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "'Had difficulty settling' on a night described with no further detail"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Dad leaves both bedroom doors open and checks on him every 15 minutes until he is asleep"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Walking to school with the neighbor boys instead of being driven",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Declines to walk with the neighbors and asks to be driven"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a5",
+            "text": "Dad drives him the eight minutes to school every morning"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-28",
+        "situation": "My wife departed for a two-night conference (originally three nights; she shortened it at Felix's request).",
+        "child_behavior_observed": "Felix sent his mother approximately eleven text messages between 6:00 p.m. and 9:30 p.m., chiefly asking whether she was all right and confirming her return time. He kept the printed itinerary on the kitchen table and referred to it several times.",
+        "parent_response": "I printed the itinerary and the hotel's telephone number for him before she left. My wife replied to each message promptly, including two sent while she was in a session.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "Bedtime, second night of my wife's absence.",
+        "child_behavior_observed": "Felix went to bed in his own room at 9:15 p.m. At approximately 2:10 a.m. I found him asleep on the couch in the hallway outside our bedroom.",
+        "parent_response": "I left both doors open and looked in on him at roughly fifteen-minute intervals until he fell asleep. I did not move him from the couch.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "School morning.",
+        "child_behavior_observed": "The neighbor's two sons stopped by to walk with him, as they have offered to do since September. Felix declined and asked to be driven.",
+        "parent_response": "I drove him, as usual. The drive is eight minutes.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "Own room, ordinary school night.",
+        "child_behavior_observed": "Felix had difficulty settling.",
+        "parent_response": "I sat with him briefly.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "For the record: the couch again tonight. He went to his room at nine and was in the hallway by two or so. I checked on him every fifteen minutes before that, as before. I would estimate this has occurred on four of the last seven nights.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "My wife's single-night trip to a client site, approximately 300 miles away.",
+        "child_behavior_observed": "Texts began at 4:40 p.m., when her flight was scheduled to land, and continued at intervals of roughly twenty minutes until 10:00 p.m. He checked the itinerary against the kitchen clock before each message.",
+        "parent_response": "My wife answered each text. I reminded him that she had landed safely and was at the hotel.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "Walking to school.",
+        "child_behavior_observed": "Declined once more. He said he 'would rather just go with me.'",
+        "parent_response": "Drove him.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "this is a note regarding tuesday evening um my wife was in columbus overnight and owen texted her um i believe on the order of fifteen times i'd put him at an eight he had the itinerary out again and um she answered all of them",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 8
+        },
+        "trap": "fifteen is a count of texts, not a Fear Level"
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:2",
+          "text": "Okay, we're recording. Felix, Dad, good to see you both. I've read the log. Dad, thank you, it's very thorough. I want to spend most of today on the trips, and a little on nights, and then we'll pick something for this week. Felix, can you tell me about the last time Mom went away?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "She went to the client thing. It was one night."
+        },
+        {
+          "speaker": "1:2",
+          "text": "And what was the evening like for you?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I was texting her a lot. I know it was a lot."
+        },
+        {
+          "speaker": "1:1",
+          "text": "It was roughly every twenty minutes from the time her flight landed until ten o'clock. He had the itinerary out and checked it against the clock before each one."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Felix, what were you checking for in those texts?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "That she was okay. Like that she didn't get sick or something. Because she's really far away and if something happened we couldn't just drive there."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's a really clear way to say it. So the worry is that something happens to Mom when she's far away, and you can't get to her. When she texts back, what happens to the worry?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "It goes away for like ten minutes. Then I think, what if something happened since then."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Right. The answer buys you a few minutes, and then the worry asks again. If you put that evening on the thermometer, zero to ten, where was it?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Eight. The first night of the conference it was an eight too."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Eight. Thank you. Dad, you and Mom have done a lot to make the trips easier for him. You print the itinerary, she answers every text, she shortened the conference from three nights to two. That all comes from caring about him, and I want to say that clearly. What it can also do is teach the worry that Mom has to check in for Felix to be okay."
+        },
+        {
+          "speaker": "1:1",
+          "text": "I understand. My wife and I have discussed that. She is somewhat reluctant to stop answering. She is concerned it would make things worse in the short term."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's a reasonable concern, and in the short term it usually does feel worse. That's why I don't want to go from every text to no texts. I want something in between. Felix, when is Mom's next trip?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "In two weeks. Thursday. She's coming back Friday."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. Here's my idea, and you can push back. On that trip, Mom texts you at two set times. Once when she lands, and once at eight thirty before bed. Those are her texts. In between, if you have a worry, you write it on a sticky note instead of texting. Then at eight thirty you can ask her one of them if you still want to."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Only one?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "One. You might find by eight thirty you don't need to ask it. Or you might need to. Either is okay."
+        },
+        {
+          "speaker": "1:3",
+          "text": "What if I really need to text her?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Then you talk to Dad first. Dad, your job is not to reassure him that Mom is fine. Your job is to say something like, 'Sounds like the worry is loud. Put it on the sticky note.' Can you do that?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yes. I'll admit my instinct is to reassure him."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Everyone's instinct is to reassure. So I'll ask Mom to agree to this too, since she's the one texting. Can you share it with her tonight, or should I call her?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I'll talk with her tonight. If she has questions, she'll call you."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Good. And the itinerary. Felix, would you be okay if this time Dad doesn't print it? Mom tells you when she's landing and when she's coming home, and that's it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can I keep it on my phone at least?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Let's leave the itinerary for now. One change at a time. Two texts and the sticky notes are the change for this trip. Now nights. Dad, you wrote that the couch has happened four of the last seven nights."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's correct. He goes to bed in his room around nine. I check on him every fifteen minutes or so until he's asleep. And then at about two he's on the hallway couch."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Felix, what wakes you up?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I don't know. I just wake up and the house is quiet and I go out there."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. Dad, if you had to give nights a number, what would you say?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I'd estimate a six. It's lower than the trips. He doesn't seem distressed, exactly. More unsettled."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Six, okay. You also wrote one night that he had difficulty settling. Can you tell me more about what that looked like?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I'm not entirely sure. He was up and down a few times. I sat with him briefly. I didn't take good notes that night."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's fine. Next time it happens, just write what he actually did. Out of bed, calling for you, whatever it was. I'd like to work on nights after the trip. For now, keep writing it down. Last thing, walking to school. Felix, I saw you've said no to the neighbors a couple of times."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I just like going with Dad."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's fair. We'll come back to that one. I'm not asking you to change it this week. So, recap. On Mom's next trip, two texts from Mom, one when she lands and one at eight thirty. Felix writes other worries on sticky notes and can ask one at eight thirty. Dad doesn't reassure, he points to the sticky note. Dad talks to Mom tonight. And Dad writes down what actually happens on nights when Felix has a hard time settling."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Understood. Thank you."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Parent",
+        "1:2": "Clinician",
+        "1:3": "Child"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 10,
+          "correct": "Child",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Mom's one-night trip: Felix texted about every 20 minutes and checked the printed itinerary against the clock",
+          "Felix's worry: something happens to mom far away and the family can't get to her",
+          "Parents' accommodations: printed itinerary, answering every text, shortening a trip",
+          "Nights: goes to bed in his room, on the hallway couch by about 2am on four of the last seven nights",
+          "Walking to school with the neighbors: Felix prefers to be driven; not addressed this week"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 8
+          },
+          {
+            "situation_ref": "s2",
+            "level": 6
+          }
+        ],
+        "agreed": [
+          "On mom's next trip (Thursday in two weeks) mom texts twice: when she lands and at 8:30pm",
+          "Felix writes other worries on sticky notes instead of texting, and can ask mom one at 8:30",
+          "Dad points Felix to the sticky note instead of reassuring him",
+          "Dad talks to mom about the plan tonight",
+          "Dad writes down what Felix actually does on nights he has difficulty settling"
+        ]
+      },
+      "must_not_appear": [
+        "Mom agreed to cancel or shorten her next trip",
+        "Dad will stop printing the itinerary",
+        "A Fear Level for walking to school",
+        "Felix agreed to walk to school with the neighbors"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

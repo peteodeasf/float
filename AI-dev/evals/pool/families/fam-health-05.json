@@ -1,0 +1,414 @@
+{
+  "id": "fam-health-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom who gives fear as a range ('6 or 7') instead of one number; puts the lower number in the field and the range in the text; casual, quick entries",
+  "facts": {
+    "child": {
+      "name": "Anika",
+      "age": 16
+    },
+    "anxiety": "panic attacks and fear of fainting",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Driving practice",
+        "fear_level": 7,
+        "fear_level_max": 8,
+        "feared_outcome": "I'll have a panic attack at the wheel and crash the car",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Cancels the driving lesson"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Only drives with Mom in the passenger seat and keeps mints and water in the cup holder"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom rides along and talks her through every turn"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Hot, crowded places (concerts, pep rallies)",
+        "fear_level": 6,
+        "fear_level_max": 7,
+        "feared_outcome": "I'll faint and people will film it",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Left the concert after about twenty minutes"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Stands by the exit and keeps mints and a water bottle on her"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom waits in the parking lot so she can leave early"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Noticing her heartbeat or feeling dizzy when she stands up",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Checks her heart rate on her smartwatch over and over"
+          },
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Googles her symptoms in bed at night"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom booked another doctor's visit to reassure her"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-03",
+        "situation": "Driving lesson w/ instructor",
+        "child_behavior_observed": "Cancelled it an hour before. Said she felt off.",
+        "parent_response": "Called the driving school and rescheduled. Said I'd take her out myself this weekend instead.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent said '7 or 8' when asked; only the first number is in the field"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "Practice driving, me in the car",
+        "child_behavior_observed": "Drove around the neighborhood ok. Had her water and mints in the cup holder, took a mint at every stop sign basically. Wouldn't go on the main road. Maybe a 6 or 7.",
+        "parent_response": "Rode with her and talked her through every turn, told her she was doing great.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "range '6 or 7' in the text; field holds 6"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Got dizzy standing up from the couch",
+        "child_behavior_observed": "Sat right back down and checked her watch. Then checked it again. Then again, like every minute for a while. Said her heart was 'weird.'",
+        "parent_response": "Told her she probably stood up too fast. Got her some juice.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Concert downtown w/ friends",
+        "child_behavior_observed": "Texted me after about 20 min that she needed to leave. Said it was so hot and packed and she felt like she was going to pass out. She'd been standing by the doors the whole time with her water. 6 or 7 she said.",
+        "parent_response": "I was already waiting in the parking garage, I'd told her I'd stay close just in case. Picked her up.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2",
+        "trap": "'20 min' is a time, not a fear level; range '6 or 7' in the text"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "up late again googling. showed me some article about heart arrhythmias in teens. I said ok we'll ask the doctor and I made her an appt for thursday, she already had a checkup in august that was totally normal. she was calmer once it was booked",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-16",
+        "situation": "Pep rally, school gym",
+        "child_behavior_observed": "Went. Stayed the whole time but stood next to the exit door with her water bottle and a pack of mints. Said it was a 6, maybe 7.",
+        "parent_response": "Waited in the school parking lot in case she wanted out. She didn't need me.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-17",
+        "situation": "Driving lesson",
+        "child_behavior_observed": "Cancelled again. I'd say 7 or 8 just thinking about it.",
+        "parent_response": "Told her fine but we're going out Sunday, just us.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so its like eleven thirty and shes still up she came in showing me her watch saying her heart rate was ninety something lying down and she'd been reading stuff online again and um i told her its fine but honestly i dont know what to say anymore",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5",
+            "b6"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'eleven thirty' is a time and 'ninety something' is a heart rate; neither is a fear level"
+      },
+      {
+        "text": "quick update she drove to the grocery store today with me um did the main road for like two blocks and then wanted to turn off she said like a seven or eight and she had her mints",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "range 'seven or eight' said aloud; fear_level_said is the lower number"
+      }
+    ],
+    "session": {
+      "minutes": 12,
+      "turns": [
+        {
+          "speaker": "1:1",
+          "text": "Hey Anika. Hi Mom. Let's look at the last couple of weeks. Anika, I'd like to start with you. What stood out?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "The concert, I guess. I really wanted to go. It was a band I've liked since eighth grade. And I lasted like twenty minutes."
+        },
+        {
+          "speaker": "1:1",
+          "text": "What happened in those twenty minutes?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "It was so hot. Everybody was pressed together. And I started feeling lightheaded and my heart was pounding and I was like, I'm going to faint. Right here. And people would film it and it'd be everywhere."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That sounds awful. Where were you standing?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "By the doors. I always stand by the doors. And I had water and mints."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And I was in the parking garage. I'd told her I'd be close. She texted me and I came right around."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Anika, if you think about being in that crowd, zero to ten, how scared were you?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Six or seven? Like a six when I got there and a seven when it got bad."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Let's call it a seven at the worst point. And did you faint?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "No. But I left before I could."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's an important thing we'll come back to. When you leave before it can happen, you never find out what would have happened if you stayed. Your brain just remembers, phew, I got out in time. Mom, I notice you've been writing two numbers sometimes, like six or seven."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yeah, sorry. It's hard to pick one. She'll say one and then change it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "No need to apologize. If it's a range, could you put the higher number in the box and write the range in the notes? That way I don't lose the top end. Let's talk about the pep rally, because that went differently."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I stayed the whole time. But I was by the exit. With my water."
+        },
+        {
+          "speaker": "1:1",
+          "text": "You stayed the whole time. That's real. And you had your safety things with you, the door, the water, the mints. Those are part of what we'll slowly work on. Now, driving. Mom, you wrote that she cancelled twice."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Twice with the instructor. She'll drive with me in the car, around the neighborhood, and once she went two blocks on the main road. But she always has the mints and water in the cup holder and I talk her through every turn."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Because what if I have a panic attack and I'm going forty and I just, like, can't control the car."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's the worry, that a panic attack at the wheel means a crash. Okay. And then there's the nighttime stuff. Your mom mentioned the watch, and looking things up."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I check my heart rate when it feels weird. Like a lot. And I read stuff. There was this article about heart problems in teenagers."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And I booked her another doctor's appointment. She had a totally normal checkup in August. I know, I know. She just calmed down so much once it was on the calendar."
+        },
+        {
+          "speaker": "1:1",
+          "text": "It's completely natural to want to make her feel better. And it does work, for a day or two. Then the next weird heartbeat comes along and we need the next check. Anika, does that sound right?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah. The appointment helped until like the next night."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So here's what I'd like to agree on for this week. Let's pick the watch first, because it's happening every day and it's in your control. Anika, would you be willing to take the heart rate screen off your watch face this week? You can still have the watch. Just not the heart rate on the front."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Can I still check it if I really need to?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Let's say no checking this week. If the urge comes, notice it, rate how strong it is from zero to ten, and write it down. That's the job. We want to see what happens to the urge when you don't feed it."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. That's going to be hard. But okay."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And one driving step. Mom will still be in the car, that doesn't change yet. But the mints and water go in the back seat, not the cup holder. And Mom, you're there but you're quiet. No talking her through turns unless it's a real driving instruction, like where to go."
+        },
+        {
+          "speaker": "1:3",
+          "text": "So just sit there?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Just sit there. You can look out the window. Two practice drives this week, neighborhood is fine. Anika, rate your fear before and after each drive."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Two drives. Mints in the back. Mom's quiet. No heart rate on my watch."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Should I cancel the doctor's appointment on Thursday?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's a decision for you and your doctor. I'm not going to tell you to cancel a medical appointment. What I'd ask is that going forward, before booking a new one for the same worry, we talk about it first."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. That's fair."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Great. Anika, nice work today. Next time I'd like to hear how the urge to check went."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Clinician",
+        "1:2": "Child",
+        "1:3": "Parent"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 19,
+          "correct": "Child",
+          "note": ""
+        },
+        {
+          "turn": 33,
+          "correct": "Parent",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Left a concert after about twenty minutes; stood by the doors with water and mints; fear of fainting and being filmed",
+          "Stayed through a pep rally next to the exit",
+          "Cancelled driving lessons twice; drives only with Mom, who talks her through turns; fear of a panic attack causing a crash",
+          "Checks her heart rate on her watch and reads about heart problems at night; Mom booked another doctor's visit",
+          "Mom records fear as a range; asked to put the higher number in the box and the range in the notes"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s2",
+            "level": 7
+          }
+        ],
+        "agreed": [
+          "Anika removes the heart rate display from her watch face and does no checking this week; she rates and writes down each urge",
+          "Two practice drives this week with Mom in the car but quiet, except real directions",
+          "Mints and water go in the back seat during drives",
+          "Anika rates fear before and after each drive",
+          "Before booking a new doctor's visit for the same worry, Mom talks with the clinician first"
+        ]
+      },
+      "must_not_appear": [
+        "Mom should cancel Thursday's doctor's appointment",
+        "Anika will drive without Mom in the car this week",
+        "A Fear Level for driving (none was said in the session)",
+        "A diagnosis such as panic disorder or POTS"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

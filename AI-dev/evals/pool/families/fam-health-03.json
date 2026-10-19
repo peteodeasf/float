@@ -1,0 +1,433 @@
+{
+  "id": "fam-health-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom who writes the child's body symptoms in the situation field instead of what was happening; the trigger is buried in the other fields",
+  "facts": {
+    "child": {
+      "name": "Ruby",
+      "age": 12
+    },
+    "anxiety": "fear of getting sick",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Plans at a friend's house when someone there has been sick",
+        "fear_level": 7,
+        "feared_outcome": "I'll catch it and be sick for weeks and miss everything",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Cancels the sleepover or visit"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom texts the other parent to ask whether anyone in the house is sick"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Eating food she didn't see being made (restaurants, potlucks)",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Inspects and smells her food and picks out anything that looks undercooked"
+          },
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Asks Mom 'is this safe to eat?'"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom cuts the food open to show it is cooked through and tells her it is safe"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Visiting her grandpa in the hospital",
+        "fear_level": null,
+        "feared_outcome": "I'll pick up a germ in the hospital and bring it home",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Goes into her grandpa's room but leaves after a few minutes to wait in the hallway"
+          },
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Uses hand sanitizer over and over during the visit"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom brought her a mask and a small bottle of sanitizer"
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "name": "Sitting near a classmate who is coughing",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Pulls her sweatshirt up over her nose and mouth"
+          },
+          {
+            "id": "b7",
+            "type": "unclear",
+            "text": "Told the teacher she needed to move; not known whether she moved or what happened"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-02",
+        "situation": "stomachache, sweaty hands, said she felt hot",
+        "child_behavior_observed": "Supposed to sleep over at Jada's but Jada's little brother had a stomach bug last week. Ruby cancelled about an hour before.",
+        "parent_response": "I texted Jada's mom to ask if everyone was better. She said yes but Ruby still didn't want to go. I let her stay home.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "symptoms in the situation field; the trigger (sleepover where a sibling was sick) is in the behavior field"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "nauseous, didn't want to eat",
+        "child_behavior_observed": "At the diner she cut her chicken into pieces and smelled each one. Pushed some to the side of the plate. Asked me if it was cooked enough.",
+        "parent_response": "I cut a piece open and showed her it was white all the way through. Told her it's safe.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2",
+        "trap": "symptoms in the situation field"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "throat tight, kept clearing it",
+        "child_behavior_observed": "A boy next to her in science was coughing a lot. She pulled her hoodie up over her nose for most of class.",
+        "parent_response": "She told me after school. I said that was smart, coughs spread.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s4",
+        "trap": "symptoms in the situation field"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "shaky, pale, said her stomach hurt",
+        "child_behavior_observed": "We went to see my dad at the hospital. She went in and said hi to him but after maybe five minutes she said she needed air and went out to the hallway and stayed there. She used the sanitizer like ten times.",
+        "parent_response": "I had brought her a mask and the little sanitizer from my purse. I went back and forth between her and Dad.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3",
+        "trap": "symptoms in the situation field"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "headache, tired",
+        "child_behavior_observed": "Potluck at church. Only ate the chips because they were from a bag. Kept asking me if the pasta salad had been sitting out.",
+        "parent_response": "I told her it had been in a cooler and it was fine. She still didn't eat it.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2",
+        "trap": "symptoms in the situation field"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "tummy ache all morning, then she says she's not going to Lena's birthday because Lena had strep two weeks ago. I texted Lena's mom and she said Lena's been on antibiotics and is fine. Ruby still said no. She was a 7 or so. I didn't make her go",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "felt sick in class",
+        "child_behavior_observed": "Girl behind her had a cold. Ruby told the teacher she needed to move.",
+        "parent_response": "Didn't find out until dinner. I asked if the teacher let her move and she just shrugged.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s4",
+        "trap": "symptoms in the situation field; b7 unclear: not known whether she moved"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "hi so um stomach hurting again tonight at dinner at my sisters house she was like picking through the lasagna and asking me is this cooked is this safe and i said yes it's fine it's fine and um she ate like three bites",
+        "expected": {
+          "refs": [
+            "s2",
+            "b2",
+            "b3",
+            "a2"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'three bites' is a count, not a fear level; the voice note also leads with a symptom rather than the situation"
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:1",
+          "text": "Hi Ruby, hi Mom. Come on in. I've been reading the log. Mom, I noticed you write down a lot about how Ruby's body feels, the stomachaches and the sweaty hands. That's helpful. I also want to understand what was happening around her when those feelings showed up. Can we go through a couple of them?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Sure. I guess I write the symptoms because that's what she tells me first. She'll say 'my stomach hurts' and then later I find out what's going on."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That makes a lot of sense. Ruby, the sleepover at your friend's house, can you tell me about that?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Her little brother had a stomach bug. And I just kept thinking, what if it's still in the house. Like on the doorknobs or the bathroom or whatever."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And what would happen if it was?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I'd catch it. And I'd be sick for like weeks and I'd miss school and the volleyball tournament and everything."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So the worry is catching it and being sick for a long time and missing things. On the zero to ten, how scared were you about going to the sleepover?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Seven. Maybe."
+        },
+        {
+          "speaker": "1:1",
+          "text": "A seven. And you ended up not going."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I texted her friend's mom first to check if everyone was better, and she said they were. But Ruby still didn't want to go. Then the same thing happened with Lena's birthday. Lena had strep a couple weeks before."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Mom, when you text the other parent to check, what are you hoping will happen?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I'm hoping the answer will make Ruby feel okay enough to go. But it never does, really."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's a really good thing to notice. Checking with the other parent feels like it should help, but it actually tells Ruby's worry that there's something to check for. And the worry always has another 'what if.' Ruby, does that fit?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yeah. Like even when she said everyone was fine, I thought, but what if they're not all the way fine."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Exactly. Let's talk about food for a minute. Mom wrote about the diner and the potluck."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I don't like eating stuff when I didn't see how they made it. Like chicken. If it's pink at all, you can get really sick."
+        },
+        {
+          "speaker": "1:3",
+          "text": "She cuts everything up and smells it, and asks me if it's cooked. And I cut it open and show her. At the potluck she only ate chips from a bag."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Ruby, when Mom shows you it's cooked and says it's safe, how long does that feeling of being okay last?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Like until the next piece."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Until the next piece. That's very honest. Okay. And the hospital visit with Grandpa?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "That was hard. My dad's been in for his hip. She went in and said hi and then after a few minutes she went out in the hallway and stayed there. I'd brought her a mask and sanitizer."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Hospitals are literally where the sick people are."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's a reasonable thought to have, and also the worry turns it up really loud. We won't plan anything about the hospital today. I want to pick one thing to start with that's not too big. Ruby, of these, the sleepovers, the food, the coughing kid in science, which feels easiest to practice?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Probably food. Like at home, not a restaurant."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Great choice. Here's an idea. This week, Mom makes a dinner, maybe chicken, and Ruby eats it without cutting it open to check the middle. Just eats it the way it comes. Three times this week. Ruby, could you do that?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Without checking at all?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Without checking. You can rate how scared you are before you start, and then again after you finish. And notice whether you got sick."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. Three times. At home."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And Mom, the part for you. When Ruby asks 'is this safe' or 'is it cooked,' you don't cut it open and you don't answer the question. You can say something kind like 'I know the worry is asking, and I trust you to handle it.' Then keep eating your own dinner."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That feels mean. Is it okay if I just say yes, it's safe, one time?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I get why it feels mean. It isn't. It's actually showing her you think she can do it. Let's try no answering at all for these three dinners, and see what happens. You can write down what she asked and how she did."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. I'll try."
+        },
+        {
+          "speaker": "1:1",
+          "text": "One more thing on the log. Mom, when you write an entry, could you put what was happening in the first box, like 'sleepover at a friend's,' and the stomachache and sweaty hands in the box about what Ruby did? It helps me see the pattern."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Oh. Sure, I didn't realize."
+        },
+        {
+          "speaker": "1:1",
+          "text": "No problem at all. You're writing great detail. Ruby, nice job today. Three dinners, no checking. Mom, no answering the safety question, and the situation goes in the first box."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can I still use my sanitizer at school?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "We're not changing anything at school this week. Just the dinners. We'll talk about the rest next time."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Clinician",
+        "1:2": "Parent",
+        "1:3": "Child"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 16,
+          "correct": "Parent",
+          "note": ""
+        },
+        {
+          "turn": 27,
+          "correct": "Child",
+          "note": ""
+        },
+        {
+          "turn": 31,
+          "correct": "Parent",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Cancelled a sleepover and a birthday party because someone in the house had been sick; fear of catching it and being sick for weeks",
+          "Mom texts other parents to check whether anyone is sick",
+          "Food she didn't see made: cuts, smells and checks it, asks if it's safe; Mom cuts it open to show her",
+          "Hospital visit to her grandpa: went in, then waited in the hallway; mask and sanitizer",
+          "Log entries put symptoms where the situation should go"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 7
+          }
+        ],
+        "agreed": [
+          "Ruby eats a home-cooked dinner without cutting it open to check, three times this week, rating fear before and after",
+          "Mom does not cut food open or answer 'is this safe' during those dinners, and writes down what Ruby asked",
+          "Mom puts what was happening in the situation box and symptoms in the behavior box"
+        ]
+      },
+      "must_not_appear": [
+        "A plan or step about hospital visits",
+        "Ruby stops using hand sanitizer at school",
+        "A Fear Level for food or for the hospital (none was said in the session)",
+        "A diagnosis such as OCD or illness anxiety disorder"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      },
+      {
+        "situation_ref": "s4",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s4",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,442 @@
+{
+  "id": "fam-edge-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "Mom, long chatty entries, quotes her son word for word, lots of 'and then'",
+  "difficulty": "Several reassurance questions asked in one moment (one behavior or several?), and dread the night before a test (avoidance, or unclear?). Both are open questions with Dr. Walker.",
+  "label_notes": {
+    "b1": "Labeled as ONE safety behavior. The night before a test Owen asks a run of questions in one sitting ('what if I blank', 'will you be mad', 'did I study enough', 'can you check my notes'). They all do the same job: get mom to say it will be okay. Counting each question as its own behavior would inflate the list and make one moment look like four. The questions are kept in the log as examples of the behavior. If Dr. Walker decides each question is separate, b1 splits into four safety behaviors; the type does not change.",
+    "b2": "Labeled UNCLEAR. Lying awake dreading the test and saying he feels sick is an anxiety response, not something he does to stay out of the situation. He goes to school the next day on every night it is logged except one (b3). So it is not avoidance by the confirmed definition (the child does not enter the situation). It is not escape or safety either. If Dr. Walker treats anticipatory dread as part of avoidance, this changes to avoidance.",
+    "b3": "Labeled AVOIDANCE. On the Spanish test day he stayed home, so he did not enter the situation. This is the clear case the dread entry is contrasted with.",
+    "b4_b5": "Tracking dad's flight and calling mom on arriving home are each one safety behavior: he stays in the situation and does something to feel safer."
+  },
+  "facts": {
+    "child": {
+      "name": "Owen",
+      "age": 14
+    },
+    "anxiety": "generalized worry",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Tests at school",
+        "fear_level": 7,
+        "feared_outcome": "I'll blank and fail and it will wreck my grade for the whole year",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "The night before a test, asks mom a string of reassurance questions in one sitting"
+          },
+          {
+            "id": "b2",
+            "type": "unclear",
+            "text": "Lies awake dreading the test the night before and says he feels sick"
+          },
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Stayed home on the day of the Spanish test"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom answers each question and tells him he'll be fine"
+          },
+          {
+            "id": "a2",
+            "text": "Mom let him stay home on the test day"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Dad flying for work",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Tracks dad's flight on a phone app and texts him to confirm he landed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad texts a photo from the gate every time he lands"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Coming home to an empty house after school",
+        "fear_level": 4,
+        "feared_outcome": "Something happened to Mom and nobody will tell me",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Calls mom as soon as he walks in and keeps her on the phone"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom stays on the phone with him until his dad gets home"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-01",
+        "situation": "Night before bio test",
+        "child_behavior_observed": "Came into the kitchen at like 9:30 and it was question after question. 'What if I blank?' 'Will you be mad if I get a C?' 'Do you think I studied enough?' 'Can you just look at my notes one more time?' All in about ten minutes.",
+        "parent_response": "I answered every one and then I quizzed him on the notes and told him he'd be fine",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-01",
+        "situation": "Same night, bedtime",
+        "child_behavior_observed": "Couldn't sleep. Came down at 11:45 saying he felt sick and was dreading tomorrow. Went to school in the morning and took the test.",
+        "parent_response": "Sat with him for a bit, made tea",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "Dad's flight to Denver",
+        "child_behavior_observed": "Had the flight tracker open all evening and then texted his dad 'did you land??' the second it said arrived",
+        "parent_response": "Dad sent a selfie from the gate like he always does",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "After school, nobody home",
+        "child_behavior_observed": "Called me the minute he walked in, stayed on the phone",
+        "parent_response": "Stayed on with him till his dad's car pulled in, about 25 minutes",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Night before Spanish test",
+        "child_behavior_observed": "Same thing with the questions. 'What if she asks the ones we didn't go over' 'what if I fail the whole class' 'you'd tell me if I was going to fail right'. Then lying in bed saying he felt sick, dreading it.",
+        "parent_response": "Reassured him, said he always does better than he thinks",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "Spanish test day",
+        "child_behavior_observed": "Said he threw up (I didn't see it). Stayed home.",
+        "parent_response": "I let him stay home and emailed the school he was sick",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "math quiz tomorrow and here we go again, he's asking me will you be mad, did i do enough, and then upstairs he's not sleeping, says he feels gross and he's dreading it. he did go in and take it this morning though",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "Home alone after school",
+        "child_behavior_observed": "Phoned me right when he got in again",
+        "parent_response": "Stayed on until dad got home",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "hi so um night before the history test and it's the questions again like will you be mad what if i blank did i study enough three four of them in a row and i just kept saying you'll be fine and then he went up and i can hear him not sleeping he says he's dreading it um he put it at a seven",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "'three four of them in a row' is a count of questions, not a Fear Level. One moment, not several, even though there are several questions."
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:1",
+          "text": "Hi Owen, hi Mom. Let's go over the week. Mom, your notes were really detailed, thank you. I want to start with the test nights because that's most of the log."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yeah, it's every test. The night before is the worst part."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Owen, walk me through a night before a test. What happens?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I don't know. I just start thinking about it and then I can't stop. Like what if I blank. And then I go ask my mom stuff."
+        },
+        {
+          "speaker": "1:1",
+          "text": "What kind of stuff?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Like if she'll be mad. If I studied enough. Sometimes I get her to check my notes."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And when she says you'll be fine, how long does that feeling last?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Like, a minute. Then I think of another one."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's really honest, and it's exactly how this works. The questions are all trying to get the same thing, which is for Mom to promise it'll be okay. Mom, does that sound right?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Totally. It's four or five questions in ten minutes. They're all the same question really."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Owen, what's the worst thing that could happen on a test? Like if the worry got its way."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I blank and fail and then my grade's wrecked for the whole year. And I can't fix it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. On the thermometer, zero to ten, where are test nights usually?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Seven. The Spanish one was worse."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Seven usually. Let's talk about the Spanish one. You stayed home that day."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I felt really sick."
+        },
+        {
+          "speaker": "1:3",
+          "text": "He said he threw up. I didn't see it. I let him stay home. I emailed the school."
+        },
+        {
+          "speaker": "1:1",
+          "text": "I'm not going to second-guess whether you were sick, Owen. What I'd like to understand is the other nights. Mom wrote that you lie awake feeling sick and dreading it, but then you go in the next morning. Is that right?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah. Most of the time I go. It's just the night that's bad."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So the night before is really hard, and in the morning you go anyway. That's worth noticing. The dread is real, but it isn't stopping you most days. The Spanish test was the one time it did."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Is the not sleeping part of what we're supposed to be fixing? I wasn't sure how to log it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Good question. It's something we watch. It's not the same as staying home. I'd log it just like you did, what he said and what time. I'm honestly still thinking about how to count it, so detail helps."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Let's look at the other two quickly. Dad's trip."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I just like to see the plane. On the app. And then I text him when it lands."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And his dad sends a selfie from the gate every single time. It's a whole thing now."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Where's that one on the thermometer, Owen?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Five maybe."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And coming home to an empty house?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's like a four. I just call my mom."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And I stay on until his dad gets home. Sometimes twenty-five minutes."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. So we have three areas and they all have something in common, which is checking that things are okay. The questions, the flight app, the phone call. Each one helps for a minute. For this week I want to start with the test questions, because that's where Owen is most stuck. Owen, how many questions do you think you'd need the night before a test, if we had to set a number?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Like, none? I don't know. Two?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Let's say two. Here's the plan. The night before a test, you get two questions. You can pick which two. After that, Mom says something like, 'That sounds like the worry talking. I know you can handle it.' And she doesn't answer it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And if he gets upset?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "He might. That's okay. You can stay with him, be kind, just don't answer the question. No checking notes either. Owen, can you try that?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Two questions. Okay. And no notes."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And I'd like you to write down your number before you go to bed and again after the test. I bet the number after the test is lower than the one at night."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Probably."
+        },
+        {
+          "speaker": "1:1",
+          "text": "The flight tracker and the phone call, let's leave those for now. Mom, keep logging them like you have been."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. Two questions, no notes, the line about the worry talking. I'll write it on the fridge."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Perfect. Owen, you were really honest today. That makes this a lot easier. See you next week."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Clinician",
+        "1:2": "Child",
+        "1:3": "Parent"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 22,
+          "correct": "Clinician",
+          "note": ""
+        },
+        {
+          "turn": 37,
+          "correct": "Child",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Night before tests: Owen asks mom a run of reassurance questions in one sitting; mom answers and checks his notes",
+          "Feared outcome: blanking, failing, and wrecking his grade for the year",
+          "Lies awake dreading tests and feeling sick, but goes to school the next day on most occasions",
+          "Stayed home on the Spanish test day",
+          "Dad's work flights: tracks the flight and texts on landing; dad sends a gate selfie",
+          "Coming home to an empty house: calls mom and she stays on until dad gets home"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 7
+          },
+          {
+            "situation_ref": "s2",
+            "level": 5
+          },
+          {
+            "situation_ref": "s3",
+            "level": 4
+          }
+        ],
+        "agreed": [
+          "Night before a test, Owen may ask two questions",
+          "After two, mom names it as the worry and does not answer",
+          "No checking his notes",
+          "Owen records his number before bed and after the test",
+          "Flight tracking and the after-school phone call left as they are this week; mom keeps logging"
+        ]
+      },
+      "must_not_appear": [
+        "That Owen was lying about being sick on the Spanish test day",
+        "That Owen avoids school because of the night-before dread (he went on all but one day)",
+        "A plan to stop the flight tracking or the phone calls this week",
+        "A diagnosis such as generalized anxiety disorder"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

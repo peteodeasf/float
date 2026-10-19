@@ -1,0 +1,429 @@
+{
+  "id": "fam-school-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "calm and reflective; full sentences, wonders aloud about why, notes her own part",
+  "facts": {
+    "child": {
+      "name": "Hazel",
+      "age": 11
+    },
+    "anxiety": "perfectionism",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Doing homework at night",
+        "fear_level": 7,
+        "feared_outcome": "If it looks messy Mr. Delacroix will think I'm lazy and not smart",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Erases and rewrites answers until the page is perfect, sometimes tearing the paper"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Asks mom to check every answer before she will put the homework in her bag"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom checks every page of homework each night"
+          },
+          {
+            "id": "a2",
+            "text": "Mom lets her stay up past bedtime to redo pages"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Handing in finished work at school",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Leaves finished assignments in her folder and doesn't turn them in, then says she forgot"
+          },
+          {
+            "id": "b4",
+            "type": "unclear",
+            "text": "Very quiet and went to her room early on the evening the science lab was due"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom emails the teacher to ask for more time"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Making a mistake at piano lesson",
+        "fear_level": null,
+        "feared_outcome": "Ms. Varga will figure out I'm not actually good at piano",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Stopped in the middle of the piece after a wrong note, went to the bathroom and stayed there most of the lesson"
+          }
+        ],
+        "accommodations": []
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-21",
+        "situation": "Math homework after dinner",
+        "child_behavior_observed": "She erased the same long-division problem so many times the paper tore, and then she started the whole sheet over on a clean copy.",
+        "parent_response": "I sat next to her and checked each answer as she finished it. I think I was hoping that if she knew they were right she would stop redoing them. It didn't really work.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-23",
+        "situation": "Homework (reading response)",
+        "child_behavior_observed": "Wrote three drafts of a one-paragraph response. Would not put it in her backpack until I had read it.",
+        "parent_response": "I read it and told her it was lovely. She went to bed at 10:20, almost an hour past bedtime. I let it slide because she was so upset.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-24",
+        "situation": "Turning in the history worksheet",
+        "child_behavior_observed": "I found the worksheet she redid on Monday still in her folder. When I asked, she said she forgot to hand it in. I don't think she forgot.",
+        "parent_response": "I didn't push. I emailed Mr. Delacroix and asked if she could turn it in Friday.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-26",
+        "situation": "Piano lesson",
+        "child_behavior_observed": "Ms. Varga told me afterward that Hazel hit a wrong note in the middle of her recital piece, stopped playing, asked to use the bathroom, and stayed in there until about ten minutes before the end. At bedtime Hazel said Ms. Varga is going to figure out she isn't actually any good.",
+        "parent_response": "On the drive home I asked how it went and she said fine. I didn't bring up the bathroom. I'm not sure if that was right.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "Homework - spelling sentences",
+        "child_behavior_observed": "Asked me to check every sentence, one at a time, before she would write the next one.",
+        "parent_response": "I checked them. I noticed I've become part of the routine; she won't start the next line without me.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-01",
+        "situation": "Science lab write-up due",
+        "child_behavior_observed": "Very quiet at dinner and went up to her room early. I don't know if she handed in the lab or not, or if it was something else entirely. Possibly a friend thing.",
+        "parent_response": "I let her be and checked on her once.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Sunday evening, the poster project. She redid the title lettering four times because one letter leaned. I offered to check it and she said yes please, can you check the facts too. I did. Then I realized it was nearly 10 and she was still going and I said that's enough, and she cried but stopped.",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Handing in the poster",
+        "child_behavior_observed": "Mr. Delacroix's note home said the poster wasn't turned in today. Hazel said she left it at home on purpose because a corner got bent on the bus.",
+        "parent_response": "I asked what she thought would happen if she turned it in with a bent corner. She shrugged. I didn't email him this time.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "so tonight was um a little different she did three pages of math and she asked me to check like she always does and i said i'll look at it once when you're all done instead of after every problem and she was pretty upset at first i'd say a six maybe and then she just kind of finished it and put it in her bag without me looking and i don't know i felt like that was something",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 6
+        },
+        "trap": "three pages is a count, not a fear level"
+      },
+      {
+        "text": "um quick one Mr Delacroix emailed and said she's missing two assignments and i found both of them finished in her folder so it's the same thing again where she does the work and then doesn't hand it in",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ],
+    "session": {
+      "minutes": 11,
+      "turns": [
+        {
+          "speaker": "1:3",
+          "text": "Hi Hazel, hi Mom. Let's look at the week. Mom, your notes were really thoughtful, thank you. I'd like to start with homework, since that's most of the entries, and then talk about handing things in."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Sure. I think homework is where I've noticed my own part the most. She asks me to check, I check, and then she asks again on the next problem. I've become a step in the process."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That's a really honest thing to notice. Hazel, can you tell me what homework is like for you? What happens in your head when you're doing a page?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I just want it to be right. And neat. If there's an eraser mark it looks bad."
+        },
+        {
+          "speaker": "1:3",
+          "text": "What would happen if Mr. Delacroix saw an eraser mark?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "He'd think I'm lazy. Like I didn't try. Or that I'm not smart."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. So the worry says a messy page means you're lazy or not smart. On the zero to ten scale, how strong is that worry when you're doing homework at night?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Seven."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Seven. And when Mom checks an answer, what happens to the seven?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "It goes down. But then on the next one it goes back up."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Right. It goes down for a moment and comes back. That's the pattern I see a lot. The checking helps right now, but it also tells your brain that you can't trust your own work without Mom looking. Mom, I saw in your voice note that one night you tried something different."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yes. I told her I would look once, at the end, instead of after every problem. She was upset, I'd guess a six. And then she finished and put it in her bag before I looked at all. I was surprised."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Hazel, do you remember that night?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yeah. I was mad. But then I was tired and I just put it in."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And what happened at school the next day with that page?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Nothing. I got a check."
+        },
+        {
+          "speaker": "1:3",
+          "text": "You got a check. So the page that Mom didn't look at came back fine. Let's hold on to that. Now the other thing in the log was the work that gets finished but doesn't get handed in. Mom, you found the history sheet and the poster."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yes. And Mr. Delacroix emailed about two more. Each time it's finished, it's sitting in her folder. The first time I emailed him and asked for more time. The second time I didn't."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Hazel, when you've finished something and it's in your folder, what makes it hard to hand in?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "If it's in my folder he can't see it. If I hand it in he can see what's wrong with it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That makes a lot of sense. How big is the worry right at the moment of handing it in, putting it on his desk?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "A five. It's less than homework. It's more like I just don't want to."
+        },
+        {
+          "speaker": "1:3",
+          "text": "A five. Thank you. And the bent corner on the poster, was that part of it?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "It looked bad."
+        },
+        {
+          "speaker": "1:1",
+          "text": "There was also the evening the science lab was due. She was very quiet and went to her room early. I honestly don't know if that was about the lab. It could have been something with a friend."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That's fine to leave as a question mark. Hazel, do you want to say anything about that night?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I don't really remember."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay, no problem. We'll keep it as something we don't know yet. Mom, you also mentioned piano once."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Just the one lesson. Ms. Varga said she hit a wrong note, stopped, and went to the bathroom for most of the lesson. I didn't ask her about it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Hazel, I'm not going to ask you to talk about that today unless you want to. I just want to say it sounds connected: a mistake happens, and the worry says get out. We might come back to piano later."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay."
+        },
+        {
+          "speaker": "1:3",
+          "text": "So here's what I'd like us to agree on. First, homework checking. Mom, instead of checking each answer, you look once when the page is done, and only to see that it's finished, not whether it's right. Does that feel doable?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yes. I think I can do that."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Hazel, the second part is for you, and it's going to feel weird. On one page this week, I'd like you to leave one eraser mark and not fix it. Just one. And hand it in like that."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Just one?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Just one. And then you write down what number the worry was before, and what Mr. Delacroix actually did. Can you try that?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I guess. Can it be on spelling? Spelling's easier."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Spelling is a great place to start. And third, homework stops at nine thirty, finished or not. Mom, that means no staying up late to redo things."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. That one will be hard for me, but yes."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Thank you both. So: Mom looks once at the end, only for done. Hazel hands in one spelling page with one eraser mark left on it. Homework stops at nine thirty. We didn't make a plan for handing things in yet, we'll get to that next time."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Child",
+        "1:2": "Parent",
+        "1:3": "Clinician"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 24,
+          "correct": "Parent",
+          "note": "mom describing the science lab evening, tagged with the child's key 1:1"
+        },
+        {
+          "turn": 32,
+          "correct": "Parent",
+          "note": "mom agreeing to look once at the end, tagged with the clinician's key 1:3"
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Nightly homework: erasing and redoing, asking mom to check every answer",
+          "Mom tried checking once at the end; Hazel put homework in her bag unchecked and got a check",
+          "Finished work left in her folder and not handed in, including the poster with a bent corner",
+          "Unclear quiet evening when the science lab was due",
+          "Piano lesson mentioned once: stopped after a wrong note and stayed in the bathroom"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 7
+          },
+          {
+            "situation_ref": "s1",
+            "level": 6
+          },
+          {
+            "situation_ref": "s2",
+            "level": 5
+          }
+        ],
+        "agreed": [
+          "Mom looks at homework once when the page is done, only to see it is finished, not whether it is right",
+          "Hazel hands in one spelling page with one eraser mark left unfixed, and records the worry number and what the teacher did",
+          "Homework stops at 9:30, finished or not; no staying up to redo"
+        ]
+      },
+      "must_not_appear": [
+        "A plan for handing in work (the clinician said it would wait for next time)",
+        "A Fear Level for piano",
+        "A diagnosis such as OCD",
+        "That mom agreed to email the teacher for extensions"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

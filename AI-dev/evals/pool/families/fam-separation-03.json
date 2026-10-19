@@ -1,0 +1,469 @@
+{
+  "id": "fam-separation-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "very short fragments packed with numbers: clock times, minutes, counts, miles",
+  "facts": {
+    "child": {
+      "name": "Nadia",
+      "age": 9
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Sleepover at a friend's house",
+        "fear_level": 9,
+        "feared_outcome": "Something bad will happen at home while I'm gone and nobody will tell me",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "escape",
+            "text": "Went to the sleepover, then called at 9:40pm to be picked up before bed"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Said no to a birthday sleepover invitation"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad drove over and picked her up at night when she called"
+          },
+          {
+            "id": "a2",
+            "text": "Mom arranged with the other parent that Nadia would only stay until bedtime"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Being dropped off at gymnastics practice",
+        "fear_level": 5,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Has mom stay in the parking lot for the whole practice and keeps checking the window to see the car"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom waits in the car in the lot for the full 90 minutes"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Staying overnight at Grandma's",
+        "fear_level": null,
+        "feared_outcome": "Mom and Dad will forget to come get me",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Calls home three or four times during the evening at Grandma's"
+          },
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Woke at 5am at Grandma's and 'didn't want to talk' at breakfast"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom keeps her phone on loud overnight and answers every call"
+          },
+          {
+            "id": "a5",
+            "text": "Parents pick her up at 7am Sunday instead of noon"
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "name": "Mom leaving the house for an errand while Nadia stays home with Dad",
+        "fear_level": 4,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Asks mom where she's going and when she'll be back, three times, before she leaves"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a6",
+            "text": "Mom texts her when she gets to the store and when she leaves"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-26",
+        "situation": "Sleepover, Lena's. 1.5 mi away.",
+        "child_behavior_observed": "Dropped 6:00. Called 9:40. Crying. Wanted home.",
+        "parent_response": "Dad got her 10:05.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-29",
+        "situation": "Gymnastics 4:30-6:00",
+        "child_behavior_observed": "Asked 2x if I'd stay in lot. Looked out window ~every 10 min (coach said).",
+        "parent_response": "Stayed in car 90 min.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "Grandma's overnight. Sat 3pm - Sun.",
+        "child_behavior_observed": "Called 4x. Last one 10:20pm. Each call: 'you won't forget to get me tmrw?'",
+        "parent_response": "Answered all 4. Phone on loud all night.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "Grandma's, morning",
+        "child_behavior_observed": "Up 5:00. Didn't want to talk at breakfast per Grandma.",
+        "parent_response": "Picked up 7:00 instead of 12:00.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Gym, Tues",
+        "child_behavior_observed": "Same. Checked window. Waved at car 3x.",
+        "parent_response": "Waited in lot. 90 min.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Ran to Target 7pm. She asked where, when back, 3 times. Left her w/ Dad. I texted at store + leaving. 35 min total. 4/10.",
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "Bday party invite - sleepover",
+        "child_behavior_observed": "Said no. 0 discussion.",
+        "parent_response": "Texted Ana's mom. She'll come 5-8:30 only, skip overnight.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Gymnastics",
+        "child_behavior_observed": "Asked 1x about lot. Checked window less? 3-4 times.",
+        "parent_response": "Stayed full time.",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so sleepover thing um she was there from six and called at nine forty crying so we got her at like ten oh five that's twice now she was there almost four hours which is honestly the longest ever and um she said it was a nine",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 9
+        },
+        "trap": "six, nine forty, ten oh five and four hours are times and durations; 'twice' is a count; only 'a nine' is a Fear Level"
+      },
+      {
+        "text": "gymnastics today um i stayed in the car again ninety minutes she looked out the window a few times um then sunday at grandmas she called like three times and we got her early",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "a3",
+            "s3",
+            "b4",
+            "a5"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        }
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:1",
+          "text": "Hi Nadia. Hi Mom. Thanks for the log this week, it was very clear. Lots of numbers, which I love. Can we start with gymnastics, since that one happened three times?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Sure. Same each time. I sit in the car, ninety minutes. She looks out the window. The last time was a little better, she only asked once if I'd stay."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Nadia, what's it like when you look out the window and see Mom's car?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Good. Then I can do my bars."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And what if you looked out and the car wasn't there?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I'd stop. I'd go to the bathroom and cry probably."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's really honest, thank you. When the car is there, how scared are you, zero to ten, at practice?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Five. Maybe four now."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Five, maybe four. That's lower than I expected. That tells me gymnastics might be a good place to start practicing. Let's put a pin in that. Mom, the sleepover at Lena's. Tell me about it."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Dropped her at six. She called at nine forty. Crying. Her dad drove over, she was home by ten fifteen."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Nadia, what happened right before you called?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "We were getting in sleeping bags. And Lena's mom turned off the big light. And I thought about home."
+        },
+        {
+          "speaker": "1:1",
+          "text": "What did you think about home?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "That something could happen. Like at our house. And I wouldn't know because I'm at Lena's."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Something could happen at home and nobody would tell you. That's a heavy thing to be carrying in a sleeping bag. How high was it?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Nine."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Nine. Okay. That's very high. And you were there almost four hours before it got to nine, which I think is worth noticing. Mom, I saw you also turned down a birthday sleepover."
+        },
+        {
+          "speaker": "1:2",
+          "text": "She said no right away. So I texted the mom and said she'd come for the party and leave at eight thirty."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. I can see why. I'd like us to leave the sleepovers aside for now. A nine is too high to start with. We want to start lower and build up. Let's talk about Grandma's, because that one's interesting. You stayed the whole night."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yeah. But I called a lot."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Four calls. Last one at ten twenty. Phone was on loud all night. Then she was up at five and didn't want to talk to Grandma at breakfast. So we picked her up at seven, not noon."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Nadia, at breakfast, was that a scared feeling or a tired feeling or something else?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I don't know. I was just tired. And I wanted to go home."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay, that's fair. We'll keep an eye on that one. Mom, do you have a number for Grandma's?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I didn't put one. I don't know. I wasn't there."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's fine, leave it blank. Better blank than a guess. So here's what I want to suggest. Gymnastics is a four or a five. That's a good place to start. What if this week, at Tuesday practice, Mom drops you off, and leaves the parking lot for the first thirty minutes. She drives to the coffee place, and she's back in the lot by five o'clock, before you're halfway done."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Thirty minutes?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Thirty minutes. And she'll be back. You'll be on bars or beam for most of it. If you look out the window and the car isn't there, that's the plan working. It doesn't mean something went wrong."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can she text me when she's back?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Good question. Do you have your phone at practice?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "No. It's in her bag in the cubby."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Then no text. You'll see the car when you come out. Mom, does thirty minutes work for you?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yes. Tuesday and Thursday?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Let's start with Tuesday only. If it goes okay, Thursday too. Nadia, before practice, what number do you think it'll be?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Six. Or seven."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Write down your guess before, and then after practice you write down what it actually was. Sometimes the guess is higher than what really happens. Mom, you write down the times. When you left, when you came back."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I can do that."
+        },
+        {
+          "speaker": "1:1",
+          "text": "One more thing on the log. Errands. You wrote she asked three times where you were going. I'd like you to keep writing those down too, just how many times she asks. Don't change anything yet. Just count."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. Just count."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So recap. Tuesday, Mom leaves gymnastics for the first thirty minutes and is back by five. Nadia writes down her guess before and her real number after. Mom writes the times and keeps counting the questions before errands. Sleepovers and Grandma's we'll come back to. Nadia, you did a lot of talking today, thank you."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. Bye."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Bye. See you both next week."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Clinician",
+        "1:2": "Parent",
+        "1:3": "Child"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 15,
+          "correct": "Child",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Gymnastics: mom waits in the lot for the full 90 minutes; Nadia checks the window for the car",
+          "Sleepover at a friend's: called at 9:40 to come home after almost four hours; turned down a birthday sleepover",
+          "Nadia's worry: something will happen at home and nobody will tell her",
+          "Overnight at Grandma's: four calls home, up at 5am, picked up at 7am instead of noon; no Fear Level given",
+          "Errands: Nadia asks three times where mom is going"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s2",
+            "level": 5
+          },
+          {
+            "situation_ref": "s1",
+            "level": 9
+          }
+        ],
+        "agreed": [
+          "Tuesday gymnastics: mom leaves the parking lot for the first 30 minutes and is back by 5:00; Thursday too only if Tuesday goes okay",
+          "No text to Nadia when mom is back",
+          "Nadia writes her guessed Fear Level before practice and the real one after",
+          "Mom writes down the times she left and came back, and keeps counting Nadia's questions before errands without changing anything"
+        ]
+      },
+      "must_not_appear": [
+        "Nadia agreed to try a full sleepover",
+        "A Fear Level for the overnight at Grandma's",
+        "Mom will text Nadia when she is back in the lot",
+        "Mom agreed to stop answering Nadia's calls from Grandma's"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s4",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s4",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

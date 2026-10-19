@@ -1,0 +1,512 @@
+{
+  "id": "fam-social-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "mom writes long rambling paragraphs with backstory, asides and second-guessing",
+  "facts": {
+    "child": {
+      "name": "Imani",
+      "age": 15
+    },
+    "anxiety": "social anxiety",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Giving a presentation in class",
+        "fear_level": 8,
+        "feared_outcome": "My voice will shake, everyone will see I'm nervous, and someone will film it",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Stayed home sick on the day of her history presentation"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Reads straight from cue cards held up in front of her face, never looks at the class"
+          },
+          {
+            "id": "b6",
+            "type": "unclear",
+            "text": "Stayed up very late the night before rewriting her slides over and over; could be ordinary preparing or could be anxiety-driven"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom emailed the teacher asking if Imani could present to the teacher alone at lunch instead"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Ordering at a coffee shop or drive-thru with friends",
+        "fear_level": 4,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Has a friend order for her and pays her back"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Orders the exact same drink every time so she has the words memorized"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "Asking about a part-time job in person",
+        "fear_level": null,
+        "feared_outcome": "They'll think I'm stupid and laugh about me after I leave",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Rode to the bakery with mom but stayed in the car and never handed in the application"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom offered to go in and ask about the job for her"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "So this was the history presentation, which she has known about for about three weeks, it was on the Industrial Revolution and it was a group thing originally but then the groups got changed and she ended up doing her part by herself",
+        "child_behavior_observed": "She was up until almost 1am the night before redoing her slides, I could see the light under the door, and I don't know if that's just her being a perfectionist (she's always been like that, even in kindergarten with her coloring) or if it's the anxiety thing. Then in the morning she said she had a headache and her stomach was bad and she stayed home. I'm honestly not sure if the headache was real, she did look pale, but she was fine by about 11 and watching shows.",
+        "parent_response": "I let her stay home. I called her in sick. I didn't really push it because I was running late for work and I didn't want a whole fight at 7am, which I know is probably not the right answer.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "History again, the makeup day for the presentation, which the teacher (who is lovely, by the way, very understanding) let her do the next day",
+        "child_behavior_observed": "She did it! But she told me she held her note cards right up in front of her face the whole time and read them word for word and never looked up at anybody, not even once. She said it was over in like three minutes. She said a couple of boys in the back were on their phones and she was sure they were recording her, though I don't think they were, I mean why would they.",
+        "parent_response": "I told her I was proud of her for doing it. And I'll be honest, the night before, I had emailed Mr. Okafor to ask if she could just do it for him at lunch instead of in front of everybody, but he wrote back and said he'd rather she try with the class first, which in hindsight I'm glad about.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "Coffee place after school with her two friends from orchestra, the one by the gas station, she goes there a lot",
+        "child_behavior_observed": "Her friend Tessa ordered for her and Imani paid her back after with her phone. Tessa apparently does this a lot, which I didn't know until tonight. She seemed totally fine about it and was laughing in the car, so maybe this one isn't that big a deal? It's hard to tell what's a big deal and what isn't.",
+        "parent_response": "I didn't say anything about it, I just listened. I wasn't sure if I should.",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "So we drove to the bakery on Linden because they had a sign up for weekend help and she has been saying for weeks she wants a job so she can have her own money, and she had the application all filled out, she'd done it at the kitchen table, very neat. And we parked and she just sat there. Like fifteen minutes. I offered to go in with her, and then I offered to go in and just ask them about it myself and she could come in after, and she said no to both, and then she said can we just go, and we went home. She said they would think she was stupid and laugh about her after she left. I didn't ask her for a number because she was pretty upset and I didn't want to make it into a whole therapy thing in the car.",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Drive-thru, just me and her, getting breakfast before her dentist appointment",
+        "child_behavior_observed": "She ordered for herself through the speaker, which I didn't expect, but it was the same thing she always gets, the vanilla iced coffee and the egg bite, she says it the exact same way every time almost like a little script. When the girl asked if she wanted the large she panicked a little and looked at me.",
+        "parent_response": "I said \"medium\" for her. It just came out. I know.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "Coffee place with orchestra friends again",
+        "child_behavior_observed": "Same as before, Tessa ordered, Imani paid her back. I only know because I picked them up and heard them talking about it.",
+        "parent_response": "Nothing, just drove.",
+        "fear_thermometer": 3,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um two things one she has another presentation coming up in english it's a poem one and she's already asking me if i can email the teacher like she did last time which um i haven't i told her i'd think about it and she said it's like an eight and then the other thing was the bakery um they still have the sign up i drove past it today and i mentioned it and she just said not yet and kind of changed the subject",
+        "expected": {
+          "refs": [
+            "s1",
+            "a1",
+            "s3",
+            "b5"
+          ],
+          "observations": 2,
+          "fear_level_said": 8
+        }
+      }
+    ],
+    "session": {
+      "minutes": 12,
+      "turns": [
+        {
+          "speaker": "1:3",
+          "text": "Hi, come on in, both of you. Imani, you can take the chair by the window if you want. Mom, thank you for the log this week. It's very detailed."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Sorry, I know it's long. I kept thinking of things."
+        },
+        {
+          "speaker": "1:3",
+          "text": "No, long is good. It helps me see what's going on. Let's start with the history presentation, since that seemed to be the biggest thing. Imani, can you tell me how it went from your side?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I mean, I didn't go the first day. And then I did it the second day."
+        },
+        {
+          "speaker": "1:3",
+          "text": "You did it. How did it go?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Fine, I guess. I just read the cards. I held them up so I didn't have to look at anybody."
+        },
+        {
+          "speaker": "1:3",
+          "text": "What would have happened if you had looked up?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I'd see everybody looking at me. And then my voice would start shaking, and they'd all know I was nervous. And there were these guys in the back on their phones."
+        },
+        {
+          "speaker": "1:3",
+          "text": "What were you worried they were doing?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Filming. Like, you get one video of your voice shaking and that's it, it's in every group chat by lunch."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That's a real fear for a lot of people your age. It's not silly at all. Do you know if they were filming?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "No. I didn't look. Because of the cards."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Right. The cards kept you from seeing, either way. Zero to ten, how scary was standing up there?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Eight. Both days, really. The day I stayed home was also an eight, just thinking about it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Can I ask something? The night before, she was up so late redoing her slides. Is that part of this? Because she's always been like that. Even in kindergarten, the coloring had to be perfect."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Honestly, I'm not sure yet. It might be good preparing. It might be the anxiety talking. Imani, what was going on at midnight with the slides?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I don't know. I just wanted them to be good."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. Let's leave that one as a question mark for now. We'll keep an eye on it. Mom, you also mentioned you emailed the teacher."
+        },
+        {
+          "speaker": "1:1",
+          "text": "I did. I asked if she could do it for him alone, at lunch. And he said no, he'd rather she try with the class. And she did. So I'm actually glad he said no. But now there's an English one coming up and she's already asking me to email."
+        },
+        {
+          "speaker": "1:2",
+          "text": "It's a poem. You have to recite a poem. From memory. No cards."
+        },
+        {
+          "speaker": "1:3",
+          "text": "No cards. That's a hard one. When is it?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "In like two weeks."
+        },
+        {
+          "speaker": "1:4",
+          "text": "Sorry to interrupt, Dr. Reyes, your next family is here a bit early, I'll have them wait in the lobby."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Thanks, that's fine. Okay. Let's not decide about the English poem today. Mom, can you hold off on emailing the teacher until we talk about it next week? Not saying never. Just not yet."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yes. I can do that. I was already kind of holding off."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Good. Now I want to talk about something smaller, because I noticed something in the log. The coffee shop."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Oh. That's not a big deal."
+        },
+        {
+          "speaker": "1:3",
+          "text": "It might not be a big deal. Tell me what happens."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Tessa orders. She just knows what I get. And I pay her back. It's easier."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Easier how?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I don't know. The person at the counter talks really fast. And there's a line. And if I ask for something new I won't know the sizes or whatever."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And at the drive-thru she did order for herself. But it was the same thing she always gets, said the exact same way. And when they asked about the size she looked at me, and I just said medium for her."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Thank you for being honest about that. It's such a natural thing to do. Imani, how scary is ordering for yourself at the coffee place, zero to ten?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Like a four. Honestly not that bad."
+        },
+        {
+          "speaker": "1:3",
+          "text": "A four. That's actually great news, because a four is a good place to practice. It's real, but it's not huge. And you're at that coffee shop a couple of times a week, right?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Twice, usually. After orchestra."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And the bakery. Mom mentioned you went there with the application."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I didn't go in."
+        },
+        {
+          "speaker": "1:3",
+          "text": "What was the worry?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "That they'd think I'm stupid. Like, they'd ask me something and I'd say something dumb, and then after I left they'd laugh about me."
+        },
+        {
+          "speaker": "1:3",
+          "text": "How scary is going in to ask about the job?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I don't know. It depends on who's there. I can't really give it a number."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That's okay. We don't need one today. I'll put it on the list as something you want, which matters. You want the job."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I do want the job."
+        },
+        {
+          "speaker": "1:3",
+          "text": "So let's start smaller and work up to it. Here's my idea. This week, at the coffee place with your friends, you order for yourself. Both times. And one of those two times, you order something different from your usual."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Something different? Like what?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Anything. Something you've never said before. So you don't have the words already memorized. If they ask a question you don't know, you get to find out what happens."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What if they ask the size and I don't know the size names?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Then you can say, what are the sizes? People say that all the time."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. And Tessa can't order for me."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Right. You might need to tell her that ahead of time. Do you want to tell her, or just do it?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I'll just get to the counter first."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That works. And what number do you think ordering something new will be, compared to your usual?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Higher. Like a five, maybe. Because I won't know what to say."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That seems about right. A five is still very doable. And here's what I want you to notice when you're up there. Does the person at the counter actually seem to care that you're ordering something new? Do they look at you funny, or do they just make the drink? You don't have to change anything about how you feel. Just notice what they do."
+        },
+        {
+          "speaker": "1:2",
+          "text": "They probably just make the drink."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Probably. But your brain is telling you something different, so it's worth checking. That's how we'll work up to the bakery too, eventually. Practice with the small stuff, where you can see what really happens, before the bigger stuff."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Can I say something? I feel like I've been doing a lot of these things without thinking. The medium. Offering to go into the bakery. The email. I'm a little embarrassed reading it all back."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Please don't be. Every one of those came from wanting to help her. That's what parents do. And you wrote them all down honestly, which is exactly what makes this work. I can't help with what I can't see."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Thank you. It's a lot of words, the log, I know."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Keep the words coming. Imani, anything you want to add before we wrap up?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "No. Just, Tessa's going to think it's weird when I order."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Maybe. Write that down too, if she does. And if she doesn't."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And me? What do I do?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Two things. If you're there and she looks at you for help, you just smile and wait. Don't answer for her. And keep writing it down, with the number. Including the drive-thru."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Smile and wait. And no email to the English teacher."
+        },
+        {
+          "speaker": "1:3",
+          "text": "No email yet. We'll talk about the poem next time. Good work today, Imani."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Parent",
+        "1:2": "Child",
+        "1:3": "Clinician",
+        "1:4": "Other"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 30,
+          "correct": "Child",
+          "note": ""
+        },
+        {
+          "turn": 46,
+          "correct": "Clinician",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "History presentation: stayed home the first day; presented the next day reading from cue cards held in front of her face; fears her voice shaking and being filmed",
+          "Late-night slide rewriting: unclear whether preparation or anxiety",
+          "Mom emailed the history teacher asking for a private presentation; teacher declined; English poem recitation coming in about two weeks",
+          "Coffee shop: friend orders for her; at the drive-thru she ordered her usual and mom answered the size question",
+          "Bakery job: did not go in with the application; fears being thought stupid and laughed at; no number given"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 8
+          },
+          {
+            "situation_ref": "s2",
+            "level": 4
+          }
+        ],
+        "agreed": [
+          "Imani orders for herself at the coffee shop both times this week",
+          "One of those times she orders something different from her usual",
+          "Mom smiles and waits and does not answer for her",
+          "Mom holds off emailing the English teacher until next session",
+          "Mom keeps logging with the number, including drive-thru"
+        ]
+      },
+      "must_not_appear": [
+        "Imani will hand in the bakery application this week",
+        "A Fear Level for asking about the job",
+        "Mom will email the English teacher to ask for an alternative",
+        "Advice to limit or ban phones or social media"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

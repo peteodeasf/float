@@ -1,0 +1,443 @@
+{
+  "id": "fam-specific-04",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "dad who writes everything as dash bullet lists, clipped, times and floor numbers included",
+  "facts": {
+    "child": {
+      "name": "Wren",
+      "age": 12
+    },
+    "anxiety": "elevators",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Taking the elevator to the orthodontist on the sixth floor",
+        "fear_level": 8,
+        "feared_outcome": "The elevator will get stuck between floors and I won't be able to breathe",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "escape",
+            "text": "Steps into the elevator, then jumps back out before the doors close and takes the stairs"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Heads straight for the stairs without trying the elevator"
+          },
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Stands right by the panel and keeps pressing the door-open button"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad walks the six flights of stairs with her"
+          },
+          {
+            "id": "a2",
+            "text": "Dad calls the front desk to say they will be late"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Riding the elevator at her aunt's apartment building",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Only rides if dad is in the elevator with her"
+          },
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Counts the floors under her breath (could be calming herself, could be habit)"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad always rides up and down with her"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Going through the automatic car wash",
+        "fear_level": null,
+        "feared_outcome": "The doors will lock and we'll be stuck inside",
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Gets out of the car and waits in the lot while dad drives through"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Dad lets her wait outside"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-29",
+        "situation": "- Ortho appt, 4:15\n- 6th floor, Medical Arts bldg",
+        "child_behavior_observed": "- Got in elevator\n- Doors started closing, she jumped back out\n- Took stairs",
+        "parent_response": "- Walked stairs w/ her\n- Called front desk, said 5 min late",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-02",
+        "situation": "- Aunt Dee's apt\n- 4th floor",
+        "child_behavior_observed": "- Rode up OK\n- Counting floors quietly",
+        "parent_response": "- Rode w/ her",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "- Car wash on the way home",
+        "child_behavior_observed": "- Asked to get out first\n- Waited by the vacuums",
+        "parent_response": "- Let her. Drove through alone.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "- Ortho, wire adjustment\n- 6th fl",
+        "child_behavior_observed": "- Went straight to stairwell, didn't try",
+        "parent_response": "- Went with her\n- Called ahead again",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "- Aunt Dee's, leaving",
+        "child_behavior_observed": "- Wouldn't go down until I came\n- Counting again, lips moving",
+        "parent_response": "- Rode down w/ her",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "- asked her what she thinks will happen\n- says it gets stuck between floors and she can't breathe\n- she's never been stuck. neither has anyone we know",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "- Ortho, retainer fitting",
+        "child_behavior_observed": "- Rode up!\n- Stood right at panel, held door-open btn every floor",
+        "parent_response": "- Rode with her\n- Told her she did great",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok quick one the four fifteen ortho appointment she rode up to the sixth floor with me which is huge um but she held the door open button like the whole way so it kept stopping and I'd say she was a seven",
+        "expected": {
+          "refs": [
+            "s1",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "'four fifteen' is a time and 'sixth floor' a floor number; the fear level is 7"
+      },
+      {
+        "text": "at dee's tonight she waited for me before she'd get in the elevator and uh counted the floors again two three four under her breath",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "b5",
+            "a3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'two three four' is her counting floors, not a fear level"
+      }
+    ],
+    "session": {
+      "minutes": 12,
+      "turns": [
+        {
+          "speaker": "1:3",
+          "text": "Hi Wren, hi Mr. Okafor. Thanks for coming in. Mr. Okafor, your log is very easy to read, I appreciate the bullet points. Wren, I'd like to go through the last two weeks and then make a plan for the next step. Sound okay?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Sure."
+        },
+        {
+          "speaker": "1:3",
+          "text": "So the orthodontist is the big one. Sixth floor. The first time, you got in, and then jumped back out as the doors were closing. Can you tell me what was happening right then?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "It's kind of stupid. I got in and I was fine, and then the doors started closing and I just thought, what if it stops between floors. And I couldn't think about anything else. So I got out."
+        },
+        {
+          "speaker": "1:3",
+          "text": "It's not stupid. That's a really clear description. When the doors started closing, the thought showed up, what if it gets stuck. And then what? If it got stuck, what would happen next?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I'd be stuck in a box. And it gets hot and there's no air, and I wouldn't be able to breathe. And nobody would come for like hours."
+        },
+        {
+          "speaker": "1:3",
+          "text": "So the scary part is being stuck and not being able to breathe. Thank you. Has that ever happened to you, or someone you know?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "No. Dad asked me that too. I just saw a video once."
+        },
+        {
+          "speaker": "1:1",
+          "text": "She saw a clip online, some people stuck in an elevator in an office building. That was in the summer. It started after that, I think."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That makes sense. On the thermometer, zero to ten, riding up to the sixth floor at the orthodontist. Where are you?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Eight. Maybe seven now, since I did it once."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Let's talk about that, because last Tuesday you actually rode it. That's a big deal. Mr. Okafor, you wrote that she stood at the panel and held the door-open button."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Every floor. So the doors would open on two, three, four, five, nobody there. It took forever. But she did it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Wren, what was holding the button doing for you?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "If the doors open I can get out. If it's going to get stuck I can just get out at the next floor."
+        },
+        {
+          "speaker": "1:3",
+          "text": "So the button is like an escape hatch. It makes sense you'd want one. The problem is, every time you ride with the escape hatch, your brain gives the credit to the button. It thinks, I was safe because I could get out. It doesn't learn, I was safe because elevators almost never get stuck. So the next step is going to be riding without holding the button. Not today, and not at the sixth floor first."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. That sounds hard."
+        },
+        {
+          "speaker": "1:3",
+          "text": "It should sound a bit hard. Now, your aunt's building. Mr. Okafor, that looks different from the orthodontist."
+        },
+        {
+          "speaker": "1:2",
+          "text": "It's an older building, fourth floor. She rides it, but only if I'm in there with her. When we were leaving last week she waited by the door until I'd said goodbye to my sister, so we could go down together."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And you wrote that she counts the floors."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Under her breath. Lips moving. I didn't know if that was a thing or not."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Wren, what's the counting about?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I don't know. I count stuff a lot. Like stairs too. I don't think it's the elevator."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay, that's helpful. I'm not going to decide what it is yet. If you notice yourself counting other places, maybe jot it down. What number is your aunt's elevator, with Dad in it?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Like a six. It's old and it shakes. But Dad's in there."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Six with Dad. And without Dad?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I've never done that. I don't know. Higher."
+        },
+        {
+          "speaker": "1:2",
+          "text": "There was also the car wash, that one time. She asked to get out and waited by the vacuums."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I saw that. Wren, is that the same worry, getting stuck?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Kind of. The doors lock and the brushes come. I just don't like it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. We'll put that on the list but we won't work on it this week. Let's build from where you are. Here's what I'm suggesting. The public library on your side of town has a small elevator, two floors. This week, step one: ride it with Dad, up and down, three times in a row, and you don't touch the panel at all. Dad presses the button. What number would that be?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "With Dad, two floors, no button. Four, maybe."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Four. Then step two, same day if it goes okay: you ride one floor by yourself, and Dad takes the stairs and meets you. What number is that?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Six. Okay, that's scary, but it's one floor."
+        },
+        {
+          "speaker": "1:3",
+          "text": "One floor. You don't have to love it. You just have to stay in until the doors open on their own. Mr. Okafor, there's a part for you too. I noticed you call ahead to the front desk when she takes the stairs."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah, so they don't give away the slot."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I get it. For the next appointment, I'd like you to not plan around the stairs. Leave at the normal time. If she takes the stairs, that's okay, she can, but you don't walk with her and you don't call ahead. You take the elevator and meet her at the top. That's not to punish her, it's so the stairs stop being the easy plan."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's fair. When's the next appointment, Wren, two weeks?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Three weeks. And if I do the library thing I might do the ortho one."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That would be up to you, and I'd love to hear about it. So, this week: library elevator with Dad, three rides, no touching the panel. Then one floor alone. Dad, you log the numbers she gives you. And at the next ortho visit, you take the elevator, and you don't walk the stairs with her or call ahead. Everyone okay with that?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yep. Library, three rides, then one alone. I'll write it down."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Can it be Saturday?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Saturday is perfect. Great work today, Wren. See you both in a week."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Child",
+        "1:2": "Parent",
+        "1:3": "Clinician"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 8,
+          "correct": "Parent",
+          "note": "Dad's account of the online clip given to Wren"
+        },
+        {
+          "turn": 22,
+          "correct": "Child",
+          "note": "Wren's 'I count stuff a lot' given to Dad"
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Orthodontist elevator: got in and jumped out as the doors closed; another time went straight to the stairs; last visit rode up holding the door-open button every floor",
+          "Wren fears the elevator will get stuck and she won't be able to breathe; started after an online video",
+          "Aunt's building: rides only with Dad; counts floors, which Wren says she does elsewhere too (not decided what it is)",
+          "Car wash: got out and waited, mentioned once, not worked on",
+          "Dad walks the stairs with her and calls the front desk ahead"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 8,
+            "context": "riding to the sixth floor (she added 'maybe seven now')"
+          },
+          {
+            "situation_ref": "s2",
+            "level": 6,
+            "context": "aunt's elevator with Dad"
+          }
+        ],
+        "agreed": [
+          "Library elevator with Dad, three rides in a row, Wren does not touch the panel",
+          "Then ride one floor alone while Dad takes the stairs",
+          "Dad logs the numbers she gives",
+          "Next orthodontist visit: Dad takes the elevator, does not walk the stairs with her or call ahead"
+        ]
+      },
+      "must_not_appear": [
+        "Wren has been stuck in an elevator",
+        "A diagnosis such as claustrophobia or panic disorder",
+        "A step for the car wash this week",
+        "Any Fear Level for the car wash"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

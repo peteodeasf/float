@@ -1,0 +1,460 @@
+{
+  "id": "fam-separation-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "two parents taking turns on the log: dad is terse and lowercase and signs '-M'; mom is chatty with exclamation points and signs '-Jen'",
+  "facts": {
+    "child": {
+      "name": "Milo",
+      "age": 8
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Parents going out to dinner with a sitter at home",
+        "fear_level": 7,
+        "feared_outcome": "You'll crash the car on the way home and I'll be stuck with the babysitter forever",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Calls mom's cell from the sitter's phone every 15-20 minutes to ask if they're on their way"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Makes parents say the exact time they will be home and repeat it back before they leave"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Parents answer every call from home while they're out"
+          },
+          {
+            "id": "a2",
+            "text": "Parents come home before Milo's bedtime so he doesn't fall asleep without them there"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Dad away on a work trip",
+        "fear_level": 6,
+        "feared_outcome": "Dad's plane will crash",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Won't lie down at bedtime until he has FaceTimed dad"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Tracks dad's flight on the tablet and keeps asking mom if it has landed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad sets a FaceTime at 8pm every night of the trip, stepping out of work dinners to do it"
+          },
+          {
+            "id": "a4",
+            "text": "Mom lets Milo sleep in the parents' bed while dad is away"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Being on a different floor of the house from his parents",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Goes down to the basement playroom to build Legos, then runs back upstairs after a few minutes"
+          },
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Won't go upstairs alone to get something from his room"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a5",
+            "text": "A parent walks upstairs with him or stands at the bottom of the stairs talking to him"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-03",
+        "situation": "date night, sitter",
+        "child_behavior_observed": "called jen's phone 5x from sitter's phone. 'are you coming yet'",
+        "parent_response": "jen picked up every time. we left before dessert. -M",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-04",
+        "situation": "Playing in the basement!",
+        "child_behavior_observed": "He took his Lego bin down to the basement all on his own!! Lasted maybe 4 minutes and then came FLYING up the stairs saying it was 'too quiet down there.'",
+        "parent_response": "I told him how brave it was to try and let him build at the kitchen table instead. -Jen",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "M flying to Denver for work",
+        "child_behavior_observed": "Had the flight tracker up on the tablet basically all afternoon. Asked me 'did it land yet' probably ten times!  At dinner he asked what happens if a plane crashes.",
+        "parent_response": "I kept telling him it's still in the air, it's fine, and showed him the little plane on the map. -Jen",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "bedtime, me away",
+        "child_behavior_observed": "wouldn't get in bed until facetime",
+        "parent_response": "stepped out of client dinner at 8 to call. stayed on 15 min. -M",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Night 2 of the trip",
+        "child_behavior_observed": "He was okay after the FaceTime but asked to sleep in our bed again.",
+        "parent_response": "I said yes, it's only till Thursday!! Honestly I sleep better too. -Jen",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "needed his library book from his room. he would not go up alone. stood at the bottom of the stairs, made me come. I went up with him. -M",
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "Dinner out for our anniversary",
+        "child_behavior_observed": "Before we left he made us say what time we'd be home, three times, and repeat it back. 8:45. Then the calls started around 7.",
+        "parent_response": "We answered every call and we were home at 8:30 before he fell asleep, which was the deal. -Jen",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-16",
+        "situation": "upstairs bathroom",
+        "child_behavior_observed": "wanted someone near. went up after i stood at stairs talking",
+        "parent_response": "stood at stairs, talked the whole time. -M",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3",
+        "trap": "parent action written in child field"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "uh hey it's marcus so we went out tonight he called jen's phone i think four times um she answered all of them and he made us say we'd be back at eight thirty like twice before we left i'd say he was a seven",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": 7
+        },
+        "trap": "eight thirty is a time and four is a count of calls; the Fear Level is seven"
+      },
+      {
+        "text": "hi it's jen um so tonight he took his legos down to the basement again which yay but he was back up in like two minutes and then um later he asked if he could sleep with me while marcus is in denver and i said yes again so",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5",
+            "s2",
+            "a4"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        }
+      }
+    ],
+    "session": {
+      "minutes": 11,
+      "turns": [
+        {
+          "speaker": "1:3",
+          "text": "Okay, everybody's here. Dad, you're on the laptop, can you hear us?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yep. I can hear you."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Great. Milo, hi. Mom, hi. We have about ten minutes, so I'd like to go over the week, and then pick one thing to practice. Milo, I heard there was a big anniversary dinner."
+        },
+        {
+          "speaker": "1:2",
+          "text": "They went to the fancy place. I had Kayla."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Kayla's the babysitter? How was it with Kayla?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Fine. But I called Mom a lot."
+        },
+        {
+          "speaker": "1:4",
+          "text": "He did. I want to say five or six times. Starting around seven. And before we left he made us say what time we'd be home, and then he made us say it again, and then he said it back to us."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Milo, what were you checking for when you called?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "If they were coming home yet."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And what's the worry? What's the scary thing that might happen if they're not coming home yet?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "That they crash the car. And then I'm stuck with Kayla forever. Not forever forever. But like a really long time."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That's a big scary thought to have while you're eating pizza with Kayla. Thank you for telling me. Can you give it a number, the night they went to dinner? Zero is totally fine, ten is the most scared you've ever been."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Seven."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Seven. And when you called and Mom picked up, what happened to the seven?"
+        },
+        {
+          "speaker": "1:4",
+          "text": "It went down. And then it went up again."
+        },
+        {
+          "speaker": "1:3",
+          "text": "That's such a good thing to notice. It goes down for a little while and then it climbs back up, and then you need to call again. That's how worries work. Calling feels good for a minute but it teaches the worry to keep asking. Dad, how about the trip? You were gone four nights, right?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Three. Monday to Thursday. Every night at eight I called. Stepped out of a client dinner one night. He wouldn't go to bed until we talked."
+        },
+        {
+          "speaker": "1:4",
+          "text": "And he had the flight tracker up the whole afternoon when Marcus flew out. 'Did it land, did it land.' And he slept in our bed. I said yes every night, honestly."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Dad, from your side, if you had to put the trip on the thermometer for Milo, where would you put it?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Six. Lower than dinner out. He knows where I am on a trip."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay, six. That's an interesting difference. A trip is longer, but it's more predictable. A dinner out feels shorter, but in his head anything could happen on the drive. Those are two different worries even though both are about you leaving. Mom, the basement. You wrote that one up."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yes! So he took his Legos down there by himself, which he never does. And then he came flying up after maybe four minutes. He said it was too quiet. So I let him build at the kitchen table."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Milo, I think going down there by yourself was really brave. What happened when it got too quiet?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I didn't know if anyone was still upstairs."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Ah. So you weren't sure people were still in the house. That's a lot like the dinner worry, isn't it? Wanting to check that everyone's where they should be."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Kind of."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. Here's what I want to suggest for this week, and you all tell me if it's too much. Two things. First, the basement. Milo, how about you go down with the Lego bin and set a timer for five minutes. Mom or Dad stays upstairs. Nobody calls down, nobody comes down. When the timer goes off, you can come up and tell them what you built. Does five minutes sound doable?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Can I have music?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Hmm. Let's say no music for this one, because I want you to find out that the quiet is okay. If five minutes is too long, we can do three. What do you think?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Five. But only five."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Five it is. Every day if you can, at least three days. Second thing. Mom and Dad, is there another night out coming up?"
+        },
+        {
+          "speaker": "1:4",
+          "text": "My work thing on the twenty-fourth. Saturday."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. For that night, here's the idea. Before you leave, you tell Milo one time when you'll be home. He doesn't repeat it back. And instead of answering every call, there's one planned call. Milo calls once at eight o'clock, Mom answers, and that's the only call. If he calls at other times, the phone doesn't get picked up, and you text Kayla to say you're fine."
+        },
+        {
+          "speaker": "1:4",
+          "text": "Oh, that's going to be hard. For me, I mean."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I know. It's usually harder for the parents than the kid. Milo, what do you think about one call at eight?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "What if it's an emergency?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Great question. If there's a real emergency, Kayla calls. Kayla knows what to do. You calling to check isn't an emergency, it's the worry asking. Deal?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. Deal."
+        },
+        {
+          "speaker": "1:1",
+          "text": "We'll do it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay, recap. Basement with a five-minute timer, at least three days this week, nobody upstairs calls down. On the twenty-fourth, one time said once before you leave, and one planned call at eight. Keep writing in the log, both of you. And I'd like to hear about upstairs too, getting things from his room, next time. We didn't get to that today."
+        },
+        {
+          "speaker": "1:4",
+          "text": "Sounds good. Thank you."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Bye!"
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Parent",
+        "1:2": "Child",
+        "1:3": "Clinician",
+        "1:4": "Parent"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 14,
+          "correct": "Child",
+          "note": ""
+        },
+        {
+          "turn": 21,
+          "correct": "Parent",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Anniversary dinner: Milo called mom 5-6 times from the sitter's phone and made parents repeat the return time",
+          "Milo's feared outcome: parents crash the car and he is stuck with the sitter",
+          "Dad's three-night work trip: nightly 8pm FaceTime, flight tracking, Milo slept in parents' bed",
+          "Basement: Milo went down alone and came back up after about four minutes because it was too quiet",
+          "Getting things from upstairs alone was not discussed and is for next time"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 7
+          },
+          {
+            "situation_ref": "s2",
+            "level": 6
+          }
+        ],
+        "agreed": [
+          "Milo plays in the basement alone with a five-minute timer, no music, at least three days this week; parents stay upstairs and do not call down",
+          "On the next night out (Saturday the 24th) parents say the return time once, Milo does not repeat it back, and there is one planned call at 8pm; other calls are not answered",
+          "Both parents keep writing the log"
+        ]
+      },
+      "must_not_appear": [
+        "Dad agreed to cancel or shorten his next work trip",
+        "A Fear Level for the basement or for going upstairs",
+        "Milo is allowed music in the basement",
+        "Mom agreed to stop letting Milo sleep in the parents' bed"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

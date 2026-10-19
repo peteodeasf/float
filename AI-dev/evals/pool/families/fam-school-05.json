@@ -1,0 +1,435 @@
+{
+  "id": "fam-school-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "parent who quotes the teachers' and counselor's words; mixes school reports with own observations",
+  "facts": {
+    "child": {
+      "name": "Declan",
+      "age": 17
+    },
+    "anxiety": "school avoidance and fear of making mistakes",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Going into first period chemistry",
+        "fear_level": 7,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Sits in his car in the school lot through first period"
+          },
+          {
+            "id": "b2",
+            "type": "escape",
+            "text": "Goes into class, then leaves after about twenty minutes for the counselor's office and drives home"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom emails the counselor to excuse the absence"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Dealing with teachers about missing work",
+        "fear_level": 6,
+        "feared_outcome": "They'll think I'm a screwup who doesn't care",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Won't open the grades portal or his school email"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Asks mom to write the emails to his teachers for him"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom writes and sends the emails to teachers"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Talking about college applications",
+        "fear_level": 5,
+        "feared_outcome": "I won't get in anywhere and all of high school will have been for nothing",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Quiet all weekend and stayed in his room after an early-deadline reminder"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Parents have stopped bringing up college at all"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "1st period AP Chem",
+        "child_behavior_observed": "Attendance flagged him absent 1st period. Mr. Brandt's note: 'His car was in the lot at 7:50. He walked in at the start of 2nd.' So he sat in the car.",
+        "parent_response": "Emailed Ms. Ruiz (counselor) to excuse it as a migraine.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Chem lab",
+        "child_behavior_observed": "Ms. Ruiz called: 'He was here, then he wasn't. He came to my office about twenty minutes into first period, said he felt sick, and signed out.' He drove home.",
+        "parent_response": "Let him rest. Emailed Ms. Ruiz back that he'd be in tomorrow.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Missing assignments email",
+        "child_behavior_observed": "Mr. Brandt emailed home: 'Declan is missing four labs. He hasn't responded to my emails.' Declan says he hasn't checked his school email in weeks.",
+        "parent_response": "He asked me to write back for him. I did, said he'd been ill.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Grades portal",
+        "child_behavior_observed": "Wouldn't log in to see his chem grade. Said 'I don't want to know.'",
+        "parent_response": "I looked at it myself and didn't tell him the number.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "College / weekend",
+        "child_behavior_observed": "Ms. Ruiz sent the early-deadline reminder Friday ('Nov 1 is two weeks away, please make sure he's on track'). He was quiet all weekend, stayed in his room. Not sure if that's the college thing or just being 17.",
+        "parent_response": "We didn't mention college. We've stopped bringing it up.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Chem",
+        "child_behavior_observed": "Mr. Brandt: 'He made it through the whole period today and answered a question.'",
+        "parent_response": "Told him I heard. He shrugged but I think he was pleased.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Wednesday. He asked me to email his English teacher about an extension, said he'd mess up the wording and she'd think he was making excuses. I wrote it, he read it over my shoulder, I sent it. Ms. Achterberg wrote back 'Thanks for letting me know, I'd prefer to hear from Declan directly next time.'",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "Morning 1st period",
+        "child_behavior_observed": "Left the house on time. Attendance shows tardy 1st period by 25 minutes. Don't know if he sat in the car again or what.",
+        "parent_response": "Didn't email anyone this time.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um the counselor called again Ms Ruiz and she said and i'm quoting he was here then he wasn't he went in to chem and then like twenty minutes in he came to her office and signed himself out and drove home and um that's the second time this month and i just emailed her to excuse it again which i know",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2",
+            "a1"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "twenty minutes and 'second time' are a duration and a count; no fear level was said"
+      },
+      {
+        "text": "and he asked me to write to his history teacher too and i said no you write it and i'll read it and he said fine and then didn't write it so like i'd say he's at a 6 about the emails",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": 6
+        }
+      }
+    ],
+    "session": {
+      "minutes": 12,
+      "turns": [
+        {
+          "speaker": "1:2",
+          "text": "Declan, Mom, good to see you. Mom, thank you for the log. I like that you included what the school actually said, it helps a lot. Let's go through it. Declan, I'll try not to make this feel like a report card."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay."
+        },
+        {
+          "speaker": "1:2",
+          "text": "So first period chem shows up a few times. Monday the fifth, Mr. Brandt said your car was in the lot and you came in at second period. Can you tell me what was going on?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I just sat there. I got there on time. I just couldn't go in."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What did it feel like, sitting there?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Like if I walked in late it'd be worse, so I waited for the bell for second. And then I felt stupid."
+        },
+        {
+          "speaker": "1:2",
+          "text": "And if you think about walking into first period chem, just the walk through the door, how big is it on the zero to ten?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Seven."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Seven. Do you know what you're worried will happen in there?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I don't know. It's not one thing. It's just chem."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's fine. We don't need a reason yet. Tuesday was a little different. Mom, can you read what Ms. Ruiz said?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "She said, he was here, then he wasn't. He came to her office about twenty minutes into first period, said he felt sick, signed out, and drove home."
+        },
+        {
+          "speaker": "1:2",
+          "text": "So Tuesday you went in, and then about twenty minutes in you left. Declan, what happened at twenty minutes?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Nothing happened. It just kept building and building and I had to get out. So I said I was sick."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. And Mom, both days you emailed Ms. Ruiz to excuse it."
+        },
+        {
+          "speaker": "1:3",
+          "text": "I did. I said migraine the first time. I don't feel great about it. On the fifteenth he was late again and I didn't email anyone."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's an honest thing to say. And it's a real change on the fifteenth. I also want to point out the thirteenth. Mr. Brandt wrote that you made it through the whole period and answered a question."
+        },
+        {
+          "speaker": "1:1",
+          "text": "It was an easy question."
+        },
+        {
+          "speaker": "1:2",
+          "text": "You still stayed the whole period and talked in front of the class. That's the thing we're practicing. Let's talk about the emails. Mr. Brandt said four missing labs and no reply."
+        },
+        {
+          "speaker": "1:1",
+          "text": "I haven't opened my school email. There's like forty unread. I know it's all bad."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What do you picture the teachers thinking, if you write back?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "That I'm a screwup. That I don't care. And I do care, that's the whole problem."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That sounds really important. How big is the email worry?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Like a six. Less than chem."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Six. And Mom, you've been writing them for him."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Twice. And the English teacher, Ms. Achterberg, wrote back, I'd prefer to hear from Declan directly next time. Which, fair."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That was embarrassing."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I can imagine. And when Mom writes them, the worry goes down for a bit, but you never find out what happens when you write one yourself. Which is the thing the worry is most sure about. One more thing, Mom, you mentioned college and the weekend."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Ms. Ruiz sent a reminder that the November first deadline is coming. He was quiet the whole weekend and stayed in his room. Honestly I don't know if that was college or just being seventeen. We've kind of stopped mentioning college altogether because it seems to set him off."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Declan, anything you want to say about college?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Just that if I don't get in anywhere, then all of this was for nothing. All four years."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's a heavy thought to carry around. How big is the college worry?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Five, I guess. It's far away still. Kind of."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Five. Okay. And about the weekend, you don't have to explain it. We'll leave it as something we don't know yet. Here's what I'd like to agree on. Three things, small ones. First, chem. Two mornings this week, walk through the door before the bell. Not stay the whole period, just be in the room when the bell rings. Which two?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Wednesday and Friday. No lab those days."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Good, that's a smart pick for now. Second, emails. You write one email yourself, to Mr. Brandt, about one missing lab. Two sentences. Mom doesn't write it and doesn't edit it. You can show her after it's sent if you want."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Two sentences. Okay."
+        },
+        {
+          "speaker": "1:3",
+          "text": "So I don't email the counselor or the teachers this week at all?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Not for excusing or for writing on his behalf, no. If the school contacts you, you can reply, but don't excuse chem. Is that okay?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yes. That's hard for me but okay."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Third, college. Instead of nobody mentioning it, let's put it in a box. Twenty minutes on Sunday afternoon, the three of you, just to look at the list. Outside those twenty minutes nobody brings it up. Declan, does that feel better or worse than now?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Better, probably. Right now it's like it's always there but nobody says it."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. So: two mornings in chem by the bell, Wednesday and Friday. One email to Mr. Brandt, written only by Declan. Mom doesn't excuse absences or write to teachers. Twenty minutes of college on Sunday, and not outside that. Mom, keep quoting the school, it's really useful."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Child",
+        "1:2": "Clinician",
+        "1:3": "Parent"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 32,
+          "correct": "Child",
+          "note": "Declan rating the college worry five, tagged with mom's key 1:3"
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "First period chemistry: sat in the car through first period one day; another day went in and left after about twenty minutes and drove home",
+          "Mom emailed the counselor to excuse absences; on the 15th she did not",
+          "Stayed the whole chem period on the 13th and answered a question",
+          "Not opening school email or the grades portal; mom writing emails to teachers; teacher asked to hear from Declan directly",
+          "College deadline reminder, quiet weekend of unclear cause, family has stopped mentioning college"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 7
+          },
+          {
+            "situation_ref": "s2",
+            "level": 6
+          },
+          {
+            "situation_ref": "s3",
+            "level": 5
+          }
+        ],
+        "agreed": [
+          "Declan is in the chem room by the bell on Wednesday and Friday",
+          "Declan writes one two-sentence email to Mr. Brandt himself; mom does not write or edit it",
+          "Mom does not excuse absences or write to teachers on his behalf this week",
+          "Twenty minutes of college planning together on Sunday afternoon, and no college talk outside that"
+        ]
+      },
+      "must_not_appear": [
+        "A feared outcome for chemistry (Declan said he did not know)",
+        "That Declan agreed to stay the whole chem period",
+        "A diagnosis such as depression or social anxiety disorder",
+        "That Declan agreed to open the grades portal"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

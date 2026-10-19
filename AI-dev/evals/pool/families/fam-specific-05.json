@@ -1,0 +1,443 @@
+{
+  "id": "fam-specific-05",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "detailed storyteller mom: long entries with backstory, asides and her own feelings mixed in",
+  "facts": {
+    "child": {
+      "name": "Dominic",
+      "age": 15
+    },
+    "anxiety": "bugs (wasps and spiders)",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Eating dinner outside on the back deck (wasps and bees)",
+        "fear_level": 6,
+        "feared_outcome": "A wasp will sting me and my throat will close up",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "escape",
+            "text": "Takes his plate inside partway through dinner when a wasp lands near it"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Sits at the table in a hoodie with the hood up and sleeves pulled over his hands, even when it's warm"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom moves the whole family's dinner indoors when he asks"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Going into the garage, especially after dark (spiders)",
+        "fear_level": 8,
+        "feared_outcome": "A spider will crawl on me where I can't see it",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Won't go into the garage to get his bike or take the trash out"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Asks mom to shake out his cleats and check the corners before he'll touch anything in the garage"
+          },
+          {
+            "id": "b5",
+            "type": "unclear",
+            "text": "Looks up every spider he sees on his phone to find out what kind it is"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Mom takes the trash out to the garage bins for him"
+          },
+          {
+            "id": "a3",
+            "text": "Mom shakes out his cleats before practice"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Cross-country team overnight camping trip",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Told the coach he had a family thing so he wouldn't have to go"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom backed up the 'family thing' excuse to the coach"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-22",
+        "situation": "Dinner on the deck. It was the first nice evening in a while and my husband grilled, so I really wanted us to eat outside like we used to when the kids were little.",
+        "child_behavior_observed": "Dom came out in his gray hoodie with the hood up, which was ridiculous because it was 78 degrees. About ten minutes in a wasp landed right by his corn and he stood up, grabbed his plate and went inside without a word. His little sister thought it was hilarious, which did not help.",
+        "parent_response": "I went in after him and asked if he wanted to come back. He said no, so honestly I just brought everyone's plates inside and we finished at the kitchen table. I know, I know.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-24",
+        "situation": "Trash night. The bins live in the garage and it's his chore, has been since he was eleven.",
+        "child_behavior_observed": "He stood at the door to the garage with the bag and wouldn't go in. Said there was a 'huge one' by the recycling last week. Then he went to his room and I could hear him watching some video about brown recluses, which, we live nowhere near where those live.",
+        "parent_response": "I took the trash out myself. Again. I've done it maybe four weeks running now.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-27",
+        "situation": "Getting ready for Saturday practice. His cleats are kept on the shoe rack in the garage because they're muddy.",
+        "child_behavior_observed": "I went out and shook out both cleats over the trash can and checked the corners of the rack with my phone flashlight before he'd come get them.",
+        "parent_response": "Same as always, I did the check for him.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2",
+        "trap": "parent action written in child field (Mom shaking out the cleats is her action; Dominic's behavior is asking her to)"
+      },
+      {
+        "date": "2026-09-30",
+        "situation": "The cross-country team has an overnight camping trip at a state park the second weekend in October. The coach called because Dom told him we had a 'family thing.'",
+        "child_behavior_observed": "We do not have a family thing. When I asked him later he admitted it was the tents and the bugs and sleeping on the ground. He was embarrassed and didn't want to talk about it.",
+        "parent_response": "I didn't want to make him look like a liar to his coach, so I said yes, we have a family commitment. I felt sick about it afterwards.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-03",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Long one, sorry. Friday night his bike was in the garage and he needed it for the morning, and he just would not go in, it was after nine and dark and he said at night they come out and you can't see them and one could get on you and you wouldn't know. He asked me to go turn on every light and look around first. I said I would turn on the lights but I wasn't going to do a spider patrol. He stood there for a long time and then texted his friend for a ride instead. He said it was an 8 at least.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Dinner outside again, my mother was visiting and she loves the deck.",
+        "child_behavior_observed": "Hood up again. He sat at the end nearest the door. Kept looking around. A bee went past and he flinched but he stayed this time, the whole meal, which I was surprised by. He did ask me twice whether wasps are worse in October.",
+        "parent_response": "I told him I thought they'd be gone soon once it gets cold. And I didn't move dinner in, partly because my mom was there.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Saw a spider in the bathroom upstairs, not even the garage.",
+        "child_behavior_observed": "He took a picture and spent probably twenty minutes looking it up to see what kind it was. Then announced it was a harmless cellar spider and left it there. I honestly don't know if that is a good sign or a bad sign.",
+        "parent_response": "I didn't say anything, I just let him.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um two things from today first the trash he did go to the garage door but then he like handed me the bag and said can you and I did um I know and then later his cleats I shook them out again before practice he asked me to check the corners too so yeah",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3",
+            "a2",
+            "b4",
+            "a3"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        }
+      },
+      {
+        "text": "we ate outside tonight it was like seventy degrees and he still had the hood up um no wasps actually so he stayed the whole time he said it was like a four when I asked",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2"
+          ],
+          "observations": 1,
+          "fear_level_said": 4
+        },
+        "trap": "'seventy degrees' is temperature; the fear level is 4"
+      }
+    ],
+    "session": {
+      "minutes": 12,
+      "turns": [
+        {
+          "speaker": "1:1",
+          "text": "Okay, I think we're set. Dominic, Mrs. Ferraro, thanks for coming in. Mrs. Ferraro, your log is very detailed, which I appreciate, there's a lot in it. I'd like to go through it with both of you. Dominic, I'll check with you as we go, since you know best what it's like from the inside."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah, okay."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Let's start with the garage, since that seems to come up most. Trash night, the cleats, the bike on Friday. Dominic, what's the garage like for you?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "It's just gross. It's dark in the corners and there's all this stuff piled up. Last month there was a really big spider by the recycling bin, like this big. And now every time I go in I'm thinking about where it went."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Where it went. And if you went in and it was still there, what's the worst part?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "That it gets on me and I don't notice. Like, on my back or in my shoe. At night especially, because you can't see them."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So the fear is a spider crawling on you somewhere you can't see it. That's specific, and it's useful. On a zero to ten scale, going into the garage after dark to get your bike?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Eight. That was an eight on Friday. I told my mom."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Eight. And in the daytime with the big door open?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Lower. Five maybe. It's the dark that makes it worse."
+        },
+        {
+          "speaker": "1:3",
+          "text": "And the cleats are their own thing. He won't touch them until I've shaken them out and looked around the rack with a flashlight. I've been doing it since the summer. It takes thirty seconds, it's not a big deal, but I wondered if I should stop."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's a good question, and I'll get to it. The same with the trash, you've been taking it out for him. Here's what I think happens. When you check the cleats, Dominic feels better for a minute. But his brain learns that the cleats were only safe because Mom checked. It never gets to find out that cleats are almost always fine. So the checking keeps the fear going, even though it feels kind. And it's a lot easier for you to change that than it is for him."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay. That makes sense. I think I knew that, honestly."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Dominic, you also looked up the spider in the bathroom. Your mom wasn't sure what to make of it. Tell me about that."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I just wanted to know what it was. It was a cellar spider. They're harmless. I kind of think they're interesting, as long as they're not on me."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Does looking them up make you feel calmer, or is it more that you're curious?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Both? I don't know. Sometimes it makes it worse, if it's a bad one. Mostly I just want to know."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Then I'm not going to call that good or bad yet. We'll keep an eye on it. Let's talk about dinner outside. Mrs. Ferraro, the first time he went inside with his plate, and the second time he stayed."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Right, the first time a wasp landed by his corn and he just stood up and left. And I moved everybody in. The second time, my mother was there, and I didn't move it, and he stayed. Hood up the whole time, but he stayed."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Dominic, what's the worry with wasps? Is it the same as spiders?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "No, it's different. Wasps I'm worried about getting stung. Like, what if my throat closes up. I know I'm not allergic. I got stung when I was like seven and it was fine. But I saw this thing about how you can become allergic later."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So spiders are about something crawling on you that you can't see. Wasps are about being stung and having a reaction. Those are two different worries, even though they're both bugs. That matters for how we practice. Where are you on the thermometer, eating on the deck?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Six. If there's one actually by my plate, more."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And the hoodie, what does that do?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "So there's less skin. They can't land on my arms."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That makes sense as a plan. It's also the same as the cleats. Your brain gives the credit to the hoodie. We'll come back to that. Since it's getting colder and the wasps are going away, I'd rather focus on the garage for now, because that's every week."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can I bring up the camping trip? I put it in the log. I feel bad about it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Sure, go ahead."
+        },
+        {
+          "speaker": "1:3",
+          "text": "The cross-country team had an overnight. Dominic told the coach we had a family thing, and when the coach called me, I went along with it. I didn't want him to look like he'd lied. But then I felt awful."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Mom. It's fine. It's over."
+        },
+        {
+          "speaker": "1:1",
+          "text": "I appreciate you telling me, both of you. It sounds like that one is already in the past, and there will be other trips. I'd like to talk about it properly next week, not squeeze it in now. Is that okay, Dominic?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah. Fine."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So, the garage. Here's what I'd like to try. In daylight, with the big door open, you go in by yourself and get your bike. No one checks first. And then you stay in there for two minutes, standing by the shelves, before you come out. You said daytime is about a five?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "With the door open, yeah. Five. Two minutes is long though."
+        },
+        {
+          "speaker": "1:1",
+          "text": "It'll feel long. That's the idea. Do it three times this week. And Mrs. Ferraro, from now on Dominic shakes out his own cleats. You don't check the rack and you don't do it for him. And trash night is his again. If he can't do it, the trash waits until he can, you don't take it out."
+        },
+        {
+          "speaker": "1:3",
+          "text": "The trash waits. Okay. My husband is going to love that."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What if I shake out the cleats and something falls out?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Then something falls out, and you'll see what happens next, and you'll tell me about it. Most likely it's dirt. Can you agree to try?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah. Okay."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Good. Mrs. Ferraro, keep logging, the detail is great, and please write down the number he gives you each time. So: the bike in daylight three times with two minutes inside, he does his own cleats, trash night is his. Camping trip is on the list for next week. See you both then."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Thank you. Really."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Clinician",
+        "1:2": "Child",
+        "1:3": "Parent"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 7,
+          "correct": "Child",
+          "note": "Dominic's 'Eight' for the garage given to Mom"
+        },
+        {
+          "turn": 20,
+          "correct": "Child",
+          "note": "Dominic's wasp worry and 'I know I'm not allergic' given to Mom"
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Garage: won't go in for the trash or his bike, especially after dark; fear is a spider crawling on him where he can't see it",
+          "Mom shakes out his cleats and checks the rack, and takes the trash out for him",
+          "Looking up spiders on his phone; not yet decided whether it helps or hurts",
+          "Dinner on the deck: once took his plate inside after a wasp landed; once stayed the whole meal; hood up both times",
+          "Wasp fear is about being stung and his throat closing; he says he is not allergic",
+          "Cross-country camping trip: told the coach he had a family thing and Mom backed it up; to discuss next week"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s2",
+            "level": 8,
+            "context": "garage after dark"
+          },
+          {
+            "situation_ref": "s2",
+            "level": 5,
+            "context": "garage in daylight with the big door open"
+          },
+          {
+            "situation_ref": "s1",
+            "level": 6,
+            "context": "eating on the deck"
+          }
+        ],
+        "agreed": [
+          "Three times this week: in daylight, with the big door open, get his bike alone and stay in the garage two minutes, with no one checking first",
+          "Dominic shakes out his own cleats; Mom stops checking the rack",
+          "Trash night goes back to Dominic; if he can't do it, the trash waits",
+          "Mom keeps logging and records his number each time",
+          "Camping trip to be discussed next week"
+        ]
+      },
+      "must_not_appear": [
+        "Dominic has a bee or wasp allergy or carries an EpiPen",
+        "Any Fear Level for the camping trip",
+        "An agreement that Dominic will go on the next camping trip",
+        "A step for eating outside or taking off the hoodie this week"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,406 @@
+{
+  "id": "fam-health-02",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "matter-of-fact nurse dad: terse clinical shorthand, records vitals, no feelings words",
+  "facts": {
+    "child": {
+      "name": "Ezra",
+      "age": 11
+    },
+    "anxiety": "fear of panic-like body sensations (racing heart)",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Running in PE class",
+        "fear_level": 8,
+        "feared_outcome": "My heart will go too fast and I'll pass out on the track",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Says he has a headache and sits out of PE"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Checks his pulse on his watch during laps"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad wrote a note excusing him from the mile run"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "School assembly in the packed gym",
+        "fear_level": 6,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Leaves the assembly partway through to go to the bathroom and doesn't come back"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "Feeling his heart flutter at home in the evening",
+        "fear_level": null,
+        "feared_outcome": "Something is wrong with my heart and nobody has found it yet",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Googles heart symptoms on his tablet"
+          },
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Asks Dad 'am I okay?' and asks him to check his heart"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a2",
+            "text": "Dad checks his heart rate and blood pressure with the home equipment"
+          },
+          {
+            "id": "a3",
+            "text": "Dad lets him sleep on the floor of the parents' room"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-09-08",
+        "situation": "PE - mile run",
+        "child_behavior_observed": "Reported headache AM. Asked for note. Afebrile, no other sx.",
+        "parent_response": "Wrote note excusing from mile. Advised fluids.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-09",
+        "situation": "Evening, c/o heart 'flipping'",
+        "child_behavior_observed": "Was on tablet searching 'heart skipping beats kids.' Asked 'am I okay' x4. Asked me to listen to his chest.",
+        "parent_response": "Checked HR 104, BP 108/66, pulse ox 99%. All WNL. Told him so. Let him sleep on our floor.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3",
+        "trap": "104, 108/66, 99% and x4 are vitals and a count, not fear levels"
+      },
+      {
+        "date": "2026-09-11",
+        "situation": "Assembly, full gym",
+        "child_behavior_observed": "Per teacher, left approx 15 min in for bathroom. Did not return. Found in library.",
+        "parent_response": "Discussed at dinner. Did not push.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-09-15",
+        "situation": "PE",
+        "child_behavior_observed": "Participated. Per coach, stopped 3x on track to look at his watch. Finished 2 of 4 laps walking.",
+        "parent_response": "Asked how it went. Said 'fine.' Left it.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-16",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "pe again. said headache. no fever. sat out. pretty sure its the running not his head. I'd put him at an 8. I didn't write a note this time, he sat out on his own",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-09-19",
+        "situation": "Bedtime, palpitations",
+        "child_behavior_observed": "Googled 'chest feels weird 11 year old.' Came to our room. Asked if he was okay.",
+        "parent_response": "Took HR, 96. Reassured. Allowed floor again.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-09-22",
+        "situation": "Evening after soccer",
+        "child_behavior_observed": "Noticed HR still up after practice. Asked me to check BP. Asked am I okay.",
+        "parent_response": "Checked BP 112/70. Told him post-exercise HR elevation is normal. Physiology explained.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so tonight around eight fifteen owen comes in says his heart is doing the thing again his rate was like a hundred and two which is fine for him and he asked me am i okay probably four times i checked it and told him normal and he slept on our floor again",
+        "expected": {
+          "refs": [
+            "s3",
+            "b5",
+            "a2",
+            "a3"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "eight fifteen is a time, a hundred and two is a heart rate, four is a count; none is a fear level"
+      },
+      {
+        "text": "um assembly today he walked out again bathroom didnt go back teacher found him in the library he said it was a six and um yeah that's it",
+        "expected": {
+          "refs": [
+            "s2",
+            "b3"
+          ],
+          "observations": 1,
+          "fear_level_said": 6
+        }
+      }
+    ],
+    "session": {
+      "minutes": 11,
+      "turns": [
+        {
+          "speaker": "1:2",
+          "text": "Ezra, good to see you. Dad, thanks for keeping the log, it's very detailed. Let's go through the week. Ezra, what's been the hardest part?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "PE. We have to run the mile now, every Tuesday."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What happens in your body when you're running?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "My heart gets really fast and loud. Like I can hear it in my ears. And then I think it's going to keep going faster and faster and I'll pass out on the track."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That sounds scary. And then what do you do?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "I look at my watch. It shows my heart rate. If it's over a hundred and fifty I walk."
+        },
+        {
+          "speaker": "1:3",
+          "text": "He stopped three times last week to check it, per the coach. And a couple of times he's told me he has a headache in the morning and asked for a note. I wrote one the first time. Second time I didn't, but he sat out anyway."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. Ezra, on our zero to ten scale, how scared do you get thinking about the mile?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Eight. Maybe more on the day."
+        },
+        {
+          "speaker": "1:2",
+          "text": "An eight. That's a big one. Thanks for being straight with me. Here's something I want you to know. When you run, your heart is supposed to go fast. That's your heart doing its job. The scary part is the story your brain tells about it. Does that make sense?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Kind of. But what if mine is different?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's the worry question, and I bet it shows up a lot. Dad, what about evenings?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Evenings he'll feel a flutter, he'll look it up on his tablet, then come find me. Asks if he's okay. Asks me to take his pressure. I do it, numbers are normal every time, I tell him, and he ends up sleeping on our floor. Most nights this week."
+        },
+        {
+          "speaker": "1:2",
+          "text": "When Dad tells you the numbers are normal, Ezra, how long does that help?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Until I feel it again. Then I'm like, what if he missed something."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's fair, honestly. I'm checking him like a patient. I know it doesn't stop."
+        },
+        {
+          "speaker": "1:2",
+          "text": "You're a nurse, so checking is what you're trained to do. It makes sense. The trouble is that each check teaches Ezra's brain that the flutter was dangerous enough to need checking. So the flutter becomes scarier, not less scary. That's the loop we want to break."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Understood. So what do I do instead?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Two things, and I want Ezra to agree to them too. First, at home, we practice making the heart go fast on purpose. Ezra, have you ever done jumping jacks?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yeah, in PE."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I'd like you to do thirty seconds of jumping jacks every evening this week. Your heart will speed up. That's the point. And the rule is, you don't look at your watch while you do it or after. You just notice what it feels like, and you rate how scared you are, zero to ten, before and after. Dad writes the numbers in the app. Can you try that?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Without the watch?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Without the watch. You can take it off and leave it in the kitchen while you do it. Watch off, thirty seconds, two numbers."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. I can try."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Second thing is for Dad. When Ezra asks you to check his heart in the evening, I'd like you not to take his pulse or pressure this week. You can say something warm, like 'I know it feels scary, and I'm not going to check, because your heart is fine and you can handle this feeling.' Then stay calm and do something normal."
+        },
+        {
+          "speaker": "1:3",
+          "text": "No vitals at all? Even if he looks pale?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "If there's something you'd honestly be worried about as a nurse, like he faints or has chest pain with exertion that doesn't settle, you use your judgment. That's different. But the everyday flutter at bedtime, no checking this week. Does that feel doable?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "It'll be hard. But yes."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Ezra, what about the assembly? Your dad mentioned you left one."
+        },
+        {
+          "speaker": "1:1",
+          "text": "It was so hot and everybody was squished. I felt my heart again so I said I had to go to the bathroom. Then I just went to the library."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Thanks for telling me. We'll come back to assemblies another week. For now let's focus on the jumping jacks and on Dad not checking. And one more question. The tablet searches. How do you feel after you look stuff up?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Worse, usually. It says stuff like heart problems."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's really common. We're not going to make a rule about that today, but I'd like you to notice it this week. Every time you want to search, just notice it, and tell Dad 'I wanted to look it up.' That's all. Not stop, just notice and say it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And I log it."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Exactly. So to sum up. Jumping jacks, thirty seconds every evening, watch off, two numbers. Dad doesn't take vitals for the evening flutters. Ezra notices and says out loud when he wants to search. We'll look at all of it next time."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Do I still have to run the mile on Tuesday?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "We didn't make a plan for the mile yet. Let's see how the jumping jacks go first. Good work today, both of you."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Child",
+        "1:2": "Clinician",
+        "1:3": "Parent"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 15,
+          "correct": "Parent",
+          "note": ""
+        },
+        {
+          "turn": 33,
+          "correct": "Parent",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "PE mile run: fear of heart racing and passing out; checks his watch, has sat out claiming headaches; Dad wrote one excuse note",
+          "Evening heart flutters: googles symptoms, asks if he is okay, Dad checks heart rate and blood pressure, sleeps on parents' floor",
+          "Left a crowded school assembly and went to the library",
+          "Explanation that each check makes the flutter seem more dangerous"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 8
+          }
+        ],
+        "agreed": [
+          "Ezra does 30 seconds of jumping jacks every evening with his watch off and rates fear before and after",
+          "Dad records the ratings in the app",
+          "Dad does not take pulse or blood pressure for everyday evening flutters this week, using his judgment for a real medical concern",
+          "Ezra notices and says out loud when he wants to search symptoms; Dad logs it"
+        ]
+      },
+      "must_not_appear": [
+        "A diagnosis such as panic disorder",
+        "A referral to a cardiologist or any medical test",
+        "Ezra will run the mile this week (no plan was made for the mile)",
+        "A Fear Level for the assembly or the evening flutters (none was said in the session)"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

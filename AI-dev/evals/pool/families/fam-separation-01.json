@@ -1,0 +1,449 @@
+{
+  "id": "fam-separation-01",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "tired single mom typing late at night: lowercase, run-on sentences, apologetic, the odd typo",
+  "facts": {
+    "child": {
+      "name": "Rosie",
+      "age": 6
+    },
+    "anxiety": "separation",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Falling asleep and staying asleep in her own bed",
+        "fear_level": 8,
+        "feared_outcome": "Mommy will leave the house while I'm asleep and I won't know where she went",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Calls out 'mommy are you there' over and over from her bed until mom answers"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Will only fall asleep with mom lying next to her, holding a piece of mom's hair"
+          },
+          {
+            "id": "b3",
+            "type": "escape",
+            "text": "Starts the night in her own bed, then gets up around 1-2am and climbs into mom's bed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom lies down in Rosie's bed until she is fully asleep, starting over if Rosie wakes"
+          },
+          {
+            "id": "a2",
+            "text": "Mom lets her stay in mom's bed for the rest of the night"
+          },
+          {
+            "id": "a3",
+            "text": "Mom leaves the door open and hall light on and answers every call-out"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Morning drop-off at first grade",
+        "fear_level": 7,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Holds onto mom's leg at the classroom door until the teacher takes her hand"
+          },
+          {
+            "id": "b5",
+            "type": "avoidance",
+            "text": "Says her tummy hurts in the morning and asks to stay home"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Mom parks and walks her all the way into the classroom instead of using the car line"
+          },
+          {
+            "id": "a5",
+            "text": "Mom promises to be the very first parent at pickup"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Mom going out for an evening with a babysitter at home",
+        "fear_level": null,
+        "feared_outcome": "Mommy won't come back",
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "unclear",
+            "text": "Was 'kind of off' and very quiet the whole evening with the sitter"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a6",
+            "text": "Mom texted the sitter photos to show Rosie and came home an hour early"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "bedtime",
+        "child_behavior_observed": "wouldnt go to sleep unless i laid down with her. holds my hair. tried to sneak out at 9:15 she woke right up and we started over",
+        "parent_response": "laid back down w her till she was out, took like 40 min. left hall light on",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "school drop off",
+        "child_behavior_observed": "tummy hurts tummy hurts all through breakfast, asked if she could stay home w me",
+        "parent_response": "told her she had to go. parked and walked her in instead of car line bc i didnt want a scene",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "night time / her room",
+        "child_behavior_observed": "kept yelling mommy are you there mommy are you there, at least every couple min for a while",
+        "parent_response": "i answered every time, yes baby im here. i know im not supposed to maybe? sorry",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "sorry no log last night was too wiped. she ended up in my bed again around 1:30 i think, i just scooted over and let her stay, didnt even really wake up. thats basically every night honestly",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "went out w friends, sitter came",
+        "child_behavior_observed": "sitter said she was kind of off all night, really quiet, didnt want to play. not crying tho. at bath she told the sitter she thought i wasnt coming back",
+        "parent_response": "texted the sitter pics of me to show her and came home an hour early",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "classroom door",
+        "child_behavior_observed": "grabbed onto my leg at the door, wouldnt let go. teacher had to take her hand",
+        "parent_response": "promised id be the first mom at pickup. walked her all the way in again",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "going to sleep",
+        "child_behavior_observed": "same thing, needs me laying there. calling out again after i left. in my bed by 2",
+        "parent_response": "laid w her, door open light on, let her stay in my bed. too tired to walk her back",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok um so it's late sorry it was like 11 40 when she came in tonight which is earlier than usual and she called for me um like six times before that i counted and i'd say it's an eight like it's always an eight at night and then also this morning at school she held on to my leg again the teacher had to like take her hand",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b3",
+            "s2",
+            "b4"
+          ],
+          "observations": 2,
+          "fear_level_said": 8
+        },
+        "trap": "11 40 is a time and six is a count of call-outs; only 'an eight' is a Fear Level, and it is about bedtime, not drop-off"
+      },
+      {
+        "text": "um quick one she said her tummy hurt again this morning wanted to stay home i said no but i um walked her in again instead of doing the car line so yeah",
+        "expected": {
+          "refs": [
+            "s2",
+            "b5",
+            "a4"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        }
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:2",
+          "text": "Okay, we're recording now. Hi Rosie, hi Mom. This is our check-in, so I want to hear how the week went. Rosie, do you want to show me your drawing first, or should Mom and I talk for a minute?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Drawing first."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Deal. Oh, that is a big purple house. Who's in the window?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "That's me and that's Mommy and that's the moon."
+        },
+        {
+          "speaker": "1:2",
+          "text": "I love it. You can keep coloring while Mom and I talk, and then I want to ask you something with our thermometer, okay? Mom, let's start with nights. Last time we said you would just write down what happens, not change anything yet. How did that go?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Honestly it was a rough week. I wrote most nights, not all of them, sorry. Bedtime is the same. I lie down with her, she holds a piece of my hair, and if I try to get up before she's all the way out she wakes up and we start over. Some nights that's forty minutes. And then most nights she's in my bed by one or two. I don't even really wake up anymore, I just move over."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's really useful, and you don't need to apologize. The log was good. When she's calling out from her room, what does that sound like?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Mommy are you there, mommy are you there. Over and over. I leave the hall light on and the door open and I answer every single time, because if I don't she gets louder and then it's worse."
+        },
+        {
+          "speaker": "1:2",
+          "text": "So answering is the thing that quiets it down fastest."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Yes. Which I know is probably part of the problem."
+        },
+        {
+          "speaker": "1:2",
+          "text": "It's not something you did wrong. It's what any parent does at ten at night when they're running on empty. What we're going to do is change it in small pieces, so Rosie gets to find out she can handle it. If you had to put bedtime on the thermometer this week, zero to ten, for how scared she seems, where would it be?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "An eight. Pretty much an eight every night."
+        },
+        {
+          "speaker": "1:2",
+          "text": "An eight. Okay. And mornings at school?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Better than nights, I think. She still grabs my leg at the classroom door and her teacher has to take her hand. Twice this week she said her tummy hurt and asked to stay home. I sent her both times. But I did park and walk her in instead of doing the car line, because the car line is where it falls apart."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's honest, thank you. Rosie, can I borrow you for a second? Remember our thermometer? Down at the bottom is not scared at all, and way up at the top is the most scared ever. When Mommy says bye at the classroom door, where is your scared?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Here. Five."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Five, right in the middle. Thank you for showing me. What do you think about when Mommy leaves the door?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I don't know."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That's okay, you don't have to know. Can I ask about nighttime too? When you're in your bed and the light is off, what are you worried about?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "That Mommy goes away when I'm sleeping. And I don't know where."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Ah. So when you wake up, you want to check that Mommy is still in the house."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yeah. So I go in her bed."
+        },
+        {
+          "speaker": "1:1",
+          "text": "I've never left the house at night. Never. I tell her that."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That makes a lot of sense, and it's helpful to hear it in her words. Telling her again tends to help for about a minute, and then the worry comes back and asks again. So we'll practice a different way. Mom, I want to pick one small piece of bedtime for this week, not the whole thing. Right now you lie in the bed. What if this week you sit in a chair right next to the bed instead? Still in the room, still close, just not lying down."
+        },
+        {
+          "speaker": "1:1",
+          "text": "In a chair. Okay. I can do that. What if she wakes up and I'm still there in the chair?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Then you stay in the chair. You don't climb back into the bed. You can say one calm thing, like 'I'm right here, close your eyes,' and that's it. Rosie, what do you think? Mommy sits in the big chair instead of lying in your bed."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can Bunny be in the bed?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Bunny can absolutely be in the bed. So the plan is Mommy in the chair, Bunny in the bed, and you in the bed. We're not changing the middle of the night yet. Mom, if she comes into your bed this week, that's okay for now. I just want you to write down what time it happens."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Chair, and write down the time she comes in."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Exactly. What about drop-off, do you want to change anything there?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "Can we leave it one more week? I can't do two hard things at once right now. Mornings I'm by myself getting her out the door and then I go straight to work."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yes, that's a good call. We'll keep drop-off the same this week and come back to it next time. You mentioned on the log you went out Friday and had a sitter. How was that?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "The sitter said she was off. Just quiet. She didn't cry or anything. I came home early, though. I sent pictures to the sitter to show her I was okay."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Okay. Let's put that on the list for next time so we can talk about it properly. I don't want to rush it at the end."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's fine. Can I ask one thing? What if the chair doesn't work and she's screaming? I have work at seven thirty. I can't be up until midnight."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Fair question. The first two or three nights are usually the hardest, and then it tends to settle. If she gets very upset, you stay calm, you stay in the chair, and you say your one sentence. You don't need to fix the feeling. If after three nights it's not working at all, send me a message and we'll make the step smaller. Maybe the chair starts right up against the bed. We can always go smaller. What we don't want is to go back to lying down after a hard ten minutes, because then she learns that getting louder brings you back."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Three nights, then message you if it's a disaster."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yes. And it probably won't be a disaster. Rosie, Mommy's going to be right there in the chair. You'll be able to see her."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Can it be the blue chair?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "We can bring the blue chair in. Sure."
+        },
+        {
+          "speaker": "1:2",
+          "text": "So, to recap. This week Mom sits in the chair by the bed instead of lying down. Bunny stays in the bed. Mom writes down what time Rosie comes into her bed at night. Drop-off stays the same, and next time we'll talk about drop-off and the evening with the sitter. Rosie, high five for showing me the thermometer."
+        },
+        {
+          "speaker": "1:3",
+          "text": "High five. Can I take my drawing?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "It's yours. See you next week."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Parent",
+        "1:2": "Clinician",
+        "1:3": "Child"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 15,
+          "correct": "Child",
+          "note": ""
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Bedtime: mom lies with Rosie until asleep, Rosie holds mom's hair, calls out repeatedly, comes into mom's bed around 1-2am",
+          "Rosie's worry at night is that mom will leave the house while she sleeps",
+          "School drop-off: holds mom's leg at the door, tummy aches, mom walks her in instead of car line",
+          "Evening with a babysitter mentioned briefly and put off to next session"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 8
+          },
+          {
+            "situation_ref": "s2",
+            "level": 5
+          }
+        ],
+        "agreed": [
+          "Mom sits in a chair next to Rosie's bed instead of lying down with her this week",
+          "Rosie can have Bunny in the bed",
+          "If the chair is not working after three nights, mom messages the clinician and the step is made smaller",
+          "Mom writes down what time Rosie comes into her bed at night",
+          "Drop-off stays the same this week; drop-off and the sitter evening to be discussed next session"
+        ]
+      },
+      "must_not_appear": [
+        "Mom agreed to stop walking Rosie into the classroom",
+        "A Fear Level for the evening with the babysitter",
+        "Mom agreed to walk Rosie back to her own bed in the night",
+        "A diagnosis of separation anxiety disorder"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

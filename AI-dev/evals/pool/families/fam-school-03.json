@@ -1,0 +1,422 @@
+{
+  "id": "fam-school-03",
+  "provenance": "SYNTHETIC — generating agent, 2026-10-19",
+  "status": "pool",
+  "style": "dad who logs mostly what he did; short practical notes, child's side is thin",
+  "facts": {
+    "child": {
+      "name": "Desmond",
+      "age": 13
+    },
+    "anxiety": "worry about being late",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Leaving for school in the morning",
+        "fear_level": 8,
+        "feared_outcome": "If I walk in late everyone will turn around and stare at me",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Makes dad leave half an hour early and keeps checking the clock in the car"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "When they will be a few minutes late, refuses to go in and waits in the car until second period"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Dad drives him instead of letting him take the bus"
+          },
+          {
+            "id": "a2",
+            "text": "Dad calls the attendance office so he can come in at second period"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Getting to class on time between periods",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "unclear",
+            "text": "Was off all afternoon after he got to math late; school said he seemed checked out"
+          },
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Carries every book all day and runs between classes so he never has to stop at his locker"
+          }
+        ],
+        "accommodations": []
+      },
+      {
+        "id": "s3",
+        "name": "Waiting to be picked up from soccer practice",
+        "fear_level": 6,
+        "feared_outcome": "Something happened to Dad on the way",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Texts dad over and over asking where he is"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad texts him updates every few minutes and leaves work early to be there first"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": ""
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "School drop off",
+        "child_behavior_observed": "Wanted to leave at 6:55.",
+        "parent_response": "Drove him. Left at 6:55. We were there 35 min before the doors opened.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "Drop off",
+        "child_behavior_observed": "Traffic on the bridge. Kept saying the time out loud.",
+        "parent_response": "Told him we'd make it. Called the office from the car. Took him in at 2nd period.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "note": "child's refusal to go in late (b2) is only implied by dad's actions"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "Soccer pickup",
+        "child_behavior_observed": "Texted me 9 times between 5:10 and 5:25.",
+        "parent_response": "Replied to each one. Left the office early.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "School",
+        "child_behavior_observed": "Counselor called me. He got to math late after a fire drill and was off all afternoon. She said checked out.",
+        "parent_response": "Asked him at dinner. He said nothing happened. Left it.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Drop off",
+        "child_behavior_observed": "Drove him at 6:50 because he asked. Also asked the office to let him in early.",
+        "parent_response": "",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1",
+        "trap": "parent action written in child field (driving him and asking the office are dad's actions, a1)"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Noticed his backpack weighs a ton. He carries every book all day. Says he doesn't have time to stop at the locker, he'd be late. Runs between classes. Didn't say anything to him.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "Morning - bus?",
+        "child_behavior_observed": "Asked if he could take the bus like his friend. Then changed his mind at the stop.",
+        "parent_response": "Drove him. Left early again.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "Pickup after practice",
+        "child_behavior_observed": "Texts started at 5:02.",
+        "parent_response": "Texted him at 5:00, 5:05, 5:10 with where I was. Got there 5:12.",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so uh today he wanted to leave like 30 minutes early again so we left at 6:50 and then um the bridge was backed up and we got there at 8:04 which is like four minutes late and he wouldn't get out of the car so i called the office and he went in at second period he was at a 9 i'd say",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "b2",
+            "a1",
+            "a2"
+          ],
+          "observations": 1,
+          "fear_level_said": 9
+        },
+        "trap": "30 minutes, 6:50, 8:04 and four minutes are times and counts; the fear level is the 9 at the end, and it differs from the 8 in the facts"
+      }
+    ],
+    "session": {
+      "minutes": 10,
+      "turns": [
+        {
+          "speaker": "1:1",
+          "text": "Good to see you both. Desmond, Dad. Dad, the log is mostly what you did, which is actually really useful. I'd like to fill in Desmond's side with him today. Let's start with mornings."
+        },
+        {
+          "speaker": "1:3",
+          "text": "Yeah, mornings are the main thing. I've been driving him every day. We leave before seven. Some days we're there half an hour before the doors open."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Desmond, what's it like for you in the car on the way?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I just watch the clock. If the bridge is bad I start doing the math, like if we're going to make it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And what's the worst part about being late? What do you picture?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Opening the door to homeroom and everybody turns around. Like everyone stops and looks at you. And Mr. Hale says something."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Everyone turns around and stares. That's a hard picture. On the zero to ten, how big is the worry on a morning where it looks like you might be late?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Eight. If we're actually late, more."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Eight. Thank you. Dad, on the sixth you wrote that you called the office and took him in at second period. Can you tell me about that?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "We were maybe four minutes late. He wouldn't get out. I didn't want a fight, so I called and said he'd be in for second."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Desmond, waiting until second period, what did that do to the worry?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "It went away. Because second period nobody's late, everyone's just walking in."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Right. So the worry goes away fast, but you missed homeroom and first period to make it go away. And the next morning the worry wants to leave even earlier. Is that fair?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I guess. Yeah."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Now, there's another thing in here that sounds a bit similar but I don't think it's the same. Soccer pickup. Dad, you wrote nine texts in fifteen minutes."
+        },
+        {
+          "speaker": "1:2",
+          "text": "That one's different. That's when I'm waiting for him. I answer every single one. I've started leaving work early so I'm there first."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Desmond, when you're waiting at practice and Dad's not there yet, what's the worry?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "That something happened. Like a crash or something. Because he's never late, so if he's late something's wrong."
+        },
+        {
+          "speaker": "1:1",
+          "text": "So with mornings it's I'll be late and people will stare. With pickup it's Dad is late and something bad happened to him. Both are about being late, but they're really different worries. How big is the pickup one?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Six. It's less. Once he texts back it's fine."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Six. And then it comes back after a few minutes and you text again?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. Dad, one more thing. The school counselor called about the day there was a fire drill and he got to math late."
+        },
+        {
+          "speaker": "1:3",
+          "text": "She said he was checked out all afternoon. I asked him and he said nothing happened."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Desmond, anything you want to say about that afternoon?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "Not really. I was just tired."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Okay. We'll leave that as a question for now. I also saw the note about the backpack. You carry everything so you don't stop at your locker?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "If I go to my locker I'm late to science. It's on the other side."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Have you ever actually been late to science from going to your locker?"
+        },
+        {
+          "speaker": "1:2",
+          "text": "I don't know. I haven't tried it."
+        },
+        {
+          "speaker": "1:1",
+          "text": "That's a really honest answer. We don't know yet, because the worry hasn't let you test it. Okay. Let me suggest a few things and you tell me if they're fair. Desmond, you said on the thirteenth you wanted to take the bus like your friend."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Yeah but then I didn't."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Could you take the bus two mornings this week? The bus gets there on time, but not thirty minutes early. That's the practice: arriving at a normal time."
+        },
+        {
+          "speaker": "1:2",
+          "text": "Two days. Can I pick which ones?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "You can pick. Tell Dad tonight which two. Dad, on the days he drives with you, can you leave at your normal time, seven twenty-five, not before seven?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "I can do that. I'd honestly like my mornings back."
+        },
+        {
+          "speaker": "1:1",
+          "text": "And for pickup, I'd like you to send one text when you leave work, and then not answer the follow-up texts. Desmond, you'll know he's on his way from that one text."
+        },
+        {
+          "speaker": "1:2",
+          "text": "What if he's really late?"
+        },
+        {
+          "speaker": "1:1",
+          "text": "If he's more than fifteen minutes past the time he said, you can call once. That's the deal. Dad, okay?"
+        },
+        {
+          "speaker": "1:3",
+          "text": "Okay."
+        },
+        {
+          "speaker": "1:1",
+          "text": "Good. So: Desmond takes the bus two mornings, his choice which. On drive days Dad leaves at seven twenty-five. For pickup, Dad sends one text when he leaves and doesn't reply to follow-ups; Desmond can call once if Dad is fifteen minutes past. We're not doing anything with the locker yet. Dad, keep logging, and when you can, add a line about what Desmond did, not just what you did."
+        }
+      ],
+      "true_speakers": {
+        "1:1": "Clinician",
+        "1:2": "Child",
+        "1:3": "Parent"
+      },
+      "mislabeled_turns": [
+        {
+          "turn": 15,
+          "correct": "Parent",
+          "note": "dad describing answering texts and leaving work early, tagged with the child's key 1:2"
+        }
+      ],
+      "expected_note": {
+        "topics": [
+          "Mornings: leaving very early, watching the clock, refusing to go in when a few minutes late and going in at second period",
+          "Soccer pickup: repeated texts to dad, fear something happened to him; dad replies to every text and leaves work early",
+          "These two are different worries: being late himself versus dad being late",
+          "Unclear afternoon after arriving late to math following a fire drill",
+          "Carrying all books to avoid the locker; he has not tested whether the locker makes him late"
+        ],
+        "fear_levels_said": [
+          {
+            "situation_ref": "s1",
+            "level": 8
+          },
+          {
+            "situation_ref": "s3",
+            "level": 6
+          }
+        ],
+        "agreed": [
+          "Desmond takes the bus two mornings this week, his choice which, and tells dad tonight",
+          "On drive days dad leaves at his normal time, 7:25",
+          "For pickup dad sends one text when he leaves and does not answer follow-up texts; Desmond may call once if dad is 15 minutes past",
+          "Dad adds what Desmond did to the log"
+        ]
+      },
+      "must_not_appear": [
+        "A plan for the locker (the clinician said not yet)",
+        "A Fear Level for getting to class between periods",
+        "A diagnosis such as ADHD or panic disorder",
+        "That Desmond agreed to walk into homeroom late on purpose"
+      ]
+    }
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}
