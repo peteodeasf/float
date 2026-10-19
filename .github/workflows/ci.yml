@@ -57,6 +57,23 @@ jobs:
         # cleanly from an empty database on every push.
         run: python -m pytest -q
 
+  cases-not-in-prompts:
+    name: No test case in an AI prompt
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check the prompts for copied test cases
+        # A test case copied into a prompt no longer tests anything (docs/plans/ai-quality-testing.md).
+        # Plain Python, no packages and no API key. The five downward arrow cases already in the
+        # prompt are listed by name in the script and reported, not failed.
+        run: python -I AI-dev/evals/check_no_cases_in_prompts.py
+
   frontend:
     name: Frontend typecheck and build
     runs-on: ubuntu-latest
