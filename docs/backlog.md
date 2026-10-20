@@ -58,16 +58,6 @@ Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not toni
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
 
-#### Score monitoring analysis on the pool `M`
-- **Today:** the runner (earlier item) can run `rebuild_from_monitoring`. Nothing scores it
-  against the pool's answer keys.
-- **What changes:** score situations found, behavior types, parent actions mistaken for child
-  behaviors, and invented triggers. Do not score the risk flag. Run it on the working cases (odd
-  ids rule from `float_harness`, or the pool's own split if it has one).
-- **How to tell it worked:** a report in the PR with each score, its sample size, and its
-  stability across runs. Tests for the scoring code.
-- **Gate:** none (it changes no prompt). **Depends on:** the test runner.
-
 #### The two monitoring prompts disagree about extra triggers `S`
 - **Today:** the preliminary report prompt in `backend/app/api/routers/patients.py` says "you may
   add them" about triggers the parent never logged. The extraction prompt forbids it.

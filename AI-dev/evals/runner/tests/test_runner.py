@@ -288,3 +288,115 @@ def test_report_has_sample_sizes_and_no_case_text():
             assert s["name"] not in blob
             for bh in s["behaviors"]:
                 assert bh["text"] not in blob
+
+
+# ── Working and held-out halves ──────────────────────────────────────────────
+
+def test_halves_follow_the_odd_even_rule():
+    # Prompts are tuned on the working half only. If the rule drifted, held-out families would be
+    # tuned on and their scores would stop meaning anything.
+    from cases import half
+    assert half("fam-social-01") == "working"
+    assert half("fam-social-02") == "held_out"
+    assert half("fam-specific-06") == "held_out"
+    with pytest.raises(ValueError):
+        half("fam-social")
+
+
+def test_loader_keeps_one_half_and_refuses_the_other_by_name():
+    # A held-out family asked for by name must be refused, not quietly run with the working ones.
+    from cases import half
+    working = load_cases("monitoring_analysis", only="working")
+    assert working and all(half(c.family_id) == "working" for c in working)
+    held = load_cases("monitoring_analysis", only="held_out")
+    assert len(working) + len(held) == len(list(POOL.glob("*.json")))
+    with pytest.raises(ValueError):
+        load_cases("monitoring_analysis", ["fam-social-02"], only="working")
+    with pytest.raises(ValueError):
+        load_cases("monitoring_analysis", only="tuning")
+
+
+# ── Parent actions and triggers not in the answer key ────────────────────────
+
+@pytest.mark.parametrize("text", [
+    "Mom walks him into the classroom",
+    "Parent lets her skip the party",
+    "Her dad checks the closet every night",
+    "Teacher lets him sit by the door",
+    "Allowed to stay home from school",
+    "Was kept home on Monday",
+])
+def test_parent_action_wording_is_caught(text):
+    # The prompt forbids turning an adult's action into a child behavior. These are the shapes that
+    # mistake takes when it happens.
+    assert ma.is_parent_action(text)
+
+
+@pytest.mark.parametrize("text", [
+    "Asks mom over and over if she will come back",
+    "Left the party after the dog was let out",
+    "Stays home from school",
+    "Mom's car is the only one she will ride in",
+    # The first real run flagged 25 of these. "Kept" alone is the child carrying on doing something.
+    "Kept asking if parent would be home all day",
+    "Kept water and mints in the cup holder",
+    "",
+])
+def test_child_behavior_wording_is_not_caught(text):
+    # A child behavior that mentions an adult, or an adult's thing, is still the child's.
+    # Only the start of the sentence decides.
+    assert not ma.is_parent_action(text)
+
+
+def test_no_fact_behavior_in_the_pool_reads_as_a_parent_action():
+    # The answer keys' own child behaviors must not be flagged, or the score counts false alarms.
+    # The comment in monitoring_analysis.py quotes this count; the test keeps it true as the pool grows.
+    flagged = [b["text"] for f in POOL.glob("*.json")
+               for s in json.loads(f.read_text())["facts"]["situations"]
+               for b in s["behaviors"] if ma.is_parent_action(b["text"])]
+    assert flagged == []
+
+
+def test_parent_action_as_behavior_is_counted():
+    answer = perfect_answer()
+    answer["situations"][0]["behaviors"].append(
+        {"order": 9, "type": "safety", "description": "Mom stays in the room until she falls asleep"})
+    s = run_one(answer)[0][0].runs[0].score
+    assert s["parent_actions"] == 1
+    assert s["model_behaviors"] == s["behaviors"] + 1
+
+
+def test_triggers_not_in_the_answer_key_add_unlinked_and_split():
+    # An invented trigger can cite no entry, or cite an entry that already backs a real situation.
+    # Both are triggers the answer key does not have, and both must count.
+    answer = perfect_answer()
+    first = answer["situations"][0]
+    answer["situations"].append({"name": "Stomach aches", "fear_rating": None, "behaviors": [],
+                                 "accommodations": [], "entries": first["entries"][:1]})
+    answer["situations"].append({"name": "Never logged", "fear_rating": None, "behaviors": [],
+                                 "accommodations": [], "entries": []})
+    s = run_one(answer)[0][0].runs[0].score
+    assert (s["split"], s["unlinked"], s["extra_triggers"]) == (1, 1, 2)
+    assert s["situations_found"] == s["situations"]  # the real ones are still found
+
+
+# ── Per-run spread in the report ─────────────────────────────────────────────
+
+def test_report_shows_each_score_run_by_run():
+    # A total over 3 runs can hide one bad run. The report must show each run's totals, and how
+    # many cases moved, so a score's stability can be read next to the score.
+    wrong = perfect_answer(b1="escape")
+    replies = iter([json.dumps(perfect_answer()), json.dumps(wrong), json.dumps(perfect_answer())])
+    results, stopped, b, _ = run_one(lambda kw: next(replies), runs=3)
+    rep = report.build(ma, results, runs_per_case=3, cases_planned=1, budget=b, stopped=stopped,
+                       half="working")
+    right = [r["types_right"] for r in rep["by_run"]]
+    assert right[0] == right[2] == right[1] + 1
+    assert rep["cases_varied"]["types_right"] == 1
+    assert rep["cases_varied"]["situations_found"] == 0
+    assert rep["cases_with_two_scored_runs"] == 1
+    md = report.markdown(rep)
+    assert "| Run 1 | Run 2 | Run 3 |" in md
+    assert "Parent actions written as child behaviors" in md
+    assert "Triggers not in the answer key" in md
+    assert "working half" in md
