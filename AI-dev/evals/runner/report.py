@@ -7,19 +7,8 @@ to paste into a pull request, and is the shape the held-out report needs later.
 import hashlib
 import json
 
-SUMMED = ("situations", "situations_found", "behaviors", "types_right", "extra_behaviors",
-          "model_behaviors", "parent_actions", "unlinked", "split", "extra_triggers")
-
-# The scores in the report, each with what it is counted out of (None for a plain count).
-SCORES = (
-    ("Situations found", "situations_found", "situations"),
-    ("Behavior types right, in situations found", "types_right", "behaviors"),
-    ("Parent actions written as child behaviors", "parent_actions", "model_behaviors"),
-    ("Triggers not in the answer key", "extra_triggers", None),
-    ("... of which point at no log entry", "unlinked", None),
-    ("... of which are a second situation for one in the answer key", "split", None),
-    ("Extra behaviors beyond the answer key", "extra_behaviors", None),
-)
+# Each feature says what it counts (`SUMMED`), which counts are scores and what each is out of
+# (`SCORES`), which go in the per-case table (`PER_CASE`), and when two runs agree (`AGREEMENT`).
 
 
 def _ratio(a: int, b: int) -> str:
@@ -30,22 +19,22 @@ def _cell(totals: dict, key: str, out_of: str | None) -> str:
     return _ratio(totals[key], totals[out_of]) if out_of else str(totals[key])
 
 
-def _by_run(results, runs_per_case: int) -> list[dict]:
+def _by_run(results, runs_per_case: int, summed) -> list[dict]:
     """The totals for each run number: every case's first run added up, then every case's second,
     and so on. How far apart they are shows how much a score moves from one run of the whole set to
     the next."""
     out = []
     for i in range(runs_per_case):
         scored = [c.runs[i].score for c in results if len(c.runs) > i and c.runs[i].score]
-        out.append({"runs_scored": len(scored), **{k: sum(s[k] for s in scored) for k in SUMMED}})
+        out.append({"runs_scored": len(scored), **{k: sum(s[k] for s in scored) for k in summed}})
     return out
 
 
-def _cases_varied(results) -> dict[str, int]:
+def _cases_varied(results, summed) -> dict[str, int]:
     """For each score, how many cases did not give the same count on every run. Only cases with
     two or more scored runs can vary."""
     out = {}
-    for k in SUMMED:
+    for k in summed:
         out[k] = sum(1 for c in results
                      if len({r.score[k] for r in c.runs if r.score}) > 1)
     return out
@@ -60,9 +49,10 @@ HALF_TEXT = {
 
 def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, stopped,
           reviewers=(), half: str | None = None) -> dict:
+    summed = feature.SUMMED
     all_runs = [r for c in results for r in c.runs]
     scored = [r.score for r in all_runs if r.score]
-    totals = {k: sum(s[k] for s in scored) for k in SUMMED}
+    totals = {k: sum(s[k] for s in scored) for k in summed}
 
     check_names = sorted({name for r in all_runs for name in r.checks})
     checks = {name: {"failed_runs": sum(1 for r in all_runs if r.checks.get(name)),
@@ -79,6 +69,7 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
         "runs_per_case": runs_per_case,
         "cases_planned": cases_planned,
         "cases_run": len(results),
+        "families_run": len({c.case_id.split("/")[0] for c in results}),
         "runs": len(all_runs),
         "runs_with_error": sum(1 for r in all_runs if r.error),
         "runs_scored": len(scored),
@@ -88,8 +79,11 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
         "stopped": stopped,
         "checks": checks,
         "totals": totals,
-        "by_run": _by_run(results, runs_per_case),
-        "cases_varied": _cases_varied(results),
+        "scores": [list(s) for s in feature.SCORES],
+        "per_case_columns": [list(s) for s in feature.PER_CASE],
+        "agreement": feature.AGREEMENT,
+        "by_run": _by_run(results, runs_per_case, summed),
+        "cases_varied": _cases_varied(results, summed),
         "cases_with_two_scored_runs": sum(1 for c in results if sum(1 for r in c.runs if r.score) > 1),
         "stability": {
             "mean": round(sum(stabilities) / len(stabilities), 3) if stabilities else None,
@@ -103,7 +97,7 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
                 "runs": len(c.runs),
                 "checks_failed": sum(1 for r in c.runs if any(r.checks.values())),
                 "errors": sum(1 for r in c.runs if r.error),
-                **{k: sum(r.score[k] for r in c.runs if r.score) for k in SUMMED},
+                **{k: sum(r.score[k] for r in c.runs if r.score) for k in summed},
                 "stability": None if c.stability is None else round(c.stability, 3),
             }
             for c in results
@@ -142,14 +136,15 @@ def markdown(rep: dict) -> str:
         "|---" * (len(by_run) + 3) + "|",
     ]
     varied, two = rep["cases_varied"], rep["cases_with_two_scored_runs"]
-    for label, key, out_of in SCORES:
+    for label, key, out_of in rep["scores"]:
         lines.append(f"| {label} | {_cell(t, key, out_of)} | "
                      + " | ".join(_cell(r, key, out_of) for r in by_run)
                      + f" | {varied[key]} of {two} |")
     lines += [
         "",
         "Each count in the first column is over runs, not cases: one case run 3 times counts 3 "
-        f"times. The cases are {rep['cases_run']} families, so these are small numbers.",
+        f"times. The cases are {rep['cases_run']}, from {rep['families_run']} families, so these are "
+        "small numbers.",
         "",
         "## Stability",
         "",
@@ -161,8 +156,7 @@ def markdown(rep: dict) -> str:
             f"{s['mean']:.2f}. All {rep['runs_per_case']} runs agreed on "
             f"{s['cases_all_runs_agree']} of {s['cases']} cases.",
             "",
-            "Two runs agree when they find the same situations with the same behavior types under each. "
-            "Wording is ignored.",
+            rep["agreement"],
         ]
     else:
         lines.append("No runs.")
@@ -171,17 +165,17 @@ def markdown(rep: dict) -> str:
     # The held-out report (AI-dev/evals/judging/) has no per-case rows: they would say which case to
     # go and read.
     if "per_case" in rep:
+        cols = rep["per_case_columns"]
         lines += [
             "", "## Per case", "",
-            "| Case | Runs | Checks failed | Situations found | Types right | Unlinked | Stability |",
-            "|---|---|---|---|---|---|---|",
+            "| Case | Runs | Checks failed | " + " | ".join(c[0] for c in cols) + " | Stability |",
+            "|---" * (len(cols) + 4) + "|",
         ]
         for c in rep["per_case"]:
             stab = "–" if c["stability"] is None else f"{c['stability']:.2f}"
-            lines.append(
-                f"| {c['case']} | {c['runs']} | {c['checks_failed']} | {c['situations_found']}/{c['situations']} "
-                f"| {c['types_right']}/{c['behaviors']} | {c['unlinked']} | {stab} |"
-            )
+            cells = [f"{c[key]}/{c[out_of]}" if out_of else str(c[key]) for _, key, out_of in cols]
+            lines.append(f"| {c['case']} | {c['runs']} | {c['checks_failed']} | " + " | ".join(cells)
+                         + f" | {stab} |")
     lines += ["", "## What these cases don't cover", ""]
     lines += [f"- {n}" for n in rep["not_covered"]]
     return "\n".join(lines) + "\n"
@@ -193,5 +187,6 @@ def outputs_jsonl(results) -> str:
     for c in results:
         for i, r in enumerate(c.runs, 1):
             rows.append(json.dumps({"case": c.case_id, "run": i, "error": r.error, "raw": r.raw,
-                                    "checks": r.checks, "reviews": r.reviews}, ensure_ascii=False))
+                                    "checks": r.checks, "score": r.score, "reviews": r.reviews},
+                                   ensure_ascii=False))
     return "\n".join(rows) + ("\n" if rows else "")
