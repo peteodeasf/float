@@ -127,6 +127,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 5. **The overnight schedule** above, with a nightly spending limit and the morning report.
    - Local test database only.
    - Use the stability figures to propose temperature settings, as a pull request.
+   - Built 2026-10-20: `AI-dev/evals/nightly.sh` (the work is in `nightly.py`). Not yet in the crontab: the lines are at the top of `nightly.sh`, for Peter to add. "Fixed cases" means the working half of the families committed to the pool, because no family has been accepted into a fixed set yet. A family the Sunday job writes is not committed, so it stays out of the nightly runs. A prompt-change pull request is one that changes the prompt or model of a feature the runner tests. It is merged into main locally and scored with main's cases and scoring code. The Monday list is not built (item 13).
 
 **Known facts**
 

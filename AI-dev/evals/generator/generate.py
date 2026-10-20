@@ -167,12 +167,28 @@ def summary(outcomes: list[Outcome], budget: Budget, stopped: str | None, asked:
     return "\n".join(lines)
 
 
+def summary_json(outcomes: list[Outcome], budget: Budget, stopped: str | None, asked: int) -> dict:
+    """The same summary as data, for the overnight schedule (AI-dev/evals/nightly.py). Ids and counts
+    only."""
+    return {
+        "asked": asked,
+        "written": [o.slot.family_id for o in outcomes if o.family],
+        "failed": [o.slot.family_id for o in outcomes if not o.family],
+        "stopped": stopped,
+        "spent_usd": round(budget.spent, 4),
+        "limit_usd": budget.limit,
+        "calls": budget.calls,
+        "model": budget.model,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--count", type=int, default=5)
     ap.add_argument("--budget", type=float, default=10.0, help="dollars; the run stops before going over")
     ap.add_argument("--seed", type=int, default=None, help="default: today's date, so a rerun on the same day picks the same spread")
     ap.add_argument("--out", type=Path, default=POOL)
+    ap.add_argument("--summary-json", type=Path, help="also write the summary as JSON to this file")
     args = ap.parse_args(argv)
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -184,6 +200,8 @@ def main(argv: list[str] | None = None) -> int:
     seed = args.seed if args.seed is not None else int(dt.date.today().strftime("%Y%m%d"))
     outcomes, budget, stopped = run(anthropic.Anthropic(), args.count, args.budget, seed, args.out)
     print(summary(outcomes, budget, stopped, args.count))
+    if args.summary_json:
+        args.summary_json.write_text(json.dumps(summary_json(outcomes, budget, stopped, args.count), indent=2) + "\n")
     return 0 if outcomes and all(o.family for o in outcomes) and not stopped else 1
 
 
