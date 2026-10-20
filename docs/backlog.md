@@ -855,6 +855,18 @@ they wrote.
 - **How to tell it worked:** `pytest AI-dev/evals/judging/tests` passes on main.
 - **Gate:** Peter (CODEOWNERS). **Depends on:** nothing.
 
+## The preliminary report writes British spellings `S`
+- **Today:** on the 2026-10-19 trigger run (`AI-dev/evals/runner/compare_triggers.py`, 54 runs) the
+  report's situation names included "shopping centres", "public transport" and "travelling". The
+  report is shown to clinicians. `PRELIMINARY_REPORT_SYSTEM_PROMPT` in
+  `backend/app/api/routers/patients.py` says nothing about spelling. Float is US-only and uses
+  American spelling. How often it happens was not counted.
+- **What changes:** count it on the pool first (the runner's `outputs.jsonl` has the answers). If it
+  is more than a stray case, add American spelling to the prompt. That is a prompt change, so Peter
+  approves it.
+- **How to tell it worked:** a count, before and after, of British spellings in report runs.
+- **Gate:** prompt change waits for Peter. **Depends on:** nothing.
+
 ## Short case phrases in the rung prompt that the copy check cannot see
 
 Found 2026-10-19 while building the check that no test case is in a prompt

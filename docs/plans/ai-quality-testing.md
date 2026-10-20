@@ -138,6 +138,24 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
    - Score situations found, behavior types, parent actions mistaken for child behaviors and invented triggers.
    - **Do not score the risk flag.** Peter, 2026-10-19: what counts as a risk sign is a clinical question, and made-up data shouldn't settle it. Every family's risk label is marked `confirmed: false`. Score it only once Dr. Walker has answered (item 13).
    - Settle the conflict between the two prompts. The report prompt allows triggers the parent never logged (`patients.py`, "you may add them"); extraction forbids it. Bring the result to Peter.
+
+     **Measured 2026-10-19** (`AI-dev/evals/runner/compare_triggers.py`). 18 working pool families, 3 runs each, so 54 runs. A matcher on a different model (Opus 5.5) read each list against the log. It was not told which prompt wrote which list.
+
+     | | Extraction | Report |
+     |---|---|---|
+     | Situations listed | 314 | 196 |
+     | Whole situations no log entry describes | 0 | 0 |
+     | Unlogged triggers added inside a logged situation | 3 | 55 |
+     | Runs with any addition | 2 of 54 | 31 of 54 |
+     | Families with an addition in any run | 1 of 18 | 15 of 18 |
+
+     - Neither prompt made up a whole situation. The report adds by widening a logged one: "Peer social settings (birthday party, likely also playdates, school group activities)" when only a birthday party was logged. It often says "by extension".
+     - The report's additions change from run to run. All 3 runs added the same number on only 5 of 18 families. Extraction: 17 of 18.
+     - I checked 3 of the 58 flags against the log, and all 3 were right. The rest were not checked, and nor were the situations the matcher left unflagged.
+     - The extraction's 3 were all one family. Its name said "home alone" when the girl was home with her brother.
+     - Not covered: OCD, families outside the US, any patient analyzed a second time. No clinician has checked the answer keys. The extraction list is what the ladder builder offers; only the report's situation names were read.
+
+     **Question for Peter.** When the report lists a situation, should it name only what the parent logged? Or may it add likely related triggers, such as "playdates" next to a logged birthday party? Today it adds them in about half of runs, and differently each time. A clinician can't tell which parts the parent logged. If they should stay, should the report mark them as guesses? Not decided here. Nothing in either prompt has changed.
    - Fix `backend/evals/preliminary_report` to send the input the app sends. Done 2026-10-19.
 8. **Voice notes.**
    - Score how notes are split into observations, and whether the words are kept.
