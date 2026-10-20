@@ -57,22 +57,6 @@ All from `docs/plans/ai-quality-testing.md`. Read the whole plan before any of t
 Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not tonight), scoring the
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
-#### One test runner for the AI features `L`
-- **Today:** `AI-dev/Extraction Loop/float_harness/` scores monitoring analysis, but from its own
-  copy of the prompt (that is how the old 0.926 score went stale). Step sentences and suggested
-  rungs have no runner. No call sets a temperature.
-- **What changes:** build `AI-dev/evals/runner/`, reusing `float_harness` code where it fits. It
-  imports the app's real prompts and calls from `backend/app/` (no copies). It runs each case N
-  times. It runs code checks first, then reviewing agents (leave a hook for them; the reviewers are
-  a later item). It writes a report with sample sizes and a stability figure (how often the N runs
-  agree). It uses one case format for every feature, read from the pool format in
-  `AI-dev/evals/pool/README.md`. It has a spending limit and stops when reached. Start with one
-  feature wired up end to end: monitoring analysis (`rebuild_from_monitoring`).
-- **How to tell it worked:** tests with a fake AI client cover the case loader, the N-runs loop,
-  the stability figure, and the spending stop. One real run on 5 pool families, with the report
-  in the PR.
-- **Gate:** none. **Depends on:** nothing.
-
 #### Judging folder for the AI tests `S`
 - **Today:** the reviewers' instructions and held-out cases have no home.
 - **What changes:** create `AI-dev/evals/judging/` with a README saying what goes there and that
@@ -854,6 +838,17 @@ Found while checking, before building:
   a patient analyzed more than once is the combined list, not one AI answer.
 
 **Gate:** `/security-review` on anything that reads patients' records out of production.
+
+## Analyze with AI loses evidence when it names a situation twice `S`
+- **Today:** `entry_ids_by_situation` in `backend/app/services/insight_service.py` keys its answer
+  by normalised name and sets `out[key] = ids`. When the model returns two situations with the same
+  name (it does: the AI test runner counts these as "split"), the second one's entries replace the
+  first's. `rebuild_from_monitoring` then looks up that one list for both, so the log entries behind
+  the first are never saved as its evidence. Found 2026-10-19 while building `AI-dev/evals/runner/`.
+- **What changes:** add the ids to the list already there instead of replacing it.
+- **How to tell it worked:** a test in `backend/tests/test_patient_insights.py` where an extraction
+  names "Bedtime" twice with entries [1] and [2], and the saved situation's evidence holds both.
+- **Gate:** none. **Depends on:** nothing.
 
 ## AI analysis of session notes
 
