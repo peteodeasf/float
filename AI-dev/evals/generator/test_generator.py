@@ -66,13 +66,13 @@ def slot():
 
 
 # Why: a run of 5 should give one family of each kind the backlog asks for, not five of one.
-def test_plan_spreads_the_five_kinds_ages_and_places():
+def test_plan_spreads_the_five_kinds_and_ages():
     slots = plan(5, seed=7)
     assert sorted(s.kind for s in slots) == sorted(KINDS)
     assert all(8 <= s.age <= 17 for s in slots)
     assert len({s.age for s in slots}) == 5
-    outside = [s for s in slots if s.place != "the US"]
-    assert len(outside) == 3  # every other family is outside the US
+    # Float is for US families only (Peter, 2026-10-19).
+    assert all(s.place == "the US" for s in slots)
 
 
 # Why: a new family must never overwrite a hand-written one, and names must not repeat in the pool.

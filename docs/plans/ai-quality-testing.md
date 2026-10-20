@@ -130,7 +130,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 
 **Known facts**
 
-6. **The family generator.** The first pool was written by hand-run agents on 2026-10-19. The format is in `AI-dev/evals/pool/README.md`, and `validate.py` checks it. Turn what made those 30 into the Sunday job, and add what they don't cover, such as families outside the US. No session transcripts (see above).
+6. **The family generator.** The first pool was written by hand-run agents on 2026-10-19. The format is in `AI-dev/evals/pool/README.md`, and `validate.py` checks it. Turn what made those 30 into the Sunday job, and add what they don't cover. US families only: Float is US-only (Peter, 2026-10-19). No session transcripts (see above).
    - Facts first, then the inputs.
    - Kinds of anxiety: social, separation, health, specific fears, school refusal.
    - Ages 8–17, which is Float's age range, and many ways of writing.
