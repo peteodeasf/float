@@ -354,6 +354,24 @@ def job_score_prs(ctx: Ctx) -> None:
         state_path.write_text(json.dumps(scored, indent=2) + "\n")
 
 
+def merge_into(ctx: Ctx, wt: Path, base: str, sha: str) -> None:
+    """Merge `sha` into the worktree at `base`, without committing. A conflict outside backend/
+    (nearly always docs/backlog.md, which most pull requests edit) is settled by taking main's copy:
+    only the app code is being tested. A conflict in backend/ cannot be settled, and is raised."""
+    p = ctx.sh(["git", "merge", "-q", "--no-commit", "--no-ff", sha], cwd=wt)
+    if p.returncode == 0:
+        return
+    conflicted = git(ctx, "diff", "--name-only", "--diff-filter=U", cwd=wt).split()
+    in_app = [f for f in conflicted if f.startswith("backend/")]
+    if in_app or not conflicted:
+        raise RuntimeError("it conflicts with main in the app code (" + ", ".join(in_app[:3])
+                           + "), so it could not be merged to test" if in_app
+                           else f"it could not be merged with main: {last_line(p.stderr)}")
+    for f in conflicted:
+        if ctx.sh(["git", "checkout", base, "--", f], cwd=wt).returncode != 0:
+            git(ctx, "rm", "-q", "-f", "--", f, cwd=wt)  # not on main: the pull request added it
+
+
 def score_pr(ctx: Ctx, pr: dict, base: str, main_print: dict, families: list[str]) -> str:
     """Score one pull request. Returns "no change" when it changes no tested prompt or model,
     "done" when it was scored and posted, or "incomplete"."""
@@ -368,10 +386,7 @@ def score_pr(ctx: Ctx, pr: dict, base: str, main_print: dict, families: list[str
         # at the pull request, so it can be days behind main.
         git(ctx, "fetch", "-q", "origin", f"pull/{n}/head")
         git(ctx, "worktree", "add", "-q", "--detach", str(wt), base)
-        try:
-            git(ctx, "merge", "-q", "--no-commit", "--no-ff", sha, cwd=wt)
-        except RuntimeError:
-            raise RuntimeError("it conflicts with main, so it could not be merged to test") from None
+        merge_into(ctx, wt, base, sha)
         # The scoring code and the cases come from main, not from the pull request, so a pull
         # request cannot change how it is marked. Only its app code (backend/) is its own.
         shutil.rmtree(wt / REL)
