@@ -74,6 +74,14 @@ ALLOWED = {
     "AI-dev/Arrow Eval/cases_draft.json#draft-12",
     "AI-dev/Arrow Eval/cases_draft.json#draft-13",
     "AI-dev/Arrow Eval/cases_draft.json#draft-15",
+    # Two real arrow chains supply the same prompt's example of a bad question ("if THEY don't
+    # want to hang out with you"). Allowed for the same reason as the five above (Peter,
+    # 2026-10-19).
+    "AI-dev/Arrow Eval/cases.json#3",
+    "AI-dev/Arrow Eval/cases.json#4",
+    # The other way round: this made-up family quotes the extraction prompt's definition of
+    # avoidance in its notes. A case copying the prompt does not leak the case (Peter, 2026-10-19).
+    "AI-dev/evals/pool/families/fam-edge-03.json#fam-edge-03",
 }
 
 _WORD = re.compile(r"[a-z0-9]+(?:'[a-z0-9]+)*")
