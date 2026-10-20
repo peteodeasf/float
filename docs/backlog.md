@@ -88,20 +88,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   clean one passes. CI is green on the PR.
 - **Gate:** waits for Peter (it changes `.github/`). **Depends on:** nothing.
 
-#### Family generator for the waiting pool `M`
-- **Today:** the 30 families in `AI-dev/evals/pool/families/` were written by hand-run agents.
-  `validate.py` checks the format.
-- **What changes:** a script, `AI-dev/evals/generator/`, that writes new families into the pool
-  the same way: facts first (age 8–17, situations with Fear Levels, behaviors with types,
-  accommodations, risk label with `confirmed: false`), then the log and voice notes written from
-  the facts, in varied styles (terse, rambling, misspelled, out of order). Every family passes
-  `validate.py`. Spread across social, separation, health, specific fears and school refusal, and
-  add what the README says is missing, such as families outside the US. No session transcripts.
-  American spelling.
-- **How to tell it worked:** one real run of 5 families, all passing `validate.py`, added to the
-  pool in the PR. Tests for the parts that don't call the AI.
-- **Gate:** none. **Depends on:** nothing.
-
 #### Score monitoring analysis on the pool `M`
 - **Today:** the runner (earlier item) can run `rebuild_from_monitoring`. Nothing scores it
   against the pool's answer keys.
@@ -758,6 +744,14 @@ tests; CI on push; this file).
   only in production. `backend/seed_local.py` replaces it for local work and carries the same
   example content. **What changes:** delete `seed_demo.py`, unless Peter still wants a script that
   adds the demo family to an existing practice. **How to tell it worked:** nothing imports it.
+  **Gate:** none.
+- **`/verify` does not work as written on the Mac mini.** `S` Found 2026-10-19. **Today:**
+  `.claude/commands/verify.md` says to start the test database with `docker compose` and run
+  `./.venv/bin/python` from `backend/`. The mini has no Docker. Its test database is a local service
+  on port 55432 (`docs/plans/agent-machine-setup.md`), and a worktree has no `backend/.venv`; the
+  environment is `~/code/float/backend/.venv`. The tests pass once run that way. **What changes:**
+  make the first step say what to do on the mini (skip Docker if port 55432 answers, use the shared
+  environment). **How to tell it worked:** an agent on the mini can follow `/verify` word for word.
   **Gate:** none.
 
 ---

@@ -1,0 +1,244 @@
+{
+  "id": "fam-social-06",
+  "provenance": "SYNTHETIC — family generator (AI-dev/evals/generator), claude-opus-5-5, 2026-10-19",
+  "status": "pool",
+  "style": "grandmother raising the child, the Philippines; bullet points with dashes, clock times, minutes counted",
+  "facts": {
+    "child": {
+      "name": "Josh",
+      "age": 16
+    },
+    "anxiety": "Social anxiety: fear of being judged or laughed at when speaking in front of classmates, strangers, or relatives",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Graded oral recitation in his Grade 11 class",
+        "fear_level": 8,
+        "feared_outcome": "He will blank out, say the English wrong, and the whole class will laugh at him",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Writes his full answer word for word in his notebook and reads it out instead of speaking from memory"
+          },
+          {
+            "id": "b2",
+            "type": "avoidance",
+            "text": "Stayed home on the scheduled recitation day saying he had a stomachache"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Grandmother wrote an excuse letter to his class adviser so he could miss recitation day"
+          },
+          {
+            "id": "a2",
+            "text": "Grandmother quizzes him on his answers again and again the night before and tells him each time that he will do fine"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Riding the jeepney to school alone and paying the fare",
+        "fear_level": 6,
+        "feared_outcome": "The driver will not hear him say 'bayad po' or 'para po' and everyone in the jeepney will turn and look at him",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Waits for a seat right behind the driver so he can hand over the fare himself and does not have to ask other passengers to pass it"
+          },
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Got off the jeepney several stops early when he could not bring himself to call 'para po' at his stop, then walked the rest of the way"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Grandmother gives him exact coins every morning so he never has to ask the driver for change"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "His tita's birthday gathering with relatives asking him questions",
+        "fear_level": null,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Left the sala after about 20 minutes and stayed in his cousin's room for the rest of the party"
+          },
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Sat right next to his grandmother with his earphones in while relatives were around"
+          },
+          {
+            "id": "b7",
+            "type": "unclear",
+            "text": "Was very quiet the whole time he was with the relatives"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a4",
+            "text": "Grandmother answers the titas' questions about his grades and college plans for him"
+          },
+          {
+            "id": "a5",
+            "text": "Grandmother tells relatives he is tired from school so they stop asking him to come out of the room"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-05",
+        "situation": "- 6:10 AM jeep to school, alone",
+        "child_behavior_observed": "- 6:10 gave him the 13 pesos exact\n- 6:12 let 2 jeeps pass, waited 9 mins for one with seat behind driver\n- per Josh he handed the fare to driver himself, did not pass thru other passengers",
+        "parent_response": "- coins ready on the table since 5:50 as usual so no need to ask driver for change",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "- night before graded recitation, English, Grade 11",
+        "child_behavior_observed": "- 7:30 to 9:15 writing his whole answer in notebook word for word, 2 pages\n- says he will just read it tomorrow\n- 9:40 still in sala w/ notebook",
+        "parent_response": "- quizzed him on answers 9:40 to 10:25, maybe 6 or 7 times same questions\n- told him every time you will do fine apo\n- lights off 10:30",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "- recitation day",
+        "child_behavior_observed": "- 5:45 said stomachache, did not dress for school\n- stayed in bed till 9:00\n- ate lunch ok 12:00",
+        "parent_response": "- wrote letter to class adviser Ma'am Reyes, excused for today\n- gave letter to neighbor's boy 6:30 to bring",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "- Tita Baby bday, Antipolo, party 5:00 to 8:00 PM (3 hrs)",
+        "child_behavior_observed": "- 6:20 arrived, sat right beside me earphones in\n- very quiet, no talking\n- 6:40 sat beside him, answered Tita Baby re: grades and college plans\n- 6:40 left sala, only 20 mins there\n- 6:45 to 8:00 in Mika's room\n- Mika shy also, did not come out much",
+        "parent_response": "- 7:15 Tita Weng asked he come out, said tired from school\n- 7:40 same, told Tito Ben tired",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "- jeep home from school 4:30 PM",
+        "child_behavior_observed": "- got off at the church, 3 stops early, did not say para po at our stop\n- walked 18 mins home\n- arrived 5:05 sweating",
+        "parent_response": "- did not scold\n- coins ready again for tomorrow",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "- make up recitation, 10:00 AM class",
+        "child_behavior_observed": "- read from notebook the whole time, did not look up per Josh\n- answered 2 questions, about 4 mins\n- home 5:20 went straight to room",
+        "parent_response": "- 6:00 to 6:40 last night quizzed him again, maybe 5 times, said you will do fine\n- asked him how it went, he said ok",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-19",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "- monday jeep again. 6:05 coins exact as always 13 pesos. he waited 7 mins for the seat behind the driver, again. ok naman reached school 6:40",
+        "situation_ref": "s2"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so this is about the birthday of tita baby um the party was three hours five to eight pero josh was only in the sala maybe twenty minutes he sat right beside me with the earphones the whole time then he went to mika's room and stayed there until we left at eight um mika was also shy she did not come out much but that is mika and then the titas kept asking him to come out so i said he's tired from school so they would stop",
+        "expected": {
+          "refs": [
+            "s3",
+            "b6",
+            "b5",
+            "a5"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "Several numbers close together (three hours, twenty minutes, eight o'clock), and none of them is a fear level. Cousin Mika's shyness belongs to Mika, not Josh."
+      },
+      {
+        "text": "um tuesday he came home late because he got off the jeep three stops early near the church he said he could not say para po so he just walked eighteen minutes he said fear level mga six um i already give him exact coins every morning so he will not ask for change",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "a3"
+          ],
+          "observations": 1,
+          "fear_level_said": 6
+        },
+        "trap": "The numbers three (stops) and eighteen (minutes) are not fear levels. Only 'fear level mga six' is."
+      },
+      {
+        "text": "so the night before the make up recitation i quizzed him again maybe five times and i keep telling him you will do fine apo and then the next day he just read from his notebook the whole answer did not look up um he told me it was an eight",
+        "expected": {
+          "refs": [
+            "s1",
+            "a2",
+            "b1"
+          ],
+          "observations": 2,
+          "fear_level_said": 8
+        },
+        "trap": "Two separate moments (the night before and the recitation day) are in one note. Five is a count of quizzes, not the fear level."
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      }
+    ]
+  }
+}
