@@ -133,9 +133,10 @@ _ADULT = (r"(?:mom|mommy|mother|dad|daddy|father|parents?|step-?mom|step-?dad|gr
           r"grandpa|grandfather|nana|aunt|uncle|teachers?|coach|nurse|counselor|principal|babysitter|"
           r"nanny|caregivers?|adults?|staff|therapist|doctor)")
 _ADULT_FIRST = re.compile(rf"^(?:the |her |his |their |a |an |both |one )?{_ADULT}\b(?!'s)", re.I)
-# "Allowed to stay home", "Was kept home": an adult's decision with the adult left out.
-_ADULT_LEFT_OUT = re.compile(r"^(?:was |were |is |are |gets |got |being )?(?:allowed|let|kept|excused)\b",
-                             re.I)
+# "Allowed to stay home", "Was kept home": an adult's decision with the adult left out. "Kept" and
+# "let" need the "was" in front: "Kept asking if mom was up" is the child's own action.
+_ADULT_LEFT_OUT = re.compile(r"^(?:(?:was|were|is|are|gets|got|being) (?:allowed|let|kept|excused)|"
+                             r"allowed to|excused from)\b", re.I)
 
 
 def is_parent_action(description: str) -> bool:
@@ -212,8 +213,8 @@ NOT_COVERED = [
     "Parent actions written as child behaviors are found from the wording alone: a behavior that "
     "begins with an adult (\"Mom walks him in\") or with something allowed (\"Allowed to stay "
     "home\"). One worded as the child's action (\"Stays home\") is not caught, even when the answer "
-    "key has it as the parent's. The wording rule was tried on answer-key texts, not on the model's "
-    "own wording.",
+    "key has it as the parent's. On the first real run (2026-10-19) the behaviors it flagged were "
+    "read by hand; the ones it did not flag were not, so how many it misses is not known.",
     "Triggers not in the answer key are matched by log entry, so a made-up trigger drawn from an "
     "entry and a real one cut in two are counted together.",
     "Accommodations are not scored.",

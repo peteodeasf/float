@@ -337,6 +337,9 @@ def test_parent_action_wording_is_caught(text):
     "Left the party after the dog was let out",
     "Stays home from school",
     "Mom's car is the only one she will ride in",
+    # The first real run flagged 25 of these. "Kept" alone is the child carrying on doing something.
+    "Kept asking if parent would be home all day",
+    "Kept water and mints in the cup holder",
     "",
 ])
 def test_child_behavior_wording_is_not_caught(text):

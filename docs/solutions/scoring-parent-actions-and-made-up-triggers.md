@@ -17,6 +17,13 @@ him in"), or something an adult allowed with the adult left out ("Allowed to sta
 sentence. On the pool's own child behaviors it flagged "Left the party after the dog was let out"
 and "Asks whether dogs are allowed at the park". Anchoring at the start fixed both.
 
+**"Kept" alone is the child.** The second version allowed a bare "Kept ..." at the start, for "Kept
+home". Every answer-key text passed, but on the first real run 25 of its 26 flags were the model's
+"Kept asking if mom was up", "Kept water and mints in the cup holder". The answer keys never
+start a behavior with "Kept"; the model does all the time. Now "kept" and "let" need a "was" in
+front. The lesson: a wording rule tried only on the answer keys' wording must be read against the
+model's real output before its count is trusted. Read the flagged ones by hand after the first run.
+
 **How it was checked.** On the texts Dr. Walker confirmed in June
 (`AI-dev/Extraction Loop/float_harness/tests/fixtures.json`) it marks 0 of 42 behaviors and 34 of 34
 accommodations. On the pool's facts, 0 of 185 and 123 of 123. Those texts were written by people
@@ -30,6 +37,11 @@ an entry "about nothing". It either cites no entry (counted as unlinked) or cite
 already backs a real situation (counted as split). A real trigger cut in two looks exactly like the
 second case. Telling them apart would need the text. The runner counts both as "triggers not in the
 answer key" and says so in the report, rather than pretend to separate them.
+
+On the first run (18 working families, 3 runs) all 143 were the second kind, and reading run 1 by
+hand they were mostly one situation per occasion: the model listed "Night before bio test" and
+"Night before Spanish test" where the answer key has one situation for both. So this count mostly
+measures how finely situations are cut, not made-up triggers. Read it that way.
 
 ## Stability for each score, not just the whole answer
 
