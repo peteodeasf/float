@@ -363,10 +363,11 @@ def merge_into(ctx: Ctx, wt: Path, base: str, sha: str) -> None:
         return
     conflicted = git(ctx, "diff", "--name-only", "--diff-filter=U", cwd=wt).split()
     in_app = [f for f in conflicted if f.startswith("backend/")]
-    if in_app or not conflicted:
-        raise RuntimeError("it conflicts with main in the app code (" + ", ".join(in_app[:3])
-                           + "), so it could not be merged to test" if in_app
-                           else f"it could not be merged with main: {last_line(p.stderr)}")
+    if in_app:
+        raise RuntimeError(f"it conflicts with main in the app code ({', '.join(in_app[:3])}), "
+                           f"so it could not be merged to test")
+    if not conflicted:
+        raise RuntimeError(f"it could not be merged with main: {last_line(p.stderr)}")
     for f in conflicted:
         if ctx.sh(["git", "checkout", base, "--", f], cwd=wt).returncode != 0:
             git(ctx, "rm", "-q", "-f", "--", f, cwd=wt)  # not on main: the pull request added it
@@ -389,7 +390,7 @@ def score_pr(ctx: Ctx, pr: dict, base: str, main_print: dict, families: list[str
         merge_into(ctx, wt, base, sha)
         # The scoring code and the cases come from main, not from the pull request, so a pull
         # request cannot change how it is marked. Only its app code (backend/) is its own.
-        shutil.rmtree(wt / REL)
+        shutil.rmtree(wt / REL, ignore_errors=True)
         git(ctx, "checkout", base, "--", REL, cwd=wt)
         pr_print = _fingerprint_of(ctx, wt)
         changed = [f for f in FEATURES if pr_print.get(f) != main_print.get(f)]
@@ -536,55 +537,76 @@ def morning_report(ctx: Ctx) -> str:
                   "what each job would have done.", ""]
     lines.append(f"Spent ${night.spent():.2f} of the ${night.limit:.2f} limit for the night.")
 
+    body: list[str] = []
+    changes: list[str] = []
+    compared = False
     for feature in FEATURES:
+        name = FEATURE_TEXT[feature]
         path = night.dir / "run" / feature / "report.json"
-        lines += ["", f"## {FEATURE_TEXT[feature]}", ""]
+        body += ["", f"## {name}", ""]
         if not path.exists():
-            lines.append("Not run tonight. See \"What ran\" below.")
+            body.append("Not run tonight. See \"What ran\" below.")
             continue
         rep = json.loads(path.read_text())
-        lines.append(f"{rep['cases_run']} cases from {rep['families_run']} families, "
-                     f"{rep['runs_per_case']} runs each. {rep['runs_scored']} of {rep['runs']} runs "
-                     f"gave an answer the app could read.")
+        n = rep["runs_per_case"]
+        body.append(f"{rep['cases_run']} cases from {rep['families_run']} families, "
+                    f"{n} run{'' if n == 1 else 's'} each. {rep['runs_scored']} of {rep['runs']} runs "
+                    f"gave an answer the app could read.")
         old_path = prev / "run" / feature / "report.json" if prev else None
         old = json.loads(old_path.read_text()) if old_path and old_path.exists() else None
         if old and not same_sample(old, rep):
-            lines.append(f"Not compared with {prev.name}: the sample was different then.")
+            body.append(f"Not compared with {prev.name}: the sample was different then.")
             old = None
         elif not old:
-            lines.append("No earlier night to compare with.")
+            body.append("No earlier night to compare with.")
         else:
-            lines.append(f"Compared with {prev.name}. "
-                         + ("The prompt and model are the same." if old["prompt_sha256"] == rep["prompt_sha256"]
-                            else "**The prompt changed since then.**"))
-        lines.append("")
+            compared = True
+            if old["prompt_sha256"] == rep["prompt_sha256"]:
+                body.append(f"Compared with {prev.name}. The prompt is the same.")
+            else:
+                body.append(f"Compared with {prev.name}. **The prompt changed since then.**")
+                changes.append(f"{name}: the prompt changed.")
+        body.append("")
         for label, key, out_of in rep["scores"]:
             now = _ratio(rep["totals"], key, out_of)
-            if old:
-                d = direction(key, _share(old["totals"], key, out_of), _share(rep["totals"], key, out_of))
-                then = _ratio(old["totals"], key, out_of)
-                lines.append(f"- {label}: {now}" + ("" if d == "same" else f", was {then} ({d})"))
+            d = direction(key, _share(old["totals"], key, out_of),
+                          _share(rep["totals"], key, out_of)) if old else "same"
+            if d == "same":
+                body.append(f"- {label}: {now}")
             else:
-                lines.append(f"- {label}: {now}")
-        s = rep["stability"]
-        unsteady = [c["case"] for c in rep["per_case"] if c["stability"] is not None and c["stability"] < 1]
-        lines.append(f"- Cases where the runs did not all agree: {len(unsteady)} of {s['cases']}.")
-        if old:
-            was_steady = {c["case"] for c in old["per_case"] if c["stability"] == 1}
-            new = [c for c in unsteady if c in was_steady]
-            if new:
-                lines.append(f"- New tonight (all runs agreed last time): {', '.join(new)}.")
+                then = _ratio(old["totals"], key, out_of)
+                body.append(f"- {label}: {now}, was {then} ({d})")
+                changes.append(f"{name}, {label.lstrip('. ')}: {d}, {now} (was {then}).")
+        if n < 2:
+            body.append("- With one run each, whether runs agree cannot be measured.")
+        else:
+            unsteady = [c["case"] for c in rep["per_case"]
+                        if c["stability"] is not None and c["stability"] < 1]
+            body.append(f"- Cases where the runs did not all agree: {len(unsteady)} of "
+                        f"{rep['stability']['cases']}.")
+            if old and old["runs_per_case"] > 1:
+                was_steady = {c["case"] for c in old["per_case"] if c["stability"] == 1}
+                new = [c for c in unsteady if c in was_steady]
+                if new:
+                    body.append(f"- New tonight (all runs agreed last time): {', '.join(new)}.")
+                    changes.append(f"{name}: runs now disagree on {len(new)} case"
+                                   f"{'' if len(new) == 1 else 's'} where they agreed last time.")
         if rep["stopped"]:
-            lines.append(f"- Stopped early: {rep['stopped']}.")
+            body.append(f"- Stopped early: {rep['stopped']}.")
         held_path = night.dir / "held_out" / f"{feature}.json"
         held = json.loads(held_path.read_text()) if held_path.exists() else None
         if held is None and any(st["step"] == f"held-out {feature}" and st["detail"] == "no held-out cases yet"
                                 for st in night.steps):
             held = {"none": True}
-        lines.append(f"- {_held_out_line(held)}")
-    if any(s["job"] == "run" for s in night.steps) and not night.dry_run:
+        body.append(f"- {_held_out_line(held)}")
+
+    if changes:
+        lines += ["", f"**Since {prev.name}:**", ""] + [f"- {c}" for c in changes]
         lines += ["", "Small numbers: a change of one or two can come from the AI answering "
                       "differently from run to run, not from a change to Float."]
+    elif compared:
+        lines += ["", f"No score changed since {prev.name}."]
+    lines += body
 
     prs = [s for s in night.steps if s["job"] == "score-prs" and s.get("pr")]
     lines += ["", "## Pull requests scored", ""]

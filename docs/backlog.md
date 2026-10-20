@@ -106,18 +106,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
 - **How to tell it worked:** a report in the PR with sample sizes, marked unchecked by a clinician.
 - **Gate:** none (no prompt change). **Depends on:** the test runner, and the reviewers.
 
-#### Overnight schedule for the AI tests `M`
-- **Today:** nothing runs on a schedule.
-- **What changes:** one script, `AI-dev/evals/nightly.sh`, that does the schedule in the plan:
-  Sunday new pool families, nightly runs on the fixed cases, scoring any open prompt-change PR, and
-  a short plain-English morning report for Peter in `~/eval-reports/`. A nightly spending limit,
-  checked before each job. Local test database only. **Do not install the crontab.** Put the
-  crontab lines in the PR description for Peter to add.
-- **How to tell it worked:** one dry run, with the morning report it wrote in the PR.
-- **Gate:** none to merge the script. Proposing temperatures from the stability figures is a
-  separate prompt-change PR for Peter. **Depends on:** the test runner, scoring monitoring
-  analysis, and the family generator.
-
 ---
 
 # Compliance

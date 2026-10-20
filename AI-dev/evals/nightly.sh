@@ -7,6 +7,16 @@
 # --update first moves this checkout to the latest main, so the night tests what is live. It is
 # skipped if the checkout has edits of its own. Meant for a checkout kept for the AI tests alone
 # (~/code/float-nightly), not one anybody works in.
+#
+# Setting it up (once, as agent on the Mac mini):
+#   git -C ~/code/float worktree add --detach ~/code/float-nightly origin/main
+#   ~/.float-eval-env holding `export ANTHROPIC_API_KEY=...`, then chmod 600 it
+#   crontab -e, and add:
+#     0 1 * * 0  ~/code/float-nightly/AI-dev/evals/nightly.sh generate --update >> ~/eval-reports/cron.log 2>&1
+#     0 2 * * *  ~/code/float-nightly/AI-dev/evals/nightly.sh run --update >> ~/eval-reports/cron.log 2>&1
+#     0 4 * * *  ~/code/float-nightly/AI-dev/evals/nightly.sh score-prs --update >> ~/eval-reports/cron.log 2>&1
+#     0 6 * * *  ~/code/float-nightly/AI-dev/evals/nightly.sh report >> ~/eval-reports/cron.log 2>&1
+# The night's spending limit is $10 unless FLOAT_EVAL_NIGHTLY_LIMIT says otherwise.
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
