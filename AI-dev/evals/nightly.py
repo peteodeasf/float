@@ -209,10 +209,11 @@ def run_feature(ctx: Ctx, job: str, feature: str, families: list[str], out: Path
                       detail=f"would run {feature} on {len(families)} families, {ctx.runs} runs each, "
                              f"with up to ${allowance:.2f}")
         return None
+    report = out / "report.json"
+    report.unlink(missing_ok=True)  # an earlier run tonight must not pass for this one
     p = ctx.sh(cmd, cwd=checkout)
     out.mkdir(parents=True, exist_ok=True)
     (out / "log.txt").write_text(p.stdout + p.stderr)
-    report = out / "report.json"
     if p.returncode != 0 or not report.exists():
         _failed(ctx, job, step, p, allowance)
         return None
@@ -273,6 +274,8 @@ def job_generate(ctx: Ctx) -> None:
                       detail=f"would write {ctx.count} families into the waiting pool, with up to ${allowance:.2f}")
         return
     ctx.night.dir.mkdir(parents=True, exist_ok=True)
+    # A crash also exits with 1, and leaves no summary. An earlier run's summary must not stand in.
+    summary.unlink(missing_ok=True)
     p = ctx.sh(cmd, cwd=ctx.checkout)
     (ctx.night.dir / "generate-log.txt").write_text(p.stdout + p.stderr)
     # Exit code 1 means some families failed their checks, which the summary says. It is not a crash.

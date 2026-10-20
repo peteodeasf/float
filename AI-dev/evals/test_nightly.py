@@ -294,3 +294,12 @@ def test_generate_records_its_spend_and_families(tmp_path):
     nightly.job_generate(c)
     assert c.night.spent() == 1.25
     assert c.night.steps[0]["written"] == ["fam-new-01"]
+
+
+# Why: a job run twice in one night writes to the same folder. If the second run crashes, the first
+# run's report must not be read as the second's, hiding the crash and its spend.
+def test_a_crash_is_not_hidden_by_an_earlier_report(tmp_path):
+    nightly.job_run(ctx(tmp_path, FakeShell()))
+    c = ctx(tmp_path, FakeShell(runner=lambda cmd: (1, None)))
+    nightly.job_run(c)
+    assert c.night.steps[-4]["status"] == "failed"
