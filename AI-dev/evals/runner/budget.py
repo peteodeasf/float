@@ -11,6 +11,7 @@ call's own `max_tokens`, so even the first call cannot overshoot by much.
 # A model not listed here is refused rather than run unmetered.
 PRICES_PER_MTOK = {
     "claude-sonnet-4-6": (3.00, 15.00),
+    "claude-opus-5-5": (4.00, 20.00),  # the trigger matcher (compare_triggers.py); as in generator/generate.py
 }
 CACHE_WRITE = 1.25  # times the input price
 CACHE_READ = 0.10

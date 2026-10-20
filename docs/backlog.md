@@ -58,16 +58,6 @@ Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not toni
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
 
-#### The two monitoring prompts disagree about extra triggers `S`
-- **Today:** the preliminary report prompt in `backend/app/api/routers/patients.py` says "you may
-  add them" about triggers the parent never logged. The extraction prompt forbids it.
-- **What changes:** nothing in the prompts. Run both on the working pool families and count how
-  often each adds a trigger that is not in the answer key. Write the result up as a question for
-  Peter in `docs/plans/ai-quality-testing.md`, under item 7.
-- **How to tell it worked:** the PR has the counts, with sample sizes, and the question in plain
-  English.
-- **Gate:** clinical: request Peter's review and do not merge. **Depends on:** the test runner.
-
 #### Score voice notes on the pool `M`
 - **Today:** `backend/app/services/monitoring_capture.py` turns voice notes into observations.
   Nothing tests it.
@@ -839,6 +829,20 @@ querying `review_marks`, `review_additions` and `review_comments` by hand.
 Fine for one round. Worth an hour when there is a second, since the same tool is meant to carry the
 extraction and arrow reviews too: one page, every suggestion, how each reviewer marked it and what
 they wrote.
+
+## The AI test runner numbers a log out of date order differently from the app `S`
+- **Today:** `prepare` in `AI-dev/evals/runner/monitoring_analysis.py` numbers the pool's log
+  entries in file order. The route reads them oldest first (`order_by(MonitoringEntry.entry_date)` in
+  `generate_preliminary_report`, `backend/app/api/routers/patients.py`). One pool family,
+  `fam-separation-06`, has its log out of date order, so the runner sends the model a differently
+  numbered log than the app would. It is held out, so the working runs so far are not affected.
+  Found 2026-10-19 while building `AI-dev/evals/runner/compare_triggers.py`, which sorts first
+  (`in_date_order`).
+- **What changes:** sort the case's log by date in `prepare` (or in `cases._monitoring_analysis`),
+  keeping each entry's `situation_ref` beside it. `compare_triggers.in_date_order` already does this.
+- **How to tell it worked:** a runner test that reverses a family's log and gets the same numbered
+  text and the same scores.
+- **Gate:** none. **Depends on:** nothing.
 
 ## Short case phrases in the rung prompt that the copy check cannot see
 
