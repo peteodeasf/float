@@ -207,6 +207,27 @@ def signature(found: dict, unlinked: int) -> str:
     return ";".join(parts) + f"|unlinked={unlinked}"
 
 
+# What the report adds up, and how it shows it (report.py).
+SUMMED = ("situations", "situations_found", "behaviors", "types_right", "extra_behaviors",
+          "model_behaviors", "parent_actions", "unlinked", "split", "extra_triggers")
+SCORES = (
+    ("Situations found", "situations_found", "situations"),
+    ("Behavior types right, in situations found", "types_right", "behaviors"),
+    ("Parent actions written as child behaviors", "parent_actions", "model_behaviors"),
+    ("Triggers not in the answer key", "extra_triggers", None),
+    ("... of which point at no log entry", "unlinked", None),
+    ("... of which are a second situation for one in the answer key", "split", None),
+    ("Extra behaviors beyond the answer key", "extra_behaviors", None),
+)
+PER_CASE = (
+    ("Situations found", "situations_found", "situations"),
+    ("Types right", "types_right", "behaviors"),
+    ("Unlinked", "unlinked", None),
+)
+AGREEMENT = ("Two runs agree when they find the same situations with the same behavior types under "
+             "each. Wording is ignored.")
+
+
 NOT_COVERED = [
     "The risk flag (`review_flag`) is not scored. What counts as a risk sign is a question for "
     "Dr. Walker (Peter, 2026-10-19).",

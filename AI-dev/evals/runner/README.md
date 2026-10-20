@@ -3,8 +3,14 @@
 Runs one of Float's AI features over cases from the waiting pool (`AI-dev/evals/pool/`), several
 times each, and writes a report. Plan: `docs/plans/ai-quality-testing.md`.
 
-Wired up so far: **monitoring analysis** (what Analyze with AI builds, and
-`insight_service.rebuild_from_monitoring` saves). The other features are later items.
+Wired up so far:
+- **monitoring analysis** (what Analyze with AI builds, and `insight_service.rebuild_from_monitoring`
+  saves). The default.
+- **voice notes** (`--feature voice_notes`): the observations Claude writes up from a parent's voice
+  note or quick note, as `monitoring_capture.write_up` saves them. One case per note. See "Voice
+  notes" below.
+
+The other features are later items.
 
 ## It tests the app, not a copy
 
@@ -87,9 +93,41 @@ The risk flag is not scored and the risk label is not in the answer key. Peter, 
 counts as a risk sign is a question for Dr. Walker. The full list of what is not covered is printed
 at the end of every report (`NOT_COVERED` in `monitoring_analysis.py`).
 
+## Voice notes
+
+`voice_notes.py`. Float is given the note's words only. Each pool note's `expected` says how many
+separate moments it describes and the Fear Level the parent said, if any.
+
+It scores what the app saves, not the model's raw reply: the reply goes through
+`monitoring_capture.observations_in`, which drops empty observations and any Fear Level the parent
+did not say as a rating. A Fear Level the model offered and the app dropped shows up in the
+`fear_said_as_rating` check, not in the scores.
+
+- **Split:** right number of observations, too many, too few, and none found (when nothing is
+  found the app saves the words alone).
+- **Fear Level:** the said one saved, any saved that the parent did not say, and the said one put
+  on more than one observation.
+- **Words:** the content words of the note against the content words saved, after dropping small
+  words and fillers ("um", "like") and cutting endings. "Words kept" is the share of the note's
+  words that appear in the observations. "Words added" is the share of the observations' words that
+  are not in the note, and how many of those are feeling or clinical words ("anxious", "avoided",
+  `FEELING_OR_CLINICAL`). It is spelling, not meaning: a synonym counts as added.
+  `outputs.jsonl` has each run's added words for reading by hand.
+- **Stability:** two runs agree when they save the same number of observations with the same Fear
+  Levels.
+
+Which situation each observation is about is not scored: an observation has no link back to the
+answer key's situations, and matching by name would be a guess.
+
 ## Adding a feature
 
 A feature is a module with `NAME`, `model()`, `app_prompt()`, `prepare(case)`,
 `call(client, prepared)`, `read(raw)`, `checks(...)`, `score(...)` and `NOT_COVERED`
-(see `engine.py`). Add its case builder to `cases.BUILDERS`, add it to `FEATURES` in `run.py`, and
-add its model's price to `budget.PRICES_PER_MTOK`. A model without a price is refused.
+(see `engine.py`), and for the report `SUMMED`, `SCORES`, `PER_CASE` and `AGREEMENT` (see
+`report.py`). Add its case builder to `cases.BUILDERS` (it returns a list: a family can give several
+cases), add it to `FEATURES` in `run.py`, and add its model's price to `budget.PRICES_PER_MTOK`. A
+model without a price is refused.
+
+`call` is given the runner's `MeteredClient`, which is synchronous. If the app's call is async, wrap
+it as `voice_notes.py` does rather than writing an async meter: `judging/run_held_out.py` hands every
+feature the same synchronous client.

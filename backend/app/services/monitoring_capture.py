@@ -128,10 +128,15 @@ Rules:
 - If nothing in the note is a moment when the child was anxious, return {{"observations": []}}."""
 
 
-async def _ask_claude(system: str, text: str) -> str:
-    client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+WRITE_UP_MODEL = "claude-sonnet-4-6"  # the same model as monitoring extraction
+
+
+async def _ask_claude(system: str, text: str, client=None) -> str:
+    # `client` is for the AI test runner (AI-dev/evals/runner/voice_notes.py), which counts what each
+    # call costs. The app always leaves it out.
+    client = client or anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     message = await client.messages.create(
-        model="claude-sonnet-4-6",  # the same model as monitoring extraction
+        model=WRITE_UP_MODEL,
         max_tokens=2000,
         system=system,
         messages=[{"role": "user", "content": text}],
@@ -208,6 +213,12 @@ async def write_up(text: str, today: date) -> list[dict]:
     except Exception as e:
         logger.warning("monitoring write-up failed: %s", type(e).__name__)
         raise CaptureFailed from e
+    return observations_in(data, text, today)
+
+
+def observations_in(data, text: str, today: date) -> list[dict]:
+    """What is saved from Claude's read reply: each observation cleaned, empty ones dropped, at most
+    MAX_OBSERVATIONS. The AI test runner scores this, so it scores what the app saves."""
     found = data.get("observations") if isinstance(data, dict) else None
     cleaned = [_clean(o, text, today) for o in (found if isinstance(found, list) else [])]
     return [c for c in cleaned if c][:MAX_OBSERVATIONS]
