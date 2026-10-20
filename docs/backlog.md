@@ -844,6 +844,17 @@ they wrote.
   text and the same scores.
 - **Gate:** none. **Depends on:** nothing.
 
+## A held-out test fails on main since the runner's report became a table `S`
+- **Today:** `test_output_has_scores_and_counts_and_no_case_text[fmt0]` in
+  `AI-dev/evals/judging/tests/test_held_out.py` asserts `"Situations found: "` is in the printed
+  report. Since #36 (`Score monitoring analysis on the pool`) `report.markdown` in
+  `AI-dev/evals/runner/report.py` prints the scores as a table (`| Situations found | ... |`), so the
+  test fails on main (checked at `85dd09b`, 2026-10-19). The judging folder is Peter's (CODEOWNERS).
+- **What changes:** Peter decides whether the test should look for the table row instead. Agents do
+  not edit `AI-dev/evals/judging/`.
+- **How to tell it worked:** `pytest AI-dev/evals/judging/tests` passes on main.
+- **Gate:** Peter (CODEOWNERS). **Depends on:** nothing.
+
 ## Short case phrases in the rung prompt that the copy check cannot see
 
 Found 2026-10-19 while building the check that no test case is in a prompt
