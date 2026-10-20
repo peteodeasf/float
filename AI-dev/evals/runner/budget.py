@@ -11,6 +11,10 @@ call's own `max_tokens`, so even the first call cannot overshoot by much.
 # A model not listed here is refused rather than run unmetered.
 PRICES_PER_MTOK = {
     "claude-sonnet-4-6": (3.00, 15.00),
+    # The reviewing agents (AI-dev/evals/judging/reviewers.py), which run on a different model from
+    # the feature they review.
+    "claude-opus-5-5": (4.00, 20.00),
+    "claude-sonnet-5-5": (2.00, 10.00),
 }
 CACHE_WRITE = 1.25  # times the input price
 CACHE_READ = 0.10

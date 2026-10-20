@@ -29,6 +29,8 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Read by the AI tests too: their reviewing agents must run on a different model from this one.
+MODEL = "claude-sonnet-4-6"
 
 SYSTEM_PROMPT = """You help a clinician and a child build an exposure ladder.
 
@@ -134,7 +136,7 @@ async def suggest_steps(
 
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     message = client.messages.create(
-        model="claude-sonnet-4-6",
+        model=MODEL,
         max_tokens=800,
         system=SYSTEM_PROMPT,
         messages=[{

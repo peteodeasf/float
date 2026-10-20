@@ -149,6 +149,8 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 **Reviewing agents**
 
 10. **Build the rung and step-sentence reviewers,** and measure the rung reviewer against Dr. Walker's 60 marks.
+    - Built 2026-10-20: `AI-dev/evals/judging/reviewers.py` and `reviewers/`, one reviewer per concern (her rules, the child's safety, reads right for the age). An objection with no rule of that reviewer's is counted as opinion, in code.
+    - Measuring against her marks is waiting on Peter: the marks are only in the production database. `judging/check_rung_reviewer.py --marks` takes them as a file, and the judging README has the export query.
 11. **Suggested rungs.**
     - Enforce the 2–5 count, the length limit and removing duplicates in code.
     - Make the prompt, `AI-dev/Ladder Eval/checks.py` and `ladder-generation.md` agree on one set of numbers.

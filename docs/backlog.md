@@ -68,20 +68,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   English.
 - **Gate:** clinical: request Peter's review and do not merge. **Depends on:** the test runner.
 
-#### Rung and step-sentence reviewers `L`
-- **Today:** no reviewing agents. Dr. Walker's 2026-08-29 review of 60 suggested rungs is in
-  `docs/plans/ladder-generation.md`.
-- **What changes:** reviewer instructions in `AI-dev/evals/judging/`, quoting her written rules
-  from `ladder-generation.md`. One reviewer per concern: her rules; the child's safety (no way out,
-  no new fear); reads right for the child's age. Each objection must name its rule, or it is
-  reported as the reviewer's own opinion. Reviewers run on a different model from the feature.
-  Run the rung reviewer on her 60 marked suggestions and report how often it agrees with her, with
-  the counts. Say plainly that 60 can show it is badly off but can't show it is right. Mark the
-  step-sentence reviewer's verdicts as unchecked.
-- **How to tell it worked:** the agreement counts in the PR. Tests for the "objection needs a rule"
-  handling.
-- **Gate:** none to merge the tooling. **Depends on:** the test runner, and the judging folder.
-
 #### Suggested rungs: enforce the limits in code `M`
 - **Today:** the 2–5 count, the length limit and removing duplicates are asked for in the prompt
   in `backend/app/services/step_suggestion_service.py`, not checked. The prompt,
@@ -836,6 +822,17 @@ Found while checking, before building:
   agent should not edit the test. Also worth adding the `AI-dev/evals` tests to CI.
 - **How to tell it worked:** `pytest AI-dev/evals/judging/tests` passes.
 - **Gate:** Peter (judging folder). **Depends on:** nothing.
+
+## The copy check does not read the reviewers' instructions `S`
+- **Today:** `AI-dev/evals/check_no_cases_in_prompts.py` treats the strings in `backend/app/` as
+  prompt text. The reviewing agents' instructions are Markdown in
+  `AI-dev/evals/judging/reviewers/`, so a test case pasted into them would not be caught. Dr.
+  Walker's written rules quote several of the 60 rung cases, so this is an easy mistake to make
+  when the instructions are next edited. Found 2026-10-20 while building the reviewers.
+- **What changes:** add the reviewers' `.md` files to the prompt side of the check.
+- **How to tell it worked:** a test in the check's tests that a case line pasted into a reviewer
+  file fails the check, and the check passes on main.
+- **Gate:** Peter (the judging folder and CI are his in CODEOWNERS). **Depends on:** nothing.
 
 ## AI analysis of session notes
 
