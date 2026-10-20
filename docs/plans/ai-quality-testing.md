@@ -141,7 +141,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
    - Fix `backend/evals/preliminary_report` to send the input the app sends. Done 2026-10-19.
 8. **Voice notes.**
    - Score how notes are split into observations, and whether the words are kept.
-   - Fix `_said` in `monitoring_capture.py`. It counts any number in the text as a Fear Level, so "at 8pm" passes.
+   - Fix `_said` in `monitoring_capture.py`. It counts any number in the text as a Fear Level, so "at 8pm" passes. Done 2026-10-19: `_said_as_rating` only takes a number said as a rating ("about a seven", "6 out of 10"), waiting on Peter's review.
 9. **Session drafts and session suggestions: wait.** No session cases until Peter has learned from
    Dr. Walker what a typical session looks like. Known gap, for when they start: the whole transcript
    goes in one call with a 3000-token answer limit, so long sessions are the first thing to test.

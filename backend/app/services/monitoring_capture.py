@@ -143,8 +143,31 @@ NUMBER_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
                 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten"}
 
 
-def _said(text: str, n: int) -> bool:
-    return re.search(rf"\b({n}|{NUMBER_WORDS[n]})\b", text, re.IGNORECASE) is not None
+# What can come straight after a number said as a rating: "about a seven out of ten", "like a five
+# maybe", "an eight already", "an eight." Anything else after it ("a five minute drive", "a
+# six-year-old", "an 8:15 appointment") and it is not taken as one. A list of what is allowed, not
+# of what is not, because a rating missed only means the parent is asked to tap one.
+_AFTER_A_RATING = (r"(?=\s*(?:$|[.,!?;)](?!\d)|(?:out|of|on|or|to|and|but|so|maybe|probably|already|"
+                   r"at|by|for|in|i|she|he|they|we|when|then|now|today|tonight|again|too|though|"
+                   r"before|after|because|which|that|max|tops|easily|honestly|really|right|this)\b))")
+
+
+def _said_as_rating(text: str, n: int) -> bool:
+    """Whether the parent said n as a Fear Level, not as a time or a count.
+
+    "About a seven", "an 8", "6 out of 10", "Fear Level: 6", "rated it a 4" are ratings. "At 8pm",
+    "at 8:15", "three dogs", "twenty minutes" and "a six-year-old" are not. When in doubt it is not
+    a rating: then the Fear Level is left empty for the parent to tap.
+    """
+    num = rf"(?:{n}|{NUMBER_WORDS[n]})"
+    filler = r"(?:(?:it|her|him|herself|himself|themselves|was|is|as|at|of|a|an|solid|good|full|strong)\s+){0,2}"
+    any_num = r"(?:\d+|" + "|".join(NUMBER_WORDS.values()) + ")"
+    patterns = (
+        rf"\b{num}\s*(?:/\s*10|out\s+of\s+(?:10|ten))\b",                 # 7/10, seven out of ten
+        rf"\b(?:an?|fear|level|rated|rating|rate)(?:\s*:\s*|\s+){filler}{num}\b",  # an eight, Fear Level: 6
+        rf"\ban?\s+{any_num}\s+(?:or|to)\s+{num}\b",                       # a six or seven
+    )
+    return any(re.search(p + _AFTER_A_RATING, text, re.IGNORECASE) for p in patterns)
 
 
 def _part(value) -> str | None:
@@ -159,10 +182,12 @@ def _clean(o, text: str, today: date) -> dict | None:
     situation, child, parent = _part(o.get("situation")), _part(o.get("child")), _part(o.get("parent"))
     if not (situation or child or parent):
         return None
-    # Never guessed. A Fear Level only when the parent said that number: ratings must come from the
-    # source (CONCEPTS.md), so a number the model offers that is not in their words is dropped.
+    # Never guessed. A Fear Level only when the parent said that number as a rating: ratings must
+    # come from the source (CONCEPTS.md), so a number the model offers that is not in their words,
+    # or is there only as a time or a count, is dropped.
     fear = o.get("fear")
-    if isinstance(fear, bool) or not isinstance(fear, int) or not 1 <= fear <= 10 or not _said(text, fear):
+    if (isinstance(fear, bool) or not isinstance(fear, int) or not 1 <= fear <= 10
+            or not _said_as_rating(text, fear)):
         fear = None
     return {
         # Dated to the day the parent recorded it, not a date inferred from the words (Peter,

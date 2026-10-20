@@ -107,15 +107,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
 - **How to tell it worked:** a report in the PR with sample sizes. Tests for the scoring code.
 - **Gate:** none. **Depends on:** the test runner.
 
-#### Voice notes: a time is not a Fear Level `S`
-- **Today:** `_said` in `backend/app/services/monitoring_capture.py` counts any number in the text
-  as a Fear Level, so "at 8pm" passes.
-- **What changes:** only accept a number that is said as a rating. Use the pool's `trap` entries
-  ("at 8:15", "three dogs") as examples in tests, not in any prompt.
-- **How to tell it worked:** tests for "at 8pm" (rejected) and a real rating (accepted).
-- **Gate:** it touches how Fear Levels are read: request Peter's review and do not merge.
-  **Depends on:** nothing.
-
 #### Rung and step-sentence reviewers `L`
 - **Today:** no reviewing agents. Dr. Walker's 2026-08-29 review of 60 suggested rungs is in
   `docs/plans/ladder-generation.md`.
