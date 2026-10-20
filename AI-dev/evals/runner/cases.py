@@ -12,6 +12,7 @@ family's facts) lives only in `expected`. The risk label is left out of `expecte
 counts as a risk sign is a question for Dr. Walker (Peter, 2026-10-19), so it is not scored.
 """
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -53,13 +54,33 @@ BUILDERS = {
 }
 
 
+HALVES = ("working", "held_out")
+
+
+def half(family_id: str) -> str:
+    """Which half a family is in: "working" (prompts may be tuned on it) or "held_out".
+
+    float_harness's rule: odd ids are for tuning, even ids are held out. A pool id ends in its
+    number ("fam-social-03"). The pool has no split of its own yet; when a family joins the fixed set
+    and its held-out half moves to `AI-dev/evals/judging/`, this is the rule that decides.
+    """
+    m = re.search(r"(\d+)$", family_id)
+    if not m:
+        raise ValueError(f"no number at the end of family id {family_id!r}, so it has no half")
+    return "working" if int(m.group(1)) % 2 else "held_out"
+
+
 def load_cases(feature: str, family_ids: list[str] | None = None, limit: int | None = None,
-               pool: Path = POOL) -> list[Case]:
+               pool: Path = POOL, only: str | None = None) -> list[Case]:
     """The pool's cases for one feature, in file-name order.
 
     `family_ids` picks families by id and fails loudly on one that does not exist, so a typo does
-    not quietly shrink the sample. `limit` takes the first N after that.
+    not quietly shrink the sample. `only` keeps one half ("working" or "held_out"), and a family
+    picked by id from the other half is refused rather than dropped. `limit` takes the first N after
+    that.
     """
+    if only is not None and only not in HALVES:
+        raise ValueError(f"no half {only!r}; known: {HALVES}")
     if feature not in BUILDERS:
         raise ValueError(f"no cases for feature {feature!r}; known: {sorted(BUILDERS)}")
     files = sorted(Path(pool).glob("*.json"))
@@ -69,6 +90,12 @@ def load_cases(feature: str, family_ids: list[str] | None = None, limit: int | N
         if missing:
             raise ValueError(f"not in the pool: {missing}")
         files = [by_id[i] for i in family_ids]
+        if only:
+            other = [i for i in family_ids if half(i) != only]
+            if other:
+                raise ValueError(f"not in the {only} half: {other}")
+    if only:
+        files = [f for f in files if half(f.stem) == only]
     if limit is not None:
         files = files[:limit]
     return [BUILDERS[feature](json.loads(f.read_text())) for f in files]

@@ -3,6 +3,8 @@
     ~/code/float/backend/.venv/bin/python AI-dev/evals/runner/run.py \\
         --feature monitoring_analysis --limit 5 --runs 3 --budget 10
 
+Runs the working half of the pool (odd-numbered families) unless --half all is given.
+
 Needs ANTHROPIC_API_KEY in the environment. It touches no database.
 Writes AI-dev/evals/runner/runs/<timestamp>/: report.md, report.json, outputs.jsonl.
 """
@@ -40,6 +42,9 @@ def main(argv=None) -> int:
     p.add_argument("--feature", choices=sorted(FEATURES), default=monitoring_analysis.NAME)
     p.add_argument("--families", help="comma-separated pool family ids")
     p.add_argument("--limit", type=int, help="the first N families")
+    p.add_argument("--half", choices=["working", "all"], default="working",
+                   help="working: odd-numbered families only, the ones prompts may be tuned on "
+                        "(default). all: every pool family, held-out ones included")
     p.add_argument("--runs", type=int, default=3, help="runs per case (default 3)")
     p.add_argument("--budget", type=float, default=10.0, help="spending limit in dollars (default 10)")
     p.add_argument("--out", type=Path, help="report folder (default runs/<timestamp>)")
@@ -52,12 +57,14 @@ def main(argv=None) -> int:
     from anthropic import Anthropic
 
     feature = FEATURES[a.feature]
-    cases = load_cases(a.feature, a.families.split(",") if a.families else None, a.limit)
+    cases = load_cases(a.feature, a.families.split(",") if a.families else None, a.limit,
+                       only=None if a.half == "all" else a.half)
     budget = Budget(a.budget)
     results, stopped = run_cases(feature, cases, MeteredClient(Anthropic(), budget), a.runs)
     out = a.out or HERE / "runs" / datetime.now().strftime("%Y%m%d_%H%M%S")
     write(out, feature, results, runs_per_case=a.runs, cases_planned=len(cases),
-          budget=budget, stopped=stopped)
+          budget=budget, stopped=stopped,
+          half=None if a.families and a.half == "all" else a.half)
     print((out / "report.md").read_text())
     print(f"Written to {out}")
     return 0

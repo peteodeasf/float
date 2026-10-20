@@ -17,6 +17,7 @@ How a model situation is matched to a fact situation: by the entries it says it 
 pool log entry carries `situation_ref` (Float never sees it), so the fact situation most of a model
 situation's entries are about is the one it is matched to. No fuzzy name matching.
 """
+import re
 import uuid
 from collections import Counter
 from datetime import date
@@ -122,6 +123,28 @@ def _ref_for(group, prepared):
     return sorted(r for r, n in counts.items() if n == best)[0]
 
 
+# A behavior written with an adult as the one acting. The model is told never to turn a parent's
+# action into a child behavior (EXTRACTION_SYSTEM_PROMPT, "Never convert a parent/adult action"), and
+# some pool entries are built to tempt it: a parent's action written in the child's field.
+# Checked on 2026-10-19: of the texts Dr. Walker confirmed in June
+# (`AI-dev/Extraction Loop/float_harness/tests/fixtures.json`) it marks 0 of 42 behaviors and 34 of 34
+# accommodations; of the pool's facts, 0 of 185 behaviors and 123 of 123 accommodations.
+_ADULT = (r"(?:mom|mommy|mother|dad|daddy|father|parents?|step-?mom|step-?dad|grandma|grandmother|"
+          r"grandpa|grandfather|nana|aunt|uncle|teachers?|coach|nurse|counselor|principal|babysitter|"
+          r"nanny|caregivers?|adults?|staff|therapist|doctor)")
+_ADULT_FIRST = re.compile(rf"^(?:the |her |his |their |a |an |both |one )?{_ADULT}\b(?!'s)", re.I)
+# "Allowed to stay home", "Was kept home": an adult's decision with the adult left out.
+_ADULT_LEFT_OUT = re.compile(r"^(?:was |were |is |are |gets |got |being )?(?:allowed|let|kept|excused)\b",
+                             re.I)
+
+
+def is_parent_action(description: str) -> bool:
+    """True when a behavior's description begins with an adult acting, or with something an adult
+    allowed. Only the start is looked at: "Left after the dog was let out" is the child leaving."""
+    text = (description or "").strip()
+    return bool(_ADULT_FIRST.search(text) or _ADULT_LEFT_OUT.search(text))
+
+
 def score(case, prepared, parsed) -> dict:
     """Counts, not ratios, so they can be added up across cases and runs with the sample size kept.
 
@@ -132,14 +155,21 @@ def score(case, prepared, parsed) -> dict:
                         per situation: two safety and one escape against two safety and one
                         avoidance is two right)
     extra_behaviors  -- model behaviors beyond the fact count, under found situations
+    model_behaviors  -- every behavior the model gave, in any situation
+    parent_actions   -- of those, how many are written as an adult's action (`is_parent_action`)
     unlinked         -- model situations that point at no entry, so nothing backs them up
     split            -- extra model situations matched to a fact situation already matched
+    extra_triggers   -- model situations beyond the answer key's: unlinked + split. Matching by entry
+                        cannot tell an invented trigger drawn from an entry from one real trigger cut
+                        in two; both are triggers the answer key does not have.
     """
     logged = sorted({r for r in case.expected["entry_refs"] if r is not None})
     facts = case.expected["situations"]
     found: dict[str, Counter] = {}
-    unlinked = split = 0
+    unlinked = split = model_behaviors = parent_actions = 0
     for group in _merged(parsed):
+        model_behaviors += len(group["behaviors"])
+        parent_actions += sum(1 for b in group["behaviors"] if is_parent_action(b.get("description")))
         ref = _ref_for(group, prepared)
         if ref is None:
             unlinked += 1
@@ -160,8 +190,11 @@ def score(case, prepared, parsed) -> dict:
         "behaviors": behaviors,
         "types_right": types_right,
         "extra_behaviors": extra,
+        "model_behaviors": model_behaviors,
+        "parent_actions": parent_actions,
         "unlinked": unlinked,
         "split": split,
+        "extra_triggers": unlinked + split,
         "signature": signature(found, unlinked),
     }
 
@@ -176,8 +209,13 @@ def signature(found: dict, unlinked: int) -> str:
 NOT_COVERED = [
     "The risk flag (`review_flag`) is not scored. What counts as a risk sign is a question for "
     "Dr. Walker (Peter, 2026-10-19).",
-    "Parent actions mistaken for child behaviors, and triggers the parent never logged, are not "
-    "scored yet. That is the later monitoring-analysis item.",
+    "Parent actions written as child behaviors are found from the wording alone: a behavior that "
+    "begins with an adult (\"Mom walks him in\") or with something allowed (\"Allowed to stay "
+    "home\"). One worded as the child's action (\"Stays home\") is not caught, even when the answer "
+    "key has it as the parent's. The wording rule was tried on answer-key texts, not on the model's "
+    "own wording.",
+    "Triggers not in the answer key are matched by log entry, so a made-up trigger drawn from an "
+    "entry and a real one cut in two are counted together.",
     "Accommodations are not scored.",
     "Wording is not scored: a behavior counts as right on its type alone.",
     "`rebuild_from_monitoring` is not run against a database. Its grouping by name is repeated with "

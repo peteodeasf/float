@@ -20,7 +20,11 @@ From the repo root, with the backend's Python:
 
     ~/code/float/backend/.venv/bin/python AI-dev/evals/runner/run.py --limit 5 --runs 3 --budget 10
 
-- `--families fam-social-01,fam-health-02` picks families by id. `--limit N` takes the first N.
+- It runs the **working half** of the pool: the odd-numbered families (`fam-social-01`,
+  `fam-social-03`, ...), float_harness's rule. Prompts may be tuned on these. The even-numbered ones
+  are held out. `--half all` runs every family.
+- `--families fam-social-01,fam-health-03` picks families by id. A held-out one is refused unless
+  `--half all` is given. `--limit N` takes the first N.
 - `--runs` is how many times each case is run (default 3).
 - `--budget` is the spending limit in dollars (default 10). The run stops when the next call could
   pass it, and the report says so and keeps what was done.
@@ -45,7 +49,10 @@ Tests, with a fake AI client and no spending:
    is any Fear Level invented, is any situation repeated. The last three are `float_harness`'s.
 4. Then the reviewing agents. None exist yet. `run_cases(..., reviewers=[...])` is where they go.
    They only see replies the app could read.
-5. Scores each run in counts (`monitoring_analysis.score`), so totals keep their sample size.
+5. Scores each run in counts (`monitoring_analysis.score`), so totals keep their sample size:
+   situations found, behavior types right, parent actions written as child behaviors, and
+   triggers not in the answer key. The report shows each score added up over every run, then for
+   each run number on its own, and how many cases gave a different count from one run to the next.
 6. Works out the stability figure: for each case, the share of its runs that gave the most common
    answer. Two runs agree when they find the same situations with the same behavior types under
    each. Wording is ignored.
@@ -57,7 +64,19 @@ from. Each entry's `situation_ref` says which fact situation it is about. A mode
 matched to the fact situation most of its entries are about. There is no fuzzy matching on names.
 
 A model situation that points at no entry is counted as "unlinked". Two model situations matched to
-the same fact situation count once, plus one "split".
+the same fact situation count once, plus one "split". Together they are the triggers not in the
+answer key. Matching by entry cannot tell a made-up trigger drawn from an entry from a real trigger
+cut in two, so they are counted together.
+
+## How a parent action is spotted
+
+A behavior is counted as a parent action when its description starts with an adult ("Mom walks him
+in", "Teacher lets him...") or with something allowed ("Allowed to stay home", "Was kept home").
+Only the start of the sentence counts, so "Asks mom..." and "Left after the dog was let out" are the
+child's. It is a wording rule, not a reading: a parent's action worded as the child's ("Stays home")
+is missed. On 2026-10-19 it marked 0 of the 42 behaviors and all 34 accommodations Dr. Walker
+confirmed in June, and 0 of 185 behaviors and all 123 accommodations in the pool's facts. A test
+keeps the pool count at zero.
 
 ## Not scored
 

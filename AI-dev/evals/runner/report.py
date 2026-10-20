@@ -7,16 +7,59 @@ to paste into a pull request, and is the shape the held-out report needs later.
 import hashlib
 import json
 
-SUMMED = ("situations", "situations_found", "behaviors", "types_right",
-          "extra_behaviors", "unlinked", "split")
+SUMMED = ("situations", "situations_found", "behaviors", "types_right", "extra_behaviors",
+          "model_behaviors", "parent_actions", "unlinked", "split", "extra_triggers")
+
+# The scores in the report, each with what it is counted out of (None for a plain count).
+SCORES = (
+    ("Situations found", "situations_found", "situations"),
+    ("Behavior types right, in situations found", "types_right", "behaviors"),
+    ("Parent actions written as child behaviors", "parent_actions", "model_behaviors"),
+    ("Triggers not in the answer key", "extra_triggers", None),
+    ("... of which point at no log entry", "unlinked", None),
+    ("... of which are a second situation for one in the answer key", "split", None),
+    ("Extra behaviors beyond the answer key", "extra_behaviors", None),
+)
 
 
 def _ratio(a: int, b: int) -> str:
     return f"{a}/{b} ({a / b:.2f})" if b else f"{a}/0 (none to score)"
 
 
+def _cell(totals: dict, key: str, out_of: str | None) -> str:
+    return _ratio(totals[key], totals[out_of]) if out_of else str(totals[key])
+
+
+def _by_run(results, runs_per_case: int) -> list[dict]:
+    """The totals for each run number: every case's first run added up, then every case's second,
+    and so on. How far apart they are shows how much a score moves from one run of the whole set to
+    the next."""
+    out = []
+    for i in range(runs_per_case):
+        scored = [c.runs[i].score for c in results if len(c.runs) > i and c.runs[i].score]
+        out.append({"runs_scored": len(scored), **{k: sum(s[k] for s in scored) for k in SUMMED}})
+    return out
+
+
+def _cases_varied(results) -> dict[str, int]:
+    """For each score, how many cases did not give the same count on every run. Only cases with
+    two or more scored runs can vary."""
+    out = {}
+    for k in SUMMED:
+        out[k] = sum(1 for c in results
+                     if len({r.score[k] for r in c.runs if r.score}) > 1)
+    return out
+
+
+HALF_TEXT = {
+    "working": "the working half (odd-numbered), the ones prompts may be tuned on",
+    "held_out": "the held-out half (even-numbered)",
+    "all": "all of them, held-out ones included",
+}
+
+
 def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, stopped,
-          reviewers=()) -> dict:
+          reviewers=(), half: str | None = None) -> dict:
     all_runs = [r for c in results for r in c.runs]
     scored = [r.score for r in all_runs if r.score]
     totals = {k: sum(s[k] for s in scored) for k in SUMMED}
@@ -32,6 +75,7 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
         "feature": feature.NAME,
         "model": feature.model(),
         "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest()[:12],
+        "half": half,
         "runs_per_case": runs_per_case,
         "cases_planned": cases_planned,
         "cases_run": len(results),
@@ -44,6 +88,9 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
         "stopped": stopped,
         "checks": checks,
         "totals": totals,
+        "by_run": _by_run(results, runs_per_case),
+        "cases_varied": _cases_varied(results),
+        "cases_with_two_scored_runs": sum(1 for c in results if sum(1 for r in c.runs if r.score) > 1),
         "stability": {
             "mean": round(sum(stabilities) / len(stabilities), 3) if stabilities else None,
             "cases_all_runs_agree": sum(1 for s in stabilities if s == 1.0),
@@ -71,6 +118,7 @@ def markdown(rep: dict) -> str:
         f"# {rep['feature']}: test run",
         "",
         f"- Model `{rep['model']}`, the app's prompt (sha256 `{rep['prompt_sha256']}`).",
+        f"- Pool families: {HALF_TEXT.get(rep.get('half'), 'picked by hand')}.",
         f"- {rep['cases_run']} of {rep['cases_planned']} cases, {rep['runs_per_case']} runs each: "
         f"{rep['runs']} runs, {rep['runs_scored']} the app could read, {rep['runs_with_error']} failed calls.",
         f"- Spent ${rep['spent_usd']:.4f} of a ${rep['limit_usd']:.2f} limit, over {rep['calls']} calls.",
@@ -80,18 +128,28 @@ def markdown(rep: dict) -> str:
     lines += ["", "## Code checks", "", "| Check | Runs failed |", "|---|---|"]
     for name, c in rep["checks"].items():
         lines.append(f"| {name} | {c['failed_runs']} of {c['runs']} |")
+    by_run = rep["by_run"]
     lines += [
         "",
-        "## Scores, added up over every run",
+        "## Scores",
         "",
-        f"- Situations found: {_ratio(t['situations_found'], t['situations'])}",
-        f"- Behavior types right, in situations found: {_ratio(t['types_right'], t['behaviors'])}",
-        f"- Extra behaviors beyond the answer key: {t['extra_behaviors']}",
-        f"- Situations pointing at no log entry: {t['unlinked']}",
-        f"- Situations split in two: {t['split']}",
+        "The first column adds up every run. The next ones add up each run number on its own (every "
+        "case's first run, then every case's second), to show how much a score moves between runs. "
+        "The last column is how many cases did not give the same count on every run.",
         "",
-        "Each count is over runs, not cases: one case run 3 times counts 3 times. "
-        f"The cases are {rep['cases_run']} families, so these are small numbers.",
+        "| Score | All runs | " + " | ".join(f"Run {i}" for i in range(1, len(by_run) + 1))
+        + " | Cases where runs differed |",
+        "|---" * (len(by_run) + 3) + "|",
+    ]
+    varied, two = rep["cases_varied"], rep["cases_with_two_scored_runs"]
+    for label, key, out_of in SCORES:
+        lines.append(f"| {label} | {_cell(t, key, out_of)} | "
+                     + " | ".join(_cell(r, key, out_of) for r in by_run)
+                     + f" | {varied[key]} of {two} |")
+    lines += [
+        "",
+        "Each count in the first column is over runs, not cases: one case run 3 times counts 3 "
+        f"times. The cases are {rep['cases_run']} families, so these are small numbers.",
         "",
         "## Stability",
         "",
