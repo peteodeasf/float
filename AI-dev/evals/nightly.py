@@ -362,8 +362,17 @@ def score_pr(ctx: Ctx, pr: dict, base: str, main_print: dict, families: list[str
     wt = Path(tempfile.mkdtemp(prefix=f"float-pr-{n}-"))
     wt.rmdir()
     try:
-        git(ctx, "fetch", "-q", "origin", f"pull/{n}/head")
-        git(ctx, "worktree", "add", "-q", "--detach", str(wt), sha)
+        # GitHub's trial merge of the pull request into main: what main would be if it merged. A
+        # pull request that is behind main would otherwise fail on code main's tests rely on.
+        try:
+            git(ctx, "fetch", "-q", "origin", f"pull/{n}/merge")
+        except RuntimeError:
+            raise RuntimeError("GitHub has no trial merge of it into main, usually because it "
+                               "conflicts with main") from None
+        merged = git(ctx, "rev-parse", "FETCH_HEAD").strip()
+        if git(ctx, "rev-parse", f"{merged}^2").strip() != sha:
+            raise RuntimeError("GitHub's trial merge is not of its latest commit yet")
+        git(ctx, "worktree", "add", "-q", "--detach", str(wt), merged)
         # The scoring code and the cases come from main, not from the pull request, so a pull
         # request cannot change how it is marked. Only its app code (backend/) is its own.
         shutil.rmtree(wt / REL)
@@ -437,7 +446,8 @@ def pr_comment(ctx: Ctx, pr: dict, base: str, reps: dict) -> str:
         "## AI test scores",
         "",
         f"Scored overnight on {ctx.night.day.isoformat()} by `AI-dev/evals/nightly.sh`. This pull "
-        f"request at `{pr['headRefOid'][:7]}`, against main at `{base[:7]}`.",
+        f"request at `{pr['headRefOid'][:7]}`, as GitHub would merge it into main, against main "
+        f"at `{base[:7]}`.",
         "",
         "The cases and the scoring code came from main, so this pull request cannot change how it is "
         "marked. Made-up cases only.",
