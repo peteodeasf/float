@@ -66,15 +66,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   text.
 - **Gate:** none. **Depends on:** the test runner.
 
-#### Protect the judging folder `S`
-- **Today:** `.github/CODEOWNERS` does not list `AI-dev/evals/judging/`.
-- **What changes:** add `/AI-dev/evals/judging/ @peteodeasf` to `.github/CODEOWNERS`, with a
-  comment saying why: the agents that tune prompts must not be able to change how they are marked.
-  Only this line, in its own PR.
-- **How to tell it worked:** the diff is that one line and its comment.
-- **Gate:** waits for Peter (CODEOWNERS covers `.github/`). Do not try to merge it.
-  **Depends on:** nothing.
-
 #### CI check that no test case is in a prompt `M`
 - **Today:** test cases have been copied into prompts three times
   (`docs/solutions/eval-cases-burned-by-putting-them-in-the-prompt.md`). Nothing checks for it.
