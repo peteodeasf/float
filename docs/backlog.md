@@ -57,14 +57,6 @@ All from `docs/plans/ai-quality-testing.md`. Read the whole plan before any of t
 Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not tonight), scoring the
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
-#### Judging folder for the AI tests `S`
-- **Today:** the reviewers' instructions and held-out cases have no home.
-- **What changes:** create `AI-dev/evals/judging/` with a README saying what goes there and that
-  the agents tuning prompts must not edit it or read held-out cases. Add a small script that runs
-  the held-out cases and prints scores only, never the case text or the model's answers.
-- **How to tell it worked:** a test shows the held-out output has scores and counts and no case
-  text.
-- **Gate:** none. **Depends on:** the test runner.
 
 #### Score monitoring analysis on the pool `M`
 - **Today:** the runner (earlier item) can run `rebuild_from_monitoring`. Nothing scores it
@@ -722,6 +714,15 @@ tests; CI on push; this file).
   make the first step say what to do on the mini (skip Docker if port 55432 answers, use the shared
   environment). **How to tell it worked:** an agent on the mini can follow `/verify` word for word.
   **Gate:** none.
+- **The AI test tools' own tests run nowhere automatically.** `S` Found 2026-10-19. **Today:** CI
+  (`.github/workflows/ci.yml`) runs `pytest` in `backend/` only, and `/verify` runs `backend/tests/`.
+  The tests in `AI-dev/evals/runner/tests/`, `AI-dev/evals/judging/tests/` and
+  `AI-dev/evals/generator/test_generator.py` run only when someone runs them by hand. A change to
+  the backend (a renamed function in `insight_service.py`, say) can break the runner, which imports
+  it, with CI green. The tests use a fake AI client, so they need no API key and cost nothing.
+  **What changes:** add a step to the backend CI job, and a line to `/verify`, that runs those three.
+  **How to tell it worked:** breaking an import the runner uses makes CI fail. **Gate:** waits for
+  Peter (it changes `.github/`).
 
 ---
 

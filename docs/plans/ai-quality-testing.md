@@ -120,9 +120,9 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
    - It writes a scored report with sample sizes and a stability figure.
    - It uses one case format for every feature.
 3. **Keep the judging away from Trevor.**
-   - Create `AI-dev/evals/judging/` for the reviewer instructions and held-out cases.
-   - Open a separate pull request adding it to `CODEOWNERS`.
-   - Report held-out results as scores only.
+   - Create `AI-dev/evals/judging/` for the reviewer instructions and held-out cases. Done 2026-10-19.
+   - Open a separate pull request adding it to `CODEOWNERS`. Done 2026-10-19 (#29).
+   - Report held-out results as scores only. Done 2026-10-19: `judging/run_held_out.py` prints totals, check counts and stability, with no case text, model answers or case ids.
 4. **A CI check that no test case is in a prompt.** It needs no API key.
 5. **The overnight schedule** above, with a nightly spending limit and the morning report.
    - Local test database only.
