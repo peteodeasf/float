@@ -1,0 +1,240 @@
+{
+  "id": "fam-specific-06",
+  "provenance": "SYNTHETIC — family generator (AI-dev/evals/generator), claude-opus-5-5, 2026-10-19",
+  "status": "pool",
+  "style": "stepdad who has recently started keeping the log, the US; quotes the child word for word, in quotation marks",
+  "facts": {
+    "child": {
+      "name": "Andre",
+      "age": 10
+    },
+    "anxiety": "Specific phobia of dogs, focused on dogs that are loose, large, or barking and could jump on or bite him",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Walking to the school bus stop past the neighbor's fenced German shepherd",
+        "fear_level": 7,
+        "feared_outcome": "\"It's gonna jump over the fence and bite me.\"",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Insists his stepdad walk him to the bus stop and holds his stepdad's arm as they pass the neighbor's yard"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Crosses to the far side of the street before reaching the neighbor's house and crosses back after passing it"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Stepdad walks Andre to the bus stop every school morning"
+          },
+          {
+            "id": "a2",
+            "text": "Mom drives Andre to school on mornings when the stepdad has to leave for work early"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Going to his friend Malik's house, where the family has a golden retriever",
+        "fear_level": 8,
+        "feared_outcome": "\"He's gonna jump on me and knock me down.\"",
+        "behaviors": [
+          {
+            "id": "b3",
+            "type": "avoidance",
+            "text": "Turns down invitations to Malik's house and asks Malik to come to his house instead"
+          },
+          {
+            "id": "b4",
+            "type": "escape",
+            "text": "Left Malik's birthday party after the dog was let out of the bedroom into the backyard where the kids were playing"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Mom texts Malik's mom ahead of any visit to ask that the dog be kept in its crate the whole time"
+          },
+          {
+            "id": "a4",
+            "text": "Stepdad picked Andre up early from the birthday party when Andre called him"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Saturday soccer practice at the town park, where people walk dogs on the path next to the field",
+        "fear_level": null,
+        "feared_outcome": "\"A dog's gonna get off its leash and run right at me.\"",
+        "behaviors": [
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Asks over and over before leaving the house whether dogs are allowed at the park and whether they have to be on leashes"
+          },
+          {
+            "id": "b6",
+            "type": "unclear",
+            "text": "Stayed standing next to the car in the parking lot for several minutes before walking to the field"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a5",
+            "text": "Stepdad looks up the park's leash rules on the town website and reads them to Andre each time he asks"
+          },
+          {
+            "id": "a6",
+            "text": "Coach lets Andre do warm-ups on the side of the field farthest from the walking path"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-03",
+        "situation": "Sat soccer practice at the town park. First time doing this log so bear with me",
+        "child_behavior_observed": "Before we even left the house he asked \"Are dogs allowed at the park?\" then \"Do they have to be on leashes?\" then asked both again. Maybe 5 or 6 times total. Told me \"A dog's gonna get off its leash and run right at me.\" When we parked he stood next to the car for a few minutes and didn't move. Then he walked to the field.",
+        "parent_response": "Looked up the park rules on the town website and read him the leash part. Read it again every time he asked. Waited by the car with him.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-05",
+        "situation": "walk to bus stop, school morning",
+        "child_behavior_observed": "\"You have to come with me.\" Grabbed my arm and held it going past the Hendersons' yard (German shepherd, fenced). Before that he crossed us to the other side of the street before their house and crossed back once we were past. Said \"It's gonna jump over the fence and bite me.\"",
+        "parent_response": "Walked him like I do every school morning. Let him hold on.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Had to be at work by 6:30 so his mom drove him to school. That's what we do whenever I leave early. He said \"Good, I don't have to walk.\"",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "Malik invited him over after school (they have a golden retriever)",
+        "child_behavior_observed": "Said no right away. \"Can't Malik just come here instead?\" Asked his mom to tell Malik to come to our house.",
+        "parent_response": "His mom texted Malik's mom like she always does before any visit, to ask if the dog can stay in the crate the whole time. He still wanted Malik here. Malik came over Sat.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-10",
+        "situation": "soccer again",
+        "child_behavior_observed": "Same questions in the kitchen. \"Do they have to be on leashes? Like all of them?\"",
+        "parent_response": "Pulled up the town site and read it to him again. Coach had him do warm-ups on the far side of the field away from the walking path. I think coach just does that for him now.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-11",
+        "situation": "Malik's bday party at their house",
+        "child_behavior_observed": "Mom had texted ahead to keep the dog crated. About an hour in they let the dog out of the bedroom into the backyard where all the kids were playing. Andre called me. \"Come get me now. He's gonna jump on me and knock me down.\"",
+        "parent_response": "Drove over and picked him up early.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Not sure if this goes in here. Last night on YouTube he said \"I love watching dog videos, they're so funny.\" Then today we drove past the Hendersons' coming back from the store. He was in the back seat laughing, called the shepherd \"a monster.\" He seemed totally fine both times.",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-16",
+        "situation": "bus stop mornings this week",
+        "child_behavior_observed": "We skipped walking past the Hendersons' this week and went around the block.",
+        "parent_response": "That was my call, not his. Figured it would make the mornings go smoother. Still walking him every day.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um ok so sunday was maliks birthday party and uh they let the dog out of the bedroom into the backyard where all the kids were playing and andre called me and he goes come get me now so i went and picked him up early um he said it was like a fear level nine",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "a4"
+          ],
+          "observations": 1,
+          "fear_level_said": 9
+        }
+      },
+      {
+        "text": "so monday morning i walked him to the bus again like always and he crossed us over to the other side before the hendersons and then back after um and then saturday before soccer he asked me like five times are dogs allowed do they have to be on leashes and i read him the rules off the town website again oh and tonight hes cracking up at dog videos on youtube so i dont know",
+        "expected": {
+          "refs": [
+            "s1",
+            "b2",
+            "a1",
+            "s3",
+            "b5",
+            "a5"
+          ],
+          "observations": 2,
+          "fear_level_said": null
+        },
+        "trap": "Andre laughing at dog videos on YouTube at home is not a feared situation and should not be counted as an observation or linked to a behavior."
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

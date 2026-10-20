@@ -1,0 +1,269 @@
+{
+  "id": "fam-health-06",
+  "provenance": "SYNTHETIC — family generator (AI-dev/evals/generator), claude-opus-5-5, 2026-10-19",
+  "status": "pool",
+  "style": "parents who share custody across two homes; the parent with the child that week logs, England; logs mostly what the parent did, very little of what the child did",
+  "facts": {
+    "child": {
+      "name": "Oliver",
+      "age": 14
+    },
+    "anxiety": "Health anxiety focused on heart sensations, headaches, and fear of a serious allergic reaction",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Running in PE lessons at school",
+        "fear_level": 7,
+        "feared_outcome": "His heart will beat too fast and give out and he will collapse in front of everyone",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "avoidance",
+            "text": "Says he feels ill on PE mornings and asks not to go to the lesson"
+          },
+          {
+            "id": "b2",
+            "type": "escape",
+            "text": "Stops partway through the cross-country lap and walks back to the changing rooms"
+          },
+          {
+            "id": "b3",
+            "type": "safety",
+            "text": "Keeps checking his heart rate on his smartwatch while he runs"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom emails the school to excuse him from PE, saying he is unwell"
+          },
+          {
+            "id": "a2",
+            "text": "The PE teacher lets him sit on the bench and keep score instead of running"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Noticing a headache at bedtime",
+        "fear_level": null,
+        "feared_outcome": "The headache means he has a brain tumor",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Asks the parent again and again whether the headache could be something serious"
+          },
+          {
+            "id": "b5",
+            "type": "safety",
+            "text": "Searches his symptoms on his phone in bed"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad answers the same question several times each night and tells him it is definitely nothing serious"
+          },
+          {
+            "id": "a4",
+            "text": "Dad leaves the bedroom door open and checks on him until he falls asleep"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Eating meals he has not had before",
+        "fear_level": 5,
+        "feared_outcome": "He will have an allergic reaction and his throat will close up",
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "avoidance",
+            "text": "Refuses to eat any dish he has not eaten before"
+          },
+          {
+            "id": "b7",
+            "type": "unclear",
+            "text": "Was quiet at dinner and left half his plate"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a5",
+            "text": "Mom cooks only his small set of safe meals during her weeks"
+          },
+          {
+            "id": "a6",
+            "text": "Dad reads every ingredient label aloud to him before serving food"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-06",
+        "situation": "PE morning (Tues)",
+        "child_behavior_observed": "said he felt ill, asked not to go to PE",
+        "parent_response": "Emailed school before 8, said he's unwell and can he be excused from PE today",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-07",
+        "situation": "dinner",
+        "child_behavior_observed": "",
+        "parent_response": "Did the pasta bake again (one of his ok ones). Shelved the new chicken recipe, he won't do anything he hasn't had before so no point",
+        "fear_thermometer": 4,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-09",
+        "situation": "cross country in PE, school rang me",
+        "child_behavior_observed": "stopped partway round the lap and walked back to changing rooms",
+        "parent_response": "Spoke to PE teacher on phone. She'd let him sit on the bench and keep score for the rest of it. I said thanks, that's fine",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "bedtime, headache",
+        "child_behavior_observed": "headache, kept asking",
+        "parent_response": "Told him it's definitely nothing serious. Said it maybe 4 or 5 times. Left door open, checked on him till he was asleep",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-13",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "Long day at work, checked my own blood pressure when I got in, bit high, need to cut the coffee. O's head again at bedtime. Same as last night, answered him again it's nothing serious, door open, kept popping in till he dropped off around 11.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-15",
+        "situation": "tea - tried a jar curry",
+        "child_behavior_observed": "quiet, left half",
+        "parent_response": "Read every ingredient on the jar and the rice packet out to him before I served it",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-16",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "PE yesterday. His mom apparently sent another PE note last week, school still have him down as unwell. I didn't write one this week. He says he ran some of it.",
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-20",
+        "situation": "dinners this week",
+        "child_behavior_observed": "wouldn't have the fish pie my mom dropped round, never had it",
+        "parent_response": "Sticking to his safe meals all week (the usual 5). Made him the pasta bake instead",
+        "fear_thermometer": 5,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-22",
+        "situation": "Thurs PE",
+        "child_behavior_observed": "ill again",
+        "parent_response": "emailed school, unwell, excuse from PE",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "um ok so monday night again with the headache he came down and asked me um i think three times if it could be something serious like is it something bad and i said no its definitely nothing serious mate and then when i went up to check on him he was on his phone in bed googling it um headache symptoms and that so yeah left the door open again",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "b5",
+            "a3",
+            "a4"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "No number is given. The app should not invent a Fear Level for s2, which has none."
+      },
+      {
+        "text": "so um two things from this week first thing monday morning he said he felt sick and didnt want to do pe so i emailed the school again um and then wednesday the teacher said he actually ran a bit but he kept checking his watch the whole time for his heart rate um he said it felt like a seven",
+        "expected": {
+          "refs": [
+            "s1",
+            "b1",
+            "a1",
+            "b3"
+          ],
+          "observations": 2,
+          "fear_level_said": 7
+        },
+        "trap": "Two separate PE moments are in one note. The seven belongs only to Wednesday's running."
+      },
+      {
+        "text": "um just to note he told me his mom only cooks the same few safe meals at hers and um tonight he wouldnt touch the risotto because hed never had it even after i read all the ingredients out to him",
+        "expected": {
+          "refs": [
+            "s3",
+            "a5",
+            "b6",
+            "a6"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "The mom's safe-meals cooking is reported second-hand by dad. It is still an adult accommodation (a5), not something the speaker did. Only tonight's dinner counts as an observed moment."
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b3"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b5"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}
