@@ -14,6 +14,9 @@ own copy of a prompt. The old 0.926 score came from a copy that had drifted.
 
 The runner never changes a prompt.
 
+It runs the working cases from the pool. Held-out cases live in `AI-dev/evals/judging/` and are run
+by `judging/run_held_out.py`, which prints scores only. See that folder's README.
+
 ## Run
 
 From the repo root, with the backend's Python:

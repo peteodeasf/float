@@ -68,7 +68,7 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
 def markdown(rep: dict) -> str:
     t = rep["totals"]
     lines = [
-        f"# {rep['feature']}: test run",
+        f"# {rep['feature']}: {'held-out cases, scores only' if rep.get('held_out') else 'test run'}",
         "",
         f"- Model `{rep['model']}`, the app's prompt (sha256 `{rep['prompt_sha256']}`).",
         f"- {rep['cases_run']} of {rep['cases_planned']} cases, {rep['runs_per_case']} runs each: "
@@ -110,17 +110,20 @@ def markdown(rep: dict) -> str:
         lines.append("No runs.")
     lines += ["", "## Reviewing agents", ""]
     lines.append(", ".join(rep["reviewers"]) if rep["reviewers"] else "None yet. They are a later item.")
-    lines += [
-        "", "## Per case", "",
-        "| Case | Runs | Checks failed | Situations found | Types right | Unlinked | Stability |",
-        "|---|---|---|---|---|---|---|",
-    ]
-    for c in rep["per_case"]:
-        stab = "–" if c["stability"] is None else f"{c['stability']:.2f}"
-        lines.append(
-            f"| {c['case']} | {c['runs']} | {c['checks_failed']} | {c['situations_found']}/{c['situations']} "
-            f"| {c['types_right']}/{c['behaviors']} | {c['unlinked']} | {stab} |"
-        )
+    # The held-out report (AI-dev/evals/judging/) has no per-case rows: they would say which case to
+    # go and read.
+    if "per_case" in rep:
+        lines += [
+            "", "## Per case", "",
+            "| Case | Runs | Checks failed | Situations found | Types right | Unlinked | Stability |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for c in rep["per_case"]:
+            stab = "–" if c["stability"] is None else f"{c['stability']:.2f}"
+            lines.append(
+                f"| {c['case']} | {c['runs']} | {c['checks_failed']} | {c['situations_found']}/{c['situations']} "
+                f"| {c['types_right']}/{c['behaviors']} | {c['unlinked']} | {stab} |"
+            )
     lines += ["", "## What these cases don't cover", ""]
     lines += [f"- {n}" for n in rep["not_covered"]]
     return "\n".join(lines) + "\n"
