@@ -153,6 +153,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
     - Enforce the 2–5 count, the length limit and removing duplicates in code.
     - Make the prompt, `AI-dev/Ladder Eval/checks.py` and `ladder-generation.md` agree on one set of numbers.
     - Compare suggestions with and without a feared outcome. Peter dropped that requirement on 2026-10-16 to test exactly this.
+    - Done 2026-10-20, waiting on Peter's review: `within_limits` in `step_suggestion_service.py` enforces two to five, twelve words or fewer, no idea twice; `checks.py` imports the numbers; `run.py --feature rungs` runs each situation with and without its feared outcome. First run, 94 cases from 18 working families, 3 runs each, $1.01: given the feared outcome the model wrote 399 suggestions over 105 runs, told it was not known 299 over the same 105. The twelve-word limit dropped 167 of 909 suggestions and left nothing to show in 36 of 282 runs. At fourteen words that would be 4 runs. Which length to use is Peter's question in the pull request. Quality is not scored until the reviewers exist.
     - Add anxiety types beyond social anxiety.
 12. **Step sentences.**
     - Build the 30-pair set from `ladder-combinations.md`, across kinds of anxiety.

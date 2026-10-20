@@ -47,18 +47,24 @@ Both are the scorer's job. Leaving them in would have taught us to write worse s
 Plan: docs/plans/ladder-generation.md
 """
 import re
+import sys
+from pathlib import Path
 
-# Two, not three. Peter reviewed drafts where a situation with nothing on its ladder got only two
-# suggestions I would stand behind, and judged them fine. A minimum of three would push the model
-# to invent a context to fill the slot — which is the one failure this feature cannot afford, and
-# the one no mechanical check catches. Fewer suggestions is the correct answer to a thin situation.
-MIN_SUGGESTIONS = 2
-# Twelve, not five. Dr. Walker's own ladder for one oral report has ELEVEN steps — imagine it,
-# a mirror, one parent, both parents, a sibling, all siblings, the family, a friend, two friends,
-# several friends, watching videos of other kids. A cap of five would have cut her answer in half.
-MAX_SUGGESTIONS = 12
-# A child reads these aloud in session. Long ones stop being a thing you can say yes or no to.
-MAX_WORDS_PER_SUGGESTION = 18
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
+
+# The numbers are the app's, so the checks and what the clinician is shown cannot drift apart.
+# They were 2-12 suggestions of at most 18 words here, against 2-5 of about 12 in the prompt; on
+# 2026-10-20 all three places took docs/plans/ladder-generation.md's numbers.
+#
+# Two, not three: a situation with nothing on its ladder may only have two honest suggestions, and
+# a minimum of three would push the model to invent a context to fill the slot. Five, not twelve:
+# the plan's "as many as the child has actually told you". Twelve was here because Dr. Walker's own
+# ladder for one oral report has eleven steps — but that is a whole ladder built with the child,
+# not one round of suggestions.
+from app.services.step_suggestion_service import (  # noqa: E402
+    MAX_SUGGESTIONS, MAX_WORDS_PER_SUGGESTION, MIN_SUGGESTIONS,
+)
+
 # Two suggestions sharing this much of their wording are probably one idea written twice.
 DUPLICATE_OVERLAP = 0.85
 

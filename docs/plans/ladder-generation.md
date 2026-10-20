@@ -153,6 +153,15 @@ more helpful. So the prompt has to say it:
 Stated for the prompt: *if you cannot write a fourth without inventing a detail the child never
 mentioned, write three. Or two.*
 
+**The limits, in one place (2026-10-20).** Two to five suggestions, each twelve words or fewer, and
+no idea twice. The app checks them after the call (`within_limits` in
+`backend/app/services/step_suggestion_service.py`): a suggestion over twelve words is dropped, one
+with the same words as an earlier one (ignoring "the", "a", "with") is dropped, anything after the
+fifth is dropped, and fewer than two left shows the clinician "Not enough came back that was worth
+showing" instead. `AI-dev/Ladder Eval/checks.py` imports the same numbers. Twelve words is the
+prompt's number, not Dr. Walker's: she has not set a length. Before this, the table below said three
+to five, and `checks.py` said two to twelve suggestions of up to eighteen words.
+
 Checkable after the fact — count suggestions against how many rungs the situation had. A model
 writing four every time is ignoring the rule. **And the same measurement read the other way catches
 the opposite failure:** told to be careful, a model can go quiet and give two for everything, which
@@ -293,7 +302,7 @@ lessons already applied:
 | Check | |
 |---|---|
 | Output parses, and is the expected shape | |
-| Between 3 and 5 suggestions | count |
+| Between 2 and 5 suggestions, each 12 words or fewer | count — enforced in the app since 2026-10-20 |
 | At least one rated meaningfully below the situation | threshold is a parameter — Dr. Walker's |
 | The ratings span a range rather than clustering | |
 | No two suggestions are the same thing reworded | word overlap, as `uses_their_words` does |
