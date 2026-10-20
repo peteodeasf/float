@@ -1,5 +1,5 @@
 """Decide what each new family should be before any AI call: kind of anxiety, age, where the
-family lives, who keeps the log, how they write, and the child's name.
+family lives (always the US), who keeps the log, how they write, and the child's name.
 
 Doing this in code, not in the prompt, is what spreads the pool. Left to itself a model writes the
 same family again: a US mom, social anxiety, a 12-year-old called Emma.
@@ -22,22 +22,15 @@ KINDS = {
 
 AGES = list(range(8, 18))  # Float's patients are 8 to 17 (Peter, 2026-10-19)
 
-# Every family in the first pool is an English-speaking household in the US (pool README). So half
-# of what the generator writes is outside the US, and the households vary.
-PLACES_OUTSIDE_US = {
-    "Canada": ["Liam", "Chloe", "Noah", "Avery", "Mateo", "Leila"],
-    "England": ["Oliver", "Isla", "Alfie", "Freya", "Arjun", "Poppy"],
-    "Ireland": ["Cian", "Aoife", "Oisin", "Saoirse", "Fionn", "Niamh"],
-    "Australia": ["Lachlan", "Matilda", "Kai", "Harper", "Jack", "Mia"],
-    "New Zealand": ["Nikau", "Aria", "Manaia", "Hana", "Tama", "Ruby"],
-    "India": ["Aarav", "Diya", "Vihaan", "Ananya", "Kabir", "Ishita"],
-    "Nigeria": ["Chidi", "Amara", "Tobi", "Zainab", "Emeka", "Folake"],
-    "the Philippines": ["Paolo", "Bea", "Miguel", "Andrea", "Josh", "Kristine"],
-    "South Africa": ["Thabo", "Lerato", "Sipho", "Naledi", "Ruan", "Anika"],
-    "Mexico, writing in English as a second language": ["Santiago", "Valeria", "Diego", "Ximena", "Emiliano", "Renata"],
-}
-US_NAMES = ["Marcus", "Jada", "Ethan", "Sofia", "Dylan", "Maya", "Caleb", "Nora", "Isaiah", "Lucy",
-            "Tyler", "Zoe", "Andre", "Hazel", "Owen", "Gianna", "Malik", "Paige", "Wyatt", "Esme"]
+# Float is for families in the US only (Peter, 2026-10-19), so every family lives in the US. The
+# spread comes from the kind of anxiety, age, household and writing style instead.
+US_NAMES = [
+    "Marcus", "Jada", "Ethan", "Sofia", "Dylan", "Maya", "Caleb", "Nora", "Isaiah", "Lucy",
+    "Tyler", "Zoe", "Andre", "Hazel", "Owen", "Gianna", "Malik", "Paige", "Wyatt", "Esme",
+    "Mateo", "Camila", "Darius", "Imani", "Logan", "Priya", "Elijah", "Aaliyah", "Connor", "Mei",
+    "Jayden", "Valeria", "Gavin", "Nevaeh", "Rohan", "Brooke", "Xavier", "Leah", "Colton", "Amira",
+    "Diego", "Harper", "Jamal", "Ruby", "Bennett", "Kiara", "Hudson", "Ximena", "Trevon", "Ivy",
+]
 
 LOGGERS = [
     "mom, two-parent household",
@@ -74,7 +67,7 @@ class Slot:
     family_id: str
     kind: str
     age: int
-    place: str  # "the US" or a country
+    place: str  # always "the US"
     logger: str
     style: str
     name: str
@@ -111,17 +104,15 @@ def existing(pool: Path = POOL) -> tuple[dict[str, int], set[str], set[str]]:
 
 
 def plan(count: int, seed: int, pool: Path = POOL) -> list[Slot]:
-    """`count` slots, spread across the five kinds, ages 8-17, inside and outside the US.
+    """`count` slots, spread across the five kinds and ages 8-17, all in the US.
 
     Kinds go round in order, starting with whichever the pool has fewest of, so a run of 5 gives
-    one of each. Every other family is outside the US. Names are never reused within the pool."""
+    one of each. Names are never reused within the pool."""
     rng = random.Random(seed)
     counts, top, used_names = existing(pool)
     kinds = sorted(KINDS, key=lambda k: (counts[k], list(KINDS).index(k)))
     ages = AGES[:]
     rng.shuffle(ages)
-    places = list(PLACES_OUTSIDE_US)
-    rng.shuffle(places)
     loggers = LOGGERS[:]
     rng.shuffle(loggers)
     styles = STYLES[:]
@@ -131,13 +122,8 @@ def plan(count: int, seed: int, pool: Path = POOL) -> list[Slot]:
     for i in range(count):
         kind = kinds[i % len(kinds)]
         top[kind] = top.get(kind, 0) + 1
-        if i % 2 == 0:
-            place = places[(i // 2) % len(places)]
-            candidates = PLACES_OUTSIDE_US[place]
-        else:
-            place = "the US"
-            candidates = US_NAMES
-        free = [n for n in candidates if n not in used_names] or [n for n in US_NAMES if n not in used_names]
+        place = "the US"
+        free = [n for n in US_NAMES if n not in used_names]
         if not free:
             raise ValueError("every name on the lists is taken; add more names to spread.py")
         name = rng.choice(free)

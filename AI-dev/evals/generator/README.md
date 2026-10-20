@@ -14,8 +14,8 @@ Needs `ANTHROPIC_API_KEY`. Without it, it refuses and says why.
 
 1. **Code picks the family** (`spread.py`): kind of anxiety, age, where they live, who keeps the
    log, how they write, and the child's name. Kinds go round in order, starting with whichever the
-   pool has fewest of, so 5 families give one of each kind. Ages are 8 to 17. Every other family is
-   outside the US. Names already in the pool are not reused.
+   pool has fewest of, so 5 families give one of each kind. Ages are 8 to 17. Every family lives in
+   the US, because Float is US-only. Names already in the pool are not reused.
 2. **First call, the facts** (`prompts.FACTS_SYSTEM`): situations with Fear Levels and feared
    outcomes, behaviors with types, accommodations. This is the answer key.
 3. **Second call, the inputs** (`prompts.INPUTS_SYSTEM`): the monitoring log and voice notes,

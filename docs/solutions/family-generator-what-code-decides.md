@@ -10,7 +10,7 @@ pool is scored, long after the run.
 
 ## What was worked out
 
-- **The spread is chosen in code, not asked for.** Kind of anxiety, age, country, who keeps the log,
+- **The spread is chosen in code, not asked for.** Kind of anxiety, age, who keeps the log,
   writing style and the child's name are picked in `spread.py` and handed to the model. The kinds go
   round starting with whichever the pool has fewest of. Names already in the pool are skipped. The
   first pool had seven repeated names across six batches, which had to be fixed by hand (#26).
@@ -31,9 +31,9 @@ pool is scored, long after the run.
 - **`validate.py` checks a file path, not a dict,** so the generator writes each family to a temp
   folder to check it. It never writes into the pool until the family passes.
 
-## Open question, left for Peter
+## Settled: US families only
 
-The backlog asks for both "families outside the US" and "American spelling". A parent in England or
-Ireland would write "mum" and "colour". The generator follows the backlog: American spelling
-everywhere, and it rejects a family with British spellings. That makes the non-US logs less
-realistic. Whether real parents' British spelling matters to the features is not known.
+The backlog item asked for families outside the US, and the first run wrote some (England, the
+Philippines). Peter, 2026-10-19: Float's features are US-only, so test families outside the US test
+nothing we ship. They were removed, and the generator now writes only US families. That also
+settles the spelling question: American spelling everywhere.

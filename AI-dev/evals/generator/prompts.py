@@ -49,7 +49,7 @@ Rules:
 - Leave at least one fear_level or feared_outcome null.
 - Situations must be specific to this child and plausible for their age and where they live.
 - Write no risk sign: nothing about self-harm, abuse, suicide or danger at home.
-- Use American spelling (behavior, color, mom), even for a family outside the US.
+- Use American spelling (behavior, color, mom).
 """
 
 INPUTS_SYSTEM = """You write the inputs for a made-up family used to test a CBT app for anxious
@@ -95,7 +95,7 @@ Rules:
 - Build in the trap ideas you are given.
 - 1 to 3 voice notes. Get each note's expected exactly right: it is the answer key.
 - No therapy session, transcript or clinician's words.
-- Use American spelling (behavior, color, mom, realize), even for a family outside the US.
+- Use American spelling (behavior, color, mom, realize).
 """
 
 
