@@ -49,8 +49,29 @@ def _monitoring_analysis(family: dict) -> Case:
     )
 
 
+def _voice_notes(family: dict) -> list[Case]:
+    """One case per voice note. Float is given the words only; the note's `expected` and its `trap`
+    (what was built in to catch it out) stay out of the input."""
+    return [
+        Case(
+            id=f"{family['id']}/voice_notes/{n}",
+            family_id=family["id"],
+            feature="voice_notes",
+            input={"text": note["text"]},
+            expected={
+                "observations": note["expected"]["observations"],
+                "fear_level_said": note["expected"].get("fear_level_said"),
+            },
+        )
+        for n, note in enumerate(family["inputs"].get("voice_notes", []), 1)
+    ]
+
+
+# Each builder turns one pool family into its cases: one for monitoring analysis (the whole log),
+# one per note for voice notes.
 BUILDERS = {
-    "monitoring_analysis": _monitoring_analysis,
+    "monitoring_analysis": lambda family: [_monitoring_analysis(family)],
+    "voice_notes": _voice_notes,
 }
 
 
@@ -74,7 +95,8 @@ def load_cases(feature: str, family_ids: list[str] | None = None, limit: int | N
                pool: Path = POOL, only: str | None = None) -> list[Case]:
     """The pool's cases for one feature, in file-name order.
 
-    `family_ids` picks families by id and fails loudly on one that does not exist, so a typo does
+    A family can give more than one case (one per voice note), so `limit` counts families, not
+    cases. `family_ids` picks families by id and fails loudly on one that does not exist, so a typo does
     not quietly shrink the sample. `only` keeps one half ("working" or "held_out"), and a family
     picked by id from the other half is refused rather than dropped. `limit` takes the first N after
     that.
@@ -98,4 +120,4 @@ def load_cases(feature: str, family_ids: list[str] | None = None, limit: int | N
         files = [f for f in files if half(f.stem) == only]
     if limit is not None:
         files = files[:limit]
-    return [BUILDERS[feature](json.loads(f.read_text())) for f in files]
+    return [case for f in files for case in BUILDERS[feature](json.loads(f.read_text()))]

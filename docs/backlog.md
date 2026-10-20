@@ -58,14 +58,6 @@ Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not toni
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
 
-#### Score voice notes on the pool `M`
-- **Today:** `backend/app/services/monitoring_capture.py` turns voice notes into observations.
-  Nothing tests it.
-- **What changes:** wire it into the runner. Score how the notes are split into observations and
-  whether the parent's words are kept.
-- **How to tell it worked:** a report in the PR with sample sizes. Tests for the scoring code.
-- **Gate:** none. **Depends on:** the test runner.
-
 #### Rung and step-sentence reviewers `L`
 - **Today:** no reviewing agents. Dr. Walker's 2026-08-29 review of 60 suggested rungs is in
   `docs/plans/ladder-generation.md`.
@@ -103,18 +95,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   decide it.
 - **How to tell it worked:** a report in the PR with sample sizes, marked unchecked by a clinician.
 - **Gate:** none (no prompt change). **Depends on:** the test runner, and the reviewers.
-
-#### Overnight schedule for the AI tests `M`
-- **Today:** nothing runs on a schedule.
-- **What changes:** one script, `AI-dev/evals/nightly.sh`, that does the schedule in the plan:
-  Sunday new pool families, nightly runs on the fixed cases, scoring any open prompt-change PR, and
-  a short plain-English morning report for Peter in `~/eval-reports/`. A nightly spending limit,
-  checked before each job. Local test database only. **Do not install the crontab.** Put the
-  crontab lines in the PR description for Peter to add.
-- **How to tell it worked:** one dry run, with the morning report it wrote in the PR.
-- **Gate:** none to merge the script. Proposing temperatures from the stability figures is a
-  separate prompt-change PR for Peter. **Depends on:** the test runner, scoring monitoring
-  analysis, and the family generator.
 
 ---
 
@@ -793,6 +773,47 @@ Found while checking, before building:
 - **How to tell it worked:** a test in `backend/tests/test_patient_insights.py` where an extraction
   names "Bedtime" twice with entries [1] and [2], and the saved situation's evidence holds both.
 - **Gate:** none. **Depends on:** nothing.
+
+## A voice note's Fear Level is dropped when a word like "like" or "about" follows it `S`
+- **Today:** `_said_as_rating` in `backend/app/services/monitoring_capture.py` keeps a Fear Level
+  only when the word straight after the number is on a short allowed list (`_AFTER_A_RATING`).
+  "Like" and "about" are not on it. So "he was at an 8 like full meltdown" and "he's at a 6 about
+  the emails" lose their Fear Level, and the parent is asked to tap one. Found 2026-10-19 by the
+  voice notes test run: 6 of 46 note-runs where the parent said a Fear Level, every run of two notes
+  (`fam-school-01` note 1, `fam-school-05` note 2).
+- **What changes:** decide whether "like" and "about" can follow a rating, and add them if so.
+  The list was kept short on purpose: a missed rating costs a tap, a wrong one is a made-up number.
+  This is the check Peter is already reviewing, so it is his call.
+- **How to tell it worked:** tests in `backend/tests/test_monitoring_capture.py` for both phrases,
+  in short words of your own (not copied from the pool). Then
+  `run.py --feature voice_notes` shows "Fear Level said and saved" up and "Fear Levels saved that
+  the parent did not say" still 0.
+- **Gate:** Peter's review (Fear Level rules). **Depends on:** nothing.
+
+## A voice note write-up with quote marks in it cannot be read `S`
+- **Today:** when the parent quotes the child ("he kept calling out are you awake"), Claude
+  sometimes writes the quote with plain `"` marks inside the JSON string, without escaping them.
+  `parse_model_json` in `backend/app/services/insight_service.py` cannot read that reply, so
+  `write_up` in `monitoring_capture.py` fails and the note is saved as the parent's words alone,
+  with no observation. Found 2026-10-19 by the voice notes test run: 3 of 96 runs, on 2 of 32 notes.
+  Nothing is lost (the words are kept), but the clinician gets no write-up.
+- **What changes:** one of: ask for the reply with tool use or structured output, so the JSON is
+  always valid; or tell the model to use single quotes for quoted speech; or a reader that repairs
+  unescaped inner quotes. The first is the sturdiest. A prompt change needs Peter's approval.
+- **How to tell it worked:** a test that a reply with unescaped quotes inside a value is read (if
+  the reader changes), and `app_can_read` at 0 failed runs on the voice notes test run.
+- **Gate:** Peter's review if the prompt changes. **Depends on:** nothing.
+
+## A held-out test fails on main `S`
+- **Today:** `AI-dev/evals/judging/tests/test_held_out.py::test_output_has_scores_and_counts_and_no_case_text`
+  fails on main (seen 2026-10-19 at 85dd09b). It looks for `"Situations found: "` in the printed
+  report, but the runner's report writes scores as a table (`| Situations found | ...`). The
+  report changed in #36 and the judging folder came in #34 at the same time. CI does not run the
+  `AI-dev/evals` tests, so nothing caught it.
+- **What changes:** the test or the report. The judging folder is Peter's (CODEOWNERS), so an
+  agent should not edit the test. Also worth adding the `AI-dev/evals` tests to CI.
+- **How to tell it worked:** `pytest AI-dev/evals/judging/tests` passes.
+- **Gate:** Peter (judging folder). **Depends on:** nothing.
 
 ## AI analysis of session notes
 
