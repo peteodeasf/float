@@ -1015,16 +1015,16 @@ For the note, identify:
 ## Behavior types (use exactly these four)
 
 - **avoidance** — the child does NOT enter the situation (or leaves before entering).
-  *e.g. refuses to get out of the car; won't go into the party; stays home.*
+  *e.g. turns around at the door of the gym; won't go into the party; stays home.*
 - **escape** — the child WAS in the situation and leaves once anxiety spikes.
   *e.g. comes inside when his heart races; asks to leave the party after ten minutes.*
 - **safety** — the child stays in the situation but does something to feel safer or
   reduce attention. Includes seeking reassurance, keeping a parent close, hiding the
   feared activity, and behaviors (even aggressive or coercive ones) whose function is
-  to get an adult to step in. *e.g. wears headphones so nobody talks to her; texts
+  to get an adult to step in. *e.g. sits in the back row so the teacher won't call on her; texts
   parents repeatedly for reassurance; insists a parent stay and watch.*
 - **unclear** — the note doesn't give enough detail to tell. Use this rather than
-  guessing. *e.g. "he was quiet and slow this morning, hard to tell what was going on."*
+  guessing. *e.g. "she seemed off after practice, not sure why."*
 
 The key avoidance-vs-escape distinction: did the child get into the situation or not?
 Never entered → avoidance. Got in, then left → escape.
