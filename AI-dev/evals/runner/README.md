@@ -131,7 +131,7 @@ or not, and the child's behaviors as what they do to cope. No pool situation has
 yet, so `steps` is always empty.
 
 There is no answer key. It counts form, kept apart by mode: suggestions written, how many the app's
-limits let through (`within_limits`: two to five, twelve words or fewer, no idea twice), why the
+limits let through (`within_limits`: two to five, no idea twice; no length limit), why the
 rest were dropped, runs where none would be shown, words per suggestion, and whether the "other
 variations" line came back. The checks run on what the model wrote, before the limits, so a failure
 there is the prompt's rule not being followed. `plain_enough_for_a_child` is Ladder Eval's list of

@@ -13,8 +13,9 @@ Built 2026-10-20 (backlog: "Suggested rungs: enforce the limits in code").
 
 The backlog said to use the plan where they disagree. The plan disagreed with itself. Section 5 is
 the one with the reasoning ("the check permits two", written after the table), so 2–5 won and the
-table was corrected. The plan has no length at all, so the prompt's twelve was used and the plan now
-says so: it is the prompt's number, not Dr. Walker's.
+table was corrected. The plan has no length at all. The prompt's twelve was tried as a hard limit
+and dropped: it left the clinician nothing in 36 of 282 test runs, and Peter (2026-10-20) chose no
+length limit for now.
 
 To stop them drifting apart again, `checks.py` now imports the numbers from the app instead of
 keeping its own.
@@ -32,11 +33,11 @@ those two both survive. There is a test for exactly that pair.
 
 ## Order matters
 
-`within_limits` drops long ones and duplicates *before* it counts to five. Done the other way round,
+`within_limits` drops duplicates *before* it counts to five. Done the other way round,
 a duplicate in the first five would take a slot and push a real sixth suggestion out.
 
 The floor (fewer than two shows none) is checked after all the drops, so a reply of two suggestions
-where one is too long shows nothing.
+where one repeats the other shows nothing.
 
 ## Testing the app's call from the runner
 

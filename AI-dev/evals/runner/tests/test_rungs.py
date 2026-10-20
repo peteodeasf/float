@@ -64,19 +64,20 @@ def test_the_input_is_what_the_app_builds_and_is_metered():
 
 def test_counts_follow_the_apps_limits():
     # The score counts what the clinician would see, which is what `within_limits` leaves. Eight
-    # written, one too long and one repeated: five shown, and each drop counted under its reason.
+    # written, one repeated and one long (kept, there is no length limit): five shown, and each drop
+    # counted under its reason.
     written = ["One", "one", " ".join(["word"] * 13), "Two", "Three", "Four", "Five", "Six"]
     _, results, _, _ = run({"suggestions": written, "variations": "where you sit"})
     run0 = results[0].runs[0]
     mode = results[0].case_id.rsplit("/", 1)[1]
     s = run0.score
     assert (s[f"written_{mode}"], s[f"shown_{mode}"]) == (8, 5)
-    assert (s[f"dropped_long_{mode}"], s[f"dropped_duplicate_{mode}"], s[f"dropped_over_max_{mode}"]) == (1, 1, 1)
+    assert (s[f"dropped_duplicate_{mode}"], s[f"dropped_over_max_{mode}"]) == (1, 2)
     assert s[f"none_shown_{mode}"] == 0 and s[f"variations_given_{mode}"] == 1
     # The other modes stay at zero, so totals keep "with" and "without" apart.
     for other in set(rungs.MODES) - {mode}:
         assert s[f"runs_{other}"] == 0
-    assert run0.checks["two_to_five"] and run0.checks["twelve_words_or_fewer"] and run0.checks["no_idea_twice"]
+    assert run0.checks["two_to_five"] and run0.checks["no_idea_twice"]
 
 
 def test_one_suggestion_counts_as_none_shown():

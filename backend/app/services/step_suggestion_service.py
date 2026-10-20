@@ -19,8 +19,8 @@ docs/plans/ladder-generation.md — read that before changing anything here. The
 5. **As many as the child has actually told you** — two to five, and fewer when the ladder is empty,
    because the fourth would be invented.
 
-The limits — two to five suggestions, at most twelve words each, no idea twice — are asked for in
-the prompt and then checked in code (`within_limits`), because a prompt is a request, not a
+The limits — two to five suggestions, no idea twice — are asked for in the prompt and then checked
+in code (`within_limits`), because a prompt is a request, not a
 guarantee. The numbers are the ones in docs/plans/ladder-generation.md, and `AI-dev/Ladder Eval/
 checks.py` imports them from here rather than keeping its own.
 
@@ -44,8 +44,9 @@ SUGGESTION_MODEL = "claude-sonnet-4-6"
 # them; `within_limits` makes sure of them.
 MIN_SUGGESTIONS = 2
 MAX_SUGGESTIONS = 5
-# The child reads these on a chip that should fit on two lines.
-MAX_WORDS_PER_SUGGESTION = 12
+# No length limit in code. Peter, 2026-10-20: don't drop suggestions for length for now. At twelve
+# words, 36 of 282 test runs left the clinician nothing, and the 13- and 14-word ones read as well
+# as the rest. The prompt still asks for short phrases.
 
 
 SYSTEM_PROMPT = """You help a clinician and a child build an exposure ladder.
@@ -85,7 +86,7 @@ OUTPUT. Return JSON and nothing else:
 
 {"suggestions": ["...", "..."], "variations": "..."}
 
-Each suggestion is a short phrase in the second person, as the child would read it — a few words, not a full sentence. Keep it to twelve words or fewer, and do not add a clause after a dash explaining or softening it. It should fit on two lines.
+Each suggestion is a short phrase in the second person, as the child would read it — a few words, not a full sentence. Keep it under about twelve words, and do not add a clause after a dash explaining or softening it. It should fit on two lines.
 
 `variations` is a single short line naming ways to vary this situation that your suggestions did NOT
 already use, separated by commas — for example "where you sit, how busy it is, whether you buy lunch
@@ -148,8 +149,7 @@ def words_in(text: str) -> int:
 def within_limits(suggestions: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
     """What the clinician is shown, and what was dropped and why.
 
-    In this order: empty ones go, then any over MAX_WORDS_PER_SUGGESTION words, then any that is the
-    same idea as one before it, then everything after the first MAX_SUGGESTIONS. The model's order
+    In this order: empty ones go, then any that is the same idea as one before it, then everything after the first MAX_SUGGESTIONS. The model's order
     is kept.
 
     "The same idea" means the same words once small words ("the", "a", "with") are left out. That is
@@ -165,9 +165,7 @@ def within_limits(suggestions: list[str]) -> tuple[list[str], list[tuple[str, st
         s = s.strip()
         if not s:
             continue
-        if words_in(s) > MAX_WORDS_PER_SUGGESTION:
-            dropped.append((s, "too_long"))
-        elif any(_idea(s) == _idea(k) for k in kept):
+        if any(_idea(s) == _idea(k) for k in kept):
             dropped.append((s, "duplicate"))
         elif len(kept) >= MAX_SUGGESTIONS:
             dropped.append((s, "over_max"))

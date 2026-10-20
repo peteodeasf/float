@@ -80,7 +80,7 @@ def checks(case, prepared, parsed) -> dict[str, list[str]]:
     """Pass/fail code checks on what the model wrote, before the app's limits. A failure here is the
     prompt's rule not being followed; the app then drops or hides what breaks it."""
     from app.services.step_suggestion_service import (
-        MAX_SUGGESTIONS, MAX_WORDS_PER_SUGGESTION, MIN_SUGGESTIONS, words_in,
+        MAX_SUGGESTIONS, MIN_SUGGESTIONS,
     )
     if parsed is None:
         return {"app_can_read": ["the app's reader could not read the reply"]}
@@ -91,8 +91,6 @@ def checks(case, prepared, parsed) -> dict[str, list[str]]:
         "app_can_read": [],
         "two_to_five": [] if MIN_SUGGESTIONS <= n <= MAX_SUGGESTIONS
         else [f"{n} suggestions; wanted {MIN_SUGGESTIONS}-{MAX_SUGGESTIONS}"],
-        "twelve_words_or_fewer": [f"{words_in(s)} words" for s in written
-                                  if words_in(s) > MAX_WORDS_PER_SUGGESTION],
         "no_idea_twice": [f"suggestions {i + 1} and {j + 1}" for i in range(n) for j in range(i + 1, n)
                           if _same_words(written[i], written[j])],
         # Ladder Eval's list of words for a clinician's notes, not a child's screen.
@@ -100,7 +98,7 @@ def checks(case, prepared, parsed) -> dict[str, list[str]]:
     }
 
 
-METRICS = ("runs", "written", "shown", "dropped_long", "dropped_duplicate", "dropped_over_max",
+METRICS = ("runs", "written", "shown", "dropped_duplicate", "dropped_over_max",
            "none_shown", "words_shown", "variations_given")
 
 
@@ -111,7 +109,6 @@ def score(case, prepared, parsed) -> dict:
     written           -- suggestions in the model's reply
     shown             -- of those, how many the clinician would see. 0 when fewer than
                          MIN_SUGGESTIONS survive the limits, because then none are shown
-    dropped_long      -- dropped for being over MAX_WORDS_PER_SUGGESTION words
     dropped_duplicate -- dropped for having the same words as an earlier one
     dropped_over_max  -- dropped for coming after the fifth
     none_shown        -- 1 when the clinician would see none
@@ -129,7 +126,6 @@ def score(case, prepared, parsed) -> dict:
         "runs": 1,
         "written": len(parsed["suggestions"]),
         "shown": len(shown),
-        "dropped_long": reasons.count("too_long"),
         "dropped_duplicate": reasons.count("duplicate"),
         "dropped_over_max": reasons.count("over_max"),
         "none_shown": int(not shown),
@@ -157,7 +153,6 @@ SCORES = tuple(
         (f"Runs ({_MODE_TEXT[md]})", f"runs_{md}", None),
         ("... suggestions written", f"written_{md}", None),
         ("... shown, of those written", f"shown_{md}", f"written_{md}"),
-        ("... dropped, over 12 words", f"dropped_long_{md}", None),
         ("... dropped, same idea twice", f"dropped_duplicate_{md}", None),
         ("... dropped, after the fifth", f"dropped_over_max_{md}", None),
         ("... runs where none were shown", f"none_shown_{md}", f"runs_{md}"),

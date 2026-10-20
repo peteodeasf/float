@@ -62,8 +62,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
 # ladder for one oral report has eleven steps — but that is a whole ladder built with the child,
 # not one round of suggestions.
 from app.services.step_suggestion_service import (  # noqa: E402
-    MAX_SUGGESTIONS, MAX_WORDS_PER_SUGGESTION, MIN_SUGGESTIONS,
+    MAX_SUGGESTIONS, MIN_SUGGESTIONS,
 )
+# No length check: Peter, 2026-10-20, suggestions are not limited by length for now.
 
 # Two suggestions sharing this much of their wording are probably one idea written twice.
 DUPLICATE_OVERLAP = 0.85
@@ -118,14 +119,6 @@ def plain_enough_for_a_child(suggestions) -> tuple[bool, str]:
     return (not hits, "; ".join(hits) if hits else "")
 
 
-def short_enough_to_say(suggestions) -> tuple[bool, str]:
-    long_ones = [f"{n!r} ({len(n.split())} words)" for n in _names(suggestions)
-                 if len(n.split()) > MAX_WORDS_PER_SUGGESTION]
-    return (not long_ones,
-            f"longer than {MAX_WORDS_PER_SUGGESTION} words: " + "; ".join(long_ones)
-            if long_ones else "")
-
-
 def no_duplicates(suggestions) -> tuple[bool, str]:
     """One idea written twice. A warning, not a failure — two suggestions can differ by a single
     word that matters ("with the fan" / "without the fan") and still be genuinely different."""
@@ -162,7 +155,6 @@ def run_all(suggestions, existing_rungs: list[dict] | None = None) -> list[dict]
         ("has_the_right_shape", has_the_right_shape(suggestions), True),
         ("right_number_of_suggestions", right_number_of_suggestions(suggestions), True),
         ("plain_enough_for_a_child", plain_enough_for_a_child(suggestions), True),
-        ("short_enough_to_say", short_enough_to_say(suggestions), True),
         ("no_duplicates", no_duplicates(suggestions), False),
         ("not_already_a_rung", not_already_a_rung(suggestions, existing_rungs), False),
     ]

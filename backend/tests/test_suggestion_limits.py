@@ -10,7 +10,7 @@ import pytest
 
 from app.services import step_suggestion_service as svc
 from app.services.step_suggestion_service import (
-    MAX_SUGGESTIONS, MAX_WORDS_PER_SUGGESTION, MIN_SUGGESTIONS, SuggestionUnavailable,
+    MAX_SUGGESTIONS, MIN_SUGGESTIONS, SuggestionUnavailable,
     suggest_steps, within_limits,
 )
 
@@ -28,9 +28,8 @@ async def _suggest():
 def test_the_numbers_are_the_ones_in_the_plan():
     # docs/plans/ladder-generation.md, "How many suggestions": two to five. If someone changes
     # these, the plan and the prompt have to change with them.
-    assert (MIN_SUGGESTIONS, MAX_SUGGESTIONS, MAX_WORDS_PER_SUGGESTION) == (2, 5, 12)
+    assert (MIN_SUGGESTIONS, MAX_SUGGESTIONS) == (2, 5)
     assert "between two and five suggestions" in svc.SYSTEM_PROMPT
-    assert "twelve words or fewer" in svc.SYSTEM_PROMPT
 
 
 async def test_too_many_keeps_the_first_five(monkeypatch):
@@ -57,27 +56,13 @@ async def test_none_at_all_says_nothing_came_back(monkeypatch):
         await _suggest()
 
 
-async def test_a_long_one_is_dropped_and_the_rest_are_shown(monkeypatch):
-    # Thirteen words breaks the chip's two lines. Dropping it is better than cutting it off
-    # half-way through a sentence a child reads.
-    long_one = "Eat lunch in the cafeteria for ten minutes at a table near the door"
-    assert len(long_one.split()) == MAX_WORDS_PER_SUGGESTION + 2
+async def test_a_long_one_is_kept(monkeypatch):
+    # Peter, 2026-10-20: no length limit for now. A twelve-word limit left the clinician nothing in
+    # 36 of 282 test runs, and the 13- and 14-word suggestions read as well as the shorter ones.
+    long_one = "Get dropped off and stay for the full practice with mom gone from the parking lot"
     _reply(monkeypatch, ["Imagine lunch in the cafeteria", long_one, "Watch a video of a cafeteria"])
     suggestions, _ = await _suggest()
-    assert suggestions == ["Imagine lunch in the cafeteria", "Watch a video of a cafeteria"]
-
-
-async def test_too_long_leaving_one_is_not_enough(monkeypatch):
-    # The floor is counted after the limits, not before.
-    _reply(monkeypatch, ["Imagine lunch in the cafeteria", "word " * 13])
-    with pytest.raises(SuggestionUnavailable, match="Not enough"):
-        await _suggest()
-
-
-def test_twelve_words_is_allowed():
-    # The limit is "twelve or fewer", so exactly twelve stays.
-    twelve = " ".join(["word"] * MAX_WORDS_PER_SUGGESTION)
-    assert within_limits([twelve, "Something else"]) == ([twelve, "Something else"], [])
+    assert suggestions == ["Imagine lunch in the cafeteria", long_one, "Watch a video of a cafeteria"]
 
 
 def test_the_same_idea_twice_is_dropped():
