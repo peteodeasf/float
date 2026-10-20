@@ -28,3 +28,7 @@ AI-dev/**/harvested_*.json
 
 # The combination wording reading sheet holds case text. Share the file, do not commit it.
 AI-dev/Combination Wording/results.md
+
+# AI test runner output. outputs.jsonl holds the model's answers to test cases; the report is
+# pasted into the pull request instead. See AI-dev/evals/runner/README.md.
+AI-dev/evals/runner/runs/

@@ -50,6 +50,11 @@ half. At the end, the best prompt is scored once on the held-out half and writte
 `holdout_report.json`. That is the number to trust. Nine cases is small: it catches big problems,
 not small ones.
 
+## The pool families are run elsewhere
+
+The made-up families in `AI-dev/evals/pool/` are run by `AI-dev/evals/runner/`, which reuses
+this tool's checks. This tool stays for its 18 cases with Dr. Walker's confirmed answers.
+
 ## Run
 
 From `backend/`, so the app's code imports. `railway run` supplies the Anthropic key without

@@ -1,0 +1,284 @@
+{
+  "id": "fam-separation-06",
+  "provenance": "SYNTHETIC — family generator (AI-dev/evals/generator), claude-opus-5-5, 2026-10-19",
+  "status": "pool",
+  "style": "mom, two-parent household, the US; out of order: entries written days late and not in date order, sometimes says so",
+  "facts": {
+    "child": {
+      "name": "Gianna",
+      "age": 8
+    },
+    "anxiety": "Separation anxiety focused on being apart from her parents, especially fear that something will happen to mom or that her parents will leave and not come back",
+    "situations": [
+      {
+        "id": "s1",
+        "name": "Morning drop-off at elementary school",
+        "fear_level": 7,
+        "feared_outcome": "Mom will get in a car crash and won't be there at 3:10 to pick me up.",
+        "behaviors": [
+          {
+            "id": "b1",
+            "type": "safety",
+            "text": "Asks mom over and over during the drive whether she will definitely be at pickup at 3:10"
+          },
+          {
+            "id": "b2",
+            "type": "safety",
+            "text": "Refuses the car line and holds mom's hand until mom walks her all the way to the classroom door"
+          },
+          {
+            "id": "b3",
+            "type": "unclear",
+            "text": "Says her stomach hurts in the car on the way to school"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a1",
+            "text": "Mom parks and walks Gianna into the building instead of using the car line"
+          },
+          {
+            "id": "a2",
+            "text": "Mom answers every 'will you be there?' question with the same promise each time, sometimes five or six times per drive"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "name": "Falling asleep alone in her room at bedtime",
+        "fear_level": null,
+        "feared_outcome": "Mom and Dad will leave the house while I'm asleep.",
+        "behaviors": [
+          {
+            "id": "b4",
+            "type": "safety",
+            "text": "Calls out 'Are you still there?' from her bed every few minutes after lights out"
+          },
+          {
+            "id": "b5",
+            "type": "escape",
+            "text": "Wakes in the night, leaves her room, and comes into her parents' bedroom"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a3",
+            "text": "Dad lies down in Gianna's bed until she falls asleep"
+          },
+          {
+            "id": "a4",
+            "text": "Mom lets her finish the night in a sleeping bag on the floor of the parents' room"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "name": "Parents going out for date night with a babysitter",
+        "fear_level": 9,
+        "feared_outcome": null,
+        "behaviors": [
+          {
+            "id": "b6",
+            "type": "safety",
+            "text": "Uses the babysitter's phone to call mom's cell repeatedly while the parents are out"
+          },
+          {
+            "id": "b7",
+            "type": "unclear",
+            "text": "Cried at the front window after the parents' car pulled away"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a5",
+            "text": "The parents canceled their last two planned date nights"
+          },
+          {
+            "id": "a6",
+            "text": "Mom answers every call during date night and stays on the phone until Gianna calms down"
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "name": "Drop-off birthday parties and sleepovers at friends' houses",
+        "fear_level": 8,
+        "feared_outcome": "I'll get sick and nobody will come get me.",
+        "behaviors": [
+          {
+            "id": "b8",
+            "type": "avoidance",
+            "text": "Refused to go to her friend Maddie's birthday sleepover"
+          },
+          {
+            "id": "b9",
+            "type": "escape",
+            "text": "At a drop-off birthday party at a trampoline park, asked a party parent to call mom and left about 30 minutes in"
+          }
+        ],
+        "accommodations": [
+          {
+            "id": "a7",
+            "text": "Mom RSVP'd no to the sleepover on Gianna's behalf"
+          },
+          {
+            "id": "a8",
+            "text": "Mom drove back and picked Gianna up early from the trampoline park party"
+          }
+        ]
+      }
+    ],
+    "risk": {
+      "present": false,
+      "detail": "",
+      "confirmed": false
+    }
+  },
+  "inputs": {
+    "monitoring_log": [
+      {
+        "date": "2026-10-19",
+        "situation": "Maddie's birthday sleepover (was last Saturday, catching up now)",
+        "child_behavior_observed": "Flat out refused to go. Said what if she gets sick in the night and nobody comes to get her. Wouldn't even talk about just going for cake and coming home before bed, she said she wasn't going, period.",
+        "parent_response": "I texted Maddie's mom and RSVP'd no for her. Told her we'd do something special with Maddie another time.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-14",
+        "situation": "drive to school",
+        "child_behavior_observed": "Stomach hurt again in the car, right around when we turned onto Elm. And the 3:10 questions the whole way. Will you DEFINITELY be there at 3:10. She made me promise six times.",
+        "parent_response": "Same answer every time, yes I will be there at 3:10, I promise. Probably 6 times, I lost count.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-08",
+        "situation": "bedtime",
+        "child_behavior_observed": "After lights out kept yelling 'are you still there??' every couple minutes. Gianna got Dad to lie down with her again.",
+        "parent_response": "Dad stayed in her bed until she was asleep. Took like 40 min.",
+        "fear_thermometer": null,
+        "parent_words": null,
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-21",
+        "situation": "Trampoline park bday party. Super late, this was Sat the 10th, I forgot to put it in",
+        "child_behavior_observed": "Drop-off party. About 30 min in she went to one of the party moms and asked her to call me. Wanted to leave. I remember thinking in the car ugh and the sleepover thing is next weekend.",
+        "parent_response": "Turned around and drove back and picked her up early.",
+        "fear_thermometer": 8,
+        "parent_words": null,
+        "situation_ref": "s4"
+      },
+      {
+        "date": "2026-10-06",
+        "situation": "school drop off",
+        "child_behavior_observed": "Would NOT do the car line. Held my hand the whole way in and wouldn't let go until we got to her classroom door.",
+        "parent_response": "Parked and walked her in. I've been doing that most days honestly.",
+        "fear_thermometer": 6,
+        "parent_words": null,
+        "situation_ref": "s1"
+      },
+      {
+        "date": "2026-10-16",
+        "situation": "date night, Jess babysitting",
+        "child_behavior_observed": "Cried at the front window when we pulled out. Then called my cell from Jess's phone over and over while we were at dinner.",
+        "parent_response": "Picked up every single time and stayed on until she calmed down. We canceled the last two date nights because of this. We almost canceled this one too but we went anyway.",
+        "fear_thermometer": 9,
+        "parent_words": null,
+        "situation_ref": "s3"
+      },
+      {
+        "date": "2026-10-12",
+        "situation": "",
+        "child_behavior_observed": "",
+        "parent_response": "",
+        "fear_thermometer": null,
+        "parent_words": "writing this a few days after. she woke up in the middle of the night sunday and came into our room. I was too tired to walk her back so I let her finish the night in the sleeping bag on our floor. thats happened a few times now.",
+        "situation_ref": "s2"
+      },
+      {
+        "date": "2026-10-20",
+        "situation": "car to school, monday",
+        "child_behavior_observed": "Is it 3:10 pickup, are you sure, will you be there. Stomach ache again.",
+        "parent_response": "Promised every time. Walked her in, no car line.",
+        "fear_thermometer": 7,
+        "parent_words": null,
+        "situation_ref": "s1"
+      }
+    ],
+    "voice_notes": [
+      {
+        "text": "ok so um last night bedtime was rough again she kept calling out are you still there are you still there like every few minutes and then um she got dad to lie down with her again until she fell asleep and then this morning in the car it was the 3:10 thing over and over will you be there at 3:10 and i just kept saying yes i promise yes i promise um she said her worry was like a seven about school",
+        "expected": {
+          "refs": [
+            "s2",
+            "b4",
+            "a3",
+            "s1",
+            "b1",
+            "a2"
+          ],
+          "observations": 2,
+          "fear_level_said": 7
+        },
+        "trap": "'She got dad to lie down with her' phrases Dad's accommodation (a3) as if Gianna did it. The seven belongs to the morning drive (s1), not to bedtime, which has no fear level."
+      },
+      {
+        "text": "um so were out right now at dinner and shes called my phone from jess's phone i think four times already and i just answer and stay on until shes calm um she was crying at the window when we left we almost canceled tonight too honestly like we did the last two times but we went",
+        "expected": {
+          "refs": [
+            "s3",
+            "b6",
+            "a6",
+            "b7",
+            "a5"
+          ],
+          "observations": 1,
+          "fear_level_said": null
+        },
+        "trap": "'We almost canceled tonight too' is not an extra cancellation. Only the last two canceled date nights (a5) count. All of this happened on one evening, so it is one observation."
+      }
+    ]
+  },
+  "judgment": {
+    "step_sentences": [
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b1"
+      },
+      {
+        "situation_ref": "s1",
+        "behavior_ref": "b2"
+      },
+      {
+        "situation_ref": "s2",
+        "behavior_ref": "b4"
+      },
+      {
+        "situation_ref": "s3",
+        "behavior_ref": "b6"
+      }
+    ],
+    "rungs": [
+      {
+        "situation_ref": "s1",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s2",
+        "with_feared_outcome": true
+      },
+      {
+        "situation_ref": "s3",
+        "with_feared_outcome": false
+      },
+      {
+        "situation_ref": "s4",
+        "with_feared_outcome": true
+      }
+    ]
+  }
+}

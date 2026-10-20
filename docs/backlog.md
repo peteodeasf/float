@@ -57,22 +57,6 @@ All from `docs/plans/ai-quality-testing.md`. Read the whole plan before any of t
 Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not tonight), scoring the
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
-#### One test runner for the AI features `L`
-- **Today:** `AI-dev/Extraction Loop/float_harness/` scores monitoring analysis, but from its own
-  copy of the prompt (that is how the old 0.926 score went stale). Step sentences and suggested
-  rungs have no runner. No call sets a temperature.
-- **What changes:** build `AI-dev/evals/runner/`, reusing `float_harness` code where it fits. It
-  imports the app's real prompts and calls from `backend/app/` (no copies). It runs each case N
-  times. It runs code checks first, then reviewing agents (leave a hook for them; the reviewers are
-  a later item). It writes a report with sample sizes and a stability figure (how often the N runs
-  agree). It uses one case format for every feature, read from the pool format in
-  `AI-dev/evals/pool/README.md`. It has a spending limit and stops when reached. Start with one
-  feature wired up end to end: monitoring analysis (`rebuild_from_monitoring`).
-- **How to tell it worked:** tests with a fake AI client cover the case loader, the N-runs loop,
-  the stability figure, and the spending stop. One real run on 5 pool families, with the report
-  in the PR.
-- **Gate:** none. **Depends on:** nothing.
-
 #### Judging folder for the AI tests `S`
 - **Today:** the reviewers' instructions and held-out cases have no home.
 - **What changes:** create `AI-dev/evals/judging/` with a README saying what goes there and that
@@ -81,29 +65,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
 - **How to tell it worked:** a test shows the held-out output has scores and counts and no case
   text.
 - **Gate:** none. **Depends on:** the test runner.
-
-#### Protect the judging folder `S`
-- **Today:** `.github/CODEOWNERS` does not list `AI-dev/evals/judging/`.
-- **What changes:** add `/AI-dev/evals/judging/ @peteodeasf` to `.github/CODEOWNERS`, with a
-  comment saying why: the agents that tune prompts must not be able to change how they are marked.
-  Only this line, in its own PR.
-- **How to tell it worked:** the diff is that one line and its comment.
-- **Gate:** waits for Peter (CODEOWNERS covers `.github/`). Do not try to merge it.
-  **Depends on:** nothing.
-
-#### Family generator for the waiting pool `M`
-- **Today:** the 30 families in `AI-dev/evals/pool/families/` were written by hand-run agents.
-  `validate.py` checks the format.
-- **What changes:** a script, `AI-dev/evals/generator/`, that writes new families into the pool
-  the same way: facts first (age 8–17, situations with Fear Levels, behaviors with types,
-  accommodations, risk label with `confirmed: false`), then the log and voice notes written from
-  the facts, in varied styles (terse, rambling, misspelled, out of order). Every family passes
-  `validate.py`. Spread across social, separation, health, specific fears and school refusal, and
-  add what the README says is missing, such as families outside the US. No session transcripts.
-  American spelling.
-- **How to tell it worked:** one real run of 5 families, all passing `validate.py`, added to the
-  pool in the PR. Tests for the parts that don't call the AI.
-- **Gate:** none. **Depends on:** nothing.
 
 #### Score monitoring analysis on the pool `M`
 - **Today:** the runner (earlier item) can run `rebuild_from_monitoring`. Nothing scores it
@@ -114,15 +75,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
 - **How to tell it worked:** a report in the PR with each score, its sample size, and its
   stability across runs. Tests for the scoring code.
 - **Gate:** none (it changes no prompt). **Depends on:** the test runner.
-
-#### Preliminary report test sends the app's input `S`
-- **Today:** `backend/evals/preliminary_report/run_eval.py` no longer sends what the app sends
-  to the preliminary report prompt in `backend/app/api/routers/patients.py`.
-- **What changes:** make it build its input the way the route does, by calling the same code
-  rather than copying it.
-- **How to tell it worked:** a test that the eval's input and the route's input match for the same
-  log.
-- **Gate:** none. **Depends on:** nothing.
 
 #### The two monitoring prompts disagree about extra triggers `S`
 - **Today:** the preliminary report prompt in `backend/app/api/routers/patients.py` says "you may
@@ -141,15 +93,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   whether the parent's words are kept.
 - **How to tell it worked:** a report in the PR with sample sizes. Tests for the scoring code.
 - **Gate:** none. **Depends on:** the test runner.
-
-#### Voice notes: a time is not a Fear Level `S`
-- **Today:** `_said` in `backend/app/services/monitoring_capture.py` counts any number in the text
-  as a Fear Level, so "at 8pm" passes.
-- **What changes:** only accept a number that is said as a rating. Use the pool's `trap` entries
-  ("at 8:15", "three dogs") as examples in tests, not in any prompt.
-- **How to tell it worked:** tests for "at 8pm" (rejected) and a real rating (accepted).
-- **Gate:** it touches how Fear Levels are read: request Peter's review and do not merge.
-  **Depends on:** nothing.
 
 #### Rung and step-sentence reviewers `L`
 - **Today:** no reviewing agents. Dr. Walker's 2026-08-29 review of 60 suggested rungs is in
@@ -582,6 +525,23 @@ against "Screen layout" in `CLAUDE.md`, signed in as the demo parent. Peter to d
 - **How to tell it worked.** Screenshot at 375 wide shows the whole placeholder.
 - **Gate.** None.
 
+## The saved list's order is arbitrary among items seen equally often
+
+**Found 2026-10-19.** `S`
+
+- **Today.** `get_insights` in `backend/app/services/insight_service.py` sorts by how often an
+  item was seen, then by `first_seen_at`. `first_seen_at` is filled by Postgres `now()`, which is
+  the same for every row written in one transaction. One press of Analyze with AI writes the whole
+  list in one transaction, so the second key never separates anything. Items seen equally often
+  come out in whatever order Postgres returns them. That order feeds the report call's input and
+  the list the clinician sees.
+- **What changes.** Add a real tiebreak, for example the order the model listed them in, or the
+  fear rating.
+- **How to tell it worked.** A test with two situations seen once each gets the same order every
+  run, whichever is inserted first.
+- **Gate.** None to fix the order. If the tiebreak chosen is the fear rating, ask Peter, since it
+  decides what a clinician sees first.
+
 # Admin
 
 | Item | Today | Size |
@@ -754,6 +714,14 @@ tests; CI on push; this file).
   example content. **What changes:** delete `seed_demo.py`, unless Peter still wants a script that
   adds the demo family to an existing practice. **How to tell it worked:** nothing imports it.
   **Gate:** none.
+- **`/verify` does not work as written on the Mac mini.** `S` Found 2026-10-19. **Today:**
+  `.claude/commands/verify.md` says to start the test database with `docker compose` and run
+  `./.venv/bin/python` from `backend/`. The mini has no Docker. Its test database is a local service
+  on port 55432 (`docs/plans/agent-machine-setup.md`), and a worktree has no `backend/.venv`; the
+  environment is `~/code/float/backend/.venv`. The tests pass once run that way. **What changes:**
+  make the first step say what to do on the mini (skip Docker if port 55432 answers, use the shared
+  environment). **How to tell it worked:** an agent on the mini can follow `/verify` word for word.
+  **Gate:** none.
 
 ---
 
@@ -833,6 +801,17 @@ Found while checking, before building:
   a patient analyzed more than once is the combined list, not one AI answer.
 
 **Gate:** `/security-review` on anything that reads patients' records out of production.
+
+## Analyze with AI loses evidence when it names a situation twice `S`
+- **Today:** `entry_ids_by_situation` in `backend/app/services/insight_service.py` keys its answer
+  by normalised name and sets `out[key] = ids`. When the model returns two situations with the same
+  name (it does: the AI test runner counts these as "split"), the second one's entries replace the
+  first's. `rebuild_from_monitoring` then looks up that one list for both, so the log entries behind
+  the first are never saved as its evidence. Found 2026-10-19 while building `AI-dev/evals/runner/`.
+- **What changes:** add the ids to the list already there instead of replacing it.
+- **How to tell it worked:** a test in `backend/tests/test_patient_insights.py` where an extraction
+  names "Bedtime" twice with entries [1] and [2], and the saved situation's evidence holds both.
+- **Gate:** none. **Depends on:** nothing.
 
 ## AI analysis of session notes
 
