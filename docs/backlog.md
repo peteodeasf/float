@@ -66,19 +66,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   text.
 - **Gate:** none. **Depends on:** the test runner.
 
-#### CI check that no test case is in a prompt `M`
-- **Today:** test cases have been copied into prompts three times
-  (`docs/solutions/eval-cases-burned-by-putting-them-in-the-prompt.md`). Nothing checks for it.
-- **What changes:** a script that collects the prompt text in `backend/app/` and the case text in
-  `AI-dev/evals/`, `AI-dev/Extraction Loop/`, `AI-dev/Ladder Eval/`, `AI-dev/Arrow Eval/` and
-  `backend/evals/`, and fails if a long enough run of words from a case appears in a prompt. Needs
-  no API key. Add it as a step in `.github/workflows/ci.yml`. The downward arrow prompt already
-  contains five cases. Report them, and let the check skip only those five by name, with a comment
-  pointing to the plan. Do not remove them from the prompt.
-- **How to tell it worked:** a test where a planted case in a fake prompt fails the check, and a
-  clean one passes. CI is green on the PR.
-- **Gate:** waits for Peter (it changes `.github/`). **Depends on:** nothing.
-
 #### Score monitoring analysis on the pool `M`
 - **Today:** the runner (earlier item) can run `rebuild_from_monitoring`. Nothing scores it
   against the pool's answer keys.
@@ -861,6 +848,25 @@ querying `review_marks`, `review_additions` and `review_comments` by hand.
 Fine for one round. Worth an hour when there is a second, since the same tool is meant to carry the
 extraction and arrow reviews too: one page, every suggestion, how each reviewer marked it and what
 they wrote.
+
+## Short case phrases in the rung prompt that the copy check cannot see
+
+Found 2026-10-19 while building the check that no test case is in a prompt
+(`AI-dev/evals/check_no_cases_in_prompts.py`). `S`
+
+- **Today:** the check needs 7 words in a row to match. Two examples in the suggested-rungs prompt
+  (`SYSTEM_PROMPT` in `backend/app/services/step_suggestion_service.py`, rule 2) are shorter copies
+  of rung cases. "Play the first ten minutes" is a target in `AI-dev/Ladder Eval/` case
+  `sit-82f50a2f`. "Stay until bedtime then get picked up" is close to a target in case
+  `sit-b2a0b25a` ("Stay at the group sleepover until bedtime, then get picked up"). The check also
+  cannot see the Kemp case in the preliminary report prompt, because it was reworded on the way in
+  (`backend/evals/preliminary_report/cases/kemp.json` already says it is not a real test).
+- **What changes:** nothing in the prompt without Peter. Decide whether those two rung cases still
+  count as tests. If not, mark them as spent in their case files. If so, reword the prompt examples
+  so they come from no case (a prompt change, so Peter approves it).
+- **How to tell it worked:** the two cases are either marked spent, or share no phrase with the
+  prompt.
+- **Gate:** the prompt change waits for Peter. **Depends on:** nothing.
 
 ## Ladder generation — build it
 
