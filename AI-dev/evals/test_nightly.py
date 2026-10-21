@@ -310,3 +310,31 @@ def test_a_crash_is_not_hidden_by_an_earlier_report(tmp_path, two_features):
     c = ctx(tmp_path, FakeShell(runner=lambda cmd: (1, None)))
     nightly.job_run(c)
     assert c.night.steps[-4]["status"] == "failed"
+
+
+# Why: Peter reads Trevor's face before the words, so the face must not look happier than the night
+# was. Bad news wins over good, a dry run says nothing about Float, and a quiet clean night is
+# "pleased", not "cheering".
+@pytest.mark.parametrize("dry_run,trouble,better,worse,all_ran,mood", [
+    (True, False, 3, 0, True, "unimpressed"),
+    (False, True, 3, 0, True, "cross"),
+    (False, False, 2, 1, True, "cross"),
+    (False, False, 1, 0, False, "cheering"),
+    (False, False, 0, 0, True, "pleased"),
+    (False, False, 0, 0, False, "unimpressed"),
+])
+def test_trevors_face_matches_the_night(dry_run, trouble, better, worse, all_ran, mood):
+    assert nightly.night_mood(dry_run, trouble, better, worse, all_ran) == mood
+
+
+# Why: the report links to the picture by a name beside it, so the picture must be written there,
+# and every face the report can pick must exist.
+def test_the_report_carries_trevors_face(tmp_path):
+    write_night(tmp_path, "2026-10-19", report(found=8, extra=1))
+    write_night(tmp_path, "2026-10-20", report(found=9, extra=3))
+    c = ctx(tmp_path, FakeShell())
+    path = nightly.job_report(c)
+    assert c.night.mood == "cross"  # one score got better, one got worse
+    assert "![Trevor: " in path.read_text().splitlines()[2]
+    assert (tmp_path / "2026-10-20-trevor.webp").read_bytes() == (nightly.TREVOR / "cross.webp").read_bytes()
+    assert all((nightly.TREVOR / f"{m}.webp").exists() for m in nightly.MOOD_TEXT)

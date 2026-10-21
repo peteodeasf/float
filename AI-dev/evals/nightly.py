@@ -63,6 +63,16 @@ TEST_DATABASE = "float_test"
 # For the morning report's "better" and "worse". Every other score is better when lower.
 HIGHER_IS_BETTER = {"situations_found", "types_right", "count_right", "fear_kept", "note_words_kept"}
 
+# Trevor's face at the top of the morning report, so Peter sees how the night went before reading.
+# Picked by `night_mood`; the pictures are in trevor/ beside this file.
+TREVOR = Path(__file__).resolve().parent / "trevor"
+MOOD_TEXT = {
+    "cross": "something failed, stopped early or got worse",
+    "cheering": "a score got better and nothing got worse",
+    "pleased": "everything ran and the scores held",
+    "unimpressed": "not much to go on tonight",
+}
+
 NOT_TESTED = [
     "Step sentences and suggested rungs are not run yet. They need the reviewing agents, a later item.",
     "There are no reviewing agents yet, so there are no reviewer disagreements to report.",
@@ -114,6 +124,8 @@ class Night:
         # The limit is set by the night's first job, so a later job cannot raise it.
         self.limit = float(data["limit_usd"])
         self.steps: list[dict] = data["steps"]
+        # Set by `morning_report`: one of MOOD_TEXT's keys.
+        self.mood: str | None = None
 
     def spent(self) -> float:
         return round(sum(s["spent_usd"] for s in self.steps), 4)
@@ -532,6 +544,20 @@ def _status_line(s: dict) -> str:
     return f"- {s['job']}, {s['step']}: {s['status']}{money}{detail}"
 
 
+def night_mood(dry_run: bool, trouble: bool, better: int, worse: int, all_ran: bool) -> str:
+    """Which Trevor goes on the report. Bad news wins over good, so a night where one score went up
+    and another went down shows the cross face."""
+    if dry_run:
+        return "unimpressed"
+    if trouble or worse:
+        return "cross"
+    if better:
+        return "cheering"
+    if all_ran:
+        return "pleased"
+    return "unimpressed"
+
+
 def morning_report(ctx: Ctx) -> str:
     night = ctx.night
     prev = previous_night(night.reports, night.day)
@@ -545,12 +571,16 @@ def morning_report(ctx: Ctx) -> str:
     body: list[str] = []
     changes: list[str] = []
     compared = False
+    better = worse = 0
+    all_ran = True
+    trouble = any(s["status"] == "failed" for s in night.steps)
     for feature in FEATURES:
         name = FEATURE_TEXT[feature]
         path = night.dir / "run" / feature / "report.json"
         body += ["", f"## {name}", ""]
         if not path.exists():
             body.append("Not run tonight. See \"What ran\" below.")
+            all_ran = False
             continue
         rep = json.loads(path.read_text())
         n = rep["runs_per_case"]
@@ -582,6 +612,8 @@ def morning_report(ctx: Ctx) -> str:
                 then = _ratio(old["totals"], key, out_of)
                 body.append(f"- {label}: {now}, was {then} ({d})")
                 changes.append(f"{name}, {label.lstrip('. ')}: {d}, {now} (was {then}).")
+                better += d == "better"
+                worse += d == "worse"
         if n < 2:
             body.append("- With one run each, whether runs agree cannot be measured.")
         else:
@@ -593,17 +625,22 @@ def morning_report(ctx: Ctx) -> str:
                 was_steady = {c["case"] for c in old["per_case"] if c["stability"] == 1}
                 new = [c for c in unsteady if c in was_steady]
                 if new:
+                    worse += 1
                     body.append(f"- New tonight (all runs agreed last time): {', '.join(new)}.")
                     changes.append(f"{name}: runs now disagree on {len(new)} case"
                                    f"{'' if len(new) == 1 else 's'} where they agreed last time.")
         if rep["stopped"]:
             body.append(f"- Stopped early: {rep['stopped']}.")
+            trouble = True
         held_path = night.dir / "held_out" / f"{feature}.json"
         held = json.loads(held_path.read_text()) if held_path.exists() else None
         if held is None and any(st["step"] == f"held-out {feature}" and st["detail"] == "no held-out cases yet"
                                 for st in night.steps):
             held = {"none": True}
         body.append(f"- {_held_out_line(held)}")
+
+    night.mood = night_mood(night.dry_run, trouble, better, worse, all_ran)
+    lines[2:2] = [f"![Trevor: {MOOD_TEXT[night.mood]}]({night.dir.name}-trevor.webp)", ""]
 
     if changes:
         lines += ["", f"**Since {prev.name}:**", ""] + [f"- {c}" for c in changes]
@@ -646,6 +683,8 @@ def job_report(ctx: Ctx) -> Path:
     path = ctx.night.reports / f"{ctx.night.dir.name}.md"
     ctx.night.reports.mkdir(parents=True, exist_ok=True)
     path.write_text(text)
+    # The picture sits beside the report, so the report's link works wherever the folder is read.
+    shutil.copyfile(TREVOR / f"{ctx.night.mood}.webp", ctx.night.reports / f"{ctx.night.dir.name}-trevor.webp")
     return path
 
 
