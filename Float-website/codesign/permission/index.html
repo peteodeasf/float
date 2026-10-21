@@ -919,8 +919,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(answers)
         });
-        if (r.ok) return showAnswered((await r.json()).confirmed, true);
-        if (r.status === 409) showError('This form has changed since the page was opened. Please reload the page.');
+        if (r.ok) {
+          const result = await r.json();
+          // `already`: it was sent before, from another tab or device. That first answer stands.
+          return showAnswered(result.confirmed, !result.already);
+        }
+        const problem = r.status === 422 ? await r.json().catch(() => ({})) : {};
+        const badEmail = Array.isArray(problem.detail) &&
+          problem.detail.some(d => (d.loc || []).includes('parent_email'));
+        if (badEmail) {
+          $('email').classList.add('missing');
+          showError('Please check the email address, or leave it blank.');
+        } else if (r.status === 409) showError('This form has changed since the page was opened. Please reload the page.');
         else showError('That did not send. Please check your answers and try again.');
       } catch (err) {
         showError('Something went wrong. Please try again.');

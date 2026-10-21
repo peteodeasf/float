@@ -27,6 +27,8 @@ type Signup = {
   completed_by: string | null
   parent_relationship: string | null
   parent_session_phone: string | null
+  parent_phone: string | null
+  parent_contact_email: string | null
   hold_ends_at: string
 }
 
@@ -126,8 +128,18 @@ export default function CodesignSection({ load }: { load: () => Promise<Codesign
                         {s.parent_name}
                         {s.parent_relationship && <div style={sub}>{s.parent_relationship}</div>}
                       </td>
-                      <td style={td}>{s.parent_email}</td>
-                      <td style={{ ...td, whiteSpace: 'nowrap' }}>{s.parent_session_phone ?? '—'}</td>
+                      <td style={td}>
+                        {s.parent_email}
+                        {s.parent_contact_email && s.parent_contact_email !== s.parent_email && (
+                          <div style={sub}>On the form: {s.parent_contact_email}</div>
+                        )}
+                      </td>
+                      <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                        {s.parent_session_phone ?? '—'}
+                        {s.parent_phone && s.parent_phone !== s.parent_session_phone && (
+                          <div style={sub}>Other: {s.parent_phone}</div>
+                        )}
+                      </td>
                       <td style={{ ...td, minWidth: '180px' }}><Permission s={s} /></td>
                       <td style={td}>{answered(s) ? (s.recording_allowed ? 'Yes' : 'No') : '—'}</td>
                       <td style={td}>{answered(s) ? (s.quotes_allowed ? 'Yes' : 'No') : '—'}</td>

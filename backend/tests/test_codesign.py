@@ -178,7 +178,7 @@ async def test_every_answer_is_required(api, db, open_and_outbox):
         assert (await api.post(f"/codesign/permission/{token}", json=body)).status_code == 422, key
     for over in (dict(parent_confirms_guardian=False), dict(parent_name="  "), dict(teen_name=" "),
                  dict(parent_consents="no"), dict(teen_consents=None), dict(completed_by="someone"),
-                 dict(parent_phone="12")):
+                 dict(parent_phone="12"), dict(parent_phone="  12     ")):
         assert (await api.post(f"/codesign/permission/{token}", json=_answers(**over))).status_code == 422, over
     signup = (await db.execute(select(CodesignSignup))).scalar_one()
     assert (signup.form_submitted_at, signup.permission_given_at) == (None, None)
@@ -190,7 +190,7 @@ async def test_confirmed_needs_a_yes_from_the_parent_and_the_teen(api, db, open_
     # confirmed, every answer stored, and the version of the wording shown is recorded.
     token = await _signed_up(api, db, open_and_outbox)
     r = await api.post(f"/codesign/permission/{token}", json=_answers(parent_email="Ana.Work@Example.com"))
-    assert r.json() == {"success": True, "confirmed": True}
+    assert r.json() == {"success": True, "confirmed": True, "already": False}
     s = (await db.execute(select(CodesignSignup))).scalar_one()
     assert s.permission_given_at is not None and s.permission_given_at == s.form_submitted_at
     assert (s.permission_given_by, s.parent_signed_name, s.teen_signed_name) == ("Ana Rivera", "Ana Rivera", "Maya Rivera")
@@ -212,7 +212,7 @@ async def test_a_no_from_either_declines_and_frees_the_seats(api, db, open_and_o
     assert (await api.post("/codesign/signups", json=second)).status_code == 409
 
     r = await api.post(f"/codesign/permission/{token}", json=_answers(**{no: False}))
-    assert r.json() == {"success": True, "confirmed": False}
+    assert r.json() == {"success": True, "confirmed": False, "already": False}
     s = (await db.execute(select(CodesignSignup))).scalar_one()
     assert (s.permission_given_at, s.form_submitted_at is not None) == (None, True)
     teen_note = next(e for e in open_and_outbox if e["to_email"] == "maya@example.com")
@@ -281,7 +281,7 @@ async def test_a_used_link_changes_nothing(api, db, open_and_outbox):
     sent_at = s.form_submitted_at
     open_and_outbox.clear()
     r = await api.post(f"/codesign/permission/{token}", json=_answers(parent_name="Someone Else"))
-    assert r.json() == {"success": True, "confirmed": False}
+    assert r.json() == {"success": True, "confirmed": False, "already": True}
     await db.refresh(s)
     assert (s.form_submitted_at, s.parent_signed_name, s.permission_given_at) == (sent_at, "Ana Rivera", None)
     assert open_and_outbox == []

@@ -84,7 +84,9 @@ The six sessions are added by the migration. Additive only: two new tables, noth
 1. Backend: models, migration, routes, emails, tests.
 2. floatcbt.com/codesign: new content and form; a permission page at /codesign/permission/.
 3. Admin dashboard: a Co-design section.
-4. Deploy: merge the backend (Railway runs the migration), then upload the website.
+4. Deploy: merge the backend (Railway runs the migration), then upload the website. floatcbt.com
+   is a separate Netlify site uploaded by hand from `Float-website/`
+   (docs/solutions/codesign-permission-form.md).
 
 ## Permission form (Peter, 2026-10-21)
 

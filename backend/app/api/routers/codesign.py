@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr, Field, StrictBool
+from pydantic import BaseModel, EmailStr, Field, StrictBool, StringConstraints
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -198,10 +198,11 @@ async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
     return {"success": True}
 
 
-async def _by_token(db: AsyncSession, token: str) -> CodesignSignup:
-    signup = (await db.execute(
-        select(CodesignSignup).where(CodesignSignup.permission_token_hash == _hash(token))
-    )).scalar_one_or_none()
+async def _by_token(db: AsyncSession, token: str, lock: bool = False) -> CodesignSignup:
+    query = select(CodesignSignup).where(CodesignSignup.permission_token_hash == _hash(token))
+    if lock:
+        query = query.with_for_update()
+    signup = (await db.execute(query)).scalar_one_or_none()
     if signup is None:
         raise HTTPException(status_code=404, detail="This link isn't valid.")
     return signup
@@ -233,8 +234,8 @@ def _answered(signup: CodesignSignup) -> bool:
     return signup.form_submitted_at is not None or signup.permission_given_at is not None
 
 
-Name = Annotated[str, Field(min_length=1, max_length=200)]
-Phone = Annotated[str, Field(min_length=7, max_length=40)]
+Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+Phone = Annotated[str, StringConstraints(strip_whitespace=True, min_length=7, max_length=40)]
 
 
 class PermissionIn(BaseModel):
@@ -245,7 +246,7 @@ class PermissionIn(BaseModel):
     parent_allows_quotes: StrictBool
     parent_confirms_guardian: StrictBool
     parent_name: Name
-    parent_relationship: Annotated[str, Field(min_length=1, max_length=100)]
+    parent_relationship: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
     parent_phone: Phone
     # Blank on the page means the address the link was sent to, which the page cannot show.
     parent_email: EmailStr | None = None
@@ -304,10 +305,11 @@ def _copy_paragraphs(signup: CodesignSignup, dates: list[str], confirmed: bool) 
 
 @router.post("/codesign/permission/{token}")
 async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession = Depends(get_db)):
-    signup = await _by_token(db, token)
+    # Locked, so two sends at the same moment cannot both pass the check below.
+    signup = await _by_token(db, token, lock=True)
     if _answered(signup):
         # Sent already; the first answer stands. To change it, the parent emails Sally.
-        return {"success": True, "confirmed": signup.permission_given_at is not None}
+        return {"success": True, "confirmed": signup.permission_given_at is not None, "already": True}
     if data.form_version != codesign_form.FORM_VERSION:
         # Only the wording the parent read may be recorded as the wording agreed to.
         raise HTTPException(status_code=409, detail="This form has changed since the page was opened. "
@@ -315,11 +317,6 @@ async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession 
     if not data.parent_confirms_guardian:
         raise HTTPException(status_code=422, detail="Please tick the box to confirm you are the "
                                                     "child's parent or legal guardian.")
-    typed = {k: getattr(data, k).strip() for k in (
-        "parent_name", "parent_relationship", "parent_phone", "parent_session_phone", "teen_name")}
-    if not all(typed.values()):
-        raise HTTPException(status_code=422, detail="Please fill in every field.")
-
     now = _now()
     confirmed = data.parent_consents and data.teen_consents
     signup.form_submitted_at = now
@@ -328,18 +325,18 @@ async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession 
     signup.parent_allows_recording = data.parent_allows_recording
     signup.parent_allows_quotes = data.parent_allows_quotes
     signup.parent_confirms_guardian = data.parent_confirms_guardian
-    signup.parent_signed_name = typed["parent_name"]
-    signup.parent_relationship = typed["parent_relationship"]
-    signup.parent_phone = typed["parent_phone"]
+    signup.parent_signed_name = data.parent_name
+    signup.parent_relationship = data.parent_relationship
+    signup.parent_phone = data.parent_phone
     signup.parent_contact_email = (data.parent_email or signup.parent_email).lower().strip()
-    signup.parent_session_phone = typed["parent_session_phone"]
+    signup.parent_session_phone = data.parent_session_phone
     signup.teen_consents = data.teen_consents
     signup.teen_allows_recording = data.teen_allows_recording
-    signup.teen_signed_name = typed["teen_name"]
+    signup.teen_signed_name = data.teen_name
     signup.teen_completed_by = data.completed_by
     if confirmed:
         signup.permission_given_at = now
-        signup.permission_given_by = typed["parent_name"]
+        signup.permission_given_by = data.parent_name
     await db.commit()
 
     dates = await _dates(db, signup)
@@ -373,7 +370,7 @@ async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession 
                 "If this is a mistake, email Sally at sally@floatcbt.com.",
             ],
         )
-    return {"success": True, "confirmed": confirmed}
+    return {"success": True, "confirmed": confirmed, "already": False}
 
 
 # ── Who signed up: Float admins, and the named viewers ───────────────────────
@@ -393,7 +390,7 @@ async def _signups_by_session(db: AsyncSession) -> dict:
     def status(s: CodesignSignup) -> str:
         if s.permission_given_at is not None:
             return "confirmed"
-        if s.form_submitted_at is not None:
+        if _answered(s):
             return "declined"
         return "waiting" if s.created_at > now - HOLD else "released"
 
@@ -416,6 +413,8 @@ async def _signups_by_session(db: AsyncSession) -> dict:
             "completed_by": codesign_form.COMPLETED_BY.get(s.teen_completed_by or ""),
             "parent_relationship": s.parent_relationship,
             "parent_session_phone": s.parent_session_phone,
+            "parent_phone": s.parent_phone,
+            "parent_contact_email": s.parent_contact_email,
             "hold_ends_at": (s.created_at + HOLD).isoformat(),
             "created_at": s.created_at.isoformat(),
         }
