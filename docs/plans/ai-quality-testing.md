@@ -179,6 +179,20 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 12. **Step sentences.**
     - Build the 30-pair set from `ladder-combinations.md`, across kinds of anxiety.
     - Test its open question: say what the child does, or what they stop doing.
+    - Done 2026-10-20: `run.py --feature step_sentences`. 30 pairs from 17 working families, five per kind of anxiety, picked by a rule in code (`step_sentence_set.json`). Each pair runs with the app's prompt ("app") and with its example line changed to ask what the child does ("does"). Then the three step-sentence reviewers, whose verdicts are **unchecked** by any clinician. First run, 3 runs each, 180 sentences, $1.96:
+
+      | | app | does |
+      |---|---|---|
+      | Runs | 90 | 90 |
+      | Names what the child stops ("without", "don't"...) | 86 | 12 |
+      | Over fifteen words | 21 | 16 |
+      | Adds a word not in the situation or behavior | 26 | 70 |
+      | All three reviewers say show | 79 | 76 |
+      | A reviewer found a broken rule | 8 (all reading level) | 10 (no way out, keeps part of the safety behavior) |
+      | Reviewer answer unreadable | 3 | 4 |
+
+      - Read by hand: the 30 "does" sentences from the first run only. Most added words are verbs that turn a stop into an action ("keep your questions to yourself"). A few add details: a seat, a kind of food, a time. Some soften the step into a smaller dose of the safety behavior ("call out only once", "stand next to dad"). The reviewers' objections in "does" are those.
+      - Not decided. A question for Peter, not a prompt rule. Small sample, made-up pairs, unchecked reviewers.
 
 **People**
 
