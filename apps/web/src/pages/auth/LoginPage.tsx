@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth, NotAClinicianError } from '../../context/AuthContext'
 import { apiClient } from '../../api/client'
 import FloatLogo from '../../components/ui/FloatLogo'
@@ -18,6 +18,9 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
+  // The page that sent them here to sign in (ProtectedRoute). Only a path inside this app.
+  const from = (useLocation().state as { from?: string } | null)?.from
+  const afterSignIn = from && from.startsWith('/') && !from.startsWith('//') ? from : '/dashboard'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,7 +29,7 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await login(email, password)
-      navigate('/dashboard')
+      navigate(afterSignIn)
     } catch (err) {
       if (err instanceof NotAClinicianError) setNotClinician(true)
       else setError('Invalid email or password')

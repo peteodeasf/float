@@ -1,4 +1,4 @@
-/** The admin app's table header and cell styles. */
+/** The admin app's card, table header and cell styles. */
 import type { CSSProperties } from 'react'
 
 export const thStyle: CSSProperties = {
@@ -17,4 +17,12 @@ export const tdStyle: CSSProperties = {
   fontSize: '13px',
   color: 'var(--float-text)',
   borderBottom: '1px solid var(--float-surface-sunken)',
+}
+
+/** A white card holding one section. Also the co-design list on /codesign/signups. */
+export const cardStyle: CSSProperties = {
+  background: 'var(--float-surface)',
+  borderRadius: 'var(--float-radius-lg)',
+  boxShadow: 'var(--float-shadow-sm)',
+  padding: '24px',
 }

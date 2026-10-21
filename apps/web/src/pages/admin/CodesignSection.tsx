@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { adminApiClient } from '../../context/AdminAuthContext'
-import { tdStyle as td, thStyle as th } from './tableStyles'
+import { cardStyle, tdStyle as td, thStyle as th } from './tableStyles'
 
 /**
  * Teens signed up for the November co-design sessions from floatcbt.com/codesign, by date, with
  * whether their parent has given permission. Sally sends the invites and payments by hand.
  * docs/plans/codesign-signup.md
+ *
+ * Read-only. Shown in the admin dashboard and on /codesign/signups for the clinicians named in
+ * CODESIGN_VIEWERS (docs/plans/codesign-viewer.md); each passes in how it fetches the list.
  */
 type Signup = {
   id: string
@@ -21,7 +23,7 @@ type Signup = {
   hold_ends_at: string
 }
 
-type Session = {
+export type CodesignSession = {
   id: string
   week: number
   label: string
@@ -43,12 +45,14 @@ function Permission({ s }: { s: Signup }) {
   return <span style={{ color: 'var(--float-text-hint)' }}>No permission after 3 days · seats released</span>
 }
 
-export default function CodesignSection({ cardStyle }: { cardStyle: React.CSSProperties }) {
-  const [sessions, setSessions] = useState<Session[] | null>(null)
+export default function CodesignSection({ load }: { load: () => Promise<CodesignSession[]> }) {
+  const [sessions, setSessions] = useState<CodesignSession[] | null>(null)
+  // Said out loud rather than shown as an empty list, which would read as "nobody signed up".
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    adminApiClient.get('/codesign/signups').then(r => setSessions(r.data.sessions)).catch(() => setSessions([]))
-  }, [])
+    load().then(setSessions).catch(() => setFailed(true))
+  }, [load])
 
   const teens = new Set((sessions ?? []).flatMap(s => s.signups.map(x => x.id))).size
 
@@ -61,6 +65,11 @@ export default function CodesignSection({ cardStyle }: { cardStyle: React.CSSPro
         From floatcbt.com/codesign. Each teen appears under both of their dates. Seats count teens with
         permission, plus those still inside their 3 days.
       </p>
+      {failed && (
+        <p style={{ fontSize: '13px', color: 'var(--float-danger)', margin: 0 }}>
+          Could not load the sign-ups. Reload the page to try again.
+        </p>
+      )}
       {sessions === null ? null : sessions.map(sess => {
         const over = sess.taken > sess.seats
         return (

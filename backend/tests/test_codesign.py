@@ -8,10 +8,13 @@ import pytest
 from sqlalchemy import select
 
 from app.api.routers import codesign
+from app.core.config import settings
 from app.models.codesign import CodesignSession, CodesignSignup
 from app.services import email_service
 
-from tests.factories import make_float_admin, make_org, make_practitioner
+from tests.factories import (
+    _make_user, make_float_admin, make_org, make_patient, make_practice_manager, make_practitioner,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -202,3 +205,93 @@ async def test_only_float_admins_see_who_signed_up(api, db):
     assert (row["teen_email"], row["parent_email"], row["permission"]) == ("maya@example.com", "ana@example.com", "waiting")
     assert r["sessions"][1]["signups"] == []
     assert r["sessions"][3]["signups"][0]["id"] == row["id"]
+
+
+# ── The named viewers: a read-only copy of the list for clinician logins on CODESIGN_VIEWERS ──
+# docs/plans/codesign-viewer.md. The list holds minors' names and emails and their parents'
+# details, so every way in that is not "a clinician on the list" must be refused.
+
+VIEWER_ROUTE = "/codesign/viewer/signups"
+
+
+async def _viewer(db, email="viewer@example.com"):
+    clinician = await make_practitioner(db, await make_org(db))
+    clinician.user.email = email
+    await db.flush()
+    return clinician
+
+
+async def test_a_clinician_on_the_list_sees_who_signed_up(api, db, monkeypatch):
+    # The point of the feature: the person running the sessions can read the list without being
+    # made a Float admin.
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", "viewer@example.com")
+    w1, w2 = await _sessions(db)
+    await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
+    api.sign_in_as((await _viewer(db)).user)
+    r = await api.get(VIEWER_ROUTE)
+    assert r.status_code == 200
+    [row] = r.json()["sessions"][0]["signups"]
+    assert (row["teen_email"], row["parent_email"]) == ("maya@example.com", "ana@example.com")
+    assert (await api.get("/practitioners/me")).json()["can_view_codesign"] is True
+
+
+async def test_a_clinician_not_on_the_list_is_refused(api, db, monkeypatch):
+    # Having a clinician login is not enough: any clinician at any practice could otherwise read
+    # minors' contact details.
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", "viewer@example.com")
+    api.sign_in_as((await _viewer(db, email="someone-else@example.com")).user)
+    assert (await api.get(VIEWER_ROUTE)).status_code == 403
+    assert (await api.get("/practitioners/me")).json()["can_view_codesign"] is False
+
+
+async def test_parent_teen_and_office_manager_logins_are_refused_even_if_listed(api, db, monkeypatch):
+    # Only a clinician login counts. If one of these emails got onto the list by mistake, a
+    # parent, a teen or an office manager still must not see other families' teens.
+    org = await make_org(db)
+    teen = (await make_patient(db, org)).user
+    parent = await _make_user(db, org, "parent")
+    manager = await make_practice_manager(db, org)
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", ",".join(u.email for u in (teen, parent, manager)))
+    for user in (teen, parent, manager):
+        api.sign_in_as(user)
+        assert (await api.get(VIEWER_ROUTE)).status_code == 403, user.email
+
+
+async def test_no_sign_in_is_refused(api, db, monkeypatch):
+    # Anyone who has the address but no login gets nothing.
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", "viewer@example.com")
+    assert (await api.get(VIEWER_ROUTE)).status_code == 401
+
+
+async def test_an_empty_setting_means_nobody(api, db, monkeypatch):
+    # The default. Nobody sees the list until Peter sets it on Railway.
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", "")
+    api.sign_in_as((await _viewer(db)).user)
+    assert (await api.get(VIEWER_ROUTE)).status_code == 403
+    assert (await api.get("/practitioners/me")).json()["can_view_codesign"] is False
+    # Stray commas and spaces do not let anyone through either.
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", " , ,")
+    assert (await api.get(VIEWER_ROUTE)).status_code == 403
+
+
+async def test_matching_ignores_case_and_spaces(api, db, monkeypatch):
+    # The setting is typed by hand on Railway; " Viewer@Example.COM " must still match the login.
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", " other@example.com ,  Viewer@Example.COM ")
+    api.sign_in_as((await _viewer(db, email="viewer@example.com")).user)
+    assert (await api.get(VIEWER_ROUTE)).status_code == 200
+
+
+async def test_the_viewer_list_is_the_admin_list(api, db, monkeypatch, open_and_outbox):
+    # One function behind both routes, so the viewers' page and the admin dashboard never disagree
+    # about who signed up or whose permission is in.
+    monkeypatch.setattr(settings, "CODESIGN_VIEWERS", "viewer@example.com")
+    w1, w2 = await _sessions(db)
+    await api.post("/codesign/signups", json=_form(w1[0], w2[1]))
+    await api.post("/codesign/permission/" + _token(open_and_outbox), json={"name": "Ana Rivera", "agree": True})
+    await api.post("/codesign/signups", json=_form(
+        w1[1], w2[1], teen_email="sam@example.com", parent_email="dad@example.com"))
+
+    api.sign_in_as(await make_float_admin(db))
+    admin_view = (await api.get("/codesign/signups")).json()
+    api.sign_in_as((await _viewer(db)).user)
+    assert (await api.get(VIEWER_ROUTE)).json() == admin_view

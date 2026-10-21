@@ -1267,3 +1267,14 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
   the clinic but not against the patient. The clinician's screens now show that step's name, so an
   exposure pointed at another patient's step would show that name. Using it needs the other step's
   id, which cannot be guessed. Tighten the check to the patient.
+
+## No record of who opened the co-design sign-up list (noticed 2026-10-21)
+
+- **Today:** `GET /codesign/signups` (admins) and `GET /codesign/viewer/signups` (clinicians on
+  `CODESIGN_VIEWERS`) in `backend/app/api/routers/codesign.py` return teens' names, ages and emails
+  and their parents' details. Neither writes down who asked or when. Patient records have
+  `patient_access_log`; these teens are not patients, so it does not cover them.
+- **What changes:** if Peter wants it, record each read of the list (user id, time) in a small table
+  or the existing access log.
+- **How to tell it worked:** a test that reading the list adds one row naming the reader.
+- **Gate:** `/security-review`. Needs a migration. S.

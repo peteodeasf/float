@@ -2,7 +2,8 @@
 
 A teen picks one date from each week; their parent gets a link to give permission. The public
 routes take no login: listing the dates, signing up, and the permission link (an unguessable
-token). The list of who signed up is for Float's admins only.
+token). The list of who signed up is for Float's admins, and for the clinician logins named in
+the CODESIGN_VIEWERS setting (docs/plans/codesign-viewer.md).
 
 Not patients: nothing here reads or writes a patient, family or clinician record.
 """
@@ -18,11 +19,13 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routers.admin import get_admin_context
+from app.api.routers.patients import get_practitioner_context
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.codesign import CodesignSession, CodesignSignup
 from app.models.user import User
 from app.services import email_service
+from app.services.codesign_viewers import can_view_codesign
 
 router = APIRouter(tags=["codesign"])
 
@@ -250,13 +253,11 @@ async def give_permission(token: str, data: PermissionIn, db: AsyncSession = Dep
     return {"success": True}
 
 
-# ── Admin ────────────────────────────────────────────────────────────────────
+# ── Who signed up: Float admins, and the named viewers ───────────────────────
 
-@router.get("/codesign/signups")
-async def list_signups(
-    admin: User = Depends(get_admin_context),
-    db: AsyncSession = Depends(get_db),
-):
+async def _signups_by_session(db: AsyncSession) -> dict:
+    """Every session with who signed up for it. The one source for both routes below, so the admin
+    dashboard and the viewers' page cannot show different things."""
     now = _now()
     sessions = (await db.execute(
         select(CodesignSession).order_by(CodesignSession.starts_at)
@@ -298,3 +299,33 @@ async def list_signups(
             for sess in sessions
         ],
     }
+
+
+@router.get("/codesign/signups")
+async def list_signups(
+    admin: User = Depends(get_admin_context),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _signups_by_session(db)
+
+
+async def get_codesign_viewer(context: tuple = Depends(get_practitioner_context)) -> User:
+    """A signed-in clinician whose login email is on CODESIGN_VIEWERS. Everyone else gets 403.
+
+    Through get_practitioner_context, so a parent's, a teen's or an office manager's login is
+    refused before the list is even looked at: being on the list is not enough without a
+    clinician account. docs/plans/codesign-viewer.md
+    """
+    user, _ = context
+    if not can_view_codesign(user.email):
+        raise HTTPException(status_code=403, detail="You don't have access to this list.")
+    return user
+
+
+@router.get("/codesign/viewer/signups")
+async def list_signups_for_viewer(
+    viewer: User = Depends(get_codesign_viewer),
+    db: AsyncSession = Depends(get_db),
+):
+    """Read-only: the same list as the admin one, for the named people who run the sessions."""
+    return await _signups_by_session(db)

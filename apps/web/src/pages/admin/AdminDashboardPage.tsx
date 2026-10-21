@@ -6,7 +6,7 @@ import { useAdminAuth, adminApiClient, createClinician } from '../../context/Adm
 import FloatLogo from '../../components/ui/FloatLogo'
 import AccessRequestsSection from './AccessRequestsSection'
 import CodesignSection from './CodesignSection'
-import { tdStyle, thStyle } from './tableStyles'
+import { cardStyle, tdStyle, thStyle } from './tableStyles'
 
 type Stats = {
   total_users: number
@@ -76,12 +76,7 @@ type WaitlistEntry = {
   created_at: string | null
 }
 
-const cardStyle: React.CSSProperties = {
-  background: 'var(--float-surface)',
-  borderRadius: 'var(--float-radius-lg)',
-  boxShadow: 'var(--float-shadow-sm)',
-  padding: '24px',
-}
+const loadCodesignSignups = async () => (await adminApiClient.get('/codesign/signups')).data.sessions
 
 // A form field inside the admin panels. One border, radius and padding for all of them.
 const formInput: React.CSSProperties = {
@@ -821,7 +816,7 @@ export default function AdminDashboardPage() {
           </table>
         </section>
 
-        <CodesignSection cardStyle={cardStyle} />
+        <CodesignSection load={loadCodesignSignups} />
 
         {/* Waitlist */}
         <section style={{ ...cardStyle, marginBottom: '32px' }}>
