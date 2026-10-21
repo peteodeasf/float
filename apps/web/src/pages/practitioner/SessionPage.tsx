@@ -348,7 +348,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
               <input value={newName} onChange={e => setNewName(e.target.value)} autoFocus
                 onKeyDown={e => { if (e.key === 'Enter' && newName.trim() && !addMut.isPending) addMut.mutate(newName.trim()) }}
-                placeholder="Add a situation the child finds hard"
+                placeholder="Add a trigger situation"
                 aria-label="A situation"
                 style={textBox} />
               <Button kind="secondary" size="sm" onClick={() => addMut.mutate(newName.trim())}
