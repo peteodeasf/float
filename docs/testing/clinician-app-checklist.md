@@ -94,11 +94,11 @@ parent's form) to save some entries, then section 10.
 - [ ] After that: status pill, "0 entries · sent today", one link per parent, and "not opened yet".
 - [ ] Copy link → "Copied!", and the pasted link opens the parent's form.
 - [ ] Once a parent opens the link, their row says "opened".
-- [ ] Report sub-tab lists every entry the parents saved: date, situation, what they saw, how they responded, Fear Level.
+- [ ] The report under the form lists every entry the parents saved: date, situation, what they saw, how they responded, Fear Level.
 - **Known:** the text by the button says it copies the link. It doesn't.
 - **Known:** the "Email sent to …" confirmation may never show.
 
-## 10. Analyze with AI (Monitoring → Case Summary)
+## 10. Analyze with AI (Case Summary tab)
 **Needs:** at least 4 entries saved through the parent's form (P1), about different situations.
 - [ ] With fewer than 3 entries → no button, and a message saying to add at least 3.
 - [ ] With 3 or more → Analyze with AI → "Analyzing…" → a summary with Situations, Parental responses, Safety & avoidance behaviors, Treatment targets, and the date.
@@ -115,7 +115,7 @@ monitoring log.
 ## 11. Plan tab — getting started
 - [ ] No plan yet → "Create treatment plan" → the plan appears.
 - [ ] + Add nickname → type → Save (or Enter) → shown. Edit it → Esc cancels.
-- [ ] Case Summary sub-tab shows the same AI summary as the Monitoring tab.
+- [ ] There is no Case Summary on the Plan tab or the Monitoring tab. It has its own tab, between Sessions and Plan.
 
 ## 12. Ladder editor (Plan → Build ladder / Edit ladder)
 - [ ] Add situation → type → Add (or Enter) → it appears. The panel stays open for the next one.

@@ -17,6 +17,11 @@ describe('which tab a ?tab= value opens', () => {
     expect(tabFromParam('chat')).toBe('chat')
   })
 
+  // The Case Summary became its own tab (Peter, issue #54), so a link can land on it.
+  it('opens the Case Summary tab', () => {
+    expect(tabFromParam('summary')).toBe('summary')
+  })
+
   it('opens nothing for a missing or unknown value', () => {
     expect(tabFromParam(null)).toBeNull()
     expect(tabFromParam('exposures')).toBeNull()

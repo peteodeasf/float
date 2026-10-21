@@ -421,11 +421,9 @@ export default function PatientPage() {
   // Which recipient's link was just copied (form-exists state has one Copy button per recipient).
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
-  // Monitoring panel: which tab is showing — the raw entries table or the Case Summary.
-  const [monitoringSubTab, setMonitoringSubTab] = useState<'report' | 'summary'>('report')
-  // Plan tab: the ladder on its own, with accommodations and the case summary one tab away
-  // (Peter, 2026-10-13: keep the Plan tab clean for building the ladder).
-  const [planSubTab, setPlanSubTab] = useState<'ladder' | 'accommodations' | 'summary'>('ladder')
+  // Plan tab: the ladder on its own, with accommodations one tab away (Peter, 2026-10-13: keep the
+  // Plan tab clean for building the ladder). The Case Summary is its own tab now (issue #54).
+  const [planSubTab, setPlanSubTab] = useState<'ladder' | 'accommodations'>('ladder')
   const [msgContent, setMsgContent] = useState('')
   // 'teen', or a parent's user id: a child can have two parents and each has their own thread
   // (docs/plans/two-parent-accounts.md).
@@ -1133,8 +1131,7 @@ export default function PatientPage() {
   const hasNewMonitoring = plan?.has_new_monitoring_entries ?? true
 
 
-  // The four Case Summary sections, reused by the Monitoring panel's Case Summary tab and the Plan
-  // tab. Null until a summary has been generated.
+  // The four Case Summary sections. Null until a summary has been generated.
   const caseSummarySections = preliminaryReport ? (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
@@ -1172,9 +1169,11 @@ export default function PatientPage() {
     }
   }
 
-  // The Case Summary tab body: the analyze button + state, then the sections or an empty prompt.
-  const caseSummaryTab = (
-    <div>
+  // The Case Summary tab: the analyze button + state, then the sections or an empty prompt. It
+  // used to appear twice, under Monitoring and under Plan; Peter asked for one place (issue #54).
+  const caseSummaryContent = (
+    <div style={cardStyle}>
+      <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Case Summary</h2>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
         <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0, maxWidth: '540px', lineHeight: 1.5 }}>
           AI summary from the parent monitoring log.
@@ -1204,9 +1203,8 @@ export default function PatientPage() {
     </div>
   )
 
-  // The whole monitoring section in one panel: a form status strip on top, then Report and Case
-  // Summary tabs. The old separate "view entries" list and "view report" table are the one Report
-  // tab now; send, resend, copy link and analyze are all still here.
+  // The whole monitoring section in one panel: a form status strip on top, then the report of
+  // entries. Send, resend and copy link are here; Analyze with AI is on the Case Summary tab.
   const monitoringContent = (
     <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
       <div style={{ padding: '16px 20px' }}>
@@ -1289,36 +1287,12 @@ export default function PatientPage() {
 
       {monitoringForm && (
         <>
-          <div style={{ display: 'flex', gap: '4px', padding: '0 20px', borderTop: '1px solid var(--float-border)', borderBottom: '1px solid var(--float-border)' }}>
-            {(['report', 'summary'] as const).map(t => (
-              <button key={t} onClick={() => setMonitoringSubTab(t)} style={tab(monitoringSubTab === t)}>
-                {t === 'report' ? 'Report' : 'Case Summary'}
-              </button>
-            ))}
-          </div>
-          <div style={{ padding: '18px 20px' }}>
-            {monitoringSubTab === 'report'
-              ? ((monitoringForm.entries_count ?? 0) > 0
-                  ? <InlineMonitoringReport patientId={patientId!} embedded />
-                  : <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No observations recorded yet.</p>)
-              : caseSummaryTab}
+          <div style={{ padding: '18px 20px', borderTop: '1px solid var(--float-border)' }}>
+            {(monitoringForm.entries_count ?? 0) > 0
+              ? <InlineMonitoringReport patientId={patientId!} embedded />
+              : <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No observations recorded yet.</p>}
           </div>
         </>
-      )}
-    </div>
-  )
-
-  // Read-only Case Summary shown on the Plan tab as reference while building the ladder.
-  const caseSummaryPlanCard = (
-    <div style={cardStyle}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', marginBottom: '4px' }}>Case Summary</div>
-      {preliminaryReport ? (
-        <>
-          <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '0 0 16px' }}>From the parent monitoring log. Update it on the Monitoring tab.</p>
-          {caseSummarySections}
-        </>
-      ) : (
-        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>No case summary yet. Generate it on the Monitoring tab.</p>
       )}
     </div>
   )
@@ -1943,6 +1917,7 @@ export default function PatientPage() {
           {([
             { id: 'monitoring', label: 'Monitoring' },
             { id: 'sessions', label: 'Sessions' },
+            { id: 'summary', label: 'Case Summary' },
             { id: 'plan', label: 'Plan' },
             { id: 'progress', label: 'Progress' },
             { id: 'chat', label: 'Chat', b: unreadMessageCount },
@@ -1977,13 +1952,14 @@ export default function PatientPage() {
               </>
             )}
 
+            {activeTab === 'summary' && caseSummaryContent}
+
             {activeTab === 'plan' && (
               <>
                 <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid var(--float-border)' }}>
                   {([
                     { id: 'ladder', label: 'Ladder' },
                     { id: 'accommodations', label: 'Accommodations' },
-                    { id: 'summary', label: 'Case Summary' },
                   ] as const).map(t => (
                     <button key={t.id} onClick={() => setPlanSubTab(t.id)} aria-pressed={planSubTab === t.id} style={tab(planSubTab === t.id)}>
                       {t.label}
@@ -1994,7 +1970,6 @@ export default function PatientPage() {
                 {planSubTab === 'accommodations' && (plan
                   ? <ParentPlanPanel planId={plan.id} patientId={patientId!} triggers={triggers ?? []} />
                   : <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>Create the treatment plan on the Ladder tab first.</p>)}
-                {planSubTab === 'summary' && caseSummaryPlanCard}
               </>
             )}
 
