@@ -69,23 +69,6 @@ pull request that changes a tested prompt or model.
 
 Monitoring analysis at temperature 0 was built 2026-10-21. The voice notes item below is not built yet.
 
-#### Voice notes: a Fear Level given as a range saves the higher number `S`
-- **Today:** when a parent says a range in a voice note ("a seven or eight"), the AI mostly saves no
-  Fear Level (5 of 6 runs, #46). The parent's words are kept in the note's text either way.
-- **What changes:** Peter, 2026-10-21: save the **higher** number, as long as the range stays in the
-  text. That matches Analyze with AI, which takes the highest Fear Level per situation. Change the
-  voice note prompt in `backend/app/services/monitoring_capture.py` to say so, in general words
-  (never a pool note's wording). Check `_said_as_rating` keeps the higher number of a range, and
-  that the note's text still holds the parent's words.
-- **How to tell it worked:** tests with your own wording: "a six or seven" saves 7, "between 4 and
-  6" saves 6, and the words stay in the text; a time or count is still not a Fear Level. A voice
-  notes run on the working families: the range note now saves its higher number, and Fear Levels
-  the parent did not say stay at 0.
-- **Gate:** a Fear Level rule: request Peter's review and do not merge. Add it to Dr. Walker's list
-  in `docs/plans/ai-quality-testing.md` (item 13).
-  **Depends on:** #46 (voice notes: "like" and "about" after a rating) merged. If it is not on
-  main, skip this item.
-
 ### Testing the teen's side without the teen app — moved here by Peter, 2026-10-21
 
 #### Teen data testing page `L`
@@ -811,21 +794,22 @@ Found while checking, before building:
   the reader changes), and `app_can_read` at 0 failed runs on the voice notes test run.
 - **Gate:** Peter's review if the prompt changes. **Depends on:** nothing.
 
-## A voice note that gives the Fear Level as a range usually saves none `S`
-- **Today:** when the parent says a range ("she said a six or seven"), Claude mostly leaves the
-  Fear Level empty: 5 of 6 runs on the one pool note that does this, on 2026-10-21. The prompt
-  (`_prompt` in `backend/app/services/monitoring_capture.py`) says to save a number only when the
-  parent said one, and says nothing about a range. The app's reading (`_said_as_rating`) already
-  accepts either number of a range, so this is the AI, not the app. The parent is then asked to tap
-  a Fear Level. The pool's answer key says to save the lower number, but that was the generating
-  agent's choice, not a clinical one.
-- **What changes:** Peter decides what a range should save: the lower number, the higher one, or
-  nothing (the parent taps one). If a number, one general line in the prompt says so. Never quote a
-  pool note.
-- **How to tell it worked:** `run.py --feature voice_notes` saves the chosen number on that note,
-  and "Fear Levels saved that the parent did not say" stays 0. One note is a very small sample;
-  more range notes in the pool would help.
-- **Gate:** a Fear Level rule: Peter's decision, and a note for Dr. Walker. **Depends on:** nothing.
+## The voice notes answer key marks a range's lower number as the right Fear Level `S`
+- **Today:** Peter decided on 2026-10-21 that a Fear Level said as a range ("a seven or eight")
+  saves the higher number, and the voice note prompt now says so. The pool's answer keys were
+  written before that, by the agents that made the families, and give the lower number
+  (`fear_level_said` in `AI-dev/evals/pool/families/fam-health-05.json`, voice note 2, the only
+  working note found with a range). So `run.py --feature voice_notes` counts the right answer as
+  "a Fear Level saved that the parent did not say": 3 of 3 runs on that note, on 2026-10-21. The
+  runner's report says so in its "don't cover" list (`AI-dev/evals/runner/voice_notes.py`). Held-out
+  families in `AI-dev/evals/judging/` may have the same problem; nobody has looked.
+- **What changes:** set the answer key of each range note to its higher number, in the pool and,
+  with Peter's approval (`judging/` is his), in the held-out families. Then drop the range line from
+  the runner's "don't cover" list. Not done in the pull request that changed the prompt, so that a
+  prompt change did not also change how it is marked.
+- **How to tell it worked:** a voice notes run shows 0 "Fear Levels saved that the parent did not
+  say" with the range note counted as saved.
+- **Gate:** Peter approves the `judging/` part. **Depends on:** the range prompt change merged.
 
 ## A drafted step sentence in quote marks keeps its closing quote `S`
 - **Today:** `clean` in `backend/app/services/combination_wording.py` strips quote marks from the

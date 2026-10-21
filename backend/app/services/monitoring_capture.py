@@ -125,6 +125,7 @@ Rules:
 - Keep the parent's own words. Tidy them into short sentences in the parent's voice ("I sat with her until she calmed down"). Do not add anything, soften it, explain it or diagnose it.
 - Use "" for anything the parent did not say. Never fill a gap with a guess.
 - fear: the child's Fear Level from 1 to 10, only when the parent said a number for it. Otherwise null. Words like "terrified" or "a bit nervous" are not a number.
+- If the parent gives the Fear Level as a range of two numbers, fear is the higher of the two. Keep both numbers in their words where you write up the moment.
 - If nothing in the note is a moment when the child was anxious, return {{"observations": []}}."""
 
 
@@ -166,6 +167,9 @@ def _said_as_rating(text: str, n: int) -> bool:
     "About a seven", "an 8", "6 out of 10", "Fear Level: 6", "rated it a 4" are ratings. "At 8pm",
     "at 8:15", "three dogs", "twenty minutes" and "a six-year-old" are not. When in doubt it is not
     a rating: then the Fear Level is left empty for the parent to tap.
+
+    For a range ("a six or seven", "between 4 and 6") the higher number passes: Peter, 2026-10-21,
+    a range saves its higher number, as Analyze with AI takes the highest Fear Level per situation.
     """
     num = rf"(?:{n}|{NUMBER_WORDS[n]})"
     filler = r"(?:(?:it|her|him|herself|himself|themselves|was|is|as|at|of|a|an|solid|good|full|strong)\s+){0,2}"
@@ -173,7 +177,8 @@ def _said_as_rating(text: str, n: int) -> bool:
     patterns = (
         rf"\b{num}\s*(?:/\s*10|out\s+of\s+(?:10|ten))\b",                 # 7/10, seven out of ten
         rf"\b(?:an?|fear|level|rated|rating|rate)(?:\s*:\s*|\s+){filler}{num}\b",  # an eight, Fear Level: 6
-        rf"\ban?\s+{any_num}\s+(?:or|to)\s+{num}\b",                       # a six or seven
+        rf"\ban?\s+{any_num}(?:\s+(?:or|to)\s+(?:an?\s+)?|\s*-\s*){num}\b",     # a six or (a) seven, a 6-7
+        rf"\bbetween\s+(?:an?\s+)?{any_num}\s+and\s+(?:an?\s+)?{num}\b",     # between 4 and 6
     )
     return any(re.search(p + _AFTER_A_RATING, text, re.IGNORECASE) for p in patterns)
 
