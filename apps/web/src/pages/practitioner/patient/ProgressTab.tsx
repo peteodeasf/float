@@ -1,5 +1,5 @@
 /**
- * The Exposures tab — how the child's exposure work is going, read at a glance.
+ * The Progress tab (called Exposures until 2026-10-21) — how the child's exposure work is going, read at a glance.
  *
  * Three parts, data first (Peter, 2026-09-18, redesign):
  *  1. One graph: belief (or fear) over time — an overall trend plus a line per situation.
@@ -41,7 +41,7 @@ const eyebrow: React.CSSProperties = {
   fontSize: 10.5, fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--float-text-secondary)',
 }
 
-export function ExposuresTab({ experiments }: { experiments: PlannedExperiment[] }) {
+export function ProgressTab({ experiments }: { experiments: PlannedExperiment[] }) {
   const [metric, setMetric] = useState<'belief' | 'fear'>('belief')
   const [weekOffset, setWeekOffset] = useState(0)
   const todayKey = ymd(new Date())
