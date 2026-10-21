@@ -38,6 +38,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Read by the AI tests too: their reviewing agents must run on a different model from this one.
 SUGGESTION_MODEL = "claude-sonnet-4-6"
 
 # The limits, from docs/plans/ladder-generation.md ("How many suggestions"). The prompt asks for

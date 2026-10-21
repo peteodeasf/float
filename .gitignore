@@ -32,3 +32,4 @@ AI-dev/Combination Wording/results.md
 # AI test runner output. outputs.jsonl holds the model's answers to test cases; the report is
 # pasted into the pull request instead. See AI-dev/evals/runner/README.md.
 AI-dev/evals/runner/runs/
+AI-dev/evals/judging/runs/
