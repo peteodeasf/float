@@ -31,6 +31,7 @@ import ParentProgressSection from '../../components/practitioner/ParentProgressS
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
 import { btn, buttonRow, countPill, liveDot, chip, iconBtn, tab, tabCount, segGroup, segLabel, segItem, menuPanel, menuItem } from '../../components/ui/buttons'
 import { Button, CloseButton } from '../../components/ui/primitives'
+import { participantColors } from '../../components/ui/participantColors'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
@@ -979,9 +980,7 @@ export default function PatientPage() {
     const first = full?.trim().split(/\s+/)[0]
     return first || (pt === 'patient' ? 'Patient' : 'Parent')
   }
-  const participantChipColors = (pt: SessionParticipant) => pt === 'parent'
-    ? { bg: 'var(--float-primary-light)', text: 'var(--float-primary-dark)', avatar: 'var(--float-primary)' }
-    : { bg: 'var(--float-accent-purple-bg)', text: 'var(--float-accent-purple-text)', avatar: 'var(--float-accent-purple)' }
+  const participantChipColors = (pt: SessionParticipant) => participantColors(pt === 'parent' ? 'parent' : 'child')
 
   const sessionNotesList = (
     <div style={cardStyle}>
