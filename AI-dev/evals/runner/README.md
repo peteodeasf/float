@@ -12,6 +12,10 @@ Wired up so far:
 - **suggested rungs** (`--feature rungs`): the smaller versions of a situation offered in the
   ladder editor, as `step_suggestion_service.suggest_steps` returns them. Run with and without the
   feared outcome. See "Suggested rungs" below.
+- **step sentences** (`--feature step_sentences`): the sentence drafted for a step that is a
+  situation without one safety behavior, as `combination_wording.draft_sentence` returns it. A
+  fixed set of 30 pairs, each run with the app's prompt and with one line changed, then the three
+  step-sentence reviewers. See "Step sentences" below.
 
 The other features are later items.
 
@@ -157,6 +161,43 @@ there is the prompt's rule not being followed. `plain_enough_for_a_child` is Lad
 clinical words.
 
 Whether a suggestion is any good is not scored. That is the reviewers' job.
+
+## Step sentences
+
+`step_sentences.py`. The cases are a fixed set, `step_sentence_set.json`: 30 situation and safety
+behavior pairs, five from each kind of anxiety in the pool (social, separation, health, specific
+fears, school, edge cases), all from the working half. `choose_set` is the rule that picked them:
+within a kind the families take turns, each giving its next pair. After the pool's committed
+families change, rebuild the file with
+
+    ~/code/float/backend/.venv/bin/python AI-dev/evals/runner/step_sentences.py --write-set
+
+A test fails if the file and the rule disagree. The worked example in `ladder-combinations.md` is
+not in the set, because the app's prompt uses it as its example.
+
+Float is given what the app sends: the situation's name and the behavior's words. The child's age
+goes to the age reviewer only.
+
+**The open question** (`ladder-combinations.md`): should the sentence say what the child does, or
+what they stop doing? Each pair runs twice:
+- `app`: the app's prompt. Its example names what the child stops ("... without sitting at the
+  back").
+- `does`: the app's prompt with that one line (`APP_LINE`) swapped for `DOES_LINE`, which asks for
+  what the child does and not to use "without". Built from the app's prompt on every run. If the
+  app's line changes, the run stops and says so.
+
+The runner reports, per mode: words per sentence, sentences over fifteen words, sentences that name
+what the child stops (a word list: without, don't, not, stop, instead of), and words in the
+sentence that are in neither the situation nor the behavior. Then the three step-sentence
+reviewers (`AI-dev/evals/judging/`) judge every run's sentence, and the report counts their
+verdicts per mode and per reviewer, with the rule ids they named. **Their verdicts are unchecked:**
+no clinician has marked step sentences. Stability: two runs agree when the sentence is word for
+word the same.
+
+`--no-reviewers` skips the reviewers. A full run (60 cases, 3 runs, reviewers on) cost about $1.60
+on 2026-10-20.
+
+Nothing here changes the app's prompt. A finding is a question for Peter.
 
 ## Adding a feature
 

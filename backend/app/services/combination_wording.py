@@ -44,10 +44,43 @@ def template_sentence(situation: str, behavior: str) -> str:
     return f"{situation.strip()} — without: {behavior.strip()}"
 
 
-def _clean(text: str) -> str:
+def clean(text: str) -> str:
     text = text.strip().strip('"“”').strip()
     # One sentence only. If the model wrote more, the first line is the step.
     return text.splitlines()[0].strip() if text else ""
+
+
+def user_text(situation: str, behavior: str) -> str:
+    return f"Situation: {situation.strip()}\nSafety behavior: {behavior.strip()}"
+
+
+async def ask_claude(situation: str, behavior: str, client=None, system: str = SYSTEM_PROMPT) -> str | None:
+    """The model's reply text, or None when it refused.
+
+    `client` and `system` are for the AI test runner (AI-dev/evals/runner/step_sentences.py), which
+    counts what each call costs and tries one changed line of the prompt. The app always leaves
+    them out.
+    """
+    if client is None:
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+    # The pinned SDK (0.69) predates `output_config` and `fallbacks`, so they go in the body.
+    # `fallbacks: "default"` lets the API re-run a refused request on another model.
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        system=system,
+        messages=[{"role": "user", "content": user_text(situation, behavior)}],
+        extra_headers={"anthropic-beta": "server-side-fallback-2026-07-01"},
+        extra_body={"fallbacks": "default", "output_config": {"effort": "low"}},
+    )
+    if message.stop_reason == "refusal":
+        return None
+    return "".join(
+        getattr(block, "text", "") for block in message.content
+        if getattr(block, "type", None) == "text"
+    )
 
 
 async def draft_sentence(situation: str, behavior: str) -> tuple[str, str]:
@@ -57,30 +90,11 @@ async def draft_sentence(situation: str, behavior: str) -> tuple[str, str]:
         return fallback
 
     try:
-        import anthropic
-
-        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        # The pinned SDK (0.69) predates `output_config` and `fallbacks`, so they go in the body.
-        # `fallbacks: "default"` lets the API re-run a refused request on another model.
-        message = await client.messages.create(
-            model=MODEL,
-            max_tokens=2000,
-            system=SYSTEM_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": f"Situation: {situation.strip()}\nSafety behavior: {behavior.strip()}",
-            }],
-            extra_headers={"anthropic-beta": "server-side-fallback-2026-07-01"},
-            extra_body={"fallbacks": "default", "output_config": {"effort": "low"}},
-        )
-        if message.stop_reason == "refusal":
+        text = await ask_claude(situation, behavior)
+        if text is None:
             logger.warning("combination wording: refused")
             return fallback
-        text = "".join(
-            getattr(block, "text", "") for block in message.content
-            if getattr(block, "type", None) == "text"
-        )
-        sentence = _clean(text)
+        sentence = clean(text)
         return (sentence, "ai") if sentence else fallback
     except Exception:
         # Never block the clinician on wording. The template is always editable.

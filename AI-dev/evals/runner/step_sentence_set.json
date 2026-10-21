@@ -1,0 +1,152 @@
+[
+  {
+    "family": "fam-edge-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-health-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-school-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-separation-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-social-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-specific-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-edge-03",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-health-03",
+    "situation_ref": "s2",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-school-03",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-separation-03",
+    "situation_ref": "s2",
+    "behavior_ref": "b3"
+  },
+  {
+    "family": "fam-social-03",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-specific-03",
+    "situation_ref": "s1",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-edge-01",
+    "situation_ref": "s2",
+    "behavior_ref": "b3"
+  },
+  {
+    "family": "fam-health-05",
+    "situation_ref": "s1",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-school-05",
+    "situation_ref": "s2",
+    "behavior_ref": "b4"
+  },
+  {
+    "family": "fam-separation-05",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-social-05",
+    "situation_ref": "s1",
+    "behavior_ref": "b1"
+  },
+  {
+    "family": "fam-specific-05",
+    "situation_ref": "s1",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-edge-03",
+    "situation_ref": "s2",
+    "behavior_ref": "b4"
+  },
+  {
+    "family": "fam-health-01",
+    "situation_ref": "s3",
+    "behavior_ref": "b5"
+  },
+  {
+    "family": "fam-school-01",
+    "situation_ref": "s3",
+    "behavior_ref": "b5"
+  },
+  {
+    "family": "fam-separation-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b2"
+  },
+  {
+    "family": "fam-social-01",
+    "situation_ref": "s2",
+    "behavior_ref": "b3"
+  },
+  {
+    "family": "fam-specific-01",
+    "situation_ref": "s1",
+    "behavior_ref": "b3"
+  },
+  {
+    "family": "fam-edge-01",
+    "situation_ref": "s3",
+    "behavior_ref": "b5"
+  },
+  {
+    "family": "fam-health-03",
+    "situation_ref": "s2",
+    "behavior_ref": "b3"
+  },
+  {
+    "family": "fam-school-03",
+    "situation_ref": "s2",
+    "behavior_ref": "b4"
+  },
+  {
+    "family": "fam-separation-03",
+    "situation_ref": "s3",
+    "behavior_ref": "b4"
+  },
+  {
+    "family": "fam-social-03",
+    "situation_ref": "s2",
+    "behavior_ref": "b4"
+  },
+  {
+    "family": "fam-specific-03",
+    "situation_ref": "s2",
+    "behavior_ref": "b4"
+  }
+]

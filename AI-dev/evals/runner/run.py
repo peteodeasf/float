@@ -4,7 +4,8 @@
         --feature monitoring_analysis --limit 5 --runs 3 --budget 10
 
 --feature voice_notes runs the voice notes instead, one case per note. --feature rungs runs the
-suggested rungs, with and without the feared outcome.
+suggested rungs, with and without the feared outcome. --feature step_sentences runs the fixed
+30-pair set twice each (the app's prompt, and one line changed), then the step-sentence reviewers.
 
 Runs the working half of the pool (odd-numbered families) unless --half all is given.
 
@@ -25,12 +26,13 @@ import app_code  # noqa: E402,F401
 import monitoring_analysis  # noqa: E402
 import report  # noqa: E402
 import rungs  # noqa: E402
+import step_sentences  # noqa: E402
 import voice_notes  # noqa: E402
 from budget import Budget, MeteredClient  # noqa: E402
 from cases import load_cases  # noqa: E402
 from engine import run_cases  # noqa: E402
 
-FEATURES = {f.NAME: f for f in (monitoring_analysis, voice_notes, rungs)}
+FEATURES = {f.NAME: f for f in (monitoring_analysis, voice_notes, rungs, step_sentences)}
 
 
 def write(out: Path, feature, results, **kw) -> dict:
@@ -53,6 +55,8 @@ def main(argv=None) -> int:
     p.add_argument("--runs", type=int, default=3, help="runs per case (default 3)")
     p.add_argument("--budget", type=float, default=10.0, help="spending limit in dollars (default 10)")
     p.add_argument("--out", type=Path, help="report folder (default runs/<timestamp>)")
+    p.add_argument("--no-reviewers", action="store_true",
+                   help="skip the reviewing agents, for a feature that has them")
     a = p.parse_args(argv)
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -65,10 +69,12 @@ def main(argv=None) -> int:
     cases = load_cases(a.feature, a.families.split(",") if a.families else None, a.limit,
                        only=None if a.half == "all" else a.half)
     budget = Budget(a.budget)
-    results, stopped = run_cases(feature, cases, MeteredClient(Anthropic(), budget), a.runs)
+    client = MeteredClient(Anthropic(), budget)
+    hooks = [] if a.no_reviewers or not hasattr(feature, "reviewer_hooks") else feature.reviewer_hooks(client)
+    results, stopped = run_cases(feature, cases, client, a.runs, hooks)
     out = a.out or HERE / "runs" / datetime.now().strftime("%Y%m%d_%H%M%S")
     write(out, feature, results, runs_per_case=a.runs, cases_planned=len(cases),
-          budget=budget, stopped=stopped,
+          budget=budget, stopped=stopped, reviewers=hooks,
           half=None if a.families and a.half == "all" else a.half)
     print((out / "report.md").read_text())
     print(f"Written to {out}")
