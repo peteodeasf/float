@@ -260,6 +260,29 @@ def test_budget_exceeded_is_raised_by_the_client():
             model="claude-sonnet-4-6", max_tokens=10, messages=[])
 
 
+def test_runner_temperature_replaces_the_apps_on_the_features_model_only():
+    # `run.py --temperature` measures a setting before the app uses it. It must reach the
+    # feature's own calls, replacing whatever the app sends, and must not reach the reviewers,
+    # which run on Opus 5.5 and refuse any temperature but the default.
+    client = FakeClient(lambda kw: "{}")
+    metered = MeteredClient(client, Budget(10), {"claude-sonnet-4-6": 0.0})
+    metered.messages.create(model="claude-sonnet-4-6", max_tokens=10, temperature=1.0, messages=[])
+    metered.messages.create(model="claude-opus-5-5", max_tokens=10, messages=[])
+    assert client.calls[0]["temperature"] == 0.0
+    assert "temperature" not in client.calls[1]
+
+
+def test_report_says_which_temperature_ran():
+    # A before-and-after comparison is only readable if each report says which setting it used.
+    cases = load_cases("monitoring_analysis", limit=1)
+    b = Budget(10)
+    results, stopped = run_cases(ma, cases, MeteredClient(FakeClient(lambda kw: json.dumps(perfect_answer())), b), 1)
+    app = report.build(ma, results, runs_per_case=1, cases_planned=1, budget=b, stopped=stopped)
+    zero = report.build(ma, results, runs_per_case=1, cases_planned=1, budget=b, stopped=stopped, temperature=0.0)
+    assert app["temperature"] is None and "the app's own setting" in report.markdown(app)
+    assert zero["temperature"] == 0.0 and "Temperature: 0," in report.markdown(zero)
+
+
 # ── The report ───────────────────────────────────────────────────────────────
 
 def test_report_has_sample_sizes_and_no_case_text():

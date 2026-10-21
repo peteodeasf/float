@@ -40,6 +40,10 @@ logger = logging.getLogger(__name__)
 
 # Read by the AI tests too: their reviewing agents must run on a different model from this one.
 SUGGESTION_MODEL = "claude-sonnet-4-6"
+# Measured 2026-10-21 on 40 made-up situations, 3 runs each: at 0 all three runs offered the same
+# number of suggestions on 32 cases, against 21 with no temperature set, and no check got worse.
+# 0 makes the same answer more likely, not certain.
+SUGGESTION_TEMPERATURE = 0.0
 
 # The limits, from docs/plans/ladder-generation.md ("How many suggestions"). The prompt asks for
 # them; `within_limits` makes sure of them.
@@ -198,6 +202,7 @@ def ask_claude(context: str, client=None) -> str:
     message = client.messages.create(
         model=SUGGESTION_MODEL,
         max_tokens=800,
+        temperature=SUGGESTION_TEMPERATURE,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": context}],
     )

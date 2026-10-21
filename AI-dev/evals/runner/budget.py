@@ -59,12 +59,15 @@ class Budget:
 
 
 class _Messages:
-    def __init__(self, inner, budget: Budget):
+    def __init__(self, inner, budget: Budget, temperatures: dict[str, float]):
         self._inner = inner
         self._budget = budget
+        self._temperatures = temperatures
 
     def create(self, **kwargs):
         model = kwargs["model"]
+        if model in self._temperatures:
+            kwargs["temperature"] = self._temperatures[model]
         self._budget.check(model, kwargs.get("max_tokens", 0))
         message = self._inner.messages.create(**kwargs)
         self._budget.record(model, message.usage)
@@ -72,8 +75,13 @@ class _Messages:
 
 
 class MeteredClient:
-    """Looks like an Anthropic client to the app's code (`client.messages.create`), and counts."""
+    """Looks like an Anthropic client to the app's code (`client.messages.create`), and counts.
 
-    def __init__(self, inner, budget: Budget):
+    `temperatures` is for measuring a setting before the app uses it (`run.py --temperature`): each
+    call to a model named in it is sent that temperature, in place of whatever the app sends. Calls
+    to any other model, such as the reviewers', are left as they are.
+    """
+
+    def __init__(self, inner, budget: Budget, temperatures: dict[str, float] | None = None):
         self.budget = budget
-        self.messages = _Messages(inner, budget)
+        self.messages = _Messages(inner, budget, dict(temperatures or {}))

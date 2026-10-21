@@ -67,30 +67,6 @@ a test case in a prompt, every number with its sample size. Both items change wh
 the AI, so **request Peter's review and do not merge.** The 4am nightly job also scores any open
 pull request that changes a tested prompt or model.
 
-#### Make the AI answer the same way each run `M`
-- **Today:** no AI call in the app sets `temperature`, so the same input can give different
-  answers. On 2026-10-21 the runs of one case did not all agree on 16 of 18 families for monitoring
-  analysis, 41 of 94 situations for suggested rungs, 51 of 60 pairs for step sentences, and 5 of 32
-  voice notes. The calls: `request_extraction` and `request_report` in
-  `backend/app/services/insight_service.py` (monitoring analysis), `_ask_claude` in
-  `backend/app/services/monitoring_capture.py` (voice notes), `ask_claude` in
-  `backend/app/services/step_suggestion_service.py` (suggested rungs), and the call in
-  `backend/app/services/combination_wording.py` (step sentences).
-- **What changes:**
-  1. First check, with the `claude-api` skill, which of those models accept `temperature`, and what
-     happens when it is set alongside any other setting the call uses. Do not guess.
-  2. Measure before choosing. For each of the four features, run the working families with
-     `AI-dev/evals/runner/run.py` at the app's current setting and at `temperature` 0, 3 runs each.
-     Compare both how often runs agree and every accuracy score, since steadier can also be worse.
-  3. Set `temperature` only on the calls where it made runs agree more without making any score
-     worse. Leave the others as they are, and say why in the PR.
-  4. `request_extraction` is also used for session note suggestions (`suggest_from_session_note`),
-     which have no tests. Say so in the PR, so Peter knows that feature changes too.
-- **How to tell it worked:** the PR has a table per feature: agreement and each score, before and
-  after, with sample sizes. Tests that each changed call sends the chosen setting.
-- **Gate:** changes how the AI answers: request Peter's review and do not merge.
-  **Depends on:** nothing.
-
 #### Voice notes: find why a Fear Level the parent said is missed `M`
 - **Today:** on 2026-10-21, voice notes saved the Fear Level the parent said 38 times out of 46
   runs. It never saved one the parent did not say. A said rating can be lost in two places: the AI
@@ -951,6 +927,20 @@ they wrote.
   approves it.
 - **How to tell it worked:** a count, before and after, of British spellings in report runs.
 - **Gate:** prompt change waits for Peter. **Depends on:** nothing.
+
+## A stopped test run keeps no report and no record of what it spent `S`
+- **Today:** `AI-dev/evals/runner/run.py` writes `report.md`, `report.json` and `outputs.jsonl` only
+  after the last case. If the process is killed part-way, nothing is written, so the runs are lost
+  and nobody can tell what they cost. On 2026-10-21 four runs (monitoring analysis and suggested
+  rungs) were stopped by a 10-minute time limit on the agent's background commands, after spending
+  an unknown amount up to their caps ($7.20 in total). The rest of that session had to plan its
+  spending from the caps, not from what was actually spent.
+- **What changes:** have the runner write what it spent, and the runs done so far, as it goes (for
+  example, one line to `outputs.jsonl` and an updated `spent_usd` after each case), or catch the
+  stop signal and write the report before exiting.
+- **How to tell it worked:** a runner test that stops a run part-way and finds the cases done so
+  far, and the amount spent, on disk.
+- **Gate:** none. **Depends on:** nothing.
 
 ## Short case phrases in the rung prompt that the copy check cannot see
 

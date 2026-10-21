@@ -4,7 +4,7 @@
 From the app, not copied:
   * the prompt: step_suggestion_service.SYSTEM_PROMPT
   * the input text: step_suggestion_service._context_block
-  * the call: step_suggestion_service.ask_claude (model, token limit, no temperature set)
+  * the call: step_suggestion_service.ask_claude (model, token limit, temperature)
   * reading the reply: step_suggestion_service.read_reply
   * what is shown: step_suggestion_service.within_limits, and fewer than MIN_SUGGESTIONS left shows
     none
