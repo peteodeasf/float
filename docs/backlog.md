@@ -682,6 +682,9 @@ moving DMARC past `p=none`.
   fills with `now()`. In a test, both invites run inside one transaction, so both get the same
   time and Postgres may return them either way round. In the real app each invite is its own
   request, so the order there is right.
+  Also seen locally on 2026-10-21 (issue #57 work, no backend change): a second test in the same
+  file, `test_each_parent_has_their_own_thread_with_the_clinician`, failed once in a full run and
+  passed 3 of 3 runs on its own. Check whether it depends on the same order.
 - **What changes.** Give the list a second sort key that cannot tie, or have the test not depend on
   the order.
 - **How to tell it worked.** The test passes every time, for example 50 runs in a row.
@@ -1312,3 +1315,16 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
   or the existing access log.
 - **How to tell it worked:** a test that reading the list adds one row naming the reader.
 - **Gate:** `/security-review`. Needs a migration. S.
+
+## The demo seed's downward arrow cannot be opened (noticed 2026-10-21) `S`
+
+- **Today:** `backend/seed_demo.py` (step 7, "Downward Arrow — cafeteria situation") saves each
+  step as `{"question", "answer"}`. The API's `ArrowStep` in `backend/app/schemas/downward_arrow.py`
+  needs `response`, not `answer`. So `GET /trigger-situations/<id>/downward-arrow` returns a 500 for
+  the cafeteria situation in `float_dev`, and the clinician's patient page logs the failure on every
+  load. Seen while taking screenshots for issue #57. Local demo data only.
+- **What changes:** rename `answer` to `response` in the seed. Check whether any other seed or
+  fixture writes `answer`.
+- **How to tell it worked:** reseed `float_dev`, open the demo patient, and the downward arrow
+  request returns 200.
+- **Gate:** none. **Depends on:** nothing.

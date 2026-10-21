@@ -18,8 +18,17 @@ and start it from your own worktree with `--strictPort` so it fails loudly if ta
 Run `npm ci` in the worktree first — a new worktree has no `node_modules`.
 
 The backend on port 8000 is shared and runs from the main checkout. That is fine for a
-front-end-only change. A backend change needs its own backend, which the web app would not use
-(it always calls port 8000).
+front-end-only change.
+
+**When every allowed port is taken, or you need your own backend** (2026-10-21, issue #57): the web
+app does not have to call port 8000. `VITE_API_URL` overrides it, and the backend reads
+`ALLOWED_ORIGINS` from the environment as a JSON list. Run both from your worktree, in the
+background:
+
+    cd backend && ALLOWED_ORIGINS='["http://localhost:5191"]' ~/code/float/backend/.venv/bin/uvicorn app.main:app --port 8011 --host 127.0.0.1
+    cd apps/web && VITE_API_URL=http://127.0.0.1:8011 npx vite --port 5191 --strictPort
+
+This is only a command-line setting for your session. Do not create `.env.local`.
 
 ## A screenshot straight after opening a page is blank
 
@@ -35,7 +44,19 @@ Returning the page text also tells you whether it loaded the screen you expected
 
 The Playwright tool refuses paths outside the worktree, including `/tmp`. Save to
 `.playwright-mcp/` in the worktree. That folder is not in `.gitignore`, so add files to commits by
-name, never with `git add -A`.
+name, never with `git add -A`. Some old files in it are checked into the repo, so do not
+`rm -rf` the folder to clean up: delete only your own files, or `git checkout -- .playwright-mcp`
+afterwards.
+
+The file can appear a moment after the screenshot tool says it is done, and reading a file you
+overwrote can show you the old picture. Give each new screenshot a new file name.
+
+## A note from a recording is not in the demo data
+
+The demo seeds only typed session notes. To screenshot the transcript or speaker controls, insert
+one into `float_dev` with `source = 'recording'`, `is_draft = true`, a `transcript` list of
+`{"speaker": "1:1", "text": ...}` and `speaker_names` like `{"1:1": "Clinician"}`. Copy the
+`patient_id`, `organization_id` and `practitioner_id` from an existing note.
 
 ## Getting a "before" screenshot after you have made the change
 

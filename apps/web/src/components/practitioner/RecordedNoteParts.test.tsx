@@ -44,6 +44,45 @@ describe('a note from a recording', () => {
     await waitFor(() => expect(notes.updateSessionNote).toHaveBeenCalledWith('n1', { speaker_names: { '1:2': 'Child' } }))
   })
 
+  // Issue #57: Peter could not tell whether he was still changing a speaker, because every label
+  // looked the same. The open speaker must say so, ask the question, and be closable without saving.
+  it('changing a speaker is clearly open, names who is being changed, and Cancel leaves it as it was', () => {
+    wrap(<RecordedNoteDetails note={note} patientId="pt1" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Transcript' }))
+    const speaker = screen.getByRole('button', { name: 'Speaker 2 ✎' })
+    expect(speaker).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('group')).not.toBeInTheDocument()
+    fireEvent.click(speaker)
+    expect(screen.getByRole('group', { name: 'Who is Speaker 2?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Speaker 2 ▴' })).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('group')).not.toBeInTheDocument()
+    expect(notes.updateSessionNote).not.toHaveBeenCalled()
+  })
+
+  // Issue #57: the speaker's current name is marked, so it is clear what it is now; choosing it again
+  // just closes rather than saving the same thing.
+  it('marks the current name, and choosing it again closes without saving', () => {
+    wrap(<RecordedNoteDetails note={note} patientId="pt1" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Transcript' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clinician ✎' }))
+    const current = screen.getByRole('button', { name: 'Clinician ✓' })
+    expect(current).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Child' })).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(current)
+    expect(screen.queryByRole('group')).not.toBeInTheDocument()
+    expect(notes.updateSessionNote).not.toHaveBeenCalled()
+  })
+
+  // Issue #57: the transcript lines take the speaker's color, so a rename visibly changes whose lines
+  // are whose. A child and an unnamed speaker must not look the same.
+  it('colors transcript names by who is speaking', () => {
+    wrap(<RecordedNoteDetails note={{ ...note, speaker_names: { '1:1': 'Child', '1:2': 'Speaker 2' } }} patientId="pt1" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Transcript' }))
+    expect(screen.getByText('Child:').style.color).toBe('var(--float-accent-purple-text)')
+    expect(screen.getByText('Speaker 2:').style.color).toBe('var(--float-text-secondary)')
+  })
+
   it('a draft can be approved', async () => {
     wrap(<RecordedNoteDetails note={note} patientId="pt1" />)
     fireEvent.click(screen.getByRole('button', { name: 'Approve note' }))
