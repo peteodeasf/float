@@ -19,11 +19,20 @@ docs/plans/ladder-generation.md — read that before changing anything here. The
 5. **As many as the child has actually told you** — two to five, and fewer when the ladder is empty,
    because the fourth would be invented.
 
+The limits — two to five suggestions, no idea twice — are asked for in the prompt and then checked
+in code (`within_limits`), because a prompt is a request, not a
+guarantee. The numbers are the ones in docs/plans/ladder-generation.md, and `AI-dev/Ladder Eval/
+checks.py` imports them from here rather than keeping its own.
+
 **Clinical gate:** what a child is asked to face is clinical. Pre-launch this is Peter's call and it
 is logged in the Dr. Walker review queue. She has told us what is wrong with our suggestions; she has
 not yet told us what a good set looks like beyond one worked example.
 """
+import json
 import logging
+import re
+
+import anthropic
 
 from app.core.config import settings
 
@@ -31,6 +40,15 @@ logger = logging.getLogger(__name__)
 
 # Read by the AI tests too: their reviewing agents must run on a different model from this one.
 SUGGESTION_MODEL = "claude-sonnet-4-6"
+
+# The limits, from docs/plans/ladder-generation.md ("How many suggestions"). The prompt asks for
+# them; `within_limits` makes sure of them.
+MIN_SUGGESTIONS = 2
+MAX_SUGGESTIONS = 5
+# No length limit in code. Peter, 2026-10-20: don't drop suggestions for length for now. At twelve
+# words, 36 of 282 test runs left the clinician nothing, and the 13- and 14-word ones read as well
+# as the rest. The prompt still asks for short phrases.
+
 
 SYSTEM_PROMPT = """You help a clinician and a child build an exposure ladder.
 
@@ -114,6 +132,78 @@ class SuggestionUnavailable(Exception):
     """No suggestions, and the reason is worth showing the clinician rather than swallowing."""
 
 
+# Small words that do not make two suggestions different ideas.
+_SMALL_WORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "in", "into", "is", "it", "of",
+    "on", "or", "the", "their", "them", "then", "this", "to", "up", "with", "you", "your",
+}
+
+
+def _idea(text: str) -> frozenset[str]:
+    return frozenset(w for w in re.findall(r"[a-z0-9']+", text.lower()) if w not in _SMALL_WORDS)
+
+
+def words_in(text: str) -> int:
+    return len(text.split())
+
+
+def within_limits(suggestions: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
+    """What the clinician is shown, and what was dropped and why.
+
+    In this order: empty ones go, then any that is the same idea as one before it, then everything after the first MAX_SUGGESTIONS. The model's order
+    is kept.
+
+    "The same idea" means the same words once small words ("the", "a", "with") are left out. That is
+    narrow on purpose: "Sit on the bench with the fan" and "...without the fan" differ by one word
+    that matters, and must both survive. The looser overlap test in `AI-dev/Ladder Eval/checks.py`
+    is only a warning for that reason.
+
+    Fewer than MIN_SUGGESTIONS left is the caller's to decide; this does not raise.
+    """
+    kept: list[str] = []
+    dropped: list[tuple[str, str]] = []
+    for s in suggestions:
+        s = s.strip()
+        if not s:
+            continue
+        if any(_idea(s) == _idea(k) for k in kept):
+            dropped.append((s, "duplicate"))
+        elif len(kept) >= MAX_SUGGESTIONS:
+            dropped.append((s, "over_max"))
+        else:
+            kept.append(s)
+    return kept, dropped
+
+
+def read_reply(raw: str) -> tuple[list[str], str]:
+    """The suggestions and variations line in the model's reply, before any limit is applied."""
+    raw = raw.strip()
+    # The model is asked for bare JSON; a fenced block is the usual way that goes wrong.
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+
+    data = json.loads(raw)
+    suggestions = [str(s).strip() for s in data.get("suggestions", []) if str(s).strip()]
+    variations = str(data.get("variations", "") or "").strip()
+    return suggestions, variations
+
+
+def ask_claude(context: str, client=None) -> str:
+    # `client` is for the AI test runner (AI-dev/evals/runner/rungs.py), which counts what each call
+    # costs. The app always leaves it out.
+    client = client or anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model=SUGGESTION_MODEL,
+        max_tokens=800,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": context}],
+    )
+    return message.content[0].text
+
+
 async def suggest_steps(
     *,
     situation: str,
@@ -128,39 +218,22 @@ async def suggest_steps(
     hand? That will determine sub situations." So it is used whenever there is one. Peter,
     2026-10-16: suggest without it too, and test whether the suggestions are good enough.
 
-    Raises SuggestionUnavailable when nothing worth showing comes back.
+    Raises SuggestionUnavailable when fewer than MIN_SUGGESTIONS are left after the limits.
     """
-
-    import json
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    message = client.messages.create(
-        model=SUGGESTION_MODEL,
-        max_tokens=800,
-        system=SYSTEM_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": _context_block(
-                situation=situation,
-                score=score,
-                feared_outcome=feared_outcome or "",
-                steps=steps,
-                coping=coping,
-            ),
-        }],
-    )
-    raw = message.content[0].text.strip()
-    # The model is asked for bare JSON; a fenced block is the usual way that goes wrong.
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip()
-
-    data = json.loads(raw)
-    suggestions = [str(s).strip() for s in data.get("suggestions", []) if str(s).strip()]
-    variations = str(data.get("variations", "") or "").strip()
-    if not suggestions:
+    raw = ask_claude(_context_block(
+        situation=situation,
+        score=score,
+        feared_outcome=feared_outcome or "",
+        steps=steps,
+        coping=coping,
+    ))
+    suggestions, variations = read_reply(raw)
+    kept, dropped = within_limits(suggestions)
+    if dropped:
+        # Reasons and counts only: the wording is about a child.
+        logger.info("suggested steps: dropped %s", sorted(reason for _, reason in dropped))
+    if not kept:
         raise SuggestionUnavailable("Nothing came back that was worth showing.")
-    return suggestions, variations
+    if len(kept) < MIN_SUGGESTIONS:
+        raise SuggestionUnavailable("Not enough came back that was worth showing.")
+    return kept, variations

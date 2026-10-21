@@ -3,7 +3,8 @@
     ~/code/float/backend/.venv/bin/python AI-dev/evals/runner/run.py \\
         --feature monitoring_analysis --limit 5 --runs 3 --budget 10
 
---feature voice_notes runs the voice notes instead, one case per note.
+--feature voice_notes runs the voice notes instead, one case per note. --feature rungs runs the
+suggested rungs, with and without the feared outcome.
 
 Runs the working half of the pool (odd-numbered families) unless --half all is given.
 
@@ -23,12 +24,13 @@ sys.path.insert(0, str(HERE))
 import app_code  # noqa: E402,F401
 import monitoring_analysis  # noqa: E402
 import report  # noqa: E402
+import rungs  # noqa: E402
 import voice_notes  # noqa: E402
 from budget import Budget, MeteredClient  # noqa: E402
 from cases import load_cases  # noqa: E402
 from engine import run_cases  # noqa: E402
 
-FEATURES = {f.NAME: f for f in (monitoring_analysis, voice_notes)}
+FEATURES = {f.NAME: f for f in (monitoring_analysis, voice_notes, rungs)}
 
 
 def write(out: Path, feature, results, **kw) -> dict:

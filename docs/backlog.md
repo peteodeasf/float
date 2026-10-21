@@ -57,30 +57,6 @@ All from `docs/plans/ai-quality-testing.md`. Read the whole plan before any of t
 Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not tonight), scoring the
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
-
-#### The two monitoring prompts disagree about extra triggers `S`
-- **Today:** the preliminary report prompt in `backend/app/api/routers/patients.py` says "you may
-  add them" about triggers the parent never logged. The extraction prompt forbids it.
-- **What changes:** nothing in the prompts. Run both on the working pool families and count how
-  often each adds a trigger that is not in the answer key. Write the result up as a question for
-  Peter in `docs/plans/ai-quality-testing.md`, under item 7.
-- **How to tell it worked:** the PR has the counts, with sample sizes, and the question in plain
-  English.
-- **Gate:** clinical: request Peter's review and do not merge. **Depends on:** the test runner.
-
-#### Suggested rungs: enforce the limits in code `M`
-- **Today:** the 2–5 count, the length limit and removing duplicates are asked for in the prompt
-  in `backend/app/services/step_suggestion_service.py`, not checked. The prompt,
-  `AI-dev/Ladder Eval/checks.py` and `docs/plans/ladder-generation.md` use different numbers.
-- **What changes:** check them in code after the call. Make all three places use one set of
-  numbers. Where they disagree, use `ladder-generation.md` and say in the PR which numbers changed.
-  Also run suggestions with and without a feared outcome on the pool's rung cases and report the
-  difference (Peter dropped that requirement on 2026-10-16 to test exactly this).
-- **How to tell it worked:** tests for too many, too few, too long and duplicate suggestions. The
-  comparison in the PR with sample sizes.
-- **Gate:** changes what clinicians are offered: request Peter's review and do not merge.
-  **Depends on:** the test runner.
-
 #### Step sentences: the 30-pair set `M`
 - **Today:** `AI-dev/Combination Wording/run_check.py` writes a reading sheet from 17 pairs and
   scores nothing. `docs/plans/ladder-combinations.md` planned about 30, across kinds of anxiety.
@@ -822,6 +798,22 @@ Found while checking, before building:
   file fails the check, and the check passes on main.
 - **Gate:** Peter (the judging folder and CI are his in CODEOWNERS). **Depends on:** nothing.
 
+## Three AI calls stop the backend answering anyone else while they wait `S`
+- **Today:** three routes are `async` but call Claude with the blocking client
+  (`anthropic.Anthropic`, not `AsyncAnthropic`) and do not hand the call to a thread:
+  `ask_claude` in `backend/app/services/step_suggestion_service.py` (suggested rungs),
+  `next_probe` in `backend/app/api/routers/downward_arrows.py`, and `generate_preliminary_report`
+  in `backend/app/api/routers/patients.py` (two calls in a row). While one of these waits on Claude,
+  a few seconds each, the server answers no other request. With one clinician testing it is
+  invisible; with a family's app polling at the same time it is a pause. Found 2026-10-20 while
+  enforcing the rung limits. `insight_service.py` and `monitoring_capture.py` already do it right
+  (`asyncio.to_thread`, or the async client).
+- **What changes:** wrap each call in `asyncio.to_thread`, or use `AsyncAnthropic`. Keep the
+  `client=` argument the AI test runner passes in working.
+- **How to tell it worked:** a test that starts a slow fake suggestion call and shows another
+  request answers before it finishes. The runner tests in `AI-dev/evals/runner/tests` still pass.
+- **Gate:** none. **Depends on:** nothing.
+
 ## AI analysis of session notes
 
 **Raised 2026-09-17.** `M` (plan first if it grows past a summary).
@@ -857,6 +849,43 @@ querying `review_marks`, `review_additions` and `review_comments` by hand.
 Fine for one round. Worth an hour when there is a second, since the same tool is meant to carry the
 extraction and arrow reviews too: one page, every suggestion, how each reviewer marked it and what
 they wrote.
+
+## The AI test runner numbers a log out of date order differently from the app `S`
+- **Today:** `prepare` in `AI-dev/evals/runner/monitoring_analysis.py` numbers the pool's log
+  entries in file order. The route reads them oldest first (`order_by(MonitoringEntry.entry_date)` in
+  `generate_preliminary_report`, `backend/app/api/routers/patients.py`). One pool family,
+  `fam-separation-06`, has its log out of date order, so the runner sends the model a differently
+  numbered log than the app would. It is held out, so the working runs so far are not affected.
+  Found 2026-10-19 while building `AI-dev/evals/runner/compare_triggers.py`, which sorts first
+  (`in_date_order`).
+- **What changes:** sort the case's log by date in `prepare` (or in `cases._monitoring_analysis`),
+  keeping each entry's `situation_ref` beside it. `compare_triggers.in_date_order` already does this.
+- **How to tell it worked:** a runner test that reverses a family's log and gets the same numbered
+  text and the same scores.
+- **Gate:** none. **Depends on:** nothing.
+
+## A held-out test fails on main since the runner's report became a table `S`
+- **Today:** `test_output_has_scores_and_counts_and_no_case_text[fmt0]` in
+  `AI-dev/evals/judging/tests/test_held_out.py` asserts `"Situations found: "` is in the printed
+  report. Since #36 (`Score monitoring analysis on the pool`) `report.markdown` in
+  `AI-dev/evals/runner/report.py` prints the scores as a table (`| Situations found | ... |`), so the
+  test fails on main (checked at `85dd09b`, 2026-10-19). The judging folder is Peter's (CODEOWNERS).
+- **What changes:** Peter decides whether the test should look for the table row instead. Agents do
+  not edit `AI-dev/evals/judging/`.
+- **How to tell it worked:** `pytest AI-dev/evals/judging/tests` passes on main.
+- **Gate:** Peter (CODEOWNERS). **Depends on:** nothing.
+
+## The preliminary report writes British spellings `S`
+- **Today:** on the 2026-10-19 trigger run (`AI-dev/evals/runner/compare_triggers.py`, 54 runs) the
+  report's situation names included "shopping centres", "public transport" and "travelling". The
+  report is shown to clinicians. `PRELIMINARY_REPORT_SYSTEM_PROMPT` in
+  `backend/app/api/routers/patients.py` says nothing about spelling. Float is US-only and uses
+  American spelling. How often it happens was not counted.
+- **What changes:** count it on the pool first (the runner's `outputs.jsonl` has the answers). If it
+  is more than a stray case, add American spelling to the prompt. That is a prompt change, so Peter
+  approves it.
+- **How to tell it worked:** a count, before and after, of British spellings in report runs.
+- **Gate:** prompt change waits for Peter. **Depends on:** nothing.
 
 ## Short case phrases in the rung prompt that the copy check cannot see
 

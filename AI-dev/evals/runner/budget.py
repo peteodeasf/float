@@ -12,7 +12,7 @@ call's own `max_tokens`, so even the first call cannot overshoot by much.
 PRICES_PER_MTOK = {
     "claude-sonnet-4-6": (3.00, 15.00),
     # The reviewing agents (AI-dev/evals/judging/reviewers.py), which run on a different model from
-    # the feature they review.
+    # the feature they review, and the trigger matcher (compare_triggers.py), as in generator/generate.py.
     "claude-opus-5-5": (4.00, 20.00),
     "claude-sonnet-5-5": (2.00, 10.00),
 }

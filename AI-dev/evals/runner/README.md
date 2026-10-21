@@ -9,6 +9,9 @@ Wired up so far:
 - **voice notes** (`--feature voice_notes`): the observations Claude writes up from a parent's voice
   note or quick note, as `monitoring_capture.write_up` saves them. One case per note. See "Voice
   notes" below.
+- **suggested rungs** (`--feature rungs`): the smaller versions of a situation offered in the
+  ladder editor, as `step_suggestion_service.suggest_steps` returns them. Run with and without the
+  feared outcome. See "Suggested rungs" below.
 
 The other features are later items.
 
@@ -93,6 +96,25 @@ The risk flag is not scored and the risk label is not in the answer key. Peter, 
 counts as a risk sign is a question for Dr. Walker. The full list of what is not covered is printed
 at the end of every report (`NOT_COVERED` in `monitoring_analysis.py`).
 
+## Do the two monitoring prompts add triggers? (`compare_triggers.py`)
+
+The preliminary report prompt says of triggers the parent didn't log, "you may add them". The
+extraction prompt forbids it. This script counts what each one adds, and changes neither prompt.
+
+    ~/code/float/backend/.venv/bin/python AI-dev/evals/runner/compare_triggers.py --runs 3 --budget 9
+
+For each working family and run it makes both app calls the way Analyze with AI does, then asks a
+matcher on a different model (`claude-opus-5-5`) which log entries each situation describes, and
+which triggers in its name no entry describes. The matcher is not told which prompt wrote the list.
+A situation with no entry behind it is an added trigger. A logged situation widened with unlogged
+triggers ("Dogs (and cats)") counts each extra as an added part.
+
+It needs the matcher because the report's situations have no entry numbers. The matcher's reading
+is a model's and no person has checked it: read `outputs.jsonl` before trusting a count.
+
+Writes `runs/<timestamp>-triggers/`. The same split as the runner: `report.md` and `report.json` hold
+counts only, `outputs.jsonl` holds the answers.
+
 ## Voice notes
 
 `voice_notes.py`. Float is given the note's words only. Each pool note's `expected` says how many
@@ -118,6 +140,23 @@ did not say as a rating. A Fear Level the model offered and the app dropped show
 
 Which situation each observation is about is not scored: an observation has no link back to the
 answer key's situations, and matching by name would be a guess.
+
+## Suggested rungs
+
+`rungs.py`. One case per pool rung case and mode. A situation with a feared outcome is run twice:
+"with" it, and "without" (the app's "not known yet" line instead). A situation with none is run
+once, "none". Float is given what the app sends: the situation, its Fear Level, the feared outcome
+or not, and the child's behaviors as what they do to cope. No pool situation has rungs on its ladder
+yet, so `steps` is always empty.
+
+There is no answer key. It counts form, kept apart by mode: suggestions written, how many the app's
+limits let through (`within_limits`: two to five, no idea twice; no length limit), why the
+rest were dropped, runs where none would be shown, words per suggestion, and whether the "other
+variations" line came back. The checks run on what the model wrote, before the limits, so a failure
+there is the prompt's rule not being followed. `plain_enough_for_a_child` is Ladder Eval's list of
+clinical words.
+
+Whether a suggestion is any good is not scored. That is the reviewers' job.
 
 ## Adding a feature
 

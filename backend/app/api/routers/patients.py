@@ -1147,7 +1147,7 @@ You are a senior CBT clinician analyzing a parent's monitoring log for a child w
 
 The monitoring entries are raw, one-observation-per-row parent narratives. Your job is to synthesize them into a clinical picture:
 
-1. SITUATIONS — cluster the raw observations into a small set of themed trigger situations (typically 2–5). Name each in clinical-but-readable language. Assign each situation a "fear_thermometer" score = the HIGHEST fear-thermometer rating observed across the entries belonging to that theme (0–10). Build a fuller clinical picture: where the pattern clearly implies related triggers the parent didn't log explicitly, you may add them (this is a clinician's synthesis, not a literal transcription).
+1. SITUATIONS — cluster the raw observations into a small set of themed trigger situations (typically 2–5). Name each in clinical-but-readable language. Assign each situation a "fear_thermometer" score = the HIGHEST fear-thermometer rating observed across the entries belonging to that theme (0–10). Name only triggers the parent actually logged. Do not add related triggers the parent did not log, even ones the pattern suggests, and do not widen a situation's name with examples that are not in the entries: the clinician needs to know that every trigger listed came from the log.
 
 2. PARENTAL_RESPONSES — how the parents respond across situations (reassurance, physical proximity, seeking medical attention, allowing avoidance, accommodation, getting angry, etc.). One clause per distinct response pattern.
 
