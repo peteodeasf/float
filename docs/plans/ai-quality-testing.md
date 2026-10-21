@@ -161,6 +161,7 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
 8. **Voice notes.**
    - Score how notes are split into observations, and whether the words are kept. Done 2026-10-19: `run.py --feature voice_notes`. First run, 32 notes from the 18 working families, 3 runs each: right number of observations in 84 of 94 readable runs, the parent's Fear Level saved in 38 of 46, no Fear Level saved that the parent did not say. The questions it raised for Peter are in the pull request.
    - Fix `_said` in `monitoring_capture.py`. It counts any number in the text as a Fear Level, so "at 8pm" passes. Done 2026-10-19: `_said_as_rating` only takes a number said as a rating ("about a seven", "6 out of 10"), waiting on Peter's review.
+   - Why a Fear Level the parent said is missed. Done 2026-10-21, waiting on Peter's review: of 48 runs where one was said, 10 missed it. The app dropped it in 6 ("like" or "about" after the number; now allowed), the AI left it out in 3 (all one note giving a range), and the reply could not be read in 1 (quote marks). After the fix: 44 of 48 saved, still 0 not said. `docs/solutions/fear-level-said-but-not-saved.md`.
 9. **Session drafts and session suggestions: wait.** No session cases until Peter has learned from
    Dr. Walker what a typical session looks like. Known gap, for when they start: the whole transcript
    goes in one call with a 3000-token answer limit, so long sessions are the first thing to test.

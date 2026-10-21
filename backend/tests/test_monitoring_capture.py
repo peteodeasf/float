@@ -190,6 +190,23 @@ def test_a_fear_level_said_as_a_rating_is_kept(words, n):
     assert capture._said_as_rating(words, n)
 
 
+# Why: on 2026-10-21 the AI tests found real ratings dropped by the app when "like" or "about" came
+# straight after the number: 6 of 48 runs where a parent said one. Times and counts followed by the
+# same words must still be turned away.
+@pytest.mark.parametrize("words, n, is_rating", [
+    ("so yeah she was at a 9 like totally frozen", 9, True),
+    ("i'd put him at an eight like he couldn't breathe", 8, True),
+    ("he's a 5 about the spelling test", 5, True),
+    ("honestly a four about going back", 4, True),
+    ("She woke up at 6 like every day and wouldn't eat.", 6, False),
+    ("Around 8 like always the crying started.", 8, False),
+    ("It took about 5 minutes to get her in the car.", 5, False),
+    ("We got there at 7 about an hour late.", 7, False),
+])
+def test_like_or_about_after_the_number(words, n, is_rating):
+    assert capture._said_as_rating(words, n) is is_rating
+
+
 # Why: end to end, a time in the note is not saved as the Fear Level even when the model offers it.
 async def test_a_time_in_the_note_is_not_saved_as_the_fear_level(api, db, claude):
     _, _, form = await _form(db)
