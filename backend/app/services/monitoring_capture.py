@@ -152,9 +152,12 @@ NUMBER_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
 # maybe", "an eight already", "an eight." Anything else after it ("a five minute drive", "a
 # six-year-old", "an 8:15 appointment") and it is not taken as one. A list of what is allowed, not
 # of what is not, because a rating missed only means the parent is asked to tap one.
+# "like" and "about" added 2026-10-21: ratings said as "an eight like he was shaking" or "a six
+# about the math test" were being dropped (docs/solutions/fear-level-said-but-not-saved.md).
 _AFTER_A_RATING = (r"(?=\s*(?:$|[.,!?;)](?!\d)|(?:out|of|on|or|to|and|but|so|maybe|probably|already|"
                    r"at|by|for|in|i|she|he|they|we|when|then|now|today|tonight|again|too|though|"
-                   r"before|after|because|which|that|max|tops|easily|honestly|really|right|this)\b))")
+                   r"before|after|because|which|that|max|tops|easily|honestly|really|right|this|"
+                   r"like|about)\b))")
 
 
 def _said_as_rating(text: str, n: int) -> bool:

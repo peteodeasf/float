@@ -67,27 +67,7 @@ a test case in a prompt, every number with its sample size. Both items change wh
 the AI, so **request Peter's review and do not merge.** The 4am nightly job also scores any open
 pull request that changes a tested prompt or model.
 
-#### Voice notes: find why a Fear Level the parent said is missed `M`
-- **Today:** on 2026-10-21, voice notes saved the Fear Level the parent said 38 times out of 46
-  runs. It never saved one the parent did not say. A said rating can be lost in two places: the AI
-  leaves it out, or the app drops it afterwards (`observations_in` and `_said_as_rating` in
-  `backend/app/services/monitoring_capture.py`, tightened on 2026-10-20 so that "at 8pm" is not a
-  rating). The runner records which: its `fear_said_as_rating` check flags a rating the AI gave
-  that the app dropped.
-- **What changes:**
-  1. Run voice notes on the working families (`run.py --feature voice_notes --runs 3`). For every
-     missed rating, record whether the AI left it out or the app dropped it. Read the outputs to do
-     this, but do not copy their text into the PR, a prompt or a test.
-  2. If the app dropped it, fix the reading in `monitoring_capture.py` so a rating said that way is
-     kept, while "at 8pm" and other times, dates and counts are still rejected. Write new test
-     wording yourself; do not copy pool text.
-  3. If the AI left it out, change the voice note prompt to say a rating the parent said must be
-     kept, in general words. Never quote or paraphrase a pool note.
-  4. Run again and report before and after.
-- **How to tell it worked:** the PR has the misses split by cause, and the before and after counts
-  with sample sizes, including that ratings the parent did not say are still 0.
-- **Gate:** touches how Fear Levels are read: request Peter's review and do not merge.
-  **Depends on:** nothing.
+Both items in this group were built 2026-10-21.
 
 ---
 
@@ -767,35 +747,38 @@ Found while checking, before building:
   names "Bedtime" twice with entries [1] and [2], and the saved situation's evidence holds both.
 - **Gate:** none. **Depends on:** nothing.
 
-## A voice note's Fear Level is dropped when a word like "like" or "about" follows it `S`
-- **Today:** `_said_as_rating` in `backend/app/services/monitoring_capture.py` keeps a Fear Level
-  only when the word straight after the number is on a short allowed list (`_AFTER_A_RATING`).
-  "Like" and "about" are not on it. So "he was at an 8 like full meltdown" and "he's at a 6 about
-  the emails" lose their Fear Level, and the parent is asked to tap one. Found 2026-10-19 by the
-  voice notes test run: 6 of 46 note-runs where the parent said a Fear Level, every run of two notes
-  (`fam-school-01` note 1, `fam-school-05` note 2).
-- **What changes:** decide whether "like" and "about" can follow a rating, and add them if so.
-  The list was kept short on purpose: a missed rating costs a tap, a wrong one is a made-up number.
-  This is the check Peter is already reviewing, so it is his call.
-- **How to tell it worked:** tests in `backend/tests/test_monitoring_capture.py` for both phrases,
-  in short words of your own (not copied from the pool). Then
-  `run.py --feature voice_notes` shows "Fear Level said and saved" up and "Fear Levels saved that
-  the parent did not say" still 0.
-- **Gate:** Peter's review (Fear Level rules). **Depends on:** nothing.
-
 ## A voice note write-up with quote marks in it cannot be read `S`
 - **Today:** when the parent quotes the child ("he kept calling out are you awake"), Claude
   sometimes writes the quote with plain `"` marks inside the JSON string, without escaping them.
   `parse_model_json` in `backend/app/services/insight_service.py` cannot read that reply, so
   `write_up` in `monitoring_capture.py` fails and the note is saved as the parent's words alone,
   with no observation. Found 2026-10-19 by the voice notes test run: 3 of 96 runs, on 2 of 32 notes.
-  Nothing is lost (the words are kept), but the clinician gets no write-up.
+  The words are kept, but the clinician gets no write-up, and a Fear Level the parent said in the
+  note is lost: on 2026-10-21 this was 1 of 48 runs where a Fear Level was said before the
+  "like"/"about" fix and 2 of 48 after, all on the same note (the voice notes test run, 18 working
+  families, 3 runs each).
 - **What changes:** one of: ask for the reply with tool use or structured output, so the JSON is
   always valid; or tell the model to use single quotes for quoted speech; or a reader that repairs
   unescaped inner quotes. The first is the sturdiest. A prompt change needs Peter's approval.
 - **How to tell it worked:** a test that a reply with unescaped quotes inside a value is read (if
   the reader changes), and `app_can_read` at 0 failed runs on the voice notes test run.
 - **Gate:** Peter's review if the prompt changes. **Depends on:** nothing.
+
+## A voice note that gives the Fear Level as a range usually saves none `S`
+- **Today:** when the parent says a range ("she said a six or seven"), Claude mostly leaves the
+  Fear Level empty: 5 of 6 runs on the one pool note that does this, on 2026-10-21. The prompt
+  (`_prompt` in `backend/app/services/monitoring_capture.py`) says to save a number only when the
+  parent said one, and says nothing about a range. The app's reading (`_said_as_rating`) already
+  accepts either number of a range, so this is the AI, not the app. The parent is then asked to tap
+  a Fear Level. The pool's answer key says to save the lower number, but that was the generating
+  agent's choice, not a clinical one.
+- **What changes:** Peter decides what a range should save: the lower number, the higher one, or
+  nothing (the parent taps one). If a number, one general line in the prompt says so. Never quote a
+  pool note.
+- **How to tell it worked:** `run.py --feature voice_notes` saves the chosen number on that note,
+  and "Fear Levels saved that the parent did not say" stays 0. One note is a very small sample;
+  more range notes in the pool would help.
+- **Gate:** a Fear Level rule: Peter's decision, and a note for Dr. Walker. **Depends on:** nothing.
 
 ## A drafted step sentence in quote marks keeps its closing quote `S`
 - **Today:** `clean` in `backend/app/services/combination_wording.py` strips quote marks from the
