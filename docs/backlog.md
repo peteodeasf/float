@@ -853,6 +853,51 @@ Found while checking, before building:
   file fails the check, and the check passes on main.
 - **Gate:** Peter (the judging folder and CI are his in CODEOWNERS). **Depends on:** nothing.
 
+## Monitoring form: the helper text says the link is copied, but it isn't `S`
+- **Today:** on the Monitoring tab, the text by "Create monitoring form" says it emails anyone with
+  an email "and copies the link" (`apps/web/src/pages/practitioner/PatientPage.tsx` near line
+  1248). The code deliberately does not copy it (comment near lines 707-709). Found 2026-10-21 while
+  building the UI test checklist.
+- **What changes:** make the text say what happens: it emails each parent who has an email, and
+  each link can be copied below.
+- **How to tell it worked:** the text matches what the button does. Screenshot in the PR.
+- **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
+
+## Monitoring form: the "Email sent" confirmation is probably never seen `S`
+- **Today:** the green "✓ Email sent to …" banner (`PatientPage.tsx` near lines 1223-1226) sits in
+  the view shown before a form exists. Creating the form replaces that view, so the banner likely
+  disappears at once. Found 2026-10-21 from the code; not yet seen on a screen.
+- **What changes:** check it on a screen first. If it is hidden, show the confirmation in the view
+  that follows.
+- **How to tell it worked:** after Create monitoring form, the clinician sees who was emailed.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Parent monitoring form: "Get the link sent to me again" sends nothing `S`
+- **Today:** on the parent's monitoring form, the Send button only shows "Link sent! Check your
+  email or messages." No request is made and nothing is sent
+  (`apps/web/src/pages/monitor/MonitorLandingPage.tsx` near lines 424-431). Found 2026-10-21.
+- **What changes:** either send the link again, or remove the option until it can. Peter decides
+  which.
+- **How to tell it worked:** the parent never sees "sent" when nothing was sent.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Parent set-password allows 6 characters; everywhere else needs 8 `S`
+- **Today:** `apps/web/src/pages/parent/ParentSetPasswordPage.tsx` (line 19) accepts 6 characters.
+  Clinician setup, password reset and settings require 8. Found 2026-10-21. Check what the backend
+  enforces before changing the screen.
+- **What changes:** the same minimum everywhere, enforced by the backend as well as the screen.
+- **How to tell it worked:** a test that a 7-character parent password is refused.
+- **Gate:** touches sign-in, so `/security-review`. **Depends on:** nothing.
+
+## Parent experiments: the clinician can set one up, but the parent never sees it `M`
+- **Today:** the clinician sets up an experiment with the parent on the Exposures tab
+  (`apps/web/src/components/practitioner/ParentExperimentSheet.tsx`). No parent screen shows or
+  records it, though `apps/web/src/api/parentExperiments.ts` has the functions. Found 2026-10-21.
+- **What changes:** a product decision first: should the parent see and record these in their app?
+  If yes, it needs a plan.
+- **How to tell it worked:** to be decided with the plan.
+- **Gate:** clinical (accommodation work), so Peter decides. **Depends on:** nothing.
+
 ## The morning report's "Not tested yet" list is out of date `S`
 - **Today:** `NOT_TESTED` in `AI-dev/evals/nightly.py` still says suggested rungs are not run and
   that there are no reviewing agents. Since 2026-10-20 the nightly run tests suggested rungs, and
