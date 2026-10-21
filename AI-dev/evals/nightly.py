@@ -532,6 +532,25 @@ def _held_out_line(held: dict | None) -> str:
             + "; ".join(parts) + (f"; runs agree {s['mean']:.2f}" if s["mean"] is not None else "") + ".")
 
 
+def questions_for_peter(ctx: Ctx) -> list[dict] | None:
+    """Open issues labelled needs-peter: the agent loop's questions it would not guess at
+    (docs/plans/agent-loop.md). Each with the newest comment, which is the question. None if GitHub
+    could not be read."""
+    p = ctx.sh(["gh", "issue", "list", "--label", "needs-peter", "--state", "open", "--limit", "30",
+                "--json", "number,title,url,comments"], cwd=ctx.checkout, timeout=120)
+    if p.returncode != 0:
+        return None
+    out = []
+    for issue in json.loads(p.stdout or "[]"):
+        comments = issue.get("comments") or []
+        question = " ".join((comments[-1].get("body") or "").split()) if comments else ""
+        if len(question) > 300:
+            question = question[:297].rstrip() + "..."
+        out.append({"number": issue["number"], "title": issue["title"], "url": issue["url"],
+                    "question": question})
+    return sorted(out, key=lambda q: q["number"])
+
+
 def previous_night(reports: Path, day: date) -> Path | None:
     """The latest earlier night with a run report, for "better or worse"."""
     nights = sorted(p for p in reports.glob("20*-*-*") if p.is_dir() and p.name < day.isoformat()
@@ -649,6 +668,21 @@ def morning_report(ctx: Ctx) -> str:
                       "differently from run to run, not from a change to Float."]
     elif compared:
         lines += ["", f"No score changed since {prev.name}."]
+
+    # Peter, 2026-10-21: the loop's questions go in the report as a reminder, near the top.
+    questions = questions_for_peter(ctx)
+    lines += ["", "## Questions for you", ""]
+    if questions is None:
+        lines.append("Could not read the issues list from GitHub tonight.")
+    elif not questions:
+        lines.append("None waiting.")
+    else:
+        lines.append(f"{len(questions)} issue{'' if len(questions) == 1 else 's'} labelled `needs-peter`. "
+                     "Answer on the issue and remove the label; the loop picks it up the next night.")
+        lines.append("")
+        for q in questions:
+            ask = f": {q['question']}" if q["question"] else ""
+            lines.append(f"- [#{q['number']} {q['title']}]({q['url']}){ask}")
     lines += body
 
     prs = [s for s in night.steps if s["job"] == "score-prs" and s.get("pr")]
