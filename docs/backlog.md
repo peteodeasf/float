@@ -67,7 +67,7 @@ a test case in a prompt, every number with its sample size. Both items change wh
 the AI, so **request Peter's review and do not merge.** The 4am nightly job also scores any open
 pull request that changes a tested prompt or model.
 
-Monitoring analysis at temperature 0 was built 2026-10-21. The voice notes item below is not built yet.
+Monitoring analysis at temperature 0 was built 2026-10-21. The voice notes item was built 2026-10-21 (the Fear Level range fix).
 
 ### Testing the teen's side without the teen app — moved here by Peter, 2026-10-21
 
