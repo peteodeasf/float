@@ -1918,10 +1918,11 @@ export default function PatientPage() {
           {([
             { id: 'monitoring', label: 'Monitoring' },
             { id: 'sessions', label: 'Sessions' },
-            { id: 'summary', label: 'Case Summary' },
             { id: 'plan', label: 'Plan' },
             { id: 'progress', label: 'Progress' },
             { id: 'chat', label: 'Chat', b: unreadMessageCount },
+            // Last for now (Peter, 2026-10-21): checked, but its place in the clinician's flow isn't settled.
+            { id: 'summary', label: 'Case Summary' },
           ] as const).map(t => {
             const cur = activeTab === t.id
             const b = 'b' in t ? t.b : 0
