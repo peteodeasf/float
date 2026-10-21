@@ -68,9 +68,17 @@ the machine), then into a list of points, each with its screen and time.
 One rule for both: **say what you expected and what happened.** "I pressed Save and nothing
 changed" is a finding. "This feels off" is fine too, but say which screen.
 
+**Jam is for test data only.** A Jam report sends screenshots to Jam's servers, and the page
+address names a patient record. That is fine while everything is made up. Before the first real
+family is on Float, stop using Jam on the live app, or use it only on a demo account: Jam has no
+agreement with us to handle health information. This goes with the other pre-launch relaxations in
+`CLAUDE.md`.
+
 ## From feedback to the backlog
 
-Weekly, or after each testing session:
+Peter, 2026-10-21: Trevor fixes issues itself each night, after the Ready list. Peter's own reports
+and clear bugs are fixed; suggestions, clinical questions and unclear reports get a question and the
+`needs-peter` label (`docs/plans/agent-loop.md`). For what is left, weekly:
 1. Trevor reads the open `ui-feedback` issues and any new transcripts.
 2. It merges duplicates and groups them by area.
 3. It sorts each into: **bug** (it doesn't do what it says), **confusing** (it works, but people
