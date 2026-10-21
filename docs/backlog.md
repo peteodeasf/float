@@ -105,21 +105,7 @@ Both items in this group were built 2026-10-21.
 
 ### Testing the teen's side without the teen app — moved here by Peter, 2026-10-21
 
-#### Teen data testing page `L`
-- **Today:** the teen app is being redesigned (3–4 weeks of co-design), and nothing else records a
-  teen's exposures, so the clinician's Progress tab (now "Exposures") cannot be tested.
-- **What changes:** build `docs/plans/teen-data-testing.md` in full, in one PR: the `/teen-test`
-  page signed in as the teen, every settable value per rung with sensible defaults, Record done,
-  Too hard, starting an exposure on a behavior, a message box, back-dating behind the
-  `TEEN_DATA_TESTING` switch, and the Fill in 3 weeks button. The current teen app is not changed.
-  Add an "Area G — Teen data testing and the Progress tab" section to
-  `docs/testing/clinician-app-checklist.md` with its checks.
-- **How to tell it worked:** backend tests that a date and Fill in 3 weeks are refused with the
-  switch off, only ever touch the signed-in teen's own records, and refuse future dates; that Fill
-  in 3 weeks makes the history the plan describes. Screenshots of `/teen-test` beside the clinician's
-  Progress tab after Fill in 3 weeks, desktop width, with demo data.
-- **Gate:** `/security-review` (a new way to write a child's data), and Peter approves the screens.
-  **Depends on:** nothing.
+The teen data testing page was built 2026-10-21.
 
 #### Rename the clinician's "Exposures" tab to "Progress" `S`
 - **Today:** the patient page's tab is called Exposures
@@ -383,6 +369,30 @@ of what the child sees follows from what the clinician builds, so the ladder wor
 | **Milestone rewards** | Not built. Needs a defined set of milestones. | M |
 | **The anxiety nickname in the child's and parent's apps** | **Needs a plan** (Peter, 2026-09-15). A nickname can be saved on the treatment plan, but neither app uses it; it only appears as clinician checklist items. Dr. Walker's consultation guidance: the child greets it ("Hi Worry Bug"), and the parent asks "Is Worry Bug here?" and then "What's your Distress Thermometer?", both with acceptance. She also mentions games and rewards for using it. | M |
 
+## A teen cannot start an exposure on a rung with no situation `S`
+
+**Found 2026-10-21**, building the teen data testing page.
+
+- **Today.** `POST /patient/behaviors/{behavior_id}/experiments`
+  (`patient_create_behavior_experiment` in `backend/app/api/routers/patients.py`) finds the
+  child's plan through the step's situation. A step with no situation gets 404 "Situation not
+  found". The ladder sends these steps to the child (as "Other steps"), so the child can see a
+  rung and not start it. `GET /patient/behaviors/{id}` already falls back to the step's own
+  `treatment_plan_id`; this route does not.
+- **What changes.** Find the plan through `behavior.treatment_plan_id` first, then the situation,
+  the same way `get_behavior_detail` does.
+- **How to tell it worked.** A test: a child starts an exposure on their own situation-less rung
+  (201), and still cannot on another child's (404).
+- **Gate.** `/security-review` — it changes how the route decides the step is the child's.
+
+## The Progress tab puts a too-hard exposure on the day it was scheduled `S`
+
+**Found 2026-10-21.** The Progress tab places a too-hard exposure on `completed_date`, falling
+back to `scheduled_date` (`ExposuresTab.tsx`, `dayFor`). Too hard sets `too_hard_at` and never
+`completed_date`, so it always shows on the day it was scheduled, not the day the teen said it was
+too hard. Usually the same day; not always. **What changes:** read `too_hard_at` for too-hard rows,
+which means sending it in `GET /patients/{id}/experiments`. **Gate:** none.
+
 Waiting on Dr. Walker, from the July reorg: how "do it now" works on a future scheduled slot, word
 buttons instead of faces, equal-weight answers on "did it happen", and the too-hard path.
 
@@ -503,6 +513,22 @@ against "Screen layout" in `CLAUDE.md`, signed in as the demo parent. Peter to d
 - **How to tell it worked.** `tests/test_seed_local.py` checks the parent's `/parent/progress`
   returns `shared: true`; the demo parent's home shows the child's exposures.
 - **Gate.** None — local demo data only. It does not change who can see what in the app.
+
+## The demo teen has no rungs, and the demo downward arrow breaks `S`
+
+**Found 2026-10-21**, taking screenshots for the teen data testing page.
+
+- **Today.** `backend/seed_local.py` (content from `seed_demo.py`) gives the demo child only safety
+  and avoidance behaviors. Only situation steps are rungs (`LADDER_TYPES` in
+  `backend/app/core/behavior_types.py`), so the demo teen's ladder is empty in the teen app and on
+  `/teen-test`. Separately, the demo downward arrow's steps are saved with an `answer` key where
+  the app expects `response`, so `GET /trigger-situations/{id}/downward-arrow` returns 500 on the
+  demo patient's page.
+- **What changes.** Seed three or four `scenario` steps with Fear Levels, and write the arrow steps
+  with `response`.
+- **How to tell it worked.** `tests/test_seed_local.py`: the demo teen's `/patient/ladder` has
+  rungs, and the demo arrow loads with 200.
+- **Gate.** None — local demo data only.
 
 ## Parent messages: the message box cuts off its placeholder at phone width
 

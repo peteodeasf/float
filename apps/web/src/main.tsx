@@ -50,6 +50,7 @@ import ParentProgressPage from './pages/parent/ParentProgressPage'
 import ReminderOffPage from './pages/ReminderOffPage'
 import ParentAccommodationsPage from './pages/parent/ParentAccommodationsPage'
 import TeenMessagesPage from './pages/teen/TeenMessagesPage'
+import TeenDataTestingPage from './pages/teen/TeenDataTestingPage'
 import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
 import EducationIndexPage from './pages/practitioner/EducationIndexPage'
@@ -188,6 +189,10 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/teen/messages" element={
                 <TeenProtectedRoute><TeenMessagesPage /></TeenProtectedRoute>
               } />
+
+              {/* Teen data testing: records a teen's exposures while the teen app is redesigned. Signs
+                  in on the page itself, as the teen. docs/plans/teen-data-testing.md */}
+              <Route path="/teen-test" element={<TeenDataTestingPage />} />
 
               {/* Parent routes */}
               <Route path="/parent/login" element={<ParentLoginPage />} />

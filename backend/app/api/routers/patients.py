@@ -69,11 +69,17 @@ from app.services.experiment_service import (
     create_experiment_for_behavior,
     save_before_state,
     save_after_state,
+    commit_experiment,
+    mark_too_hard,
+    notify_clinician_completed,
 )
 
 
 class TooHardRequest(BaseModel):
     reason: Optional[str] = None
+    # When, for the teen data testing page only. Refused unless TEEN_DATA_TESTING is on
+    # (app/core/teen_testing.py). Left out, it is now.
+    at: Optional[datetime] = None
 
 
 class InviteTeenRequest(BaseModel):
@@ -1754,25 +1760,13 @@ async def patient_create_behavior_experiment(
 
 
 @patient_router.post("/experiments/{experiment_id}/commit")
-async def commit_experiment(
+async def commit_my_experiment(
     experiment_id: uuid.UUID,
     context: tuple = Depends(get_patient_context),
     db: AsyncSession = Depends(get_db)
 ):
     _, patient = context
-    result = await db.execute(
-        select(Experiment).where(
-            Experiment.id == experiment_id,
-            Experiment.patient_id == patient.id
-        )
-    )
-    experiment = result.scalar_one_or_none()
-    if not experiment:
-        raise HTTPException(status_code=404, detail="Experiment not found")
-    experiment.status = "committed"
-    experiment.committed_at = datetime.now(timezone.utc)
-    await db.commit()
-    await db.refresh(experiment)
+    experiment = await commit_experiment(db, experiment_id, patient.id)
     return {"status": experiment.status, "committed_at": experiment.committed_at.isoformat()}
 
 
@@ -1784,38 +1778,7 @@ async def too_hard_experiment(
     db: AsyncSession = Depends(get_db)
 ):
     user, patient = context
-    result = await db.execute(
-        select(Experiment).where(
-            Experiment.id == experiment_id,
-            Experiment.patient_id == patient.id
-        )
-    )
-    experiment = result.scalar_one_or_none()
-    if not experiment:
-        raise HTTPException(status_code=404, detail="Experiment not found")
-    experiment.status = "too_hard"
-    experiment.too_hard_at = datetime.now(timezone.utc)
-
-    if body.reason:
-        practitioner_result = await db.execute(
-            select(PractitionerProfile).where(
-                PractitionerProfile.id == patient.primary_practitioner_id
-            )
-        )
-        practitioner = practitioner_result.scalar_one_or_none()
-        if practitioner:
-            message = Message(
-                organization_id=patient.organization_id,
-                sender_user_id=user.id,
-                recipient_user_id=practitioner.user_id,
-                patient_id=patient.id,
-                content=f"I found this experiment too hard: {body.reason}. Can you suggest a change?",
-                message_type="too_hard",
-            )
-            db.add(message)
-
-    await db.commit()
-    await db.refresh(experiment)
+    experiment = await mark_too_hard(db, experiment_id, user, patient, body.reason, at=body.at)
     return {"status": experiment.status, "too_hard_at": experiment.too_hard_at.isoformat()}
 
 
@@ -1942,70 +1905,7 @@ async def patient_save_after_state(
     )
 
     if experiment.status == "completed":
-        from app.models.treatment import AvoidanceBehavior
-
-        practitioner = None
-        if patient.primary_practitioner_id:
-            pr_result = await db.execute(
-                select(PractitionerProfile).where(
-                    PractitionerProfile.id == patient.primary_practitioner_id,
-                    PractitionerProfile.organization_id == patient.organization_id,
-                )
-            )
-            practitioner = pr_result.scalar_one_or_none()
-        if practitioner is None:
-            pr_result = await db.execute(
-                select(PractitionerProfile).where(
-                    PractitionerProfile.organization_id == patient.organization_id
-                )
-            )
-            practitioner = pr_result.scalars().first()
-
-        if practitioner is not None:
-            behavior_name = None
-            if experiment.avoidance_behavior_id:
-                b_result = await db.execute(
-                    select(AvoidanceBehavior).where(
-                        AvoidanceBehavior.id == experiment.avoidance_behavior_id
-                    )
-                )
-                behavior = b_result.scalar_one_or_none()
-                if behavior:
-                    behavior_name = behavior.name
-
-            date_str = (
-                experiment.completed_date.strftime("%Y-%m-%d")
-                if experiment.completed_date else "unknown date"
-            )
-            bip_before = f"{int(experiment.bip_before)}" if experiment.bip_before is not None else "?"
-            bip_after = f"{int(experiment.bip_after)}" if experiment.bip_after is not None else "?"
-            dt_actual = (
-                f"{experiment.distress_thermometer_actual:g}"
-                if experiment.distress_thermometer_actual is not None else "?"
-            )
-            fo_str = (
-                "Yes" if experiment.feared_outcome_occurred is True
-                else "No" if experiment.feared_outcome_occurred is False
-                else "Unknown"
-            )
-            content = (
-                f"Experiment completed: {behavior_name or 'experiment'} on {date_str}. "
-                f"BIP: {bip_before}% → {bip_after}%. "
-                f"Fear level: {dt_actual}/10. "
-                f"Feared outcome occurred: {fo_str}."
-            )
-
-            message = Message(
-                organization_id=patient.organization_id,
-                sender_user_id=user.id,
-                recipient_user_id=practitioner.user_id,
-                patient_id=patient.id,
-                content=content,
-                message_type="experiment_completed",
-                sender_type="system",
-            )
-            db.add(message)
-            await db.commit()
+        await notify_clinician_completed(db, user, patient, experiment)
 
     return experiment
 
