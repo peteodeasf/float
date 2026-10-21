@@ -207,6 +207,46 @@ def test_like_or_about_after_the_number(words, n, is_rating):
     assert capture._said_as_rating(words, n) is is_rating
 
 
+# Why: Peter, 2026-10-21: a Fear Level said as a range saves the higher number. Before, the AI saved
+# none for a range in 5 of 6 runs, and "between 4 and 6" or "a 6-7" would have been dropped by the
+# app even when the AI gave the number. Ranges of times, ages and durations must still be turned
+# away, and so must a higher number that is not in the parent's words.
+@pytest.mark.parametrize("words, n, is_rating", [
+    ("She was a six or seven at drop off.", 7, True),
+    ("honestly between 4 and 6", 6, True),
+    ("I'd say somewhere between a four and a six when the dog came over.", 6, True),
+    ("Probably a 7-8 out of 10.", 8, True),
+    ("He was an eight to nine by bedtime.", 9, True),
+    ("A six or a seven, then she calmed down.", 7, True),
+    ("She was a six or seven at drop off.", 8, False),
+    ("We were at the clinic between 4 and 6pm and she cried.", 6, False),
+    ("We stayed between 4 and 6 hours.", 6, False),
+    ("A 6-7 year old boy laughed at him.", 7, False),
+    ("It was a 3-4 minute walk but he refused.", 4, False),
+])
+def test_a_range_passes_its_higher_number(words, n, is_rating):
+    assert capture._said_as_rating(words, n) is is_rating
+
+
+# Why: end to end, a range is saved as its higher number, and the parent's words, with both numbers,
+# are kept on the observation. The prompt asks for the higher number; this checks the app keeps it.
+async def test_a_range_saves_the_higher_number_and_keeps_the_words(api, db, claude):
+    _, _, form = await _form(db)
+    claude["answer"] = {"observations": [_obs(fear=7)]}
+    await _write(api, form, "Getting in the car she was a six or seven out of ten.")
+    claude["answer"] = {"observations": [_obs(fear=6)]}
+    await _write(api, form, "At the pool she was somewhere between 4 and 6.")
+
+    by_words = {e.parent_words: e.fear_thermometer for e in await _entries(db, form)}
+    assert by_words == {"Getting in the car she was a six or seven out of ten.": 7,
+                        "At the pool she was somewhere between 4 and 6.": 6}
+
+
+# Why: the range rule is in the prompt the app sends, so a prompt edit cannot drop it unnoticed.
+def test_the_prompt_says_a_range_saves_the_higher_number():
+    assert "range of two numbers, fear is the higher" in capture._prompt()
+
+
 # Why: end to end, a time in the note is not saved as the Fear Level even when the model offers it.
 async def test_a_time_in_the_note_is_not_saved_as_the_fear_level(api, db, claude):
     _, _, form = await _form(db)
