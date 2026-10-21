@@ -233,6 +233,46 @@ async def test_the_draft_falls_back_to_the_template_and_writes_nothing(api, db):
     assert await get_rungs_for_plan(db, plan.id, org.id) == []
 
 
+class _Reply:
+    def __init__(self, text, stop_reason="end_turn"):
+        self.content = [type("Block", (), {"type": "text", "text": text})()]
+        self.stop_reason = stop_reason
+
+
+class _Client:
+    """Stands in for AsyncAnthropic, so the call's shape is checked without reaching the model."""
+
+    def __init__(self, reply):
+        self.reply, self.calls = reply, []
+        self.messages = self
+
+    async def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return self.reply
+
+
+# Why: the call was split out of draft_sentence so the AI test runner can count its cost
+# (AI-dev/evals/runner/step_sentences.py). The app must still send its own prompt and the pair.
+async def test_the_wording_call_sends_the_apps_prompt_and_the_pair():
+    client = _Client(_Reply("Answer a question in class"))
+    text = await combination_wording.ask_claude("In class", "Sits at the back", client=client)
+    assert text == "Answer a question in class"
+    call = client.calls[0]
+    assert call["model"] == combination_wording.MODEL
+    assert call["system"] == combination_wording.SYSTEM_PROMPT
+    assert call["messages"][0]["content"] == "Situation: In class\nSafety behavior: Sits at the back"
+
+
+# Why: a refusal must reach draft_sentence as "no sentence", so the clinician gets the template.
+async def test_a_refused_draft_falls_back_to_the_template(monkeypatch):
+    monkeypatch.setattr(combination_wording.settings, "ANTHROPIC_API_KEY", "sk-test")
+    client = _Client(_Reply("", stop_reason="refusal"))
+    monkeypatch.setattr("anthropic.AsyncAnthropic", lambda **kw: client)
+    assert await combination_wording.draft_sentence("In class", "Sits at the back") == (
+        "In class — without: Sits at the back", "template")
+    assert client.calls
+
+
 async def test_the_draft_uses_the_ai_sentence_when_there_is_one(api, db, monkeypatch):
     async def fake(situation, behavior):
         assert (situation, behavior) == ("Participating in class verbally", "Sits at the back")

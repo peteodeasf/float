@@ -45,9 +45,9 @@ from cases import half  # noqa: E402
 REL = "AI-dev/evals"
 POOL_REL = f"{REL}/pool/families"
 # The features the runner has (`FEATURES` in runner/run.py). A test keeps the two lists the same.
-FEATURES = ("monitoring_analysis", "voice_notes", "rungs")
+FEATURES = ("monitoring_analysis", "voice_notes", "rungs", "step_sentences")
 FEATURE_TEXT = {"monitoring_analysis": "Monitoring analysis", "voice_notes": "Voice notes",
-                "rungs": "Suggested rungs"}
+                "rungs": "Suggested rungs", "step_sentences": "Step sentences"}
 
 DEFAULT_LIMIT = 10.0
 DEFAULT_RUNS = 3
@@ -315,9 +315,10 @@ def fingerprint(checkout: Path | None = None) -> dict[str, str]:
     import app_code  # noqa: F401  # makes backend/app importable
     import monitoring_analysis
     import rungs
+    import step_sentences
     import voice_notes
     out = {}
-    for f in (monitoring_analysis, voice_notes, rungs):
+    for f in (monitoring_analysis, voice_notes, rungs, step_sentences):
         out[f.NAME] = hashlib.sha256(f"{f.model()}\n{f.app_prompt()}".encode()).hexdigest()[:12]
     return out
 

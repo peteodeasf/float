@@ -40,6 +40,46 @@ def _cases_varied(results, summed) -> dict[str, int]:
     return out
 
 
+def _review_counts(feature, results) -> dict:
+    """The reviewers' verdicts, counted per group (the feature's `group(case_id)`, or "all") and per
+    reviewer, plus all of them together. Counts are over reviewed items: one per run for a step
+    sentence, one per suggestion for rungs. No reasons and no text, only counts and rule ids."""
+    group_of = getattr(feature, "group", lambda case_id: "all")
+    out: dict[str, dict] = {}
+
+    def blank():
+        return {"items": 0, "show": 0, "dont_show": 0, "unanswered": 0, "opinion_only": 0,
+                "broken": {}}
+
+    def verdict_at(rv, i):
+        return rv["verdicts"][i] if rv["verdicts"] and i < len(rv["verdicts"]) else None
+
+    for c in results:
+        g = out.setdefault(group_of(c.case_id), {})
+        for r in c.runs:
+            if not r.reviews:
+                continue
+            # When no reviewer's answer could be read the item count is unknown, and the run counts
+            # as one unanswered item rather than vanishing from the totals.
+            n_items = max((len(rv["verdicts"]) for rv in r.reviews if rv["verdicts"]), default=1)
+            for rv in r.reviews:
+                t = g.setdefault(rv["concern"], blank())
+                for i in range(n_items):
+                    v = verdict_at(rv, i)
+                    t["items"] += 1
+                    t[(v and v["verdict"]) or "unanswered"] += 1
+                    if v:
+                        t["opinion_only"] += int(v["opinion_only"])
+                        for rule in v["broken"]:
+                            t["broken"][rule] = t["broken"].get(rule, 0) + 1
+            together = g.setdefault("all reviewers together", blank())
+            for i in range(n_items):
+                vs = [(verdict_at(rv, i) or {}).get("verdict") for rv in r.reviews]
+                together["items"] += 1
+                together["dont_show" if "dont_show" in vs else "unanswered" if None in vs else "show"] += 1
+    return {g: v for g, v in out.items() if v}
+
+
 HALF_TEXT = {
     "working": "the working half (odd-numbered), the ones prompts may be tuned on",
     "held_out": "the held-out half (even-numbered)",
@@ -91,6 +131,8 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
             "cases": len(stabilities),
         },
         "reviewers": [getattr(r, "__name__", repr(r)) for r in reviewers],
+        "reviews_checked": all(rv["checked"] for c in results for r in c.runs for rv in r.reviews),
+        "reviews": _review_counts(feature, results),
         "per_case": [
             {
                 "case": c.case_id,
@@ -161,7 +203,29 @@ def markdown(rep: dict) -> str:
     else:
         lines.append("No runs.")
     lines += ["", "## Reviewing agents", ""]
-    lines.append(", ".join(rep["reviewers"]) if rep["reviewers"] else "None yet. They are a later item.")
+    lines.append(", ".join(rep["reviewers"]) if rep["reviewers"] else "None in this run.")
+    if rep.get("reviews"):
+        if not rep["reviews_checked"]:
+            lines += ["", "**Unchecked.** No clinician has marked these items, so nothing says whether "
+                          "the reviewers agree with one."]
+        lines += [
+            "",
+            "Counts are over reviewed items. \"Don't show\" counts only when the reviewer named one "
+            "of its own rules. \"Opinion only\" is a \"don't show\" with no rule behind it, counted "
+            "as show. \"All reviewers together\" is don't show when any one of them found a broken "
+            "rule.",
+        ]
+        for group, by_concern in rep["reviews"].items():
+            lines += ["", f"### {group}", "",
+                      "| Reviewer | Items | Show | Don't show | Unanswered | Opinion only | Rules broken |",
+                      "|---|---|---|---|---|---|---|"]
+            for concern, t in by_concern.items():
+                together = concern == "all reviewers together"
+                broken = "–" if together else (
+                    ", ".join(f"{k} {n}" for k, n in sorted(t["broken"].items())) or "none")
+                lines.append(f"| {concern} | {t['items']} | {_ratio(t['show'], t['items'])} | "
+                             f"{_ratio(t['dont_show'], t['items'])} | {t['unanswered']} | "
+                             f"{'–' if together else t['opinion_only']} | {broken} |")
     # The held-out report (AI-dev/evals/judging/) has no per-case rows: they would say which case to
     # go and read.
     if "per_case" in rep:

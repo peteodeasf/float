@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 POOL = Path(__file__).resolve().parents[1] / "pool" / "families"
+# The fixed 30 step-sentence pairs, chosen from the pool by `step_sentences.choose_set`.
+STEP_SET = Path(__file__).resolve().parent / "step_sentence_set.json"
 
 
 @dataclass(frozen=True)
@@ -93,13 +95,59 @@ def _rungs(family: dict) -> list[Case]:
     return cases
 
 
+def _step_set() -> list[dict]:
+    return json.loads(STEP_SET.read_text())
+
+
+def _step_sentences(family: dict) -> list[Case]:
+    """Two cases for each of the family's pairs in the fixed set: "app" (the app's prompt) and
+    "does" (one line changed, see step_sentences.py). A family's pairs not in the set give none.
+
+    Float is given what the app sends: the situation's name and the behavior's words. The child's
+    age is for the age reviewer only; the app does not send it.
+    """
+    situations = {s["id"]: s for s in family["facts"]["situations"]}
+    cases = []
+    for p in _step_set():
+        if p["family"] != family["id"]:
+            continue
+        s = situations[p["situation_ref"]]
+        b = next(b for b in s["behaviors"] if b["id"] == p["behavior_ref"])
+        for mode in ("app", "does"):
+            cases.append(Case(
+                id=f"{family['id']}/step_sentences/{s['id']}-{b['id']}/{mode}",
+                family_id=family["id"],
+                feature="step_sentences",
+                input={"situation": s["name"], "behavior": b["text"]},
+                expected={"mode": mode, "age": family["facts"]["child"]["age"],
+                          "behavior_type": b["type"]},
+            ))
+    return cases
+
+
+def _step_order(case: Case) -> int:
+    """The set's own order, which takes the kinds of anxiety in turn, so a run stopped by the
+    spending limit still has every kind in it."""
+    family, _, pair, _ = case.id.split("/")
+    s_ref, b_ref = pair.split("-")
+    for n, p in enumerate(_step_set()):
+        if (p["family"], p["situation_ref"], p["behavior_ref"]) == (family, s_ref, b_ref):
+            return n
+    raise ValueError(f"{case.id} is not in {STEP_SET.name}")
+
+
 # Each builder turns one pool family into its cases: one for monitoring analysis (the whole log),
-# one per note for voice notes, one or two per rung case for suggested rungs.
+# one per note for voice notes, one or two per rung case for suggested rungs, two per pair in the
+# fixed step-sentence set.
 BUILDERS = {
     "monitoring_analysis": lambda family: [_monitoring_analysis(family)],
     "voice_notes": _voice_notes,
     "rungs": _rungs,
+    "step_sentences": _step_sentences,
 }
+
+# Features whose cases run in an order of their own rather than file order.
+ORDER = {"step_sentences": _step_order}
 
 
 HALVES = ("working", "held_out")
@@ -147,4 +195,5 @@ def load_cases(feature: str, family_ids: list[str] | None = None, limit: int | N
         files = [f for f in files if half(f.stem) == only]
     if limit is not None:
         files = files[:limit]
-    return [case for f in files for case in BUILDERS[feature](json.loads(f.read_text()))]
+    cases = [case for f in files for case in BUILDERS[feature](json.loads(f.read_text()))]
+    return sorted(cases, key=ORDER[feature]) if feature in ORDER else cases

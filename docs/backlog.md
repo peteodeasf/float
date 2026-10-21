@@ -57,16 +57,7 @@ All from `docs/plans/ai-quality-testing.md`. Read the whole plan before any of t
 Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not tonight), scoring the
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
-#### Step sentences: the 30-pair set `M`
-- **Today:** `AI-dev/Combination Wording/run_check.py` writes a reading sheet from 17 pairs and
-  scores nothing. `docs/plans/ladder-combinations.md` planned about 30, across kinds of anxiety.
-  The pool has 81 step-sentence pairs.
-- **What changes:** build the 30-pair set from the pool and `ladder-combinations.md`, across
-  kinds of anxiety, and run it through the runner and the step-sentence reviewer. Test its open
-  question: should the sentence say what the child does, or what they stop doing? Report it; don't
-  decide it.
-- **How to tell it worked:** a report in the PR with sample sizes, marked unchecked by a clinician.
-- **Gate:** none (no prompt change). **Depends on:** the test runner, and the reviewers.
+No items left in this group. The last, the 30-pair step-sentence set, was built 2026-10-20.
 
 ---
 
@@ -775,6 +766,16 @@ Found while checking, before building:
 - **How to tell it worked:** a test that a reply with unescaped quotes inside a value is read (if
   the reader changes), and `app_can_read` at 0 failed runs on the voice notes test run.
 - **Gate:** Peter's review if the prompt changes. **Depends on:** nothing.
+
+## A drafted step sentence in quote marks keeps its closing quote `S`
+- **Today:** `clean` in `backend/app/services/combination_wording.py` strips quote marks from the
+  start and end of the whole reply, then keeps the first line. When the model writes the sentence in
+  quotes and then a second line ("Why: ..."), the closing quote is in the middle of the reply, so it
+  is not stripped and the clinician sees `Say hello on your own"`. Found 2026-10-20 while writing the
+  step-sentence tests; not seen in a real run.
+- **What changes:** take the first line first, then strip the quotes.
+- **How to tell it worked:** a backend test that `clean('"Say hello"\nWhy: ...')` is `Say hello`.
+- **Gate:** none. **Depends on:** nothing.
 
 ## A held-out test fails on main `S`
 - **Today:** `AI-dev/evals/judging/tests/test_held_out.py::test_output_has_scores_and_counts_and_no_case_text`
