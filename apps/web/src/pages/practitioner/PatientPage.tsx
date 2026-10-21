@@ -1342,7 +1342,7 @@ export default function PatientPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span className="text-sm font-semibold text-slate-700">Treatment Plan</span>
-          <span className={`text-xs px-1.5 py-0.5 rounded-full ${plan.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{plan.status}</span>
+          {/* No status pill ("setup"/"active") here: Peter, #48 — it made no sense to clinicians. */}
           <span style={{ fontSize: '12px', color: 'var(--float-border-strong)' }}>&middot;</span>
           {editingNickname ? (
             <>
