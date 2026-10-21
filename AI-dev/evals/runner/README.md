@@ -44,8 +44,14 @@ From the repo root, with the backend's Python:
 - `--runs` is how many times each case is run (default 3).
 - `--budget` is the spending limit in dollars (default 10). The run stops when the next call could
   pass it, and the report says so and keeps what was done.
+- `--temperature 0` sends that temperature on the feature's own calls, in place of the app's
+  setting, to measure it before the app is changed. Calls to other models (the reviewers) are left
+  alone. Opus 5.5 refuses any temperature but the default, so it cannot be used on step sentences.
+  The report's header says which temperature ran.
 - Needs `ANTHROPIC_API_KEY` in the environment. Without it nothing runs.
 - Touches no database.
+- A full run of monitoring analysis or suggested rungs takes more than 10 minutes. Nothing is
+  written until it ends.
 
 It writes `runs/<timestamp>/` (not committed):
 - `report.md` and `report.json`: scores and counts only. No case text and none of the model's

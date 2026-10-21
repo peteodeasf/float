@@ -88,7 +88,7 @@ HALF_TEXT = {
 
 
 def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, stopped,
-          reviewers=(), half: str | None = None) -> dict:
+          reviewers=(), half: str | None = None, temperature: float | None = None) -> dict:
     summed = feature.SUMMED
     all_runs = [r for c in results for r in c.runs]
     scored = [r.score for r in all_runs if r.score]
@@ -106,6 +106,7 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
         "model": feature.model(),
         "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest()[:12],
         "half": half,
+        "temperature": temperature,
         "runs_per_case": runs_per_case,
         "cases_planned": cases_planned,
         "cases_run": len(results),
@@ -148,6 +149,10 @@ def build(feature, results, *, runs_per_case: int, cases_planned: int, budget, s
     }
 
 
+def _temperature_text(t: float | None) -> str:
+    return "the app's own setting" if t is None else f"{t:g}, set by the runner in place of the app's"
+
+
 def markdown(rep: dict) -> str:
     t = rep["totals"]
     lines = [
@@ -155,6 +160,7 @@ def markdown(rep: dict) -> str:
         "",
         f"- Model `{rep['model']}`, the app's prompt (sha256 `{rep['prompt_sha256']}`).",
         f"- Pool families: {HALF_TEXT.get(rep.get('half'), 'picked by hand')}.",
+        f"- Temperature: {_temperature_text(rep.get('temperature'))}.",
         f"- {rep['cases_run']} of {rep['cases_planned']} cases, {rep['runs_per_case']} runs each: "
         f"{rep['runs']} runs, {rep['runs_scored']} the app could read, {rep['runs_with_error']} failed calls.",
         f"- Spent ${rep['spent_usd']:.4f} of a ${rep['limit_usd']:.2f} limit, over {rep['calls']} calls.",

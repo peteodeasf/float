@@ -55,6 +55,20 @@ the agent: if a PR changes clinical logic (what counts as avoidance, safety or e
 accommodation or fear-rating rules, plan-commit behaviour) or who can see what, request Peter's
 review (`gh pr edit --add-reviewer peteodeasf`) and do not merge. GitHub does not enforce this.
 
+## Fixing ui-feedback issues (added 2026-10-21)
+
+Peter, 2026-10-21: the nightly loop also reads the issues list and fixes issues. When the Ready
+list is empty, each pass takes the oldest open `ui-feedback` issue (from screen testing, mostly
+through Jam):
+- Peter's own reports are his instructions, and clear bugs are fixed: one issue, one PR, `Fixes #N`.
+- Suggestions, product changes, clinical questions, access questions and unclear reports are not
+  fixed. Trevor asks Peter one question on the issue and adds `needs-peter`.
+- Production records in an issue's link are never opened; problems are reproduced with demo data.
+- Screen changes wait for Peter's approval, as before.
+
+It runs nightly from cron at 10:45pm with up to 5 passes. The detail is in
+`scripts/agent-loop-prompt.md`.
+
 ## The Ready list
 
 A new "Ready for agents" section at the top of `docs/backlog.md`. Peter moves items into it. Each

@@ -67,29 +67,7 @@ a test case in a prompt, every number with its sample size. Both items change wh
 the AI, so **request Peter's review and do not merge.** The 4am nightly job also scores any open
 pull request that changes a tested prompt or model.
 
-#### Make the AI answer the same way each run `M`
-- **Today:** no AI call in the app sets `temperature`, so the same input can give different
-  answers. On 2026-10-21 the runs of one case did not all agree on 16 of 18 families for monitoring
-  analysis, 41 of 94 situations for suggested rungs, 51 of 60 pairs for step sentences, and 5 of 32
-  voice notes. The calls: `request_extraction` and `request_report` in
-  `backend/app/services/insight_service.py` (monitoring analysis), `_ask_claude` in
-  `backend/app/services/monitoring_capture.py` (voice notes), `ask_claude` in
-  `backend/app/services/step_suggestion_service.py` (suggested rungs), and the call in
-  `backend/app/services/combination_wording.py` (step sentences).
-- **What changes:**
-  1. First check, with the `claude-api` skill, which of those models accept `temperature`, and what
-     happens when it is set alongside any other setting the call uses. Do not guess.
-  2. Measure before choosing. For each of the four features, run the working families with
-     `AI-dev/evals/runner/run.py` at the app's current setting and at `temperature` 0, 3 runs each.
-     Compare both how often runs agree and every accuracy score, since steadier can also be worse.
-  3. Set `temperature` only on the calls where it made runs agree more without making any score
-     worse. Leave the others as they are, and say why in the PR.
-  4. `request_extraction` is also used for session note suggestions (`suggest_from_session_note`),
-     which have no tests. Say so in the PR, so Peter knows that feature changes too.
-- **How to tell it worked:** the PR has a table per feature: agreement and each score, before and
-  after, with sample sizes. Tests that each changed call sends the chosen setting.
-- **Gate:** changes how the AI answers: request Peter's review and do not merge.
-  **Depends on:** nothing.
+Both items in this group were built 2026-10-21.
 
 ---
 
@@ -834,6 +812,51 @@ Found while checking, before building:
   file fails the check, and the check passes on main.
 - **Gate:** Peter (the judging folder and CI are his in CODEOWNERS). **Depends on:** nothing.
 
+## Monitoring form: the helper text says the link is copied, but it isn't `S`
+- **Today:** on the Monitoring tab, the text by "Create monitoring form" says it emails anyone with
+  an email "and copies the link" (`apps/web/src/pages/practitioner/PatientPage.tsx` near line
+  1248). The code deliberately does not copy it (comment near lines 707-709). Found 2026-10-21 while
+  building the UI test checklist.
+- **What changes:** make the text say what happens: it emails each parent who has an email, and
+  each link can be copied below.
+- **How to tell it worked:** the text matches what the button does. Screenshot in the PR.
+- **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
+
+## Monitoring form: the "Email sent" confirmation is probably never seen `S`
+- **Today:** the green "✓ Email sent to …" banner (`PatientPage.tsx` near lines 1223-1226) sits in
+  the view shown before a form exists. Creating the form replaces that view, so the banner likely
+  disappears at once. Found 2026-10-21 from the code; not yet seen on a screen.
+- **What changes:** check it on a screen first. If it is hidden, show the confirmation in the view
+  that follows.
+- **How to tell it worked:** after Create monitoring form, the clinician sees who was emailed.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Parent monitoring form: "Get the link sent to me again" sends nothing `S`
+- **Today:** on the parent's monitoring form, the Send button only shows "Link sent! Check your
+  email or messages." No request is made and nothing is sent
+  (`apps/web/src/pages/monitor/MonitorLandingPage.tsx` near lines 424-431). Found 2026-10-21.
+- **What changes:** either send the link again, or remove the option until it can. Peter decides
+  which.
+- **How to tell it worked:** the parent never sees "sent" when nothing was sent.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Parent set-password allows 6 characters; everywhere else needs 8 `S`
+- **Today:** `apps/web/src/pages/parent/ParentSetPasswordPage.tsx` (line 19) accepts 6 characters.
+  Clinician setup, password reset and settings require 8. Found 2026-10-21. Check what the backend
+  enforces before changing the screen.
+- **What changes:** the same minimum everywhere, enforced by the backend as well as the screen.
+- **How to tell it worked:** a test that a 7-character parent password is refused.
+- **Gate:** touches sign-in, so `/security-review`. **Depends on:** nothing.
+
+## Parent experiments: the clinician can set one up, but the parent never sees it `M`
+- **Today:** the clinician sets up an experiment with the parent on the Exposures tab
+  (`apps/web/src/components/practitioner/ParentExperimentSheet.tsx`). No parent screen shows or
+  records it, though `apps/web/src/api/parentExperiments.ts` has the functions. Found 2026-10-21.
+- **What changes:** a product decision first: should the parent see and record these in their app?
+  If yes, it needs a plan.
+- **How to tell it worked:** to be decided with the plan.
+- **Gate:** clinical (accommodation work), so Peter decides. **Depends on:** nothing.
+
 ## The morning report's "Not tested yet" list is out of date `S`
 - **Today:** `NOT_TESTED` in `AI-dev/evals/nightly.py` still says suggested rungs are not run and
   that there are no reviewing agents. Since 2026-10-20 the nightly run tests suggested rungs, and
@@ -932,6 +955,20 @@ they wrote.
   approves it.
 - **How to tell it worked:** a count, before and after, of British spellings in report runs.
 - **Gate:** prompt change waits for Peter. **Depends on:** nothing.
+
+## A stopped test run keeps no report and no record of what it spent `S`
+- **Today:** `AI-dev/evals/runner/run.py` writes `report.md`, `report.json` and `outputs.jsonl` only
+  after the last case. If the process is killed part-way, nothing is written, so the runs are lost
+  and nobody can tell what they cost. On 2026-10-21 four runs (monitoring analysis and suggested
+  rungs) were stopped by a 10-minute time limit on the agent's background commands, after spending
+  an unknown amount up to their caps ($7.20 in total). The rest of that session had to plan its
+  spending from the caps, not from what was actually spent.
+- **What changes:** have the runner write what it spent, and the runs done so far, as it goes (for
+  example, one line to `outputs.jsonl` and an updated `spent_usd` after each case), or catch the
+  stop signal and write the report before exiting.
+- **How to tell it worked:** a runner test that stops a run part-way and finds the cases done so
+  far, and the amount spent, on disk.
+- **Gate:** none. **Depends on:** nothing.
 
 ## Short case phrases in the rung prompt that the copy check cannot see
 
