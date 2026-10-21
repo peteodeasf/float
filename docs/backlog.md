@@ -798,6 +798,16 @@ Found while checking, before building:
   file fails the check, and the check passes on main.
 - **Gate:** Peter (the judging folder and CI are his in CODEOWNERS). **Depends on:** nothing.
 
+## The morning report's "Not tested yet" list is out of date `S`
+- **Today:** `NOT_TESTED` in `AI-dev/evals/nightly.py` still says suggested rungs are not run and
+  that there are no reviewing agents. Since 2026-10-20 the nightly run tests suggested rungs, and
+  the reviewers exist (`AI-dev/evals/judging/reviewers.py`), though they are not part of the
+  nightly run. Found 2026-10-20 in a dry run of the schedule.
+- **What changes:** say what is really untested: step sentences, the reviewers in the nightly run,
+  session notes, the downward arrow, and the risk flag.
+- **How to tell it worked:** a dry run's "Not tested yet" section matches what the night ran.
+- **Gate:** none. **Depends on:** nothing.
+
 ## Three AI calls stop the backend answering anyone else while they wait `S`
 - **Today:** three routes are `async` but call Claude with the blocking client
   (`anthropic.Anthropic`, not `AsyncAnthropic`) and do not hand the call to a thread:
