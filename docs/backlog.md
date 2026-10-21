@@ -670,6 +670,21 @@ moving DMARC past `p=none`.
   a hand-picked revision id silently created a cycle on 2026-08-28. `S`
 - **`.claude/settings.local.json` has 279 allow entries** — worth pruning to patterns. `S`
 
+## The two-parents test sometimes fails in CI `S`
+
+**Found 2026-10-21**, on PR #64, which changed no backend code. Main passed on the same backend.
+
+- **Today.** `tests/test_two_parents.py::test_a_child_can_have_two_parents_and_the_clinician_sees_both`
+  invites two parents and expects them back in invite order. `GET /patients/{id}/parents`
+  (`backend/app/api/routers/patients.py`) sorts by `ParentPatientLink.created_at`, which Postgres
+  fills with `now()`. In a test, both invites run inside one transaction, so both get the same
+  time and Postgres may return them either way round. In the real app each invite is its own
+  request, so the order there is right.
+- **What changes.** Give the list a second sort key that cannot tie, or have the test not depend on
+  the order.
+- **How to tell it worked.** The test passes every time, for example 50 runs in a row.
+- **Gate.** None. **Depends on:** nothing.
+
 ## Development setup — what is left
 
 From [`dev-setup.md`](plans/dev-setup.md). Items 1, 3 and 4 are done (test database and 64 backend
