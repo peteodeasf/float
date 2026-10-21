@@ -15,6 +15,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import nightly  # noqa: E402
 
+
+@pytest.fixture
+def two_features(monkeypatch):
+    # The spending tests below count steps, so they fix the feature list at two. What they check is
+    # how the night's limit is shared out, which does not depend on which features exist.
+    monkeypatch.setattr(nightly, "FEATURES", ("monitoring_analysis", "voice_notes"))
+
 DAY = date(2026, 10, 20)
 COMMITTED = ["fam-social-01", "fam-social-02", "fam-social-03", "fam-health-01"]
 SCORES = [["Situations found", "situations_found", "situations"],
@@ -130,7 +137,7 @@ def test_only_the_local_test_database(url, ok):
 
 # Why: the night has one limit. Each step must be given only what is left, so the night total cannot
 # pass the limit however many steps there are.
-def test_each_step_gets_only_what_is_left(tmp_path):
+def test_each_step_gets_only_what_is_left(tmp_path, two_features):
     shell = FakeShell(runner=lambda cmd: (0, report(spent=budget_of(cmd) - 0.5)))
     c = ctx(tmp_path, shell, limit=4.0)
     nightly.job_run(c)
@@ -141,7 +148,7 @@ def test_each_step_gets_only_what_is_left(tmp_path):
 
 # Why: with almost nothing left a step could not get through enough cases to mean anything, and it
 # must say it was skipped rather than run on pennies.
-def test_a_step_is_skipped_when_too_little_is_left(tmp_path):
+def test_a_step_is_skipped_when_too_little_is_left(tmp_path, two_features):
     shell = FakeShell(runner=lambda cmd: (0, report(spent=9.8)))
     c = ctx(tmp_path, shell, limit=10.0)
     nightly.job_run(c)
@@ -160,7 +167,7 @@ def test_a_later_job_cannot_raise_the_limit(tmp_path):
 
 # Why: a step that crashed may have spent money before it stopped. Not knowing how much, the night
 # must count all it was allowed, rather than carry on and go over. A missing API key spends nothing.
-def test_a_crash_counts_its_whole_allowance_and_a_missing_key_counts_nothing(tmp_path):
+def test_a_crash_counts_its_whole_allowance_and_a_missing_key_counts_nothing(tmp_path, two_features):
     shell = FakeShell(runner=lambda cmd: (1, None))
     c = ctx(tmp_path, shell, limit=10.0)
     nightly.job_run(c)
@@ -298,7 +305,7 @@ def test_generate_records_its_spend_and_families(tmp_path):
 
 # Why: a job run twice in one night writes to the same folder. If the second run crashes, the first
 # run's report must not be read as the second's, hiding the crash and its spend.
-def test_a_crash_is_not_hidden_by_an_earlier_report(tmp_path):
+def test_a_crash_is_not_hidden_by_an_earlier_report(tmp_path, two_features):
     nightly.job_run(ctx(tmp_path, FakeShell()))
     c = ctx(tmp_path, FakeShell(runner=lambda cmd: (1, None)))
     nightly.job_run(c)

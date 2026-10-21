@@ -67,11 +67,38 @@ def _voice_notes(family: dict) -> list[Case]:
     ]
 
 
+def _rungs(family: dict) -> list[Case]:
+    """One case per mode for each of the family's rung cases. A situation with a feared outcome
+    gives two: "with" it, and "without" (told it is not known). One with none gives one, "none".
+
+    Float is given what the app sends: the situation, its Fear Level, the feared outcome (or not)
+    and the child's behaviors as what they do to cope. The pool has no rungs on any ladder, so
+    `steps` is empty.
+    """
+    situations = {s["id"]: s for s in family["facts"]["situations"]}
+    cases = []
+    for r in family["judgment"].get("rungs", []):
+        s = situations[r["situation_ref"]]
+        feared = (s.get("feared_outcome") or "").strip()
+        base = {"situation": s["name"], "score": s.get("fear_level"), "steps": [],
+                "coping": [b["text"] for b in s.get("behaviors", [])]}
+        for mode in (("with", "without") if feared else ("none",)):
+            cases.append(Case(
+                id=f"{family['id']}/rungs/{s['id']}/{mode}",
+                family_id=family["id"],
+                feature="rungs",
+                input={**base, "feared_outcome": feared if mode == "with" else ""},
+                expected={"mode": mode},
+            ))
+    return cases
+
+
 # Each builder turns one pool family into its cases: one for monitoring analysis (the whole log),
-# one per note for voice notes.
+# one per note for voice notes, one or two per rung case for suggested rungs.
 BUILDERS = {
     "monitoring_analysis": lambda family: [_monitoring_analysis(family)],
     "voice_notes": _voice_notes,
+    "rungs": _rungs,
 }
 
 

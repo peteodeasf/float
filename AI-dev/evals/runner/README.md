@@ -9,6 +9,9 @@ Wired up so far:
 - **voice notes** (`--feature voice_notes`): the observations Claude writes up from a parent's voice
   note or quick note, as `monitoring_capture.write_up` saves them. One case per note. See "Voice
   notes" below.
+- **suggested rungs** (`--feature rungs`): the smaller versions of a situation offered in the
+  ladder editor, as `step_suggestion_service.suggest_steps` returns them. Run with and without the
+  feared outcome. See "Suggested rungs" below.
 
 The other features are later items.
 
@@ -118,6 +121,23 @@ did not say as a rating. A Fear Level the model offered and the app dropped show
 
 Which situation each observation is about is not scored: an observation has no link back to the
 answer key's situations, and matching by name would be a guess.
+
+## Suggested rungs
+
+`rungs.py`. One case per pool rung case and mode. A situation with a feared outcome is run twice:
+"with" it, and "without" (the app's "not known yet" line instead). A situation with none is run
+once, "none". Float is given what the app sends: the situation, its Fear Level, the feared outcome
+or not, and the child's behaviors as what they do to cope. No pool situation has rungs on its ladder
+yet, so `steps` is always empty.
+
+There is no answer key. It counts form, kept apart by mode: suggestions written, how many the app's
+limits let through (`within_limits`: two to five, no idea twice; no length limit), why the
+rest were dropped, runs where none would be shown, words per suggestion, and whether the "other
+variations" line came back. The checks run on what the model wrote, before the limits, so a failure
+there is the prompt's rule not being followed. `plain_enough_for_a_child` is Ladder Eval's list of
+clinical words.
+
+Whether a suggestion is any good is not scored. That is the reviewers' job.
 
 ## Adding a feature
 

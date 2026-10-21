@@ -82,19 +82,6 @@ risk flag, session drafts and suggestions, downward arrow questions, and the wee
   handling.
 - **Gate:** none to merge the tooling. **Depends on:** the test runner, and the judging folder.
 
-#### Suggested rungs: enforce the limits in code `M`
-- **Today:** the 2–5 count, the length limit and removing duplicates are asked for in the prompt
-  in `backend/app/services/step_suggestion_service.py`, not checked. The prompt,
-  `AI-dev/Ladder Eval/checks.py` and `docs/plans/ladder-generation.md` use different numbers.
-- **What changes:** check them in code after the call. Make all three places use one set of
-  numbers. Where they disagree, use `ladder-generation.md` and say in the PR which numbers changed.
-  Also run suggestions with and without a feared outcome on the pool's rung cases and report the
-  difference (Peter dropped that requirement on 2026-10-16 to test exactly this).
-- **How to tell it worked:** tests for too many, too few, too long and duplicate suggestions. The
-  comparison in the PR with sample sizes.
-- **Gate:** changes what clinicians are offered: request Peter's review and do not merge.
-  **Depends on:** the test runner.
-
 #### Step sentences: the 30-pair set `M`
 - **Today:** `AI-dev/Combination Wording/run_check.py` writes a reading sheet from 17 pairs and
   scores nothing. `docs/plans/ladder-combinations.md` planned about 30, across kinds of anxiety.
@@ -824,6 +811,22 @@ Found while checking, before building:
   agent should not edit the test. Also worth adding the `AI-dev/evals` tests to CI.
 - **How to tell it worked:** `pytest AI-dev/evals/judging/tests` passes.
 - **Gate:** Peter (judging folder). **Depends on:** nothing.
+
+## Three AI calls stop the backend answering anyone else while they wait `S`
+- **Today:** three routes are `async` but call Claude with the blocking client
+  (`anthropic.Anthropic`, not `AsyncAnthropic`) and do not hand the call to a thread:
+  `ask_claude` in `backend/app/services/step_suggestion_service.py` (suggested rungs),
+  `next_probe` in `backend/app/api/routers/downward_arrows.py`, and `generate_preliminary_report`
+  in `backend/app/api/routers/patients.py` (two calls in a row). While one of these waits on Claude,
+  a few seconds each, the server answers no other request. With one clinician testing it is
+  invisible; with a family's app polling at the same time it is a pause. Found 2026-10-20 while
+  enforcing the rung limits. `insight_service.py` and `monitoring_capture.py` already do it right
+  (`asyncio.to_thread`, or the async client).
+- **What changes:** wrap each call in `asyncio.to_thread`, or use `AsyncAnthropic`. Keep the
+  `client=` argument the AI test runner passes in working.
+- **How to tell it worked:** a test that starts a slow fake suggestion call and shows another
+  request answers before it finishes. The runner tests in `AI-dev/evals/runner/tests` still pass.
+- **Gate:** none. **Depends on:** nothing.
 
 ## AI analysis of session notes
 
