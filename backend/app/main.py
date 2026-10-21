@@ -13,7 +13,7 @@ from app.api.routers import (
     downward_arrows, messages, monitoring,
     session_notes, session_recordings, action_plans, admin, waitlist, codesign,
     formulation, checklist, accommodations, situation_tags, library,
-    insights, admin_reviews, setup, access_requests, practice,
+    insights, admin_reviews, setup, access_requests, practice, teen_testing,
 )
 
 app = FastAPI(
@@ -54,6 +54,7 @@ app.include_router(messages.router)
 # NOTE: patients.router is already registered above — patients_router was the same
 # object under a second name, so every patients route was registered twice.
 app.include_router(patient_router)
+app.include_router(teen_testing.router)
 app.include_router(parent_router)
 app.include_router(reminders_router)
 app.include_router(monitoring.practitioner_router)

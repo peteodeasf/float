@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     # recording a session is not offered.
     GOOGLE_RECORDINGS_BUCKET: str = ""
 
+    # The teen data testing page (/teen-test, docs/plans/teen-data-testing.md). On, a signed-in
+    # teen may say WHEN an exposure was done or found too hard, and fill in three weeks of made-up
+    # history. Off, both are refused. MUST be off before the first real family: back-dating must
+    # never be possible for a real teen.
+    TEEN_DATA_TESTING: bool = False
+
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:8081", "https://floatcbt.com", "https://www.floatcbt.com"]
     

@@ -48,6 +48,9 @@ class ExperimentAfterState(BaseModel):
     distress_thermometer_actual: float
     bip_after: float
     what_learned: str
+    # When it happened, for the teen data testing page only. Refused unless TEEN_DATA_TESTING is
+    # on (app/core/teen_testing.py). Left out, it is now.
+    completed_at: Optional[datetime] = None
 
 
 class ExperimentResponse(BaseModel):

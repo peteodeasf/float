@@ -1,6 +1,7 @@
 # Teen data testing — plan
 
-> **Planned 2026-10-21** with Peter. For the agent loop to build. Not started.
+> **Planned 2026-10-21** with Peter. **Built 2026-10-21.** What was worked out on the way:
+> `docs/solutions/teen-data-testing-dates.md`.
 
 ## Why
 
@@ -89,9 +90,10 @@ Peter, 2026-10-21: rename the clinician's Exposures tab to **Progress**. A separ
 - **Peter approves**: new screens (CODEOWNERS), with screenshots.
 - No clinical logic changes: the values are the ones the teen app already records.
 
-## Not known yet
+## Answered while building
 
-- How "missed" is decided today, and whether a back-dated undone exposure shows as missed. The
-  builder checks this in the code first.
-- Whether a teen sees the ladder only when the clinician has turned on "Visible to patient". If so,
-  the page says so when the ladder is hidden.
+- **Missed** is not stored. The clinician's Progress tab shows a set-up exposure whose day has
+  passed as missed (`ExposuresTab.tsx`). So an exposure set up for a past day and never recorded
+  shows as missed, with no backend change.
+- **Yes**, the teen sees rungs only with "Visible to patient" on (`ladder_active`). The page says
+  so, and Fill in 3 weeks refuses.

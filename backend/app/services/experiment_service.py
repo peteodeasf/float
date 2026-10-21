@@ -4,7 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
+from app.core.teen_testing import back_date
 from app.models.experiment import Experiment
+from app.models.message import Message
+from app.models.patient import PatientProfile, PractitionerProfile
+from app.models.user import User
 from app.schemas.experiment import (
     ExperimentCreate,
     ExperimentPlanCreate,
@@ -246,6 +250,11 @@ async def save_after_state(
     data: ExperimentAfterState,
     patient_id: uuid.UUID | None = None,
 ) -> Experiment:
+    # Checked before anything is touched. A chosen date only from the teen data testing page, and
+    # only with its switch on.
+    completed_date = (
+        back_date(data.completed_at) if data.completed_at is not None else datetime.now(timezone.utc)
+    )
     experiment = await get_experiment(db, experiment_id, organization_id, patient_id)
 
     if experiment.status == "completed":
@@ -260,7 +269,7 @@ async def save_after_state(
     experiment.bip_after = data.bip_after
     experiment.what_learned = data.what_learned
     experiment.status = "completed"
-    experiment.completed_date = datetime.now(timezone.utc)
+    experiment.completed_date = completed_date
     experiment.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
@@ -280,3 +289,130 @@ async def skip_experiment(
     await db.commit()
     await db.refresh(experiment)
     return experiment
+
+
+async def _own_experiment(db: AsyncSession, experiment_id: uuid.UUID, patient_id: uuid.UUID) -> Experiment:
+    experiment = (await db.execute(
+        select(Experiment).where(
+            Experiment.id == experiment_id,
+            Experiment.patient_id == patient_id,
+        )
+    )).scalar_one_or_none()
+    if not experiment:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    return experiment
+
+
+async def commit_experiment(db: AsyncSession, experiment_id: uuid.UUID, patient_id: uuid.UUID) -> Experiment:
+    """The child locks in an exposure they have set up. Their own only."""
+    experiment = await _own_experiment(db, experiment_id, patient_id)
+    experiment.status = "committed"
+    experiment.committed_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(experiment)
+    return experiment
+
+
+async def _practitioner_for(db: AsyncSession, patient: PatientProfile, fallback: bool):
+    """The clinician a child's messages go to: their own, or with `fallback` anyone in the clinic."""
+    practitioner = None
+    if patient.primary_practitioner_id:
+        practitioner = (await db.execute(
+            select(PractitionerProfile).where(
+                PractitionerProfile.id == patient.primary_practitioner_id,
+                PractitionerProfile.organization_id == patient.organization_id,
+            )
+        )).scalar_one_or_none()
+    if practitioner is None and fallback:
+        practitioner = (await db.execute(
+            select(PractitionerProfile).where(
+                PractitionerProfile.organization_id == patient.organization_id
+            )
+        )).scalars().first()
+    return practitioner
+
+
+async def mark_too_hard(
+    db: AsyncSession,
+    experiment_id: uuid.UUID,
+    user: User,
+    patient: PatientProfile,
+    reason: str | None,
+    at: datetime | None = None,
+) -> Experiment:
+    """The child found an exposure too hard. With a reason, their clinician gets a message.
+
+    `at` is when, for the teen data testing page only; refused unless its switch is on.
+    """
+    when = back_date(at) if at is not None else datetime.now(timezone.utc)
+    experiment = await _own_experiment(db, experiment_id, patient.id)
+    experiment.status = "too_hard"
+    experiment.too_hard_at = when
+
+    if reason:
+        practitioner = await _practitioner_for(db, patient, fallback=False)
+        if practitioner:
+            db.add(Message(
+                organization_id=patient.organization_id,
+                sender_user_id=user.id,
+                recipient_user_id=practitioner.user_id,
+                patient_id=patient.id,
+                content=f"I found this experiment too hard: {reason}. Can you suggest a change?",
+                message_type="too_hard",
+            ))
+
+    await db.commit()
+    await db.refresh(experiment)
+    return experiment
+
+
+async def notify_clinician_completed(
+    db: AsyncSession, user: User, patient: PatientProfile, experiment: Experiment
+) -> None:
+    """Tell the child's clinician an exposure was finished, with its numbers."""
+    from app.models.treatment import AvoidanceBehavior
+
+    practitioner = await _practitioner_for(db, patient, fallback=True)
+    if practitioner is None:
+        return
+
+    behavior_name = None
+    if experiment.avoidance_behavior_id:
+        behavior = (await db.execute(
+            select(AvoidanceBehavior).where(AvoidanceBehavior.id == experiment.avoidance_behavior_id)
+        )).scalar_one_or_none()
+        if behavior:
+            behavior_name = behavior.name
+
+    date_str = (
+        experiment.completed_date.strftime("%Y-%m-%d")
+        if experiment.completed_date else "unknown date"
+    )
+    bip_before = f"{int(experiment.bip_before)}" if experiment.bip_before is not None else "?"
+    bip_after = f"{int(experiment.bip_after)}" if experiment.bip_after is not None else "?"
+    dt_actual = (
+        f"{experiment.distress_thermometer_actual:g}"
+        if experiment.distress_thermometer_actual is not None else "?"
+    )
+    fo_str = (
+        "Yes" if experiment.feared_outcome_occurred is True
+        else "No" if experiment.feared_outcome_occurred is False
+        else "Unknown"
+    )
+    content = (
+        f"Experiment completed: {behavior_name or 'experiment'} on {date_str}. "
+        f"BIP: {bip_before}% → {bip_after}%. "
+        f"Fear level: {dt_actual}/10. "
+        f"Feared outcome occurred: {fo_str}."
+    )
+
+    db.add(Message(
+        organization_id=patient.organization_id,
+        sender_user_id=user.id,
+        recipient_user_id=practitioner.user_id,
+        patient_id=patient.id,
+        content=content,
+        message_type="experiment_completed",
+        sender_type="system",
+    ))
+    await db.commit()

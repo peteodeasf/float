@@ -214,6 +214,36 @@ parent app (invite email, private window).
 - [ ] Back on the list, the module says Done.
 - **Known:** progress is only kept in this browser.
 
+# Area G — Teen data testing and the Progress tab
+
+**Needs:** the test family, with at least two situation steps on the ladder and "Visible to
+patient" on. The backend's `TEEN_DATA_TESTING` switch on (back-dating and Fill in 3 weeks need it).
+The clinician app in one window and `/teen-test` in another (a private window, or another browser).
+Plan: `docs/plans/teen-data-testing.md`.
+
+## 22. Teen data testing — `/teen-test`
+- [ ] Not signed in → a sign-in box. The teen's own email and password sign in. A clinician's do not get any data.
+- [ ] Heading says "Teen data testing" and who is signed in.
+- [ ] With the switch off → a warning says so. "When it happened" is greyed out and Fill in 3 weeks is greyed out.
+- [ ] "Visible to patient" off → a warning says the teen app shows no rungs.
+- [ ] Every rung is listed easiest first, with its situation, Fear Level and status (not set up, set up, scheduled, done, too hard, missed).
+- [ ] Record done with the defaults → "Recorded as done." The rung says Done.
+- [ ] Set "When it happened" to a past day → Record done → the rung lists that day.
+- [ ] A date in the future → refused with "That date is in the future".
+- [ ] Too hard with a reason → "Recorded as too hard." The clinician's Chat has the teen's message.
+- [ ] Start an exposure → pick a rung and a past day → Set it up → the rung says Missed. A future day → Scheduled.
+- [ ] A rung with a set-up exposure → its card says it is recording that one, and Record done finishes it.
+- [ ] Send a message → it appears in the list, and in the clinician's Chat.
+- [ ] Fill in 3 weeks → asks first → "Made 8 done, 1 too hard and 1 missed over the past 3 weeks."
+
+## 23. The Progress tab after Fill in 3 weeks
+- [ ] Completed count went up by 8 (plus anything recorded by hand).
+- [ ] The graph has points over the past three weeks, belief coming down.
+- [ ] Longest streak and the averages change, and match what was made.
+- [ ] Page back through the weeks: 2–3 done each week, one too hard (red) and one missed (amber, two days ago).
+- [ ] Click a done day → predicted and actual Fear Level and belief, actual lower.
+- **Known:** pressing Fill in 3 weeks twice adds a second history on top of the first.
+
 ---
 
 # Parent app — after the clinician app
