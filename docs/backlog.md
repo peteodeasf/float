@@ -69,6 +69,70 @@ pull request that changes a tested prompt or model.
 
 Both items in this group were built 2026-10-21.
 
+#### Monitoring analysis: answer the same way each run `S`
+- **Today:** suggested rungs set `temperature` 0 (`SUGGESTION_TEMPERATURE` in
+  `backend/app/services/step_suggestion_service.py`, from #45). Monitoring analysis sets none. In
+  #45's measurement (9 working families, 3 runs each), temperature 0 raised its agreement from 0.59
+  to 0.70, with behavior types right 126 of 144 against 127 of 144. Peter, 2026-10-21: one in 144 on
+  9 families is within the run-to-run wobble, so set it.
+- **What changes:** set `temperature` 0 on `request_extraction` in
+  `backend/app/services/insight_service.py`, the same way #45 did for suggested rungs (a named
+  constant with a comment giving the numbers). Leave `request_report` (the preliminary report)
+  alone: it was not measured. `request_extraction` is also used for session note suggestions
+  (`suggest_from_session_note`), which have no tests; say so in the PR.
+- **How to tell it worked:** a test that `request_extraction` sends temperature 0. One run of
+  monitoring analysis on all 18 working families, 3 runs each, at the new setting, reported in the
+  PR beside the 2026-10-21 nightly numbers.
+- **Gate:** changes how the AI answers: request Peter's review and do not merge.
+  **Depends on:** nothing.
+
+#### Voice notes: a Fear Level given as a range saves the higher number `S`
+- **Today:** when a parent says a range in a voice note ("a seven or eight"), the AI mostly saves no
+  Fear Level (5 of 6 runs, #46). The parent's words are kept in the note's text either way.
+- **What changes:** Peter, 2026-10-21: save the **higher** number, as long as the range stays in the
+  text. That matches Analyze with AI, which takes the highest Fear Level per situation. Change the
+  voice note prompt in `backend/app/services/monitoring_capture.py` to say so, in general words
+  (never a pool note's wording). Check `_said_as_rating` keeps the higher number of a range, and
+  that the note's text still holds the parent's words.
+- **How to tell it worked:** tests with your own wording: "a six or seven" saves 7, "between 4 and
+  6" saves 6, and the words stay in the text; a time or count is still not a Fear Level. A voice
+  notes run on the working families: the range note now saves its higher number, and Fear Levels
+  the parent did not say stay at 0.
+- **Gate:** a Fear Level rule: request Peter's review and do not merge. Add it to Dr. Walker's list
+  in `docs/plans/ai-quality-testing.md` (item 13).
+  **Depends on:** #46 (voice notes: "like" and "about" after a rating) merged. If it is not on
+  main, skip this item.
+
+### Testing the teen's side without the teen app — moved here by Peter, 2026-10-21
+
+#### Teen data testing page `L`
+- **Today:** the teen app is being redesigned (3–4 weeks of co-design), and nothing else records a
+  teen's exposures, so the clinician's Progress tab (now "Exposures") cannot be tested.
+- **What changes:** build `docs/plans/teen-data-testing.md` in full, in one PR: the `/teen-test`
+  page signed in as the teen, every settable value per rung with sensible defaults, Record done,
+  Too hard, starting an exposure on a behavior, a message box, back-dating behind the
+  `TEEN_DATA_TESTING` switch, and the Fill in 3 weeks button. The current teen app is not changed.
+  Add an "Area G — Teen data testing and the Progress tab" section to
+  `docs/testing/clinician-app-checklist.md` with its checks.
+- **How to tell it worked:** backend tests that a date and Fill in 3 weeks are refused with the
+  switch off, only ever touch the signed-in teen's own records, and refuse future dates; that Fill
+  in 3 weeks makes the history the plan describes. Screenshots of `/teen-test` beside the clinician's
+  Progress tab after Fill in 3 weeks, desktop width, with demo data.
+- **Gate:** `/security-review` (a new way to write a child's data), and Peter approves the screens.
+  **Depends on:** nothing.
+
+#### Rename the clinician's "Exposures" tab to "Progress" `S`
+- **Today:** the patient page's tab is called Exposures
+  (`apps/web/src/pages/practitioner/PatientPage.tsx`, `ExposuresTab.tsx`). Peter, 2026-10-21: call it
+  Progress. A separate, unlinked page also uses that name (`/patients/:id/progress`,
+  `ProgressPage.tsx`).
+- **What changes:** the tab's label, and any text that names it, say "Progress". Keep the URL value
+  working for old links. Say in the PR whether the unlinked progress page should go, but do not
+  remove it here.
+- **How to tell it worked:** the tab reads Progress, old `?tab=experiments` links still open it.
+  Screenshot.
+- **Gate:** screen change: Peter approves. **Depends on:** nothing.
+
 ---
 
 # Compliance
