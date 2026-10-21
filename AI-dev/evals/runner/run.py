@@ -55,6 +55,9 @@ def main(argv=None) -> int:
     p.add_argument("--runs", type=int, default=3, help="runs per case (default 3)")
     p.add_argument("--budget", type=float, default=10.0, help="spending limit in dollars (default 10)")
     p.add_argument("--out", type=Path, help="report folder (default runs/<timestamp>)")
+    p.add_argument("--temperature", type=float,
+                   help="send this temperature on the feature's own calls, in place of the app's "
+                        "setting, to measure it before changing the app. Reviewers are not affected")
     p.add_argument("--no-reviewers", action="store_true",
                    help="skip the reviewing agents, for a feature that has them")
     a = p.parse_args(argv)
@@ -69,13 +72,14 @@ def main(argv=None) -> int:
     cases = load_cases(a.feature, a.families.split(",") if a.families else None, a.limit,
                        only=None if a.half == "all" else a.half)
     budget = Budget(a.budget)
-    client = MeteredClient(Anthropic(), budget)
+    temperatures = {} if a.temperature is None else {feature.model(): a.temperature}
+    client = MeteredClient(Anthropic(), budget, temperatures)
     hooks = [] if a.no_reviewers or not hasattr(feature, "reviewer_hooks") else feature.reviewer_hooks(client)
     results, stopped = run_cases(feature, cases, client, a.runs, hooks)
     out = a.out or HERE / "runs" / datetime.now().strftime("%Y%m%d_%H%M%S")
     write(out, feature, results, runs_per_case=a.runs, cases_planned=len(cases),
           budget=budget, stopped=stopped, reviewers=hooks,
-          half=None if a.families and a.half == "all" else a.half)
+          half=None if a.families and a.half == "all" else a.half, temperature=a.temperature)
     print((out / "report.md").read_text())
     print(f"Written to {out}")
     return 0
