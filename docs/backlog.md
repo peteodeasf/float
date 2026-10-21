@@ -266,6 +266,18 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 - **How to tell it worked:** screenshot of the tab showing "100%".
 - **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
 
+## Case Summary says "New observations since the last analysis" when there are none `S`
+- **Today:** on the clinician's Case Summary tab, the hint reads "New observations since the last
+  analysis" for a patient with no monitoring entries and no analysis ever run. Seen 2026-10-21 on the
+  local demo patient (Sarah Mitchell, no monitoring form). `hasNewMonitoring` in
+  `apps/web/src/pages/practitioner/PatientPage.tsx` falls back to `true` when the plan does not say,
+  and the line shows whenever the patient has situations.
+- **What changes:** only say there are new observations when there are entries the last analysis did
+  not include.
+- **How to tell it worked:** a test that a patient with situations but no monitoring entries does not
+  see the line.
+- **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
+
 ## Action plans — hidden, and the question is whether they are worth having
 
 **Raised by Peter 2026-09-01.** `M`

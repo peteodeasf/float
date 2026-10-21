@@ -35,7 +35,7 @@ Checks: sections 9–10, and P1.
 3. As the parent: give permission, then save **four** observations about different situations. Use
    at least one Tap & Talk on your phone if you can. Give a Fear Level each time.
 4. Back as the clinician: do the four show in the Report?
-5. Case Summary → Analyze with AI. Read it. Is every situation one the parent logged? Do the Fear
+5. Case Summary tab → Analyze with AI. Read it. Is every situation one the parent logged? Do the Fear
    Levels match?
 6. As the parent, add one more observation. As the clinician, Re-analyze.
 

@@ -1,6 +1,6 @@
 // The clinician patient page's flat tabs, in bar order. Also the `?tab=` vocabulary other screens
 // navigate with.
-export const TAB_IDS = ['monitoring', 'sessions', 'plan', 'progress', 'chat'] as const
+export const TAB_IDS = ['monitoring', 'sessions', 'summary', 'plan', 'progress', 'chat'] as const
 export type TabId = typeof TAB_IDS[number]
 
 // Old `?tab=` values that still open a tab. The Progress tab was `experiments` (labelled
