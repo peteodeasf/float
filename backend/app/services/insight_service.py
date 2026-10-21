@@ -15,7 +15,6 @@ happens on real logs before building anything cleverer.
 
 See docs/plans/patient-specific-suggestions.md.
 """
-import logging
 import re
 import uuid
 from datetime import datetime, timezone
@@ -27,9 +26,6 @@ from app.models.insight import (
     KIND_ACCOMMODATION, KIND_BEHAVIOR, KIND_SITUATION, KINDS,
     SOURCE_MONITORING, SOURCE_PARENT, SOURCE_SESSION_NOTE, PatientInsight,
 )
-
-logger = logging.getLogger(__name__)
-
 
 def normalise_name(value: str) -> str:
     """The matching key. Lowercase, collapse whitespace, drop trailing punctuation.
@@ -268,6 +264,14 @@ async def rebuild_from_monitoring(
     return touched
 
 
+def session_note_text(note) -> str:
+    """A session note's date and text, as both of Analyze session with AI's model calls read it."""
+    return (
+        f"Date: {note.session_date.isoformat() if note.session_date else 'unknown'}\n"
+        f"{(note.content or '').strip()}"
+    )
+
+
 def format_session_note(note) -> str:
     """An approved session note as text for the extractor. It reads monitoring notes, so it is told
     what this is. docs/plans/session-suggestions.md"""
@@ -275,47 +279,34 @@ def format_session_note(note) -> str:
         "This is a clinician's session note, written from a therapy session and approved by the "
         "clinician. It is not a parent's monitoring note. Treat a Fear Level as given only where the "
         "note states a number.\n\n"
-        f"[1] Date: {note.session_date.isoformat() if note.session_date else 'unknown'}\n"
-        f"{(note.content or '').strip()}"
+        f"[1] {session_note_text(note)}"
     )
 
 
-async def suggest_from_session_note(sessions, note_id: uuid.UUID) -> None:
-    """Read one approved session note and add what it finds to the suggestion list.
+async def suggest_from_session_note(db: AsyncSession, note, extraction: dict) -> list[PatientInsight]:
+    """Fold what the extractor found in one approved session note into the suggestion list, marked
+    as from that note. The first half of Analyze session with AI; the caller makes the model call
+    (`request_extraction` with `format_session_note`) and commits.
 
-    Runs after the response, with a session of its own. A failure is logged and changes nothing: the
-    note stays approved. docs/plans/session-suggestions.md
+    Folding is by wording and the note id is recorded once, so reading the same note again adds
+    nothing new. docs/plans/session-suggestions.md
     """
-    import asyncio
-    import anthropic
-    from app.core.config import settings
-    from app.models.session_note import SessionNote
-    from app.api.routers.patients import EXTRACTION_SYSTEM_PROMPT
+    return await rebuild_from_monitoring(
+        db,
+        patient_id=note.patient_id,
+        organization_id=note.organization_id,
+        extraction=extraction,
+        entry_ids_by_situation={},
+        source=SOURCE_SESSION_NOTE,
+        session_note_id=note.id,
+    )
 
-    if not settings.ANTHROPIC_API_KEY:
-        return
-    try:
-        async with sessions() as db:
-            note = (await db.execute(select(SessionNote).where(SessionNote.id == note_id))).scalar_one_or_none()
-            if note is None or not (note.content or "").strip():
-                return
-            client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-            raw = await asyncio.to_thread(
-                request_extraction, client, EXTRACTION_SYSTEM_PROMPT, format_session_note(note),
-            )
-            extraction = parse_model_json(raw)
-            await rebuild_from_monitoring(
-                db,
-                patient_id=note.patient_id,
-                organization_id=note.organization_id,
-                extraction=extraction,
-                entry_ids_by_situation={},
-                source=SOURCE_SESSION_NOTE,
-                session_note_id=note.id,
-            )
-            await db.commit()
-    except Exception:
-        logger.exception("session suggestions failed for note %s", note_id)
+
+def from_monitoring(rows: list[PatientInsight]) -> list[PatientInsight]:
+    """The list without what only a session note said. The monitoring part of the case summary is
+    written from this: session items are kept apart in the summary's `session_additions`, and
+    passing them in here too would put them in twice, described as from the parent's log."""
+    return [r for r in rows if r.monitoring_entry_ids or (r.sources or []) != [SOURCE_SESSION_NOTE]]
 
 
 async def get_insights(

@@ -10,7 +10,8 @@ import {
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, type PreliminaryReport, type SendMonitoringFormParams } from '../../api/monitoring'
 import ParentWords from '../../components/practitioner/ParentWords'
-import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
+import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, analyzeSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
+import { mergeCaseSummary, type SummaryItem } from '../../lib/caseSummary'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
 import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../../lib/checklists'
 import { getChecklistItems } from '../../api/checklist'
@@ -53,8 +54,24 @@ function DTBadge({ value, max }: { value: number | null | undefined; max?: numbe
 // Shared teal section header for the Step-2 Preliminary Report
 const reportSectionHeaderStyle = { fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '10px' }
 
+// Where a Case Summary item came from, and what a later session said about it. Monitoring items
+// carry no "from"; an analyzed session's items say which session.
+function SummaryItemText({ item }: { item: SummaryItem }) {
+  return (
+    <span>
+      {item.text}
+      {item.from && <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--float-text-hint)', whiteSpace: 'nowrap' }}>{item.from}</span>}
+      {item.comments.map((c, i) => (
+        <span key={i} style={{ display: 'block', marginTop: '3px', fontSize: '12px', color: 'var(--float-text-secondary)', fontStyle: 'italic' }}>
+          Note {c.from}: {c.note}
+        </span>
+      ))}
+    </span>
+  )
+}
+
 // A labelled bulleted section in the Step-2 Preliminary Report (with a divider above)
-function ReportSection({ label, items }: { label: string; items: string[] }) {
+function ReportSection({ label, items }: { label: string; items: SummaryItem[] }) {
   if (!items || items.length === 0) return null
   return (
     <div style={{ borderTop: '1px solid var(--float-border)', paddingTop: '20px' }}>
@@ -63,7 +80,7 @@ function ReportSection({ label, items }: { label: string; items: string[] }) {
         {items.map((it, i) => (
           <li key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}>
             <span style={{ color: 'var(--float-primary)', flexShrink: 0 }}>·</span>
-            <span>{it}</span>
+            <SummaryItemText item={it} />
           </li>
         ))}
       </ul>
@@ -756,23 +773,46 @@ export default function PatientPage() {
   const [generatedReport, setGeneratedReport] = useState<PreliminaryReport | null>(null)
   const preliminaryReport = generatedReport ?? formulation?.preliminary_report ?? null
 
+  // Both analyses can create the formulation row if none existed. Sync the id ref + cache so the
+  // draft auto-save updates that row rather than creating a duplicate.
+  const syncFormulation = async () => {
+    const f = await fetchFormulation(patientId!)
+    if (f) {
+      formulationIdRef.current = f.id
+      queryClient.setQueryData(['formulation', patientId], f)
+    }
+  }
+
   const handleGenerateReport = async () => {
     setReportLoading(true)
     setReportError(null)
     try {
       const data = await generatePreliminaryReport(patientId!)
       setGeneratedReport(data)
-      // The endpoint creates the formulation row if none existed. Sync the id ref + cache
-      // so the draft auto-save updates that row rather than creating a duplicate.
-      const f = await fetchFormulation(patientId!)
-      if (f) {
-        formulationIdRef.current = f.id
-        queryClient.setQueryData(['formulation', patientId], f)
-      }
+      await syncFormulation()
     } catch (err: any) {
       setReportError(err?.response?.data?.detail || 'Report generation failed. Please try again.')
     } finally {
       setReportLoading(false)
+    }
+  }
+
+  // Analyze session with AI, on one approved note. It updates the same Case Summary.
+  const [analyzingNoteId, setAnalyzingNoteId] = useState<string | null>(null)
+  const [analyzeError, setAnalyzeError] = useState<{ noteId: string; message: string } | null>(null)
+  const analyzedAt = new Map((preliminaryReport?.session_additions ?? []).map(a => [a.session_note_id, a.analyzed_at]))
+
+  const handleAnalyzeNote = async (noteId: string) => {
+    setAnalyzingNoteId(noteId)
+    setAnalyzeError(null)
+    try {
+      setGeneratedReport(await analyzeSessionNote(noteId))
+      queryClient.invalidateQueries({ queryKey: ['insights'] })
+      await syncFormulation()
+    } catch (err: any) {
+      setAnalyzeError({ noteId, message: err?.response?.data?.detail || 'The AI could not analyze this session. Please try again.' })
+    } finally {
+      setAnalyzingNoteId(null)
     }
   }
 
@@ -1101,6 +1141,22 @@ export default function PatientPage() {
                   <div onClick={e => e.stopPropagation()}>
                     <RecordedNoteDetails note={n} patientId={patientId!} />
                   </div>
+                  {/* On approved notes only: a draft is still software's guess at the session. */}
+                  {!n.is_draft && (
+                    <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '10px', cursor: 'default' }}>
+                      <Button kind="secondary" size="sm" onClick={() => handleAnalyzeNote(n.id)} disabled={analyzingNoteId !== null}>
+                        {analyzingNoteId === n.id ? 'Analyzing…' : 'Analyze session with AI'}
+                      </Button>
+                      {analyzedAt.has(n.id) && analyzingNoteId !== n.id && (
+                        <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>
+                          Added to the Case Summary {new Date(analyzedAt.get(n.id)!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      )}
+                      {analyzeError?.noteId === n.id && (
+                        <span role="alert" style={{ fontSize: '12px', color: 'var(--float-danger)' }}>{analyzeError.message}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Edit and Delete live behind a menu, so Delete is not a red button on every row. */}
@@ -1132,24 +1188,29 @@ export default function PatientPage() {
   const hasNewMonitoring = plan?.has_new_monitoring_entries ?? true
 
 
-  // The four Case Summary sections. Null until a summary has been generated.
-  const caseSummarySections = preliminaryReport ? (
+  // The Case Summary sections: monitoring's, with each analyzed session's additions merged in and
+  // marked. Null until either analysis has run.
+  const summary = preliminaryReport ? mergeCaseSummary(preliminaryReport) : null
+  const caseSummarySections = preliminaryReport && summary ? (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div>
-        <div style={reportSectionHeaderStyle}>Situations</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[...preliminaryReport.situations].sort((a, b) => a.fear_thermometer - b.fear_thermometer).map((s, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text-hint)', width: '18px', textAlign: 'right', flexShrink: 0, lineHeight: 1.6 }}>{i + 1}.</span>
-              <span style={{ flex: 1, fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}>{s.name}</span>
-              <span style={{ flexShrink: 0, marginTop: '1px' }}><DTBadge value={s.fear_thermometer} /></span>
-            </div>
-          ))}
+      {summary.situations.length > 0 && (
+        <div>
+          <div style={reportSectionHeaderStyle}>Situations</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {summary.situations.map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--float-text-hint)', width: '18px', textAlign: 'right', flexShrink: 0, lineHeight: 1.6 }}>{i + 1}.</span>
+                <span style={{ flex: 1, fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}><SummaryItemText item={s} /></span>
+                <span style={{ flexShrink: 0, marginTop: '1px' }}><DTBadge value={s.fear} /></span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      <ReportSection label="Parental responses" items={preliminaryReport.parental_responses} />
-      <ReportSection label={preliminaryReport.safety_section_label || 'Safety & avoidance behaviors'} items={preliminaryReport.safety_behaviors} />
-      <ReportSection label="Treatment targets" items={preliminaryReport.treatment_targets} />
+      )}
+      <ReportSection label="Parental responses" items={summary.parentalResponses} />
+      <ReportSection label={preliminaryReport.safety_section_label || 'Safety & avoidance behaviors'} items={summary.safetyBehaviors} />
+      <ReportSection label="Treatment targets" items={summary.treatmentTargets} />
+      <ReportSection label="Notes from sessions" items={summary.notes} />
       {preliminaryReport.generated_at && (
         <p style={{ fontSize: '11px', color: 'var(--float-border-strong)', margin: 0 }}>
           Generated {new Date(preliminaryReport.generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
@@ -1177,13 +1238,13 @@ export default function PatientPage() {
       <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: '0 0 4px' }}>Case Summary</h2>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
         <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: 0, maxWidth: '540px', lineHeight: 1.5 }}>
-          AI summary from the parent monitoring log.
+          AI summary from the parent monitoring log, and from any session you analyze on the Sessions tab.
           {situationsExist && hasNewMonitoring ? ' New observations since the last analysis.' : ''}
           {situationsExist && !hasNewMonitoring && plan?.last_extracted_at ? ` Last analyzed ${new Date(plan.last_extracted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.` : ''}
         </p>
         {(monitoringForm?.entries_count ?? 0) >= 3 && (
           <Button kind="primary" size="sm" onClick={handleGenerateReport} disabled={reportLoading} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {reportLoading ? 'Analyzing…' : (preliminaryReport ? 'Re-analyze with AI' : 'Analyze with AI')}
+            {reportLoading ? 'Analyzing…' : (preliminaryReport?.generated_at ? 'Re-analyze with AI' : 'Analyze with AI')}
           </Button>
         )}
       </div>
@@ -1295,19 +1356,6 @@ export default function PatientPage() {
           </div>
         </>
       )}
-    </div>
-  )
-
-  // Placeholder for the future AI session analysis — no logic yet.
-  const sessionAnalysisPlaceholder = (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <div>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)' }}>Session analysis</div>
-          <div style={{ fontSize: '12px', color: 'var(--float-text-hint)', marginTop: '2px' }}>Analyze a session with AI to add to the Case Summary. Coming soon.</div>
-        </div>
-        <Button kind="secondary" size="sm" disabled>Analyze session with AI</Button>
-      </div>
     </div>
   )
 
@@ -1947,7 +1995,6 @@ export default function PatientPage() {
 
             {activeTab === 'sessions' && (
               <>
-                {sessionAnalysisPlaceholder}
                 {sessionNotesList}
                 {SHOW_ACTION_PLANS && actionPlansContent}
               </>
