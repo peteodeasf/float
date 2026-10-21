@@ -565,24 +565,63 @@
   </style>
   <style>
     .permission { padding: 120px 20px 72px; background: var(--white); }
-    .permission-inner { max-width: 600px; margin: 0 auto; }
-    .permission h1 { font-family: 'DM Serif Display', serif; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; color: var(--text); letter-spacing: -0.01em; margin-bottom: 16px; }
+    .permission-inner { max-width: 680px; margin: 0 auto; }
+    .permission h1 { font-family: 'DM Serif Display', serif; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; color: var(--text); letter-spacing: -0.01em; margin-bottom: 24px; }
     .permission p { font-size: 16px; line-height: 1.6; color: var(--text-mid); }
-    .when { margin: 20px 0 28px; border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
-    .when div { font-size: 16px; font-weight: 600; color: var(--text); padding: 6px 0; }
-    .agreement { background: var(--off-white); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 28px; }
-    .agreement h2 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
-    .agreement p { font-size: 15px; }
-    .permission-form { display: flex; flex-direction: column; gap: 18px; }
-    .agree { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.5; color: var(--text); cursor: pointer; }
-    .agree input { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: var(--teal); }
+    /* The form's text: Peter's wording, from the server (backend/app/services/codesign_form.py). */
+    .form-text { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
+    .form-text h2 { font-size: 18px; font-weight: 600; color: var(--text); margin-top: 18px; }
+    .form-text ul, .part ul { padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+    .form-text li, .part li { font-size: 16px; line-height: 1.55; color: var(--text-mid); }
+    .facts { border: 1px solid var(--border); border-radius: 14px; padding: 6px 20px; }
+    .facts div { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 16px; line-height: 1.5; }
+    .facts div:last-child { border-bottom: none; }
+    .facts dt { font-weight: 600; color: var(--text); }
+    .facts dd { color: var(--text); }
+    .permission-form { display: flex; flex-direction: column; gap: 32px; }
+    .part { border: 1px solid var(--border); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 20px; background: var(--off-white); }
+    .part h2 { font-family: 'DM Serif Display', serif; font-size: 26px; font-weight: 400; color: var(--text); }
+    .part .child { font-size: 16px; color: var(--text); }
+    .part .child strong { font-weight: 600; }
+    .part p.note { font-size: 15px; color: var(--text-mid); }
+    #teenIntro, #teenText, #parentQuestions, #teenQuestions { display: flex; flex-direction: column; gap: 12px; }
+    .completed-by.missing label { border-color: #f04438; }
+    .yesno { border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; background: var(--white); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .yesno legend { float: left; font-size: 16px; line-height: 1.5; color: var(--text); padding: 0; max-width: 72%; }
+    .yesno .choices { display: flex; gap: 8px; flex-shrink: 0; }
+    .choice { position: relative; }
+    .choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .choice span { display: block; min-width: 64px; text-align: center; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; font-weight: 600; color: var(--text); background: var(--white); cursor: pointer; }
+    .choice input:checked + span { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); box-shadow: 0 0 0 1px var(--teal); }
+    .choice input:focus-visible + span { outline: 3px solid rgba(19,84,80,0.35); outline-offset: 2px; }
+    .missing { border-color: #f04438 !important; }
+    .agree { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 1.5; color: var(--text); cursor: pointer; padding: 16px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--white); }
+    .agree input { width: 20px; height: 20px; margin-top: 3px; flex-shrink: 0; accent-color: var(--teal); }
+    .fields { display: flex; flex-direction: column; gap: 16px; }
+    .form-group .hint { font-size: 13px; color: var(--text-mid); }
+    .completed-by { border: none; display: flex; flex-direction: column; gap: 8px; }
+    .completed-by legend { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+    .completed-by label { display: flex; gap: 10px; align-items: center; font-size: 16px; color: var(--text); cursor: pointer; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--white); }
+    .completed-by input { width: 18px; height: 18px; accent-color: var(--teal); }
     .notice { display: none; text-align: center; padding: 32px; background: var(--teal-light); border-radius: 16px; }
     .notice.show { display: block; }
     .notice h2 { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--teal-dark); margin-bottom: 8px; }
-    .form-error { display: none; font-size: 14px; color: #b42318; background: #fef3f2; border: 1px solid #fecdca; border-radius: 10px; padding: 12px 14px; }
+    .notice p + p { margin-top: 10px; }
+    .form-error { display: none; font-size: 15px; color: #b42318; background: #fef3f2; border: 1px solid #fecdca; border-radius: 10px; padding: 12px 14px; }
     .form-error.show { display: block; }
+    .form-error ul { margin-top: 6px; padding-left: 20px; }
     .questions { text-align: center; font-size: 15px; color: var(--text-mid); margin-top: 28px; }
     .questions a { color: var(--teal); font-weight: 600; }
+
+    @media (max-width: 600px) {
+      .permission { padding: 108px 16px 56px; }
+      .part { padding: 20px 16px; }
+      .facts { padding: 4px 16px; }
+      .facts div { grid-template-columns: 1fr; gap: 2px; }
+      .yesno { flex-direction: column; align-items: stretch; gap: 12px; }
+      .yesno legend { max-width: none; }
+      .yesno .choices .choice { flex: 1; }
+    }
   </style>
 </head>
 <body>
@@ -605,34 +644,77 @@
         <p>Please check you opened the whole link from the email, or contact <a href="mailto:sally@floatcbt.com">sally@floatcbt.com</a>.</p>
       </div>
 
-      <div class="notice" id="done">
+      <div class="notice" id="confirmed">
         <h2>Thank you.</h2>
-        <p>Your permission is recorded. Sally will send the video invites before the first session.</p>
+        <p>Your answers are recorded, and <span class="teen-name"></span> is confirmed for both sessions. Sally will send the video invites before the first session.</p>
+        <p class="copy-note">We have emailed you a copy of the form to keep.</p>
+      </div>
+
+      <div class="notice" id="declined">
+        <h2>Thank you.</h2>
+        <p>Your answers are recorded. <span class="teen-name"></span> will not take part in the sessions, and their places have been released.</p>
+        <p class="copy-note">We have emailed you a copy of the form to keep.</p>
       </div>
 
       <div id="ask" style="display: none">
-        <h1>Permission for <span class="teen-name"></span> to join Float's teen design sessions</h1>
-        <p><span class="teen-name"></span> has signed up for two virtual group sessions where teens tell us what they think about how apps should look, feel and work. Each is 45–60 minutes on video. Teens are paid $60 for joining both.</p>
-        <div class="when" id="dates"></div>
-
-        <div class="agreement">
-          <h2>Permission</h2>
-          <!-- PLACEHOLDER. Peter has a draft of the real permission text (2026-10-19). Replace this
-               paragraph with it before sharing the one-pager widely. docs/plans/codesign-signup.md -->
-          <p>[Placeholder: the permission text for parents goes here. It will explain what the sessions involve, how they are run, what is recorded and how it is used, and how to withdraw.]</p>
-        </div>
+        <h1 id="title"></h1>
+        <div class="form-text" id="formText"></div>
 
         <form class="permission-form" id="permissionForm" novalidate>
-          <div class="form-group">
-            <label for="parentName">Your full name</label>
-            <input type="text" id="parentName" autocomplete="name" required>
+          <div class="part" id="parentPart">
+            <h2 id="parentHeading"></h2>
+            <p class="child"><strong>Child's name:</strong> <span class="teen-name"></span></p>
+            <p class="note" id="parentIntro"></p>
+            <div id="parentQuestions"></div>
+            <label class="agree" id="confirmRow">
+              <input type="checkbox" id="confirmGuardian">
+              <span id="confirmText"></span>
+            </label>
+            <div class="fields">
+              <div class="form-group">
+                <label for="parentName">Parent or guardian full name</label>
+                <input type="text" id="parentName" autocomplete="name" maxlength="200">
+                <span class="hint">Typing your full name is your signature. The date and time are recorded when you send the form.</span>
+              </div>
+              <div class="form-group">
+                <label for="relationship">Relationship to child</label>
+                <input type="text" id="relationship" maxlength="100" placeholder="For example, mother, father, guardian">
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" autocomplete="tel" maxlength="40">
+              </div>
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" autocomplete="email" maxlength="200">
+                <span class="hint">Leave blank to use the address this link was sent to.</span>
+              </div>
+              <div class="form-group">
+                <label for="sessionPhone">Best number to reach you during the session</label>
+                <input type="tel" id="sessionPhone" maxlength="40">
+              </div>
+            </div>
           </div>
-          <label class="agree">
-            <input type="checkbox" id="agree">
-            <span>I am <span class="teen-name"></span>'s parent or guardian, and I give permission for them to take part.</span>
-          </label>
-          <p class="form-error" id="formError" role="alert"></p>
-          <button type="submit" class="form-submit">Give permission</button>
+
+          <div class="part" id="teenPart">
+            <h2 id="teenHeading"></h2>
+            <div id="teenIntro"></div>
+            <div id="teenText"></div>
+            <div id="teenQuestions"></div>
+            <div class="fields">
+              <div class="form-group">
+                <label for="teenName">Your name (the teen's full name)</label>
+                <input type="text" id="teenName" maxlength="200">
+                <span class="hint">Typing it is the teen's signature.</span>
+              </div>
+              <fieldset class="completed-by" id="completedBy">
+                <legend>Completed by</legend>
+              </fieldset>
+            </div>
+          </div>
+
+          <div class="form-error" id="formError" role="alert"></div>
+          <button type="submit" class="form-submit">Send the form</button>
         </form>
       </div>
 
@@ -656,18 +738,98 @@
     const token = new URLSearchParams(location.search).get('t') || '';
     const $ = id => document.getElementById(id);
     const show = id => { $('loading').style.display = 'none'; $(id).classList.add('show'); };
+    const el = (tag, text, cls) => {
+      const e = document.createElement(tag);
+      if (text != null) e.textContent = text;
+      if (cls) e.className = cls;
+      return e;
+    };
+    let form = null;  // the form as the server sent it, with its version
+
+    // The form's wording comes from the server, so this page and the copy emailed to the parent
+    // always match. Everything is set with textContent: none of it is read as HTML.
+    function renderBlocks(container, blocks) {
+      blocks.forEach(b => {
+        if (b.h) container.append(el('h2', b.h));
+        else if (b.p) container.append(el('p', b.p));
+        else if (b.ul) {
+          const ul = el('ul');
+          b.ul.forEach(x => ul.append(el('li', x)));
+          container.append(ul);
+        } else if (b.dl) {
+          const dl = el('dl', null, 'facts');
+          b.dl.forEach(([label, text]) => {
+            const row = el('div');
+            row.append(el('dt', label), el('dd', text));
+            dl.append(row);
+          });
+          container.append(dl);
+        }
+      });
+    }
+
+    function renderQuestions(container, questions) {
+      Object.entries(questions).forEach(([key, text]) => {
+        const set = el('fieldset', null, 'yesno');
+        set.id = 'q-' + key;
+        set.append(el('legend', text));
+        const choices = el('div', null, 'choices');
+        [['yes', 'Yes'], ['no', 'No']].forEach(([value, label]) => {
+          const choice = el('label', null, 'choice');
+          const input = el('input');
+          input.type = 'radio';
+          input.name = key;
+          input.value = value;
+          choice.append(input, el('span', label));
+          choices.append(choice);
+        });
+        set.append(choices);
+        container.append(set);
+      });
+    }
+
+    function setTeenName(name) {
+      document.querySelectorAll('.teen-name').forEach(e => { e.textContent = name; });
+    }
 
     function showAsk(data) {
+      form = data.form;
       $('loading').style.display = 'none';
-      document.querySelectorAll('.teen-name').forEach(el => { el.textContent = data.teen_first_name; });
-      const dates = $('dates');
-      dates.innerHTML = '';
-      data.dates.forEach((d, i) => {
-        const row = document.createElement('div');
-        row.textContent = (i === 0 ? 'Session one: ' : 'Session two: ') + d;
-        dates.append(row);
+      setTeenName(data.teen_first_name);
+      $('title').textContent = form.title;
+      renderBlocks($('formText'), form.about);
+
+      $('parentHeading').textContent = form.parent.heading;
+      $('parentIntro').textContent = form.parent.intro;
+      renderQuestions($('parentQuestions'), form.parent.questions);
+      $('confirmText').textContent = form.parent.confirm;
+
+      $('teenHeading').textContent = form.teen.heading;
+      form.teen.intro.forEach(t => $('teenIntro').append(el('p', t, 'note')));
+      renderBlocks($('teenText'), form.teen.text);
+      renderQuestions($('teenQuestions'), form.teen.questions);
+      Object.entries(form.teen.completed_by).forEach(([value, label]) => {
+        const row = el('label');
+        const input = el('input');
+        input.type = 'radio';
+        input.name = 'completed_by';
+        input.value = value;
+        row.append(input, el('span', label));
+        $('completedBy').append(row);
       });
       $('ask').style.display = 'block';
+    }
+
+    function showAnswered(confirmed, justSent) {
+      $('ask').style.display = 'none';
+      const id = confirmed ? 'confirmed' : 'declined';
+      if (!justSent) {
+        document.querySelector('#' + id + ' h2').textContent = 'This form has already been sent.';
+        document.querySelector('#' + id + ' .copy-note').textContent =
+          'To change an answer, email Sally at sally@floatcbt.com.';
+      }
+      show(id);
+      window.scrollTo(0, 0);
     }
 
     async function load() {
@@ -676,42 +838,95 @@
         const r = await fetch(API + '/codesign/permission/' + encodeURIComponent(token));
         if (!r.ok) return show('invalid');
         const data = await r.json();
-        if (data.permission_given) return show('done');
+        setTeenName(data.teen_first_name);
+        if (data.answered) return showAnswered(data.confirmed, false);
         showAsk(data);
       } catch (e) {
         $('loading').textContent = 'We could not load this page. Please refresh, or email sally@floatcbt.com.';
       }
     }
 
+    // Reads every answer, marks what is missing, and returns [answers, list of what is missing].
+    function collect() {
+      document.querySelectorAll('.missing').forEach(e => e.classList.remove('missing'));
+      const missing = [];
+      const answers = {};
+      const yesNo = (questions) => Object.entries(questions).forEach(([key, text]) => {
+        const picked = document.querySelector('input[name="' + key + '"]:checked');
+        if (!picked) { missing.push('Choose Yes or No: "' + text + '"'); $('q-' + key).classList.add('missing'); }
+        else answers[key] = picked.value === 'yes';
+      });
+      const field = (id, key, label, min) => {
+        const value = $(id).value.trim();
+        if (value.length < (min || 1)) { missing.push(label); $(id).classList.add('missing'); }
+        answers[key] = value;
+      };
+
+      yesNo(form.parent.questions);
+      answers.parent_confirms_guardian = $('confirmGuardian').checked;
+      if (!answers.parent_confirms_guardian) {
+        missing.push('Tick the box to confirm you are the parent or legal guardian');
+        $('confirmRow').classList.add('missing');
+      }
+      field('parentName', 'parent_name', 'Your full name');
+      field('relationship', 'parent_relationship', 'Your relationship to the child');
+      field('phone', 'parent_phone', 'Your phone number', 7);
+      const email = $('email').value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        missing.push('A valid email, or leave it blank');
+        $('email').classList.add('missing');
+      }
+      answers.parent_email = email || null;
+      field('sessionPhone', 'parent_session_phone', 'The best number to reach you during the session', 7);
+      yesNo(form.teen.questions);
+      field('teenName', 'teen_name', "The teen's full name");
+      const by = document.querySelector('input[name="completed_by"]:checked');
+      if (!by) { missing.push('Who completed the teen agreement'); $('completedBy').classList.add('missing'); }
+      else answers.completed_by = by.value;
+      answers.form_version = form.version;
+      return [answers, missing];
+    }
+
+    function showError(intro, items) {
+      const box = $('formError');
+      box.textContent = intro;
+      if (items && items.length) {
+        const ul = el('ul');
+        items.forEach(x => ul.append(el('li', x)));
+        box.append(ul);
+      }
+      box.classList.add('show');
+    }
+
+    // Answering something clears its red outline.
+    ['input', 'change'].forEach(type => $('permissionForm').addEventListener(type, e => {
+      const marked = e.target.closest('.missing') || e.target;
+      marked.classList.remove('missing');
+    }));
+
     $('permissionForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       $('formError').classList.remove('show');
-      const name = $('parentName').value.trim();
-      if (!name || !$('agree').checked) {
-        $('formError').textContent = 'Type your name and tick the box to give permission.';
-        $('formError').classList.add('show');
-        return;
-      }
+      const [answers, missing] = collect();
+      if (missing.length) return showError('Please answer everything before sending:', missing);
+
       const btn = this.querySelector('.form-submit');
       btn.disabled = true;
-      btn.textContent = 'Saving…';
+      btn.textContent = 'Sending…';
       try {
         const r = await fetch(API + '/codesign/permission/' + encodeURIComponent(token), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name, agree: true })
+          body: JSON.stringify(answers)
         });
-        if (r.ok) {
-          $('ask').style.display = 'none';
-          return show('done');
-        }
-        $('formError').textContent = 'That did not save. Please try again.';
+        if (r.ok) return showAnswered((await r.json()).confirmed, true);
+        if (r.status === 409) showError('This form has changed since the page was opened. Please reload the page.');
+        else showError('That did not send. Please check your answers and try again.');
       } catch (err) {
-        $('formError').textContent = 'Something went wrong. Please try again.';
+        showError('Something went wrong. Please try again.');
       }
-      $('formError').classList.add('show');
       btn.disabled = false;
-      btn.textContent = 'Give permission';
+      btn.textContent = 'Send the form';
     });
 
     load();
