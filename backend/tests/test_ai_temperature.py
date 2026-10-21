@@ -7,7 +7,7 @@ is replaced here, so nothing is spent.
 import asyncio
 from types import SimpleNamespace
 
-from app.services import combination_wording, step_suggestion_service
+from app.services import combination_wording, insight_service, step_suggestion_service
 
 
 class FakeClient:
@@ -43,4 +43,21 @@ def test_step_sentences_send_no_temperature():
     # (checked 2026-10-21). Sending one would turn every drafted sentence into the template.
     client = AsyncFakeClient("Answer a question in class")
     asyncio.run(combination_wording.ask_claude("Answering in class", "Sitting at the back", client=client))
+    assert "temperature" not in client.calls[0]
+
+
+def test_monitoring_analysis_sends_temperature_zero():
+    # At 0 the three runs agreed more often (0.59 to 0.70 on 9 made-up families) and behavior types
+    # held (126 of 144 against 127). Session note suggestions share this call. Measure again before
+    # changing it.
+    client = FakeClient('{"situations": []}')
+    insight_service.request_extraction(client, "system", "entries")
+    assert insight_service.EXTRACTION_TEMPERATURE == 0.0
+    assert client.calls[0]["temperature"] == 0.0
+
+
+def test_preliminary_report_sends_no_temperature():
+    # The preliminary report was not measured at 0, so it keeps the default until it is.
+    client = FakeClient("report")
+    insight_service.request_report(client, "system", [], "entries")
     assert "temperature" not in client.calls[0]
