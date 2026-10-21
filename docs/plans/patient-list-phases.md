@@ -22,7 +22,15 @@ state that visibly changes.
 
 ## Phases
 
-Peter's list, with names that read like a clinician's sentence rather than a workflow diagram:
+**Changed 2026-10-21 (issue #53).** Peter's list is now **New, Monitoring, In treatment,
+Maintenance, Closed**. Assessment and Planning are gone: a patient who would have read as either
+now reads as Monitoring until their plan is active. Maintenance is set and cleared by the clinician
+by hand from the ⋯ menu on the patient page, like closing. For now it only changes the phase; what
+else is different for a patient in maintenance is to be decided later. Closed still wins over
+Maintenance, and reopening a closed patient brings Maintenance back if it was set. The table below
+is the original list, kept for history.
+
+Peter's original list, with names that read like a clinician's sentence rather than a workflow diagram:
 
 | Phase | True when |
 |---|---|

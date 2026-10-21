@@ -81,3 +81,21 @@ instead. Write the base64 to a file first, one command per file:
       -F content=@/tmp/<worktree>/before.b64
 
 A loop over the files with `$(base64 ...)` inside it is refused by the worktree guard.
+
+## Showing a dropdown's choices in a screenshot
+
+**2026-10-21**, issue #53. A screenshot cannot catch a native `<select>` open: the list of choices
+is drawn by the browser, not the page. To show every choice, turn it into a list box for the shot
+only, with the Playwright evaluate tool:
+
+    () => { const s = document.querySelector('select'); s.size = s.options.length; s.style.height = 'auto'; return s.options.length }
+
+`style.height = 'auto'` matters: the patient list's filter has a fixed height, so without it only
+two choices show. Say in the PR that the box was opened this way, since the real control is still a
+dropdown.
+
+## Parallel commands can run in the wrong folder
+
+Running /verify's steps as parallel tool calls, each starting `cd backend && …` or
+`cd apps/web && …`, left `npx tsc -b` running in `backend/`. It failed with "Cannot read file
+backend/tsconfig.json", which looks like a broken build but is not. Run the steps one at a time.
