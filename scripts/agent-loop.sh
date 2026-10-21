@@ -1,6 +1,7 @@
 #!/bin/bash
 # Runs agent sessions on the Mac mini one after another. Each session takes one item from the
-# "Ready for agents" section of docs/backlog.md, builds it, and opens a PR.
+# "Ready for agents" section of docs/backlog.md, or one open `ui-feedback` issue, builds or fixes
+# it, and opens a PR.
 # See docs/plans/agent-loop.md.
 #
 #   scripts/agent-loop.sh [passes]        passes defaults to 3
@@ -17,6 +18,11 @@ LOG_DIR="$HOME/loop-logs"
 # /opt/homebrew/bin holds a different Node version.
 export PATH="/opt/homebrew/opt/node@22/bin:/opt/homebrew/opt/postgresql@18/bin:$HOME/.local/bin:/opt/homebrew/bin:$PATH"
 export DATABASE_URL="postgresql+asyncpg://float:float@localhost:5432/float_dev"
+# The API key for the AI tests some items run. One line in a file only agent can read; see
+# AI-dev/evals/nightly.sh.
+if [ -f "$HOME/.float-eval-env" ]; then
+  . "$HOME/.float-eval-env"
+fi
 
 mkdir -p "$LOG_DIR"
 cd "$REPO" || exit 1
