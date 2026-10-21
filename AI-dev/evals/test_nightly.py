@@ -50,7 +50,7 @@ class FakeShell:
     """Answers each command the schedule runs, and keeps a list of them."""
 
     def __init__(self, runner=None, held_out="No held-out cases yet. Nothing was run.\n", prs=(),
-                 prints=None, merge_code=0, conflicted="", checkout_fails=()):
+                 prints=None, merge_code=0, conflicted="", checkout_fails=(), issues=(), issues_fail=False):
         self.calls: list[list[str]] = []
         self.runner = runner or (lambda cmd: (0, report()))
         self.held_out = held_out
@@ -59,6 +59,8 @@ class FakeShell:
         self.merge_code = merge_code
         self.conflicted = conflicted
         self.checkout_fails = set(checkout_fails)
+        self.issues = list(issues)
+        self.issues_fail = issues_fail
 
     def __call__(self, cmd, cwd, timeout=None):
         cmd = [str(c) for c in cmd]
@@ -82,6 +84,8 @@ class FakeShell:
             return done(json.dumps(self.prs))
         if cmd[:3] == ["gh", "pr", "comment"]:
             return done()
+        if cmd[:3] == ["gh", "issue", "list"]:
+            return done(code=1) if self.issues_fail else done(json.dumps(self.issues))
         if joined.endswith("nightly.py fingerprint"):
             where = "pr" if "float-pr-" in joined else "main"
             return done(json.dumps(self.prints.get(where, {"monitoring_analysis": "m", "voice_notes": "v"})))
@@ -338,3 +342,24 @@ def test_the_report_carries_trevors_face(tmp_path):
     assert "![Trevor: " in path.read_text().splitlines()[2]
     assert (tmp_path / "2026-10-20-trevor.webp").read_bytes() == (nightly.TREVOR / "cross.webp").read_bytes()
     assert all((nightly.TREVOR / f"{m}.webp").exists() for m in nightly.MOOD_TEXT)
+
+
+# Why: Peter asked for the loop's needs-peter questions in the morning report as a reminder, so he
+# need not check GitHub. Each shows its issue and the newest comment, which is the question.
+def test_the_report_lists_questions_for_peter(tmp_path):
+    issues = [{"number": 52, "title": "Tag looks odd", "url": "https://github.com/x/52",
+               "comments": [{"body": "Old note"}, {"body": "Should the tag go,\nor be renamed?"}]},
+              {"number": 50, "title": "No comment yet", "url": "https://github.com/x/50", "comments": []}]
+    text = nightly.morning_report(ctx(tmp_path, FakeShell(issues=issues)))
+    section = text.split("## Questions for you")[1].split("\n## ")[0]
+    assert "2 issues labelled `needs-peter`" in section
+    assert "- [#50 No comment yet](https://github.com/x/50)\n" in section
+    assert "- [#52 Tag looks odd](https://github.com/x/52): Should the tag go, or be renamed?" in section
+    assert "Old note" not in section
+
+
+# Why: a report that silently says "none" when GitHub could not be read would hide questions.
+def test_the_report_says_when_questions_could_not_be_read(tmp_path):
+    assert "None waiting." in nightly.morning_report(ctx(tmp_path, FakeShell()))
+    text = nightly.morning_report(ctx(tmp_path, FakeShell(issues_fail=True)))
+    assert "Could not read the issues list from GitHub tonight." in text
