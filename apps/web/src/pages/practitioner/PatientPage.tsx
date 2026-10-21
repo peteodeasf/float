@@ -1075,7 +1075,9 @@ export default function PatientPage() {
                 </div>
 
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                  {/* The chips are labels, not controls: clicking one must not open or close the
+                      note (Peter, issue #59). The rest of the card still does. */}
+                  <div data-testid="note-chips" onClick={e => e.stopPropagation()} style={{ display: 'flex', width: 'fit-content', maxWidth: '100%', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '6px', cursor: 'default' }}>
                     {/* Who was there, as an avatar chip — visually distinct from the grey tags. */}
                     {(n.participants ?? []).length === 0 && <span className="px-1 py-0.5 rounded font-medium" style={{ fontSize: '11px', background: 'var(--float-surface-sunken)', color: 'var(--float-text-hint)' }}>&mdash;</span>}
                     {(n.participants ?? []).map(pt => {
