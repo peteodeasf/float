@@ -210,3 +210,15 @@ def test_refuses_without_a_key(monkeypatch, capsys):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     assert generate.main(["--count", "1"]) == 2
     assert "ANTHROPIC_API_KEY is not set" in capsys.readouterr().err
+
+
+# Why: the overnight schedule reads the spend and the written ids from this, to keep the night under
+# its limit and tell Peter which families are new. It must hold ids and counts, never case text.
+def test_summary_json_has_spend_and_ids_only(tmp_path):
+    client = FakeClient([json.dumps(FACTS), json.dumps(INPUTS)])
+    outcomes, budget, stopped = generate.run(client, 1, 10.0, seed=1, out_dir=tmp_path)
+    data = generate.summary_json(outcomes, budget, stopped, 1)
+    assert data["written"] == [outcomes[0].slot.family_id] and data["failed"] == []
+    assert data["spent_usd"] == pytest.approx(budget.spent, abs=1e-4) and data["calls"] == 2
+    text = json.dumps(data)
+    assert INPUTS["voice_notes"][0]["text"] not in text
