@@ -291,7 +291,7 @@ export default function RecordSessionPage() {
           <>
             <h1 className="rs-title">Can't record here</h1>
             <p className="rs-sub">{problem}</p>
-            <button className="rs-btn rs-btn-mint" onClick={back}>Back to {firstName}</button>
+            <button className="rs-btn rs-btn-mint rs-btn-end" onClick={back}>Back to Sessions</button>
           </>
         )}
 
@@ -379,7 +379,7 @@ export default function RecordSessionPage() {
             <div className="rs-check-big" aria-hidden="true">✓</div>
             <h1 className="rs-title">Saved</h1>
             <p className="rs-sub">Float is writing up the session. The note will be in {firstName}'s Session Notes as a draft in a few minutes, with the transcript. You can close this.</p>
-            <button className="rs-btn rs-btn-mint" onClick={back}>Back to {firstName}</button>
+            <button className="rs-btn rs-btn-mint rs-btn-end" onClick={back}>Back to Sessions</button>
           </>
         )}
       </main>
@@ -413,6 +413,7 @@ const CSS = `
 .rs-btn-mint { background: var(--float-primary-mid); color: var(--float-primary-dark); }
 .rs-btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1.5px solid rgba(255,255,255,.3); }
 .rs-btn-big { min-height: 64px; font-size: 19px; margin-top: auto; }
+.rs-btn-end { margin-top: auto; }
 .rs-dot { width: 14px; height: 14px; border-radius: 50%; background: #d64545; }
 .rs-link { background: none; border: 0; color: inherit; font: inherit; font-size: 15.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 10px; min-height: 44px; }
 .rs-alert { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); border-radius: 14px; padding: 12px 14px; font-size: 14.5px; line-height: 1.45; }

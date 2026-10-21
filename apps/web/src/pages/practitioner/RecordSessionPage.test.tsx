@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 
 // No clinician can be signed in here: the patient is seeded and the recording routes are recorded.
 const api = vi.hoisted(() => ({
@@ -36,13 +36,22 @@ class FakeRecorder {
   addEventListener(name: string, f: () => void) { (this.listeners[name] ??= []).push(f) }
 }
 
+// Shows where the page sent the clinician, so a test can check the destination.
+function LocationProbe() {
+  const { pathname, search } = useLocation()
+  return <p>At {pathname + search}</p>
+}
+
 function open(patient: Record<string, unknown>) {
   const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
   qc.setQueryData(['patient', 'pt1'], { id: 'pt1', name: 'Sam Rivera', closed_at: null, ...patient })
   render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/patients/pt1/record']}>
-        <Routes><Route path="/patients/:patientId/record" element={<RecordSessionPage />} /></Routes>
+        <Routes>
+          <Route path="/patients/:patientId/record" element={<RecordSessionPage />} />
+          <Route path="/patients/:patientId" element={<LocationProbe />} />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -95,6 +104,19 @@ describe('recording a session', () => {
     // The last piece, handed over when it stopped, was uploaded before saving.
     expect(api.uploadPiece).toHaveBeenCalledWith('rec1', 1, 1, expect.any(Blob), 'audio/mp4')
     expect(await screen.findByRole('heading', { name: 'Saved' })).toBeInTheDocument()
+  })
+
+  // Issue #56: the button after saving said "Back to Sam" but goes to the Sessions tab, where the
+  // draft note will appear. It must say where it goes.
+  it('after saving, the button says Back to Sessions and opens the Sessions tab', async () => {
+    open({ recording_consent_at: '2026-09-15T10:00:00Z' })
+    fireEvent.click(await screen.findByRole('button', { name: /Start recording/ }))
+    await screen.findByText('Recording')
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    await screen.findByRole('heading', { name: 'Saved' })
+    expect(screen.queryByRole('button', { name: /Back to Sam/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Sessions' }))
+    expect(await screen.findByText('At /patients/pt1?tab=sessions')).toBeInTheDocument()
   })
 
   it('when the phone stops it, carrying on adds to the same session', async () => {

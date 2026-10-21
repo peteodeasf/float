@@ -937,6 +937,28 @@ Found while checking, before building:
 - **How to tell it worked:** a dry run's "Not tested yet" section matches what the night ran.
 - **Gate:** none. **Depends on:** nothing.
 
+## Recording a session: the consent screen's Continue button is not at the bottom `S`
+- **Today:** on "Before you record" (`apps/web/src/pages/practitioner/RecordSessionPage.tsx`, the
+  `consent` step), the Continue button sits straight under the checkbox, with the empty space below
+  it. The other steps of that page pin their button to the bottom. Found 2026-10-21 while fixing
+  issue #56.
+- **What changes:** give the Continue button `rs-btn-end` (`margin-top: auto`), like the Saved
+  screen's button.
+- **How to tell it worked:** a phone-width screenshot shows the button at the bottom, with the
+  space above it.
+- **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
+
+## Sign-in screens: the Email and Password labels are not linked to their boxes `S`
+- **Today:** in `apps/web/src/pages/auth/LoginPage.tsx` the `<label>`s have no `htmlFor` and the
+  `<input>`s no `id`. A screen reader reads the boxes by their example text ("you@example.com")
+  instead of "Email", and tapping the label does not put the cursor in the box. The teen, parent
+  and admin sign-in pages may have the same problem; not checked. Found 2026-10-21 while taking
+  screenshots for issue #56.
+- **What changes:** link each label to its box.
+- **How to tell it worked:** a test finds the boxes with `getByLabelText('Email')` and
+  `getByLabelText('Password')`.
+- **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
+
 ## Three AI calls stop the backend answering anyone else while they wait `S`
 - **Today:** three routes are `async` but call Claude with the blocking client
   (`anthropic.Anthropic`, not `AsyncAnthropic`) and do not hand the call to a thread:
