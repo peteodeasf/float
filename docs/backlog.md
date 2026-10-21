@@ -103,6 +103,36 @@ Both items in this group were built 2026-10-21.
   **Depends on:** #46 (voice notes: "like" and "about" after a rating) merged. If it is not on
   main, skip this item.
 
+### Testing the teen's side without the teen app — moved here by Peter, 2026-10-21
+
+#### Teen data testing page `L`
+- **Today:** the teen app is being redesigned (3–4 weeks of co-design), and nothing else records a
+  teen's exposures, so the clinician's Progress tab (now "Exposures") cannot be tested.
+- **What changes:** build `docs/plans/teen-data-testing.md` in full, in one PR: the `/teen-test`
+  page signed in as the teen, every settable value per rung with sensible defaults, Record done,
+  Too hard, starting an exposure on a behavior, a message box, back-dating behind the
+  `TEEN_DATA_TESTING` switch, and the Fill in 3 weeks button. The current teen app is not changed.
+  Add an "Area G — Teen data testing and the Progress tab" section to
+  `docs/testing/clinician-app-checklist.md` with its checks.
+- **How to tell it worked:** backend tests that a date and Fill in 3 weeks are refused with the
+  switch off, only ever touch the signed-in teen's own records, and refuse future dates; that Fill
+  in 3 weeks makes the history the plan describes. Screenshots of `/teen-test` beside the clinician's
+  Progress tab after Fill in 3 weeks, desktop width, with demo data.
+- **Gate:** `/security-review` (a new way to write a child's data), and Peter approves the screens.
+  **Depends on:** nothing.
+
+#### Rename the clinician's "Exposures" tab to "Progress" `S`
+- **Today:** the patient page's tab is called Exposures
+  (`apps/web/src/pages/practitioner/PatientPage.tsx`, `ExposuresTab.tsx`). Peter, 2026-10-21: call it
+  Progress. A separate, unlinked page also uses that name (`/patients/:id/progress`,
+  `ProgressPage.tsx`).
+- **What changes:** the tab's label, and any text that names it, say "Progress". Keep the URL value
+  working for old links. Say in the PR whether the unlinked progress page should go, but do not
+  remove it here.
+- **How to tell it worked:** the tab reads Progress, old `?tab=experiments` links still open it.
+  Screenshot.
+- **Gate:** screen change: Peter approves. **Depends on:** nothing.
+
 ---
 
 # Compliance
