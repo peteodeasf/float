@@ -1,0 +1,95 @@
+# Testing the app's screens — plan
+
+> **Planned 2026-10-21** with Peter. Not started.
+>
+> Scope: the **clinician app first, then the parent app.** The teen app is left out, because it is
+> being redeveloped in the next few weeks (Peter, 2026-10-21).
+
+## Goal
+
+The screens are underused and undertested. Make testing quick for Peter and for a part-time tester
+(2–3 hours a week), and make every finding end up in the backlog without retyping.
+
+## What gets tested, in two layers
+
+1. **Each feature works on its own.** Every button, form and AI action does what it says: it saves,
+   edits, deletes, shows a sensible empty state, and refuses bad input. Peter, 2026-10-21: this has
+   not been done properly yet. The list is `docs/testing/clinician-app-checklist.md`, one line per
+   check, built from the code on 2026-10-21.
+2. **Journeys.** A real task from start to finish, crossing several features:
+   `docs/testing/clinician-journeys.md`. Each takes 20–30 minutes.
+
+The tester works through one or two journeys a session, ticking the feature checks for the screens
+the journey passes through. That covers both layers in the same time.
+
+## Where to test
+
+- The live app, `https://app.floatcbt.com`. It holds test data only until the first real user
+  (`CLAUDE.md`, "Current stage").
+- **Peter sets up the tester's account:** Settings → Your clinic → Invite someone, as a clinician.
+  She adds made-up families herself. Made-up names only, children 8–17.
+- **Parent screens need a second email.** Gmail's `+` trick gives as many as needed from one inbox:
+  `name+parent1@gmail.com` arrives at `name@gmail.com`. Open the parent side in a private browser
+  window, so the clinician stays signed in.
+- Screens marked "phone" in the checklist (recording a session, the parent's quick voice note) need
+  a real phone.
+
+## Recording feedback
+
+**Jam** (jam.dev), a free browser add-on. One click captures a screenshot or a short video with
+voice, the page address and any errors. Each report becomes a GitHub issue labelled `ui-feedback`.
+The tester does not need a GitHub account; Jam posts the issue.
+
+Setup, once (Peter):
+1. Make a Jam account and install the Chrome extension.
+2. In Jam, connect GitHub, choose `peteodeasf/float`, and set the label `ui-feedback`.
+3. Invite the tester to the Jam team. She installs the extension and signs in.
+
+**Peter, on his phone:** screen-record with the microphone on while doing a journey, and talk. Put
+the recording in `~/feedback-inbox/` on the mini (AirDrop to the laptop, then copy over, or a shared
+Drive folder). Trevor turns it into text on the mini (`whisper.cpp`, so the recording never leaves
+the machine), then into a list of points, each with its screen and time.
+
+One rule for both: **say what you expected and what happened.** "I pressed Save and nothing
+changed" is a finding. "This feels off" is fine too, but say which screen.
+
+## From feedback to the backlog
+
+Weekly, or after each testing session:
+1. Trevor reads the open `ui-feedback` issues and any new transcripts.
+2. It merges duplicates and groups them by journey.
+3. It sorts each into: **bug** (it doesn't do what it says), **confusing** (it works, but people
+   got lost), or **idea**.
+4. It drafts backlog items to the backlog's standard, in one pull request, under a "From UI
+   testing" heading. Each item links its issues.
+5. Peter reads the pull request and moves what he wants into "Ready for agents". The loop builds
+   them, with screenshots in each pull request, as now.
+6. Trevor comments on each issue with the backlog item it went into, and closes it.
+
+Screen changes keep waiting for Peter's approval (CODEOWNERS). Anything clinical goes to Dr.
+Walker's list, as now.
+
+## Trevor does the clicking nobody should have to
+
+Two backlog items, after the first testing week shows which screens matter most:
+
+- **Nightly screenshot tour.** Every clinician and parent screen, with demo data, at phone and
+  desktop width, on one page. It also checks the screen-layout rules in `CLAUDE.md`. Peter scrolls
+  one page instead of clicking through two apps.
+- **Automatic journey tests** for the two or three journeys that matter most to the therapist
+  pilot, so a broken button is caught before a person finds it. Playwright, against `float_dev`
+  with demo data, on the mini.
+
+## This week
+
+1. Peter: Jam setup (above), invite the tester to Float and Jam, send her the checklist and
+   journeys.
+2. Tester: journeys 1 and 2, with their feature checks.
+3. Peter: one journey on the phone, talking.
+4. Trevor: triage at the end of the week, into one backlog pull request.
+
+## Not known yet
+
+- How long each journey really takes. The 20–30 minutes is a guess; the first week will show it.
+- Whether 2–3 hours a week covers the checklist in a reasonable time. It has 120 clinician
+  checks and 19 parent checks.
