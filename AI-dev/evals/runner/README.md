@@ -96,6 +96,25 @@ The risk flag is not scored and the risk label is not in the answer key. Peter, 
 counts as a risk sign is a question for Dr. Walker. The full list of what is not covered is printed
 at the end of every report (`NOT_COVERED` in `monitoring_analysis.py`).
 
+## Do the two monitoring prompts add triggers? (`compare_triggers.py`)
+
+The preliminary report prompt says of triggers the parent didn't log, "you may add them". The
+extraction prompt forbids it. This script counts what each one adds, and changes neither prompt.
+
+    ~/code/float/backend/.venv/bin/python AI-dev/evals/runner/compare_triggers.py --runs 3 --budget 9
+
+For each working family and run it makes both app calls the way Analyze with AI does, then asks a
+matcher on a different model (`claude-opus-5-5`) which log entries each situation describes, and
+which triggers in its name no entry describes. The matcher is not told which prompt wrote the list.
+A situation with no entry behind it is an added trigger. A logged situation widened with unlogged
+triggers ("Dogs (and cats)") counts each extra as an added part.
+
+It needs the matcher because the report's situations have no entry numbers. The matcher's reading
+is a model's and no person has checked it: read `outputs.jsonl` before trusting a count.
+
+Writes `runs/<timestamp>-triggers/`. The same split as the runner: `report.md` and `report.json` hold
+counts only, `outputs.jsonl` holds the answers.
+
 ## Voice notes
 
 `voice_notes.py`. Float is given the note's words only. Each pool note's `expected` says how many

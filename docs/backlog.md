@@ -58,16 +58,6 @@ Not in this list, on purpose: showing the risk flag (Peter, 2026-10-19: not toni
 risk flag, session drafts and suggestions, downward arrow questions, and the weekly list for Peter.
 
 
-#### The two monitoring prompts disagree about extra triggers `S`
-- **Today:** the preliminary report prompt in `backend/app/api/routers/patients.py` says "you may
-  add them" about triggers the parent never logged. The extraction prompt forbids it.
-- **What changes:** nothing in the prompts. Run both on the working pool families and count how
-  often each adds a trigger that is not in the answer key. Write the result up as a question for
-  Peter in `docs/plans/ai-quality-testing.md`, under item 7.
-- **How to tell it worked:** the PR has the counts, with sample sizes, and the question in plain
-  English.
-- **Gate:** clinical: request Peter's review and do not merge. **Depends on:** the test runner.
-
 #### Rung and step-sentence reviewers `L`
 - **Today:** no reviewing agents. Dr. Walker's 2026-08-29 review of 60 suggested rungs is in
   `docs/plans/ladder-generation.md`.
@@ -863,6 +853,43 @@ querying `review_marks`, `review_additions` and `review_comments` by hand.
 Fine for one round. Worth an hour when there is a second, since the same tool is meant to carry the
 extraction and arrow reviews too: one page, every suggestion, how each reviewer marked it and what
 they wrote.
+
+## The AI test runner numbers a log out of date order differently from the app `S`
+- **Today:** `prepare` in `AI-dev/evals/runner/monitoring_analysis.py` numbers the pool's log
+  entries in file order. The route reads them oldest first (`order_by(MonitoringEntry.entry_date)` in
+  `generate_preliminary_report`, `backend/app/api/routers/patients.py`). One pool family,
+  `fam-separation-06`, has its log out of date order, so the runner sends the model a differently
+  numbered log than the app would. It is held out, so the working runs so far are not affected.
+  Found 2026-10-19 while building `AI-dev/evals/runner/compare_triggers.py`, which sorts first
+  (`in_date_order`).
+- **What changes:** sort the case's log by date in `prepare` (or in `cases._monitoring_analysis`),
+  keeping each entry's `situation_ref` beside it. `compare_triggers.in_date_order` already does this.
+- **How to tell it worked:** a runner test that reverses a family's log and gets the same numbered
+  text and the same scores.
+- **Gate:** none. **Depends on:** nothing.
+
+## A held-out test fails on main since the runner's report became a table `S`
+- **Today:** `test_output_has_scores_and_counts_and_no_case_text[fmt0]` in
+  `AI-dev/evals/judging/tests/test_held_out.py` asserts `"Situations found: "` is in the printed
+  report. Since #36 (`Score monitoring analysis on the pool`) `report.markdown` in
+  `AI-dev/evals/runner/report.py` prints the scores as a table (`| Situations found | ... |`), so the
+  test fails on main (checked at `85dd09b`, 2026-10-19). The judging folder is Peter's (CODEOWNERS).
+- **What changes:** Peter decides whether the test should look for the table row instead. Agents do
+  not edit `AI-dev/evals/judging/`.
+- **How to tell it worked:** `pytest AI-dev/evals/judging/tests` passes on main.
+- **Gate:** Peter (CODEOWNERS). **Depends on:** nothing.
+
+## The preliminary report writes British spellings `S`
+- **Today:** on the 2026-10-19 trigger run (`AI-dev/evals/runner/compare_triggers.py`, 54 runs) the
+  report's situation names included "shopping centres", "public transport" and "travelling". The
+  report is shown to clinicians. `PRELIMINARY_REPORT_SYSTEM_PROMPT` in
+  `backend/app/api/routers/patients.py` says nothing about spelling. Float is US-only and uses
+  American spelling. How often it happens was not counted.
+- **What changes:** count it on the pool first (the runner's `outputs.jsonl` has the answers). If it
+  is more than a stray case, add American spelling to the prompt. That is a prompt change, so Peter
+  approves it.
+- **How to tell it worked:** a count, before and after, of British spellings in report runs.
+- **Gate:** prompt change waits for Peter. **Depends on:** nothing.
 
 ## Short case phrases in the rung prompt that the copy check cannot see
 
