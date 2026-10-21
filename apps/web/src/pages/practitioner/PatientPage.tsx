@@ -16,7 +16,8 @@ import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../
 import { getChecklistItems } from '../../api/checklist'
 import { FlatLadder } from './patient/FlatLadder'
 import { BehaviorPanel } from './patient/BehaviorPanel'
-import { ExposuresTab } from './patient/ExposuresTab'
+import { ProgressTab } from './patient/ProgressTab'
+import { tabFromParam, type TabId } from '../../lib/patientTabs'
 export { FlatLadder } from './patient/FlatLadder'
 export { BehaviorPanel } from './patient/BehaviorPanel'
 import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
@@ -36,11 +37,6 @@ import { SessionInterview } from './SessionPage'
 import { LADDER_MAX_WIDTH, PROCESS_PANEL_WIDTH } from './patient/shared'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
-// Flat tabs, in bar order. Also the `?tab=` vocabulary other surfaces navigate with.
-
-
-const TAB_IDS = ['monitoring', 'sessions', 'plan', 'experiments', 'chat'] as const
-type TabId = typeof TAB_IDS[number]
 
 const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
@@ -469,9 +465,9 @@ export default function PatientPage() {
   // Flat-tab navigation (replaces the old phase spine + rail + setup-step machine).
   // The tab lives in the URL so other surfaces can land on one — session mode exits back to Plan.
   const [searchParams, setSearchParams] = useSearchParams()
-  const tabParam = searchParams.get('tab')
-  const hasTabParam = (TAB_IDS as readonly string[]).includes(tabParam ?? '')
-  const activeTab: TabId = hasTabParam ? (tabParam as TabId) : 'monitoring'
+  const tabFromUrl = tabFromParam(searchParams.get('tab'))
+  const hasTabParam = tabFromUrl != null
+  const activeTab: TabId = tabFromUrl ?? 'monitoring'
   const setActiveTab = (id: TabId) => {
     const next = new URLSearchParams(searchParams)
     next.set('tab', id)
@@ -1547,9 +1543,9 @@ export default function PatientPage() {
     </div>
   ))
 
-  const experimentsContent = (
+  const progressContent = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <ExposuresTab experiments={patientExperiments ?? []} />
+      <ProgressTab experiments={patientExperiments ?? []} />
       {/* The parent's progress: their experiments and weekly check-ins. Peter, 2026-09-13:
           tracking is here, the plan is on the Plan tab. */}
       {plan?.id && <ParentProgressSection planId={plan.id} />}
@@ -1948,7 +1944,7 @@ export default function PatientPage() {
             { id: 'monitoring', label: 'Monitoring' },
             { id: 'sessions', label: 'Sessions' },
             { id: 'plan', label: 'Plan' },
-            { id: 'experiments', label: 'Exposures' },
+            { id: 'progress', label: 'Progress' },
             { id: 'chat', label: 'Chat', b: unreadMessageCount },
           ] as const).map(t => {
             const cur = activeTab === t.id
@@ -2002,7 +1998,7 @@ export default function PatientPage() {
               </>
             )}
 
-            {activeTab === 'experiments' && experimentsContent}
+            {activeTab === 'progress' && progressContent}
 
             {activeTab === 'chat' && messagesContent}
           </div>

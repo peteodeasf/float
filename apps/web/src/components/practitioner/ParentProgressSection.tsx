@@ -7,7 +7,7 @@ import { answerInfo, weekLabel } from '../../lib/checkin'
 import ParentExperimentSheet from './ParentExperimentSheet'
 
 /**
- * The parent's progress, on the Experiments tab: their accommodation experiments and their weekly
+ * The parent's progress, on the Progress tab: their accommodation experiments and their weekly
  * check-ins. Peter, 2026-09-13: tracking belongs here, not on the plan.
  * docs/plans/parent-accommodations-like-the-ladder.md
  */

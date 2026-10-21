@@ -73,18 +73,6 @@ Monitoring analysis at temperature 0 was built 2026-10-21. The voice notes item 
 
 The teen data testing page was built 2026-10-21.
 
-#### Rename the clinician's "Exposures" tab to "Progress" `S`
-- **Today:** the patient page's tab is called Exposures
-  (`apps/web/src/pages/practitioner/PatientPage.tsx`, `ExposuresTab.tsx`). Peter, 2026-10-21: call it
-  Progress. A separate, unlinked page also uses that name (`/patients/:id/progress`,
-  `ProgressPage.tsx`).
-- **What changes:** the tab's label, and any text that names it, say "Progress". Keep the URL value
-  working for old links. Say in the PR whether the unlinked progress page should go, but do not
-  remove it here.
-- **How to tell it worked:** the tab reads Progress, old `?tab=experiments` links still open it.
-  Screenshot.
-- **Gate:** screen change: Peter approves. **Depends on:** nothing.
-
 ---
 
 # Compliance
@@ -267,6 +255,16 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **Rung wording goes into the shared behaviour library** | Noticed 2026-10-15, not fixed. `create_behavior` copies every new row's name into `behavior_library`, which is shared across practices and is meant to hold generic names only. A sub-situation is often a child's own words, such as *"view 3 of diana's posts on my own"*. So one practice's patient wording can be offered to another practice. Combinations are already kept out. | S |
 | **Monitoring by more than one person** | Not built. From Dr. Walker's consultation guidance (Peter, 2026-09-15): both parents should monitor for the week, and sometimes a teacher or caregiver. Today a patient can have only one open monitoring form, sent to one address (`send_monitoring_form` in `monitoring.py` refuses a second). Related to two-parent accounts under Parent. | M |
 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
+
+## Progress tab: the graph's top label is cut off `S`
+- **Today:** on the clinician's Progress tab, the "Progress over time" graph's top label reads
+  "00%", not "100%". The left edge of the label is clipped at desktop width (1440px), with the
+  local demo data. The graph is the `LineChart` in
+  `apps/web/src/pages/practitioner/patient/ProgressTab.tsx`. Probably the Y axis is too narrow for
+  three digits. Noticed 2026-10-21 while renaming the tab.
+- **What changes:** give the Y axis enough room that "100%" shows in full.
+- **How to tell it worked:** screenshot of the tab showing "100%".
+- **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
 
 ## Action plans — hidden, and the question is whether they are worth having
 

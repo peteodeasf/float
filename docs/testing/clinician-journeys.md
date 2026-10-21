@@ -62,7 +62,7 @@ Checks: sections 15–17, and P3–P5.
 4. As the parent (private window, invite email): set a password, look at Home, write "How did it
    go?" on the accommodation, and answer the weekly check-in on Progress.
 5. Back as the clinician: do the parent's notes show?
-6. Exposures tab → set up an experiment with the parent.
+6. Progress tab → set up an experiment with the parent.
 
 ## Journey 5 — Sessions and messages (20 min, needs a phone)
 Checks: sections 18–20, P6.

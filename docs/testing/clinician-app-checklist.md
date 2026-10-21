@@ -175,7 +175,7 @@ monitoring log.
 - [ ] Child ratings → pick a range for each → Done → saved.
 - [ ] Save plan → leaves edit mode, and everything is still there after reload.
 
-## 17. Exposures tab
+## 17. Progress tab
 **Needs:** at least one accommodation (section 16) to set up an experiment with the parent.
 - [ ] With no completed exposures → "No completed exposures yet…".
 - [ ] Week strip: ‹ › change week. Clicking a day shows what was planned or done.
