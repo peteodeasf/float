@@ -106,9 +106,7 @@ export default function CodesignSection({ load }: { load: () => Promise<Codesign
                 <thead>
                   <tr>
                     <th style={th}>Teen</th>
-                    <th style={th}>Teen email</th>
                     <th style={th}>Parent</th>
-                    <th style={th}>Parent email</th>
                     <th style={th}>Number during session</th>
                     <th style={th}>Status</th>
                     <th style={th}>Recording</th>
@@ -121,15 +119,11 @@ export default function CodesignSection({ load }: { load: () => Promise<Codesign
                     <tr key={s.id}>
                       <td style={td}>
                         {s.teen_first_name} {s.teen_last_name}
-                        <div style={sub}>Age {s.teen_age}</div>
-                      </td>
-                      <td style={td}>{s.teen_email}</td>
-                      <td style={td}>
-                        {s.parent_name}
-                        {s.parent_relationship && <div style={sub}>{s.parent_relationship}</div>}
+                        <div style={sub}>Age {s.teen_age} · {s.teen_email}</div>
                       </td>
                       <td style={td}>
-                        {s.parent_email}
+                        {s.parent_name}{s.parent_relationship && ` (${s.parent_relationship})`}
+                        <div style={sub}>{s.parent_email}</div>
                         {s.parent_contact_email && s.parent_contact_email !== s.parent_email && (
                           <div style={sub}>On the form: {s.parent_contact_email}</div>
                         )}
