@@ -153,7 +153,9 @@ def test_step_sentence_verdicts_are_marked_unchecked():
     item = rv.step_item("Eating in front of others", "Sits facing the wall", "Eat facing the room")
     for r in rv.load_all("step_sentences"):
         assert rv.review(r, client, item).checked is False
-    assert all(r.checked for r in rv.load_all("rungs"))
+    # Rung verdicts are not checked yet either: her marks are only in the production database,
+    # which is not reachable (Peter, 2026-10-20). This flips when check_rung_reviewer.py has run.
+    assert not any(r.checked for r in rv.load_all("rungs"))
 
 
 def test_review_sends_the_reviewer_model_and_no_temperature():

@@ -49,9 +49,11 @@ WHAT = {
 }
 
 # Whether a reviewer's verdicts for the feature have been checked against Dr. Walker's own marks.
-# Rungs: `check_rung_reviewer.py` measures it, against her 2026-08-29 marks. Step sentences: she has
-# marked none.
-CHECKED = {"rungs": True, "step_sentences": False}
+# Rungs: not yet. `check_rung_reviewer.py` measures it against her 2026-08-29 marks, but they are
+# only in the production database, which is not reachable (Peter, 2026-10-20: skip the check for
+# now). Set this to True once that check has been run and the agreement is known. Step sentences:
+# she has marked none.
+CHECKED = {"rungs": False, "step_sentences": False}
 
 _RULE = re.compile(r"^## ([a-z0-9-]+)\s*$", re.M)
 
@@ -59,7 +61,7 @@ _RULE = re.compile(r"^## ([a-z0-9-]+)\s*$", re.M)
 def feature_model(feature: str) -> str:
     """The model the app's feature runs on, imported from the app."""
     if feature == "rungs":
-        from app.services.step_suggestion_service import MODEL
+        from app.services.step_suggestion_service import SUGGESTION_MODEL as MODEL
     elif feature == "step_sentences":
         from app.services.combination_wording import MODEL
     else:
