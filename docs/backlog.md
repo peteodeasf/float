@@ -67,24 +67,7 @@ a test case in a prompt, every number with its sample size. Both items change wh
 the AI, so **request Peter's review and do not merge.** The 4am nightly job also scores any open
 pull request that changes a tested prompt or model.
 
-Both items in this group were built 2026-10-21.
-
-#### Monitoring analysis: answer the same way each run `S`
-- **Today:** suggested rungs set `temperature` 0 (`SUGGESTION_TEMPERATURE` in
-  `backend/app/services/step_suggestion_service.py`, from #45). Monitoring analysis sets none. In
-  #45's measurement (9 working families, 3 runs each), temperature 0 raised its agreement from 0.59
-  to 0.70, with behavior types right 126 of 144 against 127 of 144. Peter, 2026-10-21: one in 144 on
-  9 families is within the run-to-run wobble, so set it.
-- **What changes:** set `temperature` 0 on `request_extraction` in
-  `backend/app/services/insight_service.py`, the same way #45 did for suggested rungs (a named
-  constant with a comment giving the numbers). Leave `request_report` (the preliminary report)
-  alone: it was not measured. `request_extraction` is also used for session note suggestions
-  (`suggest_from_session_note`), which have no tests; say so in the PR.
-- **How to tell it worked:** a test that `request_extraction` sends temperature 0. One run of
-  monitoring analysis on all 18 working families, 3 runs each, at the new setting, reported in the
-  PR beside the 2026-10-21 nightly numbers.
-- **Gate:** changes how the AI answers: request Peter's review and do not merge.
-  **Depends on:** nothing.
+Monitoring analysis at temperature 0 was built 2026-10-21. The voice notes item below is not built yet.
 
 #### Voice notes: a Fear Level given as a range saves the higher number `S`
 - **Today:** when a parent says a range in a voice note ("a seven or eight"), the AI mostly saves no

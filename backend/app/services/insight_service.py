@@ -399,6 +399,11 @@ def entry_ids_by_situation(extraction: dict, by_number: dict[int, uuid.UUID]) ->
 
 
 EXTRACTION_MODEL = "claude-sonnet-4-6"
+# Measured 2026-10-21 on 9 made-up families, 3 runs each: at 0 the runs' agreement rose from 0.59 to
+# 0.70, with behavior types right 126 of 144 against 127 of 144 with no temperature set. Peter: one
+# in 144 is within the run-to-run wobble. 0 makes the same answer more likely, not certain.
+# Session note suggestions use this call too; they have no tests.
+EXTRACTION_TEMPERATURE = 0.0
 
 
 def request_extraction(client, system_prompt: str, entries_text: str) -> str:
@@ -410,6 +415,7 @@ def request_extraction(client, system_prompt: str, entries_text: str) -> str:
     message = client.messages.create(
         model=EXTRACTION_MODEL,
         max_tokens=4096,
+        temperature=EXTRACTION_TEMPERATURE,
         system=system_prompt,
         messages=[{"role": "user", "content": entries_text}],
     )
