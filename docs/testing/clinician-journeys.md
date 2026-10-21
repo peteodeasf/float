@@ -1,5 +1,8 @@
 # Clinician app — journeys
 
+> **Phase 2. Not yet.** First every area of `clinician-app-checklist.md` is checked on its own,
+> and the bugs it finds are fixed (Peter, 2026-10-21). See `docs/plans/ui-testing.md`.
+
 Each journey is one real task, from start to finish. Do it as a clinician would, and tick the
 feature checks (`clinician-app-checklist.md`) for each screen you pass through. Report anything odd
 with Jam: **what you expected, and what happened.**

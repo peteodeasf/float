@@ -3,6 +3,12 @@
 One line per check: **do this → this should happen.** If it doesn't, report it with Jam and say what
 you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md`.
 
+Test **one area at a time** (A to F, below). Each section says what it needs set up first.
+
+- **Keep one test family** for everything: make it in section 5 and reuse it. A 12-year-old with two
+  parents, each with a `+` email of your own (`you+mom@gmail.com` arrives in your inbox).
+- Open the parent's side in a **private browser window**, so you stay signed in as the clinician.
+
 - Use made-up names only. Children are 8–17.
 - Skip anything to do with the **teen app**: inviting a teen, and the teen's messages. It is being
   rebuilt.
@@ -10,6 +16,8 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 - Parent screens are at the end, for after the clinician app.
 
 ---
+
+# Area A — Getting in, and patients
 
 ## 1. Sign in — `/login`
 - [ ] Right email and password → lands on My patients.
@@ -48,6 +56,10 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 - [ ] A parent row left completely empty is ignored, not saved as a blank parent.
 - [ ] Cancel and ← Back return to My patients without saving.
 
+# Area B — The patient page and who can see it
+
+**Needs:** the test family from section 5.
+
 ## 6. Patient page — header
 - [ ] Name, age, gender and status read correctly.
 - [ ] ⋯ → Edit profile: change age and anxiety type → Save → shown straight away, and still there after reload.
@@ -71,6 +83,11 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 - [ ] Make their clinician → asks first → the badge moves.
 - [ ] Signed in as a clinician who isn't the owner or an admin → the list is read-only, with an explanation.
 
+# Area C — Monitoring and Analyze with AI
+
+**Needs:** the test family, with both parents' emails. Do section 9, then P1 at the end (the
+parent's form) to save some entries, then section 10.
+
 ## 9. Monitoring tab
 - [ ] Before a form exists: two parent rows, prefilled from the parents' names and emails.
 - [ ] Create monitoring form → each parent with an email gets one. Check the inbox.
@@ -82,12 +99,18 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 - **Known:** the "Email sent to …" confirmation may never show.
 
 ## 10. Analyze with AI (Monitoring → Case Summary)
+**Needs:** at least 4 entries saved through the parent's form (P1), about different situations.
 - [ ] With fewer than 3 entries → no button, and a message saying to add at least 3.
 - [ ] With 3 or more → Analyze with AI → "Analyzing…" → a summary with Situations, Parental responses, Safety & avoidance behaviors, Treatment targets, and the date.
 - [ ] Every situation in the summary is something the parent actually logged. Report any the parent never mentioned.
 - [ ] Fear Levels in the summary match what the parent gave.
 - [ ] Add another entry → the hint says there are new observations. Re-analyze → updated.
 - [ ] Nothing was added to the plan automatically.
+
+# Area D — The ladder and the downward arrow
+
+**Needs:** the test family, ideally after area C, so the ladder editor has suggestions from the
+monitoring log.
 
 ## 11. Plan tab — getting started
 - [ ] No plan yet → "Create treatment plan" → the plan appears.
@@ -130,6 +153,10 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 - [ ] Leave halfway and come back → your steps are still there.
 - [ ] Tools → pick a patient → type a situation → Start → the same flow. The new arrow appears under Recent downward arrows.
 
+# Area E — Exposures and accommodations
+
+**Needs:** a saved ladder with a few rungs (area D), and one downward arrow done.
+
 ## 15. Set it up (a rung's "Set it up")
 - [ ] The fear is prefilled from the downward arrow.
 - [ ] Save is greyed out until there's a fear and a readiness choice, and a day and time if "Pick a day now".
@@ -138,6 +165,7 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 - [ ] Set up a rung that's already set up → the banner warns it sets up another exposure.
 
 ## 16. Accommodations (Plan → Accommodations)
+**Needs:** situations on the ladder. Parent suggestions appear only if the parent used their form or app.
 - [ ] Without a plan → says to create the plan on the Ladder tab first.
 - [ ] Build plan → add an accommodation with a name and Fear Level from (to is optional) → it appears.
 - [ ] Add is greyed out without a name and a from-level.
@@ -148,10 +176,16 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 - [ ] Save plan → leaves edit mode, and everything is still there after reload.
 
 ## 17. Exposures tab
+**Needs:** at least one accommodation (section 16) to set up an experiment with the parent.
 - [ ] With no completed exposures → "No completed exposures yet…".
 - [ ] Week strip: ‹ › change week. Clicking a day shows what was planned or done.
 - [ ] Set one up with the parent → Save is greyed out until accommodation, day, time and fear are filled → Save → it appears under "The parent's experiments".
 - **Known:** the parent app has no screen for these experiments yet.
+
+# Area F — Sessions, recording, chat, education
+
+**Needs:** the test family. Section 19 needs a phone. Section 20 needs a parent signed in to the
+parent app (invite email, private window).
 
 ## 18. Sessions tab
 - [ ] + Add note → Save is greyed out until there's text and Parent or Patient is picked.
@@ -183,6 +217,8 @@ you expected. Built from the code on 2026-10-21. Plan: `docs/plans/ui-testing.md
 ---
 
 # Parent app — after the clinician app
+
+P1 is also used in area C. The rest (P2–P7) come after the clinician areas.
 
 ## P1. Monitoring form (the emailed link; no account)
 - [ ] The link opens with the clinician's and child's names. A broken link → "not valid or has expired".
