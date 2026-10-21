@@ -14,7 +14,8 @@ interface SubHeaderProps {
 }
 
 interface PractitionerNavProps {
-  activePage: ActivePage
+  /** Left out on a page the menu does not link to, such as /codesign/signups. */
+  activePage?: ActivePage
   subHeader?: SubHeaderProps
 }
 

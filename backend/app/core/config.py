@@ -68,6 +68,12 @@ class Settings(BaseSettings):
     # never be possible for a real teen.
     TEEN_DATA_TESTING: bool = False
 
+    # Clinician logins who may read the co-design sign-up list at /codesign/signups in the web app:
+    # comma-separated emails, matched ignoring case and spaces. Empty means nobody. The list holds
+    # minors' names and emails, so it is set by hand on Railway and never in code.
+    # docs/plans/codesign-viewer.md
+    CODESIGN_VIEWERS: str = ""
+
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:8081", "https://floatcbt.com", "https://www.floatcbt.com"]
     

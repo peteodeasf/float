@@ -15,6 +15,8 @@ export interface MyProfile {
   /** How they sign in. Read-only for now — see SettingsPage. */
   email: string
   is_org_admin: boolean
+  /** On the CODESIGN_VIEWERS list: may open /codesign/signups. docs/plans/codesign-viewer.md */
+  can_view_codesign: boolean
 }
 
 export const getMyProfile = async (): Promise<MyProfile> =>

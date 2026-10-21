@@ -55,6 +55,7 @@ import MonitorLandingPage from './pages/monitor/MonitorLandingPage'
 import MonitoringReportPage from './pages/practitioner/MonitoringReportPage'
 import EducationIndexPage from './pages/practitioner/EducationIndexPage'
 import SettingsPage from './pages/practitioner/SettingsPage'
+import CodesignSignupsPage from './pages/practitioner/CodesignSignupsPage'
 import EducationModulePage from './pages/practitioner/EducationModulePage'
 import TeenClosedPage from './pages/teen/TeenClosedPage'
 import ParentClosedPage from './pages/parent/ParentClosedPage'
@@ -160,6 +161,11 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/education/:moduleId" element={
                 <ProtectedRoute><EducationModulePage /></ProtectedRoute>
+              } />
+              {/* Co-design sign-ups, read-only, for the clinicians named in CODESIGN_VIEWERS. Not in
+                  the menu. docs/plans/codesign-viewer.md */}
+              <Route path="/codesign/signups" element={
+                <ProtectedRoute><CodesignSignupsPage /></ProtectedRoute>
               } />
 
               {/* Teen routes */}

@@ -35,6 +35,7 @@ from app.models.formulation import ClinicalFormulation
 from app.models.checklist import ConsultationChecklist
 from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse, ParentContactOut
 from app.services.email_service import send_teen_invitation_email, send_parent_invitation_email
+from app.services.codesign_viewers import can_view_codesign
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
 from app.models.action_plan import ActionPlan
 from app.models.session_note import SessionNote
@@ -2300,6 +2301,9 @@ class MyProfileResponse(BaseModel):
     phone_number: str | None
     email: str
     is_org_admin: bool
+    # On the CODESIGN_VIEWERS list, so the co-design sign-up page can say "no access" without
+    # asking for the list. docs/plans/codesign-viewer.md
+    can_view_codesign: bool
 
 
 class MyProfileUpdate(BaseModel):
@@ -2316,6 +2320,7 @@ def _my_profile(profile: PractitionerProfile, user: User, is_admin: bool) -> MyP
         phone_number=profile.phone_number,
         email=user.email,
         is_org_admin=is_admin,
+        can_view_codesign=can_view_codesign(user.email),
     )
 
 

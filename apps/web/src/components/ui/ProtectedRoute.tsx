@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 /**
@@ -13,6 +13,7 @@ type Area = 'clinician' | 'practice' | 'setup'
 
 export default function ProtectedRoute({ children, area = 'clinician' }: { children: React.ReactNode; area?: Area }) {
   const { isAuthenticated, isLoading, setupComplete, isPracticeManager } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -23,7 +24,8 @@ export default function ProtectedRoute({ children, area = 'clinician' }: { child
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    // Back to this page after signing in, so a link someone was sent still lands where it points.
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   }
   if (area === 'setup') {
     if (setupComplete) return <Navigate to={isPracticeManager ? '/practice' : '/dashboard'} replace />
