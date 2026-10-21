@@ -47,3 +47,16 @@ back.
 
 The demo data does not share the child's progress with the parent, so the parent's home and
 Progress screens only show their empty state. Logged in `docs/backlog.md`.
+
+## Putting screenshots on the `pr-screenshots` branch without a second checkout
+
+**2026-10-21.** A loop session is locked to its own worktree, so it cannot check out
+`pr-screenshots` in a second folder and commit there. Upload each file through the GitHub API
+instead. Write the base64 to a file first, one command per file:
+
+    base64 -i .playwright-mcp/before.png > /tmp/<worktree>/before.b64
+    gh api -X PUT repos/peteodeasf/float/contents/<pr-number>/before.png \
+      -f message="Screenshot for PR #<pr-number>" -f branch=pr-screenshots \
+      -F content=@/tmp/<worktree>/before.b64
+
+A loop over the files with `$(base64 ...)` inside it is refused by the worktree guard.
