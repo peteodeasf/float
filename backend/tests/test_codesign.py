@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.api.routers import codesign
 from app.core.config import settings
 from app.models.codesign import CodesignSession, CodesignSignup
-from app.services import email_service
+from app.services import codesign_form, email_service
 
 from tests.factories import (
     _make_user, make_float_admin, make_org, make_patient, make_practice_manager, make_practitioner,
@@ -49,6 +49,28 @@ def _form(week1, week2, **over):
 def _token(sent) -> str:
     [link] = [e["cta_link"] for e in sent if e.get("cta_link")]
     return link.split("?t=", 1)[1]
+
+
+def _answers(**over):
+    """The permission form filled in with a yes to everything."""
+    body = dict(
+        parent_consents=True, parent_allows_recording=True, parent_allows_quotes=True,
+        parent_confirms_guardian=True, parent_name="Ana Rivera", parent_relationship="Mother",
+        parent_phone="617-555-0142", parent_email=None, parent_session_phone="617-555-0199",
+        teen_consents=True, teen_allows_recording=True, teen_name="Maya Rivera",
+        completed_by="teen_with_parent", form_version=codesign_form.FORM_VERSION,
+    )
+    body.update(over)
+    return body
+
+
+async def _signed_up(api, db, outbox, **over) -> str:
+    """One sign-up for the first date of each week; returns the permission link's token."""
+    w1, w2 = await _sessions(db)
+    assert (await api.post("/codesign/signups", json=_form(w1[0], w2[0], **over))).status_code == 200
+    token = _token(outbox)
+    outbox.clear()
+    return token
 
 
 async def test_the_six_dates_at_noon_eastern(api, db):
@@ -117,7 +139,7 @@ async def test_permission_keeps_the_seat_after_three_days(api, db, open_and_outb
     w1[0].seats = 1
     await db.flush()
     await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
-    r = await api.post(f"/codesign/permission/{_token(open_and_outbox)}", json={"name": "Ana Rivera", "agree": True})
+    r = await api.post(f"/codesign/permission/{_token(open_and_outbox)}", json=_answers())
     assert r.status_code == 200
     first = (await db.execute(select(CodesignSignup))).scalar_one()
     first.created_at = datetime.now(timezone.utc) - timedelta(days=10)
@@ -127,42 +149,161 @@ async def test_permission_keeps_the_seat_after_three_days(api, db, open_and_outb
 
 
 async def test_the_permission_page_shows_only_the_first_name_and_dates(api, db, open_and_outbox):
+    # The link travels by email and could be forwarded. Before the form is sent it must give away
+    # nothing about the teen but their first name and dates: no surname, email or age.
     w1, w2 = await _sessions(db)
-    await api.post("/codesign/signups", json=_form(w1[2], w2[2]))
+    await api.post("/codesign/signups", json=_form(w1[2], w2[2], teen_age=16))
     r = await api.get(f"/codesign/permission/{_token(open_and_outbox)}")
     assert r.status_code == 200
-    assert r.json() == {
-        "teen_first_name": "Maya",
-        "dates": ["Thursday, November 5 at 12pm Eastern", "Thursday, November 12 at 12pm Eastern"],
-        "permission_given": False,
+    body = r.json()
+    dates = ["Thursday, November 5 at 12pm Eastern", "Thursday, November 12 at 12pm Eastern"]
+    assert {k: v for k, v in body.items() if k != "form"} == {
+        "teen_first_name": "Maya", "dates": dates, "answered": False, "confirmed": False,
     }
-    for private in ("Rivera", "maya@example.com", "ana@example.com", "15"):
+    # The form itself is Peter's wording with this teen's two dates filled in.
+    assert body["form"] == codesign_form.form_for(dates)
+    assert f"Session 1: {dates[0]}. Session 2: {dates[1]}." in r.text
+    for private in ("Rivera", "maya@example.com", "ana@example.com", "Ana", "16"):
         assert private not in r.text
 
 
-async def test_giving_permission_records_the_name_and_time_once(api, db, open_and_outbox):
-    w1, w2 = await _sessions(db)
-    await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
-    token = _token(open_and_outbox)
-    assert (await api.post(f"/codesign/permission/{token}", json={"name": "Ana", "agree": False})).status_code == 422
-    assert (await api.post(f"/codesign/permission/{token}", json={"name": " ", "agree": True})).status_code == 422
-    open_and_outbox.clear()
-    assert (await api.post(f"/codesign/permission/{token}", json={"name": "Ana Rivera", "agree": True})).status_code == 200
-    assert [e["to_email"] for e in open_and_outbox] == ["ana@example.com", "maya@example.com"]
-
+async def test_every_answer_is_required(api, db, open_and_outbox):
+    # A record that is missing an answer cannot say what was agreed to, so nothing is saved until
+    # every choice and field is filled in, and the guardian box is ticked.
+    token = await _signed_up(api, db, open_and_outbox)
+    missing = [k for k in _answers() if k != "parent_email"]
+    for key in missing:
+        body = _answers()
+        del body[key]
+        assert (await api.post(f"/codesign/permission/{token}", json=body)).status_code == 422, key
+    for over in (dict(parent_confirms_guardian=False), dict(parent_name="  "), dict(teen_name=" "),
+                 dict(parent_consents="no"), dict(teen_consents=None), dict(completed_by="someone"),
+                 dict(parent_phone="12"), dict(parent_phone="  12     ")):
+        assert (await api.post(f"/codesign/permission/{token}", json=_answers(**over))).status_code == 422, over
     signup = (await db.execute(select(CodesignSignup))).scalar_one()
-    given_at = signup.permission_given_at
-    assert (signup.permission_given_by, given_at is not None) == ("Ana Rivera", True)
-    await api.post(f"/codesign/permission/{token}", json={"name": "Someone Else", "agree": True})
-    await db.refresh(signup)
-    assert (signup.permission_given_by, signup.permission_given_at) == ("Ana Rivera", given_at)
-    assert (await api.get(f"/codesign/permission/{token}")).json()["permission_given"] is True
+    assert (signup.form_submitted_at, signup.permission_given_at) == (None, None)
+    assert open_and_outbox == []
+
+
+async def test_confirmed_needs_a_yes_from_the_parent_and_the_teen(api, db, open_and_outbox):
+    # Peter, 2026-10-21: the parent's permission and the teen's own yes are both needed. Both yes:
+    # confirmed, every answer stored, and the version of the wording shown is recorded.
+    token = await _signed_up(api, db, open_and_outbox)
+    r = await api.post(f"/codesign/permission/{token}", json=_answers(parent_email="Ana.Work@Example.com"))
+    assert r.json() == {"success": True, "confirmed": True, "already": False}
+    s = (await db.execute(select(CodesignSignup))).scalar_one()
+    assert s.permission_given_at is not None and s.permission_given_at == s.form_submitted_at
+    assert (s.permission_given_by, s.parent_signed_name, s.teen_signed_name) == ("Ana Rivera", "Ana Rivera", "Maya Rivera")
+    assert (s.parent_relationship, s.parent_phone, s.parent_session_phone, s.parent_contact_email) == (
+        "Mother", "617-555-0142", "617-555-0199", "ana.work@example.com")
+    assert (s.teen_completed_by, s.form_version) == ("teen_with_parent", codesign_form.FORM_VERSION)
+    assert (await api.get(f"/codesign/permission/{token}")).json()["confirmed"] is True
+
+
+@pytest.mark.parametrize("no", ["parent_consents", "teen_consents"])
+async def test_a_no_from_either_declines_and_frees_the_seats(api, db, open_and_outbox, no):
+    # "If either of you says no, your child will not take part." The seats go back at once rather
+    # than after the 3-day hold, so another teen can have them.
+    w1, w2 = await _sessions(db)
+    w1[0].seats = 1
+    await db.flush()
+    token = await _signed_up(api, db, open_and_outbox)
+    second = _form(w1[0], w2[0], teen_email="sam@example.com", parent_email="dad@example.com")
+    assert (await api.post("/codesign/signups", json=second)).status_code == 409
+
+    r = await api.post(f"/codesign/permission/{token}", json=_answers(**{no: False}))
+    assert r.json() == {"success": True, "confirmed": False, "already": False}
+    s = (await db.execute(select(CodesignSignup))).scalar_one()
+    assert (s.permission_given_at, s.form_submitted_at is not None) == (None, True)
+    teen_note = next(e for e in open_and_outbox if e["to_email"] == "maya@example.com")
+    assert "won't be taking part" in teen_note["subject"]
+    page = (await api.get(f"/codesign/permission/{token}")).json()
+    assert (page["answered"], page["confirmed"]) == (True, False)
+    assert (await api.post("/codesign/signups", json=second)).status_code == 200
+
+
+@pytest.mark.parametrize("parent,teen,allowed", [
+    (True, True, True), (True, False, False), (False, True, False), (False, False, False),
+])
+async def test_recording_needs_a_yes_from_both(api, db, open_and_outbox, parent, teen, allowed):
+    # "We will only record the session if you and your child agree." Sally's list must say no
+    # unless both said yes. Quotes are the parent's answer alone.
+    token = await _signed_up(api, db, open_and_outbox)
+    await api.post(f"/codesign/permission/{token}", json=_answers(
+        parent_allows_recording=parent, teen_allows_recording=teen, parent_allows_quotes=False))
+    api.sign_in_as(await make_float_admin(db))
+    [row] = (await api.get("/codesign/signups")).json()["sessions"][0]["signups"]
+    assert (row["recording_allowed"], row["quotes_allowed"]) == (allowed, False)
+    assert (row["permission"], row["completed_by"], row["parent_relationship"], row["parent_session_phone"]) == (
+        "confirmed", "The teen, with their parent", "Mother", "617-555-0199")
+
+
+async def test_the_parent_is_emailed_a_copy_with_every_answer(api, db, open_and_outbox):
+    # The form says "We will give you a copy of this form to keep". The copy carries the wording,
+    # the parent's and the teen's answers, the date and time, and Sally's contact. It goes to the
+    # address the link was sent to, not the one typed on the page.
+    token = await _signed_up(api, db, open_and_outbox)
+    await api.post(f"/codesign/permission/{token}", json=_answers(
+        parent_allows_quotes=False, teen_allows_recording=False, completed_by="parent_for_teen",
+        parent_email="someone.else@example.com"))
+    [copy] = [e for e in open_and_outbox if e["to_email"] == "ana@example.com"]
+    assert "someone.else@example.com" not in [e["to_email"] for e in open_and_outbox]
+    text = "\n".join(copy["paragraphs"])
+    s = (await db.execute(select(CodesignSignup))).scalar_one()
+    for line in (
+        "Session 1: Tuesday, November 3 at 12pm Eastern. Session 2: Tuesday, November 10 at 12pm Eastern.",
+        "Group size: Up to 5 other teens, ages 13 to 17",
+        "Child's name: Maya Rivera. Child's age: 15.",
+        f"{codesign_form.PARENT_QUESTIONS['parent_consents']} Yes",
+        f"{codesign_form.PARENT_QUESTIONS['parent_allows_recording']} Yes",
+        f"{codesign_form.PARENT_QUESTIONS['parent_allows_quotes']} No",
+        f"{codesign_form.PARENT_CONFIRM} Yes",
+        "Relationship to child: Mother",
+        "Phone and email: 617-555-0142, someone.else@example.com",
+        "Best number to reach you during the session: 617-555-0199",
+        f"{codesign_form.TEEN_QUESTIONS['teen_consents']} Yes",
+        f"{codesign_form.TEEN_QUESTIONS['teen_allows_recording']} No",
+        "Your name: Maya Rivera",
+        "Completed by: The parent, on the teen's behalf",
+        f"Date: {codesign._stamp(s.form_submitted_at)}",
+        f"Form version: {codesign_form.FORM_VERSION}",
+        "sally@floatcbt.com",
+    ):
+        assert line in text, line
+
+
+async def test_a_used_link_changes_nothing(api, db, open_and_outbox):
+    # One answer per link, as before: the first one stands, and a second send neither overwrites it
+    # nor emails anyone. To change an answer, the parent emails Sally.
+    token = await _signed_up(api, db, open_and_outbox)
+    await api.post(f"/codesign/permission/{token}", json=_answers(teen_consents=False))
+    s = (await db.execute(select(CodesignSignup))).scalar_one()
+    sent_at = s.form_submitted_at
+    open_and_outbox.clear()
+    r = await api.post(f"/codesign/permission/{token}", json=_answers(parent_name="Someone Else"))
+    assert r.json() == {"success": True, "confirmed": False, "already": True}
+    await db.refresh(s)
+    assert (s.form_submitted_at, s.parent_signed_name, s.permission_given_at) == (sent_at, "Ana Rivera", None)
+    assert open_and_outbox == []
+
+
+async def test_old_wording_is_refused(api, db, open_and_outbox):
+    # A page opened before the wording changed must not record the new wording as agreed to.
+    token = await _signed_up(api, db, open_and_outbox)
+    r = await api.post(f"/codesign/permission/{token}", json=_answers(form_version="2026-10-19"))
+    assert r.status_code == 409
+    assert (await db.execute(select(CodesignSignup))).scalar_one().form_submitted_at is None
 
 
 async def test_an_unknown_link_finds_nothing(api, db):
+    # Guessing at links gets nothing back, and saves nothing.
     assert (await api.get("/codesign/permission/not-a-real-token")).status_code == 404
-    assert (await api.post("/codesign/permission/not-a-real-token",
-                           json={"name": "X", "agree": True})).status_code == 404
+    assert (await api.post("/codesign/permission/not-a-real-token", json=_answers())).status_code == 404
+
+
+async def test_six_seats_per_session(api, db):
+    # Peter, 2026-10-21: 6 seats per session, set on the six existing dates by the migration.
+    assert [s.seats for s in (await db.execute(select(CodesignSession))).scalars().all()] == [6] * 6
 
 
 async def test_bots_are_dropped_silently(api, db, open_and_outbox):
@@ -200,7 +341,7 @@ async def test_only_float_admins_see_who_signed_up(api, db):
     api.sign_in_as(await make_float_admin(db))
     r = (await api.get("/codesign/signups")).json()
     first = r["sessions"][0]
-    assert (first["taken"], first["seats"]) == (1, 8)
+    assert (first["taken"], first["seats"]) == (1, 6)
     [row] = first["signups"]
     assert (row["teen_email"], row["parent_email"], row["permission"]) == ("maya@example.com", "ana@example.com", "waiting")
     assert r["sessions"][1]["signups"] == []
@@ -287,7 +428,7 @@ async def test_the_viewer_list_is_the_admin_list(api, db, monkeypatch, open_and_
     monkeypatch.setattr(settings, "CODESIGN_VIEWERS", "viewer@example.com")
     w1, w2 = await _sessions(db)
     await api.post("/codesign/signups", json=_form(w1[0], w2[1]))
-    await api.post("/codesign/permission/" + _token(open_and_outbox), json={"name": "Ana Rivera", "agree": True})
+    await api.post("/codesign/permission/" + _token(open_and_outbox), json=_answers())
     await api.post("/codesign/signups", json=_form(
         w1[1], w2[1], teen_email="sam@example.com", parent_email="dad@example.com"))
 

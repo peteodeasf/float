@@ -387,6 +387,21 @@ back to `scheduled_date` (`ExposuresTab.tsx`, `dayFor`). Too hard sets `too_hard
 too hard. Usually the same day; not always. **What changes:** read `too_hard_at` for too-hard rows,
 which means sending it in `GET /patients/{id}/experiments`. **Gate:** none.
 
+## A co-design email that fails to send is never noticed `S`
+
+**Found 2026-10-21**, building the co-design permission form.
+
+- **Today.** `send_codesign_email` (`backend/app/services/email_service.py`) logs an error and
+  returns `False` if Resend fails. Every caller in `backend/app/api/routers/codesign.py` ignores
+  the result. The permission page then says "We have emailed you a copy of the form to keep",
+  even if the copy never went. The parent cannot send the form again to get one, because a link
+  only takes one answer.
+- **What changes.** Record on the sign-up whether the parent's copy was sent (for example a
+  `copy_sent_at` column). Show it in Sally's list, so she can send one by hand.
+- **How to tell it worked.** A test with the email made to fail: the answers are still saved,
+  and Sally's list says the copy was not sent.
+- **Gate.** None.
+
 Waiting on Dr. Walker, from the July reorg: how "do it now" works on a future scheduled slot, word
 buttons instead of faces, equal-weight answers on "did it happen", and the too-hard path.
 

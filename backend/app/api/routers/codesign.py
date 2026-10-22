@@ -11,11 +11,12 @@ import hashlib
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Annotated, Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import func, or_, select
+from pydantic import BaseModel, EmailStr, Field, StrictBool, StringConstraints
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routers.admin import get_admin_context
@@ -24,7 +25,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.codesign import CodesignSession, CodesignSignup
 from app.models.user import User
-from app.services import email_service
+from app.services import codesign_form, email_service
 from app.services.codesign_viewers import can_view_codesign
 
 router = APIRouter(tags=["codesign"])
@@ -58,8 +59,12 @@ def _when(s: CodesignSession) -> str:
 
 
 def _holding(now: datetime):
-    """Sign-ups that count against a session's seats: permission given, or still inside the hold."""
-    return or_(CodesignSignup.permission_given_at.is_not(None), CodesignSignup.created_at > now - HOLD)
+    """Sign-ups that count against a session's seats: confirmed, or still inside the hold with no
+    answer yet. A declined form frees its seats at once."""
+    return or_(
+        CodesignSignup.permission_given_at.is_not(None),
+        and_(CodesignSignup.created_at > now - HOLD, CodesignSignup.form_submitted_at.is_(None)),
+    )
 
 
 async def _taken(db: AsyncSession, now: datetime) -> dict[uuid.UUID, int]:
@@ -177,7 +182,7 @@ async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
             f"The dates they picked: {dates[0]}, and {dates[1]}.",
             "We need your permission before they take part. Their place is held for 3 days.",
         ],
-        cta_label="Read and give permission",
+        cta_label="Read the permission form",
         cta_link=link,
     )
     await email_service.send_codesign_email(
@@ -193,10 +198,11 @@ async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
     return {"success": True}
 
 
-async def _by_token(db: AsyncSession, token: str) -> CodesignSignup:
-    signup = (await db.execute(
-        select(CodesignSignup).where(CodesignSignup.permission_token_hash == _hash(token))
-    )).scalar_one_or_none()
+async def _by_token(db: AsyncSession, token: str, lock: bool = False) -> CodesignSignup:
+    query = select(CodesignSignup).where(CodesignSignup.permission_token_hash == _hash(token))
+    if lock:
+        query = query.with_for_update()
+    signup = (await db.execute(query)).scalar_one_or_none()
     if signup is None:
         raise HTTPException(status_code=404, detail="This link isn't valid.")
     return signup
@@ -210,47 +216,161 @@ async def _dates(db: AsyncSession, signup: CodesignSignup) -> list[str]:
 
 @router.get("/codesign/permission/{token}")
 async def read_permission(token: str, db: AsyncSession = Depends(get_db)):
-    """What the parent sees: the teen's first name and the two dates. Nothing else about them."""
+    """What the parent sees: the form, the teen's first name and the two dates. Nothing else about
+    the teen or the parent, so the link alone gives away no surname, email or age."""
     signup = await _by_token(db, token)
+    dates = await _dates(db, signup)
     return {
         "teen_first_name": signup.teen_first_name,
-        "dates": await _dates(db, signup),
-        "permission_given": signup.permission_given_at is not None,
+        "dates": dates,
+        "answered": _answered(signup),
+        "confirmed": signup.permission_given_at is not None,
+        "form": codesign_form.form_for(dates),
     }
 
 
+def _answered(signup: CodesignSignup) -> bool:
+    # permission_given_at alone covers sign-ups confirmed before the form existed.
+    return signup.form_submitted_at is not None or signup.permission_given_at is not None
+
+
+Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+Phone = Annotated[str, StringConstraints(strip_whitespace=True, min_length=7, max_length=40)]
+
+
 class PermissionIn(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
-    agree: bool
+    """Every answer on the form, all required. StrictBool, so a missing answer, or "no" sent as
+    text, is refused rather than read as a yes or a no."""
+    parent_consents: StrictBool
+    parent_allows_recording: StrictBool
+    parent_allows_quotes: StrictBool
+    parent_confirms_guardian: StrictBool
+    parent_name: Name
+    parent_relationship: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    parent_phone: Phone
+    # Blank on the page means the address the link was sent to, which the page cannot show.
+    parent_email: EmailStr | None = None
+    parent_session_phone: Phone
+    teen_consents: StrictBool
+    teen_allows_recording: StrictBool
+    teen_name: Name
+    completed_by: Literal["teen_with_parent", "parent_for_teen"]
+    form_version: str = Field(max_length=100)
+
+
+def _yes(b: bool | None) -> str:
+    return "Yes" if b else "No"
+
+
+def _stamp(at: datetime) -> str:
+    """"October 21, 2026 at 6:36pm Eastern"."""
+    local = at.astimezone(EASTERN)
+    return (f"{local.strftime('%B')} {local.day}, {local.year} at "
+            f"{local.strftime('%I').lstrip('0')}{local.strftime(':%M%p').lower()} Eastern")
+
+
+def _copy_paragraphs(signup: CodesignSignup, dates: list[str], confirmed: bool) -> list[str]:
+    """The parent's copy of the form ("We will give you a copy of this form to keep"): the text they
+    were shown, every answer, theirs and the teen's, and when it was sent."""
+    f = codesign_form
+    teen = signup.teen_first_name
+    when = _stamp(signup.form_submitted_at)
+    outcome = (f"{teen} is confirmed for both sessions. Sally will send the video invites before the "
+               "first session." if confirmed else
+               f"The form says no to taking part, so {teen} will not take part and their places have "
+               "been released.")
+    return [
+        f"This is your copy of the form, sent on {when}. {outcome}",
+        *f.as_paragraphs(dates),
+        f.PARENT_HEADING,
+        f"Child's name: {signup.teen_first_name} {signup.teen_last_name}. Child's age: {signup.teen_age}.",
+        *(f"{q} {_yes(getattr(signup, key))}" for key, q in f.PARENT_QUESTIONS.items()),
+        f"{f.PARENT_CONFIRM} {_yes(signup.parent_confirms_guardian)}",
+        f"Parent or guardian name: {signup.parent_signed_name}",
+        f"Signature: {signup.parent_signed_name} (typed). Date: {when}",
+        f"Relationship to child: {signup.parent_relationship}",
+        f"Phone and email: {signup.parent_phone}, {signup.parent_contact_email}",
+        f"Best number to reach you during the session: {signup.parent_session_phone}",
+        f.TEEN_HEADING,
+        *f.teen_paragraphs(),
+        *(f"{q} {_yes(getattr(signup, key))}" for key, q in f.TEEN_QUESTIONS.items()),
+        f"Your name: {signup.teen_signed_name}",
+        f"Signature: {signup.teen_signed_name} (typed). Date: {when}",
+        f"Completed by: {f.COMPLETED_BY[signup.teen_completed_by]}",
+        f"Form version: {signup.form_version}",
+        "If you have questions, or want to change an answer, contact Sally McCarthy at "
+        "sally@floatcbt.com.",
+    ]
 
 
 @router.post("/codesign/permission/{token}")
-async def give_permission(token: str, data: PermissionIn, db: AsyncSession = Depends(get_db)):
-    signup = await _by_token(db, token)
-    name = data.name.strip()
-    if not data.agree or not name:
-        raise HTTPException(status_code=422, detail="Type your name and tick the box to give permission.")
-    if signup.permission_given_at is not None:
-        return {"success": True}  # given already; the first one stands
-
-    signup.permission_given_at = _now()
-    signup.permission_given_by = name
+async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession = Depends(get_db)):
+    # Locked, so two sends at the same moment cannot both pass the check below.
+    signup = await _by_token(db, token, lock=True)
+    if _answered(signup):
+        # Sent already; the first answer stands. To change it, the parent emails Sally.
+        return {"success": True, "confirmed": signup.permission_given_at is not None, "already": True}
+    if data.form_version != codesign_form.FORM_VERSION:
+        # Only the wording the parent read may be recorded as the wording agreed to.
+        raise HTTPException(status_code=409, detail="This form has changed since the page was opened. "
+                                                    "Please reload the page.")
+    if not data.parent_confirms_guardian:
+        raise HTTPException(status_code=422, detail="Please tick the box to confirm you are the "
+                                                    "child's parent or legal guardian.")
+    now = _now()
+    confirmed = data.parent_consents and data.teen_consents
+    signup.form_submitted_at = now
+    signup.form_version = codesign_form.FORM_VERSION
+    signup.parent_consents = data.parent_consents
+    signup.parent_allows_recording = data.parent_allows_recording
+    signup.parent_allows_quotes = data.parent_allows_quotes
+    signup.parent_confirms_guardian = data.parent_confirms_guardian
+    signup.parent_signed_name = data.parent_name
+    signup.parent_relationship = data.parent_relationship
+    signup.parent_phone = data.parent_phone
+    signup.parent_contact_email = (data.parent_email or signup.parent_email).lower().strip()
+    signup.parent_session_phone = data.parent_session_phone
+    signup.teen_consents = data.teen_consents
+    signup.teen_allows_recording = data.teen_allows_recording
+    signup.teen_signed_name = data.teen_name
+    signup.teen_completed_by = data.completed_by
+    if confirmed:
+        signup.permission_given_at = now
+        signup.permission_given_by = data.parent_name
     await db.commit()
 
     dates = await _dates(db, signup)
-    for to_email, greeting in ((signup.parent_email, f"Thank you, {name}."),
-                               (signup.teen_email, f"You're all set, {signup.teen_first_name}.")):
+    teen = signup.teen_first_name
+    # The copy goes to the address the link was sent to, not one typed on the page: it holds the
+    # teen's full name and age, and a typo must not send those to a stranger.
+    await email_service.send_codesign_email(
+        to_email=signup.parent_email,
+        subject=f"Your copy: Float co-design permission form for {teen}",
+        heading=codesign_form.TITLE,
+        paragraphs=_copy_paragraphs(signup, dates, confirmed),
+    )
+    if confirmed:
         await email_service.send_codesign_email(
-            to_email=to_email,
+            to_email=signup.teen_email,
             subject="Permission received: Float teen design sessions",
-            heading=greeting,
+            heading=f"You're all set, {teen}.",
             paragraphs=[
-                f"Permission is recorded for {signup.teen_first_name} to join on {dates[0]}, "
-                f"and {dates[1]}.",
+                f"Permission is recorded for you to join on {dates[0]}, and {dates[1]}.",
                 "Sally will send the video invites before the first session.",
             ],
         )
-    return {"success": True}
+    else:
+        await email_service.send_codesign_email(
+            to_email=signup.teen_email,
+            subject="Float teen design sessions: you won't be taking part",
+            heading=f"Thanks for letting us know, {teen}.",
+            paragraphs=[
+                "The permission form says no to taking part, so you won't be joining the sessions, "
+                "and your places have been released.",
+                "If this is a mistake, email Sally at sally@floatcbt.com.",
+            ],
+        )
+    return {"success": True, "confirmed": confirmed, "already": False}
 
 
 # ── Who signed up: Float admins, and the named viewers ───────────────────────
@@ -269,7 +389,9 @@ async def _signups_by_session(db: AsyncSession) -> dict:
 
     def status(s: CodesignSignup) -> str:
         if s.permission_given_at is not None:
-            return "given"
+            return "confirmed"
+        if _answered(s):
+            return "declined"
         return "waiting" if s.created_at > now - HOLD else "released"
 
     def out(s: CodesignSignup) -> dict:
@@ -284,6 +406,15 @@ async def _signups_by_session(db: AsyncSession) -> dict:
             "permission": status(s),
             "permission_given_at": s.permission_given_at.isoformat() if s.permission_given_at else None,
             "permission_given_by": s.permission_given_by,
+            "form_submitted_at": s.form_submitted_at.isoformat() if s.form_submitted_at else None,
+            # Recording needs a yes from both the parent and the teen; quotes are the parent's call.
+            "recording_allowed": bool(s.parent_allows_recording and s.teen_allows_recording),
+            "quotes_allowed": bool(s.parent_allows_quotes),
+            "completed_by": codesign_form.COMPLETED_BY.get(s.teen_completed_by or ""),
+            "parent_relationship": s.parent_relationship,
+            "parent_session_phone": s.parent_session_phone,
+            "parent_phone": s.parent_phone,
+            "parent_contact_email": s.parent_contact_email,
             "hold_ends_at": (s.created_at + HOLD).isoformat(),
             "created_at": s.created_at.isoformat(),
         }
