@@ -440,6 +440,7 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
 
     phase = phase_of(
         is_closed=patient.closed_at is not None,
+        in_maintenance=patient.maintenance_at is not None,
         plan_status=plan_status,
         monitoring_entries_count=monitoring_entries_count,
         has_any_session_note=has_any_session_note,
@@ -540,6 +541,7 @@ async def _patient_response(
         primary_practitioner_id=patient.primary_practitioner_id,
         created_at=patient.created_at,
         closed_at=patient.closed_at,
+        maintenance_at=patient.maintenance_at,
     )
 
 
@@ -2254,6 +2256,45 @@ async def reopen_patient(
         await db.commit()
         await db.refresh(patient)
     return _closed_state(patient)
+
+
+class MaintenanceState(BaseModel):
+    id: uuid.UUID
+    maintenance_at: datetime | None
+
+
+@router.post("/{patient_id}/maintenance", response_model=MaintenanceState)
+async def start_maintenance(
+    patient: PatientProfile = Depends(get_permitted_patient),
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The clinician moves the patient into maintenance, by hand.
+
+    Only the phase changes. What else is different for a patient in maintenance is still to be
+    decided (Peter, 2026-10-21, issue #53), so nothing else reads this yet.
+    """
+    _, practitioner = context
+    if patient.maintenance_at is None:
+        patient.maintenance_at = datetime.now(timezone.utc)
+        patient.maintenance_by_practitioner_id = practitioner.id
+        await db.commit()
+        await db.refresh(patient)
+    return MaintenanceState(id=patient.id, maintenance_at=patient.maintenance_at)
+
+
+@router.post("/{patient_id}/end-maintenance", response_model=MaintenanceState)
+async def end_maintenance(
+    patient: PatientProfile = Depends(get_permitted_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    """Back to treatment. The phase goes back to whatever the plan and monitoring say."""
+    if patient.maintenance_at is not None:
+        patient.maintenance_at = None
+        patient.maintenance_by_practitioner_id = None
+        await db.commit()
+        await db.refresh(patient)
+    return MaintenanceState(id=patient.id, maintenance_at=patient.maintenance_at)
 
 
 class ColleagueResponse(BaseModel):

@@ -270,6 +270,20 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 - **How to tell it worked:** screenshot of the tab showing "100%".
 - **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
 
+## The patient page label does not match the phase on the patient list `S`
+- **Today:** the label next to the patient's name on the clinician's patient page is worked out in
+  the browser (`activitySummary` in `apps/web/src/pages/practitioner/PatientPage.tsx`). It says
+  things like "Monitoring in progress", "Setup · 3 situations" or "Active treatment". The patient
+  list shows the phase from the server (`backend/app/services/patient_phase.py`): New, Monitoring,
+  In treatment, Maintenance, Closed. So one patient can read "Setup · 3 situations" on their page
+  and "Monitoring" on the list. A closed patient's page label does not say Closed. Noticed
+  2026-10-21 while fixing issue #53, which only made the page label say "Maintenance".
+- **What changes:** show the server's phase on the patient page too, for example by adding `phase`
+  and `phase_label` to the patient response. Peter may want to keep the extra detail
+  ("3 situations"), so ask.
+- **How to tell it worked:** a test that the page label and the list say the same phase.
+- **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
+
 ## Case Summary says "New observations since the last analysis" when there are none `S`
 - **Today:** on the clinician's Case Summary tab, the hint reads "New observations since the last
   analysis" for a patient with no monitoring entries and no analysis ever run. Seen 2026-10-21 on the

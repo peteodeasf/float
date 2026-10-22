@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { filterByPhase, needsAttentionReasons, phaseLabel, relativeActivityLabel } from './DashboardPage'
-import type { Patient } from '../../api/patients'
+import { PHASES, type Patient } from '../../api/patients'
 
 /** A patient with nothing done. Each test turns on only what it is about. */
 function patient(over: Partial<Patient> = {}): Patient {
@@ -68,6 +68,12 @@ describe('the phase column', () => {
 })
 
 describe('the phase filter', () => {
+  // Issue #53: Peter said Assessment and Planning were the wrong phases. This pins his list, in
+  // order, so the dropdown cannot drift from the server's labels again.
+  it('offers Peter\'s phases in order', () => {
+    expect(PHASES.map(p => p.label)).toEqual(['New', 'Monitoring', 'In treatment', 'Maintenance', 'Closed'])
+  })
+
   const people = [
     patient({ id: 'a', phase: 'monitoring' }),
     patient({ id: 'b', phase: 'in_treatment' }),
@@ -87,7 +93,7 @@ describe('the phase filter', () => {
   })
 
   it('returns nothing rather than everything when a phase is empty', () => {
-    expect(filterByPhase(people, 'planning')).toEqual([])
+    expect(filterByPhase(people, 'maintenance')).toEqual([])
   })
 })
 

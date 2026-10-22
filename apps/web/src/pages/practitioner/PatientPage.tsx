@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { closePatient, reopenPatient, getPatient, getMessages, markMessageRead, sendMessage, getOneParentsMessages, listParents, sendParentMessage, updatePatient } from '../../api/patients'
+import { closePatient, reopenPatient, startMaintenance, endMaintenance, getPatient, getMessages, markMessageRead, sendMessage, getOneParentsMessages, listParents, sendParentMessage, updatePatient } from '../../api/patients'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanNickname, updateTrigger, deleteTrigger,
@@ -614,6 +614,17 @@ export default function PatientPage() {
   }
 
   const handleReopen = () => closing.mutate(true)
+
+  // Maintenance is the clinician's call, made by hand (Peter, issue #53). It changes nothing for the
+  // family yet, so unlike closing it does not ask first.
+  const maintenance = useMutation({
+    mutationFn: (end: boolean) =>
+      end ? endMaintenance(patientId!) : startMaintenance(patientId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['patients'] })
+    },
+  })
   const { data: plan } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId!), enabled: !!patientId })
   const { data: rawTriggers } = useQuery({ queryKey: ['triggers', plan?.id], queryFn: () => getTriggers(plan!.id), enabled: !!plan?.id })
   // Placeholder situations (e.g. the parent-DA anchor) are filtered out of every situation list/count
@@ -673,6 +684,7 @@ export default function PatientPage() {
   const selectedTrigger = triggers?.find(t => t.id === selectedTriggerId)
 
   const activitySummary = (() => {
+    if (patient?.maintenance_at) return 'Maintenance'
     if (monitoringForm?.status === 'in_progress') return `Monitoring in progress`
     if (monitoringForm?.status === 'submitted') return `Monitoring submitted`
     if (plan?.status === 'active') return 'Active treatment'
@@ -1828,6 +1840,12 @@ export default function PatientPage() {
                 {moreMenuOpen && (
                   <div style={menuPanel} role="menu">
                     <button role="menuitem" style={menuItem()} onClick={() => { setMoreMenuOpen(false); openProfileEdit() }}>Edit profile</button>
+                    {!patient.closed_at && (
+                      <button role="menuitem" style={menuItem()} disabled={maintenance.isPending}
+                        onClick={() => { setMoreMenuOpen(false); maintenance.mutate(!!patient.maintenance_at) }}>
+                        {patient.maintenance_at ? 'Back to treatment' : 'Move to maintenance'}
+                      </button>
+                    )}
                     {patient.closed_at ? (
                       <button role="menuitem" style={menuItem()} disabled={closing.isPending} onClick={() => { setMoreMenuOpen(false); handleReopen() }}>
                         {closing.isPending ? 'Reopening…' : 'Reopen treatment'}

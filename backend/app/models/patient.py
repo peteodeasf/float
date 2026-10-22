@@ -69,6 +69,13 @@ class PatientProfile(Base):
     closed_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("practitioner_profiles.id"), nullable=True
     )
+    # Treatment is in maintenance. Set and cleared by a clinician by hand, like closing — nothing in
+    # the app works it out. For now it only changes the patient's phase; what else a patient in
+    # maintenance does differently is still to be decided (Peter, 2026-10-21, issue #53).
+    maintenance_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    maintenance_by_practitioner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("practitioner_profiles.id"), nullable=True
+    )
     # The clinician's switch for the parent app showing the child's ladder, what's planned and
     # what's done — set once the child has agreed. Null is off, and off is where every child starts.
     # docs/plans/parent-sees-child-progress.md

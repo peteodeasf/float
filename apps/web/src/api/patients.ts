@@ -1,14 +1,13 @@
 import { apiClient } from './client'
 
-export type Phase = 'new' | 'monitoring' | 'assessment' | 'planning' | 'in_treatment' | 'closed'
+export type Phase = 'new' | 'monitoring' | 'in_treatment' | 'maintenance' | 'closed'
 
 /** In the order treatment happens. Used for the filter. */
 export const PHASES: { value: Phase; label: string }[] = [
   { value: 'new', label: 'New' },
   { value: 'monitoring', label: 'Monitoring' },
-  { value: 'assessment', label: 'Assessment' },
-  { value: 'planning', label: 'Planning' },
   { value: 'in_treatment', label: 'In treatment' },
+  { value: 'maintenance', label: 'Maintenance' },
   { value: 'closed', label: 'Closed' },
 ]
 
@@ -99,6 +98,8 @@ export interface PatientDetail {
   primary_practitioner_id: string
   created_at: string
   closed_at?: string | null
+  /** Set by the clinician by hand. For now it only changes the phase (issue #53). */
+  maintenance_at?: string | null
 }
 
 export interface InviteTeenResponse {
@@ -337,5 +338,17 @@ export const closePatient = async (patientId: string) => {
 /** Treatment starting again. Gives the family their apps back. */
 export const reopenPatient = async (patientId: string) => {
   const response = await apiClient.post(`/patients/${patientId}/reopen`)
+  return response.data
+}
+
+/** The clinician moves the patient into maintenance. Only the phase changes, for now. */
+export const startMaintenance = async (patientId: string) => {
+  const response = await apiClient.post(`/patients/${patientId}/maintenance`)
+  return response.data
+}
+
+/** Back to treatment. The phase goes back to what the plan and monitoring say. */
+export const endMaintenance = async (patientId: string) => {
+  const response = await apiClient.post(`/patients/${patientId}/end-maintenance`)
   return response.data
 }
