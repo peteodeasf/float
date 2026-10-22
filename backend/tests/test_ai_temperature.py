@@ -61,3 +61,13 @@ def test_preliminary_report_sends_no_temperature():
     client = FakeClient("report")
     insight_service.request_report(client, "system", [], "entries")
     assert "temperature" not in client.calls[0]
+
+
+def test_session_summary_sends_no_temperature():
+    # Analyze session with AI's case summary call is new and has no test cases yet (no made-up
+    # sessions until Peter has learned the session approach with Dr. Walker), so it keeps the
+    # default until it can be measured.
+    from app.services import session_analysis_service
+    client = FakeClient("{}")
+    session_analysis_service.request_session_summary(client, None, "note")
+    assert "temperature" not in client.calls[0]

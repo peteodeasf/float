@@ -75,46 +75,7 @@ The teen data testing page was built 2026-10-21.
 
 ### Session analysis — moved here by Peter, 2026-10-21
 
-#### Analyze session with AI: add a session to the case summary `M`
-- **Today:**
-  - On the Sessions tab, "Analyze session with AI" is a disabled placeholder that says "Coming
-    soon" (`sessionAnalysisPlaceholder` in `apps/web/src/pages/practitioner/PatientPage.tsx`).
-  - Separately, approving a session note quietly runs `suggest_from_session_note`
-    (`backend/app/services/insight_service.py`, started from `backend/app/api/routers/session_notes.py`
-    on approval). It adds the note's situations and behaviors to the ladder editor's suggestion list,
-    but never touches the case summary. `docs/plans/session-suggestions.md`.
-  - The case summary (`formulation.preliminary_report`, built by
-    `POST /{patient_id}/monitoring/preliminary-report` in `backend/app/api/routers/patients.py` from
-    the patient's insights and monitoring entries) comes from monitoring only.
-- **What changes** (Peter, 2026-10-21):
-  1. **One clinician-started action, no automatic step.** Remove the run on approval. "We shouldn't
-     have both." Update `docs/plans/session-suggestions.md` to say so.
-  2. **The button works on an approved session note**, never a draft or the raw transcript. Put it
-     where the clinician can see which note it applies to (for example on each approved note), keeping
-     the name "Analyze session with AI". Show "Analyzing…" while it runs, and a plain error if it fails.
-  3. **One press does both things monitoring analysis does:** adds the session's situations, safety
-     and avoidance behaviors and accommodations to the suggestion list, marked as from that session
-     (reuse `suggest_from_session_note`'s extraction), then **updates the same case summary**
-     monitoring builds.
-  4. **Update, never overwrite.** Everything already in the case summary stays. New items from the
-     session are added and marked with where they came from, e.g. "from session, Oct 21". If the
-     session suggests something already there is wrong, add a note against it; never remove it. Any
-     other relevant points from the session go in as notes.
-  5. **Re-analyzing monitoring later must keep the session additions.** Build the summary so a later
-     "Re-analyze with AI" on the Monitoring side cannot drop them (e.g. feed the analyzed session
-     notes into every rebuild, or keep session items separately and merge).
-  6. Analyzing the same note twice must not add everything twice.
-- **How to tell it worked:** backend tests, each with a comment saying why: a draft note is refused;
-  nothing runs on approval any more; existing summary items survive a session analysis; session items
-  are marked with their session; a later monitoring re-analysis keeps them; analyzing the same note
-  twice adds nothing new. Use a fake AI client in tests. Screenshots of the Sessions tab and the Case
-  Summary tab after an analysis, with demo data. **No made-up session transcripts or AI test cases**
-  (Peter, 2026-10-19: wait until the session approach is learned from Dr. Walker), so say plainly in
-  the PR that the AI's output is not covered by the nightly tests.
-- **Gate:** it changes what the AI adds to a clinical summary and touches a prompt: request Peter's
-  review and do not merge. Add "session analysis output" to Dr. Walker's list in
-  `docs/plans/ai-quality-testing.md` (item 13). Screens: Peter approves (CODEOWNERS).
-  **Depends on:** nothing.
+Analyze session with AI was built 2026-10-21.
 
 ---
 
@@ -727,7 +688,9 @@ moving DMARC past `p=none`.
   request, so the order there is right.
   Also seen locally on 2026-10-21 (issue #57 work, no backend change): a second test in the same
   file, `test_each_parent_has_their_own_thread_with_the_clinician`, failed once in a full run and
-  passed 3 of 3 runs on its own. Check whether it depends on the same order.
+  passed 3 of 3 runs on its own. Check whether it depends on the same order. Seen again
+  2026-10-21 (Analyze session with AI work): that same test failed once in a full run, then passed
+  4 runs in a row.
 - **What changes.** Give the list a second sort key that cannot tie, or have the test not depend on
   the order.
 - **How to tell it worked.** The test passes every time, for example 50 runs in a row.
@@ -1038,8 +1001,9 @@ Found while checking, before building:
 **Raised 2026-09-17.** `M` (plan first if it grows past a summary).
 
 **Today:** the app can write a draft session note from a recording (the Claude write-up), and it
-analyses the parent *monitoring* log ("Analyze with AI"). Nothing reads the *content* of the written
-session notes. A clinician with several sessions on a patient re-reads them by hand.
+analyses the parent *monitoring* log ("Analyze with AI"). Since 2026-10-21, "Analyze session with
+AI" reads one approved note at a time and adds it to the case summary
+(`docs/plans/session-suggestions.md`). Nothing yet reads across all of a patient's session notes. A clinician with several sessions on a patient re-reads them by hand.
 
 **What it could do:** read a patient's session notes and surface what's useful across them — recurring
 themes, what changed since the last session, open threads to follow up, a pre-session summary. Which

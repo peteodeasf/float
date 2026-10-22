@@ -142,13 +142,30 @@ export interface ReportSituation {
   fear_thermometer: number
 }
 
+/** What Analyze session with AI added from one approved session note. Kept apart from the
+ *  monitoring sections so re-analyzing monitoring cannot drop it. */
+export interface SessionAddition {
+  session_note_id: string
+  session_date: string
+  analyzed_at: string
+  /** A Fear Level only when the note stated one. */
+  situations: { name: string; fear_thermometer: number | null }[]
+  parental_responses: string[]
+  safety_behaviors: string[]
+  /** The session suggests an item already in the summary is wrong. `about` is that item's text. */
+  comments: { about: string; note: string }[]
+  notes: string[]
+}
+
 export interface PreliminaryReport {
   situations: ReportSituation[]
   parental_responses: string[]
   safety_behaviors: string[]
   safety_section_label: string
   treatment_targets: string[]
+  /** Set by monitoring analysis only. Missing when only sessions have been analyzed. */
   generated_at?: string
+  session_additions?: SessionAddition[]
 }
 
 export const generatePreliminaryReport = async (patientId: string): Promise<PreliminaryReport> => {

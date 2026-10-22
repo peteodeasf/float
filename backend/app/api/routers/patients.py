@@ -1321,9 +1321,9 @@ async def generate_preliminary_report(
         extraction=extraction,
         entry_ids_by_situation=insight_service.entry_ids_by_situation(extraction, by_number),
     )
-    insights = await insight_service.get_insights(
+    insights = insight_service.from_monitoring(await insight_service.get_insights(
         db, patient_id=patient_id, organization_id=practitioner.organization_id
-    )
+    ))
 
     # ── 2. The report, written from the list ──────────────────────────────────
     try:
@@ -1348,6 +1348,8 @@ async def generate_preliminary_report(
             ClinicalFormulation.patient_id == patient_id,
             ClinicalFormulation.organization_id == practitioner.organization_id,
         ).order_by(ClinicalFormulation.created_at.desc())
+        # Locked, so a session analysis saved at the same moment is not lost from session_additions.
+        .with_for_update()
     )
     formulation = formulation_result.scalars().first()
     if formulation is None:
@@ -1359,6 +1361,11 @@ async def generate_preliminary_report(
         )
         db.add(formulation)
     else:
+        # What Analyze session with AI added is kept apart and carried across, so re-analyzing the
+        # log cannot drop it. app/services/session_analysis_service.py
+        kept = (formulation.preliminary_report or {}).get("session_additions")
+        if kept:
+            report["session_additions"] = kept
         formulation.preliminary_report = report
 
     # This run IS the analysis now, so it is what "Last analyzed" means. Without this the page
