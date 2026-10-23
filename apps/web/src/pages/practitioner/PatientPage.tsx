@@ -1636,7 +1636,8 @@ export default function PatientPage() {
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderBottom: '1px solid var(--float-border)', flexShrink: 0 }}>
           <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--float-text)' }}>{chatRecipientName}</span>
-          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--float-primary)', background: 'var(--float-primary-light)', border: '1px solid var(--float-primary-mid)', borderRadius: 'var(--float-radius-pill)', padding: '2px 8px' }}>{parentThreadId ? 'THIS PARENT ONLY' : 'TEEN ONLY'}</span>
+          {/* No label on the teen's thread: only the teen is in it (Peter, issue #79). */}
+          {parentThreadId && <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--float-primary)', background: 'var(--float-primary-light)', border: '1px solid var(--float-primary-mid)', borderRadius: 'var(--float-radius-pill)', padding: '2px 8px' }}>THIS PARENT ONLY</span>}
         </div>
 
         <div ref={messagesScrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
