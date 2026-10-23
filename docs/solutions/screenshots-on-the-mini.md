@@ -99,3 +99,12 @@ dropdown.
 Running /verify's steps as parallel tool calls, each starting `cd backend && …` or
 `cd apps/web && …`, left `npx tsc -b` running in `backend/`. It failed with "Cannot read file
 backend/tsconfig.json", which looks like a broken build but is not. Run the steps one at a time.
+
+## Reaching the hints inside a situation on the ladder editor
+
+**2026-10-22**, issue #77. Every demo situation is about school, so a hint that only fits school
+looks fine on all of them. To show a mismatch, add a non-school situation in `float_dev` (Plan tab,
+Edit ladder, Add situation). The behavior box shows as soon as the situation is open. The rung box
+only shows after Done, then Add rung. There are two buttons called that — "Add rung" in the
+situation and "+ Add rung" elsewhere — so click it by its exact name
+(`getByRole('button', { name: 'Add rung', exact: true })`).

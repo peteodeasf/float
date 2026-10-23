@@ -63,7 +63,7 @@ import {
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, avoidsTheSituation,
+  arrowDoneOn, avoidsTheSituation, behaviorHint, rungHint,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -785,7 +785,7 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
           <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
             <input value={draft} onChange={e => setDraft(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate({ name: draft.trim(), type: 'safety' }) }}
-              placeholder="e.g. sits at the back so the teacher does not call on them"
+              placeholder={behaviorHint(trigger.name)}
               aria-label="A safety behavior"
               style={textBox} />
             <Button kind="secondary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type: 'safety' })}
@@ -882,7 +882,7 @@ function AddRung({ planId, trigger, behaviors, onAdded, onClose }: {
       <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
         <input value={draft} onChange={e => setDraft(e.target.value)} autoFocus
           onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate(draft.trim()) }}
-          placeholder="e.g. walk to the classroom door with mom"
+          placeholder={rungHint(trigger.name)}
           aria-label="A rung"
           style={textBox} />
         <Button kind="secondary" size="sm" onClick={() => addMut.mutate(draft.trim())}

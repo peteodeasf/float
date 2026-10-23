@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { arrowDoneOn, avoidsTheSituation } from './ladderEditor'
+import { arrowDoneOn, avoidsTheSituation, behaviorHint, rungHint } from './ladderEditor'
 import type { DownwardArrow } from '../../api/treatment'
 
 function arrow(rungId: string, fear: string | null, by = 'practitioner'): DownwardArrow {
@@ -39,5 +39,18 @@ describe('whether a step shows ✓ DA', () => {
 
   it('does not count another step', () => {
     expect(arrowDoneOn('c1', [arrow('c2', 'They will laugh.')])).toBe(false)
+  })
+})
+
+describe('the hints inside a situation', () => {
+  // Issue #77: the fixed hints were about a classroom whatever the situation. They now name the
+  // situation, first, so a name of any shape still reads as a sentence.
+  it('names the situation in the behavior hint', () => {
+    expect(behaviorHint('Soccer practice after school '))
+      .toBe('Soccer practice after school: something they do to feel safer')
+  })
+
+  it('names the situation in the rung hint', () => {
+    expect(rungHint('Sleepover at a friend\'s house')).toBe('Sleepover at a friend\'s house, made a little easier')
   })
 })

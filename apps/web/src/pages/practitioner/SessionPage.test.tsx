@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 
 import { LadderEditor } from './SessionPage'
+import type { TriggerSituation } from '../../api/treatment'
 
 function openEditor() {
   const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
@@ -25,5 +26,33 @@ describe('adding a trigger situation', () => {
     openEditor()
     fireEvent.click(screen.getByRole('button', { name: 'Add situation' }))
     expect(screen.getByLabelText('A situation')).toHaveAttribute('placeholder', 'Add a trigger situation')
+  })
+})
+
+describe('the hint for adding a behavior', () => {
+  // Issue #77: the hint was always about sitting at the back of a classroom, even under "Soccer
+  // practice after school". Peter asked for it to fit the situation it sits under.
+  it('names the situation, not a classroom', () => {
+    const soccer: TriggerSituation = {
+      id: 't1', treatment_plan_id: 'plan1', name: 'Soccer practice after school', description: null,
+      distress_thermometer_rating: 5, distress_thermometer_max: 10, situation_library_id: null,
+      display_order: 0, is_active: true, created_at: '2026-10-22T00:00:00Z',
+    }
+    const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
+    qc.setQueryData(['insights', 'p1', 'situation'], [])
+    qc.setQueryData(['insights', 'p1', 'behavior'], [])
+    qc.setQueryData(['plan-rungs', 'plan1'], [])
+    qc.setQueryData(['behaviors', 't1'], [])
+    qc.setQueryData(['step-arrows', 't1'], [])
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <LadderEditor planId="plan1" patientId="p1" triggers={[soccer]} openSituationId="t1"
+            onDone={() => {}} onArrow={() => {}} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByLabelText('A safety behavior')).toHaveAttribute(
+      'placeholder', 'Soccer practice after school: something they do to feel safer')
   })
 })
