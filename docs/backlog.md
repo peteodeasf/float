@@ -719,7 +719,8 @@ moving DMARC past `p=none`.
   file, `test_each_parent_has_their_own_thread_with_the_clinician`, failed once in a full run and
   passed 3 of 3 runs on its own. Check whether it depends on the same order. Seen again
   2026-10-21 (Analyze session with AI work): that same test failed once in a full run, then passed
-  4 runs in a row.
+  4 runs in a row. Seen again 2026-10-22 (issue #79 work, no backend change): failed once in a
+  full run, then passed one full run and 5 runs of the file on its own.
 - **What changes.** Give the list a second sort key that cannot tie, or have the test not depend on
   the order.
 - **How to tell it worked.** The test passes every time, for example 50 runs in a row.
