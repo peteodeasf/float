@@ -7,7 +7,7 @@
  * these touch tokens; nothing touches raw hex, radii or font sizes.
  */
 import type { CSSProperties, ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, HTMLAttributes } from 'react'
-import { btn, field, tab, type ButtonKind, type ButtonSize } from './buttons'
+import { btn, field, tab, tabBar, type ButtonKind, type ButtonSize } from './buttons'
 
 // ── Button ────────────────────────────────────────────────────────────────────
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -133,9 +133,9 @@ export function Textarea({ block, style, ...rest }: TextareaHTMLAttributes<HTMLT
 export type TabItem = { id: string; label: string; count?: number }
 export function Tabs({ items, value, onChange }: { items: TabItem[]; value: string; onChange: (id: string) => void }) {
   return (
-    <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid var(--float-border)', overflowX: 'auto' }}>
+    <div style={{ ...tabBar, overflowX: 'auto' }}>
       {items.map(it => (
-        <button key={it.id} onClick={() => onChange(it.id)} style={tab(it.id === value)}>
+        <button key={it.id} className="float-tab" onClick={() => onChange(it.id)} aria-current={it.id === value ? 'page' : undefined} style={tab(it.id === value)}>
           {it.label}
           {it.count != null && it.count > 0 && (
             <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: 'var(--float-primary)', borderRadius: '999px', padding: '0 6px', lineHeight: '16px' }}>{it.count}</span>

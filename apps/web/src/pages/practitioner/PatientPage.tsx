@@ -30,7 +30,7 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
-import { btn, buttonRow, countPill, liveDot, chip, iconBtn, tab, tabCount, segGroup, segLabel, segItem, menuPanel, menuItem } from '../../components/ui/buttons'
+import { btn, buttonRow, countPill, liveDot, chip, iconBtn, tab, tabBar, tabCount, subTab, subTabBar, segGroup, segLabel, segItem, menuPanel, menuItem } from '../../components/ui/buttons'
 import { Button, CloseButton } from '../../components/ui/primitives'
 import { participantColors } from '../../components/ui/participantColors'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
@@ -1981,7 +1981,7 @@ export default function PatientPage() {
         )}
 
         {/* Flat tab bar (replaces the phase spine + rail) */}
-        <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid var(--float-border)', marginBottom: '20px' }}>
+        <div style={{ ...tabBar, marginBottom: '20px' }}>
           {([
             { id: 'monitoring', label: 'Monitoring' },
             { id: 'sessions', label: 'Sessions' },
@@ -1996,7 +1996,9 @@ export default function PatientPage() {
             return (
               <button
                 key={t.id}
+                className="float-tab"
                 onClick={() => setActiveTab(t.id)}
+                aria-current={cur ? 'page' : undefined}
                 style={tab(cur)}
               >
                 {t.label}
@@ -2024,12 +2026,12 @@ export default function PatientPage() {
 
             {activeTab === 'plan' && (
               <>
-                <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid var(--float-border)' }}>
+                <div style={subTabBar}>
                   {([
                     { id: 'ladder', label: 'Ladder' },
                     { id: 'accommodations', label: 'Accommodations' },
                   ] as const).map(t => (
-                    <button key={t.id} onClick={() => setPlanSubTab(t.id)} aria-pressed={planSubTab === t.id} style={tab(planSubTab === t.id)}>
+                    <button key={t.id} onClick={() => setPlanSubTab(t.id)} aria-pressed={planSubTab === t.id} style={subTab(planSubTab === t.id)}>
                       {t.label}
                     </button>
                   ))}
