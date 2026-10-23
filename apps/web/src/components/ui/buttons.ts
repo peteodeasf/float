@@ -168,9 +168,16 @@ export function iconBtn(size: ButtonSize = 'sm'): CSSProperties {
 
 
 /**
- * A tab along the top of a screen: Monitoring, Sessions, Plan, Experiments, Chat. The patient page
+ * A tab along the top of a screen: Monitoring, Sessions, Plan, Progress, Chat. The patient page
  * had two tab looks at once — these underlined ones, and small uppercase pills inside the process
- * panel. Sub-tabs are the chip above, so there is one tab and one chip rather than four of each.
+ * panel. A second row of tabs under one of these (Plan → Ladder / Accommodations) uses subTab
+ * below, so the two levels never look alike.
+ *
+ * Peter, issue #78: *"there's not enough distinction between the different tabs, and it just looks
+ * very monochrome … it's not obvious what to click on."* The selected tab was only bolder text and
+ * an underline. Now it sits on the bright mint brand color as well (the pale tint was too faint
+ * on the gray page), and the others get a hover tint (.float-tab in tokens.css) so they read as
+ * clickable.
  */
 export function tab(on: boolean): CSSProperties {
   return {
@@ -184,14 +191,34 @@ export function tab(on: boolean): CSSProperties {
     fontWeight: on ? 800 : 600,
     // Active tab carries the brand colour; inactive stays readable (text-secondary), not the
     // near-invisible text-hint, which the tokens file reserves for hints/placeholders.
-    color: on ? 'var(--float-primary)' : 'var(--float-text-secondary)',
-    background: 'transparent',
+    color: on ? 'var(--float-primary-dark)' : 'var(--float-text-secondary)',
+    // Only the selected tab sets a background here. An unselected one gets it from .float-tab in
+    // tokens.css, because an inline background would beat the hover rule there.
+    ...(on ? { background: 'var(--float-primary-mid)' } : {}),
     border: 'none',
+    borderRadius: 'var(--float-radius-control) var(--float-radius-control) 0 0',
     borderBottom: `3px solid ${on ? 'var(--float-primary)' : 'transparent'}`,
     marginBottom: '-1px',
     cursor: 'pointer',
   }
 }
+
+/** The row a set of top tabs sits on. Its line is the strong border so the tabs have a floor. */
+export const tabBar: CSSProperties = {
+  display: 'flex', gap: '4px', borderBottom: '1px solid var(--float-border-strong)',
+}
+
+/**
+ * A tab one level down, inside a top tab: Ladder / Accommodations under Plan. A chip, not an
+ * underline, so it is plain at a glance that it belongs to the tab above rather than beside it
+ * (issue #78). Medium size so it still reads as navigation, not a filter.
+ */
+export function subTab(on: boolean): CSSProperties {
+  return { ...chip(on, 'md'), fontWeight: on ? 700 : 600 }
+}
+
+/** The row sub-tabs sit in: no line under it, which is what sets it apart from a tab bar. */
+export const subTabBar: CSSProperties = { display: 'flex', gap: '8px' }
 
 /**
  * A joined group of small controls that read as one thing — the header Access control

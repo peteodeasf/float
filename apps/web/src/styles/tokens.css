@@ -139,6 +139,15 @@ button:disabled {
 .float-app button:not(:disabled):hover {
   filter: brightness(0.97);
 }
+/* A tab that is not selected lights up on hover, so it reads as something to click (issue #78).
+   White, because the page behind the tabs is gray. The selected tab sets its own background
+   inline, which wins over both rules. */
+.float-tab {
+  background: transparent;
+}
+.float-tab:hover {
+  background: #fff;
+}
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
