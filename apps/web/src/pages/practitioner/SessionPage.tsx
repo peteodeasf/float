@@ -28,7 +28,7 @@
  * starting the next. Batching all the naming then all the scoring reads as a form, not a
  * conversation, and was the thing that made the previous version feel like a wall.
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   BEHAVIOR_TYPE_AVOIDANCE, BEHAVIOR_TYPE_COMBINATION, BEHAVIOR_TYPE_SAFETY, BEHAVIOR_TYPE_SCENARIO, ScoreBox,
 } from './patient/shared'
@@ -63,7 +63,7 @@ import {
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, avoidsTheSituation, behaviorHint, rungHint,
+  arrowDoneOn, avoidsTheSituation, behaviorHint, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -128,7 +128,8 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
   })
 
   // Lowest thermometer score first. Unscored situations sit at the end rather than counting as a
-  // zero and jumping the queue.
+  // zero and jumping the queue. Sorted when the editor opens; after that a situation stays where it
+  // was shown and a new one goes at the end, until Save ladder (inShownOrder).
   const sortedTriggers = [...(triggers ?? [])]
     .filter(t => !t.is_placeholder)
     .sort((a, b) => {
@@ -173,7 +174,7 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
     <LadderEditor
       planId={plan.id}
       patientId={patientId!}
-      triggers={sortedTriggers}
+      triggers={inShownOrder(situationsList(plan.id), sortedTriggers, t => t.id)}
       openSituationId={openSituationId}
       onDone={onExit}
       onArrow={(situationId, rungId) => goToArrow(
@@ -224,6 +225,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   onArrow: (situationId: string, rungId?: string) => void
 }) {
   const qc = useQueryClient()
+  // Finished: the next time the editor opens, the situations are sorted again.
+  const finish = () => { sortNextTime(); onDone() }
   const [newName, setNewName] = useState('')
   const [open, setOpen] = useState<Set<string>>(() => new Set(openSituationId ? [openSituationId] : []))
   // Closing the editor puts these steps in front of a child, so it is the moment to look at the
@@ -267,7 +270,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   // findings, or for a check that could not run.
   const [checking, setChecking] = useState(false)
   const save = async () => {
-    if (!edited) return onDone()
+    if (!edited) return finish()
     setChecking(true)
     try {
       const result = await qc.fetchQuery({
@@ -276,7 +279,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
         staleTime: 0,
         retry: false,
       })
-      if (result.findings.length === 0) return onDone()
+      if (result.findings.length === 0) return finish()
     } catch {
       // Shown in the panel as "Could not check it just now", with Finish still offered.
     } finally {
@@ -311,6 +314,8 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   // Add situation panel; opening Add situation closes the situations.
   const toggle = (id: string) => {
     setAdding(false)
+    // Opening a situation shows its steps sorted.
+    if (!open.has(id)) sortNextTime(stepsList(id))
     setOpen(prev => (prev.has(id) ? new Set() : new Set([id])))
   }
 
@@ -435,7 +440,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
             <div style={{ ...panelFooter, marginTop: 14 }}>
               <button onClick={() => setReviewing(false)} style={quietLink}>Keep editing</button>
-              <Button kind="primary" onClick={onDone}>Save ladder</Button>
+              <Button kind="primary" onClick={finish}>Save ladder</Button>
             </div>
           </div>
         )}
@@ -600,8 +605,21 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
   const [mode, setMode] = useState<'edit' | 'saved' | null>(null)
   const [addingRung, setAddingRung] = useState(false)
 
+  // The steps are sorted when the situation is opened and on Done; in between a step stays put and
+  // a new one goes at the end (inShownOrder, below the rows). The counter only re-renders.
+  const [, setSortCount] = useState(0)
+  // What Done waits for, so it sorts by the saved scores: a Fear Level still being saved, then
+  // the behaviors being read back. Each replaces the last, so wait until it stops changing.
+  const settling = useRef<Promise<unknown>>(Promise.resolve())
+  const sortWhenSettled = async () => {
+    let p: Promise<unknown>
+    do { p = settling.current; await p.catch(() => {}) } while (p !== settling.current)
+    sortNextTime(stepsList(trigger.id))
+    setSortCount(n => n + 1)
+  }
+
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
+    settling.current = qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
     qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] })
     onEdited()
@@ -677,14 +695,17 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
       without_behavior_id: b.id,
       ...(pending[b.id]?.score != null ? { distress_thermometer_when_refraining: pending[b.id]!.score } : {}),
     }))),
-    onSuccess: () => { setPending({}); setMode('saved'); invalidate() },
+    onSuccess: () => { setPending({}); setMode('saved'); invalidate(); sortWhenSettled() },
     // A 409 means another tab already wrote that step. Re-reading shows it.
-    onError: invalidate,
+    onError: () => { invalidate(); sortWhenSettled() },
   })
 
   const saveMutRow = useMutation({
-    mutationFn: (v: { id: string; data: Parameters<typeof updateBehavior>[2] }) =>
-      updateBehavior(trigger.id, v.id, v.data),
+    mutationFn: (v: { id: string; data: Parameters<typeof updateBehavior>[2] }) => {
+      const saving = updateBehavior(trigger.id, v.id, v.data)
+      settling.current = saving
+      return saving
+    },
     onSuccess: invalidate,
   })
   const delMut = useMutation({
@@ -766,6 +787,9 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
   }))
   const rank = (r: Row) => (r.last ? 2e9 : r.score ?? 1e9)
   rows.sort((a, b) => rank(a) - rank(b))
+  // Avoidance stays last even when added mid-edit: it is not a rung.
+  const kept = inShownOrder(stepsList(trigger.id), rows, r => r.key)
+  const shownRows = [...kept.filter(r => !r.last), ...kept.filter(r => r.last)]
 
   const error = addMut.error ?? takeMut.error ?? saveMut.error ?? saveMutRow.error ?? delMut.error ?? dropMut.error
 
@@ -773,9 +797,9 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
     <div style={{ background: 'var(--float-surface)', padding: '16px 14px 16px 35px', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
         <div style={{ ...sectionLabel, marginBottom: 8 }}>What does the child do to avoid it or feel safer?</div>
-        {rows.length > 0 && (
+        {shownRows.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {rows.map(r => <div key={r.key}>{r.node}</div>)}
+            {shownRows.map(r => <div key={r.key}>{r.node}</div>)}
           </div>
         )}
       </div>
@@ -838,7 +862,7 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
 
       {saved && addingRung && (
         <AddRung planId={planId} trigger={trigger} behaviors={behaviors}
-          onAdded={invalidate} onClose={() => setAddingRung(false)} />
+          onAdded={invalidate} onClose={() => { setAddingRung(false); sortWhenSettled() }} />
       )}
 
       {error && (

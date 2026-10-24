@@ -36,6 +36,7 @@ import { participantColors } from '../../components/ui/participantColors'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
+import { sortNextTime } from './ladderEditor'
 import { LADDER_MAX_WIDTH, PROCESS_PANEL_WIDTH } from './patient/shared'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
@@ -1439,7 +1440,7 @@ export default function PatientPage() {
           triggers={triggers ?? []}
           ladderActive={!!plan.ladder_active}
           recommendedRungId={plan.recommended_rung_id ?? null}
-          onStartConversation={() => setPlanView('conversation')}
+          onStartConversation={() => { sortNextTime(); setPlanView('conversation') }}
         />
       )}
 
