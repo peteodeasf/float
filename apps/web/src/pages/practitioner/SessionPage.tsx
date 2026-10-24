@@ -49,7 +49,6 @@ import {
   getPatientInsights,
   addInsightToPlan,
   removeInsight,
-  getPlanRungs,
   draftCombination,
   getStepArrows,
   type DownwardArrow,
@@ -299,16 +298,6 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     },
   })
 
-  // Every rung on the plan, to see which situations have anything on the ladder yet.
-  const { data: rungs } = useQuery({
-    queryKey: ['plan-rungs', planId],
-    queryFn: () => getPlanRungs(planId),
-  })
-  // Step 2 of the interview: start with the situation with the lowest Fear Level. The list is
-  // already sorted that way, so it is the first one with nothing on the ladder. Advice, not a lock.
-  const startHereId = rungs
-    ? triggers.find(t => !rungs.some(r => r.trigger_situation_id === t.id))?.id ?? null
-    : null
 
   // One thing open at a time. Peter, 2026-10-16: opening a situation closes any other, and the
   // Add situation panel; opening Add situation closes the situations.
@@ -337,7 +326,6 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               planId={planId}
               patientId={patientId}
               trigger={t}
-              startHere={t.id === startHereId}
               expanded={open.has(t.id)}
               onToggle={() => toggle(t.id)}
               onArrow={rungId => onArrow(t.id, rungId)}
@@ -450,12 +438,11 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 }
 
 /** One situation: its name, its score, and — opened up — the steps underneath it. */
-function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggle, onArrow, onEdited }: {
+function SituationRow({ planId, patientId, trigger, expanded, onToggle, onArrow, onEdited }: {
   planId: string
   patientId: string
   trigger: TriggerSituation
   /** The suggested place to begin: lowest Fear Level with nothing on the ladder yet. */
-  startHere: boolean
   expanded: boolean
   onToggle: () => void
   onArrow: (rungId?: string) => void
@@ -532,12 +519,6 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
             style={{ flex: '0 1 auto', minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'text', fontSize: 14, fontWeight: 800, color: 'var(--float-primary-dark)' }}>
             {trigger.name}
           </button>
-        )}
-
-        {startHere && (
-          <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: '#fff', background: '#4d8478', borderRadius: 'var(--float-radius-pill)', padding: '2px 8px' }}>
-            Start here
-          </span>
         )}
 
         <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #a9cfc4' }} />
