@@ -49,7 +49,6 @@ import {
   getPatientInsights,
   addInsightToPlan,
   removeInsight,
-  getPlanRungs,
   draftCombination,
   getStepArrows,
   type DownwardArrow,
@@ -64,6 +63,7 @@ import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
   arrowDoneOn, avoidsTheSituation, behaviorHint, rungHint,
+  byFearLevel, inHeldOrder, heldOrders, SITUATIONS, stepsOf,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -127,18 +127,8 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
     enabled: !!planId,
   })
 
-  // Lowest thermometer score first. Unscored situations sit at the end rather than counting as a
-  // zero and jumping the queue.
-  const sortedTriggers = [...(triggers ?? [])]
-    .filter(t => !t.is_placeholder)
-    .sort((a, b) => {
-      const x = dtOf(a.distress_thermometer_rating)
-      const y = dtOf(b.distress_thermometer_rating)
-      if (x == null && y == null) return (a.display_order ?? 0) - (b.display_order ?? 0)
-      if (x == null) return 1
-      if (y == null) return -1
-      return x - y
-    })
+  // The editor puts them in order, and holds it while you edit.
+  const situations = (triggers ?? []).filter(t => !t.is_placeholder)
 
   // Full screen for when the child is looking; plain for the Plan tab, which brings its own
   // header and nav.
@@ -173,7 +163,7 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
     <LadderEditor
       planId={plan.id}
       patientId={patientId!}
-      triggers={sortedTriggers}
+      triggers={situations}
       openSituationId={openSituationId}
       onDone={onExit}
       onArrow={(situationId, rungId) => goToArrow(
@@ -183,6 +173,27 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
   )
 }
 
+
+/**
+ * Sorted once, then held: items keep their places while their scores change, new ones go at the
+ * end, removed ones drop out. `resort` sorts again from what is on screen now. The order is kept
+ * in `orders` under `name`, so the other screen (inline or full screen) picks it up. An empty list
+ * is not sorted, so a list still loading is sorted (or put back in its held order) when it arrives.
+ */
+function useHeldOrder<T>(items: T[], keyOf: (item: T) => string, compare: (a: T, b: T) => number,
+  orders: Map<string, string[]>, name: string) {
+  const [held, setHeld] = useState<string[] | null>(() => orders.get(name) ?? null)
+  const order = held ?? (items.length > 0 ? [...items].sort(compare).map(keyOf) : null)
+  // Set while rendering, so React draws once, in this order.
+  if (order && held == null) {
+    setHeld(order)
+    orders.set(name, order)
+  }
+  return {
+    ordered: order ? inHeldOrder(items, keyOf, order) : items,
+    resort: () => { orders.delete(name); setHeld(null) },
+  }
+}
 
 /** The heading over a group of situations you can tap to add. Both groups use it — the one from
  *  this child's monitoring log, and the common list — so they read as two of the same thing. */
@@ -238,6 +249,11 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
   const [adding, setAdding] = useState(false)
   const [showSuggestedSituations, setShowSuggestedSituations] = useState(true)
 
+  // Peter, 2026-10-24: "stop re-ordering with fear level immediately. It's confusing". Sorted when
+  // the editor opens and on Save ladder. Going to full screen and back carries the order over.
+  const orders = heldOrders(planId)
+  const { ordered: situations, resort } = useHeldOrder(triggers, t => t.id, byFearLevel, orders, SITUATIONS)
+
   // What the parent's monitoring log says this child finds hard — the only suggestions we show,
   // because they are about this child. A generic starter library was removed: too generic to help.
   const { data: fromMonitoring } = useQuery({
@@ -270,6 +286,10 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     if (!edited) return onDone()
     setChecking(true)
     try {
+      // Sorted from the scores as saved, including one changed just before Save ladder. Seen when
+      // the check below keeps the editor open.
+      await qc.refetchQueries({ queryKey: ['triggers', planId] })
+      resort()
       const result = await qc.fetchQuery({
         queryKey: ['ladder-review', planId],
         queryFn: () => getLadderReview(planId),
@@ -296,20 +316,11 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     },
   })
 
-  // Every rung on the plan, to see which situations have anything on the ladder yet.
-  const { data: rungs } = useQuery({
-    queryKey: ['plan-rungs', planId],
-    queryFn: () => getPlanRungs(planId),
-  })
-  // Step 2 of the interview: start with the situation with the lowest Fear Level. The list is
-  // already sorted that way, so it is the first one with nothing on the ladder. Advice, not a lock.
-  const startHereId = rungs
-    ? triggers.find(t => !rungs.some(r => r.trigger_situation_id === t.id))?.id ?? null
-    : null
-
   // One thing open at a time. Peter, 2026-10-16: opening a situation closes any other, and the
   // Add situation panel; opening Add situation closes the situations.
+  // Opening a situation sorts its steps afresh.
   const toggle = (id: string) => {
+    orders.delete(stepsOf(id))
     setAdding(false)
     setOpen(prev => (prev.has(id) ? new Set() : new Set([id])))
   }
@@ -318,7 +329,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     <div style={screenSurface}>
       <div style={bigQ}>What are your trigger situations?</div>
 
-      {triggers.length > 0 && (
+      {situations.length > 0 && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* Names the column. Every box ends 40px in from its card's edge. */}
           <div style={{ display: 'flex', marginBottom: -4 }}>
@@ -326,13 +337,12 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               <span style={{ width: 46, textAlign: 'center', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#4d8478', lineHeight: 1.15 }}>Fear Level</span>
             </div>
           </div>
-          {triggers.map(t => (
+          {situations.map(t => (
             <SituationRow
               key={t.id}
               planId={planId}
               patientId={patientId}
               trigger={t}
-              startHere={t.id === startHereId}
               expanded={open.has(t.id)}
               onToggle={() => toggle(t.id)}
               onArrow={rungId => onArrow(t.id, rungId)}
@@ -445,12 +455,10 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 }
 
 /** One situation: its name, its score, and — opened up — the steps underneath it. */
-function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggle, onArrow, onEdited }: {
+function SituationRow({ planId, patientId, trigger, expanded, onToggle, onArrow, onEdited }: {
   planId: string
   patientId: string
   trigger: TriggerSituation
-  /** The suggested place to begin: lowest Fear Level with nothing on the ladder yet. */
-  startHere: boolean
   expanded: boolean
   onToggle: () => void
   onArrow: (rungId?: string) => void
@@ -529,12 +537,6 @@ function SituationRow({ planId, patientId, trigger, startHere, expanded, onToggl
           </button>
         )}
 
-        {startHere && (
-          <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: '#fff', background: '#4d8478', borderRadius: 'var(--float-radius-pill)', padding: '2px 8px' }}>
-            Start here
-          </span>
-        )}
-
         <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 5, borderBottom: '1px dotted #a9cfc4' }} />
 
         <ScoreBox
@@ -600,11 +602,12 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
   const [mode, setMode] = useState<'edit' | 'saved' | null>(null)
   const [addingRung, setAddingRung] = useState(false)
 
+  // Resolves once the behaviors have been read again.
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
     qc.invalidateQueries({ queryKey: ['insights', patientId, 'behavior'] })
     onEdited()
+    return qc.invalidateQueries({ queryKey: ['behaviors', trigger.id] })
   }
 
   const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY)
@@ -677,24 +680,31 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
       without_behavior_id: b.id,
       ...(pending[b.id]?.score != null ? { distress_thermometer_when_refraining: pending[b.id]!.score } : {}),
     }))),
-    onSuccess: () => { setPending({}); setMode('saved'); invalidate() },
+    // Sorted once the new steps and their scores are back, so each lands by its own score.
+    onSuccess: async () => {
+      setPending({})
+      setMode('saved')
+      await invalidate()
+      resort()
+    },
     // A 409 means another tab already wrote that step. Re-reading shows it.
-    onError: invalidate,
+    onError: () => { invalidate() },
   })
 
   const saveMutRow = useMutation({
     mutationFn: (v: { id: string; data: Parameters<typeof updateBehavior>[2] }) =>
       updateBehavior(trigger.id, v.id, v.data),
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate() },
   })
   const delMut = useMutation({
     mutationFn: (id: string) => deleteBehavior(trigger.id, id),
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate() },
   })
 
   // One flat list. Peter, 2026-10-16: lowest Fear Level at the top; added rungs are rows in the
   // same list, not nested under a behaviour. Unscored rows come next, and avoidance last — it is
-  // not a rung.
+  // not a rung. Peter, 2026-10-24: sorted when the situation opens and on Done, not while you
+  // edit, so a row stays where it is when its score changes and a new one goes at the end.
   type Row = { key: string; score: number | null; last?: boolean; node: React.ReactNode }
   const rows: Row[] = []
   safety.forEach(b => {
@@ -765,7 +775,10 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
     ),
   }))
   const rank = (r: Row) => (r.last ? 2e9 : r.score ?? 1e9)
-  rows.sort((a, b) => rank(a) - rank(b))
+  const { ordered: held, resort } = useHeldOrder(rows, r => r.key, (a, b) => rank(a) - rank(b),
+    heldOrders(planId), stepsOf(trigger.id))
+  // Avoidance stays last even while the rest hold their places: one added after it goes above it.
+  const ordered = [...held.filter(r => !r.last), ...held.filter(r => r.last)]
 
   const error = addMut.error ?? takeMut.error ?? saveMut.error ?? saveMutRow.error ?? delMut.error ?? dropMut.error
 
@@ -773,9 +786,9 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
     <div style={{ background: 'var(--float-surface)', padding: '16px 14px 16px 35px', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
         <div style={{ ...sectionLabel, marginBottom: 8 }}>What does the child do to avoid it or feel safer?</div>
-        {rows.length > 0 && (
+        {ordered.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {rows.map(r => <div key={r.key}>{r.node}</div>)}
+            {ordered.map(r => <div key={r.key}>{r.node}</div>)}
           </div>
         )}
       </div>
@@ -838,7 +851,12 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
 
       {saved && addingRung && (
         <AddRung planId={planId} trigger={trigger} behaviors={behaviors}
-          onAdded={invalidate} onClose={() => setAddingRung(false)} />
+          onAdded={invalidate} onClose={async () => {
+            setAddingRung(false)
+            // Sorted once a rung or score saved just before Done is back.
+            await invalidate()
+            resort()
+          }} />
       )}
 
       {error && (

@@ -36,6 +36,7 @@ import { participantColors } from '../../components/ui/participantColors'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
+import { forgetHeldOrders } from './ladderEditor'
 import { LADDER_MAX_WIDTH, PROCESS_PANEL_WIDTH } from './patient/shared'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
@@ -626,6 +627,12 @@ export default function PatientPage() {
     },
   })
   const { data: plan } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId!), enabled: !!patientId })
+  // Whenever the ladder is showing, the ladder editor is closed, so it opens next time with its
+  // lists sorted. Coming back from full screen or a downward arrow (`?edit=1`) keeps the order.
+  const planId = plan?.id
+  useEffect(() => {
+    if (planId && planView === 'ladder') forgetHeldOrders(planId)
+  }, [planId, planView])
   const { data: rawTriggers } = useQuery({ queryKey: ['triggers', plan?.id], queryFn: () => getTriggers(plan!.id), enabled: !!plan?.id })
   // Placeholder situations (e.g. the parent-DA anchor) are filtered out of every situation list/count
   const triggers = useMemo(() => rawTriggers?.filter(t => !t.is_placeholder), [rawTriggers])
