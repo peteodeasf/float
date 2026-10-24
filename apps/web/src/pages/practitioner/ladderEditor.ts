@@ -29,6 +29,45 @@ export function rungHint(situation: string): string {
   return `${situation.trim()}, made a little easier`
 }
 
+// ── The order things are shown in while the editor is open ───────────────────
+// Peter, 2026-10-24: re-sorting by Fear Level the moment a score changes moves the thing you are
+// working on, and you lose it. So the lists are sorted when they open and when you finish (Save
+// ladder, Done), and in between they keep the order they were shown in.
+// docs/plans/ladder-editor-stable-order.md
+
+/** `now` (ids, already sorted) in the order already shown: the ones shown before keep their
+ *  place, ones that are gone drop out, and new ones go at the end. */
+export function keepOrder(shown: string[], now: string[]): string[] {
+  const live = new Set(now)
+  const kept = shown.filter(id => live.has(id))
+  const have = new Set(kept)
+  return [...kept, ...now.filter(id => !have.has(id))]
+}
+
+// One entry per list — a plan's situations, or one situation's steps — kept outside any component:
+// the inline editor, full screen and the downward arrow are different routes, and going between
+// them must not re-sort.
+const shown = new Map<string, string[]>()
+
+export const situationsList = (planId: string) => `situations:${planId}`
+export const stepsList = (situationId: string) => `steps:${situationId}`
+
+/** `sorted` in the order this list has been shown in so far (keepOrder). */
+export function inShownOrder<T>(list: string, sorted: T[], idOf: (t: T) => string): T[] {
+  const order = keepOrder(shown.get(list) ?? [], sorted.map(idOf))
+  shown.set(list, order)
+  const byId = new Map(sorted.map(t => [idOf(t), t]))
+  return order.map(id => byId.get(id)!)
+}
+
+/** Forget a list's shown order, so it is next shown sorted: a situation's steps when it is opened
+ *  and on Done. With no list, forget them all: on Save ladder, and when Edit ladder opens the
+ *  editor. */
+export function sortNextTime(list?: string): void {
+  if (list) shown.delete(list)
+  else shown.clear()
+}
+
 /** Lower-cases the first letter unless it starts an acronym or the word "I". */
 function midSentence(situation: string): string {
   const s = situation.trim()
