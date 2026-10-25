@@ -662,7 +662,8 @@ async def invite_teen(
     )
 
     # Hard gate: the teen can only be invited once parental consent to connect
-    # the child is on record (parent monitoring form or clinician override).
+    # the child is on record. A clinician records it (the parent monitoring form
+    # stopped asking for it on 2026-10-25, issue #86).
     if patient.child_connect_consent_at is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -758,8 +759,8 @@ async def set_child_connect_consent(
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
-    """Clinician-recorded parental consent to connect the child (offline override).
-    Consent is also captured via the parent monitoring form."""
+    """Clinician-recorded parental consent to connect the child. Since 2026-10-25
+    (issue #86) this is the only way to record it; the monitoring form no longer asks."""
     _, practitioner = context
     patient = await get_patient_by_id(
         db, patient_id, practitioner.organization_id
