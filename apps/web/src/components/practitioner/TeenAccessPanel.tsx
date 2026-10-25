@@ -153,7 +153,7 @@ export default function TeenAccessPanel({
         <div style={{ background: 'var(--float-warning-bg)', border: '1px solid var(--float-warning-border)', borderRadius: 'var(--float-radius-control)', padding: '10px 12px', marginBottom: '14px' }}>
           <div style={{ fontSize: '13px', color: 'var(--float-warning)', fontWeight: 600, marginBottom: '2px' }}>Awaiting parent consent</div>
           <p style={{ fontSize: '12px', color: 'var(--float-warning)', margin: '0 0 8px', lineHeight: 1.5 }}>
-            A parent must give permission to connect the child before the teen can be invited. It's captured on the parent monitoring form — or record it here if you obtained it offline.
+            A parent must give permission to connect the child before the teen can be invited. Record it here once you have it.
           </p>
           <button
             onClick={() => consentMut.mutate()}

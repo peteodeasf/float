@@ -534,3 +534,18 @@ async def test_a_google_error_is_reported_without_the_words(monkeypatch, caplog)
     with pytest.raises(capture.CaptureFailed):
         await capture.transcribe(b"audio")
     assert "she cried" not in caplog.text
+
+
+async def test_the_monitoring_form_cannot_give_teen_permission(api, db):
+    """Why this exists: Peter, 2026-10-25 (issue #86) — the monitoring form is only for monitoring
+    now, so the parent's "connect my child to the app" checkbox came off it, and with it the route
+    that saved it. A clinician still records the permission from the Teen Access panel. This checks
+    the route is gone and that nothing on the form can mark the child as connected."""
+    _, child, form = await _form(db)
+    await db.commit()
+
+    r = await api.post(f"/monitor/{form.access_token}/consent", json={"granted": True})
+
+    assert r.status_code in (404, 405)
+    await db.refresh(child)
+    assert child.child_connect_consent_at is None
