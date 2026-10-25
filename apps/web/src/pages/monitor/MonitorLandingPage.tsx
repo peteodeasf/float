@@ -49,8 +49,6 @@ export default function MonitorLandingPage() {
     try { return localStorage.getItem('float-monitor-tip') === 'dismissed' } catch { return false }
   })
   const [remindersOff, setRemindersOff] = useState(false)
-  const [consentGiven, setConsentGiven] = useState(false)
-  const [consentSaving, setConsentSaving] = useState(false)
   // Just say it: talking, or a quick note, instead of the four boxes. docs/plans/monitoring-just-say-it.md
   const [captureMode, setCaptureMode] = useState<'talk' | 'note'>('talk')
   const api = useMemo(() => captureApi(token ?? ''), [token])
@@ -234,26 +232,6 @@ export default function MonitorLandingPage() {
           <div style={{ textAlign: 'left', marginBottom: '32px' }}>
             <Instructions />
           </div>
-
-          {/* Consent to connect the child to the app (unblocks the clinician's teen invite) */}
-          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', textAlign: 'left', background: consentGiven ? 'var(--float-success-bg)' : 'var(--float-surface-muted)', border: '1px solid ' + (consentGiven ? 'var(--float-success-border)' : 'var(--float-border)'), borderRadius: '14px', padding: '14px 16px', marginBottom: '20px', cursor: consentGiven || consentSaving ? 'default' : 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={consentGiven}
-              disabled={consentGiven || consentSaving}
-              onChange={async () => {
-                setConsentSaving(true)
-                try { await axios.post(`${API_URL}/monitor/${token}/consent`, { granted: true }); setConsentGiven(true) }
-                catch { /* leave unchecked so they can retry */ }
-                finally { setConsentSaving(false) }
-              }}
-              style={{ marginTop: '3px', width: '18px', height: '18px', flexShrink: 0, accentColor: 'var(--float-primary)' }}
-            />
-            <span style={{ fontSize: '14px', color: 'var(--float-text-secondary)', lineHeight: 1.5 }}>
-              I give permission for {childName} to be connected to the Float app, so their clinician can invite them to sign in and use it as part of treatment.
-              {consentGiven && <span style={{ display: 'block', color: 'var(--float-success)', fontWeight: 600, marginTop: '4px' }}>✓ Thank you — permission recorded.</span>}
-            </span>
-          </label>
 
           <button
             onClick={() => { setActiveTab('form'); setScreen('main') }}

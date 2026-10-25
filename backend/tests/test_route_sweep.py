@@ -78,7 +78,6 @@ PUBLIC = {
     # The monitoring form a parent opens from an emailed link. Guarded by an unguessable token in
     # the URL rather than a login.
     "GET /monitor/{access_token}",
-    "POST /monitor/{access_token}/consent",
     "POST /monitor/{access_token}/entries",
     "POST /monitor/{access_token}/submit",
     # Just say it: a recording or a typed note, the one Fear Level tap after it, and deleting one

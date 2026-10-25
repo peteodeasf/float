@@ -58,6 +58,24 @@ one into `float_dev` with `source = 'recording'`, `is_draft = true`, a `transcri
 `{"speaker": "1:1", "text": ...}` and `speaker_names` like `{"1:1": "Clinician"}`. Copy the
 `patient_id`, `organization_id` and `practitioner_id` from an existing note.
 
+## The parent monitoring form is not in the demo data either
+
+**2026-10-25**, issue #86. `float_dev` has no row in `monitoring_forms`, so there is no
+`/monitor/<token>` page to open. Insert one with a token you choose, then open
+`/monitor/<that token>`:
+
+    psql "postgresql://float@localhost:5432/float_dev" -Atc "insert into monitoring_forms
+      (patient_id, organization_id, status, access_token, sent_at)
+      values ('<patient id>', '<org id>', 'sent', '<64 characters>', now()) returning id"
+
+Take both ids from `patient_profiles`. With no entries the page opens on the welcome screen.
+Delete the row afterwards. Query `float_dev` with `psql` like this, not the postgres tool: that
+tool's connection is not set by the worktree, so check where it points before trusting it.
+
+The Teen Access panel only shows its "Awaiting parent consent" box when
+`patient_profiles.child_connect_consent_at` is empty, and the demo child already has it set. Clear
+it for the shot and put it back after.
+
 ## Getting a "before" screenshot after you have made the change
 
 An agent session cannot run git in the main checkout. To screenshot the old version, copy your
