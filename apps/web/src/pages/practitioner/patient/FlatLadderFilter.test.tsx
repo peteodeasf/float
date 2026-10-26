@@ -101,6 +101,8 @@ describe('filtering the ladder by situation', () => {
     tap('All')
     expect(shownRungs()).toEqual(ALL_RUNGS)
     expect(isOn('All')).toBe(true)
+    // Back to All removes the saved entry, so the browser does not keep this patient's id.
+    expect(window.localStorage.getItem('float.ladder.situations.p1')).toBeNull()
   })
 
   // Tapping a selected chip deselects it. With nothing left selected, the list must not go empty:

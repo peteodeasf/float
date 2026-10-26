@@ -60,7 +60,9 @@ function readSituationFilter(patientId: string): string[] {
 
 function writeSituationFilter(patientId: string, ids: string[]) {
   try {
-    window.localStorage.setItem(situationFilterKey(patientId), JSON.stringify(ids))
+    // All leaves nothing behind, so the browser only keeps a patient's id while one is filtered.
+    if (ids.length === 0) window.localStorage.removeItem(situationFilterKey(patientId))
+    else window.localStorage.setItem(situationFilterKey(patientId), JSON.stringify(ids))
   } catch {
     // A browser with storage blocked still gets the filter for this visit.
   }
