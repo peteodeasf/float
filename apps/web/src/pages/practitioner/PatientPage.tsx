@@ -1435,6 +1435,7 @@ export default function PatientPage() {
         </div>
       ) : (
         <FlatLadder
+          key={patientId}
           planId={plan.id}
           patientId={patientId!}
           triggers={triggers ?? []}

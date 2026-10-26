@@ -6,7 +6,7 @@
  *
  * Moved out of PatientPage.tsx unchanged.
  */
-import { btn } from '../../../components/ui/buttons'
+import { btn, chip } from '../../../components/ui/buttons'
 import { Button } from '../../../components/ui/primitives'
 import { Switch } from '../../../components/ui/Switch'
 import { useState } from 'react'
@@ -21,6 +21,7 @@ import {
 } from '../../../api/treatment'
 import { clampDt, clampDtInput } from './shared'
 import { SessionSetupSheet } from './SessionSetupSheet'
+import { bySituationFear } from '../ladderEditor'
 
 /** Whether the situation shows under each rung. A display preference, so it lives in the browser
  *  rather than on the plan — it says how this clinician likes to read the list, not anything about
@@ -40,6 +41,28 @@ function writeShowSituations(on: boolean) {
     window.localStorage.setItem(SHOW_SITUATIONS_KEY, on ? '1' : '0')
   } catch {
     // A browser with storage blocked still gets the toggle for this visit.
+  }
+}
+
+/** Which situations the list is narrowed to, by id. Empty means all of them. Like the switch above,
+ *  it only changes what this clinician sees here, so it lives in the browser — but per patient,
+ *  because the ids belong to one patient's plan. See docs/plans/ladder-situation-filter.md. */
+const situationFilterKey = (patientId: string) => `float.ladder.situations.${patientId}`
+
+function readSituationFilter(patientId: string): string[] {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(situationFilterKey(patientId)) ?? '[]')
+    return Array.isArray(v) ? v.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function writeSituationFilter(patientId: string, ids: string[]) {
+  try {
+    window.localStorage.setItem(situationFilterKey(patientId), JSON.stringify(ids))
+  } catch {
+    // A browser with storage blocked still gets the filter for this visit.
   }
 }
 
@@ -64,6 +87,8 @@ export function FlatLadder({
 }) {
   const qc = useQueryClient()
   const [showSituations, setShowSituations] = useState(readShowSituations)
+  // Read once per patient: PatientPage keys this component by patient, so a new patient remounts it.
+  const [savedFilter, setSavedFilter] = useState(() => readSituationFilter(patientId))
 
   const { data: rungs, isLoading } = useQuery({
     queryKey: ['plan-rungs', planId],
@@ -113,6 +138,26 @@ export function FlatLadder({
     return Number(x) - Number(y)
   })
 
+  // The situation chips: every situation with a rung on it, lowest Fear Level first like the
+  // ladder editor. A selected situation stays even once its rungs are gone, so it can be
+  // deselected. A remembered situation that no longer exists is ignored here and dropped from
+  // storage on the next tap. Not pruned on load: the situations can arrive after the first render,
+  // and an empty list then would wipe the saved selection.
+  const live = new Set(triggers.map(t => t.id))
+  const selected = savedFilter.filter(id => live.has(id))
+  const isSelected = new Set(selected)
+  const withRungs = new Set(ordered.map(r => r.trigger_situation_id))
+  const situationChips = triggers
+    .filter(t => !t.is_placeholder && (withRungs.has(t.id) || isSelected.has(t.id)))
+    .sort(bySituationFear)
+  const setFilter = (ids: string[]) => { setSavedFilter(ids); writeSituationFilter(patientId, ids) }
+  const toggleSituation = (id: string) =>
+    setFilter(isSelected.has(id) ? selected.filter(x => x !== id) : [...selected, id])
+  // Only what is shown. "Visible to patient" and Build/Edit ladder still look at the whole ladder.
+  const shown = selected.length === 0
+    ? ordered
+    : ordered.filter(r => r.trigger_situation_id != null && isSelected.has(r.trigger_situation_id))
+
   return (
     <div style={{ padding: '16px 20px 20px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px', marginBottom: '12px' }}>
@@ -154,16 +199,26 @@ export function FlatLadder({
         </div>
       </div>
 
+      {ordered.length > 0 && situationChips.length > 0 && (
+        <div role="group" aria-label="Filter by situation" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+          <button onClick={() => setFilter([])} aria-pressed={selected.length === 0} style={chip(selected.length === 0)}>All</button>
+          {situationChips.map(t => {
+            const on = isSelected.has(t.id)
+            return <button key={t.id} onClick={() => toggleSituation(t.id)} aria-pressed={on} style={chip(on)}>{t.name}</button>
+          })}
+        </div>
+      )}
+
       {isLoading && <p style={{ fontSize: '12.5px', color: 'var(--float-text-hint)' }}>Loading…</p>}
 
       <div style={{ position: 'relative', paddingLeft: '22px' }}>
-        {ordered.length > 0 && (
+        {shown.length > 0 && (
           <div style={{ position: 'absolute', left: '6px', top: '12px', bottom: '12px', width: '3px', borderRadius: '2px', background: 'linear-gradient(#4bb98a, #f2a33f 55%, #ef6b53)' }} />
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {/* Names the number column. Lined up with each row's score box: the row's padding plus
               border is 14px, and the two controls after the score are fixed at 64px and 16px. */}
-          {ordered.length > 0 && (
+          {shown.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', padding: '0 14px', marginBottom: '-2px' }}>
               <span style={{ flex: 1 }} />
               <span style={{ width: '46px', flexShrink: 0, textAlign: 'center', fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--float-text-secondary)', lineHeight: 1.15 }}>Fear Level</span>
@@ -171,7 +226,7 @@ export function FlatLadder({
               <span style={{ width: '16px', flexShrink: 0 }} />
             </div>
           )}
-          {ordered.map(r => (
+          {shown.map(r => (
             <LadderRow
               key={r.id}
               planId={planId}
@@ -186,6 +241,16 @@ export function FlatLadder({
           {!isLoading && ordered.length === 0 && (
             <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)', padding: '8px 2px' }}>
               Nothing on the ladder yet — use “Build ladder”.
+            </div>
+          )}
+          {ordered.length > 0 && shown.length === 0 && (
+            <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)', padding: '8px 2px' }}>
+              No rungs in {selected.length === 1 ? 'this situation' : 'these situations'}.{' '}
+              <button onClick={() => setFilter([])}
+                className="cursor-pointer bg-transparent border-none underline"
+                style={{ fontSize: '12.5px', color: 'var(--float-text-hint)', padding: 0 }}>
+                Show all
+              </button>
             </div>
           )}
         </div>

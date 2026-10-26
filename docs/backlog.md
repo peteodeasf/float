@@ -1366,3 +1366,18 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
 - **How to tell it worked:** reseed `float_dev`, open the demo patient, and the downward arrow
   request returns 200.
 - **Gate:** none. **Depends on:** nothing.
+
+## The patient page asks for ladder flags the backend no longer serves (noticed 2026-10-26) `S`
+
+- **Today:** `BehaviorPanel` (`apps/web/src/pages/practitioner/patient/BehaviorPanel.tsx`, the
+  `ladder-flags` query) calls `getLadderFlags` in `apps/web/src/api/treatment.ts`, which sends
+  `GET /ladders/<id>/flags`. No backend router has that route (`backend/app/api/routers/ladders.py`
+  only has rungs, reorder and review), so it returns 404. Opening the demo patient's Plan tab in
+  `float_dev` logs the 404 three times. Seen while taking screenshots for the ladder situation
+  filter. The panel just shows no flags.
+- **What changes:** decide whether ladder review flags still exist. If they do, add the read route
+  (the `ladder_review_flags` table is still there; see `admin.py`). If not, remove the query and
+  `getLadderFlags`.
+- **How to tell it worked:** open the demo patient's Plan tab; no 404 for `/flags` in the console.
+- **Gate:** a new read route is data access, so `/security-review` if one is added. **Depends on:**
+  nothing.

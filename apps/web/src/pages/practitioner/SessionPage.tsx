@@ -62,7 +62,7 @@ import {
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, avoidsTheSituation, behaviorHint, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
+  arrowDoneOn, avoidsTheSituation, behaviorHint, bySituationFear, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -126,19 +126,12 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
     enabled: !!planId,
   })
 
-  // Lowest thermometer score first. Unscored situations sit at the end rather than counting as a
-  // zero and jumping the queue. Sorted when the editor opens; after that a situation stays where it
-  // was shown and a new one goes at the end, until Save ladder (inShownOrder).
+  // Lowest thermometer score first (bySituationFear). Sorted when the editor opens; after that a
+  // situation stays where it was shown and a new one goes at the end, until Save ladder
+  // (inShownOrder).
   const sortedTriggers = [...(triggers ?? [])]
     .filter(t => !t.is_placeholder)
-    .sort((a, b) => {
-      const x = dtOf(a.distress_thermometer_rating)
-      const y = dtOf(b.distress_thermometer_rating)
-      if (x == null && y == null) return (a.display_order ?? 0) - (b.display_order ?? 0)
-      if (x == null) return 1
-      if (y == null) return -1
-      return x - y
-    })
+    .sort(bySituationFear)
 
   // Full screen for when the child is looking; plain for the Plan tab, which brings its own
   // header and nav.
