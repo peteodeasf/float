@@ -1,7 +1,7 @@
 // What the ladder editor works out from the rows, kept out of SessionPage.tsx so that file only
 // exports components (React Fast Refresh needs that). docs/plans/ladder-combinations.md
 
-import type { DownwardArrow } from '../../api/treatment'
+import type { DownwardArrow, TriggerSituation } from '../../api/treatment'
 
 /** Whether this step's downward arrow has reached a feared outcome. */
 export function arrowDoneOn(rungId: string, arrows: DownwardArrow[]): boolean {
@@ -27,6 +27,18 @@ export function behaviorHint(situation: string): string {
 /** The hint in the box for adding a rung. "Soccer practice after school, made a little easier". */
 export function rungHint(situation: string): string {
   return `${situation.trim()}, made a little easier`
+}
+
+/** The order situations go in: lowest Fear Level first. Unscored situations sit at the end rather
+ *  than counting as a zero and jumping the queue, in the order they were added. The ladder editor
+ *  and the flat ladder's situation chips both use it, so the two lists agree. */
+export function bySituationFear(a: TriggerSituation, b: TriggerSituation): number {
+  const x = a.distress_thermometer_rating
+  const y = b.distress_thermometer_rating
+  if (x == null && y == null) return (a.display_order ?? 0) - (b.display_order ?? 0)
+  if (x == null) return 1
+  if (y == null) return -1
+  return Number(x) - Number(y)
 }
 
 // ── The order things are shown in while the editor is open ───────────────────
