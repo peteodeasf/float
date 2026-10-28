@@ -77,12 +77,12 @@ async def test_the_six_dates_at_noon_eastern(api, db):
     r = (await api.get("/codesign/sessions")).json()
     assert r["open"] is True
     assert [s["label"] for s in r["sessions"]] == [
-        "Tuesday, November 3 at 12pm Eastern",
-        "Wednesday, November 4 at 12pm Eastern",
-        "Thursday, November 5 at 12pm Eastern",
         "Tuesday, November 10 at 12pm Eastern",
         "Wednesday, November 11 at 12pm Eastern",
         "Thursday, November 12 at 12pm Eastern",
+        "Tuesday, November 17 at 12pm Eastern",
+        "Wednesday, November 18 at 12pm Eastern",
+        "Thursday, November 19 at 12pm Eastern",
     ]
     assert [s["week"] for s in r["sessions"]] == [1, 1, 1, 2, 2, 2]
 
@@ -98,7 +98,7 @@ async def test_signing_up_emails_the_parent_a_permission_link_and_the_teen(api, 
     assert to == ["ana@example.com", "maya@example.com"]
     token = _token(open_and_outbox)
     assert token not in signup.permission_token_hash  # only a hash is kept
-    assert "Tuesday, November 3 at 12pm Eastern" in " ".join(open_and_outbox[0]["paragraphs"])
+    assert "Tuesday, November 10 at 12pm Eastern" in " ".join(open_and_outbox[0]["paragraphs"])
 
 
 @pytest.mark.parametrize("over", [
@@ -156,7 +156,7 @@ async def test_the_permission_page_shows_only_the_first_name_and_dates(api, db, 
     r = await api.get(f"/codesign/permission/{_token(open_and_outbox)}")
     assert r.status_code == 200
     body = r.json()
-    dates = ["Thursday, November 5 at 12pm Eastern", "Thursday, November 12 at 12pm Eastern"]
+    dates = ["Thursday, November 12 at 12pm Eastern", "Thursday, November 19 at 12pm Eastern"]
     assert {k: v for k, v in body.items() if k != "form"} == {
         "teen_first_name": "Maya", "dates": dates, "answered": False, "confirmed": False,
     }
@@ -251,7 +251,7 @@ async def test_the_parent_is_emailed_a_copy_with_every_answer(api, db, open_and_
     text = "\n".join(copy["paragraphs"])
     s = (await db.execute(select(CodesignSignup))).scalar_one()
     for line in (
-        "Session 1: Tuesday, November 3 at 12pm Eastern. Session 2: Tuesday, November 10 at 12pm Eastern.",
+        "Session 1: Tuesday, November 10 at 12pm Eastern. Session 2: Tuesday, November 17 at 12pm Eastern.",
         "Group size: Up to 5 other teens, ages 13 to 17",
         "Child's name: Maya Rivera. Child's age: 15.",
         f"{codesign_form.PARENT_QUESTIONS['parent_consents']} Yes",

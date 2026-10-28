@@ -13,9 +13,10 @@ teen signs up for one date from each week, and their parent is emailed for permi
 - $60 for joining both sessions.
 - What is Float? / What we'll chat about (three items).
 - Pick one date from each week. 45–60 min · on video · open discussion.
-  - Session one · your thoughts: Tue Nov 3, Wed Nov 4, Thu Nov 5.
-  - Session two · your ideas: Tue Nov 10, Wed Nov 11, Thu Nov 12.
-- Sign up by Friday, October 30. A parent or guardian's permission is needed. Questions?
+  - Session one · your thoughts: Tue Nov 10, Wed Nov 11, Thu Nov 12.
+  - Session two · your ideas: Tue Nov 17, Wed Nov 18, Thu Nov 19.
+  - (Moved one week later on 2026-10-28, Peter. First planned for Nov 3–5 and Nov 10–12.)
+- Sign up by Friday, November 6 (was October 30; moved 2026-10-28). A parent or guardian's permission is needed. Questions?
   sally@floatcbt.com.
 
 ## Decided (Peter, 2026-10-19)
@@ -50,7 +51,7 @@ teen signs up for one date from each week, and their parent is emailed for permi
 5. Sally sees every sign-up in the admin dashboard, grouped by date: teen, parent, status
    (waiting, confirmed, declined, or seats released after 3 days), and what was agreed.
 
-Sign-ups close at the end of Friday, October 30, Eastern time. After that the form says so and the
+Sign-ups close at the end of Friday, November 6, Eastern time. After that the form says so and the
 server refuses new ones.
 
 ### Seats

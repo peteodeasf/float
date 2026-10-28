@@ -31,8 +31,9 @@ from app.services.codesign_viewers import can_view_codesign
 router = APIRouter(tags=["codesign"])
 
 EASTERN = ZoneInfo("America/New_York")
-# "Sign up by Friday, October 30": open until the end of that day in Eastern time.
-SIGNUPS_CLOSE_AT = datetime(2026, 10, 31, 0, 0, tzinfo=EASTERN)
+# "Sign up by Friday, November 6": open until the end of that day in Eastern time. Moved from
+# October 30 when the sessions moved a week later (Peter, 2026-10-28).
+SIGNUPS_CLOSE_AT = datetime(2026, 11, 7, 0, 0, tzinfo=EASTERN)
 # A sign-up holds its two seats this long while the parent has not given permission.
 HOLD = timedelta(days=3)
 # The same anti-bot bargain as the waitlist: a real person takes longer than this to fill the form.
