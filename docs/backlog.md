@@ -403,6 +403,20 @@ which means sending it in `GET /patients/{id}/experiments`. **Gate:** none.
   and Sally's list says the copy was not sent.
 - **Gate.** None.
 
+## A co-design email that fails writes the whole error into the logs `S`
+
+**Found 2026-10-29**, adding the team summary email.
+
+- **Today.** `send_codesign_email` (`backend/app/services/email_service.py`) logs
+  `f"Failed to send co-design email: {e}"`, the full error text from Resend. Elsewhere the code logs
+  failures by type only (`type(e).__name__`, for example `backend/app/services/monitoring_capture.py`),
+  so nothing about a person reaches the Railway logs. Not checked: whether Resend's error text can
+  include the address it was sending to. If it can, a teen's or parent's email lands in the logs.
+- **What changes.** Log the error type only, as elsewhere.
+- **How to tell it worked.** A test that makes `resend.Emails.send` raise with an address in the
+  message, and checks the log line does not contain it.
+- **Gate.** None.
+
 Waiting on Dr. Walker, from the July reorg: how "do it now" works on a future scheduled slot, word
 buttons instead of faces, equal-weight answers on "did it happen", and the too-hard path.
 

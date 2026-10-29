@@ -270,3 +270,22 @@ wording it was shown.
 
 The form text above under "Permission form (Peter, 2026-10-21)" is the original; the live wording is
 in `backend/app/services/codesign_form.py`.
+
+## Telling the team (Peter, 2026-10-29)
+
+When a teen signs up, and when a parent sends the permission form (yes or no, first answer only),
+Float emails a summary of every sign-up so far to the addresses in the `CODESIGN_NOTIFY_EMAILS`
+setting. Peter sets it on Railway. Empty means nothing is sent.
+
+- **Subject:** "New co-design sign-up: Maya R.", "Co-design: Maya R. confirmed" or "Co-design:
+  Maya R. won't take part".
+- **First line:** what happened, the teen as first name and last initial, and their two dates.
+- **Then** "All sign-ups so far: N", and each session in date order: "X of 6 seats taken" (the same
+  count as the list), and each teen on it with their status: waiting for permission, confirmed,
+  declined, or seats released.
+- **Then** a link to the full list in the app.
+- **Never in it:** surnames beyond the initial, ages, emails, phone numbers, parent names, or any
+  answer other than the status. The email goes to an ordinary inbox, so those stay behind the
+  sign-in.
+- It is sent after the sign-up or the answer is saved. If it fails, that is logged and nothing
+  else changes.
