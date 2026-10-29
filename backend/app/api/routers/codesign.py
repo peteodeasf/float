@@ -11,7 +11,7 @@ import hashlib
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Literal
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -244,7 +244,6 @@ class PermissionIn(BaseModel):
     text, is refused rather than read as a yes or a no."""
     parent_consents: StrictBool
     parent_allows_recording: StrictBool
-    parent_allows_quotes: StrictBool
     parent_confirms_guardian: StrictBool
     parent_name: Name
     parent_relationship: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
@@ -252,10 +251,8 @@ class PermissionIn(BaseModel):
     # Blank on the page means the address the link was sent to, which the page cannot show.
     parent_email: EmailStr | None = None
     parent_session_phone: Phone
-    teen_consents: StrictBool
-    teen_allows_recording: StrictBool
-    teen_name: Name
-    completed_by: Literal["teen_with_parent", "parent_for_teen"]
+    # The box "My child wants to participate in this initiative." Unticked is an answer too.
+    child_wants_to_take_part: StrictBool
     form_version: str = Field(max_length=100)
 
 
@@ -286,18 +283,13 @@ def _copy_paragraphs(signup: CodesignSignup, dates: list[str], confirmed: bool) 
         f.PARENT_HEADING,
         f"Child's name: {signup.teen_first_name} {signup.teen_last_name}. Child's age: {signup.teen_age}.",
         *(f"{q} {_yes(getattr(signup, key))}" for key, q in f.PARENT_QUESTIONS.items()),
+        f"{f.CHILD_WANTS} {_yes(signup.teen_consents)}",
         f"{f.PARENT_CONFIRM} {_yes(signup.parent_confirms_guardian)}",
         f"Parent or guardian name: {signup.parent_signed_name}",
         f"Signature: {signup.parent_signed_name} (typed). Date: {when}",
         f"Relationship to child: {signup.parent_relationship}",
         f"Phone and email: {signup.parent_phone}, {signup.parent_contact_email}",
         f"Best number to reach you during the session: {signup.parent_session_phone}",
-        f.TEEN_HEADING,
-        *f.teen_paragraphs(),
-        *(f"{q} {_yes(getattr(signup, key))}" for key, q in f.TEEN_QUESTIONS.items()),
-        f"Your name: {signup.teen_signed_name}",
-        f"Signature: {signup.teen_signed_name} (typed). Date: {when}",
-        f"Completed by: {f.COMPLETED_BY[signup.teen_completed_by]}",
         f"Form version: {signup.form_version}",
         "If you have questions, or want to change an answer, contact Sally McCarthy at "
         "sally@floatcbt.com.",
@@ -319,22 +311,20 @@ async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession 
         raise HTTPException(status_code=422, detail="Please tick the box to confirm you are the "
                                                     "child's parent or legal guardian.")
     now = _now()
-    confirmed = data.parent_consents and data.teen_consents
+    confirmed = data.parent_consents and data.child_wants_to_take_part
     signup.form_submitted_at = now
     signup.form_version = codesign_form.FORM_VERSION
     signup.parent_consents = data.parent_consents
     signup.parent_allows_recording = data.parent_allows_recording
-    signup.parent_allows_quotes = data.parent_allows_quotes
     signup.parent_confirms_guardian = data.parent_confirms_guardian
     signup.parent_signed_name = data.parent_name
     signup.parent_relationship = data.parent_relationship
     signup.parent_phone = data.parent_phone
     signup.parent_contact_email = (data.parent_email or signup.parent_email).lower().strip()
     signup.parent_session_phone = data.parent_session_phone
-    signup.teen_consents = data.teen_consents
-    signup.teen_allows_recording = data.teen_allows_recording
-    signup.teen_signed_name = data.teen_name
-    signup.teen_completed_by = data.completed_by
+    # The parent's "my child wants to participate" box (Peter, 2026-10-29). The teen agreement's
+    # other answers are no longer asked, so they stay empty.
+    signup.teen_consents = data.child_wants_to_take_part
     if confirmed:
         signup.permission_given_at = now
         signup.permission_given_by = data.parent_name
@@ -408,10 +398,8 @@ async def _signups_by_session(db: AsyncSession) -> dict:
             "permission_given_at": s.permission_given_at.isoformat() if s.permission_given_at else None,
             "permission_given_by": s.permission_given_by,
             "form_submitted_at": s.form_submitted_at.isoformat() if s.form_submitted_at else None,
-            # Recording needs a yes from both the parent and the teen; quotes are the parent's call.
-            "recording_allowed": bool(s.parent_allows_recording and s.teen_allows_recording),
-            "quotes_allowed": bool(s.parent_allows_quotes),
-            "completed_by": codesign_form.COMPLETED_BY.get(s.teen_completed_by or ""),
+            # Recording is the parent's answer (Peter, 2026-10-29: the teen agreement is dropped).
+            "recording_allowed": bool(s.parent_allows_recording),
             "parent_relationship": s.parent_relationship,
             "parent_session_phone": s.parent_session_phone,
             "parent_phone": s.parent_phone,

@@ -3,7 +3,7 @@ import { cardStyle, tdStyle as td, thStyle as th } from './tableStyles'
 
 /**
  * Teens signed up for the November co-design sessions from floatcbt.com/codesign, by date, with
- * what the permission form said: confirmed or declined, and whether recording and quotes are
+ * what the permission form said: confirmed or declined, and whether recording is
  * allowed. Sally sends the invites and payments by hand.
  * docs/plans/codesign-signup.md
  *
@@ -23,8 +23,6 @@ type Signup = {
   permission_given_by: string | null
   form_submitted_at: string | null
   recording_allowed: boolean
-  quotes_allowed: boolean
-  completed_by: string | null
   parent_relationship: string | null
   parent_session_phone: string | null
   parent_phone: string | null
@@ -46,7 +44,7 @@ const when = (iso: string) =>
 
 const sub = { fontSize: '12px', color: 'var(--float-text-secondary)', marginTop: '2px' }
 
-// Recording and quotes are only known once the form is sent; before that they show as a dash.
+// Recording is only known once the form is sent; before that they show as a dash.
 const answered = (s: Signup) => s.form_submitted_at !== null
 
 function Permission({ s }: { s: Signup }) {
@@ -110,8 +108,6 @@ export default function CodesignSection({ load }: { load: () => Promise<Codesign
                     <th style={th}>Number during session</th>
                     <th style={th}>Status</th>
                     <th style={th}>Recording</th>
-                    <th style={th}>Quotes</th>
-                    <th style={th}>Completed by</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -136,8 +132,6 @@ export default function CodesignSection({ load }: { load: () => Promise<Codesign
                       </td>
                       <td style={{ ...td, minWidth: '180px' }}><Permission s={s} /></td>
                       <td style={td}>{answered(s) ? (s.recording_allowed ? 'Yes' : 'No') : '—'}</td>
-                      <td style={td}>{answered(s) ? (s.quotes_allowed ? 'Yes' : 'No') : '—'}</td>
-                      <td style={td}>{s.completed_by ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>

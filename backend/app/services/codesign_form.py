@@ -67,8 +67,8 @@ ABOUT = [
     {"p": "We will use the ideas, feedback and sketches from the session to design and improve Float. "
           "By agreeing to this form, you agree that Float may use these ideas in its products without "
           "further payment or credit beyond the thank-you gift."},
-    {"p": "We will not use your child's name, face or voice in any public material. If you agree "
-          "below, we may use short quotes with no name attached in presentations about Float."},
+    # Peter, 2026-10-29: the sentence about using short quotes, and its yes/no line, are removed.
+    {"p": "We will not use your child's name, face or voice in any public material."},
     {"h": "Thank-you gift and questions"},
     {"p": "Your child will receive $60 at the end of the second session. They will receive it even if "
           "they stop early."},
@@ -85,50 +85,22 @@ PARENT_INTRO = "Please check one box for each line."
 PARENT_QUESTIONS = {
     "parent_consents": "I give permission for my child to take part in the co-design session.",
     "parent_allows_recording": "The session may be audio or video recorded.",
-    "parent_allows_quotes": "Float may use short quotes from my child, with no name attached, in "
-                            "presentations about Float.",
 }
 PARENT_CONFIRM = ("I confirm that I am this child's parent or legal guardian, I am at least 18 years "
                   "old, I have read this form, and I have had the chance to ask questions.")
 
-TEEN_HEADING = "Teen agreement"
-# The first line is the form's. The second is Peter's, 2026-10-21: the teen is under 18, so the
-# parent is there either way.
-TEEN_INTRO = [
-    "To be read with your teen and signed by them.",
-    "The teen fills this in with their parent, or the parent fills it in on the teen's behalf.",
-]
-TEEN_TEXT = [
-    {"p": "We are asking you to help us design an app for young people. You will do some activities "
-          "with a small group and share your ideas and opinions."},
-    {"ul": [
-        "Your parent said it is OK to ask you, but it is your choice.",
-        "You can skip any question, take a break, or stop at any time. No one will be upset.",
-        "We will only record the session if you and your parent agree.",
-        "We keep what you say within the Float team and do not use your name. If you tell us that you "
-        "or someone else might be seriously hurt, we will have to tell your parent.",
-        "You can ask questions at any time.",
-    ]},
-]
-TEEN_QUESTIONS = {
-    "teen_consents": "I want to take part in the co-design session.",
-    "teen_allows_recording": "It is OK to record the session.",
-}
-COMPLETED_BY = {
-    "teen_with_parent": "The teen, with their parent",
-    "parent_for_teen": "The parent, on the teen's behalf",
-}
+# Peter, 2026-10-29: the teen agreement is dropped (it made the form too long). In its place, one
+# box on the parent's part. The teen takes part only if the parent says yes and ticks it.
+CHILD_WANTS = "My child wants to participate in this initiative."
 
 _TEMPLATE = {
     "title": TITLE, "about": ABOUT,
     "parent": {"heading": PARENT_HEADING, "intro": PARENT_INTRO, "questions": PARENT_QUESTIONS,
-               "confirm": PARENT_CONFIRM},
-    "teen": {"heading": TEEN_HEADING, "intro": TEEN_INTRO, "text": TEEN_TEXT,
-             "questions": TEEN_QUESTIONS, "completed_by": COMPLETED_BY},
+               "child_wants": CHILD_WANTS, "confirm": PARENT_CONFIRM},
 }
 
 # The date of Peter's text, then a short hash of every word above, so any edit gives a new version.
-FORM_VERSION = "2026-10-21-" + hashlib.sha256(
+FORM_VERSION = "2026-10-29-" + hashlib.sha256(
     json.dumps(_TEMPLATE, sort_keys=True).encode()).hexdigest()[:8]
 
 
@@ -168,6 +140,3 @@ def as_paragraphs(dates: list[str]) -> list[str]:
     """The form's information part as plain paragraphs, for the emailed copy."""
     return _paragraphs(_fill(ABOUT, dates))
 
-
-def teen_paragraphs() -> list[str]:
-    return [*TEEN_INTRO, *_paragraphs(TEEN_TEXT)]
