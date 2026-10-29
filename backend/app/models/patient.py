@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from sqlalchemy import String, DateTime, Date, Integer, ForeignKey, ARRAY, Index, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
@@ -143,8 +143,12 @@ class ParentPatientLink(Base):
         ForeignKey("organizations.id"), nullable=False
     )
     phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Stamped by the app's clock, not Postgres's now(). now() is the transaction's start, so two
+    # links made in one transaction (as tests do) tied, and the parents list, which sorts by this,
+    # came back in either order. docs/solutions/two-parents-test-tied-timestamps.md
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
         server_default=text("now()")
     )
 
