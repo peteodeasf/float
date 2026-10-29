@@ -36,10 +36,11 @@ Nobody is watching this session. Do one backlog item or fix one issue, end with 
 
 ## Fixing a ui-feedback issue
 
-Issues labelled `ui-feedback` come from people testing the app's screens, mostly through Jam
+Issues labelled `ui-feedback` or `bug` come from people testing the app's screens, mostly through Jam
 (`docs/plans/ui-testing.md`). Each has words, screenshots and the page address.
 
-1. List them, oldest first: `gh issue list --label ui-feedback --state open --search "sort:created-asc"`.
+1. List them, oldest first: `gh issue list --state open --search "label:ui-feedback,bug sort:created-asc"`
+   (the comma means either label; Peter, 2026-10-29: a Jam report can arrive labelled `bug`).
    Skip any labelled `needs-peter`, and any that an open PR already names ("Fixes #N").
 2. Read the next one: `gh issue view <N> --comments`. Download its screenshots and look at them.
    Decide which kind it is:
