@@ -54,11 +54,10 @@ def _token(sent) -> str:
 def _answers(**over):
     """The permission form filled in with a yes to everything."""
     body = dict(
-        parent_consents=True, parent_allows_recording=True, parent_allows_quotes=True,
+        parent_consents=True, parent_allows_recording=True,
         parent_confirms_guardian=True, parent_name="Ana Rivera", parent_relationship="Mother",
         parent_phone="617-555-0142", parent_email=None, parent_session_phone="617-555-0199",
-        teen_consents=True, teen_allows_recording=True, teen_name="Maya Rivera",
-        completed_by="teen_with_parent", form_version=codesign_form.FORM_VERSION,
+        child_wants_to_take_part=True, form_version=codesign_form.FORM_VERSION,
     )
     body.update(over)
     return body
@@ -163,8 +162,10 @@ async def test_the_permission_page_shows_only_the_first_name_and_dates(api, db, 
     # The form itself is Peter's wording with this teen's two dates filled in.
     assert body["form"] == codesign_form.form_for(dates)
     assert f"Session 1: {dates[0]}. Session 2: {dates[1]}." in r.text
+    # The form's version code is random letters and digits, so it is left out of the age check.
+    text = r.text.replace(codesign_form.FORM_VERSION, "")
     for private in ("Rivera", "maya@example.com", "ana@example.com", "Ana", "16"):
-        assert private not in r.text
+        assert private not in text
 
 
 async def test_every_answer_is_required(api, db, open_and_outbox):
@@ -176,8 +177,8 @@ async def test_every_answer_is_required(api, db, open_and_outbox):
         body = _answers()
         del body[key]
         assert (await api.post(f"/codesign/permission/{token}", json=body)).status_code == 422, key
-    for over in (dict(parent_confirms_guardian=False), dict(parent_name="  "), dict(teen_name=" "),
-                 dict(parent_consents="no"), dict(teen_consents=None), dict(completed_by="someone"),
+    for over in (dict(parent_confirms_guardian=False), dict(parent_name="  "),
+                 dict(parent_consents="no"), dict(child_wants_to_take_part=None),
                  dict(parent_phone="12"), dict(parent_phone="  12     ")):
         assert (await api.post(f"/codesign/permission/{token}", json=_answers(**over))).status_code == 422, over
     signup = (await db.execute(select(CodesignSignup))).scalar_one()
@@ -185,22 +186,23 @@ async def test_every_answer_is_required(api, db, open_and_outbox):
     assert open_and_outbox == []
 
 
-async def test_confirmed_needs_a_yes_from_the_parent_and_the_teen(api, db, open_and_outbox):
-    # Peter, 2026-10-21: the parent's permission and the teen's own yes are both needed. Both yes:
-    # confirmed, every answer stored, and the version of the wording shown is recorded.
+async def test_confirmed_needs_the_parents_yes_and_the_child_box(api, db, open_and_outbox):
+    # Peter, 2026-10-29: the parent's permission and the box "My child wants to participate" are
+    # both needed (it replaced the teen agreement). Both: confirmed, every answer stored, and the
+    # version of the wording shown is recorded.
     token = await _signed_up(api, db, open_and_outbox)
     r = await api.post(f"/codesign/permission/{token}", json=_answers(parent_email="Ana.Work@Example.com"))
     assert r.json() == {"success": True, "confirmed": True, "already": False}
     s = (await db.execute(select(CodesignSignup))).scalar_one()
     assert s.permission_given_at is not None and s.permission_given_at == s.form_submitted_at
-    assert (s.permission_given_by, s.parent_signed_name, s.teen_signed_name) == ("Ana Rivera", "Ana Rivera", "Maya Rivera")
+    assert (s.permission_given_by, s.parent_signed_name, s.teen_consents) == ("Ana Rivera", "Ana Rivera", True)
     assert (s.parent_relationship, s.parent_phone, s.parent_session_phone, s.parent_contact_email) == (
         "Mother", "617-555-0142", "617-555-0199", "ana.work@example.com")
-    assert (s.teen_completed_by, s.form_version) == ("teen_with_parent", codesign_form.FORM_VERSION)
+    assert s.form_version == codesign_form.FORM_VERSION
     assert (await api.get(f"/codesign/permission/{token}")).json()["confirmed"] is True
 
 
-@pytest.mark.parametrize("no", ["parent_consents", "teen_consents"])
+@pytest.mark.parametrize("no", ["parent_consents", "child_wants_to_take_part"])
 async def test_a_no_from_either_declines_and_frees_the_seats(api, db, open_and_outbox, no):
     # "If either of you says no, your child will not take part." The seats go back at once rather
     # than after the 3-day hold, so another teen can have them.
@@ -222,30 +224,29 @@ async def test_a_no_from_either_declines_and_frees_the_seats(api, db, open_and_o
     assert (await api.post("/codesign/signups", json=second)).status_code == 200
 
 
-@pytest.mark.parametrize("parent,teen,allowed", [
-    (True, True, True), (True, False, False), (False, True, False), (False, False, False),
-])
-async def test_recording_needs_a_yes_from_both(api, db, open_and_outbox, parent, teen, allowed):
-    # "We will only record the session if you and your child agree." Sally's list must say no
-    # unless both said yes. Quotes are the parent's answer alone.
+@pytest.mark.parametrize("parent", [True, False])
+async def test_recording_is_the_parents_answer(api, db, open_and_outbox, parent):
+    # Peter, 2026-10-29: the teen agreement, with its own recording question, is dropped, so
+    # recording follows the parent's answer. Sally's list must say no unless the parent said yes.
     token = await _signed_up(api, db, open_and_outbox)
-    await api.post(f"/codesign/permission/{token}", json=_answers(
-        parent_allows_recording=parent, teen_allows_recording=teen, parent_allows_quotes=False))
+    allowed = parent
+    await api.post(f"/codesign/permission/{token}", json=_answers(parent_allows_recording=parent))
     api.sign_in_as(await make_float_admin(db))
     [row] = (await api.get("/codesign/signups")).json()["sessions"][0]["signups"]
-    assert (row["recording_allowed"], row["quotes_allowed"]) == (allowed, False)
-    assert (row["permission"], row["completed_by"], row["parent_relationship"], row["parent_session_phone"]) == (
-        "confirmed", "The teen, with their parent", "Mother", "617-555-0199")
+    assert row["recording_allowed"] == allowed
+    assert "quotes_allowed" not in row
+    assert "completed_by" not in row
+    assert (row["permission"], row["parent_relationship"], row["parent_session_phone"]) == (
+        "confirmed", "Mother", "617-555-0199")
 
 
 async def test_the_parent_is_emailed_a_copy_with_every_answer(api, db, open_and_outbox):
     # The form says "We will give you a copy of this form to keep". The copy carries the wording,
-    # the parent's and the teen's answers, the date and time, and Sally's contact. It goes to the
+    # the parent's answers, the date and time, and Sally's contact. It goes to the
     # address the link was sent to, not the one typed on the page.
     token = await _signed_up(api, db, open_and_outbox)
     await api.post(f"/codesign/permission/{token}", json=_answers(
-        parent_allows_quotes=False, teen_allows_recording=False, completed_by="parent_for_teen",
-        parent_email="someone.else@example.com"))
+        parent_allows_recording=False, parent_email="someone.else@example.com"))
     [copy] = [e for e in open_and_outbox if e["to_email"] == "ana@example.com"]
     assert "someone.else@example.com" not in [e["to_email"] for e in open_and_outbox]
     text = "\n".join(copy["paragraphs"])
@@ -255,16 +256,12 @@ async def test_the_parent_is_emailed_a_copy_with_every_answer(api, db, open_and_
         "Group size: Up to 5 other teens, ages 13 to 17",
         "Child's name: Maya Rivera. Child's age: 15.",
         f"{codesign_form.PARENT_QUESTIONS['parent_consents']} Yes",
-        f"{codesign_form.PARENT_QUESTIONS['parent_allows_recording']} Yes",
-        f"{codesign_form.PARENT_QUESTIONS['parent_allows_quotes']} No",
+        f"{codesign_form.PARENT_QUESTIONS['parent_allows_recording']} No",
+        f"{codesign_form.CHILD_WANTS} Yes",
         f"{codesign_form.PARENT_CONFIRM} Yes",
         "Relationship to child: Mother",
         "Phone and email: 617-555-0142, someone.else@example.com",
         "Best number to reach you during the session: 617-555-0199",
-        f"{codesign_form.TEEN_QUESTIONS['teen_consents']} Yes",
-        f"{codesign_form.TEEN_QUESTIONS['teen_allows_recording']} No",
-        "Your name: Maya Rivera",
-        "Completed by: The parent, on the teen's behalf",
         f"Date: {codesign._stamp(s.form_submitted_at)}",
         f"Form version: {codesign_form.FORM_VERSION}",
         "sally@floatcbt.com",
@@ -276,7 +273,7 @@ async def test_a_used_link_changes_nothing(api, db, open_and_outbox):
     # One answer per link, as before: the first one stands, and a second send neither overwrites it
     # nor emails anyone. To change an answer, the parent emails Sally.
     token = await _signed_up(api, db, open_and_outbox)
-    await api.post(f"/codesign/permission/{token}", json=_answers(teen_consents=False))
+    await api.post(f"/codesign/permission/{token}", json=_answers(child_wants_to_take_part=False))
     s = (await db.execute(select(CodesignSignup))).scalar_one()
     sent_at = s.form_submitted_at
     open_and_outbox.clear()
@@ -436,3 +433,21 @@ async def test_the_viewer_list_is_the_admin_list(api, db, monkeypatch, open_and_
     admin_view = (await api.get("/codesign/signups")).json()
     api.sign_in_as((await _viewer(db)).user)
     assert (await api.get(VIEWER_ROUTE)).json() == admin_view
+
+
+# Why: Peter, 2026-10-29, removed the quotes question and its sentence from the permission form.
+# It must not come back in the form the page shows, nor in the emailed copy.
+def test_the_form_says_nothing_about_quotes():
+    import json
+    dates = ["Tuesday, November 10 at 12pm Eastern", "Tuesday, November 17 at 12pm Eastern"]
+    text = (json.dumps(codesign_form.form_for(dates)) + " ".join(codesign_form.as_paragraphs(dates))).lower()
+    assert "quote" not in text
+    assert "parent_allows_quotes" not in codesign_form.PARENT_QUESTIONS
+
+
+# Why: Peter, 2026-10-29, dropped the teen agreement. The form must not show it again, and the
+# parent's part carries the one box in its place.
+def test_the_form_has_no_teen_agreement():
+    form = codesign_form.form_for(["Tuesday, November 10 at 12pm Eastern", "Tuesday, November 17 at 12pm Eastern"])
+    assert "teen" not in form
+    assert form["parent"]["child_wants"] == "My child wants to participate in this initiative."

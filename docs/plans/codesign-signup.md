@@ -254,3 +254,19 @@ wording it was shown.
 >
 > Your name *(typed; this is the signature)* · Completed by: the teen, with their parent / the
 > parent, on the teen's behalf
+
+
+## Changes to the form (Peter, 2026-10-29)
+
+- **No quotes.** The sentence "If you agree below, we may use short quotes with no name attached in
+  presentations about Float." and the yes/no line "Float may use short quotes from my child, with no
+  name attached, in presentations about Float." are removed. Sally's list no longer has a Quotes column.
+- **No teen agreement.** It made the form too long. In its place, one box in the parent's part: "My
+  child wants to participate in this initiative." Confirmed = the parent's yes to taking part and the
+  box ticked. Unticked means the teen does not take part, and the seats are freed. Recording follows
+  the parent's answer alone. "Completed by" is gone from the list.
+- The quotes and teen-agreement columns stay in the database, empty from now on, for any form sent
+  before.
+
+The form text above under "Permission form (Peter, 2026-10-21)" is the original; the live wording is
+in `backend/app/services/codesign_form.py`.

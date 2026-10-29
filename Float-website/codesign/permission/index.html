@@ -584,8 +584,7 @@
     .part .child { font-size: 16px; color: var(--text); }
     .part .child strong { font-weight: 600; }
     .part p.note { font-size: 15px; color: var(--text-mid); }
-    #teenIntro, #teenText, #parentQuestions, #teenQuestions { display: flex; flex-direction: column; gap: 12px; }
-    .completed-by.missing label { border-color: #f04438; }
+    #parentQuestions { display: flex; flex-direction: column; gap: 12px; }
     .yesno { border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; background: var(--white); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .yesno legend { float: left; font-size: 16px; line-height: 1.5; color: var(--text); padding: 0; max-width: 72%; }
     .yesno .choices { display: flex; gap: 8px; flex-shrink: 0; }
@@ -599,10 +598,6 @@
     .agree input { width: 20px; height: 20px; margin-top: 3px; flex-shrink: 0; accent-color: var(--teal); }
     .fields { display: flex; flex-direction: column; gap: 16px; }
     .form-group .hint { font-size: 13px; color: var(--text-mid); }
-    .completed-by { border: none; display: flex; flex-direction: column; gap: 8px; }
-    .completed-by legend { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
-    .completed-by label { display: flex; gap: 10px; align-items: center; font-size: 16px; color: var(--text); cursor: pointer; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--white); }
-    .completed-by input { width: 18px; height: 18px; accent-color: var(--teal); }
     .notice { display: none; text-align: center; padding: 32px; background: var(--teal-light); border-radius: 16px; }
     .notice.show { display: block; }
     .notice h2 { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--teal-dark); margin-bottom: 8px; }
@@ -666,6 +661,10 @@
             <p class="child"><strong>Child's name:</strong> <span class="teen-name"></span></p>
             <p class="note" id="parentIntro"></p>
             <div id="parentQuestions"></div>
+            <label class="agree" id="childWantsRow">
+              <input type="checkbox" id="childWants">
+              <span id="childWantsText"></span>
+            </label>
             <label class="agree" id="confirmRow">
               <input type="checkbox" id="confirmGuardian">
               <span id="confirmText"></span>
@@ -693,23 +692,6 @@
                 <label for="sessionPhone">Best number to reach you during the session</label>
                 <input type="tel" id="sessionPhone" maxlength="40">
               </div>
-            </div>
-          </div>
-
-          <div class="part" id="teenPart">
-            <h2 id="teenHeading"></h2>
-            <div id="teenIntro"></div>
-            <div id="teenText"></div>
-            <div id="teenQuestions"></div>
-            <div class="fields">
-              <div class="form-group">
-                <label for="teenName">Your name (the teen's full name)</label>
-                <input type="text" id="teenName" maxlength="200">
-                <span class="hint">Typing it is the teen's signature.</span>
-              </div>
-              <fieldset class="completed-by" id="completedBy">
-                <legend>Completed by</legend>
-              </fieldset>
             </div>
           </div>
 
@@ -804,19 +786,7 @@
       renderQuestions($('parentQuestions'), form.parent.questions);
       $('confirmText').textContent = form.parent.confirm;
 
-      $('teenHeading').textContent = form.teen.heading;
-      form.teen.intro.forEach(t => $('teenIntro').append(el('p', t, 'note')));
-      renderBlocks($('teenText'), form.teen.text);
-      renderQuestions($('teenQuestions'), form.teen.questions);
-      Object.entries(form.teen.completed_by).forEach(([value, label]) => {
-        const row = el('label');
-        const input = el('input');
-        input.type = 'radio';
-        input.name = 'completed_by';
-        input.value = value;
-        row.append(input, el('span', label));
-        $('completedBy').append(row);
-      });
+      $('childWantsText').textContent = form.parent.child_wants;
       $('ask').style.display = 'block';
     }
 
@@ -863,6 +833,8 @@
       };
 
       yesNo(form.parent.questions);
+      // Unticked is an answer too: the child does not want to take part.
+      answers.child_wants_to_take_part = $('childWants').checked;
       answers.parent_confirms_guardian = $('confirmGuardian').checked;
       if (!answers.parent_confirms_guardian) {
         missing.push('Tick the box to confirm you are the parent or legal guardian');
@@ -878,11 +850,6 @@
       }
       answers.parent_email = email || null;
       field('sessionPhone', 'parent_session_phone', 'The best number to reach you during the session', 7);
-      yesNo(form.teen.questions);
-      field('teenName', 'teen_name', "The teen's full name");
-      const by = document.querySelector('input[name="completed_by"]:checked');
-      if (!by) { missing.push('Who completed the teen agreement'); $('completedBy').classList.add('missing'); }
-      else answers.completed_by = by.value;
       answers.form_version = form.version;
       return [answers, missing];
     }

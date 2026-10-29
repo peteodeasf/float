@@ -45,6 +45,7 @@ class CodesignSignup(Base):
     form_version: Mapped[str | None] = mapped_column(String, nullable=True)  # the wording agreed to
     parent_consents: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     parent_allows_recording: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    # No longer asked (Peter, 2026-10-29). Kept for forms sent before then.
     parent_allows_quotes: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     parent_confirms_guardian: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     parent_signed_name: Mapped[str | None] = mapped_column(String, nullable=True)  # the signature
