@@ -8,6 +8,7 @@ the CODESIGN_VIEWERS setting (docs/plans/codesign-viewer.md).
 Not patients: nothing here reads or writes a patient, family or clinician record.
 """
 import hashlib
+import logging
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -29,6 +30,7 @@ from app.services import codesign_form, email_service
 from app.services.codesign_viewers import can_view_codesign
 
 router = APIRouter(tags=["codesign"])
+logger = logging.getLogger(__name__)
 
 EASTERN = ZoneInfo("America/New_York")
 # "Sign up by Friday, November 6": open until the end of that day in Eastern time. Moved from
@@ -77,6 +79,14 @@ async def _taken(db: AsyncSession, now: datetime) -> dict[uuid.UUID, int]:
         for session_id, n in rows:
             taken[session_id] = taken.get(session_id, 0) + n
     return taken
+
+
+def _status(s: CodesignSignup, now: datetime) -> str:
+    if s.permission_given_at is not None:
+        return "confirmed"
+    if _answered(s):
+        return "declined"
+    return "waiting" if s.created_at > now - HOLD else "released"
 
 
 def _session_out(s: CodesignSession, taken: int) -> dict:
@@ -196,6 +206,9 @@ async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
             "Sally will send you the video invites.",
         ],
     )
+    name = _short_name(teen_first, teen_last)
+    await _tell_the_team(db, f"New co-design sign-up: {name}",
+                         f"{name} signed up for {dates[0]}, and {dates[1]}.")
     return {"success": True}
 
 
@@ -361,6 +374,14 @@ async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession 
                 "If this is a mistake, email Sally at sally@floatcbt.com.",
             ],
         )
+    name = _short_name(signup.teen_first_name, signup.teen_last_name)
+    if confirmed:
+        await _tell_the_team(db, f"Co-design: {name} confirmed",
+                             f"{name}'s parent gave permission. Their dates: {dates[0]}, and {dates[1]}.")
+    else:
+        await _tell_the_team(db, f"Co-design: {name} won't take part",
+                             f"The permission form says no, so {name} won't take part. Their dates "
+                             f"were {dates[0]}, and {dates[1]}. Those seats are free again.")
     return {"success": True, "confirmed": confirmed, "already": False}
 
 
@@ -378,13 +399,6 @@ async def _signups_by_session(db: AsyncSession) -> dict:
         select(CodesignSignup).order_by(CodesignSignup.created_at)
     )).scalars().all()
 
-    def status(s: CodesignSignup) -> str:
-        if s.permission_given_at is not None:
-            return "confirmed"
-        if _answered(s):
-            return "declined"
-        return "waiting" if s.created_at > now - HOLD else "released"
-
     def out(s: CodesignSignup) -> dict:
         return {
             "id": str(s.id),
@@ -394,7 +408,7 @@ async def _signups_by_session(db: AsyncSession) -> dict:
             "teen_email": s.teen_email,
             "parent_name": s.parent_name,
             "parent_email": s.parent_email,
-            "permission": status(s),
+            "permission": _status(s, now),
             "permission_given_at": s.permission_given_at.isoformat() if s.permission_given_at else None,
             "permission_given_by": s.permission_given_by,
             "form_submitted_at": s.form_submitted_at.isoformat() if s.form_submitted_at else None,
@@ -449,3 +463,54 @@ async def list_signups_for_viewer(
 ):
     """Read-only: the same list as the admin one, for the named people who run the sessions."""
     return await _signups_by_session(db)
+
+
+# ── Telling the team ─────────────────────────────────────────────────────────
+
+_STATUS_WORDS = {
+    "waiting": "waiting for permission",
+    "confirmed": "confirmed",
+    "declined": "declined",
+    "released": "seats released",
+}
+
+
+def _short_name(first: str, last: str) -> str:
+    """"Maya R.": the most of a teen's name the team summary may carry."""
+    return f"{first} {last[:1].upper()}."
+
+
+async def _tell_the_team(db: AsyncSession, subject: str, happened: str) -> None:
+    """Email everyone on CODESIGN_NOTIFY_EMAILS what just happened and every sign-up so far.
+
+    It goes to an inbox outside the sign-in, so it carries only each teen's first name and last
+    initial, their dates and their status: no surname, age, email, phone or parent. The rest is on
+    the list behind the sign-in. Sent after the sign-up or the answer is saved, and a failure is
+    only logged, so it can never undo or fail either.
+    """
+    to = [e.strip() for e in settings.CODESIGN_NOTIFY_EMAILS.split(",") if e.strip()]
+    if not to:
+        return
+    try:
+        listing = await _signups_by_session(db)
+        everyone = {s["id"] for sess in listing["sessions"] for s in sess["signups"]}
+        paragraphs = [happened, f"All sign-ups so far: {len(everyone)}"]
+        for sess in listing["sessions"]:
+            teens = ", ".join(
+                f"{_short_name(s['teen_first_name'], s['teen_last_name'])} "
+                f"({_STATUS_WORDS[s['permission']]})"
+                for s in sess["signups"]
+            )
+            paragraphs.append(f"{sess['label']}: {sess['taken']} of {sess['seats']} seats taken. "
+                              + (f"{teens}." if teens else "No sign-ups yet."))
+        for address in to:
+            await email_service.send_codesign_email(
+                to_email=address,
+                subject=subject,
+                heading=subject,
+                paragraphs=paragraphs,
+                cta_label="See the full list",
+                cta_link=f"{settings.BASE_URL}/codesign/signups",
+            )
+    except Exception as e:
+        logger.warning("co-design team summary failed: %s", type(e).__name__)

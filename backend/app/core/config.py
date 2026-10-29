@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     # minors' names and emails, so it is set by hand on Railway and never in code.
     # docs/plans/codesign-viewer.md
     CODESIGN_VIEWERS: str = ""
+    # Who is emailed a summary of every co-design sign-up when someone signs up or a parent answers
+    # the permission form: comma-separated emails. Empty means nobody, so nothing is sent until it
+    # is set by hand on Railway. docs/plans/codesign-signup.md, "Telling the team"
+    CODESIGN_NOTIFY_EMAILS: str = ""
 
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:8081", "https://floatcbt.com", "https://www.floatcbt.com"]

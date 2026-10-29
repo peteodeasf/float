@@ -47,7 +47,7 @@ def _form(week1, week2, **over):
 
 
 def _token(sent) -> str:
-    [link] = [e["cta_link"] for e in sent if e.get("cta_link")]
+    [link] = [e["cta_link"] for e in sent if "?t=" in (e.get("cta_link") or "")]
     return link.split("?t=", 1)[1]
 
 
@@ -451,3 +451,118 @@ def test_the_form_has_no_teen_agreement():
     form = codesign_form.form_for(["Tuesday, November 10 at 12pm Eastern", "Tuesday, November 17 at 12pm Eastern"])
     assert "teen" not in form
     assert form["parent"]["child_wants"] == "My child wants to participate in this initiative."
+
+
+# ── The summary emailed to the team (CODESIGN_NOTIFY_EMAILS) ─────────────────
+
+TEAM = ("notify@example.com", "notify.two@example.com")
+
+
+@pytest.fixture
+def team(monkeypatch):
+    monkeypatch.setattr(settings, "CODESIGN_NOTIFY_EMAILS", f" {TEAM[0]} , {TEAM[1]} ")
+
+
+def _to_team(outbox):
+    return [e for e in outbox if e["to_email"] in TEAM]
+
+
+async def test_a_sign_up_sends_the_summary_to_everyone_on_the_list(api, db, open_and_outbox, team):
+    # Peter, 2026-10-29: Sally hears about each new sign-up without opening the list. Every address
+    # on the setting gets it, spaces around the commas ignored.
+    w1, w2 = await _sessions(db)
+    await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
+    sent = _to_team(open_and_outbox)
+    assert sorted(e["to_email"] for e in sent) == sorted(TEAM)
+    assert {e["subject"] for e in sent} == {"New co-design sign-up: Maya R."}
+    assert sent[0]["paragraphs"][0] == (
+        "Maya R. signed up for Tuesday, November 10 at 12pm Eastern, and Tuesday, November 17 at 12pm Eastern.")
+    assert sent[0]["cta_link"] == f"{settings.BASE_URL}/codesign/signups"
+
+
+async def test_nothing_goes_to_the_team_when_the_setting_is_empty(api, db, open_and_outbox, monkeypatch):
+    # Empty by default, so nothing is sent until Peter sets it on Railway. Only the parent and the
+    # teen are emailed, as before.
+    monkeypatch.setattr(settings, "CODESIGN_NOTIFY_EMAILS", " , ")
+    w1, w2 = await _sessions(db)
+    await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
+    assert [e["to_email"] for e in open_and_outbox] == ["ana@example.com", "maya@example.com"]
+    token = _token(open_and_outbox)
+    open_and_outbox.clear()
+    await api.post(f"/codesign/permission/{token}", json=_answers())
+    assert [e["to_email"] for e in open_and_outbox] == ["ana@example.com", "maya@example.com"]
+
+
+@pytest.mark.parametrize("answers, subject", [
+    (dict(), "Co-design: Maya R. confirmed"),
+    (dict(parent_consents=False), "Co-design: Maya R. won't take part"),
+])
+async def test_an_answer_sends_one_summary(api, db, open_and_outbox, team, answers, subject):
+    # Peter, 2026-10-29: Sally also hears when a parent confirms or says no, in the same format.
+    # One email per address, and only one: the parent's copy and the teen's note are unchanged.
+    token = await _signed_up(api, db, open_and_outbox)
+    await api.post(f"/codesign/permission/{token}", json=_answers(**answers))
+    sent = _to_team(open_and_outbox)
+    assert sorted(e["to_email"] for e in sent) == sorted(TEAM)
+    assert {e["subject"] for e in sent} == {subject}
+    status = "confirmed" if not answers else "declined"
+    assert f"Maya R. ({status})" in " ".join(sent[0]["paragraphs"])
+
+
+async def test_a_repeat_send_tells_the_team_nothing(api, db, open_and_outbox, team):
+    # The first answer stands and a second send changes nothing, so there is nothing new to tell.
+    token = await _signed_up(api, db, open_and_outbox)
+    await api.post(f"/codesign/permission/{token}", json=_answers())
+    open_and_outbox.clear()
+    r = await api.post(f"/codesign/permission/{token}", json=_answers())
+    assert r.json()["already"] is True
+    assert open_and_outbox == []
+
+
+async def test_the_summary_has_names_and_counts_and_no_contact_details(api, db, open_and_outbox, team):
+    # The summary goes to an ordinary inbox outside the sign-in. It carries each teen's first name
+    # and last initial, the seat counts and the statuses, and nothing else about a teen or parent:
+    # no surname, age, email, phone or parent name. Those stay behind the sign-in.
+    w1, w2 = await _sessions(db)
+    await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
+    token = _token(open_and_outbox)
+    await api.post(f"/codesign/permission/{token}", json=_answers())
+    open_and_outbox.clear()
+    await api.post("/codesign/signups", json=_form(
+        w1[0], w2[1], teen_first_name="Sam", teen_last_name="Okafor", teen_age=16,
+        teen_email="sam.teen@example.com", parent_name="Grace Okafor", parent_email="grace@example.com"))
+    [mail, _] = _to_team(open_and_outbox)
+    text = "\n".join([mail["subject"], mail["heading"], *mail["paragraphs"]])
+
+    assert mail["subject"] == "New co-design sign-up: Sam O."
+    assert "All sign-ups so far: 2" in text
+    assert ("Tuesday, November 10 at 12pm Eastern: 2 of 6 seats taken. "
+            "Maya R. (confirmed), Sam O. (waiting for permission).") in text
+    assert "Tuesday, November 17 at 12pm Eastern: 1 of 6 seats taken. Maya R. (confirmed)." in text
+    assert "Thursday, November 19 at 12pm Eastern: 1 of 6 seats taken. Sam O. (waiting for permission)." in text
+    assert "Wednesday, November 11 at 12pm Eastern: 0 of 6 seats taken. No sign-ups yet." in text
+    # Sessions in date order.
+    labels = [p.split(":")[0] for p in mail["paragraphs"][2:]]
+    assert labels[0].startswith("Tuesday, November 10") and labels[-1].startswith("Friday, November 20")
+    for secret in ("Rivera", "Okafor", "Ana", "Grace", "15", "16", "@", "617", "555", "Mother"):
+        assert secret not in text, secret
+
+
+async def test_a_failing_team_email_does_not_fail_the_sign_up(api, db, open_and_outbox, team, monkeypatch):
+    # The summary is a courtesy to the team. If sending it breaks, the teen is still signed up, the
+    # parent and the teen still get their emails, and the parent's answer is still recorded.
+    sent = []
+
+    async def flaky(**kwargs):
+        if kwargs["to_email"] in TEAM:
+            raise RuntimeError("mail service down")
+        sent.append(kwargs)
+        return True
+
+    monkeypatch.setattr(email_service, "send_codesign_email", flaky)
+    w1, w2 = await _sessions(db)
+    assert (await api.post("/codesign/signups", json=_form(w1[0], w2[0]))).status_code == 200
+    assert [e["to_email"] for e in sent] == ["ana@example.com", "maya@example.com"]
+    assert (await db.execute(select(CodesignSignup))).scalar_one() is not None
+    r = await api.post(f"/codesign/permission/{_token(sent)}", json=_answers())
+    assert r.status_code == 200 and r.json()["confirmed"] is True
