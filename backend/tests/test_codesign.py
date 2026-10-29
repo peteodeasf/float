@@ -80,8 +80,8 @@ async def test_the_six_dates_at_noon_eastern(api, db):
         "Wednesday, November 11 at 12pm Eastern",
         "Thursday, November 12 at 12pm Eastern",
         "Tuesday, November 17 at 12pm Eastern",
-        "Wednesday, November 18 at 12pm Eastern",
         "Thursday, November 19 at 12pm Eastern",
+        "Friday, November 20 at 12pm Eastern",
     ]
     assert [s["week"] for s in r["sessions"]] == [1, 1, 1, 2, 2, 2]
 
@@ -155,7 +155,7 @@ async def test_the_permission_page_shows_only_the_first_name_and_dates(api, db, 
     r = await api.get(f"/codesign/permission/{_token(open_and_outbox)}")
     assert r.status_code == 200
     body = r.json()
-    dates = ["Thursday, November 12 at 12pm Eastern", "Thursday, November 19 at 12pm Eastern"]
+    dates = ["Thursday, November 12 at 12pm Eastern", "Friday, November 20 at 12pm Eastern"]
     assert {k: v for k, v in body.items() if k != "form"} == {
         "teen_first_name": "Maya", "dates": dates, "answered": False, "confirmed": False,
     }
