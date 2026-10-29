@@ -14,7 +14,7 @@ teen signs up for one date from each week, and their parent is emailed for permi
 - What is Float? / What we'll chat about (three items).
 - Pick one date from each week. 45–60 min · on video · open discussion.
   - Session one · your thoughts: Tue Nov 10, Wed Nov 11, Thu Nov 12.
-  - Session two · your ideas: Tue Nov 17, Wed Nov 18, Thu Nov 19.
+  - Session two · your ideas: Tue Nov 17, Thu Nov 19, Fri Nov 20 (Wed Nov 18 moved to Fri Nov 20 on 2026-10-29, Peter).
   - (Moved one week later on 2026-10-28, Peter. First planned for Nov 3–5 and Nov 10–12.)
 - Sign up by Friday, November 6 (was October 30; moved 2026-10-28). A parent or guardian's permission is needed. Questions?
   sally@floatcbt.com.
