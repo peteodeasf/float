@@ -10,7 +10,7 @@ def messages(steps):
 def test_nothing_with_a_fear_level():
     # With no Fear Level anywhere there is no order, so the clinician is told how a rung gets on.
     assert messages([("Walk in", None)])["NO_SCORED_STEPS"] == (
-        "Nothing is on the ladder yet. A rung shows on the ladder once it has a Fear Level."
+        "Nothing is on the ladder yet. Add a situation, add a behavior under it, and give the behavior a Fear Level. It then shows on the ladder as a rung."
     )
 
 
