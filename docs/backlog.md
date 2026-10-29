@@ -706,27 +706,6 @@ moving DMARC past `p=none`.
   a hand-picked revision id silently created a cycle on 2026-08-28. `S`
 - **`.claude/settings.local.json` has 279 allow entries** — worth pruning to patterns. `S`
 
-## The two-parents test sometimes fails in CI `S`
-
-**Found 2026-10-21**, on PR #64, which changed no backend code. Main passed on the same backend.
-
-- **Today.** `tests/test_two_parents.py::test_a_child_can_have_two_parents_and_the_clinician_sees_both`
-  invites two parents and expects them back in invite order. `GET /patients/{id}/parents`
-  (`backend/app/api/routers/patients.py`) sorts by `ParentPatientLink.created_at`, which Postgres
-  fills with `now()`. In a test, both invites run inside one transaction, so both get the same
-  time and Postgres may return them either way round. In the real app each invite is its own
-  request, so the order there is right.
-  Also seen locally on 2026-10-21 (issue #57 work, no backend change): a second test in the same
-  file, `test_each_parent_has_their_own_thread_with_the_clinician`, failed once in a full run and
-  passed 3 of 3 runs on its own. Check whether it depends on the same order. Seen again
-  2026-10-21 (Analyze session with AI work): that same test failed once in a full run, then passed
-  4 runs in a row. Seen again 2026-10-22 (issue #79 work, no backend change): failed once in a
-  full run, then passed one full run and 5 runs of the file on its own.
-- **What changes.** Give the list a second sort key that cannot tie, or have the test not depend on
-  the order.
-- **How to tell it worked.** The test passes every time, for example 50 runs in a row.
-- **Gate.** None. **Depends on:** nothing.
-
 ## Development setup — what is left
 
 From [`dev-setup.md`](plans/dev-setup.md). Items 1, 3 and 4 are done (test database and 64 backend
