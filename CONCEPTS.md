@@ -50,6 +50,10 @@ _(add: child home/exposure screens, clinician case-file & sessions IA, parent lo
 Peter, 2026-10-15, after review with Dr. Walker. See
 [`docs/plans/ladder-combinations.md`](docs/plans/ladder-combinations.md).
 
+- **Rung** — an item on the exposure ladder. Say "rung" on screen, never "step". Peter, 2026-10-29:
+  *"We should use rung wherever possible, given that that's our metaphor: rungs on the ladder."*
+  The code, API fields and some AI prompts still say "step" (`review_steps`, `suggested-steps`,
+  `step_name`); those were not renamed.
 - **Combination** — being in a situation without one safety behaviour, written as one sentence with
   its own Fear Level. A rung. Stored as `behavior_type = "combination"`, with `without_behavior_id`
   pointing at the safety behaviour.
@@ -60,7 +64,7 @@ Peter, 2026-10-15, after review with Dr. Walker. See
 
 ## Fear Level
 
-The 1–10 number for how frightening something is: a step on the ladder, a situation, what the child
+The 1–10 number for how frightening something is: a rung on the ladder, a situation, what the child
 expects before an exposure, and what they felt after. Peter, 2026-09-10: *"let's use Fear Level as
 the consistent term."*
 

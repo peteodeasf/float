@@ -108,7 +108,7 @@ async def update_treatment_plan(
         if not belongs:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="That step is not on this plan.",
+                detail="That rung is not on this plan.",
             )
         plan.recommended_rung_id = data.recommended_rung_id
     await db.commit()

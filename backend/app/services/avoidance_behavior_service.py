@@ -116,7 +116,7 @@ async def _check_parent(
     if parent.behavior_type != COMBINATION or behavior_type != SCENARIO:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only an easier version can go under a step, and only under a combination.",
+            detail="Only an easier version can go under a rung, and only under a combination.",
         )
 
 
@@ -177,7 +177,7 @@ async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_
         # An easier version of a step stays an easier version.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="An easier version of a step stays an easier version.",
+            detail="An easier version of a rung stays an easier version.",
         )
     if new_type == COMBINATION or behavior.behavior_type == COMBINATION:
         raise HTTPException(
@@ -228,7 +228,7 @@ async def update_behavior(
             # An easier version of a step stays under that step, on that step's situation.
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="An easier version of a step stays with its step.",
+                detail="An easier version of a rung stays with its rung.",
             )
         if behavior.behavior_type == COMBINATION:
             # A combination is this situation without one of its behaviours. Under another

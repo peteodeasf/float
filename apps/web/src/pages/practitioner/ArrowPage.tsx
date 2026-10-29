@@ -177,8 +177,8 @@ export default function ArrowPage() {
         <div style={{ ...card, textAlign: 'center' }}>
           {situationSteps ? (
             <>
-              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--float-primary-dark)' }}>That step is not on the ladder any more</div>
-              <button onClick={exit} style={primaryBtn}>Back to the steps</button>
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--float-primary-dark)' }}>That rung is not on the ladder any more</div>
+              <button onClick={exit} style={primaryBtn}>Back to the rungs</button>
             </>
           ) : (
             <div style={{ color: '#6b7a79', fontSize: 14, padding: 20 }}>Loading…</div>
@@ -196,7 +196,7 @@ export default function ArrowPage() {
           onSaved={() => qc.invalidateQueries({ queryKey: ['step-arrows', fromSituation] })}
           onBack={exit}
           onDone={exit}
-          backLabel="← Back to the steps"
+          backLabel="← Back to the rungs"
         />
       )}
 
@@ -212,7 +212,7 @@ export default function ArrowPage() {
           // pick from again. Peter, 2026-09-05.
           onBack={fromSituation ? exit : () => setPhase('pick')}
           onDone={fromSituation ? exit : () => setPhase('pick')}
-          backLabel={fromSituation ? '← Back to the steps' : '← All situations'}
+          backLabel={fromSituation ? '← Back to the rungs' : '← All situations'}
         />
       )}
     </Chrome>

@@ -487,8 +487,8 @@ export const getSuggestedSteps = async (
 
 // ── Ladder review ──
 // Checked before the editor closes. `findings` are arithmetic against Dr. Walker's parameters —
-// enough steps, a low enough place to start, no jump too big, nothing unscored. `ai_pending` says
-// the judgement half is not built, so a clean result is not "it has been read".
+// enough rungs, a low enough place to start, no jump too big, nothing unscored. `ai_pending` says
+// the judgement half is not built; the panel no longer shows that (Peter, 2026-10-29).
 export interface LadderReview {
   findings: { code: string; message: string }[]
   ai_pending: boolean

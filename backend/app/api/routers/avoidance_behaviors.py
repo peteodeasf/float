@@ -275,8 +275,8 @@ class LadderReviewFinding(BaseModel):
 
 class LadderReviewResponse(BaseModel):
     findings: list[LadderReviewFinding] = []
-    #: The judgement half — does a step keep a safety behaviour, is there a way out built into it —
-    #: is not built. Said plainly so a clinician does not read a clean result as "it has been read".
+    #: The judgement half — does a rung keep a safety behaviour, is there a way out built into it —
+    #: is not built. Peter, 2026-10-29: the panel no longer says so on screen.
     ai_pending: bool = True
 
 
@@ -289,8 +289,8 @@ async def review_plan_ladder(
 ):
     """Check the ladder before the clinician closes the editor.
 
-    Arithmetic only, against Dr. Walker's parameters in `LADDER_RULES`: is the easiest step low
-    enough to start on, are there enough steps, is any jump between two of them too big, is anything
+    Arithmetic only, against Dr. Walker's parameters in `LADDER_RULES`: is the lowest rung low
+    enough to start on, are there enough rungs, is any jump between two of them too big, is anything
     unscored.
     """
     _, practitioner = context

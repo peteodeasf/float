@@ -62,7 +62,7 @@ import {
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, avoidsTheSituation, behaviorHint, bySituationFear, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
+  arrowDoneOn, behaviorHint, bySituationFear, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -409,16 +409,6 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               </ul>
             )}
 
-            {/* Said plainly. A clean result here means the arithmetic is fine, not that anyone has
-                read whether a step keeps a safety behavior or has a way out built into it. */}
-            {review.data?.ai_pending && (
-              <p style={{ fontSize: 12, color: 'var(--float-text-hint)', margin: '12px 0 0', lineHeight: 1.5 }}>
-                This checks the numbers only — how many steps, where it starts, the gaps between
-                them. Nothing yet reads whether a step keeps a safety behavior or has a way out
-                built into it.
-              </p>
-            )}
-
             <div style={{ ...panelFooter, marginTop: 14 }}>
               <button onClick={() => setReviewing(false)} style={quietLink}>Keep editing</button>
               <Button kind="primary" onClick={finish}>Save ladder</Button>
@@ -492,7 +482,7 @@ function SituationRow({ planId, patientId, trigger, expanded, onToggle, onArrow,
         background: 'var(--float-primary-light)',
         borderBottom: expanded ? '1px solid #cfe0db' : undefined,
       }}>
-        <button onClick={onToggle} aria-expanded={expanded} title={expanded ? 'Collapse' : 'Show its steps'}
+        <button onClick={onToggle} aria-expanded={expanded} title={expanded ? 'Collapse' : 'Show its rungs'}
           style={{ fontSize: 11, color: '#4d8478', width: 12, flexShrink: 0, background: 'none', border: 0, cursor: 'pointer', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</button>
 
         {editing ? (
@@ -629,14 +619,14 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
     pending[b.id]?.text == null && (drafts[i]?.isError || drafts[i]?.data?.drafted_by === 'template')
   const drafting = drafts.some(d => d.isLoading)
 
+  // One typed here is a safety behavior. An avoidance is typed in the clinician's own words like
+  // any other; Float no longer offers one (Dr. Walker, 2026-10-29).
   const addMut = useMutation({
-    mutationFn: (v: { name: string; type: 'safety' | 'avoidance' }) =>
-      createBehavior(trigger.id, { name: v.name, behavior_type: v.type }),
+    mutationFn: (name: string) => createBehavior(trigger.id, { name, behavior_type: BEHAVIOR_TYPE_SAFETY }),
     onSuccess: () => { invalidate(); setDraft(''); setMode('edit') },
   })
 
-  // What the log and sessions say the child does in THIS situation, not yet added, and one
-  // avoidance — staying away from the situation — while there is none on the list.
+  // What the log and sessions say the child does in THIS situation, not yet added.
   const { data: suggested } = useQuery({
     queryKey: ['insights', patientId, 'behavior'],
     queryFn: () => getPatientInsights(patientId, 'behavior'),
@@ -645,10 +635,6 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
   const fromLog = (suggested ?? []).filter(i =>
     i.situation_id === trigger.id && !listedNames.has(i.name.trim().toLowerCase()),
   )
-  const avoidsIt = avoidsTheSituation(trigger.name)
-  const offerAvoidance = avoidance.length === 0
-    && !fromLog.some(i => i.behavior_type === BEHAVIOR_TYPE_AVOIDANCE)
-  const suggestionCount = fromLog.length + (offerAvoidance ? 1 : 0)
 
   const takeMut = useMutation({
     // The log did not always say which kind it is. Peter, 2026-10-16: one added by hand is a
@@ -782,28 +768,24 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
         <div>
           <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
             <input value={draft} onChange={e => setDraft(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate({ name: draft.trim(), type: 'safety' }) }}
+              onKeyDown={e => { if (e.key === 'Enter' && draft.trim() && !addMut.isPending) addMut.mutate(draft.trim()) }}
               placeholder={behaviorHint(trigger.name)}
               aria-label="A safety behavior"
               style={textBox} />
-            <Button kind="secondary" size="sm" onClick={() => addMut.mutate({ name: draft.trim(), type: 'safety' })}
+            <Button kind="secondary" size="sm" onClick={() => addMut.mutate(draft.trim())}
               disabled={!draft.trim() || addMut.isPending} style={{ flexShrink: 0 }}>
               Add
             </Button>
           </div>
 
-          {suggestionCount > 0 && (
+          {fromLog.length > 0 && (
             <div style={{ marginTop: 12 }}>
               <button onClick={() => setShowSuggested(v => !v)} aria-expanded={showSuggested}
                 style={showHideLink}>
-                {showSuggested ? '▾ Hide' : '▸ Show'} suggested behaviors ({suggestionCount})
+                {showSuggested ? '▾ Hide' : '▸ Show'} suggested behaviors ({fromLog.length})
               </button>
               {showSuggested && (
                 <div style={chipList}>
-                  {offerAvoidance && (
-                    <SuggestionChip text={avoidsIt} disabled={addMut.isPending}
-                      onAdd={() => addMut.mutate({ name: avoidsIt, type: 'avoidance' })} />
-                  )}
                   {fromLog.map(item => (
                     <SuggestionChip key={item.id} text={item.name} disabled={takeMut.isPending}
                       onAdd={() => takeMut.mutate(item)}

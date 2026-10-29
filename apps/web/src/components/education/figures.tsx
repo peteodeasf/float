@@ -249,8 +249,8 @@ function TwoLadders() {
   return (
     <svg viewBox="0 0 600 310" role="img" aria-label="Two ladders climbed together: the child's exposure ladder and the parent's accommodation ladder, each from lowest to highest distress" style={{ fontFamily: font }}>
       <Arrowheads />
-      {ladder(40, "The child's exposure ladder", 'Refraining from avoidance', ['Lowest DT', 'Next step', 'Hardest'], C.mint)}
-      {ladder(340, "The parent's accommodation ladder", 'Stopping accommodation', ['Lowest DT', 'Next step', 'Hardest'], C.amber)}
+      {ladder(40, "The child's exposure ladder", 'Refraining from avoidance', ['Lowest DT', 'Next rung', 'Hardest'], C.mint)}
+      {ladder(340, "The parent's accommodation ladder", 'Stopping accommodation', ['Lowest DT', 'Next rung', 'Hardest'], C.amber)}
       <path d="M 272 178 L 330 178" stroke={C.teal} strokeWidth={2} markerEnd="url(#edu-arrow)" markerStart="url(#edu-arrow)" />
       <text x={301} y={166} textAnchor="middle" fontSize={11} fontWeight={700} fill={C.teal}>in step</text>
     </svg>

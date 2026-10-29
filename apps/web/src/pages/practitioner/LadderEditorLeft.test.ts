@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { arrowDoneOn, avoidsTheSituation, behaviorHint, rungHint } from './ladderEditor'
+import { arrowDoneOn, behaviorHint, rungHint } from './ladderEditor'
 import type { DownwardArrow } from '../../api/treatment'
 
 function arrow(rungId: string, fear: string | null, by = 'practitioner'): DownwardArrow {
@@ -12,17 +12,6 @@ function arrow(rungId: string, fear: string | null, by = 'practitioner'): Downwa
     created_at: '', updated_at: '',
   }
 }
-
-describe('the avoidance offered on every situation', () => {
-  it('reads as a sentence', () => {
-    expect(avoidsTheSituation('Being dropped off at school')).toBe('Avoids being dropped off at school')
-  })
-
-  it('keeps an acronym and the word I', () => {
-    expect(avoidsTheSituation('PE lessons')).toBe('Avoids PE lessons')
-    expect(avoidsTheSituation('I have to speak in class')).toBe('Avoids I have to speak in class')
-  })
-})
 
 describe('whether a step shows ✓ DA', () => {
   it('is done once the arrow reaches a feared outcome', () => {
