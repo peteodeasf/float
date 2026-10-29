@@ -1134,6 +1134,30 @@ Found 2026-10-19 while building the check that no test case is in a prompt
   prompt.
 - **Gate:** the prompt change waits for Peter. **Depends on:** nothing.
 
+## Plan tab: when the plan fails to load, it says "No treatment plan yet" `S`
+- **Today:** `apps/web/src/pages/practitioner/PatientPage.tsx` shows "No treatment plan yet" and the
+  Create treatment plan button whenever `plan` is empty. That includes when loading the plan failed.
+  The Create button's mutation (`createPlanMut`) has no error handling either, so a failed click
+  shows nothing. This is why issue #92 looked like "nothing happens". The cause of #92 is fixed on
+  the backend; this screen would still hide the next failure the same way.
+- **What changes:** when loading the plan fails, say so instead of offering Create. When Create
+  fails, show a short error.
+- **How to tell it worked:** a page test where the plan request fails, and one where Create fails,
+  each finding an error message rather than "No treatment plan yet".
+- **Gate:** screen change, waits for Peter. **Depends on:** nothing.
+
+## The patient list and the attention list read the newest plan, even a finished one `S`
+- **Today:** `backend/app/api/routers/patients.py` (the patient list's summary, `plan_status`) and
+  `backend/app/services/attention_service.py` take the newest plan of any status. Everywhere else
+  uses the unfinished plan (`get_active_plan`). If a patient's newest plan is complete and an older
+  one is still open, these two read the finished one. Since issue #92's fix that can only happen if
+  a plan was marked complete and an older one reopened, or if the cleanup migration marked a newer
+  duplicate complete. Not seen happening; noticed while reading the code.
+- **What changes:** read the unfinished plan first, and fall back to the newest finished one.
+- **How to tell it worked:** a test with an open older plan and a complete newer one, finding the
+  open plan's status on the patient list.
+- **Gate:** none. **Depends on:** nothing.
+
 ## Ladder generation — build it
 
 **PAUSED 2026-08-31.** Waiting on seed data from Dr. Walker; she judged our case set a bad place to start and is writing her own. Nothing to do until it arrives.

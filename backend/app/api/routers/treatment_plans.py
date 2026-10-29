@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,15 +56,19 @@ async def get_plan(
 async def create_plan(
     patient_id: uuid.UUID,
     data: TreatmentPlanCreate,
+    response: Response,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
     await get_patient_by_id(db, patient_id, practitioner.organization_id)
-    return await create_treatment_plan(
+    plan, made_now = await create_treatment_plan(
         db, patient_id, practitioner.id, practitioner.organization_id, data
     )
+    if not made_now:
+        response.status_code = status.HTTP_200_OK
+    return plan
 
 
 @router.put("/{plan_id}", response_model=TreatmentPlanResponse)

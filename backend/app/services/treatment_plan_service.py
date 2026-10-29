@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.treatment import TreatmentPlan, AvoidanceBehavior, TriggerSituation
@@ -14,7 +15,16 @@ async def create_treatment_plan(
     practitioner_id: uuid.UUID,
     organization_id: uuid.UUID,
     data: TreatmentPlanCreate
-) -> TreatmentPlan:
+) -> tuple[TreatmentPlan, bool]:
+    """The patient's unfinished plan, made now if there is none. Returns (plan, made_now).
+
+    A patient has one unfinished plan, and the database enforces it. Issue #92: a second one made
+    every lookup of the plan fail, so the Plan tab said "No treatment plan yet" and each click on
+    Create added another. If one exists, it is handed back instead.
+    """
+    existing = await get_active_plan(db, patient_id, organization_id)
+    if existing is not None:
+        return existing, False
     plan = TreatmentPlan(
         patient_id=patient_id,
         practitioner_id=practitioner_id,
@@ -24,10 +34,18 @@ async def create_treatment_plan(
         status="setup",
         nickname=data.nickname
     )
-    db.add(plan)
+    try:
+        # A savepoint, so losing a race to a second click undoes only this insert.
+        async with db.begin_nested():
+            db.add(plan)
+    except IntegrityError:
+        existing = await get_active_plan(db, patient_id, organization_id)
+        if existing is None:
+            raise
+        return existing, False
     await db.commit()
     await db.refresh(plan)
-    return plan
+    return plan, True
 
 
 async def get_active_plan(
@@ -81,6 +99,19 @@ async def update_treatment_plan(
     if data.parent_visibility_level is not None:
         plan.parent_visibility_level = data.parent_visibility_level
     if data.status is not None:
+        if plan.status == "complete" and data.status != "complete":
+            other_open = (await db.execute(
+                select(TreatmentPlan.id).where(
+                    TreatmentPlan.patient_id == plan.patient_id,
+                    TreatmentPlan.status != "complete",
+                    TreatmentPlan.id != plan.id,
+                )
+            )).first()
+            if other_open is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This patient already has an open treatment plan.",
+                )
         if data.status == "active" and plan.status != "active" and plan.activated_at is None:
             plan.activated_at = datetime.now(timezone.utc)
         plan.status = data.status

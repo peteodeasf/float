@@ -1,12 +1,20 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, text, Numeric, Integer, Boolean, UniqueConstraint
+from sqlalchemy import String, DateTime, ForeignKey, text, Numeric, Integer, Boolean, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
 
 class TreatmentPlan(Base):
     __tablename__ = "treatment_plans"
+    # One unfinished plan per patient. Every lookup of "the patient's plan" expects one; a second
+    # broke the Plan tab (issue #92). Completed plans are history and do not count.
+    __table_args__ = (
+        Index(
+            "uq_treatment_plans_one_open_per_patient", "patient_id",
+            unique=True, postgresql_where=text("status != 'complete'"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
