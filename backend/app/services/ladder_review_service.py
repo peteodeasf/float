@@ -254,7 +254,7 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
     if not scored:
         findings.append(ReviewFinding(
             code="NO_SCORED_STEPS",
-            message="Nothing is on the ladder yet. A rung shows on the ladder once it has a Fear Level.",
+            message="Nothing is on the ladder yet. Add a situation, add a behavior under it, and give the behavior a Fear Level. It then shows on the ladder as a rung.",
         ))
         return findings
 
