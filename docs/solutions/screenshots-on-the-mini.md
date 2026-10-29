@@ -126,3 +126,21 @@ Edit ladder, Add situation). The behavior box shows as soon as the situation is 
 only shows after Done, then Add rung. There are two buttons called that — "Add rung" in the
 situation and "+ Add rung" elsewhere — so click it by its exact name
 (`getByRole('button', { name: 'Add rung', exact: true })`).
+
+## Getting each "Before you finish" message on screen
+
+**2026-10-29**, while rewording the ladder check. Two things stop the panel from showing anything
+useful with demo data:
+
+- **Save ladder skips the check when nothing was edited.** Change something first. Typing a Fear
+  Level into an empty situation (Soccer practice after school) works, and it does not touch any rung.
+- **The demo ladder passes every check,** so the panel would be empty. Save the rung Fear Levels
+  first (`select id, distress_thermometer_when_refraining from avoidance_behaviors where
+  behavior_type in ('combination','scenario') ...` into `/tmp/<worktree>/`), then change them in
+  `float_dev` with `psql`: set some to null for the "no Fear Level" message, leave one for "too
+  few rungs", raise the lowest above 4 for "starts too high", and leave a gap above 2 for "a big
+  jump". Put the saved values back afterwards, and the situation's Fear Level back to null, and
+  diff against the saved copy.
+
+The check reads only each rung's own Fear Level, not its situation's. The three demo rungs under
+"Being dropped off at school" count even though that situation has none.

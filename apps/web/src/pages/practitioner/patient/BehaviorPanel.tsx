@@ -357,7 +357,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
               /* Delete confirmation */
               <div style={{ background: 'var(--float-danger-bg)', borderRadius: 'var(--float-radius-card)', padding: '8px 10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--float-danger)' }}>Delete this behavior{sortedBehaviors.some(c => c.parent_behavior_id === b.id) ? ' and its smaller steps' : ''}?</span>
+                  <span style={{ fontSize: '12px', color: 'var(--float-danger)' }}>Delete this behavior{sortedBehaviors.some(c => c.parent_behavior_id === b.id) ? ' and its smaller rungs' : ''}?</span>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button onClick={() => delMut.mutate(b.id)} disabled={delMut.isPending} style={btn('danger', 'sm')}>{delMut.isPending ? 'Deleting…' : 'Yes, delete'}</button>
                     <button onClick={() => { setDeletingBehaviorId(null); setDelError(null) }} style={btn('quiet', 'sm')}>Cancel</button>
@@ -402,7 +402,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                         <DTBadge value={c.distress_thermometer_when_refraining} />
                       </div>
                       <div style={{ width: '92px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
-                        <button onClick={() => { if (confirm('Delete this step?')) delMut.mutate(c.id) }} className="text-[12px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
+                        <button onClick={() => { if (confirm('Delete this rung?')) delMut.mutate(c.id) }} className="text-[12px] text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">Del</button>
                       </div>
                     </div>
                   </div>
@@ -413,7 +413,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                   <div style={{ position: 'relative', marginTop: '5px' }}>
                     <div style={{ position: 'absolute', left: '-25px', top: '15px', width: '12px', height: '12px', borderRadius: '50%', background: '#fff', border: '2px solid var(--float-border-strong)', zIndex: 2 }} />
                     <div style={{ background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', border: '1px solid var(--float-border)' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', marginBottom: '6px' }}>Smaller step under &ldquo;{b.name}&rdquo;</div>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--float-text-secondary)', marginBottom: '6px' }}>Smaller rung under &ldquo;{b.name}&rdquo;</div>
                       <input value={subName} onChange={e => setSubName(e.target.value)} placeholder="More specific, easier version" className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded" style={{ marginBottom: '8px' }} autoFocus
                         onKeyDown={e => e.key === 'Enter' && subName.trim() && subMut.mutate(b)} />
                       <div style={{ marginBottom: '8px' }}>
@@ -425,7 +425,7 @@ export function BehaviorPanel({ trigger, planId, patientId, planStatus }: {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <button onClick={() => subMut.mutate(b)} disabled={!subName.trim() || subMut.isPending} style={btn('primary', 'sm')}>Add step</button>
+                        <button onClick={() => subMut.mutate(b)} disabled={!subName.trim() || subMut.isPending} style={btn('primary', 'sm')}>Add rung</button>
                         <button onClick={resetSub} style={btn('quiet', 'sm')}>Cancel</button>
                       </div>
                     </div>

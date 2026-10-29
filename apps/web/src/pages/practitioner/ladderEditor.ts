@@ -8,12 +8,6 @@ export function arrowDoneOn(rungId: string, arrows: DownwardArrow[]): boolean {
   return arrows.some(a => a.rung_id === rungId && a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim())
 }
 
-/** The avoidance offered on every situation: staying away from it. "Avoids being dropped off at
- *  school". Lower-cases the first letter unless it starts an acronym or the word "I". */
-export function avoidsTheSituation(situation: string): string {
-  return `Avoids ${midSentence(situation)}`
-}
-
 // The hints in the two boxes inside a situation. They name the situation itself rather than give
 // a made-up example: the fixed one was about a classroom, which read wrong under "Soccer practice
 // after school" (Peter, 2026-10-22, issue #77). The situation goes first, so any name reads right.
@@ -78,11 +72,4 @@ export function inShownOrder<T>(list: string, sorted: T[], idOf: (t: T) => strin
 export function sortNextTime(list?: string): void {
   if (list) shown.delete(list)
   else shown.clear()
-}
-
-/** Lower-cases the first letter unless it starts an acronym or the word "I". */
-function midSentence(situation: string): string {
-  const s = situation.trim()
-  const keep = /^(I\b|[A-Z]{2})/.test(s)
-  return keep ? s : s.charAt(0).toLowerCase() + s.slice(1)
 }

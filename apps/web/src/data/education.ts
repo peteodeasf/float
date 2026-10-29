@@ -488,7 +488,7 @@ Not helpful: Rung 1: "Sit in cafeteria" / Rung 2: "Sit in cafeteria again"
 Helpful: Rung 1: "Sit at end of cafeteria table" / Rung 2: "Sit in the middle of the table" / Rung 3: "Sit near the most social group"
 
 **Starting too high**
-If the child's lowest-DT behavior has a refraining DT of 7+, look harder for lower-DT behaviors. There is almost always a smaller step that the child can manage.
+If the child's lowest-DT behavior has a refraining DT of 7+, look harder for lower-DT behaviors. There is almost always a smaller rung that the child can manage.
 
 **Mixing trigger situations on a single ladder**
 Each ladder should address one trigger situation. Behaviors from different situations may look similar but involve different feared outcomes — keep them separate.

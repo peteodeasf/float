@@ -20,18 +20,18 @@ LADDER_RULES = {
 
 FLAG_FALLBACKS = {
     "STARTING_DISTRESS_TOO_HIGH": (
-        "The first rung has a distress thermometer rating of {actual}. "
-        "The recommended maximum starting rating is {max_allowed}. "
+        "The first rung has a Fear Level of {actual}. "
+        "The recommended maximum starting Fear Level is {max_allowed}. "
         "Consider breaking this rung into sub-situations or adding an "
         "imaginal exposure as a lower starting point."
     ),
     "INSUFFICIENT_RUNGS": (
         "This ladder has {actual} rung(s). At least {min_required} rungs "
         "are recommended to allow gradual progression. Consider adding "
-        "intermediate steps between the current rungs."
+        "rungs in between the current ones."
     ),
     "RUNG_GAP_TOO_LARGE": (
-        "There is a gap of {gap} distress thermometer points between two "
+        "There is a gap of {gap} Fear Level points between two "
         "adjacent rungs. The recommended maximum gap is {max_allowed}. "
         "Consider adding an intermediate rung to make the progression "
         "more gradual."
@@ -217,10 +217,10 @@ async def run_ladder_review(
 # `avoidance_behaviors` rows of type `scenario`. This reads those, and applies the SAME
 # `LADDER_RULES` above so Dr. Walker's numbers stay in one place.
 #
-# These checks are arithmetic, not judgement. The judgement — does this step keep a safety
+# These checks are arithmetic, not judgement. The judgement — does a rung keep a safety
 # behaviour, is there a way out built into it, is the situation a symptom rather than the target —
-# is what Dr. Walker's review of our suggestions was about, and it is not built. `ai_pending` says
-# so rather than letting a clinician think the ladder has been read.
+# is what Dr. Walker's review of our suggestions was about, and it is not built. Peter, 2026-10-29:
+# the panel no longer says so on screen; `ai_pending` is still returned.
 
 
 @dataclass
@@ -230,10 +230,11 @@ class ReviewFinding:
 
 
 def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RULES) -> list[ReviewFinding]:
-    """`steps` is (name, thermometer score), in any order.
+    """`steps` is (name, Fear Level), in any order. On screen these are rungs.
 
-    Unscored steps are reported and then set aside — a missing score is not a zero, and treating it
-    as one would put a step at the bottom of the ladder and make every gap check wrong.
+    Rungs with no Fear Level are reported and then set aside — a missing score is not a zero, and
+    treating it as one would put a rung at the bottom of the ladder and make every gap check wrong.
+    Only the rung's own Fear Level counts here; the situation's is not read.
     """
     findings: list[ReviewFinding] = []
 
@@ -241,20 +242,19 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
     scored = sorted([(name, s) for name, s in steps if s is not None], key=lambda x: x[1])
 
     if unscored:
-        findings.append(ReviewFinding(
-            code="UNSCORED_STEPS",
-            message=(
-                f"{len(unscored)} step{'s have' if len(unscored) != 1 else ' has'} no thermometer "
-                f"score yet, so {'they are' if len(unscored) != 1 else 'it is'} not placed on the "
-                f"ladder: {', '.join(unscored[:3])}"
-                + ("…" if len(unscored) > 3 else "")
-            ),
-        ))
+        names = ", ".join(unscored[:3]) + ("…" if len(unscored) > 3 else ".")
+        if len(unscored) == 1:
+            message = (f"1 rung has no Fear Level yet, so it’s not on the ladder: {names} "
+                       "Give it a Fear Level to place it.")
+        else:
+            message = (f"{len(unscored)} rungs have no Fear Level yet, so they’re not on the ladder: "
+                       f"{names} Give each one a Fear Level to place it.")
+        findings.append(ReviewFinding(code="UNSCORED_STEPS", message=message))
 
     if not scored:
         findings.append(ReviewFinding(
             code="NO_SCORED_STEPS",
-            message="Nothing on the ladder has a score yet, so there is no order to work through.",
+            message="Nothing is on the ladder yet. A rung shows on the ladder once it has a Fear Level.",
         ))
         return findings
 
@@ -262,8 +262,9 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
     if len(scored) < min_rungs:
         findings.append(ReviewFinding(
             code="INSUFFICIENT_RUNGS",
-            message=FLAG_FALLBACKS["INSUFFICIENT_RUNGS"].format(
-                actual=len(scored), min_required=min_rungs
+            message=(
+                f"The ladder has {len(scored)} rung{'' if len(scored) == 1 else 's'}. Aim for at "
+                f"least {min_rungs}, so the child can build up gradually. Add rungs in between."
             ),
         ))
 
@@ -273,9 +274,8 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
         findings.append(ReviewFinding(
             code="STARTING_DISTRESS_TOO_HIGH",
             message=(
-                f"The easiest step — “{first_name}” — is a {first_score:g}. The recommended place "
-                f"to start is {max_start:g} or below. Something smaller usually exists: imagining "
-                f"it, or watching someone else do it."
+                f"The lowest rung, “{first_name}”, is a {first_score:g}. Start at {max_start:g} or "
+                f"below. A smaller rung usually exists: imagining it, or watching someone else do it."
             ),
         ))
 
@@ -286,9 +286,8 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
             findings.append(ReviewFinding(
                 code="RUNG_GAP_TOO_LARGE",
                 message=(
-                    f"There is a jump of {gap:g} from “{a_name}” ({a:g}) to “{b_name}” ({b:g}). "
-                    f"The recommended maximum is {max_gap:g}. Something in between would make it "
-                    f"easier to climb."
+                    f"There’s a jump of {gap:g} from “{a_name}” ({a:g}) to “{b_name}” ({b:g}). "
+                    f"Keep jumps to {max_gap:g} or less. A rung in between makes it easier to climb."
                 ),
             ))
 

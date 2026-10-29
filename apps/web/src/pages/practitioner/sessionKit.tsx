@@ -252,7 +252,7 @@ export function SessionProgress({
   // where the flow ends up rather than a step inside it.
   const stages: { key: typeof stage; label: string }[] = [
     { key: 'list', label: 'Situations' },
-    { key: 'build', label: 'Steps' },
+    { key: 'build', label: 'Rungs' },
   ]
   const current = stages.findIndex(s => s.key === stage)
 
