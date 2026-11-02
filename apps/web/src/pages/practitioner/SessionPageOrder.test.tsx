@@ -24,7 +24,6 @@ vi.mock('../../api/treatment', async importOriginal => ({
     db.behaviors = db.behaviors.map(b => (b.id === id ? { ...b, ...data } : b))
     return db.behaviors.find(b => b.id === id)
   },
-  getStepArrows: async () => [],
   getPlanRungs: async () => [],
   getPatientInsights: async () => [],
   getLadderReview: async () => ({ findings: [], ai_pending: false }),

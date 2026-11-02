@@ -22,7 +22,7 @@
  *     → review    the assembled ladder
  *
  * The downward arrow is NOT part of this flow — it is its own mode (`ArrowPage`), launched from
- * the same place as session mode. Two interviews, one register (see `sessionKit.tsx`).
+ * each rung on the main ladder (Peter, 2026-11-02). Two interviews, one register (see `sessionKit.tsx`).
  *
  * Naming and scoring ALTERNATE per behaviour — you finish talking about one thing before
  * starting the next. Batching all the naming then all the scoring reads as a form, not a
@@ -50,8 +50,6 @@ import {
   addInsightToPlan,
   removeInsight,
   draftCombination,
-  getStepArrows,
-  type DownwardArrow,
   type AvoidanceBehavior,
   type PatientInsight,
   type TriggerSituation,
@@ -62,7 +60,7 @@ import {
 import { Button } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
-  arrowDoneOn, behaviorHint, bySituationFear, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
+  behaviorHint, bySituationFear, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
 } from './ladderEditor'
 
 /** The full-screen route. A thin wrapper — the editor is the component below, so the Plan tab can
@@ -111,8 +109,6 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
    *  way out is "Exit session". */
   onCollapse?: () => void
 }) {
-  const goToArrow = useNavigate()
-
   const { data: plan, isLoading: planLoading } = useQuery({
     queryKey: ['plan', patientId],
     queryFn: () => getTreatmentPlan(patientId!),
@@ -169,9 +165,6 @@ export function SessionInterview({ patientId, embedded = false, openSituationId,
       triggers={inShownOrder(situationsList(plan.id), sortedTriggers, t => t.id)}
       openSituationId={openSituationId}
       onDone={onExit}
-      onArrow={(situationId, rungId) => goToArrow(
-        `/patients/${patientId}/arrow?situation=${situationId}${rungId ? `&rung=${rungId}` : ''}`,
-      )}
     />
   )
 }
@@ -190,7 +183,7 @@ const sectionLabel: React.CSSProperties = {
  * The editor's controls, one look each. Peter, 2026-10-16:
  * - Green: only Edit ladder (on the Plan tab) and Save ladder. Green is kept rare.
  * - White: everything else that is a button. Add, Done, Add situation, Add behavior, Add rung.
- * - Text: show/hide links, DA, and Keep beside Remove.
+ * - Text: show/hide links, and Keep beside Remove.
  * A panel's Done is where the button that opened it was. Add behavior and Add rung sit on the
  * right inside a situation; Add situation sits on the left under the list, a level up.
  */
@@ -207,14 +200,12 @@ const chipList: React.CSSProperties = {
 }
 
 // ── The editor ────────────────────────────────────────────────────────────────
-export function LadderEditor({ planId, patientId, triggers, openSituationId, onDone, onArrow }: {
+export function LadderEditor({ planId, patientId, triggers, openSituationId, onDone }: {
   planId: string
   patientId: string
   triggers: TriggerSituation[]
   openSituationId?: string | null
   onDone: () => void
-  /** Open the downward arrow on one step. Peter, 2026-10-15: the arrow is done per combination. */
-  onArrow: (situationId: string, rungId?: string) => void
 }) {
   const qc = useQueryClient()
   // Finished: the next time the editor opens, the situations are sorted again.
@@ -321,7 +312,6 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
               trigger={t}
               expanded={open.has(t.id)}
               onToggle={() => toggle(t.id)}
-              onArrow={rungId => onArrow(t.id, rungId)}
               onEdited={markEdited}
             />
           ))}
@@ -421,14 +411,13 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 }
 
 /** One situation: its name, its score, and — opened up — the steps underneath it. */
-function SituationRow({ planId, patientId, trigger, expanded, onToggle, onArrow, onEdited }: {
+function SituationRow({ planId, patientId, trigger, expanded, onToggle, onEdited }: {
   planId: string
   patientId: string
   trigger: TriggerSituation
   /** The suggested place to begin: lowest Fear Level with nothing on the ladder yet. */
   expanded: boolean
   onToggle: () => void
-  onArrow: (rungId?: string) => void
   /** Anything that writes calls this, so Save can skip the review when nothing changed. */
   onEdited: () => void
 }) {
@@ -465,11 +454,6 @@ function SituationRow({ planId, patientId, trigger, expanded, onToggle, onArrow,
   const { data: behaviors } = useQuery({
     queryKey: ['behaviors', trigger.id],
     queryFn: () => getBehaviors(trigger.id),
-    enabled: expanded,
-  })
-  const { data: stepArrows } = useQuery({
-    queryKey: ['step-arrows', trigger.id],
-    queryFn: () => getStepArrows(trigger.id),
     enabled: expanded,
   })
 
@@ -526,7 +510,7 @@ function SituationRow({ planId, patientId, trigger, expanded, onToggle, onArrow,
 
       {expanded && (
         <SituationBody planId={planId} patientId={patientId} trigger={trigger} behaviors={behaviors ?? []}
-          arrows={stepArrows} pending={pending} setPending={setPending} onArrow={onArrow} onEdited={onEdited} />
+          pending={pending} setPending={setPending} onEdited={onEdited} />
       )}
     </div>
   )
@@ -540,25 +524,22 @@ type PendingSteps = Record<string, { text?: string; score?: number }>
  * Peter, 2026-10-16: hide things until the clinician has to decide on them. So it opens on one
  * question — what does the child do to avoid it or feel safer — with the list at the top, the add
  * box under it, and the suggestions under that. Done closes all of that, and only then
- * do the downward arrow links and Add rung appear.
+ * does Add rung appear.
  *
  * Nothing goes on the ladder until Done. A safety behavior is saved as soon as it is
  * added, but its step (the combination) is only written on Save. Until then the drafted sentence
  * and its score live on this screen. Peter, 2026-10-15: the therapist reading the sentence before
  * it is saved is the check on what the child will read.
  */
-function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending, setPending, onArrow, onEdited }: {
+function SituationBody({ planId, patientId, trigger, behaviors, pending, setPending, onEdited }: {
   planId: string
   patientId: string
   trigger: TriggerSituation
   behaviors: AvoidanceBehavior[]
-  /** Undefined while loading. */
-  arrows: DownwardArrow[] | undefined
   /** Steps not written yet: the clinician's own wording and score, where they changed them. Held
    *  by the situation row, so closing the situation and opening it again keeps them. */
   pending: PendingSteps
   setPending: React.Dispatch<React.SetStateAction<PendingSteps>>
-  onArrow: (rungId?: string) => void
   onEdited: () => void
 }) {
   const qc = useQueryClient()
@@ -681,7 +662,6 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
   safety.forEach(b => {
     const step = stepOf(b.id)
     if (step) {
-      const done = !!arrows && arrowDoneOn(step.id, arrows)
       rows.push({
         key: b.id,
         score: dtOf(step.distress_thermometer_when_refraining),
@@ -691,7 +671,6 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
             onRename={name => saveMutRow.mutate({ id: step.id, data: { name } })}
             score={dtOf(step.distress_thermometer_when_refraining)}
             onScore={n => saveMutRow.mutate({ id: step.id, data: { distress_thermometer_when_refraining: n } })}
-            arrow={saved ? { done, open: () => onArrow(step.id) } : undefined}
             // Takes the behaviour, its step and its downward arrow, so it asks first. Peter,
             // 2026-10-16: the button just says Remove.
             confirmRemove
@@ -728,7 +707,6 @@ function SituationBody({ planId, patientId, trigger, behaviors, arrows, pending,
         onRename={name => saveMutRow.mutate({ id: b.id, data: { name } })}
         score={dtOf(b.distress_thermometer_when_refraining)}
         onScore={n => saveMutRow.mutate({ id: b.id, data: { distress_thermometer_when_refraining: n } })}
-        arrowSlot={saved}
         onRemove={() => delMut.mutate(b.id)}
       />
     ),
@@ -926,10 +904,10 @@ function SuggestionChip({ text, disabled, onAdd, onDismiss }: {
 }
 
 /**
- * One row in a situation's list: the wording, its Fear Level, the DA link once the behaviours are
- * saved, and remove. Peter, 2026-10-16: nothing else on the row.
+ * One row in a situation's list: the wording, its Fear Level, and remove. Peter, 2026-10-16:
+ * nothing else on the row. The downward arrow moved to the main ladder (Peter, 2026-11-02).
  */
-function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, arrowSlot, confirmRemove, onRemove }: {
+function ListRow({ text, placeholder, warning, onRename, score, onScore, confirmRemove, onRemove }: {
   text: string
   placeholder?: string
   warning?: string
@@ -937,9 +915,6 @@ function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, 
   /** Leave both out for a row with no Fear Level — the avoidance behaviour. */
   score?: number | null
   onScore?: (n: number) => void
-  arrow?: { done: boolean; open: () => void }
-  /** Keep the DA link's room on a row without one, so every Fear Level box lines up. */
-  arrowSlot?: boolean
   /** Removing loses work, so it asks first. */
   confirmRemove?: boolean
   onRemove: () => void
@@ -957,13 +932,6 @@ function ListRow({ text, placeholder, warning, onRename, score, onScore, arrow, 
         )}
       <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 9, borderBottom: '1px dotted #dde8e6' }} />
       {onScore && <ScoreBox value={score ?? null} onSet={onScore} />}
-      {arrow && (
-        <button onClick={arrow.open} title={arrow.done ? 'Downward arrow done — open it' : 'Downward arrow'}
-          style={{ ...quietLink, flexShrink: 0, width: 40, fontSize: 12, fontWeight: 700, color: arrow.done ? '#4d8478' : '#9aa9a8', padding: '4px 2px' }}>
-          {arrow.done ? '✓ DA' : 'DA'}
-        </button>
-      )}
-      {!arrow && arrowSlot && onScore && <span aria-hidden="true" style={{ flexShrink: 0, width: 40 }} />}
       {confirm ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
           <Button kind="danger" size="sm" onClick={() => { setConfirm(false); onRemove() }}>Remove</Button>

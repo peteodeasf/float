@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 
 import type { AvoidanceBehavior, TriggerSituation } from '../../../api/treatment'
 
@@ -10,6 +11,7 @@ vi.mock('../../../api/treatment', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../api/treatment')>()),
   getPlanRungs: async () => db.rungs.map(r => ({ ...r })),
   getPatientExperiments: async () => [],
+  listPatientDownwardArrows: async () => [],
 }))
 
 import { FlatLadder } from './FlatLadder'
@@ -46,7 +48,9 @@ async function showLadder(patientId = 'p1') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const view = render(
     <QueryClientProvider client={qc}>
-      <FlatLadder planId="plan-1" patientId={patientId} triggers={TRIGGERS} ladderActive recommendedRungId={null} />
+      <MemoryRouter>
+        <FlatLadder planId="plan-1" patientId={patientId} triggers={TRIGGERS} ladderActive recommendedRungId={null} />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
   await screen.findByRole('group', { name: 'Filter by situation' })
