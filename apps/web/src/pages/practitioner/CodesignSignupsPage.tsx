@@ -12,7 +12,7 @@ import { getMyProfile } from '../../api/me_practitioner'
  * Only for clinician logins on the CODESIGN_VIEWERS setting; the server refuses everyone else.
  * The clinician menu does not link here: people open it by its address. docs/plans/codesign-viewer.md
  */
-const loadSignups = async () => (await apiClient.get('/codesign/viewer/signups')).data.sessions
+const loadSignups = async () => (await apiClient.get('/codesign/viewer/signups')).data
 
 export default function CodesignSignupsPage() {
   const { data: profile, isLoading, isError } = useQuery({

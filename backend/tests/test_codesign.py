@@ -1,7 +1,8 @@
-"""Teen co-design sign-ups. docs/plans/codesign-signup.md
+"""Co-design sign-ups, high school and college. docs/plans/codesign-signup.md
 
-The six sessions come from the migration, as they do in production.
+The sessions (six high school, three college) come from the migrations, as they do in production.
 """
+import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -9,8 +10,8 @@ from sqlalchemy import select
 
 from app.api.routers import codesign
 from app.core.config import settings
-from app.models.codesign import CodesignSession, CodesignSignup
-from app.services import codesign_form, email_service
+from app.models.codesign import COLLEGE, HIGH_SCHOOL, CodesignSession, CodesignSignup
+from app.services import codesign_agreement, codesign_form, email_service
 
 from tests.factories import (
     _make_user, make_float_admin, make_org, make_patient, make_practice_manager, make_practitioner,
@@ -21,6 +22,7 @@ from tests.factories import (
 def open_and_outbox(monkeypatch):
     """Sign-ups open whatever today's date, and emails caught instead of sent."""
     monkeypatch.setattr(codesign, "SIGNUPS_CLOSE_AT", datetime(2100, 1, 1, tzinfo=timezone.utc))
+    monkeypatch.setattr(codesign, "COLLEGE_SIGNUPS_CLOSE_AT", datetime(2100, 1, 1, tzinfo=timezone.utc))
     sent = []
 
     async def capture(**kwargs):
@@ -32,7 +34,9 @@ def open_and_outbox(monkeypatch):
 
 
 async def _sessions(db):
-    rows = (await db.execute(select(CodesignSession).order_by(CodesignSession.starts_at))).scalars().all()
+    """The high school sessions, week 1 and week 2."""
+    rows = (await db.execute(select(CodesignSession).where(CodesignSession.audience == HIGH_SCHOOL)
+                             .order_by(CodesignSession.starts_at))).scalars().all()
     return [s for s in rows if s.week == 1], [s for s in rows if s.week == 2]
 
 
@@ -299,8 +303,9 @@ async def test_an_unknown_link_finds_nothing(api, db):
 
 
 async def test_six_seats_per_session(api, db):
-    # Peter, 2026-10-21: 6 seats per session, set on the six existing dates by the migration.
-    assert [s.seats for s in (await db.execute(select(CodesignSession))).scalars().all()] == [6] * 6
+    # Peter, 2026-10-21: 6 seats per session, set on the six high school dates by the migration.
+    # Peter, 2026-11-02: 6 on each of the three college dates too.
+    assert [s.seats for s in (await db.execute(select(CodesignSession))).scalars().all()] == [6] * 9
 
 
 async def test_bots_are_dropped_silently(api, db, open_and_outbox):
@@ -474,9 +479,9 @@ async def test_a_sign_up_sends_the_summary_to_everyone_on_the_list(api, db, open
     await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
     sent = _to_team(open_and_outbox)
     assert sorted(e["to_email"] for e in sent) == sorted(TEAM)
-    assert {e["subject"] for e in sent} == {"New co-design sign-up: Maya R."}
-    assert sent[0]["paragraphs"][0] == (
-        "Maya R. signed up for Tuesday, November 10 at 12pm Eastern, and Tuesday, November 17 at 12pm Eastern.")
+    assert {e["subject"] for e in sent} == {"New co-design sign-up, high school: Maya R."}
+    assert sent[0]["paragraphs"][0] == ("Maya R. (high school) signed up for Tuesday, November 10 at "
+                                        "12pm Eastern, and Tuesday, November 17 at 12pm Eastern.")
     assert sent[0]["cta_link"] == f"{settings.BASE_URL}/codesign/signups"
 
 
@@ -494,8 +499,8 @@ async def test_nothing_goes_to_the_team_when_the_setting_is_empty(api, db, open_
 
 
 @pytest.mark.parametrize("answers, subject", [
-    (dict(), "Co-design: Maya R. confirmed"),
-    (dict(parent_consents=False), "Co-design: Maya R. won't take part"),
+    (dict(), "Co-design, high school: Maya R. confirmed"),
+    (dict(parent_consents=False), "Co-design, high school: Maya R. won't take part"),
 ])
 async def test_an_answer_sends_one_summary(api, db, open_and_outbox, team, answers, subject):
     # Peter, 2026-10-29: Sally also hears when a parent confirms or says no, in the same format.
@@ -527,6 +532,11 @@ async def test_the_summary_has_names_and_counts_and_no_contact_details(api, db, 
     await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
     token = _token(open_and_outbox)
     await api.post(f"/codesign/permission/{token}", json=_answers())
+    # The whole test is one database transaction, so now() gives both sign-ups the same created_at
+    # and the list's order would be a coin toss. In production each sign-up is its own transaction.
+    maya = (await db.execute(select(CodesignSignup))).scalar_one()
+    maya.created_at -= timedelta(minutes=1)
+    await db.flush()
     open_and_outbox.clear()
     await api.post("/codesign/signups", json=_form(
         w1[0], w2[1], teen_first_name="Sam", teen_last_name="Okafor", teen_age=16,
@@ -534,16 +544,19 @@ async def test_the_summary_has_names_and_counts_and_no_contact_details(api, db, 
     [mail, _] = _to_team(open_and_outbox)
     text = "\n".join([mail["subject"], mail["heading"], *mail["paragraphs"]])
 
-    assert mail["subject"] == "New co-design sign-up: Sam O."
-    assert "All sign-ups so far: 2" in text
-    assert ("Tuesday, November 10 at 12pm Eastern: 2 of 6 seats taken. "
+    assert mail["subject"] == "New co-design sign-up, high school: Sam O."
+    assert "High school: 2 signed up so far." in text
+    assert ("High school · Tuesday, November 10 at 12pm Eastern: 2 of 6 seats taken. "
             "Maya R. (confirmed), Sam O. (waiting for permission).") in text
-    assert "Tuesday, November 17 at 12pm Eastern: 1 of 6 seats taken. Maya R. (confirmed)." in text
-    assert "Thursday, November 19 at 12pm Eastern: 1 of 6 seats taken. Sam O. (waiting for permission)." in text
-    assert "Wednesday, November 11 at 12pm Eastern: 0 of 6 seats taken. No sign-ups yet." in text
-    # Sessions in date order.
-    labels = [p.split(":")[0] for p in mail["paragraphs"][2:]]
-    assert labels[0].startswith("Tuesday, November 10") and labels[-1].startswith("Friday, November 20")
+    assert "High school · Tuesday, November 17 at 12pm Eastern: 1 of 6 seats taken. Maya R. (confirmed)." in text
+    assert ("High school · Thursday, November 19 at 12pm Eastern: 1 of 6 seats taken. "
+            "Sam O. (waiting for permission).") in text
+    assert "High school · Wednesday, November 11 at 12pm Eastern: 0 of 6 seats taken. No sign-ups yet." in text
+    # High school sessions in date order, then college.
+    labels = [p.split(":")[0] for p in mail["paragraphs"][2:8]]
+    assert labels[0].endswith("Tuesday, November 10 at 12pm Eastern")
+    assert labels[-1].endswith("Friday, November 20 at 12pm Eastern")
+    assert "College: 0 signed up so far." in text
     for secret in ("Rivera", "Okafor", "Ana", "Grace", "15", "16", "@", "617", "555", "Mother"):
         assert secret not in text, secret
 
@@ -566,3 +579,285 @@ async def test_a_failing_team_email_does_not_fail_the_sign_up(api, db, open_and_
     assert (await db.execute(select(CodesignSignup))).scalar_one() is not None
     r = await api.post(f"/codesign/permission/{_token(sent)}", json=_answers())
     assert r.status_code == 200 and r.json()["confirmed"] is True
+
+
+# ── College (18 to 20): one date, no parent, they agree for themselves ───────
+# Peter, 2026-11-02. docs/plans/codesign-signup.md ("College students")
+
+# Read before the autouse fixture opens sign-ups, so the real closing dates can be checked.
+REAL_SIGNUPS_CLOSE_AT = codesign.SIGNUPS_CLOSE_AT
+REAL_COLLEGE_SIGNUPS_CLOSE_AT = codesign.COLLEGE_SIGNUPS_CLOSE_AT
+
+
+async def _college_sessions(db):
+    return (await db.execute(select(CodesignSession).where(CodesignSession.audience == COLLEGE)
+                             .order_by(CodesignSession.starts_at))).scalars().all()
+
+
+def _college_form(session, **over):
+    body = dict(
+        first_name="Jordan", last_name="Kim", age=19, email="Jordan.Kim@example.com",
+        session_id=str(session.id), agrees_to_recording=True, agrees_to_take_part=True,
+        agreement_version=codesign_agreement.AGREEMENT_VERSION, company="", elapsed_ms=20000,
+    )
+    body.update(over)
+    return body
+
+
+async def _college_rows(db):
+    return (await db.execute(select(CodesignSignup).where(CodesignSignup.audience == COLLEGE))).scalars().all()
+
+
+async def test_the_three_college_dates_and_the_agreement(api, db):
+    # Why: the college page shows exactly the poster's three dates at 12pm Eastern, and the
+    # agreement text comes from the server, so the page and the emailed copy say the same thing.
+    r = (await api.get("/codesign/college/sessions")).json()
+    assert r["open"] is True
+    assert [s["label"] for s in r["sessions"]] == [
+        "Tuesday, November 10 at 12pm Eastern",
+        "Wednesday, November 11 at 12pm Eastern",
+        "Thursday, November 12 at 12pm Eastern",
+    ]
+    assert [s["seats_left"] for s in r["sessions"]] == [6, 6, 6]
+    assert r["agreement"] == codesign_agreement.agreement()
+    text = json.dumps(r["agreement"])
+    for line in ("This is product research, not a counseling session",
+                 "receive a $60 gift card after completing full session.",
+                 "I agree to the session being recorded as described above.",
+                 "I have read this information and agree to take part."):
+        assert line in text, line
+
+
+async def test_a_college_sign_up_with_both_boxes_is_confirmed_at_once(api, db, open_and_outbox):
+    # Why: Peter, 2026-11-02: college students are over 18, so there is no parent, no permission link
+    # and no 3-day hold. Signing up with both boxes ticked confirms them, and the record says what
+    # they agreed to, when, and which wording.
+    [s1, *_] = await _college_sessions(db)
+    r = await api.post("/codesign/college/signups", json=_college_form(s1))
+    assert r.status_code == 200
+    [row] = await _college_rows(db)
+    assert (row.teen_first_name, row.teen_last_name, row.teen_age, row.teen_email) == (
+        "Jordan", "Kim", 19, "jordan.kim@example.com")
+    assert (row.session1_id, row.session2_id, row.parent_name, row.parent_email, row.permission_token_hash) == (
+        s1.id, None, None, None, None)
+    assert (row.agrees_to_recording, row.agrees_to_take_part) == (True, True)
+    assert row.agreed_at is not None
+    assert row.agreement_version == codesign_agreement.AGREEMENT_VERSION
+
+    # Only the student is emailed: their date, who sends the invite, and a copy of what they agreed to.
+    [mail] = open_and_outbox
+    assert mail["to_email"] == "jordan.kim@example.com"
+    assert "cta_link" not in mail
+    text = "\n".join(mail["paragraphs"])
+    assert "Your date: Tuesday, November 10 at 12pm Eastern." in text
+    assert "Sally will send you the video invite" in text
+    for line in (*codesign_agreement.as_paragraphs(),
+                 "I agree to the session being recorded as described above. Yes",
+                 "I have read this information and agree to take part. Yes",
+                 f"Version: {codesign_agreement.AGREEMENT_VERSION}",
+                 codesign._stamp(row.agreed_at)):
+        assert line in text, line
+
+    api.sign_in_as(await make_float_admin(db))
+    listing = (await api.get("/codesign/signups")).json()
+    [listed] = listing["college_sessions"][0]["signups"]
+    assert (listed["first_name"], listed["age"], listed["email"], listed["recording_agreed"]) == (
+        "Jordan", 19, "jordan.kim@example.com", True)
+    assert listed["confirmed_at"] is not None
+    assert not any(k.startswith("parent") or k == "permission" for k in listed)
+    # Not on any high school session.
+    assert all(sess["signups"] == [] for sess in listing["sessions"])
+
+
+@pytest.mark.parametrize("over", [
+    dict(agrees_to_recording=False), dict(agrees_to_take_part=False),
+    dict(agrees_to_recording=None), dict(agrees_to_take_part="yes"),
+    dict(agrees_to_recording=False, agrees_to_take_part=False),
+])
+async def test_either_box_unticked_is_refused(api, db, open_and_outbox, over):
+    # Why: Peter, 2026-11-02: both boxes are required to sign up. A missing box, or one sent as text,
+    # must not be read as ticked; nothing is saved and nobody is emailed.
+    [s1, *_] = await _college_sessions(db)
+    assert (await api.post("/codesign/college/signups", json=_college_form(s1, **over))).status_code == 422
+    for key in ("agrees_to_recording", "agrees_to_take_part"):
+        body = _college_form(s1)
+        del body[key]
+        assert (await api.post("/codesign/college/signups", json=body)).status_code == 422, key
+    assert await _college_rows(db) == []
+    assert open_and_outbox == []
+
+
+@pytest.mark.parametrize("age", [12, 16, 17, 21, 30])
+async def test_college_is_18_to_20_only(api, db, age):
+    # Why: the college sessions are for adults, 18 to 20. Someone younger needs a parent's permission
+    # and belongs on the high school page; the refusal says who the sessions are for.
+    [s1, *_] = await _college_sessions(db)
+    r = await api.post("/codesign/college/signups", json=_college_form(s1, age=age))
+    assert r.status_code == 422
+    assert r.json()["detail"] == "The college sessions are for ages 18 to 20."
+    assert await _college_rows(db) == []
+
+
+@pytest.mark.parametrize("age", [18, 20])
+async def test_18_and_20_can_sign_up_for_college(api, db, age):
+    # Why: the edges of 18 to 20 are in, not out.
+    [s1, *_] = await _college_sessions(db)
+    assert (await api.post("/codesign/college/signups", json=_college_form(s1, age=age))).status_code == 200
+
+
+@pytest.mark.parametrize("age, status", [(12, 422), (13, 200), (17, 200), (18, 422)])
+async def test_high_school_is_still_13_to_17(api, db, age, status):
+    # Why: adding college must not open the high school sign-up to adults, or close it to 13 or 17.
+    w1, w2 = await _sessions(db)
+    assert (await api.post("/codesign/signups", json=_form(w1[0], w2[0], teen_age=age))).status_code == status
+
+
+async def test_a_session_belongs_to_one_group(api, db):
+    # Why: Peter, 2026-11-02: adults and 13-to-17-year-olds never share a session. A college date
+    # cannot be used by a high school sign-up, and a high school date cannot be used by a college one.
+    w1, w2 = await _sessions(db)
+    [c1, *_] = await _college_sessions(db)
+    assert (await api.post("/codesign/signups", json=_form(c1, w2[0]))).status_code == 422
+    assert (await api.post("/codesign/college/signups", json=_college_form(w1[0]))).status_code == 422
+    assert (await api.post("/codesign/college/signups", json=_college_form(w2[0]))).status_code == 422
+    assert (await db.execute(select(CodesignSignup))).scalars().all() == []
+
+
+async def test_the_old_calls_are_high_school_only(api, db):
+    # Why: the live page calls these with no group until the new website is uploaded. They must
+    # behave exactly as before: high school dates only, and a sign-up saved as high school.
+    body = (await api.get("/codesign/sessions")).json()
+    college_ids = {str(s.id) for s in await _college_sessions(db)}
+    assert len(body["sessions"]) == 6 and not college_ids & {s["id"] for s in body["sessions"]}
+    assert "agreement" not in body
+    w1, w2 = await _sessions(db)
+    assert (await api.post("/codesign/signups", json=_form(w1[0], w2[0]))).status_code == 200
+    assert (await db.execute(select(CodesignSignup))).scalar_one().audience == HIGH_SCHOOL
+
+
+def test_each_group_closes_on_its_own_date():
+    # Why: high school sign-ups close at the end of Friday, November 6, college at the end of
+    # Sunday, November 8, both Eastern. The server enforces each, whatever the page says.
+    assert REAL_SIGNUPS_CLOSE_AT == datetime(2026, 11, 7, 0, 0, tzinfo=codesign.EASTERN)
+    assert REAL_COLLEGE_SIGNUPS_CLOSE_AT == datetime(2026, 11, 9, 0, 0, tzinfo=codesign.EASTERN)
+
+
+async def test_high_school_closed_and_college_still_open(api, db, monkeypatch):
+    # Why: on November 7 and 8, high school is closed and college is not. Each page, and each
+    # sign-up route, reads its own date.
+    monkeypatch.setattr(codesign, "SIGNUPS_CLOSE_AT", datetime(2000, 1, 1, tzinfo=timezone.utc))
+    w1, w2 = await _sessions(db)
+    [c1, *_] = await _college_sessions(db)
+    assert (await api.get("/codesign/sessions")).json()["open"] is False
+    assert (await api.post("/codesign/signups", json=_form(w1[0], w2[0]))).status_code == 400
+    assert (await api.get("/codesign/college/sessions")).json()["open"] is True
+    assert (await api.post("/codesign/college/signups", json=_college_form(c1))).status_code == 200
+
+    monkeypatch.setattr(codesign, "COLLEGE_SIGNUPS_CLOSE_AT", datetime(2000, 1, 1, tzinfo=timezone.utc))
+    assert (await api.get("/codesign/college/sessions")).json()["open"] is False
+    r = await api.post("/codesign/college/signups", json=_college_form(c1, email="other@example.com"))
+    assert r.status_code == 400
+
+
+async def test_seats_are_counted_per_session(api, db):
+    # Why: a college date and the high school date at the same time are separate sessions with
+    # separate seats ("we will do one or the other"). A full college date does not fill the high
+    # school one, and a college sign-up holds its seat from the start.
+    w1, w2 = await _sessions(db)
+    [c1, c2, _] = await _college_sessions(db)
+    c1.seats = 1
+    await db.flush()
+    assert (await api.post("/codesign/college/signups", json=_college_form(c1))).status_code == 200
+    r = await api.post("/codesign/college/signups", json=_college_form(c1, email="sam@example.com"))
+    assert r.status_code == 409
+    college = (await api.get("/codesign/college/sessions")).json()["sessions"]
+    assert [(s["full"], s["seats_left"]) for s in college] == [(True, 0), (False, 6), (False, 6)]
+    assert (await api.post("/codesign/college/signups",
+                           json=_college_form(c2, email="sam@example.com"))).status_code == 200
+    # The high school session at the same time is untouched.
+    hs = (await api.get("/codesign/sessions")).json()["sessions"][0]
+    assert hs["starts_at"] == college[0]["starts_at"]
+    assert (hs["full"], hs["seats_left"]) == (False, 6)
+    assert (await api.post("/codesign/signups", json=_form(w1[0], w2[0]))).status_code == 200
+
+
+async def test_college_old_wording_is_refused(api, db):
+    # Why: a page opened before the agreement changed must not record the new wording as agreed to.
+    [c1, *_] = await _college_sessions(db)
+    r = await api.post("/codesign/college/signups", json=_college_form(c1, agreement_version="2026-11-01"))
+    assert r.status_code == 409
+    assert await _college_rows(db) == []
+
+
+async def test_college_bots_are_dropped_silently(api, db, open_and_outbox):
+    # Why: the same anti-bot check as the high school form.
+    [c1, *_] = await _college_sessions(db)
+    for over in (dict(company="Acme"), dict(elapsed_ms=500)):
+        assert (await api.post("/codesign/college/signups", json=_college_form(c1, **over))).status_code == 200
+    assert await _college_rows(db) == []
+    assert open_and_outbox == []
+
+
+async def test_college_one_email_cannot_be_sent_a_stream_of_sign_ups(api, db):
+    # Why: the same duplicate-email rule as the high school form, so the page cannot be used to
+    # send a stream of emails to someone. It counts the address wherever it appears, here as a parent.
+    w1, w2 = await _sessions(db)
+    [c1, *_] = await _college_sessions(db)
+    for i in range(codesign.MAX_PER_EMAIL_PER_DAY):
+        r = await api.post("/codesign/signups", json=_form(
+            w1[0], w2[0], teen_email=f"t{i}@example.com", parent_email="jordan.kim@example.com"))
+        assert r.status_code == 200
+    assert (await api.post("/codesign/college/signups", json=_college_form(c1))).status_code == 429
+
+
+async def test_one_college_seat_per_student(api, db, open_and_outbox):
+    # Why: college is one session each. A second tap, or signing up for a second date, would hold a
+    # seat another student could have. The second is refused and Sally changes dates by hand.
+    [c1, c2, _] = await _college_sessions(db)
+    assert (await api.post("/codesign/college/signups", json=_college_form(c1))).status_code == 200
+    r = await api.post("/codesign/college/signups", json=_college_form(c2, email="JORDAN.KIM@example.com"))
+    assert r.status_code == 409
+    assert "already signed up" in r.json()["detail"]
+    assert len(await _college_rows(db)) == 1
+    assert len(open_and_outbox) == 1
+
+
+async def test_the_permission_link_refuses_a_college_sign_up(api, db, open_and_outbox):
+    # Why: a college sign-up has no parent. Even if a permission link somehow matched one, it must not
+    # be shown, or answered as a high school permission form.
+    [c1, *_] = await _college_sessions(db)
+    await api.post("/codesign/college/signups", json=_college_form(c1))
+    [row] = await _college_rows(db)
+    row.permission_token_hash = codesign._hash("college-token")
+    await db.flush()
+    assert (await api.get("/codesign/permission/college-token")).status_code == 404
+    assert (await api.post("/codesign/permission/college-token", json=_answers())).status_code == 404
+    await db.refresh(row)
+    assert (row.form_submitted_at, row.permission_given_at, row.parent_consents) == (None, None, None)
+
+
+async def test_the_summary_labels_the_group_and_has_no_contact_details(api, db, open_and_outbox, team):
+    # Why: Sally's summary covers both groups, labeled, and says which group in the subject. It goes
+    # to an ordinary inbox, so it still carries first name and last initial only: no surname, age or
+    # email. No parent is emailed for college.
+    w1, w2 = await _sessions(db)
+    await api.post("/codesign/signups", json=_form(w1[0], w2[0]))
+    open_and_outbox.clear()
+    [c1, *_] = await _college_sessions(db)
+    # Age 18, not 19 or 20: those are in the session dates ("November 19"), so the check below
+    # could not tell them apart.
+    await api.post("/codesign/college/signups", json=_college_form(c1, age=18))
+    assert [e["to_email"] for e in open_and_outbox if e["to_email"] not in TEAM] == ["jordan.kim@example.com"]
+    [mail, _] = _to_team(open_and_outbox)
+    text = "\n".join([mail["subject"], mail["heading"], *mail["paragraphs"]])
+
+    assert mail["subject"] == "New co-design sign-up, college: Jordan K."
+    assert mail["paragraphs"][0] == "Jordan K. (college) signed up for Tuesday, November 10 at 12pm Eastern."
+    assert "High school: 1 signed up so far." in text
+    assert "College: 1 signed up so far." in text
+    assert ("High school · Tuesday, November 10 at 12pm Eastern: 1 of 6 seats taken. "
+            "Maya R. (waiting for permission).") in text
+    assert "College · Tuesday, November 10 at 12pm Eastern: 1 of 6 seats taken. Jordan K. (confirmed)." in text
+    assert "College · Thursday, November 12 at 12pm Eastern: 0 of 6 seats taken. No sign-ups yet." in text
+    for secret in ("Kim", "Rivera", "18", "15", "@", "Ana"):
+        assert secret not in text, secret

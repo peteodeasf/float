@@ -289,3 +289,65 @@ setting. Peter sets it on Railway. Empty means nothing is sent.
   sign-in.
 - It is sent after the sign-up or the answer is saved. If it fails, that is logged and nothing
   else changes.
+
+## College students (Peter, 2026-11-02)
+
+Peter: "I want to create two different sign up pages for high schoolers and college students. The
+permissioning is different since college kids are over 18."
+
+### What the college poster says (the page matches it)
+
+- Calling all college students · November 2026. Ages 18–20 · Virtual · Paid.
+- "Help design a mental health app. Get paid for your ideas." "Join a relaxed, virtual group meeting
+  and tell us what you really think about how apps should look, feel and work."
+- $60 for joining the session.
+- "Build real experience. Get hands-on experience co-designing an app: great for resumes and job
+  interviews, and real-world experience for a career in tech."
+- What is Float? ("…we want teenagers and young adults to help shape it") and What we'll chat about
+  (the same three items as the high school poster).
+- Pick one date · 60–90 min · on video · open discussion. One session: "Your thoughts and ideas, all
+  in one relaxed meeting". Tue Nov 10, Wed Nov 11, Thu Nov 12.
+- Sign up by Sunday, November 8. The QR code is floatcbt.com/codesign, the same address as the high
+  school poster. "You'll be asked to agree to our terms and conditions when you sign up." Questions?
+  sally@floatcbt.com.
+
+### Decided (Peter, 2026-11-02)
+
+- **Two pages.** floatcbt.com/codesign becomes a short "Which are you?" page, because both posters
+  point there. High school is at /codesign/high-school/ (the old page, moved, unchanged). College is
+  at /codesign/college/.
+- **No parent for college.** The student reads Peter's agreement text and ticks two boxes: "I agree
+  to the session being recorded as described above." and "I have read this information and agree to
+  take part." Both are required to sign up. Signing up confirms them at once: no permission link,
+  no 3-day hold.
+- **Age 18 to 20.** Someone who enters under 18 is told the college sessions are for ages 18 to 20,
+  with a link to the high school page.
+- **Separate sessions, separate seats.** College is one session, Tue Nov 10, Wed Nov 11 or Thu Nov
+  12, 12pm Eastern, 6 seats each. The same times as high school week 1: "we will do one or the
+  other". An adult and a 13-to-17-year-old are never on the same session record.
+- **College sign-ups close at the end of Sunday, November 8**, Eastern. High school stays Friday,
+  November 6.
+- The agreement text lives on the server (`backend/app/services/codesign_agreement.py`), like the
+  permission form. Each college sign-up stores both answers, when, and which version of the wording.
+
+### Emails
+
+- The student: their date at 12pm Eastern, that Sally will send the video invite, and a copy of what
+  they agreed to.
+- Sally's summary (`CODESIGN_NOTIFY_EMAILS`) covers both groups under "High school" and "College".
+  The subject says which group. Still first name and last initial only, no contact details.
+- No parent email for college.
+
+### Data
+
+- `codesign_sessions.audience` and `codesign_signups.audience`: `high_school` or `college`. Existing
+  rows are high school.
+- A college sign-up uses the student columns (`teen_*`) and `session1_id`. Its parent, second session
+  and permission link are empty, so those columns become nullable. A database check keeps them
+  required for high school.
+- New columns for college: `agrees_to_recording`, `agrees_to_take_part`, `agreed_at`,
+  `agreement_version`.
+- The database refuses a sign-up on a session of the other group.
+- The old page's calls (`GET /codesign/sessions`, `POST /codesign/signups`) stay high school only, so
+  the live page keeps working until the new website is uploaded. College uses
+  `/codesign/college/sessions` and `/codesign/college/signups`.

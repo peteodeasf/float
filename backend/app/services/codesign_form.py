@@ -124,7 +124,9 @@ def form_for(dates: list[str]) -> dict:
     return {**_TEMPLATE, "about": _fill(ABOUT, dates), "version": FORM_VERSION}
 
 
-def _paragraphs(blocks: list[dict]) -> list[str]:
+def paragraphs(blocks: list[dict]) -> list[str]:
+    """Blocks as plain paragraphs, for an emailed copy. Also used for the college agreement
+    (codesign_agreement.py), whose blocks have the same shapes."""
     out = []
     for b in blocks:
         if "ul" in b:
@@ -138,5 +140,5 @@ def _paragraphs(blocks: list[dict]) -> list[str]:
 
 def as_paragraphs(dates: list[str]) -> list[str]:
     """The form's information part as plain paragraphs, for the emailed copy."""
-    return _paragraphs(_fill(ABOUT, dates))
+    return paragraphs(_fill(ABOUT, dates))
 

@@ -1,9 +1,13 @@
-"""Teen co-design sign-ups from floatcbt.com/codesign. docs/plans/codesign-signup.md
+"""Co-design sign-ups from floatcbt.com/codesign. docs/plans/codesign-signup.md
 
-A teen picks one date from each week; their parent gets a link to give permission. The public
-routes take no login: listing the dates, signing up, and the permission link (an unguessable
-token). The list of who signed up is for Float's admins, and for the clinician logins named in
-the CODESIGN_VIEWERS setting (docs/plans/codesign-viewer.md).
+Two groups with their own sessions and seats. High school (13 to 17): a teen picks one date from
+each week, and their parent gets a link to give permission. College (18 to 20): a student picks one
+date, ticks the two boxes under the agreement, and is confirmed at once.
+
+The public routes take no login: listing the dates, signing up, and the permission link (an
+unguessable token). The routes without "college" in them are high school only, as they were before
+college existed, so the old page keeps working. The list of who signed up is for Float's admins,
+and for the clinician logins named in the CODESIGN_VIEWERS setting (docs/plans/codesign-viewer.md).
 
 Not patients: nothing here reads or writes a patient, family or clinician record.
 """
@@ -24,9 +28,9 @@ from app.api.routers.admin import get_admin_context
 from app.api.routers.patients import get_practitioner_context
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.codesign import CodesignSession, CodesignSignup
+from app.models.codesign import COLLEGE, HIGH_SCHOOL, CodesignSession, CodesignSignup
 from app.models.user import User
-from app.services import codesign_form, email_service
+from app.services import codesign_agreement, codesign_form, email_service
 from app.services.codesign_viewers import can_view_codesign
 
 router = APIRouter(tags=["codesign"])
@@ -36,6 +40,9 @@ EASTERN = ZoneInfo("America/New_York")
 # "Sign up by Friday, November 6": open until the end of that day in Eastern time. Moved from
 # October 30 when the sessions moved a week later (Peter, 2026-10-28).
 SIGNUPS_CLOSE_AT = datetime(2026, 11, 7, 0, 0, tzinfo=EASTERN)
+# College: "Sign up by Sunday, November 8" (Peter, 2026-11-02), to the end of that day, Eastern.
+COLLEGE_SIGNUPS_CLOSE_AT = datetime(2026, 11, 9, 0, 0, tzinfo=EASTERN)
+COLLEGE_AGES = range(18, 21)
 # A sign-up holds its two seats this long while the parent has not given permission.
 HOLD = timedelta(days=3)
 # The same anti-bot bargain as the waitlist: a real person takes longer than this to fill the form.
@@ -62,9 +69,11 @@ def _when(s: CodesignSession) -> str:
 
 
 def _holding(now: datetime):
-    """Sign-ups that count against a session's seats: confirmed, or still inside the hold with no
-    answer yet. A declined form frees its seats at once."""
+    """Sign-ups that count against a session's seats: college (confirmed when they sign up), high
+    school confirmed, or high school still inside the hold with no answer yet. A declined form frees
+    its seats at once."""
     return or_(
+        CodesignSignup.audience == COLLEGE,
         CodesignSignup.permission_given_at.is_not(None),
         and_(CodesignSignup.created_at > now - HOLD, CodesignSignup.form_submitted_at.is_(None)),
     )
@@ -100,14 +109,38 @@ def _session_out(s: CodesignSession, taken: int) -> dict:
     }
 
 
-# ── Public ───────────────────────────────────────────────────────────────────
+async def _sessions_of(db: AsyncSession, audience: str, lock_ids: list[uuid.UUID] | None = None):
+    """One group's sessions in date order. With lock_ids, only those, locked so two people cannot
+    take the last seat at the same moment."""
+    query = select(CodesignSession).where(CodesignSession.audience == audience)
+    if lock_ids is not None:
+        query = query.where(CodesignSession.id.in_(lock_ids)).with_for_update()
+    return (await db.execute(query.order_by(CodesignSession.starts_at))).scalars().all()
+
+
+def _is_bot(company: str, elapsed_ms: int | None) -> bool:
+    # `company` is hidden from people, so a value means a bot filled it.
+    return bool(company.strip()) or (elapsed_ms is not None and elapsed_ms < MIN_FILL_MS)
+
+
+async def _refuse_too_many(db: AsyncSession, emails: set[str], now: datetime) -> None:
+    for email in emails:
+        recent = (await db.execute(
+            select(func.count()).select_from(CodesignSignup).where(
+                or_(CodesignSignup.teen_email == email, CodesignSignup.parent_email == email),
+                CodesignSignup.created_at > now - timedelta(days=1),
+            )
+        )).scalar()
+        if recent >= MAX_PER_EMAIL_PER_DAY:
+            raise HTTPException(status_code=429, detail="Too many sign-ups for this email today.")
+
+
+# ── Public: high school ──────────────────────────────────────────────────────
 
 @router.get("/codesign/sessions")
 async def list_sessions(db: AsyncSession = Depends(get_db)):
     now = _now()
-    sessions = (await db.execute(
-        select(CodesignSession).order_by(CodesignSession.starts_at)
-    )).scalars().all()
+    sessions = await _sessions_of(db, HIGH_SCHOOL)
     taken = await _taken(db, now)
     return {
         "open": now < SIGNUPS_CLOSE_AT,
@@ -124,7 +157,7 @@ class SignupIn(BaseModel):
     parent_email: EmailStr
     session1_id: uuid.UUID
     session2_id: uuid.UUID
-    # Anti-bot. `company` is hidden from people, so a value means a bot filled it.
+    # Anti-bot: see _is_bot.
     company: str = ""
     elapsed_ms: int | None = None
 
@@ -132,7 +165,7 @@ class SignupIn(BaseModel):
 @router.post("/codesign/signups")
 async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
     # Drop bots silently: success, so they get no signal, but nothing saved or sent.
-    if data.company.strip() or (data.elapsed_ms is not None and data.elapsed_ms < MIN_FILL_MS):
+    if _is_bot(data.company, data.elapsed_ms):
         return {"success": True}
 
     now = _now()
@@ -147,22 +180,11 @@ async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
     teen_email = data.teen_email.lower().strip()
     parent_email = data.parent_email.lower().strip()
 
-    for email in {teen_email, parent_email}:
-        recent = (await db.execute(
-            select(func.count()).select_from(CodesignSignup).where(
-                or_(CodesignSignup.teen_email == email, CodesignSignup.parent_email == email),
-                CodesignSignup.created_at > now - timedelta(days=1),
-            )
-        )).scalar()
-        if recent >= MAX_PER_EMAIL_PER_DAY:
-            raise HTTPException(status_code=429, detail="Too many sign-ups for this email today.")
+    await _refuse_too_many(db, {teen_email, parent_email}, now)
 
-    # Lock the two sessions so two people cannot take the last seat at the same moment.
-    sessions = {s.id: s for s in (await db.execute(
-        select(CodesignSession)
-        .where(CodesignSession.id.in_([data.session1_id, data.session2_id]))
-        .with_for_update()
-    )).scalars().all()}
+    # High school sessions only: a college date is "not one of the dates" here.
+    sessions = {s.id: s for s in await _sessions_of(
+        db, HIGH_SCHOOL, lock_ids=[data.session1_id, data.session2_id])}
     first, second = sessions.get(data.session1_id), sessions.get(data.session2_id)
     if first is None or second is None or first.week != 1 or second.week != 2:
         raise HTTPException(status_code=422, detail="Pick one date from each week.")
@@ -173,7 +195,7 @@ async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
 
     token = secrets.token_urlsafe(32)
     signup = CodesignSignup(
-        teen_first_name=teen_first, teen_last_name=teen_last, teen_age=data.teen_age,
+        audience=HIGH_SCHOOL, teen_first_name=teen_first, teen_last_name=teen_last, teen_age=data.teen_age,
         teen_email=teen_email, parent_name=parent_name, parent_email=parent_email,
         session1_id=first.id, session2_id=second.id, permission_token_hash=_hash(token),
     )
@@ -207,13 +229,122 @@ async def sign_up(data: SignupIn, db: AsyncSession = Depends(get_db)):
         ],
     )
     name = _short_name(teen_first, teen_last)
-    await _tell_the_team(db, f"New co-design sign-up: {name}",
-                         f"{name} signed up for {dates[0]}, and {dates[1]}.")
+    await _tell_the_team(db, f"New co-design sign-up, high school: {name}",
+                         f"{name} (high school) signed up for {dates[0]}, and {dates[1]}.")
+    return {"success": True}
+
+
+# ── Public: college ──────────────────────────────────────────────────────────
+
+@router.get("/codesign/college/sessions")
+async def list_college_sessions(db: AsyncSession = Depends(get_db)):
+    """The college dates, and the agreement the page shows above the two boxes."""
+    now = _now()
+    sessions = await _sessions_of(db, COLLEGE)
+    taken = await _taken(db, now)
+    return {
+        "open": now < COLLEGE_SIGNUPS_CLOSE_AT,
+        "sessions": [_session_out(s, taken.get(s.id, 0)) for s in sessions],
+        "agreement": codesign_agreement.agreement(),
+    }
+
+
+class CollegeSignupIn(BaseModel):
+    first_name: str = Field(min_length=1, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    # Checked in the route, so the refusal can say plainly who the sessions are for.
+    age: int = Field(ge=0, le=150)
+    email: EmailStr
+    session_id: uuid.UUID
+    # StrictBool, so a missing box, or "yes" sent as text, is refused rather than read as ticked.
+    agrees_to_recording: StrictBool
+    agrees_to_take_part: StrictBool
+    agreement_version: str = Field(max_length=100)
+    # Anti-bot: see _is_bot.
+    company: str = ""
+    elapsed_ms: int | None = None
+
+
+def _college_copy(signup: CodesignSignup, date: str) -> list[str]:
+    """The student's copy of what they agreed to: the wording, both answers, when, and the version."""
+    a = codesign_agreement
+    return [
+        f"Your date: {date}.",
+        "Sally will send you the video invite before the session.",
+        f"This is your copy of what you agreed to when you signed up on {_stamp(signup.agreed_at)}:",
+        *a.as_paragraphs(),
+        *(f"{text} {_yes(getattr(signup, key))}" for key, text in a.BOXES.items()),
+        f"Version: {signup.agreement_version}",
+        "If you have questions, or want to withdraw, email Sally McCarthy at sally@floatcbt.com.",
+    ]
+
+
+@router.post("/codesign/college/signups")
+async def college_sign_up(data: CollegeSignupIn, db: AsyncSession = Depends(get_db)):
+    """A college student signs up for one date. No parent: they agree for themselves, so a sign-up
+    with both boxes ticked is confirmed at once and holds its seat."""
+    if _is_bot(data.company, data.elapsed_ms):
+        return {"success": True}
+
+    now = _now()
+    if now >= COLLEGE_SIGNUPS_CLOSE_AT:
+        raise HTTPException(status_code=400, detail="Sign-ups have closed.")
+
+    first_name, last_name = data.first_name.strip(), data.last_name.strip()
+    if not (first_name and last_name):
+        raise HTTPException(status_code=422, detail="Please fill in every name.")
+    if data.age not in COLLEGE_AGES:
+        raise HTTPException(status_code=422, detail="The college sessions are for ages 18 to 20.")
+    if not (data.agrees_to_recording and data.agrees_to_take_part):
+        raise HTTPException(status_code=422, detail="Please tick both boxes to sign up.")
+    if data.agreement_version != codesign_agreement.AGREEMENT_VERSION:
+        # Only the wording the student read may be recorded as the wording agreed to.
+        raise HTTPException(status_code=409, detail="The agreement has changed since the page was "
+                                                    "opened. Please reload the page.")
+    email = data.email.lower().strip()
+    await _refuse_too_many(db, {email}, now)
+    # One session each, so one seat per student: a second tap or a second date would hold a seat
+    # someone else could have.
+    already = (await db.execute(select(func.count()).select_from(CodesignSignup).where(
+        CodesignSignup.audience == COLLEGE, CodesignSignup.teen_email == email))).scalar()
+    if already:
+        raise HTTPException(status_code=409, detail="This email is already signed up. To change your "
+                                                    "date, email sally@floatcbt.com.")
+
+    # College sessions only: a high school date is "not one of the dates" here.
+    found = await _sessions_of(db, COLLEGE, lock_ids=[data.session_id])
+    if not found:
+        raise HTTPException(status_code=422, detail="Pick one date.")
+    session = found[0]
+    if (await _taken(db, now)).get(session.id, 0) >= session.seats:
+        raise HTTPException(status_code=409, detail=f"{_when(session)} is full. Please pick another date.")
+
+    signup = CodesignSignup(
+        audience=COLLEGE, teen_first_name=first_name, teen_last_name=last_name, teen_age=data.age,
+        teen_email=email, session1_id=session.id,
+        agrees_to_recording=True, agrees_to_take_part=True, agreed_at=now,
+        agreement_version=codesign_agreement.AGREEMENT_VERSION,
+    )
+    db.add(signup)
+    await db.commit()
+
+    date = _when(session)
+    await email_service.send_codesign_email(
+        to_email=email,
+        subject="You're signed up to help design Float",
+        heading=f"Thanks, {first_name}. You're signed up.",
+        paragraphs=_college_copy(signup, date),
+    )
+    name = _short_name(first_name, last_name)
+    await _tell_the_team(db, f"New co-design sign-up, college: {name}",
+                         f"{name} (college) signed up for {date}.")
     return {"success": True}
 
 
 async def _by_token(db: AsyncSession, token: str, lock: bool = False) -> CodesignSignup:
-    query = select(CodesignSignup).where(CodesignSignup.permission_token_hash == _hash(token))
+    # High school only. A college sign-up has no permission link, and must never be answered as one.
+    query = select(CodesignSignup).where(CodesignSignup.permission_token_hash == _hash(token),
+                                         CodesignSignup.audience == HIGH_SCHOOL)
     if lock:
         query = query.with_for_update()
     signup = (await db.execute(query)).scalar_one_or_none()
@@ -376,10 +507,10 @@ async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession 
         )
     name = _short_name(signup.teen_first_name, signup.teen_last_name)
     if confirmed:
-        await _tell_the_team(db, f"Co-design: {name} confirmed",
+        await _tell_the_team(db, f"Co-design, high school: {name} confirmed",
                              f"{name}'s parent gave permission. Their dates: {dates[0]}, and {dates[1]}.")
     else:
-        await _tell_the_team(db, f"Co-design: {name} won't take part",
+        await _tell_the_team(db, f"Co-design, high school: {name} won't take part",
                              f"The permission form says no, so {name} won't take part. Their dates "
                              f"were {dates[0]}, and {dates[1]}. Those seats are free again.")
     return {"success": True, "confirmed": confirmed, "already": False}
@@ -388,18 +519,16 @@ async def send_permission_form(token: str, data: PermissionIn, db: AsyncSession 
 # ── Who signed up: Float admins, and the named viewers ───────────────────────
 
 async def _signups_by_session(db: AsyncSession) -> dict:
-    """Every session with who signed up for it. The one source for both routes below, so the admin
+    """Every session with who signed up for it, high school under "sessions" (as before college
+    existed) and college under "college_sessions". The one source for both routes below, so the admin
     dashboard and the viewers' page cannot show different things."""
     now = _now()
-    sessions = (await db.execute(
-        select(CodesignSession).order_by(CodesignSession.starts_at)
-    )).scalars().all()
     taken = await _taken(db, now)
     signups = (await db.execute(
         select(CodesignSignup).order_by(CodesignSignup.created_at)
     )).scalars().all()
 
-    def out(s: CodesignSignup) -> dict:
+    def high_school(s: CodesignSignup) -> dict:
         return {
             "id": str(s.id),
             "teen_first_name": s.teen_first_name,
@@ -422,16 +551,35 @@ async def _signups_by_session(db: AsyncSession) -> dict:
             "created_at": s.created_at.isoformat(),
         }
 
-    return {
-        "sessions": [
+    def college(s: CodesignSignup) -> dict:
+        # No parent and no permission link: they agreed for themselves when they signed up.
+        return {
+            "id": str(s.id),
+            "first_name": s.teen_first_name,
+            "last_name": s.teen_last_name,
+            "age": s.teen_age,
+            "email": s.teen_email,
+            "confirmed_at": s.agreed_at.isoformat(),
+            "recording_agreed": s.agrees_to_recording,
+            "agreement_version": s.agreement_version,
+            "created_at": s.created_at.isoformat(),
+        }
+
+    async def group(audience: str, out) -> list[dict]:
+        return [
             {
                 **_session_out(sess, taken.get(sess.id, 0)),
                 "seats": sess.seats,
                 "taken": taken.get(sess.id, 0),
-                "signups": [out(s) for s in signups if sess.id in (s.session1_id, s.session2_id)],
+                "signups": [out(s) for s in signups
+                            if s.audience == audience and sess.id in (s.session1_id, s.session2_id)],
             }
-            for sess in sessions
-        ],
+            for sess in await _sessions_of(db, audience)
+        ]
+
+    return {
+        "sessions": await group(HIGH_SCHOOL, high_school),
+        "college_sessions": await group(COLLEGE, college),
     }
 
 
@@ -476,33 +624,42 @@ _STATUS_WORDS = {
 
 
 def _short_name(first: str, last: str) -> str:
-    """"Maya R.": the most of a teen's name the team summary may carry."""
+    """"Maya R.": the most of a student's name the team summary may carry."""
     return f"{first} {last[:1].upper()}."
+
+
+def _summary_lines(heading: str, sessions: list[dict], name_and_status) -> list[str]:
+    everyone = {s["id"] for sess in sessions for s in sess["signups"]}
+    lines = [f"{heading}: {len(everyone)} signed up so far."]
+    for sess in sessions:
+        people = ", ".join(name_and_status(s) for s in sess["signups"])
+        lines.append(f"{heading} · {sess['label']}: {sess['taken']} of {sess['seats']} seats taken. "
+                     + (f"{people}." if people else "No sign-ups yet."))
+    return lines
 
 
 async def _tell_the_team(db: AsyncSession, subject: str, happened: str) -> None:
     """Email everyone on CODESIGN_NOTIFY_EMAILS what just happened and every sign-up so far.
 
-    It goes to an inbox outside the sign-in, so it carries only each teen's first name and last
-    initial, their dates and their status: no surname, age, email, phone or parent. The rest is on
-    the list behind the sign-in. Sent after the sign-up or the answer is saved, and a failure is
-    only logged, so it can never undo or fail either.
+    Both groups, each under its own label, high school first. It goes to an inbox outside the
+    sign-in, so it carries only each student's first name and last initial, their dates and their
+    status: no surname, age, email, phone or parent. The rest is on the list behind the sign-in.
+    Sent after the sign-up or the answer is saved, and a failure is only logged, so it can never
+    undo or fail either.
     """
     to = [e.strip() for e in settings.CODESIGN_NOTIFY_EMAILS.split(",") if e.strip()]
     if not to:
         return
     try:
         listing = await _signups_by_session(db)
-        everyone = {s["id"] for sess in listing["sessions"] for s in sess["signups"]}
-        paragraphs = [happened, f"All sign-ups so far: {len(everyone)}"]
-        for sess in listing["sessions"]:
-            teens = ", ".join(
+        paragraphs = [
+            happened,
+            *_summary_lines("High school", listing["sessions"], lambda s: (
                 f"{_short_name(s['teen_first_name'], s['teen_last_name'])} "
-                f"({_STATUS_WORDS[s['permission']]})"
-                for s in sess["signups"]
-            )
-            paragraphs.append(f"{sess['label']}: {sess['taken']} of {sess['seats']} seats taken. "
-                              + (f"{teens}." if teens else "No sign-ups yet."))
+                f"({_STATUS_WORDS[s['permission']]})")),
+            *_summary_lines("College", listing["college_sessions"], lambda s: (
+                f"{_short_name(s['first_name'], s['last_name'])} (confirmed)")),
+        ]
         for address in to:
             await email_service.send_codesign_email(
                 to_email=address,
