@@ -1020,6 +1020,29 @@ Found while checking, before building:
   request answers before it finishes. The runner tests in `AI-dev/evals/runner/tests` still pass.
 - **Gate:** none. **Depends on:** nothing.
 
+## Session transcripts from outside tools `L`
+
+Peter, 2026-10-30. **Needs a plan.** Not ready for agents.
+
+- **Today:** a clinician records a session in Float on their phone, Google transcribes it, and Claude
+  writes a draft note (`backend/app/services/session_recording.py`, `docs/plans/session-recording.md`).
+  A clinician can also paste a transcript into **+ Add note**, then approve it and run Analyze session
+  with AI. But Float does not tidy a pasted transcript into a draft note, and nothing connects to the
+  tools clinicians may already use.
+- **What changes:**
+  1. **Connect to an outside transcription tool** (for example Zoom, Otter or Fireflies), so a
+     session's transcript comes into Float for the right patient. Which tools comes first: ask
+     clinicians what they use.
+  2. **A pasted or uploaded transcript becomes a draft note,** the same way a recording does, for
+     the clinician to approve.
+- **How to tell it worked:** a transcript from the chosen tool appears as a draft note on the right
+  patient's Sessions tab, and nothing reaches the Case Summary until the clinician approves it and
+  presses Analyze session with AI.
+- **Gate:** `/security-review`. **Any outside tool must have a signed HIPAA agreement before it handles
+  real session audio or text,** and Float must store only what it needs. Dr. Walker's list too, once
+  the session approach is settled with her.
+- **Depends on:** Peter learning from Dr. Walker what a typical session looks like.
+
 ## AI analysis of session notes
 
 **Raised 2026-09-17.** `M` (plan first if it grows past a summary).
