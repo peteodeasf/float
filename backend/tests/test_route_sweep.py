@@ -69,6 +69,10 @@ PUBLIC = {
     "POST /codesign/signups",
     "GET /codesign/permission/{token}",
     "POST /codesign/permission/{token}",
+    # College sign-ups (floatcbt.com/codesign/college): the dates, seats left and agreement text, and
+    # signing up. No one's details come back from either.
+    "GET /codesign/college/sessions",
+    "POST /codesign/college/signups",
     # Request access for a practice. Always answers the same way and saves only a request; limited
     # per email and per IP address. docs/plans/clinician-practice-onboarding.md
     "POST /access-requests",
