@@ -20,7 +20,7 @@ import {
   type TriggerSituation,
   type PlannedExperiment,
 } from '../../../api/treatment'
-import { BEHAVIOR_TYPE_COMBINATION, clampDt, clampDtInput } from './shared'
+import { clampDt, clampDtInput } from './shared'
 import { SessionSetupSheet } from './SessionSetupSheet'
 import { arrowDoneOn, bySituationFear } from '../ladderEditor'
 
@@ -125,12 +125,11 @@ export function FlatLadder({
     queryKey: ['patient-arrows', patientId],
     queryFn: () => listPatientDownwardArrows(patientId),
   })
-  // Peter, 2026-11-02: the arrow opens from each rung here, not from the ladder editor. Only a
-  // combination rung with a situation can have one — the server opens an arrow on a combination
-  // and nothing else, and the arrow page needs the situation. Other rungs get no button.
+  // Peter, 2026-11-02: the arrow opens from each rung here, not from the ladder editor, and all
+  // rungs get one. The arrow page needs the situation, so a rung with none has no button.
   // docs/plans/downward-arrow-on-main-ladder.md
   const arrowFor = (r: AvoidanceBehavior) =>
-    r.behavior_type === BEHAVIOR_TYPE_COMBINATION && r.trigger_situation_id
+    r.trigger_situation_id
       ? {
           done: arrowDoneOn(r.id, arrows ?? []),
           open: () => navigate(`/patients/${patientId}/arrow?situation=${r.trigger_situation_id}&rung=${r.id}`),

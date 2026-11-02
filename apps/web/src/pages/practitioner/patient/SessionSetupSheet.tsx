@@ -60,8 +60,8 @@ export function SessionSetupSheet({
 }) {
   const qc = useQueryClient()
 
-  // The fear starts as the one from this step's downward arrow (or, for a sub-situation, its
-  // combination's), then the situation's. Peter, 2026-10-15: the arrow is done per combination.
+  // The fear starts as the one from this rung's downward arrow (or, for a sub-situation, its
+  // combination's), then the situation's.
   const { data: arrow } = useQuery({
     queryKey: ['situation-da', rung.trigger_situation_id],
     queryFn: () => getSituationDownwardArrow(rung.trigger_situation_id!),
@@ -72,10 +72,12 @@ export function SessionSetupSheet({
     queryFn: () => getStepArrows(rung.trigger_situation_id!),
     enabled: !!rung.trigger_situation_id,
   })
-  const stepFear = (stepArrows ?? []).find(a =>
-    (a.rung_id === rung.id || (!!rung.parent_behavior_id && a.rung_id === rung.parent_behavior_id))
+  // A rung's own arrow comes first: since 2026-11-02 every rung can have one.
+  const arrowOn = (rungId: string | null | undefined) => (stepArrows ?? []).find(a =>
+    !!rungId && a.rung_id === rungId
     && a.facilitated_by !== 'parent' && !!(a.feared_outcome ?? '').trim(),
   )?.feared_outcome
+  const stepFear = arrowOn(rung.id) ?? arrowOn(rung.parent_behavior_id)
   const [typedFear, setTypedFear] = useState<string | null>(null)
   const fear = typedFear ?? stepFear ?? arrow?.feared_outcome ?? ''
 

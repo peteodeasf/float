@@ -97,15 +97,15 @@ describe('the Downward Arrow button on the main ladder', () => {
     expect(second).toHaveTextContent(/^Downward Arrow$/)
   })
 
-  // The server opens an arrow only on a combination, and the arrow page needs the situation. So
-  // an easier version, or a rung with no situation, has nothing to open and gets no button.
-  it('does not show on a rung the arrow cannot open on', async () => {
+  // Peter, 2026-11-02: "all rungs should get a DA", so a rung added by hand gets the button too. The
+  // arrow page needs the situation, so a rung with no situation has nothing to open.
+  it('shows on every rung that has a situation, including one added by hand', async () => {
     db.rungs = [
       COMBO_1,
       rung('s1', 'Get dropped off one block away', 'scenario', 'school', 3),
       rung('n1', 'Walk in alone', 'combination', null, 5),
     ]
     await showLadder()
-    expect(arrowButtons()).toHaveLength(1)
+    expect(arrowButtons()).toHaveLength(2)
   })
 })

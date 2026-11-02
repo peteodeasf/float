@@ -16,10 +16,10 @@ fear level."
 
 ## Which rungs get the button
 
-The same rungs the editor showed DA on: a combination rung (a situation without one safety behavior)
-that belongs to a situation. The backend only opens an arrow on a combination
-(`_combination_on` in `avoidance_behaviors.py` returns 400 otherwise), and the URL needs the
-situation. Other rungs get an empty space the same width, so the Fear Level boxes stay in a column.
+**All rungs** (Peter, 2026-11-02: "all rungs should get a DA"): rungs made from a safety behavior and
+rungs added by hand. The server refuses anything that is not a rung (`_combination_on` in
+`avoidance_behaviors.py`, now checking `LADDER_TYPES`). The page needs the situation, so a rung with
+no situation gets an empty space the same width, and the Fear Level boxes stay in a column.
 
 ## Done-ness
 
