@@ -13,7 +13,7 @@ function openEditor() {
   render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <LadderEditor planId="plan1" patientId="p1" triggers={[]} onDone={() => {}} onArrow={() => {}} />
+        <LadderEditor planId="plan1" patientId="p1" triggers={[]} onDone={() => {}} />
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -43,12 +43,11 @@ describe('the hint for adding a behavior', () => {
     qc.setQueryData(['insights', 'p1', 'behavior'], [])
     qc.setQueryData(['plan-rungs', 'plan1'], [])
     qc.setQueryData(['behaviors', 't1'], [])
-    qc.setQueryData(['step-arrows', 't1'], [])
     render(
       <QueryClientProvider client={qc}>
         <MemoryRouter>
           <LadderEditor planId="plan1" patientId="p1" triggers={[soccer]} openSituationId="t1"
-            onDone={() => {}} onArrow={() => {}} />
+            onDone={() => {}} />
         </MemoryRouter>
       </QueryClientProvider>,
     )
@@ -71,12 +70,11 @@ describe('the avoidance behavior', () => {
     qc.setQueryData(['insights', 'p1', 'behavior'], [])
     qc.setQueryData(['plan-rungs', 'plan1'], [])
     qc.setQueryData(['behaviors', 't1'], behaviors)
-    qc.setQueryData(['step-arrows', 't1'], [])
     render(
       <QueryClientProvider client={qc}>
         <MemoryRouter>
           <LadderEditor planId="plan1" patientId="p1" triggers={[school]} openSituationId="t1"
-            onDone={() => {}} onArrow={() => {}} />
+            onDone={() => {}} />
         </MemoryRouter>
       </QueryClientProvider>,
     )
@@ -94,5 +92,39 @@ describe('the avoidance behavior', () => {
       behavior_type: 'avoidance', distress_thermometer_when_refraining: null, parent_behavior_id: null,
     }])
     expect(screen.getByText('Avoids being dropped off at school')).toBeInTheDocument()
+  })
+})
+
+describe('the downward arrow', () => {
+  // Peter, 2026-11-02: the arrow moved to the main ladder. A saved rung in the editor used to
+  // carry a DA link; it no longer does.
+  it('has no DA button in the ladder editor', () => {
+    const school: TriggerSituation = {
+      id: 't1', treatment_plan_id: 'plan1', name: 'Being dropped off at school', description: null,
+      distress_thermometer_rating: 6, distress_thermometer_max: 10, situation_library_id: null,
+      display_order: 0, is_active: true, created_at: '2026-11-02T00:00:00Z',
+    }
+    const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
+    qc.setQueryData(['insights', 'p1', 'situation'], [])
+    qc.setQueryData(['insights', 'p1', 'behavior'], [])
+    qc.setQueryData(['plan-rungs', 'plan1'], [])
+    // A safety behavior with its rung already saved: the case that showed DA before.
+    qc.setQueryData(['behaviors', 't1'], [
+      { id: 'b1', trigger_situation_id: 't1', name: 'Mom walks in with them', behavior_type: 'safety',
+        distress_thermometer_when_refraining: null, parent_behavior_id: null },
+      { id: 'c1', trigger_situation_id: 't1', name: 'Get dropped off without Mom walking in',
+        behavior_type: 'combination', without_behavior_id: 'b1',
+        distress_thermometer_when_refraining: 5, parent_behavior_id: null },
+    ])
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <LadderEditor planId="plan1" patientId="p1" triggers={[school]} openSituationId="t1"
+            onDone={() => {}} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByText('Get dropped off without Mom walking in')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /DA|Downward/i })).toBeNull()
   })
 })

@@ -100,6 +100,19 @@ instead. Write the base64 to a file first, one command per file:
 
 A loop over the files with `$(base64 ...)` inside it is refused by the worktree guard.
 
+## The shared backend on port 8000 can be running old code
+
+**2026-11-02**, moving the Downward Arrow button. Opening an arrow on a rung gave "Could not open
+this one" because the backend on port 8000 returned 404 for
+`POST /triggers/{id}/behaviors/{id}/downward-arrow`, a route that is on main. It runs from the
+main checkout and is not restarted when main moves. If a call the code clearly has returns 404,
+run your own backend from the worktree (the `VITE_API_URL` setup above) before suspecting your
+change.
+
+A CORS error in the browser console usually hides a server error: a 500 response has no CORS
+header. Call the URL with `curl` and the `access_token` from the page's `localStorage` to see the
+real status, and the backend's own output for the traceback. Delete the token file afterwards.
+
 ## Showing a dropdown's choices in a screenshot
 
 **2026-10-21**, issue #53. A screenshot cannot catch a native `<select>` open: the list of choices
@@ -126,6 +139,21 @@ Edit ladder, Add situation). The behavior box shows as soon as the situation is 
 only shows after Done, then Add rung. There are two buttons called that — "Add rung" in the
 situation and "+ Add rung" elsewhere — so click it by its exact name
 (`getByRole('button', { name: 'Add rung', exact: true })`).
+
+## Getting each Ladder Validation bullet on screen
+
+**2026-11-02.** The panel was called "Before you finish" until this date; the notes below still
+apply. Two more things:
+
+- **The shared backend on port 8000 runs main's code.** A change to the check itself does not show
+  there. Run your own backend from the worktree (the `VITE_API_URL` setup above).
+- **All four bullets at once with the demo ladder:** keep the rung at 3, set the rung at 6
+  ("Answer a question in class…") to 9, and set the other six to null. That gives No Fear Level,
+  Low rungs, Going up and Too few rungs. Then set the last two to null for Nothing on the ladder
+  yet. Keep editing, then Save ladder again, re-runs the check without another edit.
+- **List dots are off app-wide.** Tailwind's base styles (`@import "tailwindcss"` in
+  `apps/web/src/index.css`) set `list-style: none`, so a `<ul>` shows no bullets unless it sets
+  `listStyleType: 'disc'` itself, as `MonitorLandingPage.tsx` does.
 
 ## Getting each "Before you finish" message on screen
 

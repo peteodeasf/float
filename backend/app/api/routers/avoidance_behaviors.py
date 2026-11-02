@@ -22,7 +22,7 @@ from app.schemas.avoidance_behavior import (
     AvoidanceBehaviorResponse,
     CombinationDraftResponse,
 )
-from app.core.behavior_types import COMBINATION, COMBINATION_OF
+from app.core.behavior_types import COMBINATION, COMBINATION_OF, LADDER_TYPES
 from app.models.treatment import TreatmentPlan
 from app.schemas.downward_arrow import DownwardArrowCreate, DownwardArrowResponse
 from app.services.downward_arrow_service import (
@@ -135,8 +135,10 @@ async def _combination_on(db: AsyncSession, trigger_id: uuid.UUID, behavior_id: 
     step = (await db.execute(
         select(AvoidanceBehavior).where(AvoidanceBehavior.id == behavior_id)
     )).scalar_one()
-    if step.behavior_type != COMBINATION:
-        raise HTTPException(status_code=400, detail="The downward arrow is done on a combination.")
+    # Peter, 2026-11-02: "all rungs should get a DA", so a rung added by hand counts too. A safety
+    # behavior that is not a rung still does not.
+    if step.behavior_type not in LADDER_TYPES:
+        raise HTTPException(status_code=400, detail="The downward arrow is done on a rung.")
     return step
 
 
@@ -150,7 +152,7 @@ async def open_step_arrow(
     db: AsyncSession = Depends(get_db),
     _access: None = Depends(get_permitted_trigger),
 ):
-    """Get-or-create the arrow on this combination."""
+    """Get-or-create the arrow on this rung."""
     _, practitioner = context
     await _combination_on(db, trigger_id, behavior_id)
     patient_id = (await db.execute(
@@ -270,6 +272,9 @@ async def delete_plan_rung(
 
 class LadderReviewFinding(BaseModel):
     code: str
+    #: Shown bold, then `text`. `message` is the two joined, for anything that wants one string.
+    label: str
+    text: str
     message: str
 
 
@@ -289,9 +294,9 @@ async def review_plan_ladder(
 ):
     """Check the ladder before the clinician closes the editor.
 
-    Arithmetic only, against Dr. Walker's parameters in `LADDER_RULES`: is the lowest rung low
-    enough to start on, are there enough rungs, is any jump between two of them too big, is anything
-    unscored.
+    Arithmetic only, against the parameters in `LADDER_RULES`: is anything unscored, are there
+    enough low rungs to start on, which jumps between neighboring rungs are bigger than recommended,
+    are there enough rungs. Advice only — it never blocks saving.
     """
     _, practitioner = context
     rungs = await get_rungs_for_plan(db, plan_id, practitioner.organization_id)
@@ -300,5 +305,8 @@ async def review_plan_ladder(
         for r in rungs
     ]
     return LadderReviewResponse(
-        findings=[LadderReviewFinding(code=f.code, message=f.message) for f in review_steps(steps)],
+        findings=[
+            LadderReviewFinding(code=f.code, label=f.label, text=f.text, message=f.message)
+            for f in review_steps(steps)
+        ],
     )

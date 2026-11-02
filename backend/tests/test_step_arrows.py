@@ -76,8 +76,9 @@ async def test_two_combinations_on_one_situation_each_get_their_own(api, db):
     assert {x["rung_id"] for x in listed} == {str(combination.id), str(other.id)}
 
 
-async def test_no_arrow_on_a_sub_situation_or_a_behaviour_for_now(api, db):
-    """Peter, 2026-10-15: "My inclination is no, but that could change." """
+async def test_every_rung_can_have_an_arrow_but_a_safety_behavior_cannot(api, db):
+    """Peter, 2026-11-02: "all rungs should get a DA" (on 2026-10-15 it was combinations only). A rung
+    added by hand now qualifies. A safety behavior is not a rung, so it still does not."""
     _, _, _, situation, clinician, safety, _ = await _setup(db)
     sub = await make_rung(db, situation=situation, name="Sit in the middle row", behavior_type="scenario")
     api.sign_in_as(clinician.user)
@@ -85,7 +86,8 @@ async def test_no_arrow_on_a_sub_situation_or_a_behaviour_for_now(api, db):
     on_sub = await api.post(f"/triggers/{situation.id}/behaviors/{sub.id}/downward-arrow", json={})
     on_safety = await api.post(f"/triggers/{situation.id}/behaviors/{safety.id}/downward-arrow", json={})
 
-    assert on_sub.status_code == 400
+    assert on_sub.status_code == 201
+    assert on_sub.json()["rung_id"] == str(sub.id)
     assert on_safety.status_code == 400
 
 
