@@ -76,7 +76,7 @@ type WaitlistEntry = {
   created_at: string | null
 }
 
-const loadCodesignSignups = async () => (await adminApiClient.get('/codesign/signups')).data.sessions
+const loadCodesignSignups = async () => (await adminApiClient.get('/codesign/signups')).data
 
 // A form field inside the admin panels. One border, radius and padding for all of them.
 const formInput: React.CSSProperties = {

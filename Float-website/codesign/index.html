@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="description" content="Teens aged 13–17: help design an app for teens and get paid $60 for two virtual group sessions in November 2026.">
+  <meta name="description" content="Help design Float and get paid $60. Sign up as a high school student (ages 13–17) or a college student (ages 18–20). Virtual group sessions in November 2026.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 120%27 fill=%27none%27><g transform=%27rotate(-50 60 60)%27><path d=%27M52 97 A38 38 0 1 1 68 97%27 stroke=%27%23135450%27 stroke-width=%2716%27 stroke-linecap=%27round%27/></g><circle cx=%2760%27 cy=%2760%27 r=%2719%27 fill=%27%239af6e4%27/></svg>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="apple-touch-icon" href="https://app.floatcbt.com/brand/apple-touch-icon.png">
   <meta name="theme-color" content="#135450">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Help design an app for teens">
+  <meta property="og:title" content="Help design Float: which are you?">
   <meta property="og:image" content="https://app.floatcbt.com/brand/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <title>Help design Float</title>
+  <title>Help design Float: which are you?</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -548,7 +548,24 @@
     .questions { text-align: center; font-size: 15px; color: var(--text-mid); margin-top: 28px; }
     .questions a { color: var(--teal); font-weight: 600; }
 
+    /* ── WHICH ARE YOU? ── both posters' QR codes point here. docs/plans/codesign-signup.md */
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    footer { margin-top: auto; }
+    .choose { padding: 48px 48px 72px; background: var(--white); }
+    .choose-inner { max-width: 760px; margin: 0 auto; }
+    .choose h2 { font-family: 'DM Serif Display', serif; font-size: clamp(30px, 3.6vw, 40px); line-height: 1.1; color: var(--text); letter-spacing: -0.02em; margin-bottom: 24px; }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .choice-card { display: flex; flex-direction: column; gap: 10px; padding: 28px; border: 1.5px solid var(--border); border-radius: 16px; text-decoration: none; color: var(--text); background: var(--white); transition: all 0.2s; }
+    .choice-card:hover, .choice-card:focus-visible { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal), 0 8px 24px rgba(13,61,58,0.08); outline: none; }
+    .choice-card .who { font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; color: var(--text); }
+    .choice-card .facts-line { font-size: 15px; line-height: 1.5; color: var(--text-mid); margin-bottom: 8px; }
+    .choice-card .go { margin-top: auto; display: inline-flex; align-items: center; justify-content: center; background: var(--teal); color: var(--white); font-size: 16px; font-weight: 600; padding: 14px 20px; border-radius: 10px; }
+    .choice-card:hover .go { background: var(--teal-dark); }
+
     @media (max-width: 768px) {
+      .choose { padding: 32px 20px 48px; }
+      .choices { grid-template-columns: 1fr; gap: 16px; }
+      .choice-card { padding: 22px; }
       .banner { padding: 92px 20px 28px; }
       .banner-inner { flex-direction: column; align-items: flex-start; gap: 20px; }
       .pay { width: auto; height: auto; border-radius: 14px; flex-direction: row; gap: 10px; padding: 12px 16px; }
@@ -578,110 +595,30 @@
   <section class="banner">
     <div class="banner-inner">
       <div>
-        <div class="banner-label">Calling all students · November 2026</div>
-        <h1>Help design an app for teens. Get paid for your ideas.</h1>
-        <p>Join two relaxed, virtual group chats and tell us what you really think about how apps should look, feel and work.</p>
-        <div class="chips"><span class="chip">Ages 13–17</span><span class="chip">Virtual</span><span class="chip">Paid</span></div>
+        <div class="banner-label">Co-design · November 2026</div>
+        <h1>Help design Float. Get paid for your ideas.</h1>
+        <p>Join a relaxed, virtual group and tell us what you really think about how apps should look, feel and work.</p>
       </div>
-      <div class="pay"><strong>$60</strong><span>for joining<br>both sessions</span></div>
+      <div class="pay"><strong>$60</strong><span>for taking<br>part</span></div>
     </div>
   </section>
 
-  <!-- DETAILS -->
-  <section class="details">
-    <div class="details-inner">
-      <div class="problem-card">
-        <span class="problem-card-tag">What is Float?</span>
-        <p><strong>Float is a new app that helps teens face anxiety one small step at a time,</strong> working alongside their therapist. We're building it now, and we want teens to help shape it.</p>
+  <!-- WHICH ARE YOU? -->
+  <section class="choose">
+    <div class="choose-inner">
+      <h2>Which are you?</h2>
+      <div class="choices">
+        <a class="choice-card" href="/codesign/high-school/">
+          <span class="who">High school student</span>
+          <span class="facts-line">Ages 13–17 · two sessions · a parent or guardian's permission is needed · sign up by Friday, November 6</span>
+          <span class="go">High school sign-up →</span>
+        </a>
+        <a class="choice-card" href="/codesign/college/">
+          <span class="who">College student</span>
+          <span class="facts-line">Ages 18–20 · one session · sign up by Sunday, November 8</span>
+          <span class="go">College sign-up →</span>
+        </a>
       </div>
-      <div class="problem-card">
-        <span class="problem-card-tag">What we'll chat about</span>
-        <ul class="chat-list">
-          <li>The apps you love, and why</li>
-          <li>What feels supportive, and what feels cringe</li>
-          <li>Your ideas for Float's design</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- SIGN-UP -->
-  <section class="waitlist" id="signup">
-    <div class="signup-inner">
-      <div class="banner-label" style="color: var(--teal)">Sign up by Friday, November 6</div>
-      <h2>Pick one date from each week</h2>
-      <p class="signup-meta">45–60 min · on video · open discussion · every session starts at 12pm Eastern</p>
-
-      <div class="signup-closed" id="signupClosed">Sign-ups have closed. Questions? <a href="mailto:sally@floatcbt.com">sally@floatcbt.com</a></div>
-
-      <form class="signup-form" id="signupForm" novalidate>
-        <div class="signup-section">
-          <h3><span class="num">1</span>Session one · your thoughts</h3>
-          <div class="dates" id="week1" role="radiogroup" aria-label="Session one date"></div>
-        </div>
-        <div class="signup-section">
-          <h3><span class="num">2</span>Session two · your ideas</h3>
-          <div class="dates" id="week2" role="radiogroup" aria-label="Session two date"></div>
-        </div>
-
-        <div class="signup-section">
-          <h3>About you</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="teenFirst">First name</label>
-              <input type="text" id="teenFirst" autocomplete="given-name" required>
-            </div>
-            <div class="form-group">
-              <label for="teenLast">Last name</label>
-              <input type="text" id="teenLast" autocomplete="family-name" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="teenAge">Age</label>
-              <select id="teenAge" required>
-                <option value="" disabled selected>Select</option>
-                <option>13</option><option>14</option><option>15</option><option>16</option><option>17</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="teenEmail">Your email</label>
-              <input type="email" id="teenEmail" autocomplete="email" required>
-            </div>
-          </div>
-        </div>
-
-        <div class="signup-section">
-          <h3>Your parent or guardian</h3>
-          <p class="hint">A parent or guardian's permission is needed to take part. We'll email them a link to give it.</p>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="parentName">Their name</label>
-              <input type="text" id="parentName" required>
-            </div>
-            <div class="form-group">
-              <label for="parentEmail">Their email</label>
-              <input type="email" id="parentEmail" required>
-            </div>
-          </div>
-        </div>
-
-        <!-- Anti-bot honeypot: hidden from people (off-screen, not tabbable, no autofill); bots
-             fill every field, so a non-empty value means it's a bot. Real submissions leave it empty. -->
-        <div class="hp-field" aria-hidden="true">
-          <label for="company">Company</label>
-          <input type="text" id="company" name="company" tabindex="-1" autocomplete="off">
-        </div>
-
-        <p class="form-error" id="formError" role="alert"></p>
-        <button type="submit" class="form-submit">Sign up →</button>
-      </form>
-
-      <div class="form-success" id="formSuccess" role="status">
-        <h3>You're signed up.</h3>
-        <p>We've emailed your parent or guardian to ask for their permission, and sent your dates to your email. Your place is held for 3 days while they reply.</p>
-      </div>
-
       <p class="questions">Questions? <a href="mailto:sally@floatcbt.com">sally@floatcbt.com</a></p>
     </div>
   </section>
@@ -697,105 +634,5 @@
     </div>
   </footer>
 
-  <script>
-    const API = 'https://floatcbt-production.up.railway.app';
-    const formLoadedAt = Date.now();
-    const form = document.getElementById('signupForm');
-    const errorBox = document.getElementById('formError');
-
-    function showError(message) {
-      errorBox.textContent = message;
-      errorBox.classList.add('show');
-      errorBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-
-    // "Tue Nov 10", in Eastern time, which is where the sessions are set.
-    function shortDate(iso) {
-      return new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' }).replace(',', '');
-    }
-
-    function renderDates(sessions) {
-      for (const week of [1, 2]) {
-        const box = document.getElementById('week' + week);
-        box.innerHTML = '';
-        for (const s of sessions.filter(x => x.week === week)) {
-          const id = 's-' + s.id;
-          const wrap = document.createElement('div');
-          wrap.className = 'date';
-          const input = document.createElement('input');
-          input.type = 'radio'; input.name = 'week' + week; input.value = s.id; input.id = id; input.disabled = s.full;
-          const label = document.createElement('label');
-          label.htmlFor = id;
-          label.innerHTML = '<span></span><small></small>';
-          label.firstChild.textContent = shortDate(s.starts_at);
-          label.lastChild.textContent = s.full ? 'Full' : '12pm ET';
-          wrap.append(input, label);
-          box.append(wrap);
-        }
-      }
-    }
-
-    async function loadSessions() {
-      try {
-        const r = await fetch(API + '/codesign/sessions');
-        const data = await r.json();
-        if (!data.open) {
-          form.style.display = 'none';
-          document.getElementById('signupClosed').classList.add('show');
-          return;
-        }
-        renderDates(data.sessions);
-      } catch (e) {
-        showError('We could not load the dates. Please refresh the page, or email sally@floatcbt.com.');
-      }
-    }
-
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      errorBox.classList.remove('show');
-      const picked = w => (form.querySelector('input[name="week' + w + '"]:checked') || {}).value;
-      const val = id => document.getElementById(id).value.trim();
-      if (!picked(1) || !picked(2)) return showError('Pick one date from each week.');
-      if (!val('teenFirst') || !val('teenLast') || !val('teenAge') || !val('teenEmail') || !val('parentName') || !val('parentEmail')) {
-        return showError('Please fill in every box.');
-      }
-      for (const id of ['teenEmail', 'parentEmail']) {
-        if (!document.getElementById(id).checkValidity()) return showError('Please check the email addresses.');
-      }
-
-      const btn = form.querySelector('.form-submit');
-      btn.textContent = 'Signing up…';
-      btn.disabled = true;
-      try {
-        const r = await fetch(API + '/codesign/signups', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            teen_first_name: val('teenFirst'), teen_last_name: val('teenLast'), teen_age: Number(val('teenAge')),
-            teen_email: val('teenEmail'), parent_name: val('parentName'), parent_email: val('parentEmail'),
-            session1_id: picked(1), session2_id: picked(2),
-            // Anti-bot: the honeypot must be empty, and a real person takes more than a moment.
-            company: document.getElementById('company').value,
-            elapsed_ms: Date.now() - formLoadedAt
-          })
-        });
-        if (r.ok) {
-          form.style.display = 'none';
-          document.getElementById('formSuccess').classList.add('show');
-          document.getElementById('formSuccess').scrollIntoView({ block: 'center', behavior: 'smooth' });
-          return;
-        }
-        const detail = (await r.json().catch(() => ({}))).detail;
-        if (r.status === 409) { await loadSessions(); }
-        showError(typeof detail === 'string' ? detail : 'Please check your answers and try again.');
-      } catch (err) {
-        showError('Something went wrong. Please try again.');
-      }
-      btn.textContent = 'Sign up →';
-      btn.disabled = false;
-    });
-
-    loadSessions();
-  </script>
 </body>
 </html>

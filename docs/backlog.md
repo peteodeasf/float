@@ -1421,3 +1421,18 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
 - **How to tell it worked:** open the demo patient's Plan tab; no 404 for `/flags` in the console.
 - **Gate:** a new read route is data access, so `/security-review` if one is added. **Depends on:**
   nothing.
+
+## Co-design: a withdrawal cannot be recorded, and a high school email can hold several sign-ups (noticed 2026-11-02) `S`
+
+- **Today:** `backend/app/api/routers/codesign.py`. A college sign-up always counts against its
+  seat (`_holding`), and nothing marks it withdrawn. The agreement says a student can withdraw at
+  any time by emailing Sally, but the only way to free the seat is to delete the row by hand. High
+  school is similar: a parent can only change an answer by emailing Sally. Separately, the high
+  school form lets the same teen email sign up up to 3 times a day (`MAX_PER_EMAIL_PER_DAY`), each
+  holding seats for 3 days. The college form now allows one sign-up per email.
+- **What changes:** decide with Peter whether Sally needs a "withdrawn" button on the list (it
+  would free the seat and say so in the team summary), and whether high school should also be one
+  sign-up per teen email.
+- **How to tell it worked:** a withdrawn student's seat shows as free on the page and in the list.
+- **Gate:** `/security-review` (a write route on minors' and adults' records). **Depends on:**
+  nothing.
