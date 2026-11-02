@@ -390,7 +390,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
           </div>
         ) : (
           <div style={{ background: 'var(--float-surface)', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--float-primary-dark)' }}>Before you finish</div>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--float-primary-dark)' }}>Ladder Validation</div>
 
             {review.isLoading && (
               <p style={{ fontSize: 13, color: '#6b7a79', margin: '8px 0 0' }}>Checking the ladder…</p>
@@ -400,10 +400,14 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
             )}
 
             {(review.data?.findings ?? []).length > 0 && (
-              <ul style={{ margin: '10px 0 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 7 }}>
+              // Tailwind's base styles turn list dots off; Peter asked for a bulleted list.
+              <ul style={{ margin: '10px 0 0', paddingLeft: 18, listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {review.data!.findings.map(f => (
-                  <li key={f.code + f.message} style={{ fontSize: 13, color: '#4b5a59', lineHeight: 1.5 }}>
-                    {f.message}
+                  <li key={f.code} style={{ fontSize: 13, color: '#4b5a59', lineHeight: 1.5 }}>
+                    {/* An older backend, mid-deploy, sends only `message`. */}
+                    {f.label
+                      ? <><strong style={{ color: 'var(--float-primary-dark)' }}>{f.label}:</strong> {f.text}</>
+                      : f.message}
                   </li>
                 ))}
               </ul>

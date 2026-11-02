@@ -131,7 +131,7 @@ monitoring log.
 - [ ] Add rung → type one → Add.
 - [ ] **AI suggested rungs:** Show suggested rungs → "Thinking of easier versions…" → 2 to 5 suggestions. Tap one to add it.
 - [ ] The suggestions are easier versions of this situation, with no repeats, and nothing invented that the family never mentioned.
-- [ ] Save ladder → "Checking the ladder…" → closes, or shows "Before you finish" with Keep editing / Save ladder.
+- [ ] Save ladder → "Checking the ladder…" → closes, or shows the "Ladder Validation" list (a bold label on each bullet) with Keep editing / Save ladder.
 - [ ] ⛶ Full screen → the same editor full screen. Exit full screen → back where you were.
 - **Known:** the ladder check only checks the numbers, and says so.
 

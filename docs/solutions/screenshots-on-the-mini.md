@@ -127,6 +127,21 @@ only shows after Done, then Add rung. There are two buttons called that — "Add
 situation and "+ Add rung" elsewhere — so click it by its exact name
 (`getByRole('button', { name: 'Add rung', exact: true })`).
 
+## Getting each Ladder Validation bullet on screen
+
+**2026-11-02.** The panel was called "Before you finish" until this date; the notes below still
+apply. Two more things:
+
+- **The shared backend on port 8000 runs main's code.** A change to the check itself does not show
+  there. Run your own backend from the worktree (the `VITE_API_URL` setup above).
+- **All four bullets at once with the demo ladder:** keep the rung at 3, set the rung at 6
+  ("Answer a question in class…") to 9, and set the other six to null. That gives No Fear Level,
+  Low rungs, Going up and Too few rungs. Then set the last two to null for Nothing on the ladder
+  yet. Keep editing, then Save ladder again, re-runs the check without another edit.
+- **List dots are off app-wide.** Tailwind's base styles (`@import "tailwindcss"` in
+  `apps/web/src/index.css`) set `list-style: none`, so a `<ul>` shows no bullets unless it sets
+  `listStyleType: 'disc'` itself, as `MonitorLandingPage.tsx` does.
+
 ## Getting each "Before you finish" message on screen
 
 **2026-10-29**, while rewording the ladder check. Two things stop the panel from showing anything
