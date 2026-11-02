@@ -3,13 +3,14 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { AvoidanceBehavior, TriggerSituation } from '../../api/treatment'
+import type { AvoidanceBehavior, LadderReview, TriggerSituation } from '../../api/treatment'
 
 // A small stand-in for the backend: what is saved is what is read back, so a Fear Level change goes
 // through the same save-then-refetch the real screen does.
 const db = vi.hoisted(() => ({
   triggers: [] as TriggerSituation[],
   behaviors: [] as AvoidanceBehavior[],
+  findings: [] as LadderReview['findings'],
 }))
 vi.mock('../../api/treatment', async importOriginal => ({
   ...(await importOriginal<typeof import('../../api/treatment')>()),
@@ -26,14 +27,14 @@ vi.mock('../../api/treatment', async importOriginal => ({
   },
   getPlanRungs: async () => [],
   getPatientInsights: async () => [],
-  getLadderReview: async () => ({ findings: [], ai_pending: false }),
+  getLadderReview: async () => ({ findings: db.findings, ai_pending: false }),
 }))
 
 import { SessionInterview } from './SessionPage'
 import { sortNextTime } from './ladderEditor'
 
 // The shown order lives outside the component, so each test starts from a freshly opened editor.
-beforeEach(() => sortNextTime())
+beforeEach(() => { sortNextTime(); db.findings = [] })
 
 const situation = (id: string, name: string, rating: number, order: number): TriggerSituation => ({
   id, treatment_plan_id: 'plan-order', name, description: null,
@@ -145,5 +146,33 @@ describe('the steps inside a situation keep their order until Done', () => {
     const panel = screen.getByLabelText('A rung').closest('div')!.parentElement!
     fireEvent.click(within(panel).getByRole('button', { name: 'Done' }))
     await waitFor(() => expect(onScreenOrder(steps)).toEqual([steps[1], steps[0]]))
+  })
+})
+
+// Peter, 2026-11-02: the check after Save ladder is a "Ladder Validation" list — one issue per
+// bullet, a short bold label, then concise text.
+describe('Ladder Validation', () => {
+  it('has its heading, and each bullet starts with its label in bold', async () => {
+    db.triggers = [situation('a', 'Ordering at a restaurant', 3, 0)]
+    db.behaviors = []
+    db.findings = [
+      { code: 'FEW_LOW_RUNGS', label: 'Low rungs', text: '1 of the 2 needed at Fear Level 4 or lower. Add 1 more.', message: '' },
+      { code: 'INSUFFICIENT_RUNGS', label: 'Too few rungs', text: 'at least 2 needed. Add at least 1 more.', message: '' },
+    ]
+    openEditor()
+    await screen.findByText('Ordering at a restaurant')
+
+    // Save ladder only runs the check after an edit.
+    fireEvent.change(fearBoxes()[0], { target: { value: '5' } })
+    await waitFor(() => expect(db.triggers[0].distress_thermometer_rating).toBe(5))
+    fireEvent.click(screen.getByRole('button', { name: 'Save ladder' }))
+
+    expect(await screen.findByText('Ladder Validation')).toBeTruthy()
+    const bullets = screen.getAllByRole('listitem')
+    expect(bullets.map(li => li.querySelector('strong')?.textContent)).toEqual(['Low rungs:', 'Too few rungs:'])
+    expect(bullets[0].textContent).toBe('Low rungs: 1 of the 2 needed at Fear Level 4 or lower. Add 1 more.')
+    // The two buttons are still there.
+    expect(screen.getByRole('button', { name: 'Keep editing' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Save ladder' })).toBeTruthy()
   })
 })

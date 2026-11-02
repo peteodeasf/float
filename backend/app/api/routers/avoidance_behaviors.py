@@ -272,6 +272,9 @@ async def delete_plan_rung(
 
 class LadderReviewFinding(BaseModel):
     code: str
+    #: Shown bold, then `text`. `message` is the two joined, for anything that wants one string.
+    label: str
+    text: str
     message: str
 
 
@@ -291,9 +294,9 @@ async def review_plan_ladder(
 ):
     """Check the ladder before the clinician closes the editor.
 
-    Arithmetic only, against Dr. Walker's parameters in `LADDER_RULES`: is the lowest rung low
-    enough to start on, are there enough rungs, is any jump between two of them too big, is anything
-    unscored.
+    Arithmetic only, against the parameters in `LADDER_RULES`: is anything unscored, are there
+    enough low rungs to start on, which jumps between neighboring rungs are bigger than recommended,
+    are there enough rungs. Advice only — it never blocks saving.
     """
     _, practitioner = context
     rungs = await get_rungs_for_plan(db, plan_id, practitioner.organization_id)
@@ -302,5 +305,8 @@ async def review_plan_ladder(
         for r in rungs
     ]
     return LadderReviewResponse(
-        findings=[LadderReviewFinding(code=f.code, message=f.message) for f in review_steps(steps)],
+        findings=[
+            LadderReviewFinding(code=f.code, label=f.label, text=f.text, message=f.message)
+            for f in review_steps(steps)
+        ],
     )

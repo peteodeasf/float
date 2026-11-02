@@ -1422,3 +1422,17 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
 - **How to tell it worked:** open the demo patient's Plan tab; no 404 for `/flags` in the console.
 - **Gate:** a new read route is data access, so `/security-review` if one is added. **Depends on:**
   nothing.
+
+## Three lists were meant to show bullet dots and show none (noticed 2026-11-02) `S`
+
+- **Today:** Tailwind's base styles (`@import "tailwindcss"` in `apps/web/src/index.css`) set
+  `list-style: none` on every list. Three lists leave room for a dot (`paddingLeft: 18`) but never
+  turn it back on, so they show indented text with no dots: two in
+  `apps/web/src/pages/admin/AdminDashboardPage.tsx` (around lines 688 and 704) and one in
+  `apps/web/src/pages/parent/ParentAccommodationsPage.tsx` (around line 235, the "already" list).
+  Seen while building the Ladder Validation list, which had the same problem.
+- **What changes:** add `listStyleType: 'disc'` to each, as `MonitorLandingPage.tsx` and the
+  Ladder Validation list in `SessionPage.tsx` do. The parent one is a phone screen, so check it at
+  phone width.
+- **How to tell it worked:** screenshot each; the dots show.
+- **Gate:** none. **Depends on:** nothing.

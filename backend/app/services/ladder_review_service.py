@@ -9,13 +9,26 @@ from app.models.notification import LadderReviewFlag
 
 
 # --- Rule configuration ---
-# Parameters defined by Dr. Walker — updateable without code deployment
+# Clinical parameters. Changing one needs a deploy. The Ladder Validation values are Peter's
+# (2026-11-02) and wait for Dr. Walker to confirm (docs/plans/ai-quality-testing.md, item 13).
 
 LADDER_RULES = {
-    "max_starting_distress_thermometer": 4.0,
-    "min_rungs": 3,
-    "max_rung_gap": 2.0,
+    "min_rungs": 2,  # Peter, 2026-11-02: "Let's go with two for now."
+    # Ladder Validation (`review_steps`). Peter, 2026-11-02: at least 2 rungs at Fear Level 4 or
+    # lower, and mostly go up 1 at a time — a recommendation, with no limit on a single jump.
+    "low_rung_max": 4.0,
+    "min_low_rungs": 2,
+    "recommended_rung_gap": 1.0,
     "require_high_confidence_rung": False  # open until Dr. Walker confirms
+}
+
+# The older `LadderRuleEngine` below still checks the rules from before 2026-11-02: the lowest rung
+# at 4 or below, and no jump over 2. It reads `ladder_rungs`, which has no rows (see the note above
+# `review_steps`), so nothing a clinician sees comes from these.
+_OLDER_ENGINE_RULES = {
+    **LADDER_RULES,
+    "max_starting_distress_thermometer": 4.0,
+    "max_rung_gap": 2.0,
 }
 
 FLAG_FALLBACKS = {
@@ -59,7 +72,7 @@ class LadderFlag:
 
 
 class LadderRuleEngine:
-    def __init__(self, rules: dict = LADDER_RULES):
+    def __init__(self, rules: dict = _OLDER_ENGINE_RULES):
         self.rules = rules
 
     def review(self, rungs: list[LadderRung]) -> list[LadderFlag]:
@@ -214,8 +227,8 @@ async def run_ladder_review(
 #
 # The engine above works on `LadderRung`, a table with zero rows in production — nothing has ever
 # written to it (see docs/plans/ladder-rung-shape.md). The ladder a clinician builds is
-# `avoidance_behaviors` rows of type `scenario`. This reads those, and applies the SAME
-# `LADDER_RULES` above so Dr. Walker's numbers stay in one place.
+# `avoidance_behaviors` rows of type `scenario`. This reads those, and applies `LADDER_RULES`
+# above, so the numbers stay in one place. The engine above keeps its own older two.
 #
 # These checks are arithmetic, not judgement. The judgement — does a rung keep a safety
 # behaviour, is there a way out built into it, is the situation a symptom rather than the target —
@@ -225,8 +238,19 @@ async def run_ladder_review(
 
 @dataclass
 class ReviewFinding:
+    """One bullet in Ladder Validation: a short label, shown bold, then the text."""
     code: str
-    message: str
+    label: str
+    text: str
+
+    @property
+    def message(self) -> str:
+        return f"{self.label}: {self.text}"
+
+
+def _first_three(items: list[str]) -> str:
+    """The first three, then "…" if there are more, or "." if not."""
+    return ", ".join(items[:3]) + ("…" if len(items) > 3 else ".")
 
 
 def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RULES) -> list[ReviewFinding]:
@@ -235,60 +259,65 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
     Rungs with no Fear Level are reported and then set aside — a missing score is not a zero, and
     treating it as one would put a rung at the bottom of the ladder and make every gap check wrong.
     Only the rung's own Fear Level counts here; the situation's is not read.
+
+    Advice only: nothing here stops the clinician saving.
     """
     findings: list[ReviewFinding] = []
 
     unscored = [name for name, score in steps if score is None]
     scored = sorted([(name, s) for name, s in steps if s is not None], key=lambda x: x[1])
 
-    if unscored:
-        names = ", ".join(unscored[:3]) + ("…" if len(unscored) > 3 else ".")
-        if len(unscored) == 1:
-            message = (f"1 rung has no Fear Level yet, so it’s not on the ladder: {names} "
-                       "Give it a Fear Level to place it.")
-        else:
-            message = (f"{len(unscored)} rungs have no Fear Level yet, so they’re not on the ladder: "
-                       f"{names} Give each one a Fear Level to place it.")
-        findings.append(ReviewFinding(code="UNSCORED_STEPS", message=message))
-
     if not scored:
         findings.append(ReviewFinding(
             code="NO_SCORED_STEPS",
-            message="Nothing is on the ladder yet. Add a situation, add a behavior under it, and give the behavior a Fear Level. It then shows on the ladder as a rung.",
+            label="Nothing on the ladder yet",
+            text="add a situation, add a behavior under it, and give the behavior a Fear Level.",
         ))
+
+    if unscored:
+        ask = "Give it a Fear Level." if len(unscored) == 1 else "Give each one a Fear Level."
+        findings.append(ReviewFinding(
+            code="UNSCORED_STEPS", label="No Fear Level", text=f"{_first_three([f'“{n}”' for n in unscored])} {ask}",
+        ))
+
+    if not scored:
         return findings
 
+    # Too few rungs and Low rungs would each give a number to add. When there are too few, only
+    # that one shows, so the clinician is not told two different numbers.
     min_rungs = rules["min_rungs"]
-    if len(scored) < min_rungs:
+    too_few = len(scored) < min_rungs
+
+    low_max, min_low = rules["low_rung_max"], rules["min_low_rungs"]
+    low = sum(1 for _, s in scored if s <= low_max)
+    if low < min_low and not too_few:
+        findings.append(ReviewFinding(
+            code="FEW_LOW_RUNGS",
+            label="Low rungs",
+            text=f"{low} of the {min_low} needed at Fear Level {low_max:g} or lower. Add {min_low - low} more.",
+        ))
+
+    # Not an error: Peter, 2026-11-02, "there's no limit, but the recommendation is you should
+    # mostly go up 1 at a time." So every bigger jump is listed in one bullet, with no threshold.
+    gap = rules["recommended_rung_gap"]
+    # Rounded so decimal Fear Levels (1.2 to 2.2) are not listed for floating-point noise.
+    jumps = [
+        f"“{a_name}” ({a:g}) to “{b_name}” ({b:g})"
+        for (a_name, a), (b_name, b) in zip(scored, scored[1:])
+        if round(b - a, 6) > gap
+    ]
+    if jumps:
+        findings.append(ReviewFinding(
+            code="BIG_JUMPS",
+            label="Going up",
+            text=f"mostly go up {gap:g} at a time. Bigger jumps here: {_first_three(jumps)}",
+        ))
+
+    if too_few:
         findings.append(ReviewFinding(
             code="INSUFFICIENT_RUNGS",
-            message=(
-                f"The ladder has {len(scored)} rung{'' if len(scored) == 1 else 's'}. Aim for at "
-                f"least {min_rungs}, so the child can build up gradually. Add rungs in between."
-            ),
+            label="Too few rungs",
+            text=f"at least {min_rungs} needed. Add at least {min_rungs - len(scored)} more.",
         ))
-
-    max_start = rules["max_starting_distress_thermometer"]
-    first_name, first_score = scored[0]
-    if first_score > max_start:
-        findings.append(ReviewFinding(
-            code="STARTING_DISTRESS_TOO_HIGH",
-            message=(
-                f"The lowest rung, “{first_name}”, is a {first_score:g}. Start at {max_start:g} or "
-                f"below. A smaller rung usually exists: imagining it, or watching someone else do it."
-            ),
-        ))
-
-    max_gap = rules["max_rung_gap"]
-    for (a_name, a), (b_name, b) in zip(scored, scored[1:]):
-        gap = b - a
-        if gap > max_gap:
-            findings.append(ReviewFinding(
-                code="RUNG_GAP_TOO_LARGE",
-                message=(
-                    f"There’s a jump of {gap:g} from “{a_name}” ({a:g}) to “{b_name}” ({b:g}). "
-                    f"Keep jumps to {max_gap:g} or less. A rung in between makes it easier to climb."
-                ),
-            ))
 
     return findings

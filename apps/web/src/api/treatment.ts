@@ -486,11 +486,13 @@ export const getSuggestedSteps = async (
   )).data
 
 // ── Ladder review ──
-// Checked before the editor closes. `findings` are arithmetic against Dr. Walker's parameters —
-// enough rungs, a low enough place to start, no jump too big, nothing unscored. `ai_pending` says
-// the judgement half is not built; the panel no longer shows that (Peter, 2026-10-29).
+// Checked before the editor closes, and shown as the Ladder Validation list. `findings` are
+// arithmetic against the parameters in LADDER_RULES — nothing unscored, enough low rungs, which
+// jumps are bigger than 1, enough rungs. Each is one bullet: `label` in bold, then `text`;
+// `message` is the two joined. `ai_pending` says the judgement half is not built; the panel no
+// longer shows that (Peter, 2026-10-29).
 export interface LadderReview {
-  findings: { code: string; message: string }[]
+  findings: { code: string; label: string; text: string; message: string }[]
   ai_pending: boolean
 }
 

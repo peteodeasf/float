@@ -203,4 +203,9 @@ Trevor also writes the prompts, so it must not be able to mark its own work:
     - Put "what counts as a risk sign that a clinician should see now" first. The risk flag is not tested until she answers.
     - Then her three open extraction questions: how broad "safety" is, whether several reassurance actions are one behavior or several, and whether dread is avoidance. They are in `AI-dev/Extraction Loop/Bridget-Extraction-Review.docx`.
     - A Fear Level a parent gives as a range ("a seven or eight") is saved as the higher number (Peter, 2026-10-21), the way Analyze with AI takes the highest Fear Level per situation. Confirm, or say what it should be.
+    - **Ladder Validation rules** (Peter, 2026-11-02). Shown when a clinician saves the ladder; advice only, it never stops the save. Values in `LADDER_RULES` in `backend/app/services/ladder_review_service.py`. Confirm, or give the numbers she would use:
+      - At least 2 rungs at Fear Level 4 or lower. Was: the lowest rung must be 4 or lower.
+      - Mostly go up 1 Fear Level at a time, with no limit on a single jump. Every jump bigger than 1 is listed. Was: no jump bigger than 2.
+      - At least 3 rungs. Unchanged.
+      - A rung with no Fear Level is named and left out of the checks. Unchanged.
     - **Session analysis output** (built 2026-10-21). "Analyze session with AI" adds what an approved session note says to the case summary: new situations, parental responses, safety behaviors, comments on existing items, and other notes (`SESSION_SUMMARY_SYSTEM_PROMPT` in `backend/app/services/session_analysis_service.py`). No test cases cover it: no made-up sessions until the session approach is learned from her. Ask whether what it adds, and what it flags as possibly wrong, is what a clinician would add.
