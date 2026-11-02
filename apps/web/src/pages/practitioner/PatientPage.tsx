@@ -422,7 +422,7 @@ export default function PatientPage() {
   // second tab showing the same thing (Peter, 2026-09-01). The two-pane Situations builder is
   // hidden: its code is still below and rendered by nothing.
   //
-  // `?edit=1` lands straight in the editor: the downward arrow uses it to come back to the screen
+  // `?edit=1` lands straight in the editor: leaving full screen uses it to come back to the screen
   // it was opened from, with `?situation=` saying which one to reopen. Read off the URL directly
   // because this runs above the useSearchParams call below.
   const [planView, setPlanView] = useState<'ladder' | 'conversation'>(

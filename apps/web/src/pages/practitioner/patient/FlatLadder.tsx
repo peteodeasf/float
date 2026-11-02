@@ -10,18 +10,19 @@ import { btn, chip } from '../../../components/ui/buttons'
 import { Button } from '../../../components/ui/primitives'
 import { Switch } from '../../../components/ui/Switch'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
   getPlanRungs, updatePlanRung, deletePlanRung,
-  setLadderActive, setRecommendedRung, getPatientExperiments,
+  setLadderActive, setRecommendedRung, getPatientExperiments, listPatientDownwardArrows,
   type AvoidanceBehavior,
   type TriggerSituation,
   type PlannedExperiment,
 } from '../../../api/treatment'
-import { clampDt, clampDtInput } from './shared'
+import { BEHAVIOR_TYPE_COMBINATION, clampDt, clampDtInput } from './shared'
 import { SessionSetupSheet } from './SessionSetupSheet'
-import { bySituationFear } from '../ladderEditor'
+import { arrowDoneOn, bySituationFear } from '../ladderEditor'
 
 /** Whether the situation shows under each rung. A display preference, so it lives in the browser
  *  rather than on the plan — it says how this clinician likes to read the list, not anything about
@@ -116,6 +117,25 @@ export function FlatLadder({
     const pat = prev.scheduled_date ? Date.parse(prev.scheduled_date) : Infinity
     if (at < pat) pendingByBehavior.set(e.avoidance_behavior_id, e)
   }
+
+  // Every arrow on this patient in one call, for the ✓ on each rung's Downward Arrow button. The
+  // arrow page invalidates this key when it saves.
+  const navigate = useNavigate()
+  const { data: arrows } = useQuery({
+    queryKey: ['patient-arrows', patientId],
+    queryFn: () => listPatientDownwardArrows(patientId),
+  })
+  // Peter, 2026-11-02: the arrow opens from each rung here, not from the ladder editor. Only a
+  // combination rung with a situation can have one — the server opens an arrow on a combination
+  // and nothing else, and the arrow page needs the situation. Other rungs get no button.
+  // docs/plans/downward-arrow-on-main-ladder.md
+  const arrowFor = (r: AvoidanceBehavior) =>
+    r.behavior_type === BEHAVIOR_TYPE_COMBINATION && r.trigger_situation_id
+      ? {
+          done: arrowDoneOn(r.id, arrows ?? []),
+          open: () => navigate(`/patients/${patientId}/arrow?situation=${r.trigger_situation_id}&rung=${r.id}`),
+        }
+      : null
 
   const refreshPlan = () => {
     qc.invalidateQueries({ queryKey: ['plan', patientId] })
@@ -237,6 +257,7 @@ export function FlatLadder({
               isRecommended={recommendedRungId === r.id}
               showSituation={showSituations}
               experiment={pendingByBehavior.get(r.id) ?? null}
+              arrow={arrowFor(r)}
               onRecommend={() => recommendMut.mutate(recommendedRungId === r.id ? null : r.id)}
             />
           ))}
@@ -281,6 +302,18 @@ function setupWhen(e: PlannedExperiment): string {
   return `${day} · ${bucket}`
 }
 
+/** The look of a row's two buttons, Downward Arrow and Set it up. Tinted once done. */
+function pill(done: boolean, width: string): React.CSSProperties {
+  return {
+    fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
+    width, textAlign: 'center',
+    borderRadius: 'var(--float-radius-pill)', padding: '3px 0',
+    color: '#3f8a78',
+    background: done ? '#eef7f4' : 'var(--float-surface)',
+    border: `1px solid ${done ? '#bcdfd4' : 'var(--float-border)'}`,
+  }
+}
+
 function LadderRow({
   planId,
   rung,
@@ -288,6 +321,7 @@ function LadderRow({
   isRecommended,
   showSituation,
   experiment,
+  arrow,
   onRecommend,
 }: {
   planId: string
@@ -299,6 +333,8 @@ function LadderRow({
   showSituation: boolean
   /** A pending exposure already set up on this rung (by the clinician or the child), or null. */
   experiment: PlannedExperiment | null
+  /** The Downward Arrow button, or null on a rung the arrow does not open on. */
+  arrow: { done: boolean; open: () => void } | null
   onRecommend: () => void
 }) {
   const qc = useQueryClient()
@@ -353,8 +389,9 @@ function LadderRow({
         <button
           onClick={() => { setDraft(rung.name); setEditingName(true) }}
           title="Change the wording"
-          className="text-sm text-slate-700 truncate bg-transparent border-none"
-          style={{ flex: '0 1 auto', minWidth: 0, fontWeight: 600, textAlign: 'left', padding: 0, cursor: 'text' }}
+          // Wraps rather than truncating, so a long rung reads in full and the buttons stay put.
+          className="text-sm text-slate-700 bg-transparent border-none"
+          style={{ flex: '0 1 auto', minWidth: 0, overflowWrap: 'anywhere', fontWeight: 600, textAlign: 'left', padding: 0, cursor: 'text' }}
         >
           {rung.name}
         </button>
@@ -363,6 +400,18 @@ function LadderRow({
       {/* Carries the eye from the step to its score, so the two read as one thing however wide
           the row is — and the scores still line up in a column you can read down. */}
       <span aria-hidden="true" style={{ flex: 1, minWidth: 12, alignSelf: 'flex-end', marginBottom: 7, borderBottom: '1px dotted #dde8e6' }} />
+
+      {/* Left of the score, so the score keeps its column: everything to its right is fixed width.
+          A rung without one just has a longer dotted line. */}
+      {arrow && (
+        <button
+          onClick={arrow.open}
+          title={arrow.done ? 'Downward arrow done — open it' : 'Do the downward arrow on this rung, with them'}
+          className="cursor-pointer"
+          style={pill(arrow.done, '116px')}>
+          {arrow.done ? 'Downward Arrow ✓' : 'Downward Arrow'}
+        </button>
+      )}
 
       <input
         type="number" min="1" max="10"
@@ -379,15 +428,8 @@ function LadderRow({
         onClick={() => setSettingUp(true)}
         title={isSetUp ? 'Already set up — view it, edit it, or set up another' : 'Set up an exposure on this one, with them'}
         className="cursor-pointer"
-        style={{
-          fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
-          // Fixed width so every row's score sits in the same column, under the Fear Level heading.
-          width: '64px', textAlign: 'center',
-          borderRadius: 'var(--float-radius-pill)', padding: '3px 0',
-          color: '#3f8a78',
-          background: isSetUp ? '#eef7f4' : 'var(--float-surface)',
-          border: `1px solid ${isSetUp ? '#bcdfd4' : 'var(--float-border)'}`,
-        }}>
+        // Fixed width so every row's score sits in the same column, under the Fear Level heading.
+        style={pill(isSetUp, '64px')}>
         {isSetUp ? 'Set up ✓' : 'Set it up'}
       </button>
 

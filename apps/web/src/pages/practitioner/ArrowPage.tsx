@@ -82,8 +82,9 @@ export default function ArrowPage() {
   // into the conversation rather than being a second button on the Plan tab.
   const [searchParams] = useSearchParams()
   const fromSituation = searchParams.get('situation')
-  // Opened from a step in the ladder editor. Peter, 2026-10-15: the arrow is done for each
-  // combination, not the situation as a whole. docs/plans/ladder-combinations.md, step 3.
+  // Opened from a rung on the main ladder. Peter, 2026-10-15: the arrow is done for each
+  // combination, not the situation as a whole. docs/plans/ladder-combinations.md, step 3. It moved
+  // there from the ladder editor on 2026-11-02: docs/plans/downward-arrow-on-main-ladder.md.
   const fromRung = searchParams.get('rung')
 
   const [phase, setPhase] = useState<Phase>(fromSituation ? 'chain' : 'intro')
@@ -135,15 +136,10 @@ export default function ArrowPage() {
     .filter(t => !t.is_placeholder)
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
 
-  // Back where they came from. Opened from a situation in the ladder editor, that is the editor
-  // with the situation still open — not the ladder, and not a list of situations to pick from.
-  // Peter, 2026-09-05: "you should go back to whence you came".
-  const exit = () =>
-    navigate(
-      fromSituation
-        ? `/patients/${patientId}?tab=plan&edit=1&situation=${fromSituation}`
-        : `/patients/${patientId}?tab=plan`
-    )
+  // Back where they came from. Peter, 2026-09-05: "you should go back to whence you came".
+  // Every way in now starts on the main ladder: the Downward Arrow button on a rung, or the
+  // checklist on the patient page. Peter, 2026-11-02.
+  const exit = () => navigate(`/patients/${patientId}?tab=plan`)
   const current = situations.find(t => t.id === currentId) ?? null
 
   if (planLoading) {
@@ -178,7 +174,7 @@ export default function ArrowPage() {
           {situationSteps ? (
             <>
               <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--float-primary-dark)' }}>That rung is not on the ladder any more</div>
-              <button onClick={exit} style={primaryBtn}>Back to the rungs</button>
+              <button onClick={exit} style={primaryBtn}>Back to the ladder</button>
             </>
           ) : (
             <div style={{ color: '#6b7a79', fontSize: 14, padding: 20 }}>Loading…</div>
@@ -196,7 +192,7 @@ export default function ArrowPage() {
           onSaved={() => qc.invalidateQueries({ queryKey: ['step-arrows', fromSituation] })}
           onBack={exit}
           onDone={exit}
-          backLabel="← Back to the rungs"
+          backLabel="← Back to the ladder"
         />
       )}
 
@@ -212,7 +208,7 @@ export default function ArrowPage() {
           // pick from again. Peter, 2026-09-05.
           onBack={fromSituation ? exit : () => setPhase('pick')}
           onDone={fromSituation ? exit : () => setPhase('pick')}
-          backLabel={fromSituation ? '← Back to the rungs' : '← All situations'}
+          backLabel={fromSituation ? '← Back to the ladder' : '← All situations'}
         />
       )}
     </Chrome>
