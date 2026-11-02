@@ -158,7 +158,7 @@ describe('Ladder Validation', () => {
     db.behaviors = []
     db.findings = [
       { code: 'FEW_LOW_RUNGS', label: 'Low rungs', text: '1 of the 2 needed at Fear Level 4 or lower. Add 1 more.', message: '' },
-      { code: 'INSUFFICIENT_RUNGS', label: 'Too few rungs', text: '2 on the ladder. Aim for at least 3.', message: '' },
+      { code: 'INSUFFICIENT_RUNGS', label: 'Too few rungs', text: 'at least 2 needed. Add at least 1 more.', message: '' },
     ]
     openEditor()
     await screen.findByText('Ordering at a restaurant')

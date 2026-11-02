@@ -122,21 +122,28 @@ def test_decimal_fear_levels_use_the_same_number_formatting():
 # ── Too few rungs ──────────────────────────────────────────────────────────────
 
 def test_too_few_rungs():
-    # Only rungs with a Fear Level count towards the minimum; singular for one.
-    assert messages([("A", 2)])["INSUFFICIENT_RUNGS"] == "Too few rungs: 1 on the ladder. Aim for at least 3."
-    assert messages([("A", 2), ("B", 3)])["INSUFFICIENT_RUNGS"] == (
-        "Too few rungs: 2 on the ladder. Aim for at least 3."
+    # Peter, 2026-11-02: the minimum is two for now. Only rungs with a Fear Level count towards it.
+    assert messages([("A", 2)])["INSUFFICIENT_RUNGS"] == "Too few rungs: at least 2 needed. Add at least 1 more."
+    assert messages([("A", 2), ("B", None)])["INSUFFICIENT_RUNGS"] == (
+        "Too few rungs: at least 2 needed. Add at least 1 more."
     )
-    assert "INSUFFICIENT_RUNGS" not in codes([("A", 2), ("B", 3), ("C", 4)])
+    assert "INSUFFICIENT_RUNGS" not in codes([("A", 2), ("B", 3)])
+
+
+def test_too_few_rungs_is_the_only_count_shown():
+    # Peter, 2026-11-02: one rung used to get both "Add 1 more" and "Aim for at least 3". A clinician
+    # should not be told two numbers, so Low rungs waits until there are enough rungs.
+    assert codes([("A", 2)]) == ["INSUFFICIENT_RUNGS"]
+    assert codes([("A", 7)]) == ["INSUFFICIENT_RUNGS"]
+    assert "FEW_LOW_RUNGS" in codes([("A", 3), ("B", 5)])
 
 
 # ── The list as a whole ────────────────────────────────────────────────────────
 
 def test_the_bullets_come_in_peters_order():
-    # No Fear Level, Low rungs, Going up, Too few rungs.
-    assert codes([("A", None), ("B", 6), ("C", 9)]) == [
-        "UNSCORED_STEPS", "FEW_LOW_RUNGS", "BIG_JUMPS", "INSUFFICIENT_RUNGS",
-    ]
+    # No Fear Level, Low rungs, Going up. Too few rungs replaces Low rungs when it applies.
+    assert codes([("A", None), ("B", 6), ("C", 9)]) == ["UNSCORED_STEPS", "FEW_LOW_RUNGS", "BIG_JUMPS"]
+    assert codes([("A", None), ("B", 6)]) == ["UNSCORED_STEPS", "INSUFFICIENT_RUNGS"]
 
 
 def test_a_good_ladder_has_no_bullets():

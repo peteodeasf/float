@@ -13,7 +13,7 @@ from app.models.notification import LadderReviewFlag
 # (2026-11-02) and wait for Dr. Walker to confirm (docs/plans/ai-quality-testing.md, item 13).
 
 LADDER_RULES = {
-    "min_rungs": 3,
+    "min_rungs": 2,  # Peter, 2026-11-02: "Let's go with two for now."
     # Ladder Validation (`review_steps`). Peter, 2026-11-02: at least 2 rungs at Fear Level 4 or
     # lower, and mostly go up 1 at a time — a recommendation, with no limit on a single jump.
     "low_rung_max": 4.0,
@@ -283,9 +283,14 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
     if not scored:
         return findings
 
+    # Too few rungs and Low rungs would each give a number to add. When there are too few, only
+    # that one shows, so the clinician is not told two different numbers.
+    min_rungs = rules["min_rungs"]
+    too_few = len(scored) < min_rungs
+
     low_max, min_low = rules["low_rung_max"], rules["min_low_rungs"]
     low = sum(1 for _, s in scored if s <= low_max)
-    if low < min_low:
+    if low < min_low and not too_few:
         findings.append(ReviewFinding(
             code="FEW_LOW_RUNGS",
             label="Low rungs",
@@ -308,12 +313,11 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
             text=f"mostly go up {gap:g} at a time. Bigger jumps here: {_first_three(jumps)}",
         ))
 
-    min_rungs = rules["min_rungs"]
-    if len(scored) < min_rungs:
+    if too_few:
         findings.append(ReviewFinding(
             code="INSUFFICIENT_RUNGS",
             label="Too few rungs",
-            text=f"{len(scored)} on the ladder. Aim for at least {min_rungs}.",
+            text=f"at least {min_rungs} needed. Add at least {min_rungs - len(scored)} more.",
         ))
 
     return findings
