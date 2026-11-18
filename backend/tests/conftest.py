@@ -134,6 +134,7 @@ async def db(engine) -> AsyncSession:
             # another test's rows and the database stays disposable.
             async with conn.begin():
                 await conn.exec_driver_sql("DELETE FROM patient_access_log")
+                await conn.exec_driver_sql("DELETE FROM clinician_feedback")
 
 
 # ── The API, called in memory ─────────────────────────────────────────────────

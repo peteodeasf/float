@@ -13,6 +13,7 @@
  * Design record: docs/plans/session-situation-screen-focus.md
  */
 import { btn } from '../../components/ui/buttons'
+import FeedbackLink from '../../components/ui/FeedbackLink'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 
 // Fear scores are a fixed 1–10 scale (see docs/solutions — enforced backend + here).
@@ -51,6 +52,7 @@ export function Chrome({ onExit, exitLabel = '← Exit session', children }: {
             style={{ fontSize: 13, fontWeight: 700, color: '#6b7a79', background: 'var(--float-surface)', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-pill)', padding: '7px 14px', cursor: 'pointer' }}>
             {exitLabel}
           </button>
+          <div style={{ marginLeft: 'auto' }}><FeedbackLink /></div>
         </div>
         {children}
       </div>

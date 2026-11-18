@@ -13,7 +13,7 @@ from app.api.routers import (
     downward_arrows, messages, monitoring,
     session_notes, session_recordings, action_plans, admin, waitlist, codesign,
     formulation, checklist, accommodations, situation_tags, library,
-    insights, admin_reviews, setup, access_requests, practice, teen_testing,
+    insights, admin_reviews, setup, access_requests, practice, teen_testing, feedback,
 )
 
 app = FastAPI(
@@ -68,6 +68,7 @@ app.include_router(admin.router)
 app.include_router(admin_reviews.router)
 app.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
 app.include_router(codesign.router)
+app.include_router(feedback.router)
 
 @app.get("/health")
 async def health_check():
