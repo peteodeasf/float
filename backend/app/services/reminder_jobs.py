@@ -385,4 +385,7 @@ async def run_due(
     # left part-way. docs/plans/session-recording.md
     from app.services.session_recording import backstop
     counts["session_recordings"] = await backstop(db, now_utc)
+    # Clinician feedback that did not reach GitHub when it was saved. docs/plans/clinician-feedback-link.md
+    from app.services.feedback_service import send_unsent
+    counts["feedback_issues"] = await send_unsent(db)
     return counts

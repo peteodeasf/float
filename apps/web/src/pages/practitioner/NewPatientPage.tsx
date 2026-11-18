@@ -1,4 +1,5 @@
 import { Button, Card, Select, TextInput } from '../../components/ui/primitives'
+import FeedbackLink from '../../components/ui/FeedbackLink'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -66,6 +67,7 @@ export default function NewPatientPage() {
           ← Back
         </Button>
         <h1 className="text-xl font-semibold" style={{ color: 'var(--float-text)' }}>Add patient</h1>
+        <div className="ml-auto"><FeedbackLink /></div>
       </nav>
 
       <main className="px-8 py-8 max-w-2xl mx-auto">

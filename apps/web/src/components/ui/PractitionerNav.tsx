@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import FloatLogo from './FloatLogo'
+import FeedbackLink from './FeedbackLink'
 
 type ActivePage = 'patients' | 'tools' | 'education' | 'settings'
 
@@ -83,6 +84,8 @@ export default function PractitionerNav({ activePage, subHeader }: PractitionerN
           </div>
         </div>
         <div className="flex items-center">
+          <FeedbackLink />
+          <span className="mx-4 h-5 w-px" style={{ background: 'var(--float-border)' }} />
           {organizationName && (
             <>
               <span className="text-sm font-semibold" style={{ color: 'var(--float-primary)' }}>

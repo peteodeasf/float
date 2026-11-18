@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getPatient } from '../../api/patients'
+import FeedbackLink from '../../components/ui/FeedbackLink'
 import {
   confirmRecordingConsent, startRecording, stopRecording, uploadPiece, type SessionRecording,
 } from '../../api/sessionRecordings'
@@ -281,7 +282,10 @@ export default function RecordSessionPage() {
         {step === 'recording' || step === 'saving' || step === 'interrupted'
           ? <span className="rs-top-note">{patient?.name}</span>
           : <button className="rs-quiet" onClick={back}>← Back</button>}
-        <span className="rs-mark">float</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <FeedbackLink style={{ color: 'inherit' }} />
+          <span className="rs-mark">float</span>
+        </span>
       </div>
 
       <main className="rs-body">
