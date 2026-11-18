@@ -247,4 +247,16 @@ async def _suggest(
             detail=f"Could not get suggestions: {type(e).__name__}",
         ) from e
 
+    # Recorded with no decision: the clinician picks any, some or none, and each pick is a rung.
+    from app.models import ai_suggestion as ai
+    from app.services import ai_record, step_suggestion_service
+    plan = await db.get(TreatmentPlan, plan_id)
+    await ai_record.record(
+        db, patient_id=plan.patient_id, organization_id=plan.organization_id, job=ai.STEP_SUGGESTIONS,
+        model=step_suggestion_service.SUGGESTION_MODEL, prompt=step_suggestion_service.SYSTEM_PROMPT,
+        output={"suggestions": suggestions, "variations": variations},
+        source={"trigger_situation_id": str(trigger_id), **({"rung_id": str(rung_id)} if rung_id else {})},
+        triggered_by_user_id=practitioner.user_id, status=ai.NO_DECISION,
+    )
+    await db.commit()
     return SuggestedStepsResponse(suggestions=suggestions, variations=variations)

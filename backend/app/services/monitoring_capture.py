@@ -259,6 +259,18 @@ async def write_up_note(sessions, note_id: uuid.UUID) -> None:
             )).scalar_one_or_none()
             if note is None:
                 return
+            form = await db.get(MonitoringForm, note.monitoring_form_id)
+            if observations and form is not None:
+                # What the AI wrote up, beside the parent's words. Nothing to accept: the clinician
+                # reads them. docs/plans/ai-foundation-and-features.md
+                from app.models import ai_suggestion as ai
+                from app.services import ai_record
+                await ai_record.record(
+                    db, patient_id=form.patient_id, organization_id=form.organization_id,
+                    job=ai.VOICE_NOTE_WRITEUP, model=WRITE_UP_MODEL, prompt=_prompt(),
+                    output={"observations": observations}, source={"monitoring_note_id": str(note.id)},
+                    status=ai.NO_DECISION,
+                )
             if not observations:
                 observations = [{"entry_date": note.entry_date, "situation": None, "child_behavior_observed": None,
                                  "parent_response": None, "fear_thermometer": None}]
@@ -269,7 +281,6 @@ async def write_up_note(sessions, note_id: uuid.UUID) -> None:
                                        recipient_id=note.recipient_id, is_draft=False,
                                        parent_words=note.words, captured_by=note.captured_by, **o))
             note.written_up_at = datetime.now(timezone.utc)
-            form = await db.get(MonitoringForm, note.monitoring_form_id)
             if form is not None and form.status == "pending":
                 form.status = "in_progress"
             await db.commit()

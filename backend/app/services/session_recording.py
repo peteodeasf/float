@@ -101,10 +101,13 @@ Rules:
 - Plain, short sentences. Say "the child" or use {child_name}'s first name; do not write "the patient"."""
 
 
+NOTE_MODEL = "claude-sonnet-4-6"
+
+
 async def _ask_claude(system: str, text: str) -> str:
     client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     message = await client.messages.create(
-        model="claude-sonnet-4-6",
+        model=NOTE_MODEL,
         max_tokens=3000,
         system=system,
         messages=[{"role": "user", "content": text}],
@@ -252,6 +255,21 @@ async def advance(db: AsyncSession, recording_id: uuid.UUID) -> str:
             )
             db.add(note)
             await db.flush()
+            # Waits for the clinician to approve it, as written or edited.
+            # docs/plans/ai-foundation-and-features.md
+            from app.models import ai_suggestion as ai
+            from app.models.patient import PractitionerProfile
+            from app.services import ai_record
+            started_by = await db.get(PractitionerProfile, rec.practitioner_id) if rec.practitioner_id else None
+            await ai_record.record(
+                db, patient_id=rec.patient_id, organization_id=rec.organization_id, job=ai.SESSION_NOTE_DRAFT,
+                # The instructions without this child's name or who was there, so the fingerprint
+                # changes only when the instructions do.
+                model=NOTE_MODEL, prompt=_prompt("", []),
+                output={"content": written["content"], "tags": written["tags"], "participants": written["participants"]},
+                source={"session_note_id": str(note.id)},
+                triggered_by_user_id=started_by.user_id if started_by else None,
+            )
             rec.session_note_id = note.id
             rec.status = "done"
             rec.error = None

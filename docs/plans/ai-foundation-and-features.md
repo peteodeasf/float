@@ -84,6 +84,21 @@ such as Claude connected to Float.
 
 This touches sign-in and access, so it gets a security review and waits for Peter's approval.
 
+**Second PR (built 2026-11-18):** four more jobs recorded.
+- *Step sentence:* waits for a decision. Saving the rung marks it accepted (wording unchanged) or
+  edited (with the final wording). A second draft for the same behavior replaces the first. Float's
+  own fallback wording, used when the AI is unavailable, is not recorded: it is not the AI's.
+- *Session note from a recording:* waits for a decision. Approving marks it accepted or edited;
+  deleting the draft marks it rejected.
+- *Smaller-step suggestions* and *voice note write-ups:* recorded with no decision. A picked
+  suggestion becomes a rung; a write-up is read beside the parent's words.
+- *The suggestion list:* each item's decision (added to the plan, removed, or reworded) is already
+  stored on the item itself, in `patient_insights` (`added_at`, `removed_at`, `is_edited`). It is not
+  copied. It does not yet store who decided.
+- *Not recorded yet:* the downward arrow's question wording. Its request does not say which patient
+  it is for (`POST /downward-arrows/next-probe` takes only the chain), so it cannot be filed under a
+  patient without changing that request.
+
 ## Part 2 — the features
 
 Each one is built on the foundation: its output is recorded (1), it can only draft (2), and it only

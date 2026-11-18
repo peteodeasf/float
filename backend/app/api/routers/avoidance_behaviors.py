@@ -29,7 +29,9 @@ from app.services.downward_arrow_service import (
     get_or_create_rung_downward_arrow, get_rung_downward_arrows,
 )
 from app.models.treatment import TriggerSituation
+from app.services import ai_record, combination_wording
 from app.services.combination_wording import draft_sentence
+from app.models import ai_suggestion as ai
 from sqlalchemy import select
 from fastapi import HTTPException
 
@@ -56,7 +58,16 @@ async def create_avoidance_behavior(
     _access: None = Depends(get_permitted_trigger),
 ):
     _, practitioner = context
-    return await create_behavior(db, trigger_id, practitioner.organization_id, data)
+    created = await create_behavior(db, trigger_id, practitioner.organization_id, data)
+    # Saving a rung settles the drafted sentence it was made from: kept as drafted, or edited.
+    # docs/plans/ai-foundation-and-features.md
+    if data.behavior_type == COMBINATION and data.without_behavior_id:
+        if await ai_record.decide(
+            db, job=ai.STEP_SENTENCE, source={"behavior_id": str(data.without_behavior_id)},
+            user_id=practitioner.user_id, kept={"sentence": data.name}, compare="sentence",
+        ):
+            await db.commit()
+    return created
 
 
 @router.put("/{behavior_id}", response_model=AvoidanceBehaviorResponse)
@@ -187,10 +198,21 @@ async def draft_combination(
     )).scalar_one()
     if behavior.behavior_type not in COMBINATION_OF:
         raise HTTPException(status_code=400, detail="Only a safety or avoidance behavior makes a combination.")
-    situation = (await db.execute(
-        select(TriggerSituation.name).where(TriggerSituation.id == trigger_id)
-    )).scalar_one()
+    situation, plan_id = (await db.execute(
+        select(TriggerSituation.name, TriggerSituation.treatment_plan_id).where(TriggerSituation.id == trigger_id)
+    )).one()
     sentence, drafted_by = await draft_sentence(situation, behavior.name)
+    if drafted_by == "ai":
+        # The template is ours, not the AI's, so only an AI draft goes in the record.
+        _, practitioner = context
+        plan = await db.get(TreatmentPlan, plan_id)
+        await ai_record.record(
+            db, patient_id=plan.patient_id, organization_id=plan.organization_id, job=ai.STEP_SENTENCE,
+            model=combination_wording.MODEL, prompt=combination_wording.SYSTEM_PROMPT,
+            output={"sentence": sentence}, source={"behavior_id": str(behavior_id)},
+            triggered_by_user_id=practitioner.user_id,
+        )
+        await db.commit()
     return CombinationDraftResponse(sentence=sentence, drafted_by=drafted_by)
 
 
