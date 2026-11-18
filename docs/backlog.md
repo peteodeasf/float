@@ -304,6 +304,8 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
   guide in the order a clinician meets the app: monitoring, the case summary, sessions, the ladder,
   the downward arrow. Mark every statement that is Float's choice rather than her guidance, so she
   can check each.
+  **Must include** (Peter, 2026-11-18): anything new (an exposure, tool or strategy) is practiced in
+  session with the clinician before it goes on the action plan. Float does not check this.
 - **How to tell it worked:** Dr. Walker reads the draft and marks it up.
 - **Gate:** her review before any clinician sees it. **Depends on:** Peter sharing her notes.
 
@@ -537,7 +539,7 @@ child's own words or their ratings of each exposure. Off for every child to star
 | **Parent exposure reminders** | Not built, and blocked: needs a scheduler, which does not exist. Fires on the scheduled date and on the child's commit, telling the parent what to do and what not to do. | L |
 | **Child rates parent accommodations** | Not built, and it is what the plan's ORDER depends on — today the clinician guesses it. Now part of the accommodation conversation below rather than a feature on its own. | M |
 | **Progress and charts** | Not built. | M |
-| **Rewards** | **Needs a plan** (Peter, 2026-09-15). Not built. Dr. Walker's consultation guidance: parents make a list of rewards that matter to the child, not what the parent thinks should be enough; a reward comes as soon as possible after the agreed task; point systems only for children over 10. Different from milestone rewards under Teen, which are for reaching milestones. | M |
+| **Rewards** | **Planned 2026-11-18** in `docs/plans/action-plans-and-rewards.md`, from Dr. Walker's answers; waiting on her questions there. Was: needs a plan (Peter, 2026-09-15). Not built. Dr. Walker's consultation guidance: parents make a list of rewards that matter to the child, not what the parent thinks should be enough; a reward comes as soon as possible after the agreed task; point systems only for children over 10. Different from milestone rewards under Teen, which are for reaching milestones. | M |
 | **Navigation between parent screens** | Home and messages exist with nothing tying them together. | S |
 | **The accommodation conversation** | **The big one.** A guided tool in the parent app that finds the accommodations with the parent, then rates them with the child — and the ratings order the plan. One switch, parents only or parents and child; the clinician being in the room does not change the flow. Planned in [`accommodation-conversation.md`](plans/accommodation-conversation.md). | L |
 | **An accommodation needs a state the clinician can see and change** | **BUILT 2026-09-10** — [`accommodation-states.md`](plans/accommodation-states.md). Making one the focus marks it started. Was: `status` on `AccommodationBehavior` is set to "active" when it is created and then never read or written again. Three states: **not started, started, stopped.** Shown to the clinician on the parent plan panel, and theirs to change. **The app does not detect drift and should not try.** When the weekly focus moves on, nothing asks the parent about the old accommodation again — the clinician finds out it has come back by asking in session, and moves it back to the focus. The book is why the state matters: *"Make sure you do not go back... you will set the stage for relapse."* | M |
