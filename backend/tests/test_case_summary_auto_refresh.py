@@ -317,3 +317,66 @@ async def test_a_new_entry_refreshes_through_the_real_request_functions(api, db,
     assert r.status_code == 200, r.text
     assert len(sent) == 2
     assert (await _report(db, patient))["parental_responses"] == ["Stays"]
+
+
+# ── The record of what the AI proposed ───────────────────────────────────────
+# docs/plans/ai-foundation-and-features.md, part 1 item 1.
+
+async def test_an_automatic_refresh_is_recorded_as_automatic(api, db, monkeypatch):
+    from app.models.ai_suggestion import AiSuggestion
+    _, patient, clinician, form, _ = await _setup(db, monkeypatch, entries=2)
+
+    await _entry(api, form)
+
+    rows = (await db.execute(select(AiSuggestion).where(AiSuggestion.patient_id == patient.id))).scalars().all()
+    assert sorted(r.job for r in rows) == ["case_summary", "monitoring_extraction"]
+    assert all(r.triggered_by_user_id is None and r.status == "no_decision" for r in rows)
+    assert all(len(r.prompt_fingerprint) == 12 for r in rows)
+    extraction = next(r for r in rows if r.job == "monitoring_extraction")
+    assert len(extraction.source["monitoring_entry_ids"]) == 3
+
+
+async def test_ai_refresh_records_who_pressed_it(api, db, monkeypatch):
+    from app.models.ai_suggestion import AiSuggestion
+    _, patient, clinician, _, _ = await _setup(db, monkeypatch, entries=3)
+    note = await _approved_note(db, patient, clinician)
+    api.sign_in_as(clinician.user)
+
+    r = await api.post(f"/patients/{patient.id}/monitoring/preliminary-report")
+
+    assert r.status_code == 200, r.text
+    rows = (await db.execute(select(AiSuggestion).where(AiSuggestion.patient_id == patient.id))).scalars().all()
+    assert sorted(r.job for r in rows) == ["case_summary", "monitoring_extraction", "monitoring_extraction", "session_analysis"]
+    assert all(r.triggered_by_user_id == clinician.user.id for r in rows)
+    assert {"session_note_id": str(note.id)} in [r.source for r in rows]
+
+
+async def test_a_failed_run_records_nothing(api, db, monkeypatch):
+    # The record is written in the same transaction as the work, so a run that saved nothing is not
+    # in it either.
+    from app.models.ai_suggestion import AiSuggestion
+    _, patient, clinician, _, _ = await _setup(db, monkeypatch, entries=3)
+    monkeypatch.setattr(insight_service, "request_report", lambda *a: (_ for _ in ()).throw(RuntimeError("down")))
+    api.sign_in_as(clinician.user)
+    patient_id = patient.id  # the failed run rolls the shared test session back, which empties `patient`
+
+    r = await api.post(f"/patients/{patient_id}/monitoring/preliminary-report")
+
+    assert r.status_code == 500
+    assert (await db.execute(select(AiSuggestion).where(AiSuggestion.patient_id == patient_id))).scalars().all() == []
+
+
+async def test_the_record_is_for_the_patients_clinicians_only(api, db, monkeypatch):
+    from tests.factories import make_practitioner as another
+    org, patient, clinician, form, _ = await _setup(db, monkeypatch, entries=2)
+    await _entry(api, form)
+    stranger = await another(db, org, name="No grant")
+
+    api.sign_in_as(clinician.user)
+    mine = await api.get(f"/patients/{patient.id}/ai-suggestions")
+    api.sign_in_as(stranger.user)
+    theirs = await api.get(f"/patients/{patient.id}/ai-suggestions")
+
+    assert mine.status_code == 200 and len(mine.json()) == 2
+    assert all(row["automatic"] for row in mine.json())
+    assert theirs.status_code in (403, 404)
