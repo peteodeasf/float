@@ -262,6 +262,53 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **Monitoring by more than one person** | Not built. From Dr. Walker's consultation guidance (Peter, 2026-09-15): both parents should monitor for the week, and sometimes a teacher or caregiver. Today a patient can have only one open monitoring form, sent to one address (`send_monitoring_form` in `monitoring.py` refuses a second). Related to two-parent accounts under Parent. | M |
 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
 
+## Treatment targets in the Case Summary are just the situations again `M`
+- **Today:** the Case Summary's "Treatment targets" section repeats the situations, easiest first.
+  That is what the AI is told to write: point 4 of `PRELIMINARY_REPORT_SYSTEM_PROMPT` in
+  `backend/app/api/routers/patients.py` says "TREATMENT_TARGETS — the trigger situations to work
+  on, listed from LOWEST to HIGHEST fear thermometer". Its three worked examples do the same.
+  Shown by `ReportSection label="Treatment targets"` in `apps/web/src/pages/practitioner/PatientPage.tsx`.
+- **What changes:** Peter, 2026-11-18: treatment targets "need to be different than that". Dr. Walker
+  will send examples of real treatment targets. Rewrite point 4 and the worked examples from them,
+  and check the output on the preliminary report test set (`backend/evals/preliminary_report`).
+  Do not write the new instruction before her examples arrive, and do not draw a rule from fewer
+  examples than she sends.
+- **How to tell it worked:** Peter and Dr. Walker read the targets for the demo and test patients
+  and they are not a copy of the situations.
+- **Gate:** clinical: what the clinician is told to work on. Dr. Walker's examples, Peter's sign-off.
+  **Depends on:** Dr. Walker's examples (waiting, as of 2026-11-18). Until then the section stays
+  on the Case Summary as it is (Peter, 2026-11-18).
+
+## Reference sheets for the parent and for the child `M`
+- **Today:** there is no reference sheet for either. Peter, 2026-11-18: make separate sheets for the
+  parent and for the child.
+- **What changes:** once Dr. Walker sends what each sheet must contain, write a plan
+  (`docs/plans/reference-sheets.md`): what goes on each, where each person finds it (the parent app,
+  the child app), and the wording at the child's reading level (ages 8 to 17). **Each sheet can be
+  downloaded as a PDF** (Peter, 2026-11-18): PDF export is part of this work, not separate from it.
+- **The content changes with where the family is in treatment** (Peter, 2026-11-18). Each sheet is
+  built from the patient's own data at the time: for example a summary of the monitoring log early
+  on, the action plan, or progress later. This replaces exporting the monitoring log or an action
+  plan on its own as a PDF: Peter dropped that the same day, because it gets folded into these
+  sheets. Note that action plans are switched off today (see "Action plans — hidden" below), so the
+  plan has to say what stands in for them.
+- **How to tell it worked:** Dr. Walker reads both sheets and signs them off.
+- **Gate:** clinical text a child and parent read, so Dr. Walker signs off the wording.
+  **Depends on:** Dr. Walker's requirements (waiting, as of 2026-11-18).
+
+## A draft clinician guide from Dr. Walker's notes `M`
+- **Today:** there is no written guide for clinicians using Float. Peter, 2026-11-18: generate a
+  draft from Dr. Walker's notes.
+- **What changes:** collect her notes (the ones already in the repo are quoted across `docs/plans/`,
+  for example `ladder-generation.md` and `ladder-combinations.md`; ask Peter for the rest). Draft the
+  guide in the order a clinician meets the app: monitoring, the case summary, sessions, the ladder,
+  the downward arrow. Mark every statement that is Float's choice rather than her guidance, so she
+  can check each.
+  **Must include** (Peter, 2026-11-18): anything new (an exposure, tool or strategy) is practiced in
+  session with the clinician before it goes on the action plan. Float does not check this.
+- **How to tell it worked:** Dr. Walker reads the draft and marks it up.
+- **Gate:** her review before any clinician sees it. **Depends on:** Peter sharing her notes.
+
 ## Behavior suggestions are worded as the parent's story, not as a behavior `M`
 - **Today:** the monitoring extractor (`EXTRACTION_SYSTEM_PROMPT` in
   `backend/app/api/routers/patients.py`) writes a behavior "in the family's own plain language",
@@ -492,7 +539,7 @@ child's own words or their ratings of each exposure. Off for every child to star
 | **Parent exposure reminders** | Not built, and blocked: needs a scheduler, which does not exist. Fires on the scheduled date and on the child's commit, telling the parent what to do and what not to do. | L |
 | **Child rates parent accommodations** | Not built, and it is what the plan's ORDER depends on — today the clinician guesses it. Now part of the accommodation conversation below rather than a feature on its own. | M |
 | **Progress and charts** | Not built. | M |
-| **Rewards** | **Needs a plan** (Peter, 2026-09-15). Not built. Dr. Walker's consultation guidance: parents make a list of rewards that matter to the child, not what the parent thinks should be enough; a reward comes as soon as possible after the agreed task; point systems only for children over 10. Different from milestone rewards under Teen, which are for reaching milestones. | M |
+| **Rewards** | **Planned 2026-11-18** in `docs/plans/action-plans-and-rewards.md`, from Dr. Walker's answers; waiting on her questions there. Was: needs a plan (Peter, 2026-09-15). Not built. Dr. Walker's consultation guidance: parents make a list of rewards that matter to the child, not what the parent thinks should be enough; a reward comes as soon as possible after the agreed task; point systems only for children over 10. Different from milestone rewards under Teen, which are for reaching milestones. | M |
 | **Navigation between parent screens** | Home and messages exist with nothing tying them together. | S |
 | **The accommodation conversation** | **The big one.** A guided tool in the parent app that finds the accommodations with the parent, then rates them with the child — and the ratings order the plan. One switch, parents only or parents and child; the clinician being in the room does not change the flow. Planned in [`accommodation-conversation.md`](plans/accommodation-conversation.md). | L |
 | **An accommodation needs a state the clinician can see and change** | **BUILT 2026-09-10** — [`accommodation-states.md`](plans/accommodation-states.md). Making one the focus marks it started. Was: `status` on `AccommodationBehavior` is set to "active" when it is created and then never read or written again. Three states: **not started, started, stopped.** Shown to the clinician on the parent plan panel, and theirs to change. **The app does not detect drift and should not try.** When the weekly focus moves on, nothing asks the parent about the old accommodation again — the clinician finds out it has come back by asking in session, and moves it back to the focus. The book is why the state matters: *"Make sure you do not go back... you will set the stage for relapse."* | M |

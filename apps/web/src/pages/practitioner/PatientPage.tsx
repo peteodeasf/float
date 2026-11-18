@@ -1312,27 +1312,30 @@ export default function PatientPage() {
                 </span>
               )}
             </div>
+            {/* Peter's wording, 2026-11-18. Said before the links, so it explains them. */}
+            <p style={{ fontSize: '13px', color: 'var(--float-text-secondary)', lineHeight: 1.55, margin: '6px 0 0', maxWidth: '640px' }}>
+              This is a permanent link that parents can access without logging in. You can send it by email or text.
+              <br />Observations will appear below automatically.
+            </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '14px' }}>
               {((monitoringForm.recipients && monitoringForm.recipients.length > 0)
                 ? monitoringForm.recipients.map(rec => ({ key: rec.id, label: rec.label, link: rec.full_link, opened: !!rec.opened_at, onCopy: () => copyRecipientLink(rec.full_link, rec.id), copiedNow: copiedKey === rec.id, known: true }))
                 : [{ key: 'form', label: 'Parent link', link: `${window.location.origin}/monitor/${monitoringForm.access_token}`, opened: false, onCopy: handleCopyLink, copiedNow: copied, known: false }]
               ).map(r => (
-                <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '10px 12px', background: 'var(--float-surface-sunken)', border: '0.5px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)', minWidth: '72px' }}>{r.label}</span>
+                <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '8px 8px 8px 14px', background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)', minWidth: '84px' }}>{r.label}</span>
                   {r.known && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: r.opened ? 'var(--float-primary)' : 'var(--float-text-hint)' }}>
-                      <span aria-hidden style={{ width: '6px', height: '6px', borderRadius: '50%', background: r.opened ? 'var(--float-primary)' : 'var(--float-border-strong)' }} />
+                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', whiteSpace: 'nowrap', minWidth: '108px', textAlign: 'center', boxSizing: 'border-box',
+                      background: r.opened ? 'var(--float-primary-light)' : 'var(--float-surface-sunken)',
+                      color: r.opened ? 'var(--float-primary)' : 'var(--float-text-hint)' }}>
                       {r.opened ? 'Opened' : 'Not opened yet'}
                     </span>
                   )}
-                  <span title={r.link} style={{ flex: '1 1 160px', minWidth: 0, fontSize: '12px', color: 'var(--float-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.link}</span>
-                  <button onClick={r.onCopy} style={btn('secondary', 'sm')}>{r.copiedNow ? 'Copied!' : 'Copy link'}</button>
+                  <span title={r.link} style={{ flex: '1 1 160px', minWidth: 0, fontSize: '12px', color: 'var(--float-text-hint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.link}</span>
+                  <button onClick={r.onCopy} style={btn('primary', 'sm')}>{r.copiedNow ? 'Copied!' : 'Copy link'}</button>
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '8px 0 0' }}>
-              The same link each time, and responses are kept. Paste it into a text, or open it with them.
-            </p>
           </div>
         )}
       </div>
