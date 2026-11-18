@@ -29,15 +29,6 @@ function FearBadge({ value }: { value: number | null | undefined }) {
   )
 }
 
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ flex: '1 1 140px', padding: '12px 14px', background: 'var(--float-surface-sunken)', borderRadius: 'var(--float-radius-control)' }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--float-text-hint)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--float-text)', display: 'flex', alignItems: 'center', gap: 8, minHeight: 30 }}>{children}</div>
-    </div>
-  )
-}
-
 const day = (iso: string, opts: Intl.DateTimeFormatOptions) =>
   new Date(iso + 'T00:00:00').toLocaleDateString('en-US', opts)
 
@@ -62,14 +53,18 @@ export default function MonitoringLog({ report }: { report: MonitoringReport }) 
 
   return (
     <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-        <Stat label="Observations">{report.total_entries}</Stat>
-        <Stat label="Dates">
-          {range
-            ? <span>{day(range.from, { month: 'short', day: 'numeric' })} – {day(range.to, { month: 'short', day: 'numeric' })}
-                <span style={{ fontWeight: 400, color: 'var(--float-text-hint)', fontSize: 13 }}> · {range.days} {range.days === 1 ? 'day' : 'days'}</span></span>
-            : '—'}
-        </Stat>
+      {/* One line, not boxes: Peter, 2026-11-18, the boxes were "ridiculous in size for such a
+          small amount of text". */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>Observations</h3>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--float-primary)', background: 'var(--float-primary-light)', padding: '1px 8px', borderRadius: 999 }}>
+          {report.total_entries}
+        </span>
+        {range && (
+          <span style={{ fontSize: 12, color: 'var(--float-text-hint)' }}>
+            {day(range.from, { month: 'short', day: 'numeric' })} – {day(range.to, { month: 'short', day: 'numeric' })} · {range.days} {range.days === 1 ? 'day' : 'days'}
+          </span>
+        )}
       </div>
 
       <div className="overflow-x-auto">
