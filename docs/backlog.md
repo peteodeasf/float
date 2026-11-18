@@ -304,6 +304,8 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
   guide in the order a clinician meets the app: monitoring, the case summary, sessions, the ladder,
   the downward arrow. Mark every statement that is Float's choice rather than her guidance, so she
   can check each.
+  **Must include** (Peter, 2026-11-18): anything new (an exposure, tool or strategy) is practiced in
+  session with the clinician before it goes on the action plan. Float does not check this.
 - **How to tell it worked:** Dr. Walker reads the draft and marks it up.
 - **Gate:** her review before any clinician sees it. **Depends on:** Peter sharing her notes.
 

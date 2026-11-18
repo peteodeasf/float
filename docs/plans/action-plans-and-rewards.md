@@ -64,77 +64,82 @@
 - **Experiments** (a child's exposure) already store a `confidence_level`.
 - **Rewards:** nothing built. The backlog has a "Rewards — needs a plan" item; this replaces it.
 
-## Proposed design
+## Design — agreed with Peter, 2026-11-18
+
+Peter went through the questions one at a time. His answers replace the proposal that was here.
 
 ### Action plans
 
-**One action plan per session**, made in the last part of the session, in session mode.
+**What it looks like:**
 
-- **Items**, each one of:
-  - *a rung on the ladder* (a link; the child's app opens that rung's exposure),
-  - *an accommodation the parent is working on* (a link; the parent's app shows it),
-  - *a tool or strategy* (short text, for the child or the parent),
-  - *an instruction for the parent* (short text, such as how to respond to crying).
-- **Carry over:** starting a new plan shows the last plan's items, each with *keep practicing* or
-  *done*. Kept items carry over as links, not copies.
-- **Practiced in session first:** a new item (not on the last plan) asks *"Practiced in session
-  today?"*. Float does not let a new exposure go on the plan without it. *(Question 2: is that a hard
-  stop, or a reminder?)*
-- **Time:** each item has an estimate in minutes per day; the plan shows the total and warns above 15.
-- **Confidence:** the last step is the youth's confidence, low, medium or high. Not high: Float goes
-  back to the items to adjust. The plan is saved only at high. *(Question 1: who enters it.)*
-- **Where it shows:** the child's app shows the child's items; the parent's app shows the parent's
-  items and, read-only, the child's. *(Question 3.)*
-- **Replaces today's action plans.** Pre-launch, today's free-text plans and lists are test data;
-  moving to items can drop them. That will be said plainly in the PR when it happens.
+```
+Action plan · Session 4 · Nov 18
+For Sam, until the next session (Nov 25)
 
-### The parent's part (on the accommodation ladder that exists)
+SAM
+  Exposures
+  □ Answer one question in class            ← rung, Fear Level 5
+  □ Order lunch in the cafeteria myself     ← rung, Fear Level 6 (kept from last week)
+  Tools
+  □ Slow breathing before school
+  □ "Worry is a false alarm" reminder
 
-- **Comfort:** each accommodation gets the parent's comfort with giving it up. *(Question 4: what
-  scale.)* Recorded in the parent meeting, which happens without the child.
-- **Willing first:** an accommodation the parent is not yet comfortable giving up shows as *needs
-  discussion* and **cannot be put on an action plan** or shown to the child. The clinician records
-  the concerns explored, as a short note.
-- **The child's prediction:** before an accommodation goes on an action plan, Float asks for the
-  child's predicted distress, which the ladder already stores (`distress_min/max`, `child_rated_at`).
-  If there is none, adding it asks for it.
+MOM AND DAD
+  Accommodations to work on
+  □ Stop checking homework every night      ← from the parent ladder
+  How to help
+  □ When he cries, acknowledge it once, then don't keep reassuring
 
-### Rewards
+Sam's confidence: High
+```
 
-- **The list:** in the parent's app. The child can suggest a reward (from the child's app, or with
-  the parent); the parent approves or declines each. Only approved rewards are on the list.
-- **Kind, by age:** *immediate* (given straight away) for every age; *points toward a bigger reward*
-  offered only for preteens and teens. *(Question 5: at what age, or at the clinician's choice.)*
-- **Giving one:** the parent records it: which reward, when, and for what (a link to the exposure or
-  action plan item, or short text).
-- **Points:** for a points reward, each task earns points the parent sets; the child sees progress
-  toward it.
-- **The clinician:** *(Question 6.)*
+- **When:** made in the last part of each session, in session mode. One plan per session.
+- **Items:** a rung on the ladder or an accommodation from the parent's ladder (linked, not
+  retyped), or short text for a tool, strategy or parent instruction.
+- **Formats:** the plan shows in the app, and may also be a separate document. In the app the items
+  are live links; in a document they name the rung or accommodation but are not connected.
+- **Carry-over:** a new plan starts from the last plan's items, each marked *keep practicing* or
+  *done*. Kept items stay linked.
+- **Confidence, the last step:** the youth's confidence that they can do it, low, medium or high,
+  entered on the session screen. The clinician is in control; who taps it does not matter. Not high:
+  they adjust the items. Saved only at high.
+- **Who sees what:** the parent sees the whole plan. The child sees their own items, plus any parent
+  item the clinician marks *share with child*. The clinician sees everything.
+- **Practiced in session first:** Float does not check this; it does not record where an exposure
+  was done. The clinician follows the rule, and it goes in the clinician guide.
+- **No daily time limit** for now. The 10 to 15 minutes is left out of this version (Peter).
+- **Replaces today's action plans.** The free-text version, switched off since 2026-09-01, goes.
+  Pre-launch its saved plans are test data; the PR that does it says plainly what it drops.
 
-## Questions for Dr. Walker (and Peter)
+### The parent's part (the accommodation ladder that exists)
 
-1. **Confidence: who enters it?** One version of the text says the child rates their confidence;
-   the other says the clinician assesses it. In session mode, does the child tap low / medium / high,
-   or does the clinician record it?
-2. **Practiced in session first:** should Float refuse to put a new exposure on the plan unless it
-   was practiced in session today, or just remind the clinician?
-3. **The parent's app:** should the parent see the child's items, or only their own? Does the child
-   see the parent's items?
-4. **The parent's comfort:** what scale? Low / medium / high like confidence, or 0 to 10?
-5. **Points:** from what age, or does the clinician switch points on for a child they judge mature
-   enough? Her guidance of 2026-09-15 (in `docs/backlog.md`) said "point systems only for children
-   over 10"; the new answer says "preteens and teens, depending on maturity". Over 10 as the default,
-   with the clinician able to change it?
-6. **Rewards in the clinician app:** one version keeps the list in the clinician app, the other in
-   the parent's app. Should the clinician see the list and what was given, read-only?
-7. **Time:** is the 10 to 15 minutes a day for the child's items only, or child and parent together?
+- **No new comfort rating.** The parent's own estimate of the child's Fear Level if they stop
+  (`parent_estimate_min/max`, already beside the child's rating) is how ready the parent is. The
+  clinician talks through the high ones.
+- **Willing first, with no new lock:** the accommodation stays *not started* until the parent is
+  willing; the clinician moves it on. It goes on an action plan only after that.
+- **The child's predicted distress** is already on the ladder (`distress_min/max`). The clinician
+  checks it before the accommodation goes on a plan.
 
-## Order to build, once the questions are answered
+### Rewards — a separate feature
+
+Not part of the action plan. They came in the same batch of answers. The one connection: a reward
+given can say which action plan item it was for.
+
+- The parent and child make the list at the start of treatment. The child suggests; the parent
+  decides. Only approved rewards are on it.
+- The list lives in the parent's app. **The clinician can see and edit it**, for example to set it
+  up in the first session.
+- Immediate rewards for every child. **Points toward a bigger reward are on by default for every
+  child; the clinician can turn them off.**
+- The parent records each reward given: when, and for what task.
+
+## Order to build
 
 1. Action plan items, carry-over and links, in session mode (clinician side), replacing today's plans.
-2. The confidence step and the time total.
+2. The confidence step.
 3. The child's app and the parent's app showing the plan; switch `SHOW_ACTION_PLANS` back on.
-4. Parent comfort and "willing first" on the accommodation ladder.
+4. The document version of the plan (with the reference sheets, see `docs/backlog.md`).
 5. Rewards: the list and approvals, then giving and points.
 
 Each step is a clinical change and waits for Peter's review. Session prep (item 4 of
@@ -142,5 +147,11 @@ Each step is a clinical change and waits for Peter's review. Session prep (item 
 
 ## Dr. Walker review queue
 
-- All seven questions above.
-- The "willing first" rule as built (step 4) before it reaches families.
+- **Points for every age.** She said points are for preteens and teens (and in September "only for
+  children over 10"), with an immediate physical reward for ages 8 to 10. Peter decided points are on
+  by default for every child, with the clinician able to turn them off. Immediate rewards stay
+  available for everyone.
+- **No daily time limit** in the first version, though she said 10 to 15 minutes a day at most.
+- **Float does not check** that a new exposure was practiced in session first; it is in the
+  clinician guide instead.
+- **Parent comfort** is read from the parent's own estimate, not a separate rating.
