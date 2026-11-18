@@ -1265,121 +1265,60 @@ async def generate_preliminary_report(
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
-    """Build the patient's saved list from the monitoring log, then write the report from it.
+    """AI Refresh: bring the case summary up to date now.
 
-    Two model calls, in order. The first pulls situations, behaviours and accommodations out of the
-    log and folds them into `patient_insights`, keeping the clinician's decisions. The second
-    writes the report from that list rather than going back to the raw log — so the Treatment
-    Targets in the report and the situations offered in the ladder builder are the same list in the
-    same words. See docs/plans/patient-specific-suggestions.md.
+    Runs the monitoring analysis, then analyzes any approved session note that is not in the
+    summary yet or changed since. The same work runs on its own when an entry or note arrives; this
+    is the button, and the retry when a run in the background failed.
+    app/services/case_summary_service.py
     """
-    import json
-    import anthropic
-    from app.models.monitoring import MonitoringForm, MonitoringEntry
-    from app.services import insight_service
-    from app.services.treatment_plan_service import get_active_plan
+    from app.services import case_summary_service as cs
 
     _, practitioner = context
+    org_id = practitioner.organization_id
 
-    # Fetch all (non-draft) monitoring entries for this patient
-    result = await db.execute(
-        select(MonitoringEntry)
-        .join(MonitoringForm, MonitoringEntry.monitoring_form_id == MonitoringForm.id)
-        .where(
-            MonitoringForm.patient_id == patient_id,
-            MonitoringForm.organization_id == practitioner.organization_id,
-            MonitoringEntry.is_draft == False,  # noqa: E712
-        )
-        .order_by(MonitoringEntry.entry_date.asc())
-    )
-    entries = result.scalars().all()
+    async with cs.patient_lock(patient_id):
+        has_entries = await cs.count_entries(db, patient_id, org_id) > 0
+        notes = await cs.notes_needing_analysis(db, patient_id, org_id)
+        if not has_entries and not notes:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No monitoring entries found for this patient"
+            )
+        try:
+            if has_entries:
+                await cs.refresh_from_monitoring(
+                    db, patient_id=patient_id, organization_id=org_id, practitioner_id=practitioner.id,
+                )
+            for note in notes:
+                await cs.analyze_note(db, note, practitioner_id=practitioner.id)
+        except cs.AnalysisFailed as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+        except cs.AnalysisConflict as e:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="The case summary changed while it was being updated. Please try again.",
+            ) from e
 
-    if not entries:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No monitoring entries found for this patient"
-        )
-
-    entries_text, by_number = insight_service.format_entries(entries)
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-
-    # ── 1. The list ───────────────────────────────────────────────────────────
-    try:
-        extraction = insight_service.parse_model_json(
-            insight_service.request_extraction(client, EXTRACTION_SYSTEM_PROMPT, entries_text)
-        )
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"AI analysis failed: {type(e).__name__}: {str(e)}")
-    except Exception as e:
-        logger.exception("insight build failed for patient %s", patient_id)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI analysis failed: {type(e).__name__}: {str(e)}"
-        ) from e
-
-    await insight_service.rebuild_from_monitoring(
-        db,
-        patient_id=patient_id,
-        organization_id=practitioner.organization_id,
-        extraction=extraction,
-        entry_ids_by_situation=insight_service.entry_ids_by_situation(extraction, by_number),
-    )
-    insights = insight_service.from_monitoring(await insight_service.get_insights(
-        db, patient_id=patient_id, organization_id=practitioner.organization_id
-    ))
-
-    # ── 2. The report, written from the list ──────────────────────────────────
-    try:
-        report = insight_service.parse_model_json(
-            insight_service.request_report(client, PRELIMINARY_REPORT_SYSTEM_PROMPT, insights, entries_text)
-        )
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"AI report generation failed: {type(e).__name__}: {str(e)}")
-    except Exception as e:
-        logger.exception("preliminary report failed for patient %s", patient_id)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI report generation failed: {type(e).__name__}: {str(e)}"
-        ) from e
-
-    report["generated_at"] = datetime.now(timezone.utc).isoformat()
-
-    # Persist onto the clinical formulation (create the row if none exists).
-    # Tolerate legacy duplicate rows by taking the most recent.
-    formulation_result = await db.execute(
+    formulation = (await db.execute(
         select(ClinicalFormulation).where(
             ClinicalFormulation.patient_id == patient_id,
-            ClinicalFormulation.organization_id == practitioner.organization_id,
-        ).order_by(ClinicalFormulation.created_at.desc())
-        # Locked, so a session analysis saved at the same moment is not lost from session_additions.
-        .with_for_update()
-    )
-    formulation = formulation_result.scalars().first()
-    if formulation is None:
-        formulation = ClinicalFormulation(
-            patient_id=patient_id,
-            organization_id=practitioner.organization_id,
-            practitioner_id=practitioner.id,
-            preliminary_report=report,
-        )
-        db.add(formulation)
-    else:
-        # What Analyze session with AI added is kept apart and carried across, so re-analyzing the
-        # log cannot drop it. app/services/session_analysis_service.py
-        kept = (formulation.preliminary_report or {}).get("session_additions")
-        if kept:
-            report["session_additions"] = kept
-        formulation.preliminary_report = report
+            ClinicalFormulation.organization_id == org_id,
+        ).order_by(ClinicalFormulation.created_at.desc()).limit(1)
+        .execution_options(populate_existing=True)
+    )).scalars().first()
+    return formulation.preliminary_report if formulation else None
 
-    # This run IS the analysis now, so it is what "Last analyzed" means. Without this the page
-    # would keep offering to re-analyze immediately after analysing.
-    plan = await get_active_plan(db, patient_id, practitioner.organization_id)
-    if plan is not None:
-        plan.last_extracted_at = datetime.now(timezone.utc)
 
-    await db.commit()
-
-    return report
+@router.get("/{patient_id}/case-summary/status")
+async def case_summary_status(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    _access: PatientProfile = Depends(get_permitted_patient),
+):
+    """Whether the case summary is being updated right now, so the page can say so and reload it."""
+    from app.services import case_summary_service as cs
+    return {"updating": cs.is_updating(patient_id)}
 
 
 # ── Patient-facing endpoints ──────────────────────────────────────────────────

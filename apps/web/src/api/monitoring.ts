@@ -168,9 +168,16 @@ export interface PreliminaryReport {
   session_additions?: SessionAddition[]
 }
 
+/** AI Refresh: the monitoring analysis, plus any approved session note not in the summary yet. */
 export const generatePreliminaryReport = async (patientId: string): Promise<PreliminaryReport> => {
   const response = await apiClient.post(`/patients/${patientId}/monitoring/preliminary-report`)
   return response.data
+}
+
+/** Whether the case summary is being updated on its own right now (after a new entry or note). */
+export const getCaseSummaryStatus = async (patientId: string): Promise<{ updating: boolean }> => {
+  const response = await apiClient.get(`/patients/${patientId}/case-summary/status`)
+  return response.data ?? { updating: false }
 }
 
 export const getMonitoringSituations = async (patientId: string): Promise<{

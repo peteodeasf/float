@@ -1,5 +1,4 @@
 import { apiClient } from './client'
-import type { PreliminaryReport } from './monitoring'
 
 export type SessionParticipant = 'parent' | 'patient'
 
@@ -57,11 +56,4 @@ export const updateSessionNote = async (noteId: string, data: UpdateSessionNote)
 
 export const deleteSessionNote = async (noteId: string): Promise<void> => {
   await apiClient.delete(`/notes/${noteId}`)
-}
-
-/** Analyze session with AI: adds an approved note to the suggestion list and the case summary.
- *  Returns the whole case summary. */
-export const analyzeSessionNote = async (noteId: string): Promise<PreliminaryReport> => {
-  const response = await apiClient.post(`/notes/${noteId}/analyze`)
-  return response.data
 }

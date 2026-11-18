@@ -273,7 +273,14 @@ async def write_up_note(sessions, note_id: uuid.UUID) -> None:
             if form is not None and form.status == "pending":
                 form.status = "in_progress"
             await db.commit()
+            patient_id = form.patient_id if form is not None else None
         except Exception as e:
             # The kind of failure only, never the words. The note itself is already saved.
             logger.warning("writing up a monitoring note failed: %s", type(e).__name__)
+            return
+
+    # The new observations update the case summary (Peter, 2026-11-18).
+    if patient_id is not None:
+        from app.services import case_summary_service
+        await case_summary_service.run_in_background(sessions, patient_id, monitoring=True)
 

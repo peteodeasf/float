@@ -106,9 +106,10 @@ async def test_a_draft_note_is_refused(api, db, monkeypatch):
     assert calls == {"extraction": [], "summary": []}
 
 
-async def test_approving_a_note_reads_nothing(api, db, monkeypatch):
-    # The automatic run on approval was removed (Peter: "We shouldn't have both"). Approving must not
-    # call the model at all.
+async def test_approving_a_note_adds_it_to_the_summary(api, db, monkeypatch):
+    # Changed 2026-11-18 (Peter): the case summary updates on its own, so approving a note analyzes
+    # it. This replaced the 2026-10-21 test that approving reads nothing ("We shouldn't have both").
+    # docs/plans/case-summary-auto-refresh.md
     org, patient, clinician, note, calls = await _setup(db, monkeypatch, draft=True)
     api.sign_in_as(clinician.user)
 
@@ -116,8 +117,9 @@ async def test_approving_a_note_reads_nothing(api, db, monkeypatch):
 
     assert r.status_code == 200, r.text
     assert r.json()["is_draft"] is False
-    assert calls == {"extraction": [], "summary": []}
-    assert await get_insights(db, patient_id=patient.id, organization_id=org.id) == []
+    assert len(calls["extraction"]) == 1 and len(calls["summary"]) == 1
+    block, = (await _saved_report(db, patient))["session_additions"]
+    assert block["session_note_id"] == str(note.id)
 
 
 async def test_another_clinicians_note_is_refused(api, db, monkeypatch):

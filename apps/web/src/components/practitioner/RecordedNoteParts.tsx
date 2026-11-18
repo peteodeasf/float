@@ -87,7 +87,11 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
   const [open, setOpen] = useState(false)
   const [renaming, setRenaming] = useState<string | null>(null)
   const names = note.speaker_names ?? {}
-  const refresh = () => qc.invalidateQueries({ queryKey: ['session-notes', patientId] })
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['session-notes', patientId] })
+    // Approving puts the note into the Case Summary on its own; the page shows it updating.
+    qc.invalidateQueries({ queryKey: ['case-summary-status', patientId] })
+  }
   const renameMut = useMutation({
     mutationFn: ({ key, name }: { key: string; name: string }) => updateSessionNote(note.id, { speaker_names: { [key]: name } }),
     onSuccess: () => { setRenaming(null); refresh() },

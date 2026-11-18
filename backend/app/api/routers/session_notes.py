@@ -1,25 +1,21 @@
-import asyncio
 import logging
 import uuid
 from datetime import date
 from typing import Optional
-import anthropic
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
-from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import get_db, get_session_factory
 from app.models.formulation import ClinicalFormulation
 from app.models.session_note import SessionNote
 from app.models.user import User
 from app.models.patient import PractitionerProfile, PatientProfile
-from app.services import insight_service, session_analysis_service
+from app.services import case_summary_service, session_analysis_service
 from app.api.routers.patients import (
-    EXTRACTION_SYSTEM_PROMPT, get_practitioner_context, get_permitted_patient, get_permitted_note,
+    get_practitioner_context, get_permitted_patient, get_permitted_note,
 )
 
 logger = logging.getLogger(__name__)
@@ -104,8 +100,10 @@ async def list_session_notes(
 async def create_session_note(
     patient_id: uuid.UUID,
     data: SessionNoteCreate,
+    background: BackgroundTasks,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    sessions=Depends(get_session_factory),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
@@ -122,6 +120,10 @@ async def create_session_note(
     db.add(note)
     await db.commit()
     await db.refresh(note)
+    # A typed note is approved when saved, so it goes into the case summary now (after the
+    # response: the clinician does not wait for the AI).
+    if case_summary_service.note_is_ready(note):
+        case_summary_service.schedule(background, sessions, note.patient_id, note_id=note.id)
     return note
 
 
@@ -132,8 +134,10 @@ async def create_session_note(
 async def update_session_note(
     note_id: uuid.UUID,
     data: SessionNoteUpdate,
+    background: BackgroundTasks,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
+    sessions=Depends(get_session_factory),
     _access: None = Depends(get_permitted_note),
 ):
     _, practitioner = context
@@ -149,6 +153,9 @@ async def update_session_note(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Session note not found"
         )
+
+    # What the case summary reads from the note: approval, its text and its date.
+    before = (note.is_draft, note.content, note.session_date)
 
     if data.session_type is not None:
         note.session_type = data.session_type
@@ -169,12 +176,14 @@ async def update_session_note(
     if data.is_draft is not None:
         if data.is_draft:
             raise HTTPException(status_code=422, detail="A note can be approved, not made a draft again.")
-        # Approving reads nothing. The clinician presses Analyze session with AI for that
-        # (Peter, 2026-10-21: "We shouldn't have both").
         note.is_draft = False
 
     await db.commit()
     await db.refresh(note)
+    # Approved, or an approved note's text or date changed: the case summary is updated on its own
+    # (Peter, 2026-11-18). docs/plans/case-summary-auto-refresh.md
+    if case_summary_service.note_is_ready(note) and before != (note.is_draft, note.content, note.session_date):
+        case_summary_service.schedule(background, sessions, note.patient_id, note_id=note.id)
     return note
 
 
@@ -185,12 +194,11 @@ async def analyze_session_note(
     db: AsyncSession = Depends(get_db),
     _access: None = Depends(get_permitted_note),
 ):
-    """Analyze session with AI: one approved note, added to the suggestion list and the case summary.
+    """One approved note, added to the suggestion list and the case summary, now.
 
-    Two model calls. The first is the monitoring extractor reading the note; what it finds is folded
-    into the suggestion list, marked as from this note. The second says what the note adds to the
-    case summary, and that is merged in without changing anything already there. Either failing
-    saves nothing. Returns the whole case summary. app/services/session_analysis_service.py
+    The page no longer has a button for this (Peter, 2026-11-18): a note is analyzed on its own when
+    it is saved approved, approved, or edited. Kept for that work's tests and as a way to run it for
+    one note. app/services/case_summary_service.py
     """
     _, practitioner = context
     note = (await db.execute(
@@ -207,64 +215,17 @@ async def analyze_session_note(
     if not (note.content or "").strip():
         raise HTTPException(status_code=422, detail="This note is empty.")
 
-    # The newest formulation row, as the monitoring analysis picks it.
-    latest_formulation = (
-        select(ClinicalFormulation).where(
-            ClinicalFormulation.patient_id == note.patient_id,
-            ClinicalFormulation.organization_id == practitioner.organization_id,
-        ).order_by(ClinicalFormulation.created_at.desc()).limit(1)
-    )
-    formulation = (await db.execute(latest_formulation)).scalars().first()
-    current = formulation.preliminary_report if formulation else None
-
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    # Both model calls before anything is written, so a failure leaves everything as it was. They
-    # do not depend on each other, so they run at the same time.
-    try:
-        raw_extraction, raw_summary = await asyncio.gather(
-            asyncio.to_thread(insight_service.request_extraction, client, EXTRACTION_SYSTEM_PROMPT,
-                              insight_service.format_session_note(note)),
-            asyncio.to_thread(session_analysis_service.request_session_summary, client, current,
-                              insight_service.session_note_text(note)),
-        )
-        extraction = insight_service.parse_model_json(raw_extraction)
-        reply = insight_service.parse_model_json(raw_summary)
-        if not isinstance(extraction, dict) or not isinstance(reply, dict):
-            raise ValueError("the model's answer was not a JSON object")
-    except Exception as e:
-        logger.exception("session analysis failed for note %s", note_id)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="The AI could not analyze this session. Please try again.",
-        ) from e
-
-    await insight_service.suggest_from_session_note(db, note, extraction)
-    # Merged into the summary as it is now, not as it was before the model calls, so a monitoring
-    # analysis or another session saved meanwhile is not lost.
-    formulation = (await db.execute(
-        latest_formulation.with_for_update().execution_options(populate_existing=True)
-    )).scalars().first()
-    report = session_analysis_service.merge_session(
-        formulation.preliminary_report if formulation else None, note_id=note.id, session_date=note.session_date, reply=reply,
-    )
-    if formulation is None:
-        db.add(ClinicalFormulation(
-            patient_id=note.patient_id,
-            organization_id=practitioner.organization_id,
-            practitioner_id=practitioner.id,
-            preliminary_report=report,
-        ))
-    else:
-        formulation.preliminary_report = report
-    try:
-        await db.commit()
-    except IntegrityError as e:
-        # The patient had no case summary, and another analysis created one at the same moment.
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="The case summary changed while this session was being analyzed. Please try again.",
-        ) from e
-    return report
+    async with case_summary_service.patient_lock(note.patient_id):
+        try:
+            return await case_summary_service.analyze_note(db, note, practitioner_id=practitioner.id)
+        except case_summary_service.AnalysisFailed as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+        except case_summary_service.AnalysisConflict as e:
+            # The patient had no case summary, and another analysis created one at the same moment.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="The case summary changed while this session was being analyzed. Please try again.",
+            ) from e
 
 
 @router.delete(
