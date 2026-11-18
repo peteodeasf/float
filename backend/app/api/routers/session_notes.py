@@ -13,7 +13,8 @@ from app.models.formulation import ClinicalFormulation
 from app.models.session_note import SessionNote
 from app.models.user import User
 from app.models.patient import PractitionerProfile, PatientProfile
-from app.services import case_summary_service, session_analysis_service
+from app.models import ai_suggestion as ai
+from app.services import ai_record, case_summary_service, session_analysis_service
 from app.api.routers.patients import (
     get_practitioner_context, get_permitted_patient, get_permitted_note,
 )
@@ -177,6 +178,11 @@ async def update_session_note(
         if data.is_draft:
             raise HTTPException(status_code=422, detail="A note can be approved, not made a draft again.")
         note.is_draft = False
+        # Approving settles the drafted note: kept as written, or edited.
+        await ai_record.decide(
+            db, job=ai.SESSION_NOTE_DRAFT, source={"session_note_id": str(note.id)},
+            user_id=practitioner.user_id, kept={"content": note.content}, compare="content",
+        )
 
     await db.commit()
     await db.refresh(note)
@@ -266,5 +272,11 @@ async def delete_session_note(
         if f.preliminary_report and f.preliminary_report.get("session_additions"):
             f.preliminary_report = session_analysis_service.without_session(f.preliminary_report, note.id)
 
+    # A draft from a recording deleted without being approved: the clinician turned it down.
+    if note.is_draft:
+        await ai_record.decide(
+            db, job=ai.SESSION_NOTE_DRAFT, source={"session_note_id": str(note.id)},
+            user_id=practitioner.user_id, kept=None,
+        )
     await db.delete(note)
     await db.commit()

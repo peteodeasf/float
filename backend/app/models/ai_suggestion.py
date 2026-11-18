@@ -20,6 +20,10 @@ from app.core.database import Base
 MONITORING_EXTRACTION = "monitoring_extraction"
 CASE_SUMMARY = "case_summary"
 SESSION_ANALYSIS = "session_analysis"
+STEP_SENTENCE = "step_sentence"            # "the situation without X", which the clinician edits
+STEP_SUGGESTIONS = "step_suggestions"      # smaller versions of a situation to pick from
+SESSION_NOTE_DRAFT = "session_note_draft"  # a session note written from a recording
+VOICE_NOTE_WRITEUP = "voice_note_writeup"  # a parent's spoken or typed note, as observations
 
 #: What happened to it.
 PENDING = "pending"            # waiting for the clinician
