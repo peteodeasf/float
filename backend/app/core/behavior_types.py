@@ -53,8 +53,8 @@ NOT_A_BEHAVIOUR = {
 #: * a combination — the situation without one safety behaviour;
 #: * a sub-situation — an easier version of a combination, or of the situation itself.
 #:
-#: A safety behaviour is not itself a rung; its combination is. An avoidance makes no rung at all —
-#: Peter: "It's avoiding the situation." The situation itself is not a rung either. An observation
+#: A safety or avoidance behaviour is not itself a rung; its combination is. (Until 2026-11-18 an
+#: avoidance made no rung at all.) The situation itself is not a rung either. An observation
 #: was never a behaviour.
 #:
 #: Between 2026-09-01 and 2026-10-15 the ladder was sub-situations only. Rows from before that,
@@ -62,8 +62,10 @@ NOT_A_BEHAVIOUR = {
 #: safety row into a combination by itself.
 LADDER_TYPES = {SCENARIO, COMBINATION}
 
-#: The only type a combination can be about.
-COMBINATION_OF = SAFETY
+#: What a combination can be about. Peter, 2026-11-18: an avoidance behaviour is dealt with the
+#: same as a safety behaviour — the situation without it is a rung, with its own Fear Level. Before
+#: that an avoidance was words only and never a rung (2026-10-16).
+COMBINATION_OF = frozenset({SAFETY, AVOIDANCE})
 
 
 def normalise(value: str | None) -> str:

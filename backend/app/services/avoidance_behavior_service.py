@@ -83,7 +83,7 @@ async def create_behavior(
         if behavior_type == COMBINATION:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This safety behavior already has a combination.",
+                detail="This behavior already has a combination.",
             )
         raise
     await db.refresh(behavior)
@@ -147,15 +147,15 @@ async def _check_combination(
         # Same answer whether it does not exist or is under another situation, so this cannot be
         # used to find out whether a row exists somewhere else.
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Behavior not found")
-    if target.behavior_type != COMBINATION_OF:
+    if target.behavior_type not in COMBINATION_OF:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only a safety behavior makes a combination.",
+            detail="Only a safety or avoidance behavior makes a combination.",
         )
     if await _has_combination(db, without_behavior_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="This safety behavior already has a combination.",
+            detail="This behavior already has a combination.",
         )
 
 
@@ -170,8 +170,9 @@ async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_
 
     A row cannot become a combination by retyping, because it would have no behaviour to be
     without. A combination cannot become something else, because it would keep pointing at one. A
-    safety behaviour with a combination cannot stop being safety, because the combination would
-    then be "without" something that is not a safety behaviour.
+    safety or avoidance behaviour with a combination cannot become anything else, because the
+    combination would then be "without" something that is not a behaviour. Switching between safety
+    and avoidance is fine: both make a combination.
     """
     if behavior.parent_behavior_id is not None and new_type != SCENARIO:
         # An easier version of a step stays an easier version.
@@ -184,11 +185,11 @@ async def _check_type_change(db: AsyncSession, behavior: AvoidanceBehavior, new_
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A combination is made from a safety behavior, not by changing a type.",
         )
-    if behavior.behavior_type == COMBINATION_OF:
+    if behavior.behavior_type in COMBINATION_OF and new_type not in COMBINATION_OF:
         if await _has_combination(db, behavior.id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This safety behavior has a combination. Remove the combination first.",
+                detail="This behavior has a combination. Remove the combination first.",
             )
 
 

@@ -185,8 +185,8 @@ async def draft_combination(
     behavior = (await db.execute(
         select(AvoidanceBehavior).where(AvoidanceBehavior.id == behavior_id)
     )).scalar_one()
-    if behavior.behavior_type != COMBINATION_OF:
-        raise HTTPException(status_code=400, detail="Only a safety behavior makes a combination.")
+    if behavior.behavior_type not in COMBINATION_OF:
+        raise HTTPException(status_code=400, detail="Only a safety or avoidance behavior makes a combination.")
     situation = (await db.execute(
         select(TriggerSituation.name).where(TriggerSituation.id == trigger_id)
     )).scalar_one()

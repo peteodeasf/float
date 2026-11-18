@@ -74,8 +74,10 @@ async def test_a_safety_behaviour_makes_a_combination_on_the_ladder(api, db):
     assert [x.name for x in rungs] == ["Participate in class without sitting at the back"]
 
 
-async def test_an_avoidance_makes_no_combination(api, db):
-    """Peter, 2026-10-15: "It's avoiding the situation." """
+async def test_an_avoidance_makes_a_combination(api, db):
+    """Peter, 2026-11-18: an avoidance behaviour is dealt with the same as a safety behaviour. This
+    replaced the 2026-10-15 test that an avoidance makes no combination ("It's avoiding the
+    situation")."""
     _, _, _, situation, clinician = await _setup(db)
     avoidance = await make_rung(
         db, situation=situation, name="Doesn't participate verbally", behavior_type="avoidance",
@@ -84,7 +86,7 @@ async def test_an_avoidance_makes_no_combination(api, db):
     api.sign_in_as(clinician.user)
     r = await api.post(f"/triggers/{situation.id}/behaviors", json=_combination(avoidance))
 
-    assert r.status_code == 400
+    assert r.status_code == 201, r.text
 
 
 async def test_one_combination_per_safety_behaviour(api, db):
@@ -189,15 +191,20 @@ async def test_a_row_cannot_become_a_combination_by_retyping(api, db):
     assert r.status_code == 400
 
 
-async def test_a_safety_behaviour_with_a_combination_stays_safety(api, db):
+async def test_a_behaviour_with_a_combination_stays_a_behaviour(api, db):
+    # Safety and avoidance both make a combination (Peter, 2026-11-18), so switching between them is
+    # fine. Becoming an easier version of the situation would leave the combination "without"
+    # something that is not a behaviour. Before 2026-11-18 this checked the row stayed safety.
     _, _, _, situation, clinician = await _setup(db)
     safety = await make_rung(db, situation=situation, name="Sits at the back", behavior_type="safety")
     api.sign_in_as(clinician.user)
     await api.post(f"/triggers/{situation.id}/behaviors", json=_combination(safety))
 
-    r = await api.put(f"/triggers/{situation.id}/behaviors/{safety.id}", json={"behavior_type": "avoidance"})
+    switched = await api.put(f"/triggers/{situation.id}/behaviors/{safety.id}", json={"behavior_type": "avoidance"})
+    scenario = await api.put(f"/triggers/{situation.id}/behaviors/{safety.id}", json={"behavior_type": "scenario"})
 
-    assert r.status_code == 409
+    assert switched.status_code == 200, switched.text
+    assert scenario.status_code == 409
 
 
 async def test_removing_the_safety_behaviour_removes_its_combination(api, db):
@@ -288,12 +295,26 @@ async def test_the_draft_uses_the_ai_sentence_when_there_is_one(api, db, monkeyp
     assert r.json()["drafted_by"] == "ai"
 
 
-async def test_no_draft_for_an_avoidance(api, db):
+async def test_an_avoidance_gets_a_draft(api, db):
+    # Peter, 2026-11-18: dealt with the same as a safety behaviour. Replaced "no draft for an
+    # avoidance".
     _, _, _, situation, clinician = await _setup(db)
     avoidance = await make_rung(db, situation=situation, name="Doesn't participate", behavior_type="avoidance")
 
     api.sign_in_as(clinician.user)
     r = await api.post(f"/triggers/{situation.id}/behaviors/{avoidance.id}/combination-draft")
+
+    assert r.status_code == 200, r.text
+    assert r.json()["sentence"]
+
+
+async def test_an_observation_makes_no_combination(api, db):
+    # Only behaviours make rungs. A symptom or a thought is not one.
+    _, _, _, situation, clinician = await _setup(db)
+    observation = await make_rung(db, situation=situation, name="Stomach ache", behavior_type="observation")
+
+    api.sign_in_as(clinician.user)
+    r = await api.post(f"/triggers/{situation.id}/behaviors", json=_combination(observation))
 
     assert r.status_code == 400
 

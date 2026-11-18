@@ -247,14 +247,10 @@ async def add_to_plan(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A behavior is avoidance or safety.",
             )
-        behavior_type = chosen or _behaviour_type_of(row)
-        if behavior_type is None:
-            # The log did not say, or said something like "escape" that is still an open clinical
-            # question. The clinician says which it is rather than us guessing.
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Say whether this is avoidance or a safety behavior.",
-            )
+        # Peter, 2026-11-18: everything added from a suggestion is a safety behavior, whatever the
+        # AI called it. Even a behavior that is technically avoidance is dealt with the same way:
+        # the situation without it becomes a rung with its own Fear Level.
+        behavior_type = chosen or SAFETY
         # Written directly rather than through create_behavior, on purpose: that also copies the
         # name into the behaviour library shared by every practice, and this name is the
         # family's own words from the log. See the backlog item on rung wording in that library.
