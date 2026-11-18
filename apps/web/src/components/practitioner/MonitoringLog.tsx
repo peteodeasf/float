@@ -8,11 +8,12 @@ import ParentWords from './ParentWords'
  * plain table was "a bit bland".
  */
 
-// Green, amber, red, the same bands as the Fear Level badges elsewhere in the clinician app.
-function fearColors(v: number): { bg: string; fg: string } {
-  if (v >= 7) return { bg: '#fee2e2', fg: '#b91c1c' }
-  if (v >= 4) return { bg: '#fef3c7', fg: '#b45309' }
-  return { bg: '#dcfce7', fg: '#15803d' }
+// Green, amber, red: the same bands (1–3, 4–6, 7–10) as the Fear Level badges elsewhere in the
+// clinician app, in the app's status colors (styles/tokens.css).
+function fearColors(v: number): { bg: string; fg: string; border: string } {
+  if (v >= 7) return { bg: 'var(--float-danger-bg)', fg: 'var(--float-danger)', border: 'var(--float-danger-border)' }
+  if (v >= 4) return { bg: 'var(--float-warning-bg)', fg: 'var(--float-warning)', border: 'var(--float-warning-border)' }
+  return { bg: 'var(--float-success-bg)', fg: 'var(--float-success)', border: 'var(--float-success-border)' }
 }
 
 function FearBadge({ value, large }: { value: number | null | undefined; large?: boolean }) {
@@ -22,7 +23,7 @@ function FearBadge({ value, large }: { value: number | null | undefined; large?:
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: size, height: size,
-      padding: '0 6px', borderRadius: size / 2, background: c.bg, color: c.fg,
+      padding: '0 6px', borderRadius: size / 2, background: c.bg, color: c.fg, border: `1px solid ${c.border}`,
       fontSize: large ? 14 : 13, fontWeight: 700,
     }}>{Number.isInteger(value) ? value : Number(value).toFixed(1)}</span>
   )
