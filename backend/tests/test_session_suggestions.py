@@ -173,6 +173,36 @@ async def test_a_session_fear_level_does_not_replace_the_logs(api, db, monkeypat
     assert SOURCE_SESSION_NOTE in situation.sources
 
 
+async def test_the_extractor_is_told_the_situations_already_on_the_list(api, db, monkeypatch):
+    # Items fold in by wording. In a local run (2026-11-17) the note's "Bedtime" became a second
+    # situation beside the log's "Bedtime, going to sleep in her own room", because the extractor
+    # never saw the log's wording. It is now given the list's names to reuse.
+    org, patient, clinician, note, calls = await _setup(db, monkeypatch)
+    await upsert_insight(db, patient_id=patient.id, organization_id=org.id, kind=KIND_SITUATION,
+                         name="Bedtime, going to sleep in her own room")
+    await db.flush()
+    api.sign_in_as(clinician.user)
+
+    r = await api.post(f"/notes/{note.id}/analyze")
+
+    assert r.status_code == 200, r.text
+    [sent] = calls["extraction"]
+    assert "- Bedtime, going to sleep in her own room" in sent
+    assert "use its name exactly as written here" in sent
+    # The note itself still follows the list.
+    assert sent.index("Bedtime, going to sleep") < sent.index("[1] Date: 2026-10-15")
+
+
+async def test_a_patient_with_no_list_gets_no_situations_line(api, db, monkeypatch):
+    _, _, clinician, note, calls = await _setup(db, monkeypatch)
+    api.sign_in_as(clinician.user)
+
+    await api.post(f"/notes/{note.id}/analyze")
+
+    [sent] = calls["extraction"]
+    assert "already on this child's list" not in sent
+
+
 async def test_a_behaviour_from_a_session_does_not_borrow_the_logs_evidence(api, db, monkeypatch):
     # Kept from the on-approval version: the evidence for a session's behavior is the note, not the
     # log entries behind the situation it sits under.
