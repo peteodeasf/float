@@ -174,10 +174,11 @@ export const generatePreliminaryReport = async (patientId: string): Promise<Prel
   return response.data
 }
 
-/** Whether the case summary is being updated on its own right now (after a new entry or note). */
-export const getCaseSummaryStatus = async (patientId: string): Promise<{ updating: boolean }> => {
+/** Whether the case summary is being updated on its own right now (after a new entry or note),
+ *  and when an analysis last wrote it. */
+export const getCaseSummaryStatus = async (patientId: string): Promise<{ updating: boolean; changed_at: string | null }> => {
   const response = await apiClient.get(`/patients/${patientId}/case-summary/status`)
-  return response.data ?? { updating: false }
+  return response.data ?? { updating: false, changed_at: null }
 }
 
 export const getMonitoringSituations = async (patientId: string): Promise<{

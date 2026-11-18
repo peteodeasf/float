@@ -233,6 +233,18 @@ async def analyze_note(db: AsyncSession, note: SessionNote, *, practitioner_id) 
     return report
 
 
+async def changed_at(db: AsyncSession, patient_id, organization_id) -> Optional[str]:
+    """When an analysis last wrote the summary: the latest of the monitoring run and each session's.
+
+    Read from the summary itself rather than the row's updated_at, which the clinician's own
+    formulation draft also moves."""
+    formulation = (await db.execute(_latest_formulation(patient_id, organization_id))).scalars().first()
+    report = (formulation.preliminary_report or {}) if formulation else {}
+    stamps = [report.get("generated_at")] + [a.get("analyzed_at") for a in report.get("session_additions") or []]
+    stamps = [s for s in stamps if s]
+    return max(stamps, key=datetime.fromisoformat) if stamps else None
+
+
 def note_is_ready(note: SessionNote) -> bool:
     """Approved and not empty. A draft is still software's guess at the session."""
     return not note.is_draft and bool((note.content or "").strip())

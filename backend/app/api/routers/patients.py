@@ -1314,11 +1314,20 @@ async def generate_preliminary_report(
 async def case_summary_status(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
-    """Whether the case summary is being updated right now, so the page can say so and reload it."""
+    """Whether the case summary is being updated right now, and when it last changed.
+
+    The page reloads the summary whenever `changed_at` moves. Watching "updating" alone missed an
+    update that started and finished between two checks. docs/solutions/background-ai-work-and-the-page.md
+    """
     from app.services import case_summary_service as cs
-    return {"updating": cs.is_updating(patient_id)}
+    _, practitioner = context
+    return {
+        "updating": cs.is_updating(patient_id),
+        "changed_at": await cs.changed_at(db, patient_id, practitioner.organization_id),
+    }
 
 
 # ── Patient-facing endpoints ──────────────────────────────────────────────────

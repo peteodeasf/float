@@ -8,7 +8,7 @@ import {
   getSituationDownwardArrow,
   getPatientExperiments, searchSituationLibrary, type DownwardArrow
 } from '../../api/treatment'
-import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, getCaseSummaryStatus, type PreliminaryReport, type SendMonitoringFormParams } from '../../api/monitoring'
+import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, getCaseSummaryStatus, type SendMonitoringFormParams } from '../../api/monitoring'
 import MonitoringLog from '../../components/practitioner/MonitoringLog'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { mergeCaseSummary, type SummaryItem } from '../../lib/caseSummary'
@@ -754,8 +754,9 @@ export default function PatientPage() {
   // Preliminary Report (Step 2) — AI clinical summary, persisted on the formulation
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
-  const [generatedReport, setGeneratedReport] = useState<PreliminaryReport | null>(null)
-  const preliminaryReport = generatedReport ?? formulation?.preliminary_report ?? null
+  // Always the saved summary. AI Refresh used to keep its own copy, which then hid every later
+  // automatic update until the page was reloaded.
+  const preliminaryReport = formulation?.preliminary_report ?? null
 
   // Both analyses can create the formulation row if none existed. Sync the id ref + cache so the
   // draft auto-save updates that row rather than creating a duplicate.
@@ -771,9 +772,10 @@ export default function PatientPage() {
     setReportLoading(true)
     setReportError(null)
     try {
-      const data = await generatePreliminaryReport(patientId!)
-      setGeneratedReport(data)
+      await generatePreliminaryReport(patientId!)
       await syncFormulation()
+      queryClient.invalidateQueries({ queryKey: ['insights'] })
+      queryClient.invalidateQueries({ queryKey: ['case-summary-status', patientId] })
     } catch (err: any) {
       setReportError(err?.response?.data?.detail || 'Report generation failed. Please try again.')
     } finally {
@@ -790,19 +792,24 @@ export default function PatientPage() {
     queryKey: ['case-summary-status', patientId],
     queryFn: () => getCaseSummaryStatus(patientId!),
     enabled: !!patientId,
-    refetchInterval: q => (q.state.data?.updating ? 3000 : 30000),
+    refetchInterval: q => (q.state.data?.updating ? 3000 : 10000),
   })
   const summaryUpdating = summaryStatus?.updating ?? false
-  const wasUpdating = useRef(false)
+  // Reload whenever the summary has been written since we last loaded it. Waiting to see
+  // "updating" turn off missed a run that started and finished between two checks.
+  const summaryChangedAt = summaryStatus?.changed_at ?? null
+  const seenChangedAt = useRef<string | null | undefined>(undefined)
   useEffect(() => {
-    if (wasUpdating.current && !summaryUpdating) {
-      setGeneratedReport(null)
+    if (summaryStatus === undefined) return
+    if (seenChangedAt.current !== undefined && seenChangedAt.current !== summaryChangedAt) {
       syncFormulation()
       queryClient.invalidateQueries({ queryKey: ['insights'] })
       queryClient.invalidateQueries({ queryKey: ['plan', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['monitoring-form', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['monitoring-report', patientId] })
     }
-    wasUpdating.current = summaryUpdating
-  }, [summaryUpdating])
+    seenChangedAt.current = summaryChangedAt
+  }, [summaryStatus === undefined, summaryChangedAt])
 
 
   const daysSinceSent = monitoringForm?.sent_at
