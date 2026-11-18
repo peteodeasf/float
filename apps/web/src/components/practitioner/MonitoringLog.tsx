@@ -71,7 +71,6 @@ export default function MonitoringLog({ report }: { report: MonitoringReport }) 
                 <span style={{ fontWeight: 400, color: 'var(--float-text-hint)', fontSize: 13 }}> · {range.days} {range.days === 1 ? 'day' : 'days'}</span></span>
             : '—'}
         </Stat>
-        <Stat label="Average Fear Level"><FearBadge value={report.average_dt} large /></Stat>
         <Stat label="Highest Fear Level"><FearBadge value={highest} large /></Stat>
       </div>
 

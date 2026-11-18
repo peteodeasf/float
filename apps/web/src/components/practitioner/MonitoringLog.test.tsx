@@ -21,7 +21,9 @@ const report: MonitoringReport = {
 describe('the monitoring log', () => {
   it('shows the summary and names the columns for the clinician', () => {
     render(<MonitoringLog report={report} />)
-    expect(screen.getByText('Average Fear Level')).toBeInTheDocument()
+    expect(screen.getByText('Highest Fear Level')).toBeInTheDocument()
+    // Peter, 2026-11-18: no average.
+    expect(screen.queryByText('Average Fear Level')).toBeNull()
     expect(screen.getByText('6 days', { exact: false })).toBeInTheDocument()
     expect(screen.getByText('What the child did')).toBeInTheDocument()
     expect(screen.getByText('How the parent responded')).toBeInTheDocument()
