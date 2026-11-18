@@ -262,6 +262,43 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **Monitoring by more than one person** | Not built. From Dr. Walker's consultation guidance (Peter, 2026-09-15): both parents should monitor for the week, and sometimes a teacher or caregiver. Today a patient can have only one open monitoring form, sent to one address (`send_monitoring_form` in `monitoring.py` refuses a second). Related to two-parent accounts under Parent. | M |
 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
 
+## Treatment targets in the Case Summary are just the situations again `M`
+- **Today:** the Case Summary's "Treatment targets" section repeats the situations, easiest first.
+  That is what the AI is told to write: point 4 of `PRELIMINARY_REPORT_SYSTEM_PROMPT` in
+  `backend/app/api/routers/patients.py` says "TREATMENT_TARGETS — the trigger situations to work
+  on, listed from LOWEST to HIGHEST fear thermometer". Its three worked examples do the same.
+  Shown by `ReportSection label="Treatment targets"` in `apps/web/src/pages/practitioner/PatientPage.tsx`.
+- **What changes:** Peter, 2026-11-18: treatment targets "need to be different than that". Dr. Walker
+  will send examples of real treatment targets. Rewrite point 4 and the worked examples from them,
+  and check the output on the preliminary report test set (`backend/evals/preliminary_report`).
+  Do not write the new instruction before her examples arrive, and do not draw a rule from fewer
+  examples than she sends.
+- **How to tell it worked:** Peter and Dr. Walker read the targets for the demo and test patients
+  and they are not a copy of the situations.
+- **Gate:** clinical: what the clinician is told to work on. Dr. Walker's examples, Peter's sign-off.
+  **Depends on:** Dr. Walker's examples (waiting, as of 2026-11-18).
+
+## Reference sheets for the parent and for the child `M`
+- **Today:** there is no reference sheet for either. Peter, 2026-11-18: make separate sheets for the
+  parent and for the child.
+- **What changes:** once Dr. Walker sends what each sheet must contain, write a plan
+  (`docs/plans/reference-sheets.md`): what goes on each, where each person finds it (the parent app,
+  the child app, a printable page), and the wording at the child's reading level (ages 8 to 17).
+- **How to tell it worked:** Dr. Walker reads both sheets and signs them off.
+- **Gate:** clinical text a child and parent read, so Dr. Walker signs off the wording.
+  **Depends on:** Dr. Walker's requirements (waiting, as of 2026-11-18).
+
+## A draft clinician guide from Dr. Walker's notes `M`
+- **Today:** there is no written guide for clinicians using Float. Peter, 2026-11-18: generate a
+  draft from Dr. Walker's notes.
+- **What changes:** collect her notes (the ones already in the repo are quoted across `docs/plans/`,
+  for example `ladder-generation.md` and `ladder-combinations.md`; ask Peter for the rest). Draft the
+  guide in the order a clinician meets the app: monitoring, the case summary, sessions, the ladder,
+  the downward arrow. Mark every statement that is Float's choice rather than her guidance, so she
+  can check each.
+- **How to tell it worked:** Dr. Walker reads the draft and marks it up.
+- **Gate:** her review before any clinician sees it. **Depends on:** Peter sharing her notes.
+
 ## Behavior suggestions are worded as the parent's story, not as a behavior `M`
 - **Today:** the monitoring extractor (`EXTRACTION_SYSTEM_PROMPT` in
   `backend/app/api/routers/patients.py`) writes a behavior "in the family's own plain language",
