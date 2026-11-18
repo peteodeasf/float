@@ -76,23 +76,20 @@ async def test_its_situation_has_to_be_on_the_ladder_first(api, db):
     assert r.status_code == 400
 
 
-async def test_an_unclear_type_is_chosen_by_the_clinician_not_guessed(api, db):
-    """"Escape" is an open clinical question, so the clinician says which it is."""
-    _, patient, clinician, situation, behaviour = await _setup(db, behaviour_type="escape")
-    api.sign_in_as(clinician.user)
-    await api.post(f"/patients/{patient.id}/insights/{situation.id}/add")
+async def test_every_suggestion_is_added_as_safety_whatever_the_ai_called_it(api, db):
+    # Peter, 2026-11-18: everything added from a suggestion is a safety behavior. This replaced the
+    # test that an "escape" suggestion is refused until the clinician says which kind it is.
+    for ai_type in ("escape", "avoidance", "unclear"):
+        _, patient, clinician, situation, behaviour = await _setup(db, behaviour_type=ai_type)
+        api.sign_in_as(clinician.user)
+        await api.post(f"/patients/{patient.id}/insights/{situation.id}/add")
 
-    unchosen = await api.post(f"/patients/{patient.id}/insights/{behaviour.id}/add")
-    chosen = await api.post(
-        f"/patients/{patient.id}/insights/{behaviour.id}/add", json={"behavior_type": "avoidance"},
-    )
+        r = await api.post(f"/patients/{patient.id}/insights/{behaviour.id}/add")
 
-    assert unchosen.status_code == 400
-    assert chosen.status_code == 200, chosen.text
-    row = (await db.execute(
-        select(AvoidanceBehavior).where(AvoidanceBehavior.name == "Wears headphones so nobody talks to her")
-    )).scalar_one()
-    assert row.behavior_type == "avoidance"
+        assert r.status_code == 200, (ai_type, r.text)
+        await db.refresh(behaviour)
+        row = await db.get(AvoidanceBehavior, behaviour.avoidance_behavior_id)
+        assert row.behavior_type == "safety", ai_type
 
 
 async def test_only_avoidance_or_safety_can_be_chosen(api, db):

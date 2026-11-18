@@ -14,8 +14,8 @@
  *     → list      "What do you have trouble with?"      (starter list + add your own)
  *     → rate      "How big does this one feel?"          (one situation at a time)
  *     → situation per situation, in turn:
- *                   "Do you stay away from this if you can?"   → yes ⇒ an avoidance behaviour
- *                                                                 scored AT the situation's own DT
+ *                   "Do you stay away from this if you can?"   → yes ⇒ an avoidance behaviour,
+ *                                                                 which makes a rung like a safety one
  *                   "When you're in it, what do you do?"        → name one
  *                   "How hard would it be … without that?"      → score that one
  *                   "What else do you do?"                      → loop
@@ -574,8 +574,9 @@ function SituationBody({ planId, patientId, trigger, behaviors, pending, setPend
     onEdited()
   }
 
-  const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY)
-  const avoidance = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE)
+  // Peter, 2026-11-18: an avoidance behavior is dealt with the same as a safety behavior. Each
+  // gets a rung, the situation without it, with its own Fear Level.
+  const safety = behaviors.filter(b => b.behavior_type === BEHAVIOR_TYPE_SAFETY || b.behavior_type === BEHAVIOR_TYPE_AVOIDANCE)
   const stepOf = (id: string) =>
     behaviors.find(b => b.behavior_type === BEHAVIOR_TYPE_COMBINATION && b.without_behavior_id === id)
   const noStep = safety.filter(b => !stepOf(b.id))
@@ -622,10 +623,8 @@ function SituationBody({ planId, patientId, trigger, behaviors, pending, setPend
   )
 
   const takeMut = useMutation({
-    // The log did not always say which kind it is. Peter, 2026-10-16: one added by hand is a
-    // safety behaviour, so one the log did not type is too.
-    mutationFn: (item: PatientInsight) =>
-      addInsightToPlan(patientId, item.id, item.behavior_type ? undefined : 'safety'),
+    // Every suggestion goes in as a safety behavior, whatever the AI called it (Peter, 2026-11-18).
+    mutationFn: (item: PatientInsight) => addInsightToPlan(patientId, item.id, 'safety'),
     onSuccess: () => { invalidate(); setMode('edit') },
   })
   const dropMut = useMutation({
@@ -659,9 +658,8 @@ function SituationBody({ planId, patientId, trigger, behaviors, pending, setPend
   })
 
   // One flat list. Peter, 2026-10-16: lowest Fear Level at the top; added rungs are rows in the
-  // same list, not nested under a behaviour. Unscored rows come next, and avoidance last — it is
-  // not a rung.
-  type Row = { key: string; score: number | null; last?: boolean; node: React.ReactNode }
+  // same list, not nested under a behaviour. Unscored rows come next.
+  type Row = { key: string; score: number | null; node: React.ReactNode }
   const rows: Row[] = []
   safety.forEach(b => {
     const step = stepOf(b.id)
@@ -715,23 +713,9 @@ function SituationBody({ planId, patientId, trigger, behaviors, pending, setPend
       />
     ),
   }))
-  avoidance.forEach(b => rows.push({
-    key: b.id,
-    score: null,
-    last: true,
-    node: (
-      <ListRow
-        text={b.name}
-        onRename={name => saveMutRow.mutate({ id: b.id, data: { name } })}
-        onRemove={() => delMut.mutate(b.id)}
-      />
-    ),
-  }))
-  const rank = (r: Row) => (r.last ? 2e9 : r.score ?? 1e9)
+  const rank = (r: Row) => r.score ?? 1e9
   rows.sort((a, b) => rank(a) - rank(b))
-  // Avoidance stays last even when added mid-edit: it is not a rung.
-  const kept = inShownOrder(stepsList(trigger.id), rows, r => r.key)
-  const shownRows = [...kept.filter(r => !r.last), ...kept.filter(r => r.last)]
+  const shownRows = inShownOrder(stepsList(trigger.id), rows, r => r.key)
 
   const error = addMut.error ?? takeMut.error ?? saveMut.error ?? saveMutRow.error ?? delMut.error ?? dropMut.error
 
@@ -916,7 +900,7 @@ function ListRow({ text, placeholder, warning, onRename, score, onScore, confirm
   placeholder?: string
   warning?: string
   onRename: (next: string) => void
-  /** Leave both out for a row with no Fear Level — the avoidance behaviour. */
+  /** Leave both out for a row with no Fear Level. */
   score?: number | null
   onScore?: (n: number) => void
   /** Removing loses work, so it asks first. */

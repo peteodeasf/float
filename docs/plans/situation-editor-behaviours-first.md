@@ -6,6 +6,10 @@
 > **Clinical gate:** this is mostly layout. One point touches clinical logic: a behaviour typed in by
 > hand, or taken from the log without a type, is now a safety behaviour (see below). Peter decided
 > it. It goes in the Dr. Walker review queue, with the avoidance question for Bridget.
+>
+> **Changed 2026-11-18 (Peter):** an avoidance row is no longer words only. It makes a rung with a
+> Fear Level, like a safety behavior, and every suggestion is added as safety. See
+> [`avoidance-as-safety.md`](avoidance-as-safety.md).
 
 ## The problem
 

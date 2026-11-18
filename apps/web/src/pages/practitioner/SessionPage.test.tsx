@@ -64,8 +64,10 @@ describe('the avoidance behavior', () => {
     distress_thermometer_rating: 6, distress_thermometer_max: 10, situation_library_id: null,
     display_order: 0, is_active: true, created_at: '2026-10-29T00:00:00Z',
   }
-  function openSituation(behaviors: unknown[]) {
+  function openSituation(behaviors: unknown[], drafts: Record<string, string> = {}) {
     const qc = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
+    Object.entries(drafts).forEach(([id, sentence]) =>
+      qc.setQueryData(['combination-draft', id], { sentence, drafted_by: 'ai' }))
     qc.setQueryData(['insights', 'p1', 'situation'], [])
     qc.setQueryData(['insights', 'p1', 'behavior'], [])
     qc.setQueryData(['plan-rungs', 'plan1'], [])
@@ -86,12 +88,16 @@ describe('the avoidance behavior', () => {
     expect(screen.queryByText(/suggested behaviors/)).toBeNull()
   })
 
-  it('still shows one that was saved before', () => {
+  // Peter, 2026-11-18: an avoidance is dealt with the same as a safety behavior. One saved before
+  // shows the step drafted from it, with a Fear Level, not its own words alone. This replaced
+  // "still shows one that was saved before", which checked the words-only row.
+  it('one saved before becomes a step with a Fear Level, like a safety behavior', () => {
     openSituation([{
       id: 'b1', trigger_situation_id: 't1', name: 'Avoids being dropped off at school',
       behavior_type: 'avoidance', distress_thermometer_when_refraining: null, parent_behavior_id: null,
-    }])
-    expect(screen.getByText('Avoids being dropped off at school')).toBeInTheDocument()
+    }], { b1: 'Get dropped off at school and walk in on your own' })
+    expect(screen.getByText('Get dropped off at school and walk in on your own')).toBeInTheDocument()
+    expect(screen.queryByText('Avoids being dropped off at school')).toBeNull()
   })
 })
 
