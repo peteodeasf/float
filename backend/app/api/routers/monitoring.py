@@ -14,7 +14,7 @@ from app.core.database import get_db, get_session_factory
 from app.models.monitoring import MonitoringEntry, MonitoringForm, MonitoringNote, MonitoringRecipient
 from app.models.patient import PatientProfile, PractitionerProfile, PatientParentContact
 from app.api.routers.patients import get_practitioner_context, get_permitted_patient
-from app.services import monitoring_capture as capture
+from app.services import case_summary_service, monitoring_capture as capture
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
@@ -542,7 +542,9 @@ async def get_public_form(
 async def create_entry(
     access_token: str,
     data: MonitoringEntryCreate,
-    db: AsyncSession = Depends(get_db)
+    background: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    sessions=Depends(get_session_factory),
 ):
     form, recipient = await _resolve_token(access_token, db)
 
@@ -574,6 +576,10 @@ async def create_entry(
 
     await db.commit()
     await db.refresh(entry)
+
+    # Every new observation updates the case summary, after the response (Peter, 2026-11-18).
+    if not entry.is_draft:
+        case_summary_service.schedule(background, sessions, form.patient_id, monitoring=True)
 
     return _entry_out(entry)
 

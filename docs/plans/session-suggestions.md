@@ -6,6 +6,10 @@
 > **Changed 2026-10-21 (Peter): nothing runs on approval any more.** "We shouldn't have both." The
 > clinician presses **Analyze session with AI** on an approved note. One press adds the note's
 > suggestions (as below) and updates the case summary. See "Analyze session with AI" at the end.
+>
+> **Changed again 2026-11-18 (Peter): it runs on its own.** A note is analyzed when it is saved
+> approved, approved, or edited, and the per-note button is gone. See
+> [`case-summary-auto-refresh.md`](case-summary-auto-refresh.md).
 
 ## Goal
 
