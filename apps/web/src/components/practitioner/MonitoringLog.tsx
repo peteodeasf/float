@@ -16,15 +16,15 @@ function fearColors(v: number): { bg: string; fg: string; border: string } {
   return { bg: 'var(--float-success-bg)', fg: 'var(--float-success)', border: 'var(--float-success-border)' }
 }
 
-function FearBadge({ value, large }: { value: number | null | undefined; large?: boolean }) {
+function FearBadge({ value }: { value: number | null | undefined }) {
   if (value == null) return <span style={{ color: 'var(--float-text-hint)' }}>—</span>
   const c = fearColors(Number(value))
-  const size = large ? 30 : 26
+  const size = 26
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: size, height: size,
       padding: '0 6px', borderRadius: size / 2, background: c.bg, color: c.fg, border: `1px solid ${c.border}`,
-      fontSize: large ? 14 : 13, fontWeight: 700,
+      fontSize: 13, fontWeight: 700,
     }}>{Number.isInteger(value) ? value : Number(value).toFixed(1)}</span>
   )
 }
@@ -59,7 +59,6 @@ function isEmpty(e: ReportEntry) {
 
 export default function MonitoringLog({ report }: { report: MonitoringReport }) {
   const range = report.date_range
-  const highest = report.dt_range?.max ?? null
 
   return (
     <div>
@@ -71,8 +70,6 @@ export default function MonitoringLog({ report }: { report: MonitoringReport }) 
                 <span style={{ fontWeight: 400, color: 'var(--float-text-hint)', fontSize: 13 }}> · {range.days} {range.days === 1 ? 'day' : 'days'}</span></span>
             : '—'}
         </Stat>
-        <Stat label="Average Fear Level"><FearBadge value={report.average_dt} large /></Stat>
-        <Stat label="Highest Fear Level"><FearBadge value={highest} large /></Stat>
       </div>
 
       <div className="overflow-x-auto">

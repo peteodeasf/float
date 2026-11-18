@@ -1297,41 +1297,41 @@ export default function PatientPage() {
           </div>
         ) : (
           <div>
-            <div className="flex items-center gap-3" style={{ flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Parent monitoring form</h2>
+            {/* Peter, 2026-11-18: reformat the header nicely. Title and status, then one tidy row per
+                parent's link. The entry count is in the summary below, so it is not repeated here. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--float-text)', margin: 0 }}>Parent monitoring</h2>
               <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                 monitoringForm.status === 'submitted' ? 'bg-green-100 text-green-700' :
                 monitoringForm.status === 'in_progress' ? 'bg-teal-100 text-teal-700' :
                 'bg-amber-100 text-amber-700'
-              }`}>{monitoringForm.status === 'in_progress' ? 'in progress' : monitoringForm.status}</span>
-              <span className="text-sm text-slate-400">
-                {monitoringForm.entries_count ? `${monitoringForm.entries_count} ${monitoringForm.entries_count === 1 ? 'entry' : 'entries'} · ` : ''}
-                {daysSinceSent == null ? '' : daysSinceSent === 0 ? 'sent today' : `sent ${daysSinceSent}d ago`}
-              </span>
+              }`}>{monitoringForm.status === 'in_progress' ? 'In progress' : monitoringForm.status === 'submitted' ? 'Submitted' : 'Not started'}</span>
+              {daysSinceSent != null && (
+                <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--float-text-hint)' }}>
+                  {daysSinceSent === 0 ? 'Sent today' : `Sent ${daysSinceSent} ${daysSinceSent === 1 ? 'day' : 'days'} ago`}
+                </span>
+              )}
             </div>
-            {(monitoringForm.recipients && monitoringForm.recipients.length > 0) ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                {monitoringForm.recipients.map(rec => (
-                  <div key={rec.id} className="flex gap-2 items-center" style={{ flexWrap: 'wrap' }}>
-                    <span className="text-sm font-medium" style={{ width: '100px', color: 'var(--float-text)', flexShrink: 0 }}>{rec.label}</span>
-                    <input readOnly value={rec.full_link} onFocus={e => e.currentTarget.select()}
-                      className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600" style={{ minWidth: '160px' }} />
-                    <button onClick={() => copyRecipientLink(rec.full_link, rec.id)} style={btn('secondary', 'md')}>{copiedKey === rec.id ? 'Copied!' : 'Copy link'}</button>
-                    <span className="text-xs" style={{ color: rec.opened_at ? 'var(--float-primary)' : 'var(--float-text-hint)', flexShrink: 0 }}>
-                      {rec.opened_at ? 'opened' : 'not opened yet'}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '14px' }}>
+              {((monitoringForm.recipients && monitoringForm.recipients.length > 0)
+                ? monitoringForm.recipients.map(rec => ({ key: rec.id, label: rec.label, link: rec.full_link, opened: !!rec.opened_at, onCopy: () => copyRecipientLink(rec.full_link, rec.id), copiedNow: copiedKey === rec.id, known: true }))
+                : [{ key: 'form', label: 'Parent link', link: `${window.location.origin}/monitor/${monitoringForm.access_token}`, opened: false, onCopy: handleCopyLink, copiedNow: copied, known: false }]
+              ).map(r => (
+                <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '10px 12px', background: 'var(--float-surface-sunken)', border: '0.5px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)', minWidth: '72px' }}>{r.label}</span>
+                  {r.known && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: r.opened ? 'var(--float-primary)' : 'var(--float-text-hint)' }}>
+                      <span aria-hidden style={{ width: '6px', height: '6px', borderRadius: '50%', background: r.opened ? 'var(--float-primary)' : 'var(--float-border-strong)' }} />
+                      {r.opened ? 'Opened' : 'Not opened yet'}
                     </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex gap-2" style={{ marginTop: '12px' }}>
-                <input readOnly value={`${window.location.origin}/monitor/${monitoringForm.access_token}`} onFocus={e => e.currentTarget.select()}
-                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600" />
-                <button onClick={handleCopyLink} style={btn('secondary', 'md')}>{copied ? 'Copied!' : 'Copy link'}</button>
-              </div>
-            )}
-            <p className="text-xs text-slate-400" style={{ margin: '8px 0 0' }}>
-              Same link each time — responses are kept. Paste it into a text, or open it with them.
+                  )}
+                  <span title={r.link} style={{ flex: '1 1 160px', minWidth: 0, fontSize: '12px', color: 'var(--float-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.link}</span>
+                  <button onClick={r.onCopy} style={btn('secondary', 'sm')}>{r.copiedNow ? 'Copied!' : 'Copy link'}</button>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '8px 0 0' }}>
+              The same link each time, and responses are kept. Paste it into a text, or open it with them.
             </p>
           </div>
         )}
