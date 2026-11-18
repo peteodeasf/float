@@ -262,6 +262,20 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **Monitoring by more than one person** | Not built. From Dr. Walker's consultation guidance (Peter, 2026-09-15): both parents should monitor for the week, and sometimes a teacher or caregiver. Today a patient can have only one open monitoring form, sent to one address (`send_monitoring_form` in `monitoring.py` refuses a second). Related to two-parent accounts under Parent. | M |
 | **Treatment plan — exposure ladder and parent accommodations** | In progress. See [`ladder-generation.md`](plans/ladder-generation.md) and [`flat-ladder-grouped-situations.md`](plans/flat-ladder-grouped-situations.md). | L |
 
+## Clinician feedback does not say which tab the clinician was on `S`
+- **Today:** the Feedback link (pull request 107) sends the page address without the part after
+  `?`, so feedback from the patient page says `/patients/<id>` but not whether it was the Plan,
+  Case Summary or Sessions tab, or the Ladder or Accommodations view. `FeedbackLink.tsx` sends
+  `useLocation().pathname` only, and `PAGE_PATH` in `backend/app/api/routers/feedback.py` drops
+  anything with a `?` in it. Peter asked 2026-11-18 whether feedback records the screen.
+- **What changes:** send the tab as well (from `?tab=`, and the Plan tab's Ladder/Accommodations
+  view, which may not be in the address today), checked against a list of known tab names on the
+  server, and show it on the GitHub issue.
+- **How to tell it worked:** a test that feedback sent from the Plan tab's Ladder view arrives with
+  both named.
+- **Gate:** the feedback goes to GitHub, outside the app. Only tab names, never anything the
+  clinician typed into the page or a patient's name. **Depends on:** nothing.
+
 ## Progress tab: the graph's top label is cut off `S`
 - **Today:** on the clinician's Progress tab, the "Progress over time" graph's top label reads
   "00%", not "100%". The left edge of the label is clipped at desktop width (1440px), with the
@@ -286,7 +300,11 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 - **How to tell it worked:** a test that the page label and the list say the same phase.
 - **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
 
-## Case Summary says "New observations since the last analysis" when there are none `S`
+## Case Summary says "New observations since the last analysis" when there are none — DONE 2026-11-18
+
+The line is gone: the case summary now updates on its own, so there is nothing to wait for
+(docs/plans/case-summary-auto-refresh.md). What it said before:
+
 - **Today:** on the clinician's Case Summary tab, the hint reads "New observations since the last
   analysis" for a patient with no monitoring entries and no analysis ever run. Seen 2026-10-21 on the
   local demo patient (Sarah Mitchell, no monitoring form). `hasNewMonitoring` in

@@ -44,6 +44,11 @@ clinician taps it, the same as the monitoring suggestions.
    `session_note`, so the editor can say "from a session".
 5. **Any approved note.** A typed note is never a draft, so it counts as approved and has the
    button too. A draft note from a recording does not, until it is approved.
+6. **The extractor is shown the situations already on the list** (added 2026-11-17). Without them,
+   a note's "Bedtime" became a second situation beside the log's "Bedtime, going to sleep in her
+   own room", and the note's items went under the copy. It is told to reuse a listed name where the
+   note is about that situation. This is a second piece of new wording beside the framing line.
+   `docs/solutions/running-the-ai-flow-on-this-laptop.md`.
 
 ## Not known
 

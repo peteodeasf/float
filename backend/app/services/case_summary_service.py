@@ -183,13 +183,16 @@ async def analyze_note(db: AsyncSession, note: SessionNote, *, practitioner_id) 
     if current:
         current = session_analysis_service.without_session(current, note.id)
 
+    # The situation names already on the list, so the note's are matched to them (pull request 106).
+    known_situations = await insight_service.situation_names(db, note.patient_id)
+
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     # Both model calls before anything is written, so a failure leaves everything as it was. They
     # do not depend on each other, so they run at the same time.
     try:
         raw_extraction, raw_summary = await asyncio.gather(
             asyncio.to_thread(insight_service.request_extraction, client, EXTRACTION_SYSTEM_PROMPT,
-                              insight_service.format_session_note(note)),
+                              insight_service.format_session_note(note, known_situations)),
             asyncio.to_thread(session_analysis_service.request_session_summary, client, current,
                               insight_service.session_note_text(note)),
         )

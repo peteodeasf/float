@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     # docs/plans/clinician-practice-onboarding.md, step 7.
     PRACTICE_SIGNUP_MODE: str = "approval"
 
+    # Clinician feedback becomes GitHub issues (docs/plans/clinician-feedback-link.md). A
+    # fine-grained token from the odea-agent account with Issues read/write on this repository
+    # only. Empty means feedback is saved but not sent; it goes once the token is set.
+    GITHUB_FEEDBACK_TOKEN: str = ""
+    GITHUB_FEEDBACK_REPO: str = "peteodeasf/float"
+
     # SMS (Twilio)
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
