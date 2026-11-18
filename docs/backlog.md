@@ -283,7 +283,13 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
   parent and for the child.
 - **What changes:** once Dr. Walker sends what each sheet must contain, write a plan
   (`docs/plans/reference-sheets.md`): what goes on each, where each person finds it (the parent app,
-  the child app, a printable page), and the wording at the child's reading level (ages 8 to 17).
+  the child app, a printable page or PDF), and the wording at the child's reading level (ages 8 to 17).
+- **The content changes with where the family is in treatment** (Peter, 2026-11-18). Each sheet is
+  built from the patient's own data at the time: for example a summary of the monitoring log early
+  on, the action plan, or progress later. This replaces exporting the monitoring log or an action
+  plan on its own as a PDF: Peter dropped that the same day, because it gets folded into these
+  sheets. Note that action plans are switched off today (see "Action plans — hidden" below), so the
+  plan has to say what stands in for them.
 - **How to tell it worked:** Dr. Walker reads both sheets and signs them off.
 - **Gate:** clinical text a child and parent read, so Dr. Walker signs off the wording.
   **Depends on:** Dr. Walker's requirements (waiting, as of 2026-11-18).
