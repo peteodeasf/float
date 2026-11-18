@@ -25,7 +25,8 @@ from app.models.formulation import ClinicalFormulation
 from app.models.monitoring import MonitoringEntry, MonitoringForm
 from app.models.patient import PatientProfile
 from app.models.session_note import SessionNote
-from app.services import insight_service, session_analysis_service
+from app.models import ai_suggestion as ai
+from app.services import ai_record, insight_service, session_analysis_service
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ async def count_entries(db: AsyncSession, patient_id, organization_id) -> int:
 # ── The monitoring analysis ───────────────────────────────────────────────────
 
 async def refresh_from_monitoring(
-    db: AsyncSession, *, patient_id, organization_id, practitioner_id,
+    db: AsyncSession, *, patient_id, organization_id, practitioner_id, triggered_by_user_id=None,
 ) -> Optional[dict]:
     """Build the patient's saved list from the monitoring log, then write the summary from it.
 
@@ -111,6 +112,14 @@ async def refresh_from_monitoring(
         logger.exception("insight build failed for patient %s", patient_id)
         raise AnalysisFailed(f"AI analysis failed: {type(e).__name__}: {e}") from e
 
+    source = {"monitoring_entry_ids": [str(e.id) for e in entries]}
+    # The clinician decides on each item in the list itself, so the run as a whole has no decision.
+    await ai_record.record(
+        db, patient_id=patient_id, organization_id=organization_id, job=ai.MONITORING_EXTRACTION,
+        model=insight_service.EXTRACTION_MODEL, prompt=EXTRACTION_SYSTEM_PROMPT,
+        output=extraction if isinstance(extraction, dict) else {"raw": extraction},
+        source=source, triggered_by_user_id=triggered_by_user_id, status=ai.NO_DECISION,
+    )
     await insight_service.rebuild_from_monitoring(
         db,
         patient_id=patient_id,
@@ -133,6 +142,11 @@ async def refresh_from_monitoring(
         raise AnalysisFailed(f"AI report generation failed: {type(e).__name__}: {e}") from e
 
     report["generated_at"] = datetime.now(timezone.utc).isoformat()
+    await ai_record.record(
+        db, patient_id=patient_id, organization_id=organization_id, job=ai.CASE_SUMMARY,
+        model=insight_service.REPORT_MODEL, prompt=PRELIMINARY_REPORT_SYSTEM_PROMPT, output=report,
+        source=source, triggered_by_user_id=triggered_by_user_id, status=ai.NO_DECISION,
+    )
 
     # Locked, so a session analysis saved at the same moment is not lost from session_additions.
     formulation = (await db.execute(
@@ -165,7 +179,7 @@ async def refresh_from_monitoring(
 
 # ── The session analysis ──────────────────────────────────────────────────────
 
-async def analyze_note(db: AsyncSession, note: SessionNote, *, practitioner_id) -> dict:
+async def analyze_note(db: AsyncSession, note: SessionNote, *, practitioner_id, triggered_by_user_id=None) -> dict:
     """One approved note, added to the suggestion list and the case summary.
 
     Two model calls. The first is the monitoring extractor reading the note; what it finds is folded
@@ -204,6 +218,18 @@ async def analyze_note(db: AsyncSession, note: SessionNote, *, practitioner_id) 
         logger.exception("session analysis failed for note %s", note.id)
         raise AnalysisFailed("The AI could not analyze this session. Please try again.") from e
 
+    source = {"session_note_id": str(note.id)}
+    await ai_record.record(
+        db, patient_id=note.patient_id, organization_id=note.organization_id, job=ai.MONITORING_EXTRACTION,
+        model=insight_service.EXTRACTION_MODEL, prompt=EXTRACTION_SYSTEM_PROMPT, output=extraction,
+        source=source, triggered_by_user_id=triggered_by_user_id, status=ai.NO_DECISION,
+    )
+    await ai_record.record(
+        db, patient_id=note.patient_id, organization_id=note.organization_id, job=ai.SESSION_ANALYSIS,
+        model=session_analysis_service.SESSION_SUMMARY_MODEL,
+        prompt=session_analysis_service.SESSION_SUMMARY_SYSTEM_PROMPT, output=reply,
+        source=source, triggered_by_user_id=triggered_by_user_id, status=ai.NO_DECISION,
+    )
     await insight_service.suggest_from_session_note(db, note, extraction)
     # Merged into the summary as it is now, not as it was before the model calls, so a monitoring
     # analysis or another session saved meanwhile is not lost.

@@ -1289,9 +1289,11 @@ async def generate_preliminary_report(
             if has_entries:
                 await cs.refresh_from_monitoring(
                     db, patient_id=patient_id, organization_id=org_id, practitioner_id=practitioner.id,
+                    triggered_by_user_id=practitioner.user_id,
                 )
             for note in notes:
-                await cs.analyze_note(db, note, practitioner_id=practitioner.id)
+                await cs.analyze_note(db, note, practitioner_id=practitioner.id,
+                                      triggered_by_user_id=practitioner.user_id)
         except cs.AnalysisFailed as e:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
         except cs.AnalysisConflict as e:
@@ -1308,6 +1310,33 @@ async def generate_preliminary_report(
         .execution_options(populate_existing=True)
     )).scalars().first()
     return formulation.preliminary_report if formulation else None
+
+
+@router.get("/{patient_id}/ai-suggestions")
+async def list_ai_suggestions(
+    patient_id: uuid.UUID,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+    _access: PatientProfile = Depends(get_permitted_patient),
+):
+    """What the AI proposed for this patient and what happened to it, newest first.
+
+    Clinicians with access to the patient only. docs/plans/ai-foundation-and-features.md
+    """
+    from app.services import ai_record
+    _, practitioner = context
+    rows = await ai_record.for_patient(db, patient_id, practitioner.organization_id)
+    return [
+        {
+            "id": str(r.id), "job": r.job, "model": r.model, "prompt_fingerprint": r.prompt_fingerprint,
+            "source": r.source, "output": r.output, "status": r.status,
+            "automatic": r.triggered_by_user_id is None,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "decided_at": r.decided_at.isoformat() if r.decided_at else None,
+            "final": r.final,
+        }
+        for r in rows
+    ]
 
 
 @router.get("/{patient_id}/case-summary/status")

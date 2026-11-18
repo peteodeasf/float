@@ -217,7 +217,9 @@ async def analyze_session_note(
 
     async with case_summary_service.patient_lock(note.patient_id):
         try:
-            return await case_summary_service.analyze_note(db, note, practitioner_id=practitioner.id)
+            return await case_summary_service.analyze_note(
+                db, note, practitioner_id=practitioner.id, triggered_by_user_id=practitioner.user_id,
+            )
         except case_summary_service.AnalysisFailed as e:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
         except case_summary_service.AnalysisConflict as e:
