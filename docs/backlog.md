@@ -276,7 +276,8 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 - **How to tell it worked:** Peter and Dr. Walker read the targets for the demo and test patients
   and they are not a copy of the situations.
 - **Gate:** clinical: what the clinician is told to work on. Dr. Walker's examples, Peter's sign-off.
-  **Depends on:** Dr. Walker's examples (waiting, as of 2026-11-18).
+  **Depends on:** Dr. Walker's examples (waiting, as of 2026-11-18). Until then the section stays
+  on the Case Summary as it is (Peter, 2026-11-18).
 
 ## Reference sheets for the parent and for the child `M`
 - **Today:** there is no reference sheet for either. Peter, 2026-11-18: make separate sheets for the
