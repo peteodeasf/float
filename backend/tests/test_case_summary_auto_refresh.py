@@ -230,7 +230,20 @@ async def test_the_status_route_says_when_it_is_idle(api, db, monkeypatch):
 
     r = await api.get(f"/patients/{patient.id}/case-summary/status")
 
-    assert r.status_code == 200 and r.json() == {"updating": False}
+    assert r.status_code == 200 and r.json() == {"updating": False, "changed_at": None}
+
+
+async def test_the_status_route_says_when_the_summary_last_changed(api, db, monkeypatch):
+    # The page reloads the summary when this moves, so a run that started and finished between two
+    # checks is still picked up.
+    _, patient, clinician, form, _ = await _setup(db, monkeypatch, entries=2)
+    api.sign_in_as(clinician.user)
+    before = (await api.get(f"/patients/{patient.id}/case-summary/status")).json()["changed_at"]
+
+    await _entry(api, form)
+    after = (await api.get(f"/patients/{patient.id}/case-summary/status")).json()["changed_at"]
+
+    assert before is None and after is not None
 
 
 # ── One at a time ─────────────────────────────────────────────────────────────
@@ -263,3 +276,44 @@ async def test_what_arrives_during_a_run_is_done_once_after_it(monkeypatch):
 
     assert runs == [patient_id, patient_id]
     assert not case_summary_service.is_updating(patient_id)
+
+
+# ── End to end, with the real request functions ──────────────────────────────
+
+async def test_a_new_entry_refreshes_through_the_real_request_functions(api, db, monkeypatch):
+    # The tests above replace request_extraction and request_report outright, so a wrong argument
+    # in the background path would pass them. Here only the AI service is fake.
+    from app.core import config
+    monkeypatch.setattr(config.settings, "ANTHROPIC_API_KEY", "test")
+    sent = []
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            sent.append(kwargs)
+            body = json.dumps(EXTRACTION) if len(sent) == 1 else json.dumps(REPORT)
+            return type("M", (), {"content": [type("T", (), {"text": body})()], "stop_reason": "end_turn"})()
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.messages = FakeMessages()
+
+    monkeypatch.setattr("anthropic.Anthropic", FakeClient)
+    org = await make_org(db)
+    patient = await make_patient(db, org)
+    clinician = await make_practitioner(db, org)
+    patient.primary_practitioner_id = clinician.id
+    await grant_patient_to(db, patient, clinician, owner=True)
+    form = MonitoringForm(patient_id=patient.id, organization_id=org.id, status="in_progress",
+                          access_token=secrets.token_hex(32), sent_at=datetime.now(timezone.utc))
+    db.add(form)
+    await db.flush()
+    for i in range(2):
+        db.add(MonitoringEntry(monitoring_form_id=form.id, entry_date=date(2026, 10, 1 + i),
+                               situation="Bedtime", fear_thermometer=6, is_draft=False))
+    await db.flush()
+
+    r = await _entry(api, form)
+
+    assert r.status_code == 200, r.text
+    assert len(sent) == 2
+    assert (await _report(db, patient))["parental_responses"] == ["Stays"]

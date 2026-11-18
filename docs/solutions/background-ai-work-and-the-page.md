@@ -20,6 +20,14 @@
    route, it stops the whole server for the length of the call. Fix: `asyncio.to_thread`. The old
    monitoring analysis route had this problem too.
 
+4. **Watching "updating" is not enough on the page.** The page checked every 30 seconds and
+   reloaded when "updating" went from on to off. A run takes 20–40 seconds, so one could start and
+   finish between two checks and the page never reloaded (Peter, 2026-11-18: "monitoring data does
+   not automatically refresh in the case summary"). Separately, AI Refresh kept its result in page
+   state, which then hid every later automatic update. Fix: the status route also returns
+   `changed_at` (the latest `generated_at` / `analyzed_at` in the summary), the page reloads
+   whenever it moves, and the page always shows the saved summary.
+
 **Limits.** The state is in the server's memory. Railway runs one `uvicorn` process
 (`backend/railway.toml`), so it is complete. With more than one process, the status route and the
 one-at-a-time rule would only see their own process. A request whose run never started counts as
