@@ -122,7 +122,9 @@
    see the parent's items?
 4. **The parent's comfort:** what scale? Low / medium / high like confidence, or 0 to 10?
 5. **Points:** from what age, or does the clinician switch points on for a child they judge mature
-   enough?
+   enough? Her guidance of 2026-09-15 (in `docs/backlog.md`) said "point systems only for children
+   over 10"; the new answer says "preteens and teens, depending on maturity". Over 10 as the default,
+   with the clinician able to change it?
 6. **Rewards in the clinician app:** one version keeps the list in the clinician app, the other in
    the parent's app. Should the clinician see the list and what was given, read-only?
 7. **Time:** is the 10 to 15 minutes a day for the child's items only, or child and parent together?
