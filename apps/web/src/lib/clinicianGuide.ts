@@ -1,8 +1,8 @@
 // The clinician guide: where this patient is in treatment, what to do next, and what to know.
 // docs/plans/clinician-guide.md
 //
-// DRAFT CONTENT. Every sentence a clinician reads here is a first draft written from Dr. Walker's
-// notes of 2026-11-18, for her and Peter to review. Change the words freely; the structure is what
+// DRAFT CONTENT. Every sentence a clinician reads here is a first draft, written from the clinical
+// notes of 2026-11-18. Change the words freely; the structure is what
 // the code depends on.
 //
 // Pure functions of the patient's data, so the guide can be tested without a server.
@@ -200,11 +200,11 @@ export function guideFor(d: GuideInput): Guide {
     }
   }
 
-  // Stages with very little in Dr. Walker's notes so far.
+  // Stages with very little in the clinical notes so far.
   const drafts: Record<string, { next: Next; know: Know[] }> = {
     parent_child: {
       next: { title: `Meet ${name} with the parents`, why: 'The parent meeting is done.' },
-      know: [{ title: 'To be written with Dr. Walker', body: 'Her notes do not cover this meeting yet.' }],
+      know: [{ title: 'Draft content', body: 'Guidance for this meeting is still to be written.' }],
     },
     child_first: {
       next: { title: `Build the ladder with ${name}, then the first exposure`, why: `${d.rungs} rung${d.rungs === 1 ? '' : 's'} on the ladder so far.` },
@@ -212,7 +212,7 @@ export function guideFor(d: GuideInput): Guide {
     },
     ending: {
       next: { title: 'Plan the end of treatment', why: 'The patient is in maintenance or closed.' },
-      know: [{ title: 'To be written with Dr. Walker', body: 'Her notes do not cover ending treatment yet.' }],
+      know: [{ title: 'Draft content', body: 'Guidance for ending treatment is still to be written.' }],
     },
   }
   const draft = drafts[stage]

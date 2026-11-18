@@ -72,7 +72,7 @@ export default function GuidePanel({ open, onClose, guide, patientName }: {
             style={{ width: '32px', height: '32px', borderRadius: 'var(--float-radius-control)', border: 0, background: 'var(--float-surface-sunken)', color: 'var(--float-text-secondary)', fontSize: '18px', cursor: 'pointer' }}>×</button>
         </div>
         <div style={{ margin: '0 20px 8px', fontSize: '11px', color: 'var(--float-warning)', background: 'var(--float-warning-bg)', border: '1px solid var(--float-warning-border)', borderRadius: 'var(--float-radius-control)', padding: '6px 10px' }}>
-          Draft guidance, for Dr. Walker's review.
+          Draft content.
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '8px 20px 20px', opacity: open ? 1 : 0, transition: 'opacity .25s ease .08s' }}>

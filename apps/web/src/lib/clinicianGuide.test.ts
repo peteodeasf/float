@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { guideFor, type GuideInput } from './clinicianGuide'
 
 // docs/plans/clinician-guide.md. These test where the guide places a patient and what it picks
-// out of their data, not the wording, which is a draft for Dr. Walker.
+// out of their data, not the wording, which is draft content.
 
 const base: GuideInput = {
   childName: 'Sam Rivera', phase: null, monitoringSent: true, monitoringEntries: 9, hasCaseSummary: true,
