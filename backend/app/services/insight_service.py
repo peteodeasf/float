@@ -272,14 +272,35 @@ def session_note_text(note) -> str:
     )
 
 
-def format_session_note(note) -> str:
+async def situation_names(db: AsyncSession, patient_id: uuid.UUID) -> list[str]:
+    """The situations already on the patient's suggestion list, in their current wording."""
+    return list((await db.execute(
+        select(PatientInsight.name)
+        .where(PatientInsight.patient_id == patient_id, PatientInsight.kind == KIND_SITUATION)
+        .order_by(PatientInsight.created_at)
+    )).scalars().all())
+
+
+def format_session_note(note, known_situations: list[str] = ()) -> str:
     """An approved session note as text for the extractor. It reads monitoring notes, so it is told
-    what this is. docs/plans/session-suggestions.md"""
+    what this is. docs/plans/session-suggestions.md
+
+    It is also given the situations already on the list. Items fold in by wording, so without them a
+    note's "Bedtime" became a second situation beside the log's "Bedtime, going to sleep in her own
+    room", and what the note said about bedtime went under the copy (local run, 2026-11-17).
+    """
+    known = ""
+    if known_situations:
+        known = (
+            "Situations already on this child's list. Where the note is about one of these, use its "
+            "name exactly as written here. Name a new situation only for something not on this "
+            "list.\n" + "\n".join(f"- {s}" for s in known_situations) + "\n\n"
+        )
     return (
         "This is a clinician's session note, written from a therapy session and approved by the "
         "clinician. It is not a parent's monitoring note. Treat a Fear Level as given only where the "
         "note states a number.\n\n"
-        f"[1] {session_note_text(note)}"
+        f"{known}[1] {session_note_text(note)}"
     )
 
 
