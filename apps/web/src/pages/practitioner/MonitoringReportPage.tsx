@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getMonitoringReport } from '../../api/monitoring'
-import ParentWords from '../../components/practitioner/ParentWords'
+import MonitoringLog from '../../components/practitioner/MonitoringLog'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import { Button } from '../../components/ui/primitives'
 
@@ -42,13 +42,6 @@ export default function MonitoringReportPage() {
     )
   }
 
-  const dateFrom = report.date_range
-    ? new Date(report.date_range.from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : ''
-  const dateTo = report.date_range
-    ? new Date(report.date_range.to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : ''
-
   return (
     <div className="min-h-screen" style={{ background: 'var(--float-surface)' }}>
       {/* Nav — hidden when printing */}
@@ -78,54 +71,9 @@ export default function MonitoringReportPage() {
           <h2 className="text-base font-medium mb-2" style={{ color: 'var(--float-text-secondary)' }}>
             Monitoring report
           </h2>
-          <div className="text-sm" style={{ color: 'var(--float-text-hint)' }}>
-            <span>Dates: {dateFrom} &mdash; {dateTo}</span>
-            <span style={{ margin: '0 8px' }}>&middot;</span>
-            <span>Entries: {report.total_entries}</span>
-          </div>
         </div>
 
-        {/* Observation matrix table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--float-border)' }}>
-                <th className="text-left py-3 px-3 text-xs font-medium uppercase tracking-wider" style={{ whiteSpace: 'nowrap', color: 'var(--float-text-secondary)' }}>Date</th>
-                <th className="text-left py-3 px-3 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--float-text-secondary)' }}>Situation</th>
-                <th className="text-left py-3 px-3 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--float-text-secondary)' }}>What I observed about my child</th>
-                <th className="text-left py-3 px-3 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--float-text-secondary)' }}>How I responded</th>
-                <th className="text-center py-3 px-3 text-xs font-medium uppercase tracking-wider" style={{ whiteSpace: 'nowrap', color: 'var(--float-text-secondary)' }}>Fear Level</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.entries.map((entry) => (
-                <tr key={entry.id} style={{ borderBottom: '1px solid var(--float-surface-sunken)' }}>
-                  <td className="py-3 px-3" style={{ whiteSpace: 'nowrap', color: 'var(--float-text-secondary)' }}>
-                    {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </td>
-                  <td className="py-3 px-3" style={{ color: 'var(--float-text)' }}>
-                    {entry.situation || '--'}
-                    {entry.recipient_label && (
-                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full align-middle" style={{ whiteSpace: 'nowrap', background: 'var(--float-surface-muted)', color: 'var(--float-text-secondary)' }}>
-                        {entry.recipient_label}
-                      </span>
-                    )}
-                    <ParentWords entry={entry} />
-                  </td>
-                  <td className="py-3 px-3" style={{ color: 'var(--float-text-secondary)' }}>
-                    {entry.child_behavior_observed || '--'}
-                  </td>
-                  <td className="py-3 px-3" style={{ color: 'var(--float-text-secondary)' }}>
-                    {entry.parent_response || '--'}
-                  </td>
-                  <td className="py-3 px-3 text-center font-medium" style={{ color: 'var(--float-text)' }}>
-                    {entry.fear_thermometer ?? '--'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <MonitoringLog report={report} />
 
         {/* Print footer */}
         <div className="hidden print:block pt-4 mt-8" style={{ borderTop: '1px solid var(--float-border)' }}>

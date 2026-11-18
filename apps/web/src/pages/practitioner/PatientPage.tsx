@@ -9,7 +9,7 @@ import {
   getPatientExperiments, searchSituationLibrary, type DownwardArrow
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, getCaseSummaryStatus, type PreliminaryReport, type SendMonitoringFormParams } from '../../api/monitoring'
-import ParentWords from '../../components/practitioner/ParentWords'
+import MonitoringLog from '../../components/practitioner/MonitoringLog'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { mergeCaseSummary, type SummaryItem } from '../../lib/caseSummary'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
@@ -198,66 +198,16 @@ function InlineMonitoringReport({ patientId, onClose, embedded }: { patientId: s
     )
   }
 
-  const dateFrom = report.date_range
-    ? new Date(report.date_range.from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : ''
-  const dateTo = report.date_range
-    ? new Date(report.date_range.to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : ''
-
   return (
     <div>
       {backLink}
-      <div className="mb-6">
-        {!embedded && <h1 className="text-xl font-bold text-slate-800 mb-1">{report.patient_name}</h1>}
-        {!embedded && <h2 className="text-base text-slate-500 font-medium mb-2">Monitoring report</h2>}
-        <div className="text-sm text-slate-400">
-          <span>Dates: {dateFrom} &mdash; {dateTo}</span>
-          <span style={{ margin: '0 8px' }}>&middot;</span>
-          <span>Entries: {report.total_entries}</span>
+      {!embedded && (
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-slate-800 mb-1">{report.patient_name}</h1>
+          <h2 className="text-base text-slate-500 font-medium mb-2">Monitoring report</h2>
         </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid var(--float-border)' }}>
-              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Date</th>
-              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Situation</th>
-              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">What I observed about my child</th>
-              <th className="text-left py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider">How I responded</th>
-              <th className="text-center py-3 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider" style={{ whiteSpace: 'nowrap' }}>Fear Level</th>
-            </tr>
-          </thead>
-          <tbody>
-            {report.entries.map((entry) => (
-              <tr key={entry.id} style={{ borderBottom: '1px solid var(--float-surface-sunken)' }}>
-                <td className="py-3 px-3 text-slate-500" style={{ whiteSpace: 'nowrap' }}>
-                  {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </td>
-                <td className="py-3 px-3 text-slate-700">
-                  {entry.situation || '--'}
-                  {entry.recipient_label && (
-                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 align-middle" style={{ whiteSpace: 'nowrap' }}>
-                      {entry.recipient_label}
-                    </span>
-                  )}
-                  <ParentWords entry={entry} />
-                </td>
-                <td className="py-3 px-3 text-slate-600">
-                  {entry.child_behavior_observed || '--'}
-                </td>
-                <td className="py-3 px-3 text-slate-600">
-                  {entry.parent_response || '--'}
-                </td>
-                <td className="py-3 px-3 text-center text-slate-700 font-medium">
-                  {entry.fear_thermometer ?? '--'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )}
+      <MonitoringLog report={report} />
     </div>
   )
 }
