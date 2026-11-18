@@ -6,10 +6,13 @@ import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanNickname, updateTrigger, deleteTrigger,
   getSituationDownwardArrow,
-  getPatientExperiments, searchSituationLibrary, type DownwardArrow
+  getPatientExperiments, searchSituationLibrary, getPlanRungs, type DownwardArrow
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, getCaseSummaryStatus, type SendMonitoringFormParams } from '../../api/monitoring'
 import MonitoringLog from '../../components/practitioner/MonitoringLog'
+import GuidePanel from '../../components/practitioner/GuidePanel'
+import InfoDot from '../../components/practitioner/InfoDot'
+import { guideFor, INFO, type GuideInput } from '../../lib/clinicianGuide'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { mergeCaseSummary, type SummaryItem } from '../../lib/caseSummary'
 import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
@@ -56,12 +59,14 @@ function DTBadge({ value, max }: { value: number | null | undefined; max?: numbe
 const reportSectionHeaderStyle = { fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '12px' }
 
 // A section header with how many items are under it.
-function SummaryHeader({ label, count, right }: { label: string; count: number; right?: string }) {
+function SummaryHeader({ label, count, right, info }: { label: string; count: number; right?: string; info?: React.ReactNode }) {
   return (
-    <div style={{ ...reportSectionHeaderStyle, display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+    <div style={{ ...reportSectionHeaderStyle, display: 'flex', alignItems: 'center', gap: '8px' }}>
       <span>{label}</span>
       <span style={{ fontWeight: 600, color: 'var(--float-text-hint)', letterSpacing: 0 }}>{count}</span>
+      {!right && info}
       {right && <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 600, color: 'var(--float-text-hint)', textTransform: 'none', letterSpacing: 0 }}>{right}</span>}
+      {right && info}
     </div>
   )
 }
@@ -93,11 +98,11 @@ function SummaryItemText({ item }: { item: SummaryItem }) {
 }
 
 // A labelled bulleted section in the Step-2 Preliminary Report (with a divider above)
-function ReportSection({ label, items }: { label: string; items: SummaryItem[] }) {
+function ReportSection({ label, items, info }: { label: string; items: SummaryItem[]; info?: React.ReactNode }) {
   if (!items || items.length === 0) return null
   return (
     <div style={{ borderTop: '1px solid var(--float-border)', paddingTop: '20px' }}>
-      <SummaryHeader label={label} count={items.length} />
+      <SummaryHeader label={label} count={items.length} info={info} />
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {items.map((it, i) => (
           <li key={i} style={{ display: 'flex', gap: '10px', fontSize: '13px', color: 'var(--float-text)', lineHeight: 1.5 }}>
@@ -637,6 +642,11 @@ export default function PatientPage() {
     if (el) el.scrollTop = el.scrollHeight
   }, [messages?.length, parentMessages?.length, msgThread])
   const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
+  // For the clinician guide. docs/plans/clinician-guide.md
+  const [guideOpen, setGuideOpen] = useState(false)
+  const closeGuide = useCallback(() => setGuideOpen(false), [])
+  const { data: guideRungs } = useQuery({ queryKey: ['plan-rungs', plan?.id], queryFn: () => getPlanRungs(plan!.id), enabled: !!plan?.id })
+  const { data: guideReport } = useQuery({ queryKey: ['monitoring-report', patientId], queryFn: () => getMonitoringReport(patientId!), enabled: !!patientId && (monitoringForm?.entries_count ?? 0) > 0 })
 
   // Fetch DA status for every trigger situation (incl. the placeholder, so the parent DA is captured)
   const triggerIds = (rawTriggers ?? []).map(t => t.id)
@@ -1177,11 +1187,33 @@ export default function PatientPage() {
   // The Case Summary sections: monitoring's, with each analyzed session's additions merged in and
   // marked. Null until either analysis has run.
   const summary = preliminaryReport ? mergeCaseSummary(preliminaryReport) : null
+
+  // What the guide reads about this patient: all of it already loaded for this page.
+  const guideInput: GuideInput = {
+    childName: patient?.name ?? '',
+    phase: patient?.closed_at ? 'closed' : patient?.maintenance_at ? 'maintenance' : null,
+    monitoringSent: !!monitoringForm,
+    monitoringEntries: monitoringForm?.entries_count ?? 0,
+    hasCaseSummary: !!preliminaryReport,
+    summarySituations: (summary?.situations ?? []).map(s => ({ name: s.text, fear: s.fear })),
+    summaryBehaviors: summary?.safetyBehaviors.length ?? 0,
+    parentResponses: (summary?.parentalResponses ?? []).map(r => r.text),
+    ladderSituations: (triggers ?? []).map(t => ({
+      name: t.name, fear: t.distress_thermometer_rating ?? null,
+      fearedOutcome: daStatuses?.[t.id]?.feared_outcome ?? null,
+    })),
+    rungs: (guideRungs ?? []).length,
+    nickname: plan?.nickname ?? null,
+    exposuresDone: (patientExperiments ?? []).filter(e => e.status === 'completed').length,
+    entries: (guideReport?.entries ?? []).map(e => ({ situation: e.situation, who: e.recipient_label, fear: e.fear_thermometer })),
+  }
+  const guide = guideFor(guideInput)
   const caseSummarySections = preliminaryReport && summary ? (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {summary.situations.length > 0 && (
         <div>
-          <SummaryHeader label="Situations" count={summary.situations.length} right="Fear Level" />
+          <SummaryHeader label="Situations" count={summary.situations.length} right="Fear Level"
+            info={<InfoDot {...INFO.fearLevel(guideInput)} />} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {summary.situations.map((s, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
@@ -1194,7 +1226,8 @@ export default function PatientPage() {
         </div>
       )}
       <ReportSection label="Parental responses" items={summary.parentalResponses} />
-      <ReportSection label={preliminaryReport.safety_section_label || 'Safety & avoidance behaviors'} items={summary.safetyBehaviors} />
+      <ReportSection label={preliminaryReport.safety_section_label || 'Safety & avoidance behaviors'} items={summary.safetyBehaviors}
+        info={<InfoDot {...INFO.safetyAvoidance()} align="left" />} />
       <ReportSection label="Treatment targets" items={summary.treatmentTargets} />
       <ReportSection label="Notes from sessions" items={summary.notes} />
     </div>
@@ -1757,7 +1790,17 @@ export default function PatientPage() {
       <PractitionerNav activePage="patients" subHeader={{
         backTo: '/dashboard', backLabel: 'Back to patients',
         title: patient?.name ?? 'Loading...',
-      }} />
+      }} extra={patient && (
+        <button type="button" onClick={() => setGuideOpen(true)} aria-haspopup="dialog"
+          className="flex items-center gap-2 text-sm font-semibold"
+          style={{ background: 'var(--float-surface)', border: '1px solid var(--float-border)', color: 'var(--float-primary)', borderRadius: 'var(--float-radius-pill)', padding: '5px 14px', cursor: 'pointer' }}>
+          <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--float-primary)' }} />
+          Guide
+        </button>
+      )} />
+      {patient && (
+        <GuidePanel open={guideOpen} onClose={closeGuide} guide={guide} patientName={patient.name} />
+      )}
 
       {/* The page has a width. Without one everything stretched to the browser, so on a wide
           screen a step's name sat at one end of its row and its thermometer score at the other —

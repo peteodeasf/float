@@ -1,3 +1,20 @@
 @import "../src/styles/tokens.css";
 @import "../src/styles/teen-tokens.css";
 @import "tailwindcss";
+
+/* The clinician guide: the ⓘ dot's gentle pulse and its pop-up. docs/plans/clinician-guide.md */
+@keyframes float-info-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--float-primary) 45%, transparent); }
+  70% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--float-primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--float-primary) 0%, transparent); }
+}
+@keyframes float-info-pop {
+  from { transform: translateY(-4px) scale(.97); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.float-info-dot { animation: float-info-ring 2.4s ease-out infinite; transition: transform .15s; }
+.float-info-dot:hover { transform: scale(1.15); }
+.float-info-pop { animation: float-info-pop .18s cubic-bezier(.22,1,.36,1); }
+@media (prefers-reduced-motion: reduce) {
+  .float-info-dot, .float-info-pop { animation: none; }
+}

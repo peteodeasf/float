@@ -18,6 +18,8 @@ interface PractitionerNavProps {
   /** Left out on a page the menu does not link to, such as /codesign/signups. */
   activePage?: ActivePage
   subHeader?: SubHeaderProps
+  /** Shown at the top right, before Feedback. The patient page puts its Guide button here. */
+  extra?: React.ReactNode
 }
 
 const navLinks: { label: string; page: ActivePage; path: string; enabled: boolean; tooltip?: string }[] = [
@@ -30,7 +32,7 @@ const navLinks: { label: string; page: ActivePage; path: string; enabled: boolea
   { label: 'Settings', page: 'settings', path: '/settings', enabled: true },
 ]
 
-export default function PractitionerNav({ activePage, subHeader }: PractitionerNavProps) {
+export default function PractitionerNav({ activePage, subHeader, extra }: PractitionerNavProps) {
   const navigate = useNavigate()
   const { logout, organizationName } = useAuth()
 
@@ -84,6 +86,7 @@ export default function PractitionerNav({ activePage, subHeader }: PractitionerN
           </div>
         </div>
         <div className="flex items-center">
+          {extra && <span className="mr-4">{extra}</span>}
           <FeedbackLink />
           <span className="mx-4 h-5 w-px" style={{ background: 'var(--float-border)' }} />
           {organizationName && (
