@@ -25,6 +25,7 @@ from app.schemas.downward_arrow import (
     DownwardArrowResponse,
     NextProbeRequest,
     NextProbeResponse,
+    FearedOutcomeResponse,
 )
 
 router = APIRouter(tags=["downward-arrows"])
@@ -112,6 +113,43 @@ Rules:
   next question."""
 
 
+
+# The feared outcome, drafted from the whole arrow when the clinician presses "That's the bottom".
+# Peter, 2026-11-19: each step only ever looked at the last answer; this step reads them all.
+# His decisions: join the key steps of the arrow into one outcome (not just the deepest answer),
+# in the child's own words and first person. The clinician edits and confirms it before it is saved,
+# as before. docs/plans/arrow-feared-outcome.md
+FEARED_OUTCOME_SYSTEM_PROMPT = """You help a child therapist finish a "downward arrow" with a young person (ages ~8-17).
+
+The child has been asked, step by step, what they fear will happen next. The therapist has decided
+the arrow has reached the bottom. Read the whole arrow, from the worry at the top to the last
+answer, and write the child's FEARED OUTCOME: what they predict will happen, as one statement.
+
+How to write it:
+- Join the key steps of the arrow into one sentence that runs from what goes wrong to the worst
+  thing they predict at the end. Keep the steps that carry the fear forward; leave out the rest.
+- Leave out answers that add nothing: "I don't know", repeats of an earlier answer, a vague bad
+  feeling with nothing in it, and what the child would do to avoid the situation.
+- A feared outcome is something that would HAPPEN, that an exposure could show does or does not
+  happen. Keep a named feeling or body reaction when it is part of what they fear will happen
+  ("I'll panic and have to leave"). Do not turn it into what it would say about them ("I'm a
+  failure", "I'm unlovable") unless the child said exactly that.
+- Use the child's own words, in the first person ("I", "me", "my"), as they would say it. You may
+  join their phrases and fix tense so it reads as one sentence. Fill in a word only where their
+  phrase would not make sense on its own ("they'd find out" -> "they'd find out I was scared").
+- Never add a fear, detail or outcome the child did not say.
+- One sentence, about 25 words at most, ending with a full stop.
+
+Example of the shape (not from a real child):
+  Worry: "I'll mess up my lines in the play."
+  Q: What will happen if you mess up your lines?  A: "Everyone in the audience will see."
+  Q: What will happen if everyone sees?  A: "I don't know. It would be bad."
+  Q: So it would be bad - what will happen then?  A: "People at school would talk about it for weeks."
+  -> I'll mess up my lines, everyone will see, and people at school will talk about it for weeks.
+
+Return ONLY the sentence. No quotes, no explanation."""
+
+
 def _chain_text(req: NextProbeRequest) -> str:
     lines = [f'Starting thought: "{req.starting_thought}"']
     for s in req.steps:
@@ -147,6 +185,41 @@ async def next_probe(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI probe generation failed: {type(e).__name__}: {str(e)}",
         )
+
+
+
+def _whole_arrow_text(req: NextProbeRequest) -> str:
+    lines = [f'Worry: "{req.starting_thought}"']
+    for s in req.steps:
+        lines.append(f'Q: {s.question}')
+        lines.append(f'A: "{s.response}"')
+    lines.append("\nThis is the bottom. Write the feared outcome.")
+    return "\n".join(lines)
+
+
+@router.post("/downward-arrows/feared-outcome", response_model=FearedOutcomeResponse)
+async def draft_feared_outcome(
+    data: NextProbeRequest,
+    context: tuple = Depends(get_practitioner_context),
+):
+    """Draft the feared outcome from the whole arrow. Confirm-first: the clinician edits it."""
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=200,
+            system=FEARED_OUTCOME_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": _whole_arrow_text(data)}],
+        )
+        text = message.content[0].text.strip().strip('"“”').strip()
+        if not text:
+            raise ValueError("empty answer")
+        return FearedOutcomeResponse(feared_outcome=text)
+    except Exception as e:
+        # The screen falls back to the child's last answer, so this only has to say it failed.
+        print(f"draft_feared_outcome failed: {type(e).__name__}", flush=True)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not draft the feared outcome.")
 
 
 @router.get("/trigger-situations/{situation_id}/downward-arrow",

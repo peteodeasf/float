@@ -375,6 +375,13 @@ export const getNextProbe = async (startingThought: string, steps: ArrowStep[]):
   return response.data.probe as string
 }
 
+// Draft the feared outcome from the whole arrow, when the clinician says it has reached the bottom
+// (AI, confirm-first — the clinician edits it before saving). docs/plans/arrow-feared-outcome.md
+export const draftFearedOutcome = async (startingThought: string, steps: ArrowStep[]): Promise<string> => {
+  const response = await apiClient.post('/downward-arrows/feared-outcome', { starting_thought: startingThought, steps })
+  return response.data.feared_outcome as string
+}
+
 export interface PlannedExperiment {
   id: string
   ladder_rung_id: string | null

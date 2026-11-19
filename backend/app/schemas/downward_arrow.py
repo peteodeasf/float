@@ -34,6 +34,11 @@ class NextProbeResponse(BaseModel):
     probe: str
 
 
+class FearedOutcomeResponse(BaseModel):
+    """The feared outcome drafted from the whole arrow, for the clinician to edit and confirm."""
+    feared_outcome: str
+
+
 class DownwardArrowResponse(BaseModel):
     id: uuid.UUID
     trigger_situation_id: Optional[uuid.UUID] = None
