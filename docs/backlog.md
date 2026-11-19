@@ -208,7 +208,8 @@ code, that is at least:
 |---|---|
 | **Anthropic** | The extraction, downward-arrow and combination-wording prompts send a child's clinical text to the API |
 | **Railway** | The application and the Postgres database |
-| **Netlify** | The frontends |
+| **Netlify** | The frontends (moving to Google Cloud instead, decided 2026-11-19) |
+| **Mux** | Which video a viewer plays, and their IP address (`plans/videos.md`); BAA to ask |
 | **Twilio** | Phone numbers and message content |
 | **Resend** | Email addresses and invite content |
 
@@ -225,9 +226,11 @@ the day.
 **11. Each screen should only get the data it needs.** Review what each one actually returns. Easier
 once the access log exists, because that shows what is really being read.
 
-**One decision of yours changes all of the above:** is Float the clinic's supplier, or does Float
-hold the patient relationship itself? That decides who has to tell patients when something goes
-wrong, and who owes them a copy of their record.
+**Decided 2026-11-19 (Peter): Float is the clinics' supplier, a business associate.** The clinic
+tells patients after a breach and owes them their record; Float tells the clinic, and signs a BAA
+with each clinic and with each vendor. Also decided that day: Google Cloud as planned, the web apps
+move off Netlify, and email switches provider if Resend will not sign. See
+[`hosting-for-real-patient-data.md`](plans/hosting-for-real-patient-data.md), "Decided".
 
 ---
 

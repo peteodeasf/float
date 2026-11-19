@@ -119,3 +119,26 @@ shapes who owes what. It does not change the hosting decision.
 Whether to move at all. Paying Railway $12,000 a year is a legitimate answer — it buys back the
 operational simplicity, which for a solo developer is worth something real. This document exists so
 that choice is made deliberately rather than by running out of time in November.
+
+## Decided (Peter, 2026-11-19)
+
+- **Float is the clinics' supplier: a business associate, not a covered entity.** The clinic is the
+  covered entity and holds the patient relationship. Float signs a BAA with each clinic, and a BAA
+  with every vendor that touches patient data (a subcontractor BAA). The clinic tells patients
+  after a breach and gives them their record; Float must tell the clinic promptly, so the breach
+  plan (backlog, Paperwork 9) is written around telling clinics.
+- **Google Cloud, as recommended above:** Cloud Run, Cloud SQL, Secret Manager, Cloud Storage,
+  Speech-to-Text, under Google's BAA. Deed moves first; real patients from December 2026.
+- **The web apps move off Netlify** to Cloud Storage with Google's CDN, under the same BAA. This
+  closes the open Netlify question above.
+- **Email: if Resend will not sign a BAA, switch to a provider that will.**
+- **The patient and parent apps will also be iOS and Android apps.** They call the same backend.
+
+## Still open
+
+- **Mux:** ask whether it signs a BAA. Float sends it no names or ids, but it sees viewers' IP
+  addresses (`docs/plans/videos.md`).
+- **Phone notifications** from the iOS and Android apps go through Apple's and Google's push
+  services, which will not sign BAAs: the notification text must hold nothing about the child.
+- **A BAA template for clinics** to sign with Float.
+
