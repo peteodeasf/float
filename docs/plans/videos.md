@@ -19,8 +19,7 @@
 
 ## Who does what
 
-1. **The Float team uploads** a video in Mux's dashboard, with a **signed** playback policy. Then,
-   on Float's admin page, picks it from the list of Mux videos not yet in Float, gives it a title
+1. **The Float team uploads** a video in Mux's dashboard. Then, on Float's admin page, picks it from the list of Mux videos not yet in Float, gives it a title
    and a short description, says who it is for (clinicians, families, or both), and publishes it.
 2. **A clinician sees every video** marked for clinicians or both, in the Library, and can play any
    of them full screen in a session.
@@ -65,7 +64,10 @@ The videos are not patient data. **Who watched what is.**
 - `video_shares`: one row per video, patient and recipient (`child` or `parent`): who shared it,
   when, and when it was watched (empty until then). Sharing with both makes two rows.
 - **Adding a video:** the admin page lists the assets in Mux (through Mux's API) that Float does
-  not have yet, and refuses one whose only playback id is public. Its signed playback id and length
+  not have yet. **Adding one makes it private:** Float adds a signed playback id and deletes any
+  public one (Mux's API: create a playback id with policy `signed`, then delete the public id). Mux's
+  dashboard does not clearly offer this (Peter, 2026-11-19: "not clear to me how to make them
+  private in Mux"), and its uploads default to public. Its signed playback id and length
   are saved. No uploads go through Float, so big files never touch Railway.
 - **A webhook is not needed** while videos are added by hand after they finish processing in Mux.
   Add one later if uploads move into Float.
@@ -99,8 +101,8 @@ so the mini never holds the production ones.
 
 ## Setup steps given to Peter (2026-11-19)
 
-1. In Mux, make sure each video's playback id is **signed**, not public. For a public one: add a
-   signed playback id, then delete the public one. Choose signed for future uploads.
+1. Nothing to change on videos already in Mux: adding one in Float makes it private. Until then
+   a public video plays only for someone with its playback id, which has not been shared.
 2. Production environment: an access token (Mux Video read and write only) and a signing key.
 3. Railway, backend service, Variables: the four `MUX_` variables above.
 4. Development environment: the same two keys, as `export` lines in `~/.zshrc` on the Mac mini.
