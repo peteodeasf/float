@@ -16,7 +16,7 @@ from app.models.organization import Organization
 from app.models.patient import PractitionerProfile
 from app.models.practice import PracticeManagerProfile
 from app.models.user import User, UserRole
-from app.services import checklist_item_service, setup_link_service
+from app.services import setup_link_service
 from app.services.email_service import send_setup_email
 
 CLINICIAN = "practitioner"
@@ -166,8 +166,6 @@ async def create_practice(
                        size=size)
     db.add(org)
     await db.flush()
-    # Every practice starts with the default consultation checklist.
-    await checklist_item_service.seed_defaults(db, org.id)
     return org
 
 

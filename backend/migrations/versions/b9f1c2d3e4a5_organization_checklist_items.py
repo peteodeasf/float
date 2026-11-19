@@ -18,7 +18,22 @@ from typing import Sequence, Union
 from alembic import op, context
 import sqlalchemy as sa
 
-from app.data.default_checklist import DEFAULT_PROCESS_CHECKLIST
+# The default list as it was when this migration ran. Copied in on 2026-11-19, when the checklist was
+# removed and `app/data/default_checklist.py` went with it, so this migration still runs unchanged.
+DEFAULT_PROCESS_CHECKLIST: list[dict] = [
+    dict(key='send_monitoring_links', text='Send monitoring links to parents'),
+    dict(key='analyze_monitoring_data', text='Analyze monitoring data'),
+    dict(key='prep_parent_consultation', text='Prepare for parent consultation meeting'),
+    dict(key='parent_first_meeting', text='Parent first meeting'),
+    dict(key='prep_parent_child_meeting', text='Prepare for parent-child meeting'),
+    dict(key='parent_child_first_meeting', text='Parent-child first meeting'),
+    dict(key='child_first_meeting', text='Child first meeting'),
+    dict(key='review_cbt_exposure_concepts', text='Review key CBT and exposure concepts'),
+    dict(key='setup_exposure_ladder', text='Set up exposure ladder for child'),
+    dict(key='setup_accommodation_ladder', text='Set up accommodation ladder for parents'),
+    dict(key='child_first_exposure', text="Child's first exposure"),
+    dict(key='monitor_progress_exposure_data', text='Monitoring of progress and exposure data'),
+]
 
 
 # revision identifiers, used by Alembic.

@@ -137,8 +137,8 @@ export default function ArrowPage() {
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
 
   // Back where they came from. Peter, 2026-09-05: "you should go back to whence you came".
-  // Every way in now starts on the main ladder: the Downward Arrow button on a rung, or the
-  // checklist on the patient page. Peter, 2026-11-02.
+  // Every way in now starts on the main ladder: the Downward Arrow button on a rung. Peter,
+  // 2026-11-02. (The checklist on the patient page, the other way in, was removed 2026-11-19.)
   const exit = () => navigate(`/patients/${patientId}?tab=plan`)
   const current = situations.find(t => t.id === currentId) ?? null
 

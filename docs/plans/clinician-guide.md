@@ -119,3 +119,13 @@ do not go to Dr. Walker.
   does. Rungs can be written before the child is seen.
 - "Match the behaviors to each situation" counts safety, avoidance and ritual rows per situation
   (`/triggers/{id}/behaviors`), not rungs: a rung is a sub-situation or a combination.
+
+## The checklist is gone (Peter, 2026-11-19)
+
+"Remove the checklist feature UI and backend completely ... It has been replaced by the new
+checkable guide." The Checklist button and panel on the patient page, the admin checklist editor,
+each practice's checklist items, and their routes are removed. The guide's ticks now live in their
+own record, `guide_progress` (was `consultation_checklists`), at `/patients/{id}/guide-ticks`.
+Migration `d4b8f2a6c1e3`. "Parent's first meeting done" on the setup steps now counts a session
+note with a parent present only; it used to count a checklist tick too.
+

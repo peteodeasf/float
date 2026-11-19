@@ -34,7 +34,6 @@ function patient(over: Partial<Patient> = {}): Patient {
     active_plan_with_no_recent_activity: false,
     monitoring_entries_count: 0,
     monitoring_form_sent: false,
-    checklist_checked_items: {},
     phase: 'new',
     phase_label: 'New',
     closed_at: null,

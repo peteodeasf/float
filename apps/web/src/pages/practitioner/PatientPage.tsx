@@ -16,9 +16,7 @@ import InfoDot from '../../components/practitioner/InfoDot'
 import { guideFor, INFO, type GuideInput } from '../../lib/clinicianGuide'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
 import { mergeCaseSummary, type SummaryItem } from '../../lib/caseSummary'
-import { getChecklist, updateChecklist, type ChecklistItems } from '../../api/checklist'
-import { PROCESS_CHECKLIST, type ChecklistItemDef, type ChecklistNav } from '../../lib/checklists'
-import { getChecklistItems } from '../../api/checklist'
+import { getGuideTicks, updateGuideTicks, type GuideTicks } from '../../api/guide'
 import { FlatLadder } from './patient/FlatLadder'
 import { BehaviorPanel } from './patient/BehaviorPanel'
 import { ProgressTab } from './patient/ProgressTab'
@@ -34,14 +32,14 @@ import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
 import { RecordingsInProgress, RecordedNoteDetails } from '../../components/practitioner/RecordedNoteParts'
-import { btn, buttonRow, countPill, liveDot, chip, iconBtn, tab, tabBar, tabCount, subTab, subTabBar, segGroup, segLabel, segItem, menuPanel, menuItem } from '../../components/ui/buttons'
-import { Button, CloseButton } from '../../components/ui/primitives'
+import { btn, buttonRow, liveDot, chip, iconBtn, tab, tabBar, tabCount, subTab, subTabBar, segGroup, segLabel, segItem, menuPanel, menuItem } from '../../components/ui/buttons'
+import { Button } from '../../components/ui/primitives'
 import { participantColors } from '../../components/ui/participantColors'
 import TeenAccessPanel from '../../components/practitioner/TeenAccessPanel'
 import ClinicianAccessPanel from '../../components/practitioner/ClinicianAccessPanel'
 import { SessionInterview } from './SessionPage'
 import { sortNextTime } from './ladderEditor'
-import { LADDER_MAX_WIDTH, PROCESS_PANEL_WIDTH } from './patient/shared'
+import { LADDER_MAX_WIDTH } from './patient/shared'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
 
@@ -241,146 +239,21 @@ function formatMsgTime(iso: string | null | undefined): string {
 }
 
 // ── Case Conceptualization (living draft) ──
-// ── Consultation checklists (Steps 3 & 4) ──
-// Definitions live in ../../lib/checklists so the patient list page can share them.
-
-// The checklist keys that mean the parent's first meeting is done — the setup "Step 3" heuristic
-// (it also completes when a parent session note exists). Updated 2026-09-21 to the shorter draft
-// checklist's keys; the old long-list keys are gone.
-const STAGE1_PARENT_KEYS = [
-  'parent_first_meeting',
-]
-
-// Ticks one key in the patient's checklist record, showing it at once and undoing it if the save
-// fails. The process checklist and the clinician guide both save their ticks this way.
-function useChecklistToggle(patientId: string | undefined) {
+// Ticks one of the clinician guide's keys for this patient, showing it at once and undoing it if
+// the save fails. docs/plans/clinician-guide.md
+function useGuideTick(patientId: string | undefined) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ key, value }: { key: string; value: boolean }) => updateChecklist(patientId!, { [key]: value }),
+    mutationFn: ({ key, value }: { key: string; value: boolean }) => updateGuideTicks(patientId!, { [key]: value }),
     onMutate: async ({ key, value }) => {
-      await qc.cancelQueries({ queryKey: ['checklist', patientId] })
-      const prev = qc.getQueryData<ChecklistItems>(['checklist', patientId])
-      qc.setQueryData<ChecklistItems>(['checklist', patientId], { ...(prev ?? {}), [key]: value })
+      await qc.cancelQueries({ queryKey: ['guide-ticks', patientId] })
+      const prev = qc.getQueryData<GuideTicks>(['guide-ticks', patientId])
+      qc.setQueryData<GuideTicks>(['guide-ticks', patientId], { ...(prev ?? {}), [key]: value })
       return { prev }
     },
-    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['checklist', patientId], ctx.prev) },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['checklist', patientId] }),
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['guide-ticks', patientId], ctx.prev) },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['guide-ticks', patientId] }),
   })
-}
-
-function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, onNavigate }: {
-  patientId: string
-  title: string
-  collapsed: boolean
-  onToggleCollapse: () => void
-  onNavigate: (action: ChecklistNav['action']) => void
-}) {
-  const [popoverKey, setPopoverKey] = useState<string | null>(null)
-
-  const { data: checked } = useQuery({
-    queryKey: ['checklist', patientId],
-    queryFn: () => getChecklist(patientId),
-    enabled: !!patientId,
-  })
-
-  // The organization's configured list. Falls back to the bundled default if the request fails,
-  // so a network blip leaves the clinician with a working checklist rather than an empty panel.
-  const { data: orgItems } = useQuery({
-    queryKey: ['checklist-items'],
-    queryFn: getChecklistItems,
-  })
-  const items: ChecklistItemDef[] = (orgItems && orgItems.length > 0)
-    ? orgItems.map(i => ({
-        key: i.key,
-        text: i.text,
-        link: i.link_icon && i.link_label ? { icon: i.link_icon, label: i.link_label } : undefined,
-        nav: i.nav_label && i.nav_action ? { label: i.nav_label, action: i.nav_action as ChecklistNav['action'] } : undefined,
-      }))
-    : PROCESS_CHECKLIST
-
-  const toggleMut = useChecklistToggle(patientId)
-
-  const checkedItems = checked ?? {}
-  const allKeys = items.map(i => i.key)
-  const total = allKeys.length
-  const checkedCount = allKeys.filter(k => !!checkedItems[k]).length
-  const progress = `${checkedCount}/${total}`
-
-  const panelStyle = { background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '16px', width: '100%', boxSizing: 'border-box' as const }
-
-  // Collapsed: slim vertical bar
-  if (collapsed) {
-    return (
-      <div
-        onClick={onToggleCollapse}
-        title={title}
-        style={{ ...panelStyle, padding: '12px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
-      >
-        <span style={{ fontSize: '12px', color: 'var(--float-text-hint)', lineHeight: 1 }}>›</span>
-        <span style={{ writingMode: 'vertical-rl', fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>CHECKLIST</span>
-        <span style={{ fontSize: '12px', color: 'var(--float-text-secondary)' }}>{progress}</span>
-      </div>
-    )
-  }
-
-  return (
-    <div style={panelStyle}>
-      {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }} title={title}>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Checklist</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          <span style={{ fontSize: '12px', color: 'var(--float-text-hint)' }}>{progress}</span>
-          <button onClick={onToggleCollapse} aria-label="Collapse checklist"
-            className="bg-transparent border-none cursor-pointer"
-            style={{ fontSize: '14px', color: 'var(--float-text-hint)', padding: 0, lineHeight: 1 }}>›</button>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-        {items.map(item => {
-          const isChecked = !!checkedItems[item.key]
-          return (
-            <div key={item.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => toggleMut.mutate({ key: item.key, value: !isChecked })}
-                style={{ accentColor: 'var(--float-primary)', width: '15px', height: '15px', marginTop: '2px', flexShrink: 0, cursor: 'pointer' }}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: '12.5px', lineHeight: 1.4, color: isChecked ? 'var(--float-text-hint)' : 'var(--float-text)' }}>{item.text}</span>
-                {item.link && (
-                  <div style={{ position: 'relative', marginTop: '3px' }}>
-                    <button
-                      onClick={() => setPopoverKey(popoverKey === item.key ? null : item.key)}
-                      className="bg-transparent border-none cursor-pointer"
-                      style={{ fontSize: '11.5px', color: 'var(--float-text-hint)', padding: 0, whiteSpace: 'nowrap' }}
-                    >
-                      {item.link.icon} {item.link.label}
-                    </button>
-                    {popoverKey === item.key && (
-                      <div style={{ position: 'absolute', left: 0, top: '22px', background: 'var(--float-text)', color: '#fff', fontSize: '11px', padding: '6px 10px', borderRadius: 'var(--float-radius-control)', whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                        Education content coming soon
-                      </div>
-                    )}
-                  </div>
-                )}
-                {item.nav && (
-                  <button
-                    onClick={() => onNavigate(item.nav!.action)}
-                    className="bg-transparent border-none cursor-pointer"
-                    style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: 'var(--float-primary)', padding: 0, marginTop: '3px', textAlign: 'left' }}
-                  >
-                    {item.nav.label}
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
 }
 
 // Preset session-note tags (multi-select); custom tags can also be typed.
@@ -480,7 +353,6 @@ export default function PatientPage() {
   const [notesWhoFilter, setNotesWhoFilter] = useState<SessionParticipant | null>(null)
   const [sessionTagFilter, setSessionTagFilter] = useState<string | null>(null)
   const [showClinicianAccess, setShowClinicianAccess] = useState(false)
-  const [processPanelOpen, setProcessPanelOpen] = useState(false)
   // The ⋯ menu in the header holds the rare actions (Edit profile, Close treatment).
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const moreMenuRef = useRef<HTMLDivElement>(null)
@@ -629,7 +501,7 @@ export default function PatientPage() {
     })))
   }, [patient?.parent_contacts, monitoringForm])
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
-  const { data: checklistItems, isLoading: checklistLoading } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
+  const { data: guideTicks, isLoading: guideTicksLoading } = useQuery({ queryKey: ['guide-ticks', patientId], queryFn: () => getGuideTicks(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
   const { data: parents = [] } = useQuery({ queryKey: ['parents', patientId], queryFn: () => listParents(patientId!), enabled: !!patientId })
@@ -665,8 +537,7 @@ export default function PatientPage() {
   })
   // Same key as the parents' plan panel, so the two share one fetch.
   const { data: guideAccommodations, isLoading: accommodationsLoading } = useQuery({ queryKey: ['accommodations', plan?.id], queryFn: () => listAccommodations(plan!.id), enabled: !!plan?.id })
-  // The clinician's guide ticks are saved in the patient's checklist record, under `guide:` keys.
-  const guideTick = useChecklistToggle(patientId)
+  const guideTick = useGuideTick(patientId)
 
   // Fetch DA status for every trigger situation (incl. the placeholder, so the parent DA is captured)
   const triggerIds = (rawTriggers ?? []).map(t => t.id)
@@ -972,10 +843,6 @@ export default function PatientPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, parentThreadId, messages, parentMessages, patient, patientId])
 
-  // Process-panel checklist progress (setup groups: parent + patient consults)
-  const processChecklistKeys = PROCESS_CHECKLIST.map(i => i.key)
-  const processChecklistDone = processChecklistKeys.filter(k => !!(checklistItems ?? {})[k]).length
-  const processChecklistTotal = processChecklistKeys.length
 
 
   const notesList = sessionNotes ?? []
@@ -985,7 +852,7 @@ export default function PatientPage() {
   const stepComplete: boolean[] = [
     !!monitoringForm && !!monitoringForm.sent_at,
     (triggers?.length ?? 0) >= 1,
-    notesList.some(n => (n.participants ?? []).includes('parent')) || STAGE1_PARENT_KEYS.every(k => !!(checklistItems ?? {})[k]),
+    notesList.some(n => (n.participants ?? []).includes('parent')),
     notesList.some(n => (n.participants ?? []).includes('patient')) && hasPatientDA,
   ]
   const firstIncompleteStep = stepComplete.findIndex(c => !c)
@@ -1234,12 +1101,12 @@ export default function PatientPage() {
     highConfidence: experiments.some(e => e.confidence_level === 'high'),
     accommodations: accommodationRows.length,
     accommodationsChildRated: accommodationRows.filter(a => !!a.child_rated_at).length,
-    ticks: checklistItems ?? {},
+    ticks: guideTicks ?? {},
     entries: (guideReport?.entries ?? []).map(e => ({ situation: e.situation, who: e.recipient_label, fear: e.fear_thermometer })),
   }
   const guide = guideFor(guideInput)
   // Until these load, the guide would place the patient too early and then jump.
-  const guideReady = !checklistLoading && !experimentsLoading && !rungsLoading && !accommodationsLoading && !guideBehaviors.some(q => q.isLoading)
+  const guideReady = !guideTicksLoading && !experimentsLoading && !rungsLoading && !accommodationsLoading && !guideBehaviors.some(q => q.isLoading)
   const caseSummarySections = preliminaryReport && summary ? (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {summary.situations.length > 0 && (
@@ -1265,17 +1132,6 @@ export default function PatientPage() {
     </div>
   ) : null
 
-
-  // Checklist item navigation links (Step 4 patient checklist)
-  const handleChecklistNav = (action: 'treatmentPlan' | 'openArrow') => {
-    if (action === 'treatmentPlan') {
-      setActiveTab('plan')
-    } else if (action === 'openArrow') {
-      // The arrow used to be a section on the Plan tab. It became its own mode on 2026-08-24,
-      // so the checklist step now opens that rather than scrolling to a form.
-      navigate(`/patients/${patientId}/arrow`)
-    }
-  }
 
   // The Case Summary tab: the analyze button + state, then the sections or an empty prompt. It
   // used to appear twice, under Monitoring and under Plan; Peter asked for one place (issue #54).
@@ -1838,10 +1694,7 @@ export default function PatientPage() {
           screen a step's name sat at one end of its row and its thermometer score at the other —
           the two things that belong together, as far apart as the screen allows. Left-aligned
           (Peter, 2026-09-05). Content column + the process panel + the gap between them. */}
-      {/* Reserve the Checklist column's width only when it's open, so the header, tabs and content
-          all share the content width in the normal (closed) state instead of the header looking
-          wider than the panels below it. */}
-      <div style={{ padding: '24px', maxWidth: LADDER_MAX_WIDTH + 48 + (processPanelOpen ? PROCESS_PANEL_WIDTH + 24 : 0) }}>
+      <div style={{ padding: '24px', maxWidth: LADDER_MAX_WIDTH + 48 }}>
 
         {/* Patient header — identity + access + actions. On its own white band (pulled to the
             padded container's edges, bottom border + soft shadow) so it reads as a toolbar,
@@ -1869,7 +1722,7 @@ export default function PatientPage() {
               </div>
             </div>
 
-            {/* Who can log in is one grouped control; then the setup checklist; then the rare
+            {/* Who can log in is one grouped control; then the rare
                 actions tucked into a ⋯ menu so the terminal Close treatment isn't a stray click. */}
             <div style={buttonRow}>
               <div style={segGroup}>
@@ -1886,11 +1739,6 @@ export default function PatientPage() {
                   Clinician
                 </button>
               </div>
-
-              <button onClick={() => setProcessPanelOpen(v => !v)} style={btn(processPanelOpen ? 'on' : 'secondary')}>
-                Checklist
-                <span style={countPill(processPanelOpen)}>{processChecklistDone}/{processChecklistTotal}</span>
-              </button>
 
               <div ref={moreMenuRef} style={{ position: 'relative', marginLeft: 'auto' }}>
                 <button onClick={() => setMoreMenuOpen(v => !v)} aria-label="More actions" aria-haspopup="menu" aria-expanded={moreMenuOpen}
@@ -2104,18 +1952,6 @@ export default function PatientPage() {
 
             {activeTab === 'chat' && messagesContent}
           </div>
-
-          {/* Checklist panel, available on every tab */}
-          {processPanelOpen && (
-            <div style={{ width: '340px', flexShrink: 0, position: 'sticky', top: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                <CloseButton onClick={() => setProcessPanelOpen(false)} label="Close checklist panel" />
-              </div>
-              {patientId && (
-                <ConsultationChecklist patientId={patientId} title="Checklist" collapsed={false} onToggleCollapse={() => {}} onNavigate={handleChecklistNav} />
-              )}
-            </div>
-          )}
         </div>
       </div>
 

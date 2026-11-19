@@ -15,7 +15,7 @@ import { changeMyPassword, getMyProfile, updateMyProfile } from '../../api/me_pr
  * profile, shown on the patient page, and could not be edited anywhere.
  *
  * "Your clinic" shows practice admins the people in the practice (docs/plans/clinician-practice-onboarding.md).
- * The consultation checklist and sign-out timer from the settings plan are not here yet.
+ * The sign-out timer from the settings plan is not here yet.
  */
 export default function SettingsPage() {
   const qc = useQueryClient()

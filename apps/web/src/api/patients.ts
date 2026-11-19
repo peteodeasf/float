@@ -45,7 +45,6 @@ export type Patient = {
   active_plan_with_no_recent_activity: boolean
   monitoring_entries_count: number
   monitoring_form_sent: boolean
-  checklist_checked_items: Record<string, boolean>
   // Where the patient is up to. Worked out on the server so every screen agrees, and so the
   // column cannot silently freeze the way the old step counter did.
   phase: Phase
