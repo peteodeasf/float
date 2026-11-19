@@ -28,6 +28,7 @@ import {
   createSituationDownwardArrow,
   updateDownwardArrow,
   getNextProbe,
+  draftFearedOutcome,
   getBehaviors,
   openStepArrow,
   type TriggerSituation,
@@ -277,7 +278,7 @@ function PickRow({ trigger, onOpen }: { trigger: TriggerSituation; onOpen: (id: 
 }
 
 // ── The descent ────────────────────────────────────────────────
-// The feared outcome defaults from the child's last answer. Strip the hanging words a child tacks on
+// If the AI cannot draft the feared outcome, it defaults from the child's last answer. Strip the hanging words a child tacks on
 // to the trailing sentence that don't change the fear ("…, obviously", "well, …"), so the saved
 // outcome reads as the fear itself. A light, hand-kept list — the clinician still edits before
 // saving. Add new hanging words here as we find them (per Peter, this list is expected to grow).
@@ -317,6 +318,7 @@ export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backL
   const [answer, setAnswer] = useState('')
   const [atBottom, setAtBottom] = useState(false)
   const [fearedDraft, setFearedDraft] = useState('')
+  const [drafting, setDrafting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -373,9 +375,14 @@ export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backL
     catch { setErr('Could not save that step. Try again.') }
   }
 
-  const reachedBottom = () => {
-    setFearedDraft(cleanFearedOutcome(steps.length ? steps[steps.length - 1].response : startingThought))
-    setAtBottom(true)
+  // Peter, 2026-11-19: the AI reads the whole arrow and drafts one feared outcome that joins its key
+  // steps, in the child's words. The clinician still edits and confirms it. If the AI fails, the
+  // draft is the child's last answer, as it was before.
+  const reachedBottom = async () => {
+    setAtBottom(true); setFearedDraft(''); setDrafting(true)
+    try { setFearedDraft(await draftFearedOutcome(startingThought, steps)) }
+    catch { setFearedDraft(cleanFearedOutcome(steps.length ? steps[steps.length - 1].response : startingThought)) }
+    finally { setDrafting(false) }
   }
 
   const save = async () => {
@@ -415,11 +422,13 @@ export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backL
           <div style={{ background: 'var(--float-primary-dark)', borderRadius: 'var(--float-radius-card)', padding: '15px 17px' }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', color: '#7fd8c5', textTransform: 'uppercase', marginBottom: 7 }}>♡ feared outcome</div>
             <textarea value={fearedDraft} onChange={e => setFearedDraft(e.target.value)} rows={2}
+              readOnly={drafting} placeholder={drafting ? 'Putting the arrow together…' : undefined}
+              aria-busy={drafting}
               style={{ width: '100%', border: 'none', outline: 'none', fontSize: 16.5, fontWeight: 800, color: '#fff', background: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
             <button onClick={() => setAtBottom(false)} style={{ ...ghostBtn, marginTop: 0 }}>← Keep going</button>
-            <button onClick={save} disabled={!fearedDraft.trim() || busy} style={{ ...primaryBtn, marginTop: 0, opacity: !fearedDraft.trim() ? 0.4 : 1 }}>That&rsquo;s it — save →</button>
+            <button onClick={save} disabled={!fearedDraft.trim() || busy || drafting} style={{ ...primaryBtn, marginTop: 0, opacity: !fearedDraft.trim() ? 0.4 : 1 }}>That&rsquo;s it — save →</button>
           </div>
         </div>
       ) : !startingThought ? (
@@ -438,7 +447,7 @@ export function ChainPhase({ name, dt, openArrow, onSaved, onBack, onDone, backL
           <SayIt value={answer} onChange={setAnswer} onSend={() => void step(answer.trim())}
             placeholder="What they said…" pending={busy} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
-            <button onClick={reachedBottom} disabled={busy} style={{ ...ghostBtn, marginTop: 0 }}>That&rsquo;s the bottom ✓</button>
+            <button onClick={() => void reachedBottom()} disabled={busy} style={{ ...ghostBtn, marginTop: 0 }}>That&rsquo;s the bottom ✓</button>
             {busy && <span style={{ fontSize: 12, color: '#b6c3c1' }}>thinking…</span>}
           </div>
         </div>
