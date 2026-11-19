@@ -12,7 +12,7 @@ from app.api.routers import (
     ladders, experiments, progress,
     downward_arrows, messages, monitoring,
     session_notes, session_recordings, action_plans, admin, waitlist, codesign,
-    formulation, checklist, accommodations, situation_tags, library,
+    formulation, guide, accommodations, situation_tags, library,
     insights, admin_reviews, setup, access_requests, practice, teen_testing, feedback,
 )
 
@@ -62,7 +62,7 @@ app.include_router(monitoring.public_router)
 app.include_router(session_notes.router)
 app.include_router(session_recordings.router)
 app.include_router(formulation.router)
-app.include_router(checklist.router)
+app.include_router(guide.router)
 app.include_router(action_plans.router)
 app.include_router(admin.router)
 app.include_router(admin_reviews.router)

@@ -20,7 +20,7 @@ const LIST_ROW = (name: string, attention: Patient['attention'], phase = 'In tre
   has_active_situation_with_behaviors: true, plan_status: 'active', teen_invited: true,
   completed_experiment_count: 4, has_weekly_note: true, overdue_experiment_count: 0,
   active_plan_with_no_recent_activity: false, monitoring_entries_count: 6, monitoring_form_sent: true,
-  checklist_checked_items: {}, phase: 'in_treatment', phase_label: phase, closed_at: null, attention,
+  phase: 'in_treatment', phase_label: phase, closed_at: null, attention,
 })
 const LIST_ROWS: Patient[] = [
   LIST_ROW('Sam Rivera', [

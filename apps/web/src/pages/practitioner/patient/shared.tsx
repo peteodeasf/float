@@ -31,8 +31,6 @@ export const BEHAVIOR_TYPE_AVOIDANCE = 'avoidance'
 // rather than shrinking the whole page again.
 export const LADDER_MAX_WIDTH = 1060
 
-/** The process checklist that sits beside the content on the patient page. */
-export const PROCESS_PANEL_WIDTH = 340
 
 // Not a behaviour at all — a symptom, a thought, a distress response. Nine such rows arrived in
 // this table from monitoring extraction ("Complained of stomach pain") and were showing as rungs.

@@ -27,7 +27,7 @@ from fastapi.routing import APIRoute
 
 from datetime import date
 
-from app.models.checklist_item import OrganizationChecklistItem
+from app.models.guide_progress import GuideProgress
 from app.models.downward_arrow import DownwardArrow
 from app.models.experiment import Experiment, AccommodationBehavior
 from app.models.jit_content import JitTip, Tag
@@ -45,10 +45,10 @@ from tests.factories import (
 
 CANARY = "ZZCANARYZZ"
 
-# Content that belongs to the INSTITUTION rather than to one child — the process checklist a
-# clinic writes for itself. A colleague in the same institution is supposed to see it, so it
-# cannot carry the ordinary marker: a grant is about one child's record, not about the clinic's
-# own vocabulary. It still must not cross an institution boundary, which is what this second
+# Content that belongs to the INSTITUTION rather than to one child — the names of who works
+# there. (Until 2026-11-19 also the process checklist a clinic wrote for itself; removed.) A
+# colleague in the same institution is supposed to see it, so it cannot carry the ordinary marker:
+# a grant is about one child's record, not about the clinic's own vocabulary. It still must not cross an institution boundary, which is what this second
 # marker checks.
 ORG_CANARY = "ZZORGSHAREDZZ"
 
@@ -138,15 +138,15 @@ async def _victim_world(db):
     note = SessionNote(patient_id=patient.id, organization_id=org.id,
                        practitioner_id=plan.practitioner_id, session_date=date.today(),
                        content=f"{CANARY} session note", tags=[])
-    item = OrganizationChecklistItem(organization_id=org.id, key=f"{ORG_CANARY}_item",
-                                     text_=f"{ORG_CANARY} checklist item")
+    # The clinician guide's ticks: the keys are the only free text, so the marker goes in one.
+    guide = GuideProgress(patient_id=patient.id, organization_id=org.id, ticks={f"guide:{CANARY}": True})
     # Tags and tips are SHARED vocabulary across institutions — the clinician-facing /tags route
     # is meant to return them to everyone. They carry no marker: the marker means "this belongs to
     # the victim", and marking shared content would report a correct route as a leak. They exist
     # here only so the admin routes that take a tag or tip id can be reached at all.
     tag = Tag(slug="sweep-shared-tag", label="Shared tag")
     tip = JitTip(title="Shared tip", body="Shared tip body")
-    db.add_all([exp, arrow, msg, ladder, accommodation, note, item, tag, tip])
+    db.add_all([exp, arrow, msg, ladder, accommodation, note, guide, tag, tip])
     await db.flush()
     recording = SessionRecording(patient_id=patient.id, organization_id=org.id,
                                  practitioner_id=plan.practitioner_id, participants=["patient"],
@@ -171,7 +171,7 @@ async def _victim_world(db):
         "org": org, "patient": patient, "plan": plan, "situation": situation,
         "rung": rung, "experiment": exp, "arrow": arrow, "message": msg, "parent_user": parent_user,
         "ladder": ladder, "accommodation": accommodation, "note": note,
-        "item": item, "tag": tag, "tip": tip,
+        "guide": guide, "tag": tag, "tip": tip,
         "house_clinician": house_clinician, "recording": recording, "review_round": review_round,
     }
 
@@ -197,7 +197,6 @@ def _param_values(w):
         "accommodation_id": w["accommodation"].id,
         "note_id": w["note"].id,
         "practitioner_id": w["house_clinician"].id,
-        "item_id": w["item"].id,
         "tag_id": w["tag"].id,
         "tip_id": w["tip"].id,
         "recording_id": w["recording"].id,
@@ -272,7 +271,7 @@ async def test_no_route_leaks_the_victims_data(api, db, intruder_kind, capsys):
         called += 1
         if CANARY in r.text:
             leaks.append(f"{key}  ->  {r.status_code}")
-        # Institution content — the clinic's checklist, the names of who works there. A colleague
+        # Institution content — the names of who works there. A colleague
         # in the same institution is supposed to see it; someone outside it is not. Until now this
         # marker was planted and never checked.
         if intruder_kind == "foreign_clinician" and ORG_CANARY in r.text:

@@ -29,7 +29,7 @@ const stepName = (s: Step) => s === 'parent_meeting.1' ? 'Parent meeting, part 1
   : STAGES.find(x => x.id === s)!.name
 const moveOnLabel = (s: Step) => { const n = stepName(s); return `Move on to ${n.charAt(0).toLowerCase()}${n.slice(1)}` }
 
-/** Where the clinician's ticks are saved: the patient's checklist record, under these keys. */
+/** Where the clinician's ticks are saved: the patient's guide record (`/patients/{id}/guide-ticks`), under these keys. */
 export const goalKey = (step: string, goal: string) => `guide:${step}.${goal}`
 export const movedOnKey = (step: string) => `guide:moved-on.${step}`
 
@@ -61,7 +61,7 @@ export interface GuideInput {
   accommodationsChildRated: number
   /** Monitoring entries by who logged them, for spotting parents who see it differently. */
   entries: { situation: string | null; who: string | null; fear: number | null }[]
-  /** The clinician's ticks, from the patient's checklist record. */
+  /** The clinician's ticks, from the patient's guide record. */
   ticks: Record<string, boolean>
 }
 

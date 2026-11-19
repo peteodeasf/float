@@ -32,7 +32,6 @@ from app.models.downward_arrow import DownwardArrow
 from app.models.monitoring import MonitoringForm, MonitoringEntry
 from app.models.treatment import TreatmentPlan, TriggerSituation, AvoidanceBehavior
 from app.models.formulation import ClinicalFormulation
-from app.models.checklist import ConsultationChecklist
 from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, PatientListResponse, ParentContactOut
 from app.services.email_service import send_teen_invitation_email, send_parent_invitation_email
 from app.services.codesign_viewers import can_view_codesign
@@ -433,11 +432,6 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
 
     has_any_session_note = bool(note_types)
 
-    # --- Consultation checklist state ---
-    checklist_checked_items = (await db.execute(
-        select(ConsultationChecklist.checked_items).where(ConsultationChecklist.patient_id == pid)
-    )).scalars().first() or {}
-
     phase = phase_of(
         is_closed=patient.closed_at is not None,
         in_maintenance=patient.maintenance_at is not None,
@@ -464,7 +458,6 @@ async def _compute_patient_list_metrics(db: AsyncSession, patient: PatientProfil
         'active_plan_with_no_recent_activity': active_plan_with_no_recent_activity,
         'monitoring_entries_count': monitoring_entries_count,
         'monitoring_form_sent': monitoring_form_sent,
-        'checklist_checked_items': checklist_checked_items,
         'phase': phase.value,
         'phase_label': LABELS[phase],
         'closed_at': patient.closed_at,
