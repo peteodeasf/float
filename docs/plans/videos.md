@@ -21,8 +21,9 @@
 
 1. **The Float team uploads** a video in Mux's dashboard. Then, on Float's admin page, picks it from the list of Mux videos not yet in Float, gives it a title
    and a short description, says who it is for (clinicians, families, or both), and publishes it.
-2. **A clinician sees every video** marked for clinicians or both, in the Library, and can play any
-   of them full screen in a session.
+2. **A clinician sees every published video** in the Library, family videos included, and can
+   play any of them full screen in a session. "For clinicians" means it cannot be shared with a
+   family.
 3. **A clinician shares a video** marked for families or both, from the Library: Share, pick one of
    their patients, then the child, the parent, or both.
 4. **The child or parent watches it in their app.** They see only what was shared with them.
@@ -33,7 +34,7 @@
 
 - **No public address.** Every video on Mux has a signed playback policy: it plays only with a
   short-lived pass (a signed token) that our backend makes, after checking who is asking:
-  - a clinician: any video marked for clinicians or both;
+  - a clinician: any published video;
   - a child or parent: only a video shared with them, by a clinician who may see that patient.
 - **A pass runs out** a few hours after it is made (long enough to watch; the exact number is set
   when building). A link copied out of the app stops working.
