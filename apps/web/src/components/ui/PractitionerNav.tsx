@@ -25,7 +25,9 @@ interface PractitionerNavProps {
 const navLinks: { label: string; page: ActivePage; path: string; enabled: boolean; tooltip?: string }[] = [
   { label: 'My Patients', page: 'patients', path: '/dashboard', enabled: true },
   { label: 'Tools', page: 'tools', path: '/tools', enabled: true },
-  { label: 'Education', page: 'education', path: '/education', enabled: true },
+  // Shown as Library (Peter, 2026-11-19): the step-by-step help is the guide on the patient page;
+  // this is the reference to look things up in. The address stays /education so links keep working.
+  { label: 'Library', page: 'education', path: '/education', enabled: true },
   // No Reports item. Peter, 2026-09-01: pilot data comes straight out of the database, and
   // clinicians get charts on the patient's Experiments tab rather than a reports section. A
   // permanently greyed-out nav item promises something that is not coming.
