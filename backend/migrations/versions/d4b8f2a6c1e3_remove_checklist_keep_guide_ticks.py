@@ -16,14 +16,14 @@ Renames, keeping every row:
 - the table's primary key and foreign keys, to match
 
 Revision ID: d4b8f2a6c1e3
-Revises: b8d2e5f1a9c3
+Revises: c3a7e9d2b4f1
 Create Date: 2026-11-19
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = 'd4b8f2a6c1e3'
-down_revision = 'b8d2e5f1a9c3'
+down_revision = 'c3a7e9d2b4f1'
 branch_labels = None
 depends_on = None
 
