@@ -261,7 +261,7 @@ function knowFor(step: Step, d: GuideInput): Know[] {
         { title: 'Praise the work, accept the setbacks', body: '"These things come up, and that is why we go over it carefully."' },
       ]
     default:
-      return [{ title: 'To be written with Dr. Walker', body: 'Her notes do not cover ending treatment yet.' }]
+      return [{ title: 'To be written', body: 'Guidance for ending treatment is still to come.' }]
   }
 }
 
