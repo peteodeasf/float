@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { STAGES, type Guide } from '../../lib/clinicianGuide'
+import { STAGES, type Guide, type Goal } from '../../lib/clinicianGuide'
+import { btn } from '../ui/buttons'
 
 /**
  * The clinician guide, as a panel that slides in over the page and back out. It never pushes the
@@ -22,11 +23,15 @@ function writeFolded(stage: string, folded: boolean) {
   try { folded ? window.localStorage.setItem(foldKey(stage), '1') : window.localStorage.removeItem(foldKey(stage)) } catch { /* private window */ }
 }
 
-export default function GuidePanel({ open, onClose, guide, patientName }: {
+export default function GuidePanel({ open, onClose, guide, patientName, onTick, loading }: {
   open: boolean
   onClose: () => void
   guide: Guide
   patientName: string
+  /** Saves one of the clinician's ticks (a goal, or moving on), with the patient. */
+  onTick: (key: string, value: boolean) => void
+  /** True while the patient's data is still loading: the panel waits rather than show a wrong stage. */
+  loading?: boolean
 }) {
   const [folded, setFolded] = useState(() => readFolded(guide.stage))
   useEffect(() => setFolded(readFolded(guide.stage)), [guide.stage])
@@ -76,6 +81,7 @@ export default function GuidePanel({ open, onClose, guide, patientName }: {
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '8px 20px 20px', opacity: open ? 1 : 0, transition: 'opacity .25s ease .08s' }}>
+          {loading ? <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>Loading…</p> : <>
           <div style={{ ...label, marginBottom: '10px' }}>Where you are</div>
           <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {STAGES.map((s, i) => {
@@ -105,28 +111,31 @@ export default function GuidePanel({ open, onClose, guide, patientName }: {
             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--float-primary-dark)' }}>{guide.next.title}</div>
             <div style={{ fontSize: '13px', color: 'var(--float-primary-dark)', marginTop: '6px', lineHeight: 1.5 }}>{guide.next.why}</div>
           </div>
-          {guide.goals.length > 0 && (
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {guide.goals.map(g => (
-                <li key={g.title} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '6px 0' }}>
-                  <span aria-hidden="true" style={{
-                    width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, boxSizing: 'border-box', marginTop: '1px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700,
-                    background: g.state === 'done' ? 'var(--float-primary)' : 'var(--float-surface)',
-                    color: 'var(--float-surface)',
-                    border: g.state === 'done' ? 0 : g.state === 'todo' ? '2px solid var(--float-primary)' : '2px dashed var(--float-border-strong)',
-                  }}>{g.state === 'done' ? '✓' : ''}</span>
-                  <span style={{ flex: 1 }}>
-                    <span style={{ display: 'block', fontSize: '13px', fontWeight: g.state === 'todo' ? 600 : 400, color: g.state === 'done' ? 'var(--float-text-secondary)' : 'var(--float-text)' }}>
-                      {g.title}<span className="sr-only">{g.state === 'done' ? ' (done)' : g.state === 'todo' ? ' (to do)' : ''}</span>
-                    </span>
-                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--float-text-hint)' }}>{g.detail}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
+          {guide.goals.length > 0 && <GoalList goals={guide.goals} onTick={onTick} />}
+          {guide.routine && (
+            <ol style={{ listStyle: 'decimal', margin: '4px 0 0', paddingLeft: '20px', fontSize: '13px', lineHeight: 1.6, color: 'var(--float-text)' }}>
+              {guide.routine.map(r => <li key={r}>{r}</li>)}
+            </ol>
           )}
           {guide.note && <p style={{ fontSize: '12px', color: 'var(--float-text-secondary)', margin: '8px 0 0' }}>{guide.note}</p>}
+          {guide.moveOn && (
+            <button type="button" onClick={() => onTick(guide.moveOn!.key, true)} style={btn('secondary', 'sm', { marginTop: '12px' })}>
+              {guide.moveOn.label} →
+            </button>
+          )}
+          {guide.movedOnFrom && (
+            <p style={{ fontSize: '12px', color: 'var(--float-text-hint)', margin: '8px 0 0' }}>
+              You moved on to this stage.{' '}
+              <button type="button" onClick={() => onTick(guide.movedOnFrom!, false)} style={btn('quiet', 'sm')}>Go back</button>
+            </p>
+          )}
+
+          {guide.earlier.length > 0 && (
+            <>
+              <div style={{ ...label, margin: '20px 0 4px' }}>Not done earlier</div>
+              <GoalList goals={guide.earlier} onTick={onTick} />
+            </>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0 6px' }}>
             <span style={{ ...label, flex: 1 }}>What to know</span>
@@ -146,8 +155,48 @@ export default function GuidePanel({ open, onClose, guide, patientName }: {
               )}
             </div>
           ))}
+          </>}
         </div>
       </aside>
     </>
+  )
+}
+
+/** Goals. Float ticks the ones it can see; the clinician ticks the rest by tapping them. */
+function GoalList({ goals, onTick }: { goals: Goal[]; onTick: (key: string, value: boolean) => void }) {
+  return (
+    <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+      {goals.map(g => {
+        const mark = (
+          <span aria-hidden="true" style={{
+            width: '18px', height: '18px', borderRadius: g.byClinician ? '5px' : '50%', flexShrink: 0, boxSizing: 'border-box', marginTop: '1px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700,
+            background: g.done ? 'var(--float-primary)' : 'var(--float-surface)', color: 'var(--float-surface)',
+            border: g.done ? 0 : '2px solid var(--float-primary)',
+          }}>{g.done ? '✓' : ''}</span>
+        )
+        const text = (
+          <span style={{ flex: 1, textAlign: 'left' }}>
+            <span style={{ display: 'block', fontSize: '13px', fontWeight: g.done ? 400 : 600, color: g.done ? 'var(--float-text-secondary)' : 'var(--float-text)' }}>
+              {g.title}<span className="sr-only">{g.done ? ' (done)' : ' (to do)'}</span>
+            </span>
+            <span style={{ display: 'block', fontSize: '12px', color: 'var(--float-text-hint)' }}>
+              {g.from ? `${g.from} · ` : ''}{g.detail}{g.byClinician ? '' : ' · Float ticks this'}
+            </span>
+          </span>
+        )
+        const row = { display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '6px 0', width: '100%' } as const
+        return (
+          <li key={g.key}>
+            {g.byClinician ? (
+              <button type="button" role="checkbox" aria-checked={g.done} onClick={() => onTick(g.key, !g.done)}
+                style={{ ...row, border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit' }}>
+                {mark}{text}
+              </button>
+            ) : <div style={row}>{mark}{text}</div>}
+          </li>
+        )
+      })}
+    </ul>
   )
 }

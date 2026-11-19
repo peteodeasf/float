@@ -70,3 +70,52 @@ parent joins).
 
 **Must include** (Peter, 2026-11-18): anything new is practiced in session before it goes on the
 action plan. Float does not check this.
+
+## Version 2 — Dr. Walker's Session 2 and 3 notes (Peter, 2026-11-19)
+
+Peter sent three documents: *Structure and pacing of consultation*, *Session 2: Pace and Scope*, and
+*Session 3*. The first is the 2026-11-18 notes with the repeats removed. It drops the 60-minute
+length and "monitor for several days", so monitoring is one week. Sessions 2 and 3 are new: they are
+the parent and child meeting and the child's first session. Peter: these decisions are final; they
+do not go to Dr. Walker.
+
+**The guide never blocks** (Peter: "These are guides").
+- A goal Float tracks ticks itself. A goal Float cannot see, the clinician ticks. This replaces the
+  dashed "in conversation" goals.
+- The clinician can move on to the next stage at any time. The guide also moves on by itself when
+  every goal in a stage is ticked, and jumps ahead when later work shows up in the data.
+- Goals left unticked in an earlier stage show under the current one as "Not done earlier".
+- The clinician's ticks are saved with the patient, in the existing process checklist record
+  (`consultation_checklists.checked_items`), under keys starting `guide:`. No new table and no new
+  route: the checklist routes already accept any key and already check the clinician may see the
+  patient. Nothing else reads every key in that record.
+
+**What moved or was added**
+- **Fear Level** is the standard word. Her notes say Distress, Worry or Fear Thermometer, SUDS and
+  DT; the guide says Fear Level.
+- **The nickname** is chosen by the child in the parent and child meeting. In part 2 of the parent
+  meeting the goal is explaining it to the parents.
+- **The parents' script** for telling their child about the first meeting goes in the guide, at the
+  end of the parent meeting. Not in the parent app.
+- **The child's accommodation ratings** (Child ratings, `child_rated_at`) show as a goal from the
+  parent and child meeting onward until done, marked as able to wait for a later session. It does
+  not hold the stage.
+- **The downward arrow with the child** goes in the child's first session, before the ladder.
+  The clinician ticks it: the clinician app saves every arrow as `practitioner`, whoever was in the
+  room, so Float cannot tell one done with the child from one done with the parents.
+- **Practice in session** is ticked by the clinician. Float does not record it, so practicing does
+  not move the guide to weekly sessions; the first exposure done at home does.
+- **Daily practice time** says "a short daily practice". Her notes give 15–20 and 10–15 minutes.
+- **The ladder rules** from Session 3 go in the guide's text only. The guide suggests at least 3
+  rungs. Ladder Validation is unchanged (it flags fewer than 2), and Float's ladder building is
+  unchanged. Not added as checks, by Peter's decision: a top rung of 8 to 10, a maximum number of
+  rungs, and a rung for the situation without any behavior (Float's own rungs already cover it).
+- **Points** are on for every child; the therapist will be able to switch them off for a child.
+  That switch is separate work (backlog). The guide does not mention it until it exists.
+
+**Stage changes in the code**
+- Weekly sessions repeat, so their structure shows as a list without ticks.
+- A ladder with rungs no longer moves the guide to the child's first session; an exposure set up
+  does. Rungs can be written before the child is seen.
+- "Match the behaviors to each situation" counts safety, avoidance and ritual rows per situation
+  (`/triggers/{id}/behaviors`), not rungs: a rung is a sub-situation or a combination.
