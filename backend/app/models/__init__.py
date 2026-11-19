@@ -14,6 +14,7 @@ from app.models.waitlist import WaitlistEntry
 from app.models.codesign import CodesignSession, CodesignSignup
 from app.models.formulation import ClinicalFormulation
 from app.models.guide_progress import GuideProgress
+from app.models.video import Video
 from app.models.jit_content import Tag, JitTip, JitTipTag, TriggerSituationTag
 from app.models.review import ReviewRound, ReviewReviewer, ReviewMark, ReviewAddition, ReviewComment
 from app.models.insight import PatientInsight

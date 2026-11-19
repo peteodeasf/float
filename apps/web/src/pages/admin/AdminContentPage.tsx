@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient } from '../../context/AdminAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
+import AdminVideos from './AdminVideos'
 import { Button, Badge } from '../../components/ui/primitives'
 
 type Tag = { id: string; slug: string; label: string; is_active: boolean }
@@ -321,6 +322,8 @@ export default function AdminContentPage() {
           <p style={{ color: 'var(--float-text-hint)' }}>Loading…</p>
         ) : (
           <>
+            <AdminVideos />
+
             {/* Tags */}
             <section style={card}>
               <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 4px', color: 'var(--float-text-strong)' }}>Tags</h2>

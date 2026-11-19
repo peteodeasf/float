@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import LibraryVideos from '../../components/videos/LibraryVideos'
 import { clinicianModules, type EducationModule } from '../../data/education'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import { ModuleIcon } from '../../components/education/figures'
@@ -50,7 +51,7 @@ export default function EducationIndexPage({ basePath = '/education' }: { basePa
       <header className="edu-hero">
         <div className="edu-hero-in">
           <div style={{ flex: 1 }}>
-            <div className="edu-eyebrow">Clinician guide</div>
+            <div className="edu-eyebrow">Library</div>
             <h1>Using Exposure-based CBT and Float</h1>
           </div>
           <ProgressRing done={done} total={clinicianModules.length} />
@@ -70,6 +71,8 @@ export default function EducationIndexPage({ basePath = '/education' }: { basePa
             <span className="edu-continue-go">{started ? 'Continue' : 'Start'} →</span>
           </button>
         )}
+
+        <LibraryVideos />
 
         {GROUPS.map(g => (
           <section key={g.title} className="edu-group" aria-labelledby={`g-${g.title}`}>

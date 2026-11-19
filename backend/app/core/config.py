@@ -57,6 +57,15 @@ class Settings(BaseSettings):
     # Anthropic
     ANTHROPIC_API_KEY: str = ""
 
+    # Mux, for Float's own videos (docs/plans/videos.md). The access token lists videos and makes
+    # them private; the signing key signs the short-lived pass each play needs. Empty means no
+    # videos are offered. Set in Railway for production; a separate Mux development environment's
+    # keys on the Mac mini. MUX_SIGNING_PRIVATE_KEY is the base64 text Mux shows, as is.
+    MUX_TOKEN_ID: str = ""
+    MUX_TOKEN_SECRET: str = ""
+    MUX_SIGNING_KEY_ID: str = ""
+    MUX_SIGNING_PRIVATE_KEY: str = ""
+
     # Google Speech-to-Text, for monitoring by voice (docs/plans/monitoring-just-say-it.md): a
     # service account's JSON key, pasted whole. Empty means recording is not offered; typing a
     # quick note still works. Google's "data logging" must stay off for patient data.
