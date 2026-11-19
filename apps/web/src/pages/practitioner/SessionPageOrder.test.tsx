@@ -149,30 +149,40 @@ describe('the steps inside a situation keep their order until Done', () => {
   })
 })
 
-// Peter, 2026-11-02: the check after Save ladder is a "Ladder Validation" list — one issue per
-// bullet, a short bold label, then concise text.
+// Peter, 2026-11-02: the check after Save ladder is a "Ladder Validation" list, one issue per
+// bullet. Peter, 2026-11-19: each bullet is whole sentences, and the list stops the save in a
+// dialog. Keep editing is the main button; Save ladder anyway still saves.
 describe('Ladder Validation', () => {
-  it('has its heading, and each bullet starts with its label in bold', async () => {
+  const findings = [
+    { code: 'FEW_LOW_RUNGS', label: 'Easy rungs', text: 'The ladder needs at least 2 easy rungs to start on, at a Fear Level of 4 or lower. It has 1. Add 1 more.', message: 'The ladder needs at least 2 easy rungs to start on, at a Fear Level of 4 or lower. It has 1. Add 1 more.' },
+    { code: 'INSUFFICIENT_RUNGS', label: 'Too few rungs', text: 'The ladder needs at least 2 rungs with a Fear Level. It has 1. Add at least 1 more.', message: 'The ladder needs at least 2 rungs with a Fear Level. It has 1. Add at least 1 more.' },
+  ]
+  const editAndSave = async () => {
     db.triggers = [situation('a', 'Ordering at a restaurant', 3, 0)]
     db.behaviors = []
-    db.findings = [
-      { code: 'FEW_LOW_RUNGS', label: 'Low rungs', text: '1 of the 2 needed at Fear Level 4 or lower. Add 1 more.', message: '' },
-      { code: 'INSUFFICIENT_RUNGS', label: 'Too few rungs', text: 'at least 2 needed. Add at least 1 more.', message: '' },
-    ]
+    db.findings = findings
     openEditor()
     await screen.findByText('Ordering at a restaurant')
-
     // Save ladder only runs the check after an edit.
     fireEvent.change(fearBoxes()[0], { target: { value: '5' } })
     await waitFor(() => expect(db.triggers[0].distress_thermometer_rating).toBe(5))
     fireEvent.click(screen.getByRole('button', { name: 'Save ladder' }))
+    return await screen.findByRole('dialog')
+  }
 
-    expect(await screen.findByText('Ladder Validation')).toBeTruthy()
-    const bullets = screen.getAllByRole('listitem')
-    expect(bullets.map(li => li.querySelector('strong')?.textContent)).toEqual(['Low rungs:', 'Too few rungs:'])
-    expect(bullets[0].textContent).toBe('Low rungs: 1 of the 2 needed at Fear Level 4 or lower. Add 1 more.')
-    // The two buttons are still there.
-    expect(screen.getByRole('button', { name: 'Keep editing' })).toBeTruthy()
+  it('stops the save in a dialog, with each finding as whole sentences', async () => {
+    const dialog = await editAndSave()
+    expect(within(dialog).getByText('Ladder Validation')).toBeTruthy()
+    expect(within(dialog).getByText('There are 2 things to look at before you save this ladder:')).toBeTruthy()
+    expect(within(dialog).getAllByRole('listitem').map(li => li.textContent)).toEqual(findings.map(f => f.message))
+    expect(within(dialog).getByRole('button', { name: 'Keep editing' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Save ladder anyway' })).toBeTruthy()
+  })
+
+  it('Keep editing closes the dialog and leaves the editor open', async () => {
+    const dialog = await editAndSave()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(screen.getByRole('button', { name: 'Save ladder' })).toBeTruthy()
   })
 })

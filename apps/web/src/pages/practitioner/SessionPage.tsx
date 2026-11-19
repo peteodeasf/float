@@ -57,7 +57,7 @@ import {
 import {
   dtOf, screenSurface, card, primaryBtn, bigQ, quietLink, Chrome,
 } from './sessionKit'
-import { Button } from '../../components/ui/primitives'
+import { Button, Modal } from '../../components/ui/primitives'
 import { errorMessage } from '../../components/ui/form'
 import {
   behaviorHint, bySituationFear, rungHint, inShownOrder, sortNextTime, situationsList, stepsList,
@@ -249,6 +249,7 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
     staleTime: 0,
     retry: false,
   })
+  const findings = review.data?.findings ?? []
   // Peter, 2026-10-16: if the check finds nothing, just save and close. The panel is only for
   // findings, or for a check that could not run.
   const [checking, setChecking] = useState(false)
@@ -372,44 +373,43 @@ export function LadderEditor({ planId, patientId, triggers, openSituationId, onD
 
       {/* Closing puts these steps in front of a child, so the ladder gets looked at first. */}
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #eef2f1' }}>
-        {!reviewing ? (
-          <div style={panelFooter}>
-            <Button kind="primary" onClick={save} disabled={checking}>
-              {checking ? 'Checking the ladder…' : 'Save ladder'}
-            </Button>
-          </div>
-        ) : (
-          <div style={{ background: 'var(--float-surface)', border: '1px solid #dbe8e5', borderRadius: 'var(--float-radius-card)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--float-primary-dark)' }}>Ladder Validation</div>
-
-            {review.isLoading && (
-              <p style={{ fontSize: 13, color: '#6b7a79', margin: '8px 0 0' }}>Checking the ladder…</p>
-            )}
-            {review.isError && (
-              <p style={{ fontSize: 13, color: '#991b1b', margin: '8px 0 0' }}>Could not check it just now.</p>
-            )}
-
-            {(review.data?.findings ?? []).length > 0 && (
-              // Tailwind's base styles turn list dots off; Peter asked for a bulleted list.
-              <ul style={{ margin: '10px 0 0', paddingLeft: 18, listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {review.data!.findings.map(f => (
-                  <li key={f.code} style={{ fontSize: 13, color: '#4b5a59', lineHeight: 1.5 }}>
-                    {/* An older backend, mid-deploy, sends only `message`. */}
-                    {f.label
-                      ? <><strong style={{ color: 'var(--float-primary-dark)' }}>{f.label}:</strong> {f.text}</>
-                      : f.message}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div style={{ ...panelFooter, marginTop: 14 }}>
-              <button onClick={() => setReviewing(false)} style={quietLink}>Keep editing</button>
-              <Button kind="primary" onClick={finish}>Save ladder</Button>
-            </div>
-          </div>
-        )}
+        <div style={panelFooter}>
+          <Button kind="primary" onClick={save} disabled={checking}>
+            {checking ? 'Checking the ladder…' : 'Save ladder'}
+          </Button>
+        </div>
       </div>
+
+      {/* Peter, 2026-11-19: a panel under the ladder was "way too passive". The findings stop the
+          save in a dialog. Keep editing is the main button; saving anyway is still allowed. */}
+      <Modal open={reviewing} onClose={() => setReviewing(false)} title="Ladder Validation" width={520}>
+        {review.isLoading && (
+          <p style={{ fontSize: 14, color: 'var(--float-text-secondary)', margin: 0 }}>Checking the ladder…</p>
+        )}
+        {review.isError && (
+          <p style={{ fontSize: 14, color: 'var(--float-text)', margin: 0, lineHeight: 1.5 }}>
+            Float could not check the ladder just now. You can keep editing, or save it anyway.
+          </p>
+        )}
+        {findings.length > 0 && (
+          <>
+            <p style={{ fontSize: 14, color: 'var(--float-text)', margin: 0, lineHeight: 1.5 }}>
+              {findings.length === 1 ? 'There is one thing to look at before you save this ladder:' : `There are ${findings.length} things to look at before you save this ladder:`}
+            </p>
+            {/* Tailwind's base styles turn list dots off; Peter asked for a bulleted list. */}
+            <ul style={{ margin: '12px 0 0', paddingLeft: 18, listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {findings.map(f => (
+                // Whole sentences. An older backend, mid-deploy, sends "Label: text" as `message`.
+                <li key={f.code} style={{ fontSize: 14, color: 'var(--float-text)', lineHeight: 1.5 }}>{f.message}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        <div style={{ ...panelFooter, marginTop: 20, gap: 10 }}>
+          <Button kind="secondary" onClick={finish}>Save ladder anyway</Button>
+          <Button kind="primary" onClick={() => setReviewing(false)} autoFocus>Keep editing</Button>
+        </div>
+      </Modal>
     </div>
   )
 }

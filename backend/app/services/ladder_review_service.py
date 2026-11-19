@@ -238,14 +238,16 @@ async def run_ladder_review(
 
 @dataclass
 class ReviewFinding:
-    """One bullet in Ladder Validation: a short label, shown bold, then the text."""
+    """One bullet in Ladder Validation. `text` is what the clinician reads: whole sentences
+    (Peter, 2026-11-19: "using actual English sentence structure"), so it is shown on its own.
+    `label` is a short name for the finding, kept for older screens mid-deploy."""
     code: str
     label: str
     text: str
 
     @property
     def message(self) -> str:
-        return f"{self.label}: {self.text}"
+        return self.text
 
 
 def _first_three(items: list[str]) -> str:
@@ -271,14 +273,15 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
         findings.append(ReviewFinding(
             code="NO_SCORED_STEPS",
             label="Nothing on the ladder yet",
-            text="add a situation, add a behavior under it, and give the behavior a Fear Level.",
+            text="No rung on the ladder has a Fear Level yet. Add a situation, add a behavior under it, "
+                 "and give the behavior a Fear Level.",
         ))
 
     if unscored:
-        ask = "Give it a Fear Level." if len(unscored) == 1 else "Give each one a Fear Level."
-        findings.append(ReviewFinding(
-            code="UNSCORED_STEPS", label="No Fear Level", text=f"{_first_three([f'“{n}”' for n in unscored])} {ask}",
-        ))
+        names = _first_three([f"“{n}”" for n in unscored])
+        text = (f"This rung has no Fear Level: {names} Give it a Fear Level." if len(unscored) == 1
+                else f"These rungs have no Fear Level: {names} Give each one a Fear Level.")
+        findings.append(ReviewFinding(code="UNSCORED_STEPS", label="No Fear Level", text=text))
 
     if not scored:
         return findings
@@ -293,8 +296,10 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
     if low < min_low and not too_few:
         findings.append(ReviewFinding(
             code="FEW_LOW_RUNGS",
-            label="Low rungs",
-            text=f"{low} of the {min_low} needed at Fear Level {low_max:g} or lower. Add {min_low - low} more.",
+            label="Easy rungs",
+            text=f"The ladder needs at least {min_low} easy rungs to start on, at a Fear Level of {low_max:g} "
+                 f"or lower. It has {'none' if low == 0 else low}. "
+                 f"Add {min_low - low}{' more' if low else ''}.",
         ))
 
     # Not an error: Peter, 2026-11-02, "there's no limit, but the recommendation is you should
@@ -309,15 +314,16 @@ def review_steps(steps: list[tuple[str, float | None]], rules: dict = LADDER_RUL
     if jumps:
         findings.append(ReviewFinding(
             code="BIG_JUMPS",
-            label="Going up",
-            text=f"mostly go up {gap:g} at a time. Bigger jumps here: {_first_three(jumps)}",
+            label="Big jumps",
+            text=f"Rungs should mostly go up {gap:g} Fear Level at a time. These go up by more: {_first_three(jumps)}",
         ))
 
     if too_few:
         findings.append(ReviewFinding(
             code="INSUFFICIENT_RUNGS",
             label="Too few rungs",
-            text=f"at least {min_rungs} needed. Add at least {min_rungs - len(scored)} more.",
+            text=f"The ladder needs at least {min_rungs} rungs with a Fear Level. "
+                 f"It has {len(scored)}. Add at least {min_rungs - len(scored)} more.",
         ))
 
     return findings
