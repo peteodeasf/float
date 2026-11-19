@@ -50,7 +50,7 @@ export default function EducationIndexPage({ basePath = '/education' }: { basePa
       <header className="edu-hero">
         <div className="edu-hero-in">
           <div style={{ flex: 1 }}>
-            <div className="edu-eyebrow">Clinician guide</div>
+            <div className="edu-eyebrow">Library</div>
             <h1>Using Exposure-based CBT and Float</h1>
           </div>
           <ProgressRing done={done} total={clinicianModules.length} />
