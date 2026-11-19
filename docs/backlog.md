@@ -629,6 +629,22 @@ against "Screen layout" in `CLAUDE.md`, signed in as the demo parent. Peter to d
 - **How to tell it worked.** A fresh `seed_local.py` run shows "mom".
 - **Gate.** None — local demo data only.
 
+## The therapist cannot switch points off for a child `S`
+
+**Agreed 2026-11-19** (Peter), while updating the clinician guide from Dr. Walker's Session 2 and 3
+notes. Her notes say points suit children over 10; Peter decided points stay on for every child,
+and the therapist can switch them off for one child.
+
+- **Today.** Points are on for every child (`docs/plans/action-plans-and-rewards.md`). Nothing lets
+  a therapist turn them off.
+- **What changes.** A per-child on/off for points, set by the therapist in the clinician app. With
+  points off, the child and parent apps show rewards without points. Once it exists, the clinician
+  guide's rewards note (part 2 of the parent meeting, `apps/web/src/lib/clinicianGuide.ts`) can say
+  so.
+- **How to tell it worked.** A test that a child with points off gets no points for a completed
+  exposure, and that the child app shows no points.
+- **Gate.** Clinical, at Peter's discretion: it changes what a child is rewarded with.
+
 ## The demo teen has no rungs, and the demo downward arrow breaks `S`
 
 **Found 2026-10-21**, taking screenshots for the teen data testing page.

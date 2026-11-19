@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import { closePatient, reopenPatient, startMaintenance, endMaintenance, getPatient, getMessages, markMessageRead, sendMessage, getOneParentsMessages, listParents, sendParentMessage, updatePatient } from '../../api/patients'
 import {
   getTreatmentPlan, getTriggers, createTreatmentPlan, createTrigger,
   updatePlanNickname, updateTrigger, deleteTrigger,
   getSituationDownwardArrow,
-  getPatientExperiments, searchSituationLibrary, getPlanRungs, type DownwardArrow
+  getPatientExperiments, searchSituationLibrary, getPlanRungs, getBehaviors, type DownwardArrow
 } from '../../api/treatment'
 import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, getCaseSummaryStatus, type SendMonitoringFormParams } from '../../api/monitoring'
 import MonitoringLog from '../../components/practitioner/MonitoringLog'
 import GuidePanel from '../../components/practitioner/GuidePanel'
+import { listAccommodations } from '../../api/accommodations'
 import InfoDot from '../../components/practitioner/InfoDot'
 import { guideFor, INFO, type GuideInput } from '../../lib/clinicianGuide'
 import { getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote, type SessionNote, type SessionParticipant } from '../../api/session_notes'
@@ -57,6 +58,10 @@ function DTBadge({ value, max }: { value: number | null | undefined; max?: numbe
 
 // Shared teal section header for the Case Summary
 const reportSectionHeaderStyle = { fontSize: '12px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '12px' }
+
+// Rows in the behaviors table that are not a behavior the child does: rungs (a sub-situation or a
+// combination) and observations. backend/app/core/behavior_types.py
+const NOT_BEHAVIORS = new Set(['scenario', 'combination', 'observation'])
 
 // A section header with how many items are under it.
 function SummaryHeader({ label, count, right, info }: { label: string; count: number; right?: string; info?: React.ReactNode }) {
@@ -246,6 +251,23 @@ const STAGE1_PARENT_KEYS = [
   'parent_first_meeting',
 ]
 
+// Ticks one key in the patient's checklist record, showing it at once and undoing it if the save
+// fails. The process checklist and the clinician guide both save their ticks this way.
+function useChecklistToggle(patientId: string | undefined) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ key, value }: { key: string; value: boolean }) => updateChecklist(patientId!, { [key]: value }),
+    onMutate: async ({ key, value }) => {
+      await qc.cancelQueries({ queryKey: ['checklist', patientId] })
+      const prev = qc.getQueryData<ChecklistItems>(['checklist', patientId])
+      qc.setQueryData<ChecklistItems>(['checklist', patientId], { ...(prev ?? {}), [key]: value })
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['checklist', patientId], ctx.prev) },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['checklist', patientId] }),
+  })
+}
+
 function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, onNavigate }: {
   patientId: string
   title: string
@@ -253,7 +275,6 @@ function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, 
   onToggleCollapse: () => void
   onNavigate: (action: ChecklistNav['action']) => void
 }) {
-  const qc = useQueryClient()
   const [popoverKey, setPopoverKey] = useState<string | null>(null)
 
   const { data: checked } = useQuery({
@@ -277,17 +298,7 @@ function ConsultationChecklist({ patientId, title, collapsed, onToggleCollapse, 
       }))
     : PROCESS_CHECKLIST
 
-  const toggleMut = useMutation({
-    mutationFn: ({ key, value }: { key: string; value: boolean }) => updateChecklist(patientId, { [key]: value }),
-    onMutate: async ({ key, value }) => {
-      await qc.cancelQueries({ queryKey: ['checklist', patientId] })
-      const prev = qc.getQueryData<ChecklistItems>(['checklist', patientId])
-      qc.setQueryData<ChecklistItems>(['checklist', patientId], { ...(prev ?? {}), [key]: value })
-      return { prev }
-    },
-    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['checklist', patientId], ctx.prev) },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['checklist', patientId] }),
-  })
+  const toggleMut = useChecklistToggle(patientId)
 
   const checkedItems = checked ?? {}
   const allKeys = items.map(i => i.key)
@@ -618,7 +629,7 @@ export default function PatientPage() {
     })))
   }, [patient?.parent_contacts, monitoringForm])
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
-  const { data: checklistItems } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
+  const { data: checklistItems, isLoading: checklistLoading } = useQuery({ queryKey: ['checklist', patientId], queryFn: () => getChecklist(patientId!), enabled: !!patientId })
   const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
   const { data: parents = [] } = useQuery({ queryKey: ['parents', patientId], queryFn: () => listParents(patientId!), enabled: !!patientId })
@@ -641,12 +652,21 @@ export default function PatientPage() {
     const el = messagesScrollRef.current
     if (el) el.scrollTop = el.scrollHeight
   }, [messages?.length, parentMessages?.length, msgThread])
-  const { data: patientExperiments } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
+  const { data: patientExperiments, isLoading: experimentsLoading } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId!), enabled: !!patientId })
   // For the clinician guide. docs/plans/clinician-guide.md
   const [guideOpen, setGuideOpen] = useState(false)
   const closeGuide = useCallback(() => setGuideOpen(false), [])
-  const { data: guideRungs } = useQuery({ queryKey: ['plan-rungs', plan?.id], queryFn: () => getPlanRungs(plan!.id), enabled: !!plan?.id })
+  const { data: guideRungs, isLoading: rungsLoading } = useQuery({ queryKey: ['plan-rungs', plan?.id], queryFn: () => getPlanRungs(plan!.id), enabled: !!plan?.id })
   const { data: guideReport } = useQuery({ queryKey: ['monitoring-report', patientId], queryFn: () => getMonitoringReport(patientId!), enabled: !!patientId && (monitoringForm?.entries_count ?? 0) > 0 })
+  // The behaviors written under each situation (not rungs: a rung is a sub-situation or a
+  // combination). Same key as the behavior panel, so they share one fetch.
+  const guideBehaviors = useQueries({
+    queries: (triggers ?? []).map(t => ({ queryKey: ['behaviors', t.id], queryFn: () => getBehaviors(t.id) })),
+  })
+  // Same key as the parents' plan panel, so the two share one fetch.
+  const { data: guideAccommodations, isLoading: accommodationsLoading } = useQuery({ queryKey: ['accommodations', plan?.id], queryFn: () => listAccommodations(plan!.id), enabled: !!plan?.id })
+  // The clinician's guide ticks are saved in the patient's checklist record, under `guide:` keys.
+  const guideTick = useChecklistToggle(patientId)
 
   // Fetch DA status for every trigger situation (incl. the placeholder, so the parent DA is captured)
   const triggerIds = (rawTriggers ?? []).map(t => t.id)
@@ -1189,6 +1209,9 @@ export default function PatientPage() {
   const summary = preliminaryReport ? mergeCaseSummary(preliminaryReport) : null
 
   // What the guide reads about this patient: all of it already loaded for this page.
+  const rungRows = guideRungs ?? []
+  const experiments = patientExperiments ?? []
+  const accommodationRows = guideAccommodations ?? []
   const guideInput: GuideInput = {
     childName: patient?.name ?? '',
     phase: patient?.closed_at ? 'closed' : patient?.maintenance_at ? 'maintenance' : null,
@@ -1198,16 +1221,25 @@ export default function PatientPage() {
     summarySituations: (summary?.situations ?? []).map(s => ({ name: s.text, fear: s.fear })),
     summaryBehaviors: summary?.safetyBehaviors.length ?? 0,
     parentResponses: (summary?.parentalResponses ?? []).map(r => r.text),
-    ladderSituations: (triggers ?? []).map(t => ({
+    ladderSituations: (triggers ?? []).map((t, i) => ({
       name: t.name, fear: t.distress_thermometer_rating ?? null,
       fearedOutcome: daStatuses?.[t.id]?.feared_outcome ?? null,
+      behaviors: (guideBehaviors[i]?.data ?? []).filter(b => !NOT_BEHAVIORS.has(b.behavior_type)).length,
     })),
-    rungs: (guideRungs ?? []).length,
+    rungs: rungRows.length,
+    rungsRated: rungRows.filter(r => r.distress_thermometer_when_refraining != null).length,
     nickname: plan?.nickname ?? null,
-    exposuresDone: (patientExperiments ?? []).filter(e => e.status === 'completed').length,
+    exposuresPlanned: experiments.length,
+    exposuresDone: experiments.filter(e => e.status === 'completed').length,
+    highConfidence: experiments.some(e => e.confidence_level === 'high'),
+    accommodations: accommodationRows.length,
+    accommodationsChildRated: accommodationRows.filter(a => !!a.child_rated_at).length,
+    ticks: checklistItems ?? {},
     entries: (guideReport?.entries ?? []).map(e => ({ situation: e.situation, who: e.recipient_label, fear: e.fear_thermometer })),
   }
   const guide = guideFor(guideInput)
+  // Until these load, the guide would place the patient too early and then jump.
+  const guideReady = !checklistLoading && !experimentsLoading && !rungsLoading && !accommodationsLoading && !guideBehaviors.some(q => q.isLoading)
   const caseSummarySections = preliminaryReport && summary ? (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {summary.situations.length > 0 && (
@@ -1799,7 +1831,7 @@ export default function PatientPage() {
         </button>
       )} />
       {patient && (
-        <GuidePanel open={guideOpen} onClose={closeGuide} guide={guide} patientName={patient.name} />
+        <GuidePanel open={guideOpen} onClose={closeGuide} guide={guide} patientName={patient.name} onTick={(key, value) => guideTick.mutate({ key, value })} loading={!guideReady} />
       )}
 
       {/* The page has a width. Without one everything stretched to the browser, so on a wide
