@@ -11,18 +11,24 @@
 - **A family sees only the videos a clinician has shared with them.** Not a library of every family
   video.
 - **The clinician sees whether each shared video was watched.** Yes or no; not how far they got.
+- **Sharing is done from the Library, not the patient page,** for now: "so we're not messing with
+  the UI design until we understand how people are going to use them."
+- **Videos are uploaded in Mux's own dashboard.** Peter has created the Mux account and uploaded
+  samples. Float's admin page adds a video that is already in Mux; it does not upload.
+- **Product videos** (how to use Float) are mainly for clinicians.
 
 ## Who does what
 
-1. **The Float team uploads** a video on an admin page, gives it a title and a short description,
-   and says who it is for: clinicians, families, or both. Batches arrive over time, so uploading is
-   one video at a time, as often as needed.
+1. **The Float team uploads** a video in Mux's dashboard, with a **signed** playback policy. Then,
+   on Float's admin page, picks it from the list of Mux videos not yet in Float, gives it a title
+   and a short description, says who it is for (clinicians, families, or both), and publishes it.
 2. **A clinician sees every video** marked for clinicians or both, in the Library, and can play any
    of them full screen in a session.
-3. **A clinician shares a video** marked for families or both with a patient's child, parent, or
-   both, from the patient page.
+3. **A clinician shares a video** marked for families or both, from the Library: Share, pick one of
+   their patients, then the child, the parent, or both.
 4. **The child or parent watches it in their app.** They see only what was shared with them.
-5. **The clinician sees, on the patient page, what was shared, when, and whether it was watched.**
+5. **The clinician sees, on the video in the Library, who it was shared with, when, and whether it
+   was watched.**
 
 ## How the videos are kept private
 
@@ -58,27 +64,27 @@ The videos are not patient data. **Who watched what is.**
   ids, status (`uploading` / `ready` / `failed`), length, order, published or not.
 - `video_shares`: one row per video, patient and recipient (`child` or `parent`): who shared it,
   when, and when it was watched (empty until then). Sharing with both makes two rows.
-- **Upload:** the admin page asks our backend for a one-time Mux upload address, and the browser
-  sends the file straight to Mux. Big files never pass through Railway.
-- **Mux tells us when a video is ready** (a webhook, checked with Mux's signature), and we save its
-  playback id and length.
+- **Adding a video:** the admin page lists the assets in Mux (through Mux's API) that Float does
+  not have yet, and refuses one whose only playback id is public. Its signed playback id and length
+  are saved. No uploads go through Float, so big files never touch Railway.
+- **A webhook is not needed** while videos are added by hand after they finish processing in Mux.
+  Add one later if uploads move into Float.
 - **Routes**, each behind the existing role checks:
-  - admin: create (upload address), edit, publish, delete;
-  - clinician: list videos; a pass for one; share with a patient; list a patient's shares;
+  - admin: list Mux assets not in Float; add, edit, publish, remove;
+  - clinician: list videos; a pass for one; share with one of their patients; list a video's shares;
   - child and parent: list what was shared with them; a pass for one of those; mark watched.
 - **"Watched"** is set when the player reaches the end, or 90% of the way.
 
 **Apps**
-- **Admin:** a Videos page — upload, title, audience, publish, order.
-- **Clinician:** a Videos section in the Library, with full-screen play for sessions. On the
-  patient page, a way to share and the list of what was shared and watched (where exactly: question
-  below).
+- **Admin:** a Videos page — add from Mux, title, audience, publish, order.
+- **Clinician:** a Videos section in the Library, with full-screen play for sessions, Share on each
+  family video, and who it was shared with and whether they watched. Nothing on the patient page.
 - **Child and parent apps:** a Videos list on the home screen, newest first, with a mark on ones
   not watched yet. Tapping one plays it full screen.
 - **Player:** Mux's own web player.
 
-**Secrets** (Peter sets them in Railway; never in the repo): Mux API token, signing key, webhook
-secret. For building and testing on the Mac mini, a separate Mux **development** environment's keys,
+**Secrets** (Peter sets them in Railway; never in the repo): `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`,
+`MUX_SIGNING_KEY_ID`, `MUX_SIGNING_PRIVATE_KEY`. For building and testing on the Mac mini, a separate Mux **development** environment's keys,
 so the mini never holds the production ones.
 
 ## In stages
@@ -91,12 +97,10 @@ so the mini never holds the production ones.
 
 **Gate:** `/security-review` on stages 1 and 2 (new access paths for all three roles).
 
-## Open questions for Peter
+## Setup steps given to Peter (2026-11-19)
 
-1. **Where on the patient page** are videos shared from and listed? Suggestion: a **Videos** tab,
-   after Case Summary.
-2. **The Mux account:** Peter creates it (production and development environments) and puts the
-   production keys in Railway. Development keys come to the mini as environment variables, the way
-   `ANTHROPIC_API_KEY` does.
-3. **Product videos** (how to use Float): for clinicians only, or for families too? The audience
-   setting covers either; this is about what to upload first.
+1. In Mux, make sure each video's playback id is **signed**, not public. For a public one: add a
+   signed playback id, then delete the public one. Choose signed for future uploads.
+2. Production environment: an access token (Mux Video read and write only) and a signing key.
+3. Railway, backend service, Variables: the four `MUX_` variables above.
+4. Development environment: the same two keys, as `export` lines in `~/.zshrc` on the Mac mini.
