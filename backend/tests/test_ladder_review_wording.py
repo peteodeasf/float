@@ -1,6 +1,7 @@
 """The Ladder Validation list in the ladder editor. Peter, 2026-10-29: say "rung" and "Fear Level",
 and use his wording. Peter, 2026-11-02: one short bold label per bullet, concise text, and two new
-rules — at least 2 low rungs, and mostly go up 1 at a time. Pure arithmetic, so no database."""
+rules — at least 2 low rungs, and mostly go up 1 at a time. Peter, 2026-11-19: the bullets were not
+clear; each is now whole sentences, shown without the label. Pure arithmetic, so no database."""
 from app.services.ladder_review_service import review_steps
 
 
@@ -21,8 +22,8 @@ def test_nothing_with_a_fear_level():
     assert [f.code for f in got] == ["NO_SCORED_STEPS", "UNSCORED_STEPS"]
     assert got[0].label == "Nothing on the ladder yet"
     assert got[0].message == (
-        "Nothing on the ladder yet: add a situation, add a behavior under it, and give the "
-        "behavior a Fear Level."
+        "No rung on the ladder has a Fear Level yet. Add a situation, add a behavior under it, "
+        "and give the behavior a Fear Level."
     )
 
 
@@ -36,13 +37,13 @@ def test_an_empty_ladder_shows_only_nothing_on_the_ladder():
 def test_one_rung_with_no_fear_level():
     # Singular reads "Give it", not "Give each one".
     got = messages([("Walk in", None), ("A", 2), ("B", 3), ("C", 4)])["UNSCORED_STEPS"]
-    assert got == "No Fear Level: “Walk in”. Give it a Fear Level."
+    assert got == "This rung has no Fear Level: “Walk in”. Give it a Fear Level."
 
 
 def test_several_rungs_with_no_fear_level_name_the_first_three():
     # More than three names would run on; the rest are cut with an ellipsis.
     got = messages([("A", None), ("B", None), ("C", None), ("D", None), ("E", 2)])["UNSCORED_STEPS"]
-    assert got == "No Fear Level: “A”, “B”, “C”… Give each one a Fear Level."
+    assert got == "These rungs have no Fear Level: “A”, “B”, “C”… Give each one a Fear Level."
 
 
 def test_unscored_rungs_are_left_out_of_the_other_checks():
@@ -61,13 +62,15 @@ def test_two_low_rungs_pass():
 
 def test_one_low_rung_flags_and_asks_for_one_more():
     assert messages([("A", 2), ("B", 5), ("C", 6)])["FEW_LOW_RUNGS"] == (
-        "Low rungs: 1 of the 2 needed at Fear Level 4 or lower. Add 1 more."
+        "The ladder needs at least 2 easy rungs to start on, at a Fear Level of 4 or lower. "
+        "It has 1. Add 1 more."
     )
 
 
 def test_no_low_rungs_flags_and_asks_for_two_more():
     assert messages([("A", 5), ("B", 6), ("C", 7)])["FEW_LOW_RUNGS"] == (
-        "Low rungs: 0 of the 2 needed at Fear Level 4 or lower. Add 2 more."
+        "The ladder needs at least 2 easy rungs to start on, at a Fear Level of 4 or lower. "
+        "It has none. Add 2."
     )
 
 
@@ -84,7 +87,8 @@ def test_jumps_over_one_are_listed_in_one_bullet():
     jumps = [f for f in got if f.code == "BIG_JUMPS"]
     assert len(jumps) == 1
     assert jumps[0].message == (
-        "Going up: mostly go up 1 at a time. Bigger jumps here: “X” (4) to “Y” (7), “Y” (7) to “Z” (9)."
+        "Rungs should mostly go up 1 Fear Level at a time. These go up by more: "
+        "“X” (4) to “Y” (7), “Y” (7) to “Z” (9)."
     )
 
 
@@ -92,7 +96,7 @@ def test_more_than_three_jumps_are_cut_at_three():
     # Four jumps over 1: the first three show, then an ellipsis.
     got = messages([("A", 1), ("B", 3), ("C", 5), ("D", 7), ("E", 9)])["BIG_JUMPS"]
     assert got == (
-        "Going up: mostly go up 1 at a time. Bigger jumps here: “A” (1) to “B” (3), "
+        "Rungs should mostly go up 1 Fear Level at a time. These go up by more: “A” (1) to “B” (3), "
         "“B” (3) to “C” (5), “C” (5) to “D” (7)…"
     )
 
@@ -108,7 +112,7 @@ def test_a_big_jump_is_advice_not_an_error():
     # Peter, 2026-11-02: "there's no limit". A jump of 8 is listed like any other, with no
     # "too big", "keep to" or maximum in the wording.
     got = messages([("A", 1), ("B", 2), ("C", 10)])["BIG_JUMPS"]
-    assert got == "Going up: mostly go up 1 at a time. Bigger jumps here: “B” (2) to “C” (10)."
+    assert got == "Rungs should mostly go up 1 Fear Level at a time. These go up by more: “B” (2) to “C” (10)."
     for word in ("too", "keep", "limit", "max", "must", "or less"):
         assert word not in got.lower()
 
@@ -123,10 +127,9 @@ def test_decimal_fear_levels_use_the_same_number_formatting():
 
 def test_too_few_rungs():
     # Peter, 2026-11-02: the minimum is two for now. Only rungs with a Fear Level count towards it.
-    assert messages([("A", 2)])["INSUFFICIENT_RUNGS"] == "Too few rungs: at least 2 needed. Add at least 1 more."
-    assert messages([("A", 2), ("B", None)])["INSUFFICIENT_RUNGS"] == (
-        "Too few rungs: at least 2 needed. Add at least 1 more."
-    )
+    one = "The ladder needs at least 2 rungs with a Fear Level. It has 1. Add at least 1 more."
+    assert messages([("A", 2)])["INSUFFICIENT_RUNGS"] == one
+    assert messages([("A", 2), ("B", None)])["INSUFFICIENT_RUNGS"] == one
     assert "INSUFFICIENT_RUNGS" not in codes([("A", 2), ("B", 3)])
 
 
@@ -151,11 +154,15 @@ def test_a_good_ladder_has_no_bullets():
     assert review_steps([("A", 2), ("B", 3), ("C", 4), ("D", 5)]) == []
 
 
-def test_every_bullet_has_a_label_and_text():
-    # The screen bolds the label, so each one needs both, and `message` is the two joined.
-    for f in review_steps([("A", None), ("B", 6), ("C", 9)]):
+def test_every_bullet_is_whole_sentences():
+    # Peter, 2026-11-19: the screen shows the text alone, so each starts with a capital and ends
+    # like a sentence. `message` is the text; the label stays for older screens.
+    every = review_steps([("A", None), ("B", 6), ("C", 9)]) + review_steps([("A", None)]) + review_steps([("A", 2)])
+    for f in every:
         assert f.label and f.text
-        assert f.message == f"{f.label}: {f.text}"
+        assert f.message == f.text
+        assert f.text[0].isupper()
+        assert f.text.endswith((".", "…"))
 
 
 def test_no_message_says_step_or_thermometer():

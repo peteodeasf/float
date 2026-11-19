@@ -618,6 +618,17 @@ against "Screen layout" in `CLAUDE.md`, signed in as the demo parent. Peter to d
   returns `shared: true`; the demo parent's home shows the child's exposures.
 - **Gate.** None — local demo data only. It does not change who can see what in the app.
 
+## The demo ladder says "mum" `S`
+
+**Found 2026-11-19**, taking Ladder Validation screenshots.
+
+- **Today.** A demo rung reads "Say goodbye to mum at the gate without holding on to her" (seeded
+  by `backend/seed_local.py` from `seed_demo.py`). Float is American: it should say "mom".
+- **What changes.** Change the word in the seed content. Search the seed files for other British
+  spellings at the same time.
+- **How to tell it worked.** A fresh `seed_local.py` run shows "mom".
+- **Gate.** None — local demo data only.
+
 ## The demo teen has no rungs, and the demo downward arrow breaks `S`
 
 **Found 2026-10-21**, taking screenshots for the teen data testing page.
