@@ -309,20 +309,6 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 - **How to tell it worked:** Dr. Walker reads the draft and marks it up.
 - **Gate:** her review before any clinician sees it. **Depends on:** Peter sharing her notes.
 
-## Behavior suggestions are worded as the parent's story, not as a behavior `M`
-- **Today:** the monitoring extractor (`EXTRACTION_SYSTEM_PROMPT` in
-  `backend/app/api/routers/patients.py`) writes a behavior "in the family's own plain language",
-  and its examples are past-tense accounts ("Wouldn't get into the pool; sat on the edge"). On
-  Monty Full's log this gave "Was really reluctant to leave and kept dragging his heels until they
-  ran out of time". Peter, 2026-11-18: "kind of a badly structured suggestion".
-- **What changes:** decide with Peter what a behavior suggestion should read like (for example a
-  short present-tense description of what the child does: "Drags his heels until there is no time
-  left"). Then change the prompt and check it against the extraction test set. One example is not
-  enough to write the rule from.
-- **How to tell it worked:** the extraction test set, plus Peter reading a batch of suggestions.
-- **Gate:** clinical wording a clinician picks from. Peter's call; note it for Dr. Walker.
-  **Depends on:** nothing.
-
 ## Clinician feedback does not say which tab the clinician was on `S`
 - **Today:** the Feedback link (pull request 107) sends the page address without the part after
   `?`, so feedback from the patient page says `/patients/<id>` but not whether it was the Plan,
