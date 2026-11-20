@@ -75,3 +75,9 @@ calls it `distress_thermometer_*`.
 
 Peter, same day: *"not sure Fear Level will be the final term but let's be consistent."* So change it
 everywhere at once if it changes, rather than letting two names drift apart.
+
+## Progress report
+
+The action plan and the child's progress, made on request from the patient's data, in a clinician
+view, a parent view and a patient view. Peter, 2026-11-20: named **Progress report**; it was called
+"reference sheet" before. Not built yet. See [`docs/plans/education.md`](docs/plans/education.md).
