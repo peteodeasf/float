@@ -1,4 +1,4 @@
-# Ladder generation — breaking a situation down, and grouping loose rungs
+# Ladder generation — breaking a situation down
 
 > **PARTIAL SEED DATA ARRIVED 2026-08-31** — separation anxiety, in
 > `AI-dev/Ladder Eval/seed/separation-anxiety.md`. **One disorder. Six situations with rungs, eleven
@@ -44,16 +44,16 @@ child, and a suggestion that lands badly is a clinical problem, not a UI one. An
 breakdown?" cannot be judged by eye at volume: twenty suggestions across five situations is already
 more than anyone reads carefully.
 
-## The two jobs
+## The job
 
 **Break down.** Given a situation and its distress rating, propose narrower versions of *that same
 situation*, varying the dimensions the book uses — who is there, how many people, how long, how far
 from home, with or without the behaviour that makes it feel safer. The point is to reach one the
 child will actually attempt.
 
-**Group.** Given rungs written without a situation, propose clusters and name them. Smaller, lower
-risk, and it does not invent anything — it only sorts what a clinician already wrote. Build it
-second.
+A second job, grouping rungs written without a situation, was listed here before. Peter removed
+it on 2026-11-20: it was an unclear idea, not a requirement. It comes back only if it is raised as
+a requirement on its own.
 
 ## What the data looks like
 
@@ -337,7 +337,6 @@ reading. **A scorer is not optional here**, and its rubric needs Dr. Walker befo
 3. Draft candidate breakdowns for Dr. Walker to confirm or reject.
 4. Build the scorer once she has agreed the rubric.
 5. **Then** the break-down feature itself, prompt imported by the harness from the shipped code.
-6. Grouping, second, reusing all of the above.
 
 Steps 1 and 2 need nothing from anyone and can start now. Step 3 is where her time is needed, and
 batching it is the whole point of doing 1 and 2 first.
