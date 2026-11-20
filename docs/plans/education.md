@@ -10,7 +10,7 @@
 | Part | Who reads it | What it is for | Where it lives | Today |
 |---|---|---|---|---|
 | **Guide** | Clinician | Walks the clinician through each stage of treatment in Float, for this patient. | Side panel on the patient page | Partly built |
-| **Library** | Clinician | The deeper clinical guide: how to do exposure-based CBT using Float, with evidence, references and helpful outside resources. | Library in the clinician app | Not started (see below) |
+| **Library** | Clinician | The deeper clinical guide: how to do exposure-based CBT using Float, with evidence, references and helpful outside resources. | Library in the clinician app | Partly built: being rewritten from the book |
 | **Software help** | Clinician (mainly) | How to use each part of Float. Ordinary software help. | Not decided | Not started |
 | **Patient and parent education** | Child, parent | Teaching content and videos served to the child and the parent in their apps. | Patient app, parent app | Mostly does not exist |
 
@@ -19,20 +19,25 @@ Plan of record: [`clinician-guide.md`](clinician-guide.md). Six of seven stages 
 Ending treatment (relapse prevention) has none, and the other gaps are listed in that plan.
 
 ### Library
-- **Today's eight modules do not count as content.** Peter: the current content is "really not
-  correct ... almost not developed at all". The reading page, quizzes and progress ring work
-  ([`education-redesign.md`](education-redesign.md)); the words need to be rewritten.
+- **The content is translated from Dr. Walker's book, *Anxiety Relief for Kids*, and she reviews
+  it** (Peter, 2026-11-20). Today's eight modules are a first pass that is "really not correct". They
+  stay, and are reorganized and rewritten, not thrown away. The reading page, quizzes and progress
+  ring work ([`education-redesign.md`](education-redesign.md)).
 - **What it will hold:** the clinical method for exposure-based CBT using Float, plus the evidence
   behind it, references, and outside resources.
 - **Videos for clinicians** sit here ([`videos.md`](videos.md), stage 1 is built).
 
 ### Software help
 - Nothing exists. There is no help page and no help search.
-- Module 8 of the current Library, "Using Float", and the product videos in `videos.md` are about how
-  to use Float, so they may belong here instead.
+- **Written pages, plus help on each screen** (Peter, 2026-11-20). Short videos maybe later.
+- **Moves here from elsewhere:** module 8 of the current Library, "Using Float", and the videos on
+  how to use Float (`videos.md` calls these product videos; they are mainly for clinicians).
 
 ### Patient and parent education
 - Content served to the child and to the parent, in their own apps. Most of it does not exist.
+- **In today's web apps too,** not only the future iOS and Android apps (Peter, 2026-11-20).
+- **How content reaches the family:** Float will support both the clinician choosing what to send
+  and Float serving it by stage of treatment. To start, the clinician chooses (Peter, 2026-11-20).
 - **Videos for families** go here: a clinician shares a video and the family watches it in their app
   ([`videos.md`](videos.md) stage 2, planned).
 - **The tips** shown during an exposure (child) and for the accommodation being worked on (parent)
@@ -50,22 +55,21 @@ child".
   the three can be made at any time.
 - **In the clinician app** the clinician can view or export any of the three, for their own use.
 - **In the patient app and the parent app,** each person sees their own view.
-- **Needs a better name.** "Reference sheet" is a placeholder.
+- **What they are:** a combination of the action plan and progress (Peter, 2026-11-20).
+- **Needs a better name.** "Reference sheet" is a placeholder. Peter suggested "plan updates".
 - What each view contains is waiting on Dr. Walker.
 
-## Open questions for Peter
+## Decided 2026-11-20
 
-1. Who writes the Library, and is *Anxiety Relief for Kids* still its starting point?
-2. What happens to the eight current modules until the Library is rewritten: hide them, or keep them
-   marked as a draft?
-3. Software help: written pages, short videos, help on each screen, or a mix? How does it differ from
-   the guide's ⓘ pop-ups?
-4. Do "Using Float" (module 8) and the product videos move to software help?
-5. Patient and parent education: does the clinician choose what to send (as with videos), or does
-   Float serve it by stage of treatment, or both?
-6. Is patient and parent education built into today's web apps, or does it wait for the iOS and
-   Android apps?
-7. A name for the reference sheets.
+Peter's answers to the first open questions are written into the sections above: the Library is
+rewritten from the book and Dr. Walker reviews it; the current modules are kept and reorganized;
+software help is written pages plus help on each screen; "Using Float" and the how-to videos move to
+software help; the clinician chooses what education to send, to start; education goes into the web
+apps too.
+
+## Still open
+
+1. The name for the reference sheets.
 
 ## Gates
 
