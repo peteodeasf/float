@@ -283,6 +283,10 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
   on the Case Summary as it is (Peter, 2026-11-18).
 
 ## Reference sheets for the parent and for the child `M`
+- **Redefined 2026-11-20 (Peter):** one set of the patient's information, made on request, in a
+  clinician view, a parent view and a patient view. The clinician can view or export all three; the
+  patient and parent apps each show their own view. Needs a better name. See
+  [`education.md`](plans/education.md). The notes below are from 2026-11-18.
 - **Today:** there is no reference sheet for either. Peter, 2026-11-18: make separate sheets for the
   parent and for the child.
 - **What changes:** once Dr. Walker sends what each sheet must contain, write a plan
