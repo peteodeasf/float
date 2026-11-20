@@ -44,7 +44,7 @@ Ending treatment (relapse prevention) has none, and the other gaps are listed in
   already work, but the wording is placeholder or missing.
 - The child's content has to read well for ages 8 to 17.
 
-## Reference sheets (name not decided)
+## Progress reports (were "reference sheets")
 
 Peter, 2026-11-20. This replaces the backlog entry "Reference sheets for the parent and for the
 child".
@@ -56,7 +56,7 @@ child".
 - **In the clinician app** the clinician can view or export any of the three, for their own use.
 - **In the patient app and the parent app,** each person sees their own view.
 - **What they are:** a combination of the action plan and progress (Peter, 2026-11-20).
-- **Needs a better name.** "Reference sheet" is a placeholder. Peter suggested "plan updates".
+- **Name: Progress report** (Peter, 2026-11-20). Replaces "reference sheet".
 - What each view contains is waiting on Dr. Walker.
 
 ## Decided 2026-11-20
@@ -65,17 +65,13 @@ Peter's answers to the first open questions are written into the sections above:
 rewritten from the book and Dr. Walker reviews it; the current modules are kept and reorganized;
 software help is written pages plus help on each screen; "Using Float" and the how-to videos move to
 software help; the clinician chooses what education to send, to start; education goes into the web
-apps too.
-
-## Still open
-
-1. The name for the reference sheets.
+apps too; reference sheets are renamed progress reports.
 
 ## Gates
 
 - **Clinical content:** every word in the Guide, the Library and patient and parent education is Dr.
   Walker's to write or sign off.
-- **Who sees what:** the reference sheets show patient data in three views. The parent view must not
+- **Who sees what:** progress reports show patient data in three views. The parent view must not
   show what the child keeps private (their own words, their ratings of each exposure; see
   [`parent-sees-child-progress.md`](parent-sees-child-progress.md)). Building them needs
   `/security-review` and Peter's review.
