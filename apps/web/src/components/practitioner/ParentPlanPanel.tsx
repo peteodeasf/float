@@ -235,14 +235,14 @@ export default function ParentPlanPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       {accommodations.length > 0 && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={() => setRatingWithChild(true)} style={quietBtn}
+          <button onClick={() => setRatingWithChild(true)} style={quietBtn} data-walkthrough="child-ratings"
             title="The child says how hard it would be if the parent stopped each one">
             Child ratings
           </button>
         </div>
       )}
       {body}
-      <button onClick={finish} style={{ ...primary, alignSelf: 'flex-start', fontSize: '13px', padding: '9px 16px' }}>
+      <button onClick={finish} data-walkthrough="save-plan" style={{ ...primary, alignSelf: 'flex-start', fontSize: '13px', padding: '9px 16px' }}>
         Save plan →
       </button>
     </div>
@@ -264,7 +264,7 @@ export default function ParentPlanPanel({
               <button onClick={() => setFullScreen(true)} style={quietBtn}>⛶ Full screen</button>
             </>
           ) : (
-            <button onClick={() => setEditing(true)} style={primary}>▸ Build plan</button>
+            <button onClick={() => setEditing(true)} style={primary} data-walkthrough="build-plan">▸ Build plan</button>
           )}
         </div>
       </div>
@@ -357,7 +357,7 @@ function AddAccommodationInline({ planId, situationId, onAdded }: {
       <RangeInputs lo={lo} hi={hi} setLo={setLo} setHi={setHi}
         onCommit={() => { if (valid) createMut.mutate() }}
         labelFrom="New accommodation Fear Level from" labelTo="New accommodation Fear Level to" />
-      <Button kind="primary" size="sm" onClick={() => createMut.mutate()} disabled={!valid || createMut.isPending} style={{ flexShrink: 0 }}>
+      <Button kind="primary" size="sm" onClick={() => createMut.mutate()} disabled={!valid || createMut.isPending} style={{ flexShrink: 0 }} data-walkthrough="add-accommodation">
         Add
       </Button>
     </div>
@@ -385,7 +385,7 @@ function SituationSuggestions({ patientId, items, onAdded }: {
 
   return (
     <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 6 }}>From monitoring — tap to add</div>
+      <div data-walkthrough="from-monitoring" style={{ fontSize: 11.5, fontWeight: 700, color: '#4d8478', marginBottom: 6 }}>From monitoring — tap to add</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
         {items.map(item => {
           const fromApp = !!item.named_by_parent || item.sources.includes('parent')
@@ -493,7 +493,7 @@ function AccommodationRow({ accommodation: a, editing, note, onSave, onDelete }:
       {!editing && (
         <>
           <span style={{ flexShrink: 0, width: 96, textAlign: 'center', fontSize: 11, fontWeight: 700, color: state.color, background: state.bg, borderRadius: 'var(--float-radius-pill)', padding: '3px 6px' }}>{state.label}</span>
-          <button onClick={() => { setPicked(a.status); setPlanning(true) }} title="Where the parent is with stopping this"
+          <button onClick={() => { setPicked(a.status); setPlanning(true) }} title="Where the parent is with stopping this" data-walkthrough="plan-it"
             style={{ fontSize: 11, fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap', width: 64, textAlign: 'center', borderRadius: 'var(--float-radius-pill)', padding: '3px 0', color: '#3f8a78', background: 'var(--float-surface)', border: '1px solid var(--float-border)', cursor: 'pointer' }}>
             Plan it
           </button>

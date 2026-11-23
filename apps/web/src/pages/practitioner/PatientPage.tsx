@@ -11,6 +11,8 @@ import {
 import { getMonitoringForm, sendMonitoringForm, getMonitoringReport, generatePreliminaryReport, getCaseSummaryStatus, type SendMonitoringFormParams } from '../../api/monitoring'
 import MonitoringLog from '../../components/practitioner/MonitoringLog'
 import GuidePanel from '../../components/practitioner/GuidePanel'
+import { HowThisWorksLink } from '../../components/practitioner/Walkthrough'
+import { WALKTHROUGHS, type WalkthroughId } from '../../lib/walkthroughs'
 import { listAccommodations } from '../../api/accommodations'
 import InfoDot from '../../components/practitioner/InfoDot'
 import { guideFor, INFO, type GuideInput } from '../../lib/clinicianGuide'
@@ -528,6 +530,10 @@ export default function PatientPage() {
   // For the clinician guide. docs/plans/clinician-guide.md
   const [guideOpen, setGuideOpen] = useState(false)
   const closeGuide = useCallback(() => setGuideOpen(false), [])
+  // The same panel shows a "How this works" walkthrough when one is chosen. docs/plans/how-this-works.md
+  const [walkthroughId, setWalkthroughId] = useState<WalkthroughId | null>(null)
+  // null opens the guide.
+  const openPanel = (id: WalkthroughId | null) => { setWalkthroughId(id); setGuideOpen(true) }
   const { data: guideRungs, isLoading: rungsLoading } = useQuery({ queryKey: ['plan-rungs', plan?.id], queryFn: () => getPlanRungs(plan!.id), enabled: !!plan?.id })
   const { data: guideReport } = useQuery({ queryKey: ['monitoring-report', patientId], queryFn: () => getMonitoringReport(patientId!), enabled: !!patientId && (monitoringForm?.entries_count ?? 0) > 0 })
   // The behaviors written under each situation (not rungs: a rung is a sub-situation or a
@@ -923,11 +929,11 @@ export default function PatientPage() {
           <div style={buttonRow}>
             {/* On the clinician's phone: record the session, and a draft note is written from it.
                 docs/plans/session-recording.md */}
-            <button onClick={() => navigate(`/patients/${patientId}/record`)} style={btn('secondary', 'sm')}>
+            <button onClick={() => navigate(`/patients/${patientId}/record`)} style={btn('secondary', 'sm')} data-walkthrough="record-session">
               <span aria-hidden="true" style={liveDot} />
               Record session
             </button>
-            <button onClick={startNewNote} style={btn('primary', 'sm')}>+ Add note</button>
+            <button onClick={startNewNote} style={btn('primary', 'sm')} data-walkthrough="add-note">+ Add note</button>
           </div>
         )}
       </div>
@@ -1147,7 +1153,7 @@ export default function PatientPage() {
           )}
         </div>
         {canRefresh && (
-          <Button kind="primary" size="sm" onClick={handleGenerateReport} disabled={reportLoading || summaryUpdating} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <Button kind="primary" size="sm" data-walkthrough="ai-refresh" onClick={handleGenerateReport} disabled={reportLoading || summaryUpdating} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
             {reportLoading ? 'Refreshing…' : 'AI Refresh'}
           </Button>
         )}
@@ -1203,13 +1209,13 @@ export default function PatientPage() {
                       className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" style={{ width: '120px' }} />
                     <input type="email" value={r.email}
                       onChange={e => setRecipients(prev => prev.map((p, j) => j === i ? { ...p, email: e.target.value } : p))}
-                      placeholder="parent@email.com" aria-label={`Parent ${i + 1} email`}
+                      placeholder="parent@email.com" aria-label={`Parent ${i + 1} email`} data-walkthrough={i === 0 ? 'parent-email' : undefined}
                       className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" style={{ minWidth: '160px' }} />
                   </div>
                 ))}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
-                <button onClick={handleCreateMonitoringForm} disabled={sendFormMutation.isPending} style={btn('primary', 'md')}>
+                <button onClick={handleCreateMonitoringForm} disabled={sendFormMutation.isPending} style={btn('primary', 'md')} data-walkthrough="create-form">
                   {sendFormMutation.isPending ? 'Creating…' : 'Create monitoring form'}
                 </button>
                 <span className="text-xs text-slate-400">Creates the form, emails anyone with an email, and copies the link — or paste it into a text, or open it with them.</span>
@@ -1246,14 +1252,14 @@ export default function PatientPage() {
                 <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '8px 8px 8px 14px', background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)' }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--float-text)', minWidth: '84px' }}>{r.label}</span>
                   {r.known && (
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', whiteSpace: 'nowrap', minWidth: '108px', textAlign: 'center', boxSizing: 'border-box',
+                    <span data-walkthrough="opened" style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', whiteSpace: 'nowrap', minWidth: '108px', textAlign: 'center', boxSizing: 'border-box',
                       background: r.opened ? 'var(--float-primary-light)' : 'var(--float-surface-sunken)',
                       color: r.opened ? 'var(--float-primary)' : 'var(--float-text-hint)' }}>
                       {r.opened ? 'Opened' : 'Not opened yet'}
                     </span>
                   )}
                   <span title={r.link} style={{ flex: '1 1 160px', minWidth: 0, fontSize: '12px', color: 'var(--float-text-hint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.link}</span>
-                  <button onClick={r.onCopy} style={btn('primary', 'sm')}>{r.copiedNow ? 'Copied!' : 'Copy link'}</button>
+                  <button onClick={r.onCopy} style={btn('primary', 'sm')} data-walkthrough="copy-link">{r.copiedNow ? 'Copied!' : 'Copy link'}</button>
                 </div>
               ))}
             </div>
@@ -1516,6 +1522,7 @@ export default function PatientPage() {
             return (
               <button
                 key={t.id}
+                data-walkthrough={t.id === 'teen' ? 'teen-thread' : undefined}
                 onClick={() => setMsgThread(t.id)}
                 className="cursor-pointer"
                 style={{ display: 'block', width: '100%', textAlign: 'left', background: on ? 'var(--float-primary-light)' : 'transparent', border: 'none', borderLeft: on ? '3px solid var(--float-primary)' : '3px solid transparent', padding: '12px 14px', cursor: 'pointer' }}
@@ -1540,7 +1547,7 @@ export default function PatientPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderBottom: '1px solid var(--float-border)', flexShrink: 0 }}>
           <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--float-text)' }}>{chatRecipientName}</span>
           {/* No label on the teen's thread: only the teen is in it (Peter, issue #79). */}
-          {parentThreadId && <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--float-primary)', background: 'var(--float-primary-light)', border: '1px solid var(--float-primary-mid)', borderRadius: 'var(--float-radius-pill)', padding: '2px 8px' }}>THIS PARENT ONLY</span>}
+          {parentThreadId && <span data-walkthrough="this-parent-only" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--float-primary)', background: 'var(--float-primary-light)', border: '1px solid var(--float-primary-mid)', borderRadius: 'var(--float-radius-pill)', padding: '2px 8px' }}>THIS PARENT ONLY</span>}
         </div>
 
         <div ref={messagesScrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
@@ -1576,7 +1583,7 @@ export default function PatientPage() {
 
         <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--float-border)', padding: '12px 16px', flexShrink: 0 }}>
           <input value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="Type a message…" className="border border-slate-200 rounded" style={{ flex: 1, fontSize: '13.5px', padding: '8px 10px', background: 'var(--float-surface)', boxSizing: 'border-box' }} onKeyDown={e => e.key === 'Enter' && msgContent.trim() && sendMsgMut.mutate()} />
-          <Button kind="primary" onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()}>Send</Button>
+          <Button kind="primary" onClick={() => sendMsgMut.mutate()} disabled={!msgContent.trim()} data-walkthrough="send-message">Send</Button>
         </div>
       </div>
     </div>
@@ -1679,7 +1686,7 @@ export default function PatientPage() {
         backTo: '/dashboard', backLabel: 'Back to patients',
         title: patient?.name ?? 'Loading...',
       }} extra={patient && (
-        <button type="button" onClick={() => setGuideOpen(true)} aria-haspopup="dialog"
+        <button type="button" onClick={() => openPanel(null)} aria-haspopup="dialog"
           className="flex items-center gap-2 text-sm font-semibold"
           style={{ background: 'var(--float-surface)', border: '1px solid var(--float-border)', color: 'var(--float-primary)', borderRadius: 'var(--float-radius-pill)', padding: '5px 14px', cursor: 'pointer' }}>
           <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--float-primary)' }} />
@@ -1687,7 +1694,8 @@ export default function PatientPage() {
         </button>
       )} />
       {patient && (
-        <GuidePanel open={guideOpen} onClose={closeGuide} guide={guide} patientName={patient.name} onTick={(key, value) => guideTick.mutate({ key, value })} loading={!guideReady} />
+        <GuidePanel open={guideOpen} onClose={closeGuide} guide={guide} patientName={patient.name} onTick={(key, value) => guideTick.mutate({ key, value })} loading={!guideReady}
+          walkthrough={walkthroughId ? WALKTHROUGHS[walkthroughId] : null} onShowGuide={() => setWalkthroughId(null)} />
       )}
 
       {/* The page has a width. Without one everything stretched to the browser, so on a wide
@@ -1727,7 +1735,7 @@ export default function PatientPage() {
             <div style={buttonRow}>
               <div style={segGroup}>
                 <span style={segLabel}>Access</span>
-                <button onClick={() => openAccess('teen')} style={segItem(showTeenAccess && accessFocus === 'teen')}>
+                <button onClick={() => openAccess('teen')} style={segItem(showTeenAccess && accessFocus === 'teen')} data-walkthrough="teen-access">
                   <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.teen_invited_at ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
                   Teen
                 </button>
@@ -1735,7 +1743,7 @@ export default function PatientPage() {
                   <span style={{ width: '8px', height: '8px', borderRadius: 'var(--float-radius-pill)', background: patient.parent_email ? 'var(--float-success)' : 'var(--float-border-strong)', flexShrink: 0 }} />
                   Parent
                 </button>
-                <button onClick={() => setShowClinicianAccess(v => !v)} style={segItem(showClinicianAccess)}>
+                <button onClick={() => setShowClinicianAccess(v => !v)} style={segItem(showClinicianAccess)} data-walkthrough="clinician-access">
                   Clinician
                 </button>
               </div>
@@ -1765,6 +1773,12 @@ export default function PatientPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {(showClinicianAccess || showTeenAccess) && patient && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6px' }}>
+            <HowThisWorksLink onClick={() => openPanel('access')} />
           </div>
         )}
 
@@ -1886,7 +1900,7 @@ export default function PatientPage() {
         )}
 
         {/* Flat tab bar (replaces the phase spine + rail) */}
-        <div style={{ ...tabBar, marginBottom: '20px' }}>
+        <div style={{ ...tabBar, marginBottom: '20px', flexWrap: 'wrap' }}>
           {([
             { id: 'monitoring', label: 'Monitoring' },
             { id: 'sessions', label: 'Sessions' },
@@ -1911,6 +1925,8 @@ export default function PatientPage() {
               </button>
             )
           })}
+          {/* One place on every tab. On Plan it follows Ladder / Accommodations. */}
+          <HowThisWorksLink onClick={() => openPanel(activeTab === 'plan' ? planSubTab : activeTab)} style={{ marginLeft: 'auto', alignSelf: 'center' }} />
         </div>
 
         {/* Body: content + optional process panel */}

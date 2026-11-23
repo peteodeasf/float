@@ -79,7 +79,7 @@ export default function ParentProgressSection({ planId }: { planId: string }) {
           ready to move on is the clinician's call, and this is what it rests on.
           docs/plans/weekly-checkin.md */}
       <div>
-        <div style={{ ...heading, marginBottom: '8px' }}>Weekly check-ins</div>
+        <div style={{ ...heading, marginBottom: '8px' }} data-walkthrough="weekly-checkins">Weekly check-ins</div>
         {checkins.length === 0 ? (
           <div style={{ fontSize: '12.5px', color: 'var(--float-text-hint)' }}>None yet.</div>
         ) : (

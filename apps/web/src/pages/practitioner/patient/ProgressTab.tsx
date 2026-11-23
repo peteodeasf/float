@@ -146,7 +146,7 @@ export function ProgressTab({ experiments }: { experiments: PlannedExperiment[] 
           <span style={eyebrow}>Progress over time</span>
           <div style={{ display: 'flex', border: '1px solid var(--float-border)', borderRadius: 8, overflow: 'hidden' }}>
             {(['belief', 'fear'] as const).map(m => (
-              <button key={m} onClick={() => setMetric(m)}
+              <button key={m} onClick={() => setMetric(m)} data-walkthrough={m === 'belief' ? 'graph-metric' : undefined}
                 style={{
                   fontSize: 12, fontWeight: 700, padding: '5px 14px', cursor: 'pointer', border: 0,
                   background: metric === m ? 'var(--float-primary)' : '#fff',
@@ -188,7 +188,7 @@ export function ProgressTab({ experiments }: { experiments: PlannedExperiment[] 
           <span style={{ fontSize: 12, color: 'var(--float-text-hint)' }}>{weekOffset === 0 ? 'This week' : weekOffset < 0 ? `${-weekOffset} week${weekOffset === -1 ? '' : 's'} ago` : `In ${weekOffset} week${weekOffset === 1 ? '' : 's'}`}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
-          <button onClick={() => gotoWeek(-1)} aria-label="Previous week" style={navBtn}>‹</button>
+          <button onClick={() => gotoWeek(-1)} aria-label="Previous week" style={navBtn} data-walkthrough="previous-week">‹</button>
           <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
             {days.map(key => {
               const items = itemsByDay.get(key) ?? []
