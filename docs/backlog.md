@@ -1072,6 +1072,102 @@ Found while checking, before building:
 - **How to tell it worked:** to be decided with the plan.
 - **Gate:** clinical (accommodation work), so Peter decides. **Depends on:** nothing.
 
+## Monitoring: only the first parent gets the evening reminders `S`
+- **Today:** the evening email ("Anything come up with [child] today?") goes only to
+  `MonitoringForm.parent_email`, the first parent with an email
+  (`backend/app/services/reminder_jobs.py` near lines 339-362). A second parent gets the first
+  invitation email from their own recipient row, but no reminders. Found 2026-11-23 while drafting
+  the clinician walkthroughs (`docs/clinician-walkthroughs.md`).
+- **What changes:** send the reminders to every recipient with an email, each with their own link,
+  and let each parent turn their own off.
+- **How to tell it worked:** a test with two recipients where both get the evening email and one
+  turning it off does not stop the other's.
+- **Gate:** none. **Depends on:** nothing.
+
+## Monitoring: nothing marks a form Submitted `S`
+- **Today:** the Monitoring tab shows Not started, In progress or Submitted. The backend has
+  `POST /monitor/{token}/submit` (`backend/app/api/routers/monitoring.py` near line 592), but no
+  screen calls it, so Submitted may never show. Found 2026-11-23 from the code; not checked on a
+  screen.
+- **What changes:** Peter decides whether a form is ever "submitted". If not, drop the status. If
+  yes, decide when it happens (the week ends, or the parent says they are done).
+- **How to tell it worked:** the status on the Monitoring tab matches what parents can do.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Monitoring: the printable monitoring log has no link to it `S`
+- **Today:** `apps/web/src/pages/practitioner/MonitoringReportPage.tsx` (route
+  `/patients/:id/monitoring-report`, `apps/web/src/main.tsx`) has a Print / Save PDF button. Nothing
+  in the app links to the page. Found 2026-11-23.
+- **What changes:** Peter decides: link it from the Monitoring tab, or remove the page.
+- **How to tell it worked:** a clinician can reach it from the Monitoring tab, or the route is gone.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Accommodations: the "Working on it" hint names the wrong parent screen `S`
+- **Today:** the hint for Working on it says "On the parent's home screen, with a weekly check-in"
+  (`apps/web/src/components/practitioner/ParentPlanPanel.tsx` line 24). The weekly check-in is on
+  the parent's Progress screen (`apps/web/src/pages/parent/ParentProgressPage.tsx`, "Your week").
+  Found 2026-11-23.
+- **What changes:** make the hint say where the check-in is.
+- **How to tell it worked:** the hint matches the parent app.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Access: the Parent dot does not show whether a parent was invited `S`
+- **Today:** in the patient header, the Teen dot turns green once the child is invited
+  (`teen_invited_at`). The Parent dot turns green when `patient.parent_email` is set, which comes
+  from the first parent contact (`apps/web/src/pages/practitioner/PatientPage.tsx` near lines
+  1731-1735). It says nothing about invited or signed-in parents. Found 2026-11-23.
+- **What changes:** the dot reflects the parent accounts linked to this child, for example green
+  once one has signed in.
+- **How to tell it worked:** a test that the dot is off for a patient with a parent email but no
+  invited parent.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
+## Access: no way to resend a parent's invite or give a parent a new password `M`
+- **Today:** the child has Resend invite. A parent does not. Inviting someone who is already this
+  child's parent sends nothing and keeps their password (`backend/app/api/routers/patients.py`
+  near lines 838-930). A parent who lost the temporary password has no way back in from this
+  screen. Found 2026-11-23. Check whether the parent login page has a working password reset first.
+- **What changes:** a way for the clinician to resend a parent's invite, or a working password
+  reset for parents.
+- **How to tell it worked:** a parent who lost their password can sign in again.
+- **Gate:** touches sign-in, so `/security-review`. **Depends on:** nothing.
+
+## Chat: a message can be sent to a child who has not been invited `S`
+- **Today:** sending to the child uses the patient's user id, which the teen invite sets. No check
+  or message for an uninvited child was found (`backend/app/api/routers/messages.py`,
+  `apps/web/src/pages/practitioner/PatientPage.tsx` near lines 717-727). Found 2026-11-23 from the
+  code; not tried.
+- **What changes:** try it. If it fails or the message goes nowhere, tell the clinician to invite
+  the child first.
+- **How to tell it worked:** a test that sending to an uninvited child gives a clear message.
+- **Gate:** messages are data access, so `/security-review`. **Depends on:** nothing.
+
+## Progress: the Belief in Prediction graph plots belief before the exposure `S`
+- **Today:** the clinician's Progress graph plots `bip_before`. "Avg belief change" uses after
+  minus before (`apps/web/src/pages/practitioner/patient/ProgressTab.tsx` near lines 63-98). Found
+  2026-11-23; not known whether this is intended.
+- **What changes:** Peter decides which belief the graph shows.
+- **How to tell it worked:** the graph shows what Peter chose.
+- **Gate:** how progress is shown to the clinician; Peter decides. **Depends on:** nothing.
+
+## An older Progress page has no link to it `S`
+- **Today:** `apps/web/src/pages/practitioner/ProgressPage.tsx` (route `/patients/:id/progress`,
+  `apps/web/src/main.tsx` near lines 150-151) is not linked from anywhere. The Progress tab replaced
+  it. Found 2026-11-23.
+- **What changes:** remove the page and its route if nothing uses it.
+- **How to tell it worked:** the route is gone and the build and tests pass.
+- **Gate:** none. **Depends on:** nothing.
+
+## Session mode has no entry of its own `S`
+- **Today:** session mode (`apps/web/src/pages/practitioner/SessionPage.tsx`) opens only from
+  ⛶ Full screen inside the Plan tab's ladder conversation (`PatientPage.tsx` near line 1326). It is
+  not on the Sessions tab. Found 2026-11-23 while drafting the walkthroughs.
+- **What changes:** Peter decides whether session mode needs its own way in, for example from the
+  Sessions tab.
+- **How to tell it worked:** a clinician can find session mode without knowing it is behind Full
+  screen.
+- **Gate:** screen change, so Peter approves. **Depends on:** nothing.
+
 ## The morning report's "Not tested yet" list is out of date `S`
 - **Today:** `NOT_TESTED` in `AI-dev/evals/nightly.py` still says suggested rungs are not run and
   that there are no reviewing agents. Since 2026-10-20 the nightly run tests suggested rungs, and

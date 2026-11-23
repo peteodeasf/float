@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { STAGES, type Guide, type Goal } from '../../lib/clinicianGuide'
-import { btn } from '../ui/buttons'
+import type { Walkthrough as WalkthroughData } from '../../lib/walkthroughs'
+import Walkthrough from './Walkthrough'
+import { btn, panelLabel as label } from '../ui/buttons'
 
 /**
  * The clinician guide, as a panel that slides in over the page and back out. It never pushes the
@@ -8,10 +10,12 @@ import { btn } from '../ui/buttons'
  * docs/plans/clinician-guide.md
  *
  * Always mounted, so closing slides it out as smoothly as opening slides it in.
+ *
+ * The same panel shows a "How this works" walkthrough instead of the guide when `walkthrough` is
+ * set: one panel over the page, never two. docs/plans/how-this-works.md
  */
 
 const EASE = 'cubic-bezier(.22,1,.36,1)'
-const label = { fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }
 
 // "Quieter over time": a clinician can fold away what to know for a stage they know well.
 // Remembered in this browser for now (Peter, 2026-11-18).
@@ -23,7 +27,7 @@ function writeFolded(stage: string, folded: boolean) {
   try { folded ? window.localStorage.setItem(foldKey(stage), '1') : window.localStorage.removeItem(foldKey(stage)) } catch { /* private window */ }
 }
 
-export default function GuidePanel({ open, onClose, guide, patientName, onTick, loading }: {
+export default function GuidePanel({ open, onClose, guide, patientName, onTick, loading, walkthrough, onShowGuide }: {
   open: boolean
   onClose: () => void
   guide: Guide
@@ -32,6 +36,10 @@ export default function GuidePanel({ open, onClose, guide, patientName, onTick, 
   onTick: (key: string, value: boolean) => void
   /** True while the patient's data is still loading: the panel waits rather than show a wrong stage. */
   loading?: boolean
+  /** Show this walkthrough instead of the guide. */
+  walkthrough?: WalkthroughData | null
+  /** Switches the panel from a walkthrough to the guide. */
+  onShowGuide?: () => void
 }) {
   const [folded, setFolded] = useState(() => readFolded(guide.stage))
   useEffect(() => setFolded(readFolded(guide.stage)), [guide.stage])
@@ -58,7 +66,7 @@ export default function GuidePanel({ open, onClose, guide, patientName, onTick, 
       />
       <aside
         role="dialog"
-        aria-label="Guide"
+        aria-label={walkthrough ? walkthrough.title : 'Guide'}
         aria-hidden={!open}
         style={{
           position: 'fixed', top: '12px', right: '12px', bottom: '12px', width: 'min(400px, calc(100vw - 24px))', zIndex: 61,
@@ -71,9 +79,9 @@ export default function GuidePanel({ open, onClose, guide, patientName, onTick, 
       >
         <div style={{ padding: '18px 20px 10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--float-text-strong)', flex: 1 }}>
-            Guide <span style={{ fontWeight: 400, color: 'var(--float-text-secondary)' }}>· {patientName}</span>
+            {walkthrough ? walkthrough.title : <>Guide <span style={{ fontWeight: 400, color: 'var(--float-text-secondary)' }}>· {patientName}</span></>}
           </span>
-          <button type="button" onClick={onClose} aria-label="Close the guide"
+          <button type="button" onClick={onClose} aria-label={walkthrough ? 'Close' : 'Close the guide'}
             style={{ width: '32px', height: '32px', borderRadius: 'var(--float-radius-control)', border: 0, background: 'var(--float-surface-sunken)', color: 'var(--float-text-secondary)', fontSize: '18px', cursor: 'pointer' }}>×</button>
         </div>
         <div style={{ margin: '0 20px 8px', fontSize: '11px', color: 'var(--float-warning)', background: 'var(--float-warning-bg)', border: '1px solid var(--float-warning-border)', borderRadius: 'var(--float-radius-control)', padding: '6px 10px' }}>
@@ -81,7 +89,8 @@ export default function GuidePanel({ open, onClose, guide, patientName, onTick, 
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '8px 20px 20px', opacity: open ? 1 : 0, transition: 'opacity .25s ease .08s' }}>
-          {loading ? <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>Loading…</p> : <>
+          {walkthrough ? <Walkthrough walkthrough={walkthrough} open={open} />
+          : loading ? <p style={{ fontSize: '13px', color: 'var(--float-text-hint)' }}>Loading…</p> : <>
           <div style={{ ...label, marginBottom: '10px' }}>Where you are</div>
           <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {STAGES.map((s, i) => {
@@ -157,6 +166,11 @@ export default function GuidePanel({ open, onClose, guide, patientName, onTick, 
           ))}
           </>}
         </div>
+        {walkthrough && onShowGuide && (
+          <div style={{ borderTop: '1px solid var(--float-surface-sunken)', padding: '12px 20px' }}>
+            <button type="button" onClick={onShowGuide} style={btn('quiet', 'sm')}>Open the guide for {patientName.split(' ')[0]}</button>
+          </div>
+        )}
       </aside>
     </>
   )

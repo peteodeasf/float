@@ -201,7 +201,7 @@ export function FlatLadder({
           {/* One switch for the whole ladder — a state, not an action, so it's a switch and not a
               solid button that would compete with Build ladder. Peter, 2026-09-01: "the clinician
               can still activate or deactivate a ladder, but it's all or nothing." */}
-          <Switch
+          <span data-walkthrough="visible-to-patient" style={{ display: 'inline-flex' }}><Switch
             checked={ladderActive}
             onChange={next => activeMut.mutate(next)}
             label="Visible to patient"
@@ -209,11 +209,11 @@ export function FlatLadder({
             // switchable off, or a clinician who clears it is stuck.
             disabled={activeMut.isPending || (!ladderActive && ordered.length === 0)}
             title={!ladderActive && ordered.length === 0 ? 'Add a rung first' : undefined}
-          />
+          /></span>
           {/* The conversation is how a ladder gets built with the child. It hangs off this view.
               Peter, 2026-10-16: once there is a rung on it, the same button says Edit ladder. */}
           {onStartConversation && (
-            <Button kind="primary" size="sm" onClick={onStartConversation}>
+            <Button kind="primary" size="sm" onClick={onStartConversation} data-walkthrough="edit-ladder">
               {ordered.length > 0 ? '▸ Edit ladder' : '▸ Build ladder'}
             </Button>
           )}
@@ -405,6 +405,7 @@ function LadderRow({
       {arrow && (
         <button
           onClick={arrow.open}
+          data-walkthrough="downward-arrow"
           title={arrow.done ? 'Downward arrow done — open it' : 'Do the downward arrow on this rung, with them'}
           className="cursor-pointer"
           style={pill(arrow.done, '116px')}>
@@ -417,6 +418,7 @@ function LadderRow({
         value={rung.distress_thermometer_when_refraining ?? ''}
         onChange={e => { const v = clampDt(clampDtInput(e.target.value)); if (v) saveMut.mutate({ distress_thermometer_when_refraining: v }) }}
         title="Fear Level, 1–10"
+        data-walkthrough="fear-level"
         className="text-sm border border-slate-200 rounded"
         style={{ width: '46px', padding: '4px 6px', textAlign: 'center', flexShrink: 0, fontWeight: 700 }} />
 
@@ -425,6 +427,7 @@ function LadderRow({
           hid the main thing you come to this row to do. */}
       <button
         onClick={() => setSettingUp(true)}
+        data-walkthrough="set-it-up"
         title={isSetUp ? 'Already set up — view it, edit it, or set up another' : 'Set up an exposure on this one, with them'}
         className="cursor-pointer"
         // Fixed width so every row's score sits in the same column, under the Fear Level heading.

@@ -106,12 +106,12 @@ export function RecordedNoteDetails({ note, patientId }: { note: SessionNote; pa
     <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         {note.transcript && note.transcript.length > 0 && (
-          <button onClick={() => setOpen(o => !o)} aria-expanded={open} style={btn('secondary', 'sm')}>
+          <button onClick={() => setOpen(o => !o)} aria-expanded={open} style={btn('secondary', 'sm')} data-walkthrough="transcript">
             {open ? 'Hide transcript' : 'Transcript'}
           </button>
         )}
         {note.is_draft && (
-          <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}
+          <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending} data-walkthrough="approve-note"
             style={{ ...btn('primary', 'sm'), marginLeft: 'auto' }}>
             {approveMut.isPending ? 'Approving…' : 'Approve note'}
           </button>

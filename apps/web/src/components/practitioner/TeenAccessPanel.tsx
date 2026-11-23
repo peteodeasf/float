@@ -260,6 +260,7 @@ export default function TeenAccessPanel({
             <input
               type="checkbox"
               checked={shared}
+              data-walkthrough="share-progress"
               disabled={shareMut.isPending}
               onChange={e => shareMut.mutate(e.target.checked)}
               style={{ cursor: 'pointer' }}
@@ -319,6 +320,7 @@ export default function TeenAccessPanel({
               <button
                 onClick={() => { if (confirm(`Remove ${p.email}? Their app stops working for this child. What they have written stays on the record.`)) parentRemoveMut.mutate(p.parent_user_id) }}
                 disabled={parentRemoveMut.isPending}
+                data-walkthrough="remove-parent"
                 style={{ flex: 'none', fontSize: '12px', fontWeight: 600, color: 'var(--float-danger)', background: 'none', border: '1px solid var(--float-danger-border)', borderRadius: 'var(--float-radius-sm)', padding: '5px 10px', cursor: 'pointer' }}
               >
                 Remove
@@ -340,6 +342,7 @@ export default function TeenAccessPanel({
           <button
             onClick={() => parentEmail.trim() && parentInviteMut.mutate(parentEmail.trim())}
             disabled={!parentEmail.trim() || parentInviteMut.isPending}
+            data-walkthrough="invite-parent"
             style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#fff', background: 'var(--float-primary)', border: 'none', borderRadius: 'var(--float-radius-control)', padding: '9px 16px', cursor: 'pointer', opacity: !parentEmail.trim() || parentInviteMut.isPending ? 0.5 : 1 }}
           >
             {parentInviteMut.isPending ? 'Sending…' : 'Invite parent'}

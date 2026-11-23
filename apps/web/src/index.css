@@ -15,6 +15,14 @@
 .float-info-dot { animation: float-info-ring 2.4s ease-out infinite; transition: transform .15s; }
 .float-info-dot:hover { transform: scale(1.15); }
 .float-info-pop { animation: float-info-pop .18s cubic-bezier(.22,1,.36,1); }
+/* "Show me" in a How this works walkthrough: the control pulses three times. docs/plans/how-this-works.md */
+@keyframes float-show-me-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--float-primary) 55%, transparent); }
+  70% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--float-primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--float-primary) 0%, transparent); }
+}
+.float-show-me { animation: float-show-me-ring 1.2s ease-out 3; }
 @media (prefers-reduced-motion: reduce) {
-  .float-info-dot, .float-info-pop { animation: none; }
+  .float-info-dot, .float-info-pop, .float-show-me { animation: none; }
+  .float-show-me { outline: 3px solid var(--float-primary); outline-offset: 3px; }
 }

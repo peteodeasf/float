@@ -56,7 +56,7 @@ export default function MonitoringLog({ report }: { report: MonitoringReport }) 
       {/* One line, not boxes: Peter, 2026-11-18, the boxes were "ridiculous in size for such a
           small amount of text". */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>Observations</h3>
+        <h3 data-walkthrough="observations" style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>Observations</h3>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--float-primary)', background: 'var(--float-primary-light)', padding: '1px 8px', borderRadius: 999 }}>
           {report.total_entries}
         </span>

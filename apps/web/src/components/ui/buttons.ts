@@ -325,3 +325,6 @@ export function field(size: ButtonSize = 'md'): CSSProperties {
     boxSizing: 'border-box',
   }
 }
+
+/** A section heading in the side panel: the guide and the How this works walkthroughs. */
+export const panelLabel: CSSProperties = { fontSize: '11px', fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }
