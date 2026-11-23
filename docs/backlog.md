@@ -1518,3 +1518,119 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
   phone width.
 - **How to tell it worked:** screenshot each; the dots show.
 - **Gate:** none. **Depends on:** nothing.
+
+## Library: answers and quiz progress carry over from one module to the next (Sally, 2026-11-02) `S`
+
+- **Today:** `apps/web/src/pages/practitioner/EducationModulePage.tsx`. The exercise answers are
+  React state, `useState(exercise.tasks.map(() => ''))` (around line 96). Every module uses the one
+  route `/education/:moduleId` (`main.tsx`, around line 162), and `<QuizSection>` and
+  `<ExerciseSection>` (around lines 239-240) have no `key`. So moving from module 3 to module 4 or 5
+  keeps the same components, and the boxes still show what was typed in module 3, under different
+  questions. The quiz's current question, answers and finished state carry over the same way. If
+  the next module has more tasks, the extra boxes start as `undefined` and React warns. Answers are
+  not saved anywhere (`components/education/progress.ts` stores only started, complete, quiz score
+  and last opened). [Jam](https://jam.dev/c/d8c4de84-5815-4a2a-bbe9-1b56b1bde0df)
+- **What changes:** add `key={mod.id}` to both sections, or key the page by `moduleId`.
+- **How to tell it worked:** a component test that types in one module, moves to another, and finds
+  the boxes empty and the quiz at question 1.
+- **Gate:** none. **Depends on:** nothing.
+
+## Patient list: "Monitoring form sent; 0 of 3 entries back" is confusing (Sally, 2026-10-22) `S`
+
+- **Today:** the badge under a patient's name on My patients is built in
+  `backend/app/services/attention_service.py` (around line 100):
+  `f"Monitoring form sent; {entries} of 3 entries back"`, shown while `entries < 3`. The same text
+  is in the preview fixture `apps/web/src/pages/practitioner/__SessionPreview.tsx` (around line 36).
+  Sally said the message is confusing. [Jam](https://jam.dev/c/5731f46d-2abf-4620-b13a-9153b4a30e28)
+- **What changes:** reword only, e.g. "Waiting on monitoring: the parent has sent 0 of 3 entries"
+  ("1 entry" for one). Peter picks the words. Keep the threshold of 3. Update the fixture and any
+  test that checks the string.
+- **How to tell it worked:** screenshot of My patients with a monitoring patient.
+- **Gate:** none. **Depends on:** Peter's wording.
+
+## Ladder: the Fear Level on each behaviour row has no label (Sally, 2026-11-04) `S`
+
+- **Today:** on the Plan tab's ladder, an opened situation lists behaviours under "What does the
+  child do to avoid it or feel safer?" (`SituationBody` in
+  `apps/web/src/pages/practitioner/SessionPage.tsx`, heading around line 725). Each row (`ListRow`,
+  around lines 898-934) has a number box whose only help is the hover text "Fear Level, 1–10"
+  (`patient/shared.tsx`, around line 112). The only "Fear Level" column header is over the
+  situation list (around line 305). The number is the Fear Level of doing the situation without
+  that behaviour (`distress_thermometer_when_refraining`); the interview asks it as "How hard would
+  it be … without that?" (around line 20). Sally understood the situation's Fear Level but not the
+  rows'. [Jam](https://jam.dev/c/8290dbe8-1b81-44f7-a014-a3c01ed57b97)
+- **What changes:** a column header over the rows, e.g. "Fear Level without it", and optionally one
+  line under the question saying each row is a step: the situation without that behaviour. Wording
+  only; Peter picks the words.
+- **How to tell it worked:** screenshot of an opened situation with two behaviours.
+- **Gate:** none (no rule changes). **Depends on:** Peter's wording.
+
+## Accommodations: the Fear Level range has no explanation (Sally, 2026-10-26 and 2026-10-30) `S`
+
+- **Today:** `apps/web/src/components/practitioner/ParentPlanPanel.tsx`. Each accommodation has two
+  number boxes (`RangeInputs`, around lines 48-71) under the column header "Fear Level" (around
+  line 206). Their hover texts are "Fear Level from, 1–10" and "Fear Level to (optional), 1–10".
+  The only explanation is a hover title on the read-only score (around line 487). Stored as
+  `distress_min` / `distress_max` (`backend/app/models/experiment.py`); used to sort accommodations
+  easiest first and shown to the parent. Meaning, from
+  `docs/plans/parent-accommodations-like-the-ladder.md` (Peter, 2026-09-21): how upset the child
+  would be if the parent stopped, given as a range because it depends on the situation. Sally asked
+  why an accommodation has a Fear Level at all, and how to pick the two numbers.
+  [Jam](https://jam.dev/c/5cfd7509-e167-4c0a-b941-75db0d2602b5),
+  [Jam](https://jam.dev/c/b1ede1a2-dbce-48c2-9280-01a03c11e66f)
+- **What changes:** rename the header, e.g. "Child's Fear Level if the parent stops", and add one
+  visible line in edit mode: use a range when it depends on the situation; leave the second box
+  blank for one number. Wording only; Peter picks the words. The parent app's version of this is in
+  `docs/plans/family-apps-requirements-from-testing.md`.
+- **How to tell it worked:** screenshot of the Accommodations tab in edit mode.
+- **Gate:** none (no rule changes). **Depends on:** Peter's wording.
+
+## Session setup: "What fear level do you expect?" is hard to read out (Sally, 2026-10-26) `S`
+
+- **Today:** `QUESTION.level` in `apps/web/src/lib/setupQuestions.ts` (around line 19), used in the
+  clinician's setup sheet (`apps/web/src/pages/practitioner/patient/SessionSetupSheet.tsx`, around
+  line 167), with ends "1 · no big deal" and "10 · the worst". The wording is shared with the child
+  app on purpose (Peter, 2026-09-10). Sally stopped at it and suggested a longer question the
+  clinician can read to the child word for word.
+  [Jam](https://jam.dev/c/6d8f819b-6a34-42c3-83a1-f0944469ff8d)
+- **What changes:** add a clinician-only read-aloud line under the question in the sheet, e.g.
+  "When you do this, how scared or upset do you think you'll feel, from 1, no big deal, to 10, the
+  worst?" Leave `QUESTION.level` alone: the current child app is not being changed, and the new
+  child app's wording is in `docs/plans/family-apps-requirements-from-testing.md`.
+- **How to tell it worked:** screenshot of the setup sheet.
+- **Gate:** none. **Depends on:** Peter's wording.
+
+## Add patient: no phone number for the second guardian (Sally, 2026-10-26) `M`
+
+- **Today:** `apps/web/src/pages/practitioner/NewPatientPage.tsx` has a "Parent / guardian 2" block
+  (around lines 134-142) with name and email only. Only guardian 1 has a phone, sent as the single
+  `parent_phone`. The contacts schema (`backend/app/schemas/patient.py`) has name and email, and
+  `docs/plans/two-parent-accounts.md` describes contacts as name and email.
+  [Jam](https://jam.dev/c/e2f68b11-f992-44ef-8c1c-02985960a576)
+- **What changes:** add `phone` to the parent contact model and schemas, with a migration that
+  moves `parent_phone` into contact 1. Add a Phone field to each guardian block and to the contact
+  editor on the patient page. Check first whether anything sends SMS to `parent_phone` (reminders
+  are tabled, but the scaffolding exists).
+- **How to tell it worked:** a backend test that creates a patient with two guardian phones and
+  reads both back; screenshot of the form.
+- **Gate:** `/security-review` (parent contact data). **Depends on:** nothing.
+
+## AI-drafted ladder steps read badly when the behaviour is avoidance (Sally, 2026-10-30) `S`
+
+- **Today:** two prompts. Steps like "See a dog in the park without staying away from the gates"
+  come from `backend/app/services/combination_wording.py` (prompt around lines 23-39, last changed
+  2026-10-20). It joins the situation with "without <behaviour>", so a behaviour that is itself
+  avoidance gives a double negative. Since 2026-11-18 avoidance is handled like a safety behaviour
+  (commit c669b0e), so this case is more common. Suggested rungs like "See a dog in a park where you
+  haven't seen dogs before" come from `backend/app/services/step_suggestion_service.py` (prompt
+  around lines 57-100). The 2026-11-19 change to behaviour suggestion wording (9315bca) touched
+  neither. [Jam](https://jam.dev/c/592acb3e-c48e-47db-85ce-17d12daf2899)
+- **What changes:** in the combination prompt, when the behaviour is staying away or leaving, write
+  the step as doing the approach ("Go up to the park gates when a dog is there"), not "without
+  staying away". In the rung prompt, ask for plain wording with no negative clauses. Test both with
+  the runners named in each file. Two examples from one tester is not a pattern; check the eval
+  set for how often this happens before changing either prompt.
+- **How to tell it worked:** the eval runs for both prompts, with sample sizes, before and after.
+- **Gate:** clinical — this changes how avoidance becomes a rung, and touches the rung rules in
+  `step_suggestion_service.py`. Peter's call; note it in the Dr. Walker log. Request Peter's review
+  and do not merge. **Depends on:** nothing.

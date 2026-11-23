@@ -2,6 +2,9 @@
 
 **Date:** 2026-09-23 · **Status:** plan, not started
 
+Requirements found by testing the current web apps, to design into the new ones:
+[`family-apps-requirements-from-testing.md`](family-apps-requirements-from-testing.md).
+
 ## Decision
 
 The child and parent experiences become native mobile apps for iOS (Apple) and Android
