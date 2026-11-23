@@ -79,12 +79,14 @@ The current walk — *"what do you do so it feels safer?"* — doesn't go away; 
 to resist. But it stops being the only way a rung gets made. **Biggest UI change of the four.**
 
 ### 4. AI
-Two distinct jobs, and they want real rungs to exist first:
+One job, and it wants real rungs to exist first:
 - **Break down** — given a situation and its score, propose smaller versions along the dimensions
   the book uses (who's there, how many, how long, with/without the behaviour).
-- **Group** — given loose rungs, propose clusters and name them.
 
-Both confirm-first, as with the arrow probe: the clinician sees the suggestion and edits before it
+A second job, grouping loose rungs into named situations, was removed by Peter on 2026-11-20 as an
+unclear idea rather than a requirement.
+
+Confirm-first, as with the arrow probe: the clinician sees the suggestion and edits before it
 counts.
 
 ## Settled (owner, 2026-08-26)
