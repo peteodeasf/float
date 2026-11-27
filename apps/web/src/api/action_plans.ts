@@ -25,7 +25,8 @@ export interface ActionPlanItem {
   fear_level?: number | null
   accommodation_behavior_id?: string | null
   tool_example_id?: string | null
-  tool_audience?: 'child' | 'parent' | 'both' | null
+  /** A tool line for the parent alone. */
+  parent_only?: boolean
   share_with_child?: boolean
   reward_given?: boolean | null
   reward_given_by?: 'parent' | 'clinician' | null
@@ -52,6 +53,7 @@ export interface NewItem {
   reward_for?: string
   note?: string
   share_with_child?: boolean
+  parent_only?: boolean
 }
 
 // Clinician

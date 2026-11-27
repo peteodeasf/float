@@ -72,6 +72,7 @@ class ItemCreate(BaseModel):
     reward_for: Optional[str] = None
     note: Optional[str] = None
     share_with_child: bool = False
+    parent_only: bool = False  # a written-in tool under the parent's section
 
 
 class ItemUpdate(BaseModel):

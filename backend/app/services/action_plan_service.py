@@ -13,8 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.behavior_types import LADDER_TYPES
 from app.models.action_plan import ActionPlan, ActionPlanItem, CHILD_KINDS
 from app.models.tool import Tool, ToolExample
-from app.models.experiment import AccommodationBehavior
+from app.models.experiment import AccommodationBehavior, Experiment
 from app.models.treatment import AvoidanceBehavior, TreatmentPlan, TriggerSituation
+
+# A set-up exposure the child hasn't done yet.
+PENDING_EXPERIMENT = ("planned", "committed")
 
 
 def _404(what: str) -> HTTPException:
@@ -52,12 +55,9 @@ async def _names(db: AsyncSession, items: list[ActionPlanItem]) -> tuple[dict, d
 
 
 def _parent_only(i: ActionPlanItem, tools: dict) -> bool:
-    """A strategy written for the parent alone, such as Polite ignoring. The child never sees it."""
-    if i.kind != "tool":
-        return False
-    tool = tools.get(i.tool_id)
-    # A page since deleted: its audience is unknown, so the child does not see the line.
-    return tool is None or tool.audience == "parent"
+    """A strategy for the parent alone, such as Polite ignoring. The child never sees it. Kept on
+    the line when it is added, so it holds after the page is changed or deleted."""
+    return i.kind == "tool" and i.parent_only
 
 
 def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, *, for_child: bool = False) -> dict:
@@ -98,7 +98,7 @@ def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, *, for_child: boo
         if rung and rung.distress_thermometer_when_refraining is not None else None,
         "accommodation_behavior_id": str(i.accommodation_behavior_id) if i.accommodation_behavior_id else None,
         "tool_example_id": str(i.tool_example_id) if i.tool_example_id else None,
-        "tool_audience": tool.audience if tool else None,
+        "parent_only": i.parent_only,
         "share_with_child": i.share_with_child,
         "reward_given": i.reward_given,
         "reward_given_by": i.reward_given_by,
@@ -208,7 +208,7 @@ async def create_plan(
                     action_plan_id=plan.id, kind=i.kind, position=pos,
                     avoidance_behavior_id=i.avoidance_behavior_id,
                     accommodation_behavior_id=i.accommodation_behavior_id,
-                    tool_id=i.tool_id, tool_example_id=i.tool_example_id, text=i.text, reward_for=i.reward_for, note=i.note,
+                    tool_id=i.tool_id, tool_example_id=i.tool_example_id, parent_only=i.parent_only, text=i.text, reward_for=i.reward_for, note=i.note,
                     share_with_child=i.share_with_child,
                 ))
     elif keep:
@@ -242,6 +242,18 @@ async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict
         )).scalar_one_or_none()
         if ok is None:
             raise _404("Step")
+        # Peter, 2026-11-27: an exposure goes on the plan only once it is set up (the same setup
+        # questions as the Plan tab) with the child's confidence High.
+        ready = (await db.execute(
+            select(Experiment.id).where(
+                Experiment.patient_id == plan.patient_id,
+                Experiment.avoidance_behavior_id == rid,
+                Experiment.status.in_(PENDING_EXPERIMENT),
+                Experiment.confidence_level == "high",
+            ).limit(1)
+        )).scalar_one_or_none()
+        if ready is None:
+            raise HTTPException(status_code=422, detail="Set it up with High confidence first")
     elif kind == "accommodation":
         aid = data.get("accommodation_behavior_id")
         if not aid:
@@ -255,7 +267,12 @@ async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict
     elif kind == "tool":
         tid = data.get("tool_id")
         if not tid:
-            raise HTTPException(status_code=422, detail="Pick a tool or strategy from the list")
+            # Written in by the clinician, with no Library page (Peter, 2026-11-27).
+            if data.get("tool_example_id"):
+                raise HTTPException(status_code=422, detail="An example needs its page")
+            if not (data.get("text") or "").strip():
+                raise HTTPException(status_code=422, detail="Pick one from the list or write one")
+            return
         ok = (await db.execute(
             select(Tool.id).where(Tool.id == tid, Tool.is_published.is_(True)))).scalar_one_or_none()
         if ok is None:
@@ -275,6 +292,14 @@ async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict
         raise HTTPException(status_code=422, detail="Unknown kind")
 
 
+async def _tool_is_parent_only(db: AsyncSession, data: dict) -> bool:
+    tid = data.get("tool_id")
+    if not tid:
+        return bool(data.get("parent_only"))  # written in under the parent's section
+    tool = await db.get(Tool, tid)
+    return tool is not None and tool.audience == "parent"
+
+
 async def add_item(db: AsyncSession, plan: ActionPlan, kind: str, data: dict) -> ActionPlanItem:
     await _check_links(db, plan, kind, data)
     position = (await db.execute(
@@ -292,6 +317,7 @@ async def add_item(db: AsyncSession, plan: ActionPlan, kind: str, data: dict) ->
         accommodation_behavior_id=data.get("accommodation_behavior_id") if kind == "accommodation" else None,
         tool_id=data.get("tool_id") if kind == "tool" else None,
         tool_example_id=data.get("tool_example_id") if kind == "tool" else None,
+        parent_only=await _tool_is_parent_only(db, data) if kind == "tool" else False,
         text=clean(data.get("text")) if kind in ("exposure", "tool", "parent_instruction", "reward") else None,
         reward_for=clean(data.get("reward_for")) if kind == "reward" else None,
         note=clean(data.get("note")),
@@ -310,7 +336,7 @@ def update_item(item: ActionPlanItem, data: dict) -> None:
 
     if "text" in data and item.kind in ("exposure", "tool", "parent_instruction", "reward"):
         t = clean(data["text"])
-        if t is None and item.kind in ("parent_instruction", "reward"):
+        if t is None and (item.kind in ("parent_instruction", "reward") or (item.kind == "tool" and item.tool_id is None)):
             raise HTTPException(status_code=422, detail="Write what it is")
         item.text = t
         if item.kind == "tool" and t:
@@ -334,8 +360,8 @@ def mark_reward(item: ActionPlanItem, given: bool, by: str) -> None:
 
 
 def publish(plan: ActionPlan, item_count: int) -> None:
-    if plan.confidence != "high":
-        raise HTTPException(status_code=422, detail="Confidence has to be high before the plan is shared")
+    """Confidence is checked per exposure when it is added, not for the whole plan
+    (Peter, 2026-11-27)."""
     if item_count == 0:
         raise HTTPException(status_code=422, detail="The plan has nothing on it")
     if plan.published_at is None:

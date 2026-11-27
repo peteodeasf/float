@@ -84,6 +84,8 @@ class ActionPlanItem(Base):
     # Reward only: what it is given for.
     reward_for: Mapped[str | None] = mapped_column(Text, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Tool only: for the parent alone (a parent strategy, or one written in under the parent).
+    parent_only: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sql("false"), default=False)
     # Parent instruction only: whether the child sees it too.
     share_with_child: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=sql("false"), default=False

@@ -9,11 +9,13 @@ Replaces today's `action_plans` table. **Destructive:** the old table and its sa
 dropped. Pre-launch these are test data, and the feature has been switched off since 2026-09-01.
 
 - `action_plans` — one per session: patient, organization, clinician, `session_number`,
-  `session_date`, `confidence` (low, medium, high or empty), `published_at` (empty while a draft).
+  `session_date`, `confidence` (no longer used: confidence is per exposure, below), `published_at` (empty while a draft).
 - `action_plan_items` — every line on a plan, in order. `kind` is one of:
   - `exposure` — links a rung (`avoidance_behavior_id`). `text` is the wording on this plan, empty
     when it uses the rung's own wording. Changing it never changes the rung.
-  - `tool` — links a tool from the list (`tool_id`). No typed tools.
+  - `tool` — links a Library page (`tool_id`), optionally one of its examples, or is written in by the
+    clinician with no page (`tool_id` empty, `text` set). `text` rewords a linked line. `parent_only`
+    marks a line for the parent alone; the child never sees it.
   - `accommodation` — links an accommodation on the parent's ladder (`accommodation_behavior_id`).
   - `parent_instruction` — typed text ("How to help"). `share_with_child` decides if the child sees it.
   - `reward` — `text` is the reward, `reward_for` is what it is given for. `reward_given` is empty,
@@ -33,16 +35,21 @@ dropped. Pre-launch these are test data, and the feature has been switched off s
 
 ## Clinician app
 
-Sessions tab, Action plans section. "New action plan" opens full screen, so the child can see it:
+Updated 2026-11-27 (Peter): the plan is a **card on the Sessions tab**, below Session notes, in the
+patient page's card style. Mockup: https://claude.ai/artifact/1N6pVXRJUCJg6HZS9PKC7x.
 
-1. **Last plan** (if there is one) — each item: keep practicing or done. Kept items are copied.
-   Rewards the parent has not answered: the clinician marks given or not.
-2. **For the child** — exposures picked from the ladder (reword, add a note), tools picked from the
-   list (add a note).
-3. **For the parent** — accommodations picked from the parent's ladder, "How to help" lines with a
-   *share with child* switch.
-4. **Rewards** — what it is, and what it is for. Several allowed.
-5. **Confidence** — low, medium, high. Publish is only possible at high.
+- The newest plan is the card you work in; earlier plans sit in a card below and open in place,
+  read only. "+ New action plan" first shows last week's plan in the same card: keep practicing or
+  done for each item, and given or not for each reward the parent hasn't answered.
+- **{Child}'s work** — *What to work on this week*: exposures. *Tools and strategies*: picked from
+  the Library (with an example where the page has them) or written in; any line can be reworded.
+- **Parent work** — *What to work on this week*: accommodations marked Working on it. *Strategies for
+  the parent*, *How to help*.
+- **Rewards.**
+- **Confidence is per exposure** (Peter, 2026-11-27). "+ Add an exposure" lists every ladder step:
+  *Ready* (set up, not done yet, confidence High) adds it; *Medium/Low confidence* → Edit, and *Not
+  ready* → Set it up, both open the Set it up sheet; saving with High adds it. The server refuses an
+  exposure without a High set-up. The plan is shared with no confidence step of its own.
 
 ## Parent and child apps
 
