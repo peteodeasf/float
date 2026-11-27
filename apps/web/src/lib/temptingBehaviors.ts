@@ -50,11 +50,30 @@ export function decodeTemptingBehaviors(
   return { times: match ? parseInt(match[1], 10) : 1, safety: [] }
 }
 
-/** Safety behaviours only — times per day has its own column now. */
-export function encodeSafetyBehaviors(safety: string[]): string | null {
-  if (safety.length === 0) return null
+/**
+ * Safety behaviours only — times per day has its own column now. An empty list is still stored: it
+ * is the answer "none" to the setup question, which is different from never having been asked.
+ */
+export function encodeSafetyBehaviors(safety: string[]): string {
   return JSON.stringify({ safety })
 }
+
+/**
+ * The answer to the setup question, or null when it was never asked (older rows, including the
+ * legacy `times:N` value). An empty list is the answer "none".
+ */
+export function readSafetyAnswer(raw: string | null | undefined): string[] | null {
+  if (!raw || !raw.trim().startsWith('{')) return null
+  try {
+    const safety = (JSON.parse(raw) as { safety?: unknown }).safety
+    return Array.isArray(safety) ? safety.filter((s): s is string => typeof s === 'string') : null
+  } catch {
+    return null
+  }
+}
+
+/** How an answer reads on a summary: the behaviors, or "None". */
+export const safetyLabel = (picked: string[]) => picked.join(', ') || 'None'
 
 /**
  * Repeats per scheduled day. Prefers the dedicated column and falls back to the

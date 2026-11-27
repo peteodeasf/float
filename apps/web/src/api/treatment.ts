@@ -397,6 +397,12 @@ export interface PlannedExperiment {
   distress_thermometer_actual: number | null
   feared_outcome_occurred: boolean | null
   what_learned: string | null
+  /** The rest of Dr. Walker's worksheet. docs/plans/exposure-worksheet-questions.md */
+  prediction?: string | null
+  how_will_i_know?: string | null
+  tempting_behaviors?: string | null
+  what_happened?: string | null
+  was_surprised?: boolean | null
   behavior_name: string | null
   situation_name: string | null
   trigger_situation_id: string | null
@@ -426,8 +432,11 @@ export const planExperimentForBehavior = async (
  *  exposure is ready on the child's ladder; without, the child picks when at home. */
 export interface SessionSetupData {
   prediction: string
+  how_will_i_know?: string
   bip_before: number
   distress_thermometer_expected: number
+  /** {"safety": [...]}, written by lib/temptingBehaviors.ts */
+  tempting_behaviors?: string
   confidence_level: 'low' | 'medium' | 'high'
   scheduled_date?: string
   scheduled_time_bucket?: 'morning' | 'afternoon' | 'evening'

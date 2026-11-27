@@ -35,6 +35,9 @@ class Experiment(Base):
     # Before state
     plan_description: Mapped[str | None] = mapped_column(Text, nullable=True)
     prediction: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # "How will I know if this happens?" — Dr. Walker's exposure worksheet.
+    # docs/plans/exposure-worksheet-questions.md
+    how_will_i_know: Mapped[str | None] = mapped_column(Text, nullable=True)
     bip_before: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     distress_thermometer_expected: Mapped[float | None] = mapped_column(
         Numeric(3, 1), nullable=True
@@ -52,6 +55,8 @@ class Experiment(Base):
     # After state
     feared_outcome_occurred: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     what_happened: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # "Was I surprised?" — Dr. Walker's worksheet. Null on exposures recorded before it was asked.
+    was_surprised: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     distress_thermometer_actual: Mapped[float | None] = mapped_column(
         Numeric(3, 1), nullable=True
     )

@@ -7,34 +7,44 @@
  *
  * Plan: docs/plans/teen-home-ladder-and-session-setup.md
  */
+import { readSafetyAnswer } from './temptingBehaviors'
 
-export type SetupKey = 'fear' | 'believe' | 'level' | 'when' | 'ready'
+export type SetupKey = 'fear' | 'know' | 'believe' | 'level' | 'safety' | 'confident' | 'when'
 
-/** The order the child meets them. */
-export const SETUP_ORDER: SetupKey[] = ['fear', 'believe', 'level', 'when', 'ready']
+/**
+ * The order the child meets them: Dr. Walker's exposure worksheet, in her words with "you" for "I",
+ * then when. "Fear Level" stays our name for her Fear Thermometer/SUDS. The confidence question is
+ * shortened because the one before it has just listed the behaviors (Peter, 2026-11-24).
+ * docs/plans/exposure-worksheet-questions.md
+ */
+export const SETUP_ORDER: SetupKey[] = ['fear', 'know', 'believe', 'level', 'safety', 'confident', 'when']
 
 export const QUESTION: Record<SetupKey, string> = {
-  fear: 'What are you afraid will happen?',
-  believe: 'How strongly do you believe that will happen?',
-  level: 'What fear level do you expect?',
+  fear: 'What are you most worried will happen?',
+  know: 'How will you know if this happens?',
+  believe: 'How strongly do you believe your prediction is correct?',
+  level: 'What will your Fear Level be?',
+  safety: 'Which safety or avoidance behaviors or rituals might you want to do?',
+  confident: 'How confident do you feel that you can do the exposure without doing them?',
   when: 'When will you do it?',
-  ready: 'How ready do you feel?',
 }
 
 /** How each answer is named once it's been given — on the partly set up summary. */
 export const ANSWERED_AS: Record<SetupKey, string> = {
-  fear: "What you're afraid will happen",
+  fear: "What you're most worried will happen",
+  know: "How you'll know",
   believe: 'How strongly you believe it',
   level: 'Expected Fear Level',
+  safety: 'Safety behaviors you might want to do',
+  confident: 'How confident you feel',
   when: "When you'll do it",
-  ready: 'How ready you feel',
 }
 
-/** Keys are the backend's confidence_level values; only the words are shown. */
+/** Keys are the backend's confidence_level values; only the words are shown. High first, as on her worksheet. */
 export const CONFIDENCE = [
-  { key: 'low', label: 'Not really' },
-  { key: 'medium', label: 'Kind of' },
-  { key: 'high', label: 'Ready' },
+  { key: 'high', label: 'High' },
+  { key: 'medium', label: 'Medium' },
+  { key: 'low', label: 'Low' },
 ] as const
 export type ConfidenceKey = (typeof CONFIDENCE)[number]['key']
 
@@ -53,22 +63,28 @@ export type SetupSoFar = {
   bip_before?: number | null
   distress_thermometer_expected?: number | null
   confidence_level?: string | null
+  how_will_i_know?: string | null
+  tempting_behaviors?: string | null
 }
 
 /**
  * What was already answered on an exposure the clinician started.
  *
- * The four answers count only when the fear is there too. They are saved together in session, and
- * the older date-only plan wrote a readiness of "Kind of" that nobody gave — so a readiness on its
- * own is not an answer.
+ * The answers count only when the fear is there too. They are saved together in session, and the
+ * older date-only plan wrote a confidence of "medium" that nobody gave — so a confidence on its own
+ * is not an answer. "How will you know" is optional for the clinician, so it counts only when typed.
+ * The safety answer counts once it was asked, even when nothing was picked; exposures set up before
+ * the question existed have nothing stored and ask it.
  */
 export function whatsDone(exp: SetupSoFar): Record<SetupKey, boolean> {
   const inSession = !!exp.prediction && exp.prediction.trim().length > 0
   return {
     fear: inSession,
+    know: inSession && !!exp.how_will_i_know && exp.how_will_i_know.trim().length > 0,
     believe: inSession && exp.bip_before != null,
     level: inSession && exp.distress_thermometer_expected != null,
-    ready: inSession && !!exp.confidence_level,
+    safety: inSession && readSafetyAnswer(exp.tempting_behaviors) !== null,
+    confident: inSession && !!exp.confidence_level,
     when: !!exp.scheduled_date && !!exp.scheduled_time_bucket,
   }
 }

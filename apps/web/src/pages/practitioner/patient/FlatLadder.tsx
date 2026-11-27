@@ -15,7 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
   getPlanRungs, updatePlanRung, deletePlanRung,
-  setLadderActive, setRecommendedRung, getPatientExperiments, listPatientDownwardArrows,
+  setLadderActive, getPatientExperiments, listPatientDownwardArrows,
   type AvoidanceBehavior,
   type TriggerSituation,
   type PlannedExperiment,
@@ -144,10 +144,6 @@ export function FlatLadder({
     mutationFn: (on: boolean) => setLadderActive(patientId, planId, on),
     onSuccess: refreshPlan,
   })
-  const recommendMut = useMutation({
-    mutationFn: (rungId: string | null) => setRecommendedRung(patientId, planId, rungId),
-    onSuccess: refreshPlan,
-  })
 
   // Easiest first. Unscored rungs sit at the end — they are not a zero, they are unanswered.
   const ordered = [...(rungs ?? [])].sort((a, b) => {
@@ -257,7 +253,6 @@ export function FlatLadder({
               showSituation={showSituations}
               experiment={pendingByBehavior.get(r.id) ?? null}
               arrow={arrowFor(r)}
-              onRecommend={() => recommendMut.mutate(recommendedRungId === r.id ? null : r.id)}
             />
           ))}
           {!isLoading && ordered.length === 0 && (
@@ -301,15 +296,21 @@ function setupWhen(e: PlannedExperiment): string {
   return `${day} · ${bucket}`
 }
 
-/** The look of a row's two buttons, Downward Arrow and Set it up. Tinted once done. */
-function pill(done: boolean, width: string): React.CSSProperties {
+/** The look of a row's two buttons, Downward Arrow and Set it up. Peter, 2026-11-25: the next
+ *  step on a row has a dark green outline (not filled, which would look like Edit ladder), a done
+ *  step is pale green, and Set it up is grey until the arrow is done. */
+type PillState = 'next' | 'done' | 'waiting'
+function pill(state: PillState, width: string): React.CSSProperties {
+  const look = {
+    next: { color: '#135450', background: 'var(--float-surface)', border: '1.5px solid #135450' },
+    done: { color: '#3f8a78', background: '#eef7f4', border: '1px solid #bcdfd4' },
+    waiting: { color: '#94a3b8', background: '#f1f5f4', border: '1px solid #e2e8f0', cursor: 'not-allowed' },
+  }[state]
   return {
     fontSize: '11px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
     width, textAlign: 'center',
     borderRadius: 'var(--float-radius-pill)', padding: '3px 0',
-    color: '#3f8a78',
-    background: done ? '#eef7f4' : 'var(--float-surface)',
-    border: `1px solid ${done ? '#bcdfd4' : 'var(--float-border)'}`,
+    ...look,
   }
 }
 
@@ -321,7 +322,6 @@ function LadderRow({
   showSituation,
   experiment,
   arrow,
-  onRecommend,
 }: {
   planId: string
   rung: AvoidanceBehavior
@@ -334,19 +334,22 @@ function LadderRow({
   experiment: PlannedExperiment | null
   /** The Downward Arrow button, or null on a rung the arrow does not open on. */
   arrow: { done: boolean; open: () => void } | null
-  onRecommend: () => void
 }) {
   const qc = useQueryClient()
   const [editingName, setEditingName] = useState(false)
   const [draft, setDraft] = useState(rung.name)
   // Peter, 2026-09-10: one button, Set it up, that opens the setup questions full screen. The
-  // child answers and the clinician types. "Tell them to do this one next" is an option inside it.
+  // child answers and the clinician types.
   // There is no date-only plan any more: picking the day is more often the child's job.
   const [settingUp, setSettingUp] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   // Whether an exposure is already set up on this rung — from real data, so it reflects past
   // sessions and anything the child set up in their own app, not just this browser session.
   const isSetUp = !!experiment
+  // Peter, 2026-11-25: testers didn't see that the downward arrow comes first. Set it up stays grey
+  // until the arrow on this rung is done. A rung with no arrow button, or one already set up, is
+  // not held back.
+  const waitingOnArrow = !!arrow && !arrow.done && !isSetUp
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['plan-rungs', planId] })
@@ -408,7 +411,7 @@ function LadderRow({
           data-walkthrough="downward-arrow"
           title={arrow.done ? 'Downward arrow done — open it' : 'Do the downward arrow on this rung, with them'}
           className="cursor-pointer"
-          style={pill(arrow.done, '116px')}>
+          style={pill(arrow.done ? 'done' : 'next', '116px')}>
           {arrow.done ? 'Downward Arrow ✓' : 'Downward Arrow'}
         </button>
       )}
@@ -427,11 +430,13 @@ function LadderRow({
           hid the main thing you come to this row to do. */}
       <button
         onClick={() => setSettingUp(true)}
+        disabled={waitingOnArrow}
         data-walkthrough="set-it-up"
-        title={isSetUp ? 'Already set up — view it, edit it, or set up another' : 'Set up an exposure on this one, with them'}
-        className="cursor-pointer"
+        title={waitingOnArrow ? 'Do the downward arrow first'
+          : isSetUp ? 'Already set up — view it, edit it, or set up another' : 'Set up an exposure on this one, with them'}
+        className={waitingOnArrow ? undefined : 'cursor-pointer'}
         // Fixed width so every row's score sits in the same column, under the Fear Level heading.
-        style={pill(isSetUp, '64px')}>
+        style={pill(waitingOnArrow ? 'waiting' : isSetUp ? 'done' : 'next', '64px')}>
         {isSetUp ? 'Set up ✓' : 'Set it up'}
       </button>
 
@@ -475,9 +480,7 @@ function LadderRow({
         <SessionSetupSheet
           rung={rung}
           situationName={sit}
-          isRecommended={isRecommended}
           existing={experiment}
-          onRecommend={onRecommend}
           onClose={() => setSettingUp(false)}
           onSaved={() => setSettingUp(false)}
         />

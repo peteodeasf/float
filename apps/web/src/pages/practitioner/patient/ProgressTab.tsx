@@ -9,11 +9,13 @@
  * Everything is derived from the patient's experiments, so it reflects work done in any session or
  * by the child in their own app.
  */
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import type { PlannedExperiment } from '../../../api/treatment'
+import { confidenceLabel } from '../../../lib/setupQuestions'
+import { readSafetyAnswer, safetyLabel } from '../../../lib/temptingBehaviors'
 
 const SERIES = ['var(--float-series-a)', 'var(--float-series-b)', 'var(--float-series-c)', 'var(--float-series-d)']
 const num = (v: number | null | undefined): number | null => (v == null ? null : Math.round(Number(v)))
@@ -287,7 +289,43 @@ function DayRow({ e, selectedDay, todayKey }: { e: PlannedExperiment; selectedDa
         <Metric label="Fear level" pred={num(e.distress_thermometer_expected)} act={done ? num(e.distress_thermometer_actual) : null} />
         <Metric label="Belief in prediction" pred={num(e.bip_before)} act={done ? num(e.bip_after) : null} suffix="%" />
       </div>
+      <Answers e={e} done={done} />
     </div>
+  )
+}
+
+/**
+ * The child's written answers, in the order of Dr. Walker's exposure worksheet. Only what was
+ * answered is shown. docs/plans/exposure-worksheet-questions.md
+ */
+function Answers({ e, done }: { e: PlannedExperiment; done: boolean }) {
+  const yes = (v: boolean | null | undefined) => (v == null ? null : v ? 'Yes' : 'No')
+  const picked = readSafetyAnswer(e.tempting_behaviors)
+  const safety = picked && safetyLabel(picked)
+  const rows: [string, string | null | undefined][] = [
+    ['Most worried will happen', e.prediction],
+    ['How they will know', e.how_will_i_know],
+    ['Safety behaviors they might want to do', safety],
+    // Only with the safety answer: before the worksheet, this field held a readiness answer.
+    ['Confident doing it without them', picked ? confidenceLabel(e.confidence_level) : null],
+    ...(done ? [
+      ['Did it happen', yes(e.feared_outcome_occurred)],
+      ['What did happen', e.what_happened],
+      ['Surprised', yes(e.was_surprised)],
+      ['What they learned', e.what_learned],
+    ] as [string, string | null | undefined][] : []),
+  ]
+  const shown = rows.filter(([, v]) => v != null && String(v).trim() !== '')
+  if (shown.length === 0) return null
+  return (
+    <dl style={{ margin: '12px 0 0', display: 'grid', gridTemplateColumns: 'minmax(0, 11em) 1fr', gap: '5px 12px', fontSize: 12.5, lineHeight: 1.4 }}>
+      {shown.map(([k, v]) => (
+        <Fragment key={k}>
+          <dt style={{ color: 'var(--float-text-hint)' }}>{k}</dt>
+          <dd style={{ margin: 0, color: 'var(--float-text)' }}>{v}</dd>
+        </Fragment>
+      ))}
+    </dl>
   )
 }
 

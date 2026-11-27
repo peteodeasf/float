@@ -40,7 +40,7 @@ from app.models.session_note import SessionNote
 from app.models.message import Message
 from app.models.experiment import Experiment
 from app.services.patient_phase import LABELS, Phase, phase_of
-from app.core.behavior_types import LADDER_TYPES, OBSERVATION
+from app.core.behavior_types import LADDER_TYPES, OBSERVATION, SAFETY_QUESTION_TYPES
 from app.services.attention_service import attention_for
 from app.services.patient_access_service import (
     accessible_patient_ids,
@@ -1705,11 +1705,26 @@ async def get_behavior_detail(
             "da_approved": da_approved,
         }
 
+    # The safety and avoidance behaviors and rituals on this situation, for the setup question
+    # "Which safety or avoidance behaviors or rituals might you want to do?". The child's own plan
+    # only: the situation was checked against their plan above, and the ladder payload already
+    # gives the child these same rows. docs/plans/exposure-worksheet-questions.md
+    safety_behaviors: list[str] = []
+    if trigger is not None:
+        rows = (await db.execute(
+            select(AvoidanceBehavior.name).where(
+                AvoidanceBehavior.trigger_situation_id == trigger.id,
+                AvoidanceBehavior.behavior_type.in_(SAFETY_QUESTION_TYPES),
+            ).order_by(AvoidanceBehavior.created_at)
+        )).scalars().all()
+        safety_behaviors = list(dict.fromkeys(n.strip() for n in rows if n and n.strip()))
+
     return {
         "id": str(behavior.id),
         "name": behavior.name,
         "behavior_type": behavior.behavior_type,
         "dt": float(behavior.distress_thermometer_when_refraining) if behavior.distress_thermometer_when_refraining is not None else None,
+        "safety_behaviors": safety_behaviors,
         # One switch for the whole ladder. The exposure screen used to check the situation's own
         # on/off flag instead, and new situations are created with that off — so a child tapping a
         # scheduled exposure on one was sent back to the home.

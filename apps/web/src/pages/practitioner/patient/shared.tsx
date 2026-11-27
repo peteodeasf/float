@@ -21,6 +21,13 @@ export const BEHAVIOR_TYPE_SCENARIO = 'scenario'
 export const BEHAVIOR_TYPE_COMBINATION = 'combination'
 export const BEHAVIOR_TYPE_SAFETY = 'safety'
 export const BEHAVIOR_TYPE_AVOIDANCE = 'avoidance'
+export const BEHAVIOR_TYPE_RITUAL = 'ritual'
+// What the exposure setup question "Which safety or avoidance behaviors or rituals might you want
+// to do?" offers. Same as SAFETY_QUESTION_TYPES in backend/app/core/behavior_types.py, old spellings
+// included; the child's app gets the backend's list.
+export const SAFETY_QUESTION_TYPES: ReadonlySet<string> = new Set([
+  BEHAVIOR_TYPE_SAFETY, BEHAVIOR_TYPE_AVOIDANCE, BEHAVIOR_TYPE_RITUAL, 'safety_behavior', 'safety_seeking',
+])
 
 // One reading width for the ladder and the editor that builds it. Without it they stretch to the
 // browser, and on a wide screen a step's name sits at one end of the row with its thermometer

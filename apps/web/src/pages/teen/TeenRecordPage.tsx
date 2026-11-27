@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
-import Chip from '../../components/teen/Chip'
 import BeliefSlider from '../../components/teen/BeliefSlider'
 import Thermometer from '../../components/teen/Thermometer'
 import teen from '../../styles/teenTokens'
@@ -14,25 +13,16 @@ import teen from '../../styles/teenTokens'
  * disconfirmation question (`outcome`) — the app no longer shows a "you're in
  * it" moment here; that now lives on the home's pre-exposure state.
  */
-type Phase = 'outcome' | 'toohard' | 'capture'
-
-const WHAT_HAPPENED = ['A few glanced', 'Nobody cared', 'Awkward but fine']
+type Phase = 'outcome' | 'feel' | 'toohard' | 'capture'
 
 /**
- * What they learned reframes by path: when the fear did not come true the
- * learning is about the prediction being wrong; when it did, the learning has
- * to be about coping and survivability, never about the prediction.
+ * The debrief follows Dr. Walker's exposure worksheet (Peter, 2026-11-24): did it happen, what did
+ * happen, were you surprised, Fear Level, what did you learn — plus belief now, kept for progress.
+ * No ready-made answers: the child says it in their own words, with a hint that suggests none.
+ * docs/plans/exposure-worksheet-questions.md
  */
-const WHAT_LEARNED_DISCONFIRMED = [
-  'My anxiety exaggerates',
-  'I can handle awkward',
-  'Nothing bad happened',
-]
-const WHAT_LEARNED_COPED = [
-  'I got through it',
-  'It passed quicker than I thought',
-  'I can handle it happening',
-]
+const HAPPENED_HINT = 'What did you do? What did other people do?'
+const LEARNED_HINT = 'How was it different to what you expected?'
 
 export default function TeenRecordPage() {
   const { experimentId } = useParams<{ experimentId: string }>()
@@ -48,9 +38,8 @@ export default function TeenRecordPage() {
   const [actualDT, setActualDT] = useState<number | null>(null)
   const [bipAfterRaw, setBipAfterRaw] = useState<number | null>(null)
   const [fearedOccurred, setFearedOccurred] = useState<boolean | null>(null)
-  const [whatHappened, setWhatHappened] = useState<string | null>(null)
+  const [wasSurprised, setWasSurprised] = useState<boolean | null>(null)
   const [happenedText, setHappenedText] = useState('')
-  const [whatLearned, setWhatLearned] = useState<string | null>(null)
   const [learnedText, setLearnedText] = useState('')
 
   const [tooHardReason, setTooHardReason] = useState('')
@@ -73,19 +62,16 @@ export default function TeenRecordPage() {
   // Starts where their belief started, so the slider shows movement they make.
   const bipAfter = bipAfterRaw ?? (bipBefore != null ? Math.round(bipBefore) : 50)
 
-  const learnedOptions = fearedOccurred ? WHAT_LEARNED_COPED : WHAT_LEARNED_DISCONFIRMED
-
   const recordMutation = useMutation({
     mutationFn: async () => {
       await teenApiClient.put(`/patient/experiments/${experimentId}/after`, {
         feared_outcome_occurred: fearedOccurred ?? false,
-        // A typed answer wins over a picked chip; either is fine, neither is required.
-        what_happened: happenedText.trim() || whatHappened || '',
+        what_happened: happenedText.trim(),
+        was_surprised: wasSurprised,
         distress_thermometer_actual: actualDT ?? 0,
         bip_after: bipAfter,
-        // Genuinely optional — a fabricated learning would pollute the
-        // clinician's recent_learnings digest.
-        what_learned: learnedText.trim() || whatLearned || '',
+        // Optional — a made-up learning would pollute the clinician's recent_learnings digest.
+        what_learned: learnedText.trim(),
       })
     },
     onSuccess: () => {
@@ -172,9 +158,58 @@ export default function TeenRecordPage() {
     </div>
   )
 
+  // A segmented control — one "pick one of two", not two action buttons. Neither half is styled as
+  // the "right" answer until it's picked: the chosen half is a light tint, and a solid fill is
+  // reserved for the main action.
+  const yesNo = (
+    value: boolean | null,
+    onPick: (v: boolean) => void,
+    options: readonly (readonly [boolean, string])[],
+    label: string,
+  ) => (
+    <div
+      role="group"
+      aria-label={label}
+      style={{ display: 'flex', border: `1.5px solid ${teen.color.lineBtn}`, borderRadius: teen.radius.pill, overflow: 'hidden' }}
+    >
+      {options.map(([v, text], i) => {
+        const on = value === v
+        return (
+          <button
+            key={text}
+            aria-pressed={on}
+            onClick={() => onPick(v)}
+            style={{
+              flex: 1, padding: '13px 10px', fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer',
+              border: 'none', borderRight: i === 0 ? `1.5px solid ${teen.color.lineBtn}` : 'none',
+              background: on ? teen.color.mintSoft : 'transparent', color: on ? teen.color.ink : teen.color.textSecondary,
+            }}
+          >
+            {text}
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  const textBox = (value: string, onChange: (v: string) => void, placeholder: string, label: string) => (
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      aria-label={label}
+      rows={3}
+      style={{
+        width: '100%', boxSizing: 'border-box', padding: '11px 13px', borderRadius: teen.radius.card,
+        border: `1px solid ${teen.color.lineChip}`, background: teen.color.cardPure, fontFamily: teen.font.sans,
+        fontSize: 14, lineHeight: 1.4, color: teen.color.ink, outline: 'none', resize: 'none',
+      }}
+    />
+  )
+
   // ────────────────────────────── OUTCOME ───────────────────────────────
   if (phase === 'outcome') {
-    const canNext = fearedOccurred !== null && actualDT !== null
+    const canNext = fearedOccurred !== null
     return (
       <TeenScreen>
         {renderBack(() => navigate(`/teen/exposure/${experimentId}`))}
@@ -223,106 +258,18 @@ export default function TeenRecordPage() {
             </div>
           </div>
 
-          {/* Did what you feared happen? — a choice; neither is styled as the
-              "right" answer until it's picked. */}
           <div>
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
-              Did what you feared happen?
+              Did what you were most worried about happen?
             </h2>
-            {/* A segmented control — one "pick one of two", not two action buttons. The chosen
-                half is a light tint; a solid fill is reserved for the main action. */}
-            <div
-              style={{
-                display: 'flex',
-                border: `1.5px solid ${teen.color.lineBtn}`,
-                borderRadius: teen.radius.pill,
-                overflow: 'hidden',
-              }}
-            >
-              {([[false, "No — it didn't"], [true, 'Yeah, it did']] as const).map(([v, label], i) => {
-                const on = fearedOccurred === v
-                return (
-                  <button
-                    key={label}
-                    onClick={() => setFearedOccurred(v)}
-                    style={{
-                      flex: 1,
-                      padding: '13px 10px',
-                      fontFamily: teen.font.sans,
-                      fontSize: 15,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      border: 'none',
-                      borderRight: i === 0 ? `1.5px solid ${teen.color.lineBtn}` : 'none',
-                      background: on ? teen.color.mintSoft : 'transparent',
-                      color: on ? teen.color.ink : teen.color.textSecondary,
-                    }}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
+            {yesNo(fearedOccurred, setFearedOccurred, [[false, "No — it didn't"], [true, 'Yeah, it did']], 'Did it happen')}
           </div>
 
-          {/* Believe it now + the was → now delta. */}
           <div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'baseline',
-                marginBottom: 11,
-              }}
-            >
-              <span style={teen.type.label}>How strong is your belief now?</span>
-              <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bipAfter}%</span>
-            </div>
-            <BeliefSlider
-              value={bipAfter}
-              onChange={setBipAfterRaw}
-              label="How much you believe it now"
-            />
-            {bipBefore != null && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginTop: 8,
-                  fontFamily: teen.font.mono,
-                  fontSize: 14,
-                  color: teen.color.textSecondary,
-                }}
-              >
-                <span>was {Math.round(bipBefore)}%</span>
-                <span style={{ color: teen.color.inkSoft }}>→</span>
-                <span style={{ color: teen.color.teal, fontSize: 15 }}>now {bipAfter}%</span>
-              </div>
-            )}
-          </div>
-
-          {/* Actual fear level + the expected → actual delta. */}
-          <div>
-            <div style={{ ...teen.type.label, marginBottom: 10 }}>What was your actual fear level?</div>
-            <Thermometer value={actualDT} onChange={setActualDT} height={46} label="Actual Fear Level" />
-            {actualDT != null && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginTop: 8,
-                  fontFamily: teen.font.mono,
-                  fontSize: 14,
-                  color: teen.color.textSecondary,
-                }}
-              >
-                <span>expected {dtExpected ?? '—'}</span>
-                <span style={{ color: teen.color.inkSoft }}>→</span>
-                <span style={{ color: teen.color.teal, fontSize: 15 }}>actual {actualDT}</span>
-              </div>
-            )}
+            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
+              What did happen?
+            </h2>
+            {textBox(happenedText, setHappenedText, HAPPENED_HINT, 'What did happen')}
           </div>
 
           </div>{/* end content group */}
@@ -331,6 +278,53 @@ export default function TeenRecordPage() {
             <button
               className="teen-btn teen-btn--primary"
               disabled={!canNext}
+              onClick={() => setPhase('feel')}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      </TeenScreen>
+    )
+  }
+
+  // ─────────────────────────── SURPRISED + FEAR LEVEL ───────────────────────────
+  // Three debrief screens, not two: with "Were you surprised?" added, the first screen pushed the
+  // button off a phone screen.
+  if (phase === 'feel') {
+    return (
+      <TeenScreen>
+        {renderBack(() => setPhase('outcome'))}
+        <div className="teen-sheet">
+          {/* Content group: even gaps between blocks; slack pools at the bottom above the button
+              (CLAUDE.md screen-layout rule). */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
+          <div>
+            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
+              Were you surprised?
+            </h2>
+            {yesNo(wasSurprised, setWasSurprised, [[true, 'Yes'], [false, 'No']], 'Were you surprised')}
+          </div>
+
+          {/* Fear Level + the expected → actual change. */}
+          <div>
+            <div style={{ ...teen.type.label, marginBottom: 10 }}>What was your Fear Level?</div>
+            <Thermometer value={actualDT} onChange={setActualDT} height={46} label="Actual Fear Level" />
+            {actualDT != null && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 8, fontFamily: teen.font.mono, fontSize: 14, color: teen.color.textSecondary }}>
+                <span>expected {dtExpected ?? '—'}</span>
+                <span style={{ color: teen.color.inkSoft }}>→</span>
+                <span style={{ color: teen.color.teal, fontSize: 15 }}>actual {actualDT}</span>
+              </div>
+            )}
+          </div>
+
+          </div>
+
+          <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 16 }}>
+            <button
+              className="teen-btn teen-btn--primary"
+              disabled={actualDT === null}
               onClick={() => setPhase('capture')}
             >
               Next →
@@ -482,117 +476,33 @@ export default function TeenRecordPage() {
   // ────────────────────────────── CAPTURE ───────────────────────────────
   return (
     <TeenScreen>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: `16px ${teen.space.pad} 12px`,
-          flex: 'none',
-        }}
-      >
-        <button
-          onClick={() => setPhase('outcome')}
-          aria-label="Back"
-          style={{
-            background: 'none',
-            border: 0,
-            cursor: 'pointer',
-            font: '600 30px ' + teen.font.sans,
-            color: teen.color.ink,
-            lineHeight: 1,
-            padding: 0,
-          }}
-        >
-          ‹
-        </button>
-        <span style={{ width: 22 }} />
-      </div>
+      {renderBack(() => setPhase('feel'))}
 
       <div className="teen-sheet">
         {/* Content group: even gaps between blocks; slack pools at the bottom above the button
             (CLAUDE.md screen-layout rule). */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
-          {/* what happened */}
+          {/* Belief now + the was → now change. Not on the worksheet; kept for progress. */}
           <div>
-            <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
-              What actually happened?
-            </h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-              {WHAT_HAPPENED.map(opt => (
-                <Chip
-                  key={opt}
-                  label={opt}
-                  selected={whatHappened === opt}
-                  onClick={() => {
-                    setWhatHappened(whatHappened === opt ? null : opt)
-                    setHappenedText('')
-                  }}
-                />
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 11 }}>
+              <span style={teen.type.label}>How strong is your belief now?</span>
+              <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bipAfter}%</span>
             </div>
-            <input
-              value={happenedText}
-              onChange={e => {
-                setHappenedText(e.target.value)
-                if (whatHappened) setWhatHappened(null)
-              }}
-              placeholder="Something else…"
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                marginTop: 10,
-                padding: '11px 13px',
-                borderRadius: teen.radius.card,
-                border: `1px solid ${teen.color.lineChip}`,
-                background: teen.color.cardPure,
-                fontFamily: teen.font.sans,
-                fontSize: 14,
-                color: teen.color.ink,
-                outline: 'none',
-              }}
-            />
+            <BeliefSlider value={bipAfter} onChange={setBipAfterRaw} label="How much you believe it now" />
+            {bipBefore != null && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 8, fontFamily: teen.font.mono, fontSize: 14, color: teen.color.textSecondary }}>
+                <span>was {Math.round(bipBefore)}%</span>
+                <span style={{ color: teen.color.inkSoft }}>→</span>
+                <span style={{ color: teen.color.teal, fontSize: 15 }}>now {bipAfter}%</span>
+              </div>
+            )}
           </div>
 
-          {/* what learned — reframed on the came-true path */}
           <div>
             <h2 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>
-              What'd you learn?
+              What did you learn?
             </h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-              {learnedOptions.map(opt => (
-                <Chip
-                  key={opt}
-                  label={opt}
-                  selected={whatLearned === opt}
-                  onClick={() => {
-                    setWhatLearned(whatLearned === opt ? null : opt)
-                    setLearnedText('')
-                  }}
-                />
-              ))}
-            </div>
-            <input
-              value={learnedText}
-              onChange={e => {
-                setLearnedText(e.target.value)
-                if (whatLearned) setWhatLearned(null)
-              }}
-              placeholder="Something else…"
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                marginTop: 10,
-                padding: '11px 13px',
-                borderRadius: teen.radius.card,
-                border: `1px solid ${teen.color.lineChip}`,
-                background: teen.color.cardPure,
-                fontFamily: teen.font.sans,
-                fontSize: 14,
-                color: teen.color.ink,
-                outline: 'none',
-              }}
-            />
+            {textBox(learnedText, setLearnedText, LEARNED_HINT, 'What did you learn')}
           </div>
         </div>
 
