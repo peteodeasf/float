@@ -9,7 +9,7 @@ from app.models.downward_arrow import DownwardArrow
 from app.models.message import Message
 from app.models.monitoring import MonitoringForm, MonitoringEntry, MonitoringNote, MonitoringRecipient
 from app.models.session_note import SessionNote, SessionRecording
-from app.models.action_plan import ActionPlan
+from app.models.action_plan import ActionPlan, ActionPlanItem, Tool
 from app.models.waitlist import WaitlistEntry
 from app.models.codesign import CodesignSession, CodesignSignup
 from app.models.formulation import ClinicalFormulation

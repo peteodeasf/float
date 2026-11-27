@@ -606,3 +606,50 @@ async def mark_parent_message_read(
         message.read_at = datetime.now(timezone.utc)
         await db.commit()
     return {"ok": True}
+
+
+# ── The action plan ───────────────────────────────────────────────────────────
+# docs/plans/action-plans-build.md
+
+class RewardGivenIn(BaseModel):
+    given: bool
+
+
+@parent_router.get("/action-plan")
+async def parent_action_plan(
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The current published plan, every item. None until there is one."""
+    from app.services import action_plan_service
+    _, children = context
+    child = _first_child(children)
+    plan = await action_plan_service.current_published(db, child.id)
+    if plan is None:
+        return None
+    return (await action_plan_service.plans_out(db, [plan], audience="parent"))[0]
+
+
+@parent_router.put("/action-plan-items/{item_id}/reward-given")
+async def parent_marks_reward(
+    item_id: uuid.UUID,
+    data: RewardGivenIn,
+    context: tuple = Depends(get_parent_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """Was this reward given? Only on a reward on this family's current plan."""
+    from app.models.action_plan import ActionPlanItem
+    from app.services import action_plan_service
+    _, children = context
+    child = _first_child(children)
+    plan = await action_plan_service.current_published(db, child.id)
+    item = None
+    if plan is not None:
+        item = (await db.execute(select(ActionPlanItem).where(
+            ActionPlanItem.id == item_id, ActionPlanItem.action_plan_id == plan.id,
+        ))).scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    action_plan_service.mark_reward(item, data.given, "parent")
+    await db.commit()
+    return (await action_plan_service.plans_out(db, [plan], audience="parent"))[0]

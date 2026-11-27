@@ -27,6 +27,7 @@ from fastapi.routing import APIRoute
 
 from datetime import date
 
+from app.models.action_plan import ActionPlan, ActionPlanItem, Tool
 from app.models.guide_progress import GuideProgress
 from app.models.downward_arrow import DownwardArrow
 from app.models.experiment import Experiment, AccommodationBehavior
@@ -152,6 +153,17 @@ async def _victim_world(db):
                                  practitioner_id=plan.practitioner_id, participants=["patient"],
                                  content_type="audio/mp4", status="failed", error=f"{CANARY} recording")
     db.add(recording)
+    # An action plan, published so the parent and child routes return it, with a marked line.
+    # The tool is shared content like the tips, so it carries no marker.
+    action_plan = ActionPlan(patient_id=patient.id, organization_id=org.id,
+                             practitioner_id=plan.practitioner_id, session_number=1,
+                             confidence="high", published_at=date.today())
+    shared_tool = Tool(name="Shared tool")
+    db.add_all([action_plan, shared_tool])
+    await db.flush()
+    action_item = ActionPlanItem(action_plan_id=action_plan.id, kind="reward",
+                                 text=f"{CANARY} reward", reward_for=f"{CANARY} for")
+    db.add(action_item)
     # A parent of the victim's child, with their own thread. A child can have two parents and each
     # has their own conversation with the clinician (docs/plans/two-parent-accounts.md), so the
     # parent routes need a real parent id to be reachable at all.
@@ -173,6 +185,7 @@ async def _victim_world(db):
         "ladder": ladder, "accommodation": accommodation, "note": note,
         "guide": guide, "tag": tag, "tip": tip,
         "house_clinician": house_clinician, "recording": recording, "review_round": review_round,
+        "action_plan": action_plan, "action_item": action_item, "tool": shared_tool,
     }
 
 
@@ -202,6 +215,9 @@ def _param_values(w):
         "recording_id": w["recording"].id,
         "round_id": w["review_round"].id,
         "parent_user_id": w["parent_user"].id,
+        "action_plan_id": w["action_plan"].id,
+        "item_id": w["action_item"].id,
+        "tool_id": w["tool"].id,
         "segment": 1,
         "seq": 0,
     }

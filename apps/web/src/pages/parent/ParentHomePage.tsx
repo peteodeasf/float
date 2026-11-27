@@ -5,6 +5,7 @@ import { useParentAuth } from '../../context/ParentAuthContext'
 import { parentApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import ParentTabBar from '../../components/parent/ParentTabBar'
+import ParentActionPlanCard from '../../components/parent/ParentActionPlanCard'
 import teen from '../../styles/teenTokens'
 import {
   getUpcomingExposures,
@@ -132,6 +133,8 @@ export default function ParentHomePage() {
         <p style={{ ...teen.type.body, fontSize: 14, color: teen.color.inkSoft, margin: 0 }}>
           When {childName} works on a situation, here's your part in it.
         </p>
+
+        <ParentActionPlanCard childName={childName} />
 
         {notShared ? (
           <div className="teen-card" style={{ marginTop: 16, padding: 22 }}>

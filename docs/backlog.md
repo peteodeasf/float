@@ -246,7 +246,7 @@ says; the ones marked "needs design" are not ready for an agent until he has dra
 | **Clinician settings — "Your account" built** | **2026-09-01.** The page exists and the nav item is live: name, credentials, phone, and changing your own password. See [`clinician-settings.md`](plans/clinician-settings.md). Still to come, in order: the Float admin capability switches, the clinic's consultation checklist, the sign-out timer. | M |
 | **Reports — dropped** | Peter, 2026-09-01: pilot data comes straight out of the database, and clinicians get charts on the patient's Experiments tab instead. The nav item is gone. | — |
 | **Session notes — needs review and design** | **BUILT 2026-09-01.** Peter's review: the pre-session brief is gone, a note can record the parent and the child together, and the two filters are labelled Who and Tag so they no longer read as one list of choices. | M |
-| **Action plans — hidden 2026-09-01, open question** | Full entry below. | M |
+| **Action plans — rebuilt 2026-11-25** | Answered: they stay. Rebuilt as items (exposures, tools, accommodations, how to help, rewards) and switched back on. [`action-plans-build.md`](plans/action-plans-build.md). | M |
 | **Remove the Patient Downward Arrows section from the Plan tab** | **DONE 2026-08-30.** Removed; the checklist step now opens the arrow mode. Took 238 lines out of PatientPage. | S |
 | **Close / relapse-prevention tab** | Tab exists, body is the literal string "Placeholder". | M |
 | **Scheduling / appointments** | Free-text next-appointment field only. No calendar or booking. | L |
@@ -370,33 +370,10 @@ The line is gone: the case summary now updates on its own, so there is nothing t
   see the line.
 - **Gate:** screen change, so Peter approves (CODEOWNERS). **Depends on:** nothing.
 
-## Action plans — hidden, and the question is whether they are worth having
+## Action plans — rebuilt 2026-11-25
 
-**Raised by Peter 2026-09-01.** `M`
-
-**Today:** action plans are built and work. A clinician writes a session summary in a rich-text
-editor, gives it a date and a nickname, and publishes it to the child's app. The endpoints, the
-editor and the child's side all still function.
-
-**They are now hidden.** One switch does it — `SHOW_ACTION_PLANS` in
-`apps/web/src/lib/featureFlags.ts` — read by both the clinician's Sessions tab and the child's tab
-bar, so turning them back on is a one-word change. Nothing was deleted.
-
-Peter's reason: he wants to see how the rest of the app flows before deciding whether an action
-plan adds anything on top of the treatment plan, the exposure ladder and the child's own app. It is
-a question about the product, not a defect.
-
-**What has to happen:** answer that question. If yes, flip the flag back and design what an action
-plan is for. If no, take the code out properly — the model, the endpoints, the editor and the
-child's app reading published plans.
-
-**The child's Plan tab is hidden too** (Peter, 2026-09-01). That tab was action plans and nothing
-else, so with no clinician able to write one it would have sat there permanently empty, telling the
-child their clinician will publish one after each session.
-
-**Worth knowing while it is hidden:** any action plan already published still exists, and a
-clinician can no longer edit or unpublish it from the portal. The child cannot reach it either, so
-nothing is visible that should not be.
+Peter answered the open question from 2026-09-01: action plans stay. The free-text version is gone
+and its saved plans were dropped. See [`action-plans-build.md`](plans/action-plans-build.md).
 
 ---
 
@@ -1734,3 +1711,17 @@ fixed. See [`own-family-role-crossing.md`](solutions/own-family-role-crossing.md
 - **Gate:** clinical — this changes how avoidance becomes a rung, and touches the rung rules in
   `step_suggestion_service.py`. Peter's call; note it in the Dr. Walker log. Request Peter's review
   and do not merge. **Depends on:** nothing.
+
+## Signing out leaves the last person's data in the page's memory `S`
+
+Found 2026-11-25 while building action plans.
+
+- **Today:** none of the sign-out functions in `apps/web/src/context/*AuthContext.tsx` clear the
+  React Query cache. The parent app's queries (`['parent-action-plan']`, `['parent-accommodations']`,
+  `['parent-upcoming']` and others) are not keyed by who is signed in. If one parent signs out and a
+  second signs in on the same device without reloading the page, the second briefly sees the first
+  family's data until the queries refetch.
+- **What changes:** call `queryClient.clear()` on every sign-out (clinician, parent, child, admin).
+- **How to tell it worked:** a test that signs in as one parent, signs out, signs in as another, and
+  checks the first family's action plan is not rendered.
+- **Gate:** `/security-review` (data reaching the wrong family).

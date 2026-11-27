@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAdminAuth, adminApiClient } from '../../context/AdminAuthContext'
 import FloatLogo from '../../components/ui/FloatLogo'
 import AdminVideos from './AdminVideos'
+import AdminTools from './AdminTools'
 import { Button, Badge } from '../../components/ui/primitives'
 
 type Tag = { id: string; slug: string; label: string; is_active: boolean }
@@ -323,6 +324,7 @@ export default function AdminContentPage() {
         ) : (
           <>
             <AdminVideos />
+            <AdminTools />
 
             {/* Tags */}
             <section style={card}>
