@@ -1,9 +1,13 @@
-"""Action plans: building one, carrying items over, publishing, and who sees what.
+"""Action plans: saving them whole, their dates, checking in, and who sees what.
 
 docs/plans/action-plans-build.md
 """
-from app.models.tool import Tool
+from datetime import date, datetime, timedelta, timezone
+
+from sqlalchemy import select
+
 from app.models.experiment import AccommodationBehavior, Experiment
+from app.models.tool import Tool
 
 from tests.factories import (
     grant_patient_to, make_org, make_patient, make_plan, make_practitioner, make_rung, make_situation,
@@ -19,231 +23,202 @@ async def _family(db):
     await grant_patient_to(db, child, clinician, owner=True)
     parent = await _parent_of(db, org, child)
     situation = await make_situation(db, plan, name="Lunch")
-    rung = await make_rung(db, situation=situation, name="Eat lunch in the cafeteria", dt=5,
-                           behavior_type="scenario")
+    rung = await make_rung(db, situation=situation, name="Eat lunch in the cafeteria", dt=5, behavior_type="scenario")
     acc = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
                                 name="Checks homework every night", status="started")
     tool = Tool(name="The worry hill", summary="A short video", is_published=True)
     # Set up in session with High confidence, so it can go on a plan.
     ready = Experiment(patient_id=child.id, organization_id=org.id, avoidance_behavior_id=rung.id,
-                       status="planned", confidence_level="high")
+                       status="planned", confidence_level="high", prediction="They'll stare",
+                       distress_thermometer_expected=5, bip_before=70)
     db.add_all([acc, tool, ready])
     await db.flush()
     return {"org": org, "child": child, "clinician": clinician, "parent": parent,
-            "rung": rung, "acc": acc, "tool": tool}
+            "rung": rung, "acc": acc, "tool": tool, "setup": ready}
 
 
-async def _full_plan(api, f):
+def _lines(f):
+    return [
+        {"kind": "exposure", "avoidance_behavior_id": str(f["rung"].id), "text": "Eat lunch in the cafeteria on Tuesday", "note": "With Sam"},
+        {"kind": "tool", "tool_id": str(f["tool"].id), "note": "Watch it twice"},
+        {"kind": "tool", "text": "Squeeze a stress ball"},
+        {"kind": "accommodation", "accommodation_behavior_id": str(f["acc"].id)},
+        {"kind": "parent_instruction", "text": "Acknowledge once", "note": "Parent only note"},
+        {"kind": "parent_instruction", "text": "Praise trying", "share_with_child": True},
+        {"kind": "reward", "text": "Pick the movie", "reward_for": "Lunch"},
+    ]
+
+
+async def _create(api, f, **extra):
     api.sign_in_as(f["clinician"].user)
-    pid = f["child"].id
-    plan = (await api.post(f"/patients/{pid}/action-plans", json={})).json()
-    url = f"/action-plans/{plan['id']}/items"
-    await api.post(url, json={"kind": "exposure", "avoidance_behavior_id": str(f["rung"].id),
-                              "text": "Eat lunch in the cafeteria on Tuesday", "note": "With Sam"})
-    await api.post(url, json={"kind": "tool", "tool_id": str(f["tool"].id), "note": "Watch it twice"})
-    await api.post(url, json={"kind": "accommodation", "accommodation_behavior_id": str(f["acc"].id)})
-    await api.post(url, json={"kind": "parent_instruction", "text": "Acknowledge once",
-                              "note": "Parent only note"})
-    await api.post(url, json={"kind": "parent_instruction", "text": "Praise trying", "share_with_child": True})
-    r = await api.post(url, json={"kind": "reward", "text": "Pick the movie", "reward_for": "Lunch"})
+    r = await api.post(f"/patients/{f['child'].id}/action-plans", json={"items": _lines(f), **extra})
     assert r.status_code == 201, r.text
     return r.json()
 
 
-async def test_a_plan_is_built_and_the_rung_keeps_its_own_wording(api, db):
+def _by_kind(plan, kind):
+    return [i for i in plan["items"] if i["kind"] == kind]
+
+
+async def test_a_plan_is_saved_whole_and_runs_a_week_by_default(api, db):
     f = await _family(db)
-    plan = await _full_plan(api, f)
-    kinds = [i["kind"] for i in plan["items"]]
-    assert kinds == ["exposure", "tool", "accommodation", "parent_instruction", "parent_instruction", "reward"]
-    exposure = plan["items"][0]
-    assert exposure["label"] == "Eat lunch in the cafeteria on Tuesday"
-    assert exposure["rung_name"] == "Eat lunch in the cafeteria"
+    plan = await _create(api, f)
+    assert plan["starts_on"] == date.today().isoformat()
+    assert plan["ends_on"] == (date.today() + timedelta(days=7)).isoformat()
+    assert plan["state"] == "current"
+    assert [i["kind"] for i in plan["items"]] == ["exposure", "tool", "tool", "accommodation", "parent_instruction", "parent_instruction", "reward"]
     await db.refresh(f["rung"])
-    assert f["rung"].name == "Eat lunch in the cafeteria"
+    assert f["rung"].name == "Eat lunch in the cafeteria"  # rewording on the plan leaves the ladder alone
 
 
-async def test_an_exposure_goes_on_only_once_set_up_with_high_confidence(api, db):
+async def test_the_family_sees_it_as_soon_as_it_is_saved(api, db):
     f = await _family(db)
-    plan_row = (await db.execute(__import__("sqlalchemy").select(Experiment).where(
-        Experiment.avoidance_behavior_id == f["rung"].id))).scalar_one()
-    api.sign_in_as(f["clinician"].user)
-    plan = (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).json()
-    url = f"/action-plans/{plan['id']}/items"
-    body = {"kind": "exposure", "avoidance_behavior_id": str(f["rung"].id)}
-
-    plan_row.confidence_level = "medium"
-    await db.flush()
-    r = await api.post(url, json=body)
-    assert r.status_code == 422 and "High" in r.text
-
-    plan_row.status = "completed"  # done already: not a set-up exposure any more
-    plan_row.confidence_level = "high"
-    await db.flush()
-    assert (await api.post(url, json=body)).status_code == 422
-
-    plan_row.status = "planned"
-    await db.flush()
-    assert (await api.post(url, json=body)).status_code == 201
-
-
-async def test_a_plan_is_shared_without_a_plan_wide_confidence(api, db):
-    f = await _family(db)
-    plan = await _full_plan(api, f)
-    r = await api.post(f"/action-plans/{plan['id']}/publish")
-    assert r.status_code == 200 and r.json()["published_at"]
-
-
-async def test_a_tool_can_be_written_in(api, db):
-    f = await _family(db)
-    api.sign_in_as(f["clinician"].user)
-    plan = (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).json()
-    url = f"/action-plans/{plan['id']}/items"
-    assert (await api.post(url, json={"kind": "tool"})).status_code == 422
-    r = await api.post(url, json={"kind": "tool", "text": "Squeeze a stress ball"})
-    assert r.status_code == 201
-    item = r.json()["items"][0]
-    assert (item["label"], item["tool_id"], item["parent_only"]) == ("Squeeze a stress ball", None, False)
-
-async def test_another_childs_rung_cannot_go_on_the_plan(api, db):
-    f = await _family(db)
-    other = await make_patient(db, f["org"])
-    other_plan = await make_plan(db, f["org"], patient=other)
-    their_rung = await make_rung(db, situation=await make_situation(db, other_plan), behavior_type="scenario")
-    api.sign_in_as(f["clinician"].user)
-    plan = (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).json()
-    r = await api.post(f"/action-plans/{plan['id']}/items",
-                       json={"kind": "exposure", "avoidance_behavior_id": str(their_rung.id)})
-    assert r.status_code == 404
-
-
-async def _publish(api, plan):
-    return (await api.post(f"/action-plans/{plan['id']}/publish")).json()
-
-
-async def test_the_child_sees_their_items_and_shared_instructions_only(api, db):
-    f = await _family(db)
-    await _publish(api, await _full_plan(api, f))
+    await _create(api, f)
     api.sign_in_as(f["child"].user)
     mine = (await api.get("/patient/action-plan")).json()
     assert [(i["kind"], i["label"]) for i in mine["items"]] == [
-        ("exposure", "Eat lunch in the cafeteria on Tuesday"),
-        ("tool", "The worry hill"),
-        ("parent_instruction", "Praise trying"),
-        ("reward", "Pick the movie"),
+        ("exposure", "Eat lunch in the cafeteria on Tuesday"), ("tool", "The worry hill"),
+        ("tool", "Squeeze a stress ball"), ("parent_instruction", "Praise trying"), ("reward", "Pick the movie"),
     ]
-    assert all("reward_given" not in i for i in mine["items"])
-    assert "Parent only note" not in str(mine)
+    assert "Parent only note" not in str(mine) and "check_note" not in str(mine)
+    api.sign_in_as(f["parent"])
+    assert len((await api.get("/parent/action-plan")).json()["items"]) == 7
 
 
-async def test_a_draft_is_not_seen_by_the_family(api, db):
+async def test_an_exposure_needs_a_high_set_up_to_go_on(api, db):
     f = await _family(db)
-    await _full_plan(api, f)
+    f["setup"].confidence_level = "medium"
+    await db.flush()
+    api.sign_in_as(f["clinician"].user)
+    r = await api.post(f"/patients/{f['child'].id}/action-plans", json={"items": _lines(f)})
+    assert r.status_code == 422 and "High" in r.text
+
+
+async def test_edit_keeps_ticks_on_kept_lines_and_drops_removed_ones(api, db):
+    f = await _family(db)
+    plan = await _create(api, f)
+    reward = _by_kind(plan, "reward")[0]
+    await api.put(f"/action-plan-items/{reward['id']}/tick", json={"done": True})
+    await api.put(f"/action-plan-items/{reward['id']}/check-note", json={"note": "Given Friday"})
+
+    # The child has done the exposure since; it stays on the plan without a new set-up.
+    f["setup"].status = "completed"
+    await db.flush()
+    keep = [{**line, "id": item["id"]} for line, item in zip(_lines(f), plan["items"]) if line["kind"] in ("exposure", "reward")]
+    r = await api.put(f"/action-plans/{plan['id']}", json={"items": keep, "ends_on": (date.today() + timedelta(days=3)).isoformat()})
+    assert r.status_code == 200, r.text
+    saved = r.json()
+    assert [i["kind"] for i in saved["items"]] == ["exposure", "reward"]
+    assert saved["ends_on"] == (date.today() + timedelta(days=3)).isoformat()
+    kept = _by_kind(saved, "reward")[0]
+    assert (kept["done"], kept["done_by"], kept["check_note"]) == (True, "clinician", "Given Friday")
+
+
+async def test_an_empty_plan_is_refused(api, db):
+    f = await _family(db)
+    api.sign_in_as(f["clinician"].user)
+    assert (await api.post(f"/patients/{f['child'].id}/action-plans", json={"items": []})).status_code == 422
+
+
+async def test_a_new_plan_closes_the_one_still_running(api, db):
+    f = await _family(db)
+    first = await _create(api, f, starts_on=(date.today() - timedelta(days=3)).isoformat())
+    second = await _create(api, f)
+    plans = (await api.get(f"/patients/{f['child'].id}/action-plans")).json()
+    by_id = {p["id"]: p for p in plans}
+    # It ends the day the new one starts, so what is recorded at that session counts for it too.
+    assert by_id[first["id"]]["ends_on"] == date.today().isoformat()
+    assert by_id[second["id"]]["state"] == "current"
     api.sign_in_as(f["child"].user)
-    assert (await api.get("/patient/action-plan")).json() is None
-    api.sign_in_as(f["parent"])
-    assert (await api.get("/parent/action-plan")).json() is None
+    assert (await api.get("/patient/action-plan")).json()["id"] == second["id"]
 
 
-async def test_the_parent_answers_was_the_reward_given(api, db):
+async def test_a_closed_plan_can_be_checked_in_on_but_not_edited(api, db):
     f = await _family(db)
-    plan = await _publish(api, await _full_plan(api, f))
-    reward = next(i for i in plan["items"] if i["kind"] == "reward")
-    exposure = next(i for i in plan["items"] if i["kind"] == "exposure")
+    old = await _create(api, f, starts_on=(date.today() - timedelta(days=10)).isoformat(),
+                        ends_on=(date.today() - timedelta(days=3)).isoformat())
+    assert old["state"] == "closed"
+    reward = _by_kind(old, "reward")[0]
+    assert (await api.put(f"/action-plan-items/{reward['id']}/tick", json={"done": True})).status_code == 200
+    r = await api.put(f"/action-plans/{old['id']}", json={"items": [{"kind": "reward", "text": "x"}]})
+    assert r.status_code == 409
 
-    api.sign_in_as(f["parent"])
-    seen = (await api.get("/parent/action-plan")).json()
-    assert len(seen["items"]) == 6
-    r = await api.put(f"/parent/action-plan-items/{reward['id']}/reward-given", json={"given": True})
+
+async def test_family_ticks_tools_and_rewards_only(api, db):
+    f = await _family(db)
+    plan = await _create(api, f)
+    tool = _by_kind(plan, "tool")[0]
+    acc = _by_kind(plan, "accommodation")[0]
+    reward = _by_kind(plan, "reward")[0]
+
+    api.sign_in_as(f["child"].user)
+    r = await api.put(f"/patient/action-plan-items/{tool['id']}/tick", json={"done": True})
     assert r.status_code == 200
-    got = next(i for i in r.json()["items"] if i["kind"] == "reward")
-    assert (got["reward_given"], got["reward_given_by"]) == (True, "parent")
-    # Only a reward.
-    r = await api.put(f"/parent/action-plan-items/{exposure['id']}/reward-given", json={"given": True})
-    assert r.status_code == 422
+    assert (await api.put(f"/patient/action-plan-items/{acc['id']}/tick", json={"done": True})).status_code == 404
+
+    api.sign_in_as(f["parent"])
+    r = await api.put(f"/parent/action-plan-items/{reward['id']}/tick", json={"done": True})
+    assert r.status_code == 200
+
+    api.sign_in_as(f["clinician"].user)
+    saved = (await api.get(f"/patients/{f['child'].id}/action-plans")).json()[0]
+    ticks = {i["id"]: (i["done"], i["done_by"]) for i in saved["items"]}
+    assert ticks[tool["id"]] == (True, "child") and ticks[reward["id"]] == (True, "parent")
+    assert saved["done_count"] == 2
 
 
-async def test_another_parent_cannot_mark_the_reward(api, db):
+async def test_another_family_cannot_tick(api, db):
     f = await _family(db)
-    plan = await _publish(api, await _full_plan(api, f))
-    reward = next(i for i in plan["items"] if i["kind"] == "reward")
+    plan = await _create(api, f)
+    reward = _by_kind(plan, "reward")[0]
     g = await _family(db)
     api.sign_in_as(g["parent"])
-    r = await api.put(f"/parent/action-plan-items/{reward['id']}/reward-given", json={"given": True})
-    assert r.status_code == 404
+    assert (await api.put(f"/parent/action-plan-items/{reward['id']}/tick", json={"done": True})).status_code == 404
+    api.sign_in_as(g["child"].user)
+    assert (await api.put(f"/patient/action-plan-items/{reward['id']}/tick", json={"done": True})).status_code == 404
 
 
-async def test_the_next_plan_carries_over_kept_items(api, db):
+async def test_an_exposure_is_done_once_recorded_by_the_child_or_the_clinician(api, db):
     f = await _family(db)
-    plan = await _publish(api, await _full_plan(api, f))
-    exposure = next(i for i in plan["items"] if i["kind"] == "exposure")
-    reward = next(i for i in plan["items"] if i["kind"] == "reward")
-    # The parent did not answer, so the clinician marks it at the next session.
-    r = await api.put(f"/action-plan-items/{reward['id']}/reward-given", json={"given": False})
-    assert r.status_code == 200
+    plan = await _create(api, f)
+    exposure = _by_kind(plan, "exposure")[0]
+    assert exposure["done"] is False
+    assert (await api.put(f"/action-plan-items/{exposure['id']}/tick", json={"done": True})).status_code == 422
 
-    r = await api.post(f"/patients/{f['child'].id}/action-plans", json={"keep_item_ids": [exposure["id"]]})
+    after = {"feared_outcome_occurred": False, "what_happened": "Nothing much", "distress_thermometer_actual": 3,
+             "bip_after": 30, "what_learned": "It was fine"}
+    api.sign_in_as(f["child"].user)
+    assert (await api.put(f"/patient/experiments/{f['setup'].id}/after", json=after)).status_code == 200
+
+    api.sign_in_as(f["clinician"].user)
+    r = await api.post(f"/patients/{f['child'].id}/exposures/{f['rung'].id}/record", json=after)
     assert r.status_code == 201, r.text
-    new = r.json()
-    assert new["session_number"] == 2
-    assert [(i["kind"], i["label"], i["note"]) for i in new["items"]] == [
-        ("exposure", "Eat lunch in the cafeteria on Tuesday", "With Sam")]
 
-    plans = (await api.get(f"/patients/{f['child'].id}/action-plans")).json()
-    old = plans[1]
-    outcomes = {i["kind"]: i["outcome"] for i in old["items"]}
-    assert outcomes["exposure"] == "keep" and outcomes["tool"] == "done"
-    old_reward = next(i for i in old["items"] if i["kind"] == "reward")
-    assert (old_reward["reward_given"], old_reward["reward_given_by"]) == (False, "clinician")
+    saved = (await api.get(f"/patients/{f['child'].id}/action-plans")).json()[0]
+    ex = _by_kind(saved, "exposure")[0]
+    assert ex["done"] is True
+    assert [rec["recorded_by"] for rec in ex["recordings"]] == ["child", "clinician"]
+    assert ex["recordings"][0]["fear_expected"] == 5.0 and ex["recordings"][0]["fear_felt"] == 3.0
+    # The clinician's recording copied the set-up answers into a new exposure.
+    rows = (await db.execute(select(Experiment).where(Experiment.avoidance_behavior_id == f["rung"].id))).scalars().all()
+    assert len(rows) == 2 and all(r.prediction == "They'll stare" for r in rows)
 
 
-async def test_only_one_draft_at_a_time(api, db):
+async def test_recordings_outside_the_plan_dates_do_not_count(api, db):
     f = await _family(db)
-    api.sign_in_as(f["clinician"].user)
-    assert (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).status_code == 201
-    assert (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).status_code == 409
-
-
-async def test_a_safety_behaviour_is_not_an_exposure(api, db):
-    """Only a step on the ladder goes on the plan as an exposure."""
-    f = await _family(db)
-    safety = await make_rung(db, plan=None, situation=await make_situation(db, await _tp(db, f)),
-                             behavior_type="safety")
-    api.sign_in_as(f["clinician"].user)
-    plan = (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).json()
-    r = await api.post(f"/action-plans/{plan['id']}/items",
-                       json={"kind": "exposure", "avoidance_behavior_id": str(safety.id)})
-    assert r.status_code == 404
-
-
-async def _tp(db, f):
-    from sqlalchemy import select
-    from app.models.treatment import TreatmentPlan
-    return (await db.execute(select(TreatmentPlan).where(TreatmentPlan.patient_id == f["child"].id))).scalar_one()
-
-
-async def test_an_older_plan_cannot_be_changed_and_a_shared_one_cannot_be_deleted(api, db):
-    f = await _family(db)
-    first = await _publish(api, await _full_plan(api, f))
-    assert (await api.delete(f"/action-plans/{first['id']}")).status_code == 409
-    await api.post(f"/patients/{f['child'].id}/action-plans", json={})
-    item = first["items"][0]
-    assert (await api.patch(f"/action-plan-items/{item['id']}", json={"note": "x"})).status_code == 409
-    assert (await api.delete(f"/action-plan-items/{item['id']}")).status_code == 409
-    assert (await api.post(f"/action-plans/{first['id']}/items",
-                           json={"kind": "reward", "text": "x"})).status_code == 409
-    # Marking last week's reward is still allowed: that is what the next session does.
-    reward = next(i for i in first["items"] if i["kind"] == "reward")
-    assert (await api.put(f"/action-plan-items/{reward['id']}/reward-given", json={"given": True})).status_code == 200
-
-
-async def test_a_removed_tool_leaves_no_blank_line_for_the_family(api, db):
-    f = await _family(db)
-    await _publish(api, await _full_plan(api, f))
-    await db.delete(f["tool"])
+    plan = await _create(api, f)
+    f["setup"].status = "completed"
+    f["setup"].completed_date = datetime.now(timezone.utc) - timedelta(days=20)
     await db.flush()
-    api.sign_in_as(f["parent"])
-    labels = [i["label"] for i in (await api.get("/parent/action-plan")).json()["items"]]
-    assert "" not in labels and "The worry hill" not in labels
     api.sign_in_as(f["clinician"].user)
-    plans = (await api.get(f"/patients/{f['child'].id}/action-plans")).json()
-    assert "(removed)" in [i["label"] for i in plans[0]["items"]]
+    saved = (await api.get(f"/patients/{f['child'].id}/action-plans")).json()[0]
+    assert _by_kind(saved, "exposure")[0]["done"] is False
+
+
+async def test_a_clinician_cannot_record_another_childs_step(api, db):
+    f = await _family(db)
+    g = await _family(db)
+    api.sign_in_as(f["clinician"].user)
+    after = {"feared_outcome_occurred": False, "what_happened": "x", "distress_thermometer_actual": 3, "bip_after": 30, "what_learned": "x"}
+    r = await api.post(f"/patients/{f['child'].id}/exposures/{g['rung'].id}/record", json=after)
+    assert r.status_code == 404

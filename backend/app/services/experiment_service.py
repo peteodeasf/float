@@ -426,3 +426,47 @@ async def notify_clinician_completed(
         sender_type="system",
     ))
     await db.commit()
+
+
+# The setup answers a new exposure copies from the last one on the same step.
+_SETUP_FIELDS = (
+    "plan_description", "prediction", "how_will_i_know", "bip_before", "distress_thermometer_expected",
+    "tempting_behaviors", "confidence_level",
+)
+
+
+async def record_for_child(
+    db: AsyncSession, patient_id: uuid.UUID, organization_id: uuid.UUID, rung_id: uuid.UUID,
+    data: ExperimentAfterState,
+) -> Experiment:
+    """The clinician records how an exposure went, in session, with the child's debrief questions
+    (action plan check-in, Peter 2026-11-27). Uses the step's set-up exposure; when the last one was
+    recorded already, a new one with the same set-up answers, as the child would set it up again."""
+    from app.models.treatment import AvoidanceBehavior, TreatmentPlan, TriggerSituation
+    from sqlalchemy import or_
+
+    tp_ids = select(TreatmentPlan.id).where(TreatmentPlan.patient_id == patient_id)
+    owned = (await db.execute(
+        select(AvoidanceBehavior.id)
+        .outerjoin(TriggerSituation, TriggerSituation.id == AvoidanceBehavior.trigger_situation_id)
+        .where(AvoidanceBehavior.id == rung_id, or_(
+            AvoidanceBehavior.treatment_plan_id.in_(tp_ids), TriggerSituation.treatment_plan_id.in_(tp_ids)))
+    )).scalar_one_or_none()
+    if owned is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step not found")
+
+    on_step = select(Experiment).where(Experiment.patient_id == patient_id, Experiment.avoidance_behavior_id == rung_id)
+    pending = (await db.execute(
+        on_step.where(Experiment.status.in_(("planned", "committed"))).order_by(Experiment.created_at.desc()).limit(1)
+    )).scalar_one_or_none()
+    if pending is None:
+        last = (await db.execute(on_step.order_by(Experiment.created_at.desc()).limit(1))).scalar_one_or_none()
+        if last is None:
+            raise HTTPException(status_code=422, detail="Set it up first")
+        pending = Experiment(patient_id=patient_id, organization_id=organization_id,
+                             avoidance_behavior_id=rung_id, status="planned",
+                             **{f: getattr(last, f) for f in _SETUP_FIELDS})
+        db.add(pending)
+        await db.flush()
+    pending.recorded_by = "clinician"
+    return await save_after_state(db, pending.id, organization_id, data, patient_id=patient_id)

@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.action_plan import ActionPlan, ActionPlanItem
 from app.models.patient import PatientProfile
+from app.schemas.experiment import ExperimentAfterState
+from app.services.experiment_service import record_for_child
 from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 from app.services import action_plan_service as svc
 from app.services.patient_access_service import get_patient_for_practitioner, patient_of_record
@@ -51,18 +53,8 @@ async def get_permitted_action_plan_item(
 
 # --- Schemas ---
 
-class PlanCreate(BaseModel):
-    session_date: Optional[date] = None
-    # Items on the last plan to carry over. The rest of the last plan is marked done.
-    keep_item_ids: list[uuid.UUID] = []
-
-
-class PlanUpdate(BaseModel):
-    session_date: Optional[date] = None
-    confidence: Optional[Literal["low", "medium", "high"]] = None
-
-
-class ItemCreate(BaseModel):
+class ItemIn(BaseModel):
+    id: Optional[uuid.UUID] = None  # a line already on the plan, keeping its ticks and notes
     kind: Literal["exposure", "tool", "accommodation", "parent_instruction", "reward"]
     avoidance_behavior_id: Optional[uuid.UUID] = None
     accommodation_behavior_id: Optional[uuid.UUID] = None
@@ -75,27 +67,33 @@ class ItemCreate(BaseModel):
     parent_only: bool = False  # a written-in tool under the parent's section
 
 
-class ItemUpdate(BaseModel):
-    text: Optional[str] = None
-    reward_for: Optional[str] = None
+class PlanIn(BaseModel):
+    starts_on: Optional[date] = None
+    ends_on: Optional[date] = None
+    items: list[ItemIn]
+
+
+class TickIn(BaseModel):
+    done: bool
+
+
+class CheckNoteIn(BaseModel):
     note: Optional[str] = None
-    share_with_child: Optional[bool] = None
-    position: Optional[int] = None
-
-
-class RewardGiven(BaseModel):
-    given: bool
 
 
 router = APIRouter(tags=["action-plans"])
+
+
+async def _one(db, plan: ActionPlan) -> dict:
+    return (await svc.plans_out(db, [plan]))[0]
 
 
 async def _plan_of(db, item: ActionPlanItem) -> ActionPlan:
     return (await db.execute(select(ActionPlan).where(ActionPlan.id == item.action_plan_id))).scalar_one()
 
 
-async def _one(db, plan: ActionPlan) -> dict:
-    return (await svc.plans_out(db, [plan]))[0]
+def _items(data: PlanIn) -> list[dict]:
+    return [{k: (str(v) if isinstance(v, uuid.UUID) else v) for k, v in i.model_dump().items()} for i in data.items]
 
 
 @router.get("/patients/{patient_id}/action-plans")
@@ -113,103 +111,65 @@ async def list_action_plans(
 @router.post("/patients/{patient_id}/action-plans", status_code=status.HTTP_201_CREATED)
 async def create_action_plan(
     patient_id: uuid.UUID,
-    data: PlanCreate,
+    data: PlanIn,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
+    """A new plan, saved whole; the family sees it straight away (Peter, 2026-11-27)."""
     _, practitioner = context
     plan = await svc.create_plan(db, patient_id, practitioner.organization_id, practitioner.id,
-                                 data.keep_item_ids, data.session_date)
+                                 data.starts_on, data.ends_on, _items(data))
     return await _one(db, plan)
 
 
-@router.patch("/action-plans/{action_plan_id}")
-async def update_action_plan(
-    data: PlanUpdate,
+@router.put("/action-plans/{action_plan_id}")
+async def save_action_plan(
+    data: PlanIn,
     db: AsyncSession = Depends(get_db),
     plan: ActionPlan = Depends(get_permitted_action_plan),
 ):
-    await svc.require_latest(db, plan)
-    if data.session_date is not None:
-        plan.session_date = data.session_date
-    if data.confidence is not None:
-        plan.confidence = data.confidence
-    await db.commit()
-    await db.refresh(plan)
+    """The edit view's Save: the plan's dates and lines, whole."""
+    plan = await svc.save_plan(db, plan, data.starts_on, data.ends_on, _items(data))
     return await _one(db, plan)
 
 
-@router.post("/action-plans/{action_plan_id}/publish")
-async def publish_action_plan(
-    db: AsyncSession = Depends(get_db),
-    plan: ActionPlan = Depends(get_permitted_action_plan),
-):
-    await svc.require_latest(db, plan)
-    count = (await db.execute(
-        select(func.count()).select_from(ActionPlanItem).where(ActionPlanItem.action_plan_id == plan.id)
-    )).scalar()
-    svc.publish(plan, count)
-    await db.commit()
-    await db.refresh(plan)
-    return await _one(db, plan)
-
-
-@router.delete("/action-plans/{action_plan_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_action_plan(
-    db: AsyncSession = Depends(get_db),
-    plan: ActionPlan = Depends(get_permitted_action_plan),
-):
-    """A draft only. A shared plan is what the family was told."""
-    if plan.published_at is not None:
-        raise HTTPException(status_code=409, detail="A shared action plan cannot be deleted")
-    await db.delete(plan)
-    await db.commit()
-
-
-@router.post("/action-plans/{action_plan_id}/items", status_code=status.HTTP_201_CREATED)
-async def add_action_plan_item(
-    data: ItemCreate,
-    db: AsyncSession = Depends(get_db),
-    plan: ActionPlan = Depends(get_permitted_action_plan),
-):
-    await svc.require_latest(db, plan)
-    await svc.add_item(db, plan, data.kind, data.model_dump())
-    return await _one(db, plan)
-
-
-@router.patch("/action-plan-items/{item_id}")
-async def update_action_plan_item(
-    data: ItemUpdate,
+@router.put("/action-plan-items/{item_id}/tick")
+async def clinician_tick(
+    data: TickIn,
     db: AsyncSession = Depends(get_db),
     item: ActionPlanItem = Depends(get_permitted_action_plan_item),
 ):
-    await svc.require_latest(db, await _plan_of(db, item))
-    svc.update_item(item, data.model_dump(exclude_unset=True))
+    """Checking in: the clinician ticks any line but an exposure, on a current or closed plan."""
+    svc.tick(item, data.done, "clinician")
     await db.commit()
-    plan = (await db.execute(select(ActionPlan).where(ActionPlan.id == item.action_plan_id))).scalar_one()
-    return await _one(db, plan)
+    return await _one(db, await _plan_of(db, item))
 
 
-@router.delete("/action-plan-items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_action_plan_item(
+@router.put("/action-plan-items/{item_id}/check-note")
+async def clinician_check_note(
+    data: CheckNoteIn,
     db: AsyncSession = Depends(get_db),
     item: ActionPlanItem = Depends(get_permitted_action_plan_item),
 ):
-    await svc.require_latest(db, await _plan_of(db, item))
-    await db.delete(item)
+    """A check-in note. The clinician's alone: never sent to the family's apps."""
+    item.check_note = (data.note or "").strip() or None
     await db.commit()
+    return await _one(db, await _plan_of(db, item))
 
 
-@router.put("/action-plan-items/{item_id}/reward-given")
-async def clinician_marks_reward(
-    data: RewardGiven,
+@router.post("/patients/{patient_id}/exposures/{rung_id}/record", status_code=status.HTTP_201_CREATED)
+async def clinician_records_exposure(
+    patient_id: uuid.UUID,
+    rung_id: uuid.UUID,
+    data: ExperimentAfterState,
+    context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
-    item: ActionPlanItem = Depends(get_permitted_action_plan_item),
+    _access: PatientProfile = Depends(get_permitted_patient),
 ):
-    """At the next session, for a reward the parent has not answered."""
-    svc.mark_reward(item, data.given, "clinician")
-    await db.commit()
-    plan = (await db.execute(select(ActionPlan).where(ActionPlan.id == item.action_plan_id))).scalar_one()
-    return await _one(db, plan)
-
+    """The clinician records how an exposure went, with the questions the child answers in their app.
+    Against the step's set-up exposure; if there is none (the last one was recorded already), a new one
+    with the same set-up answers."""
+    _, practitioner = context
+    exp = await record_for_child(db, patient_id, practitioner.organization_id, rung_id, data)
+    return {"id": str(exp.id), "status": exp.status}

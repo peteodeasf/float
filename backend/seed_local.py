@@ -320,7 +320,7 @@ async def _treatment(db, practice, clinician, child) -> None:
     # Last week's action plan, shared with the family. docs/plans/action-plans-build.md
     action_plan = ActionPlan(
         patient_id=child.id, organization_id=org_id, practitioner_id=clinician.id,
-        session_number=3, session_date=days_ago(7), confidence="high",
+        session_number=3, session_date=days_ago(3), ends_on=days_ago(3) + timedelta(days=7),
         published_at=datetime.combine(days_ago(7), datetime.min.time(), tzinfo=timezone.utc),
     )
     db.add(action_plan)

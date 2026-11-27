@@ -300,7 +300,7 @@ export default function PatientPage() {
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null)
   // Plan tab: the ladder on its own, with accommodations one tab away (Peter, 2026-10-13: keep the
   // Plan tab clean for building the ladder). The Case Summary is its own tab now (issue #54).
-  const [planSubTab, setPlanSubTab] = useState<'ladder' | 'accommodations'>('ladder')
+  const [planSubTab, setPlanSubTab] = useState<'ladder' | 'accommodations' | 'action-plan'>('ladder')
   const [msgContent, setMsgContent] = useState('')
   // 'teen', or a parent's user id: a child can have two parents and each has their own thread
   // (docs/plans/two-parent-accounts.md).
@@ -1775,7 +1775,7 @@ export default function PatientPage() {
             )
           })}
           {/* One place on every tab. On Plan it follows Ladder / Accommodations. */}
-          <HowThisWorksLink onClick={() => openPanel(activeTab === 'plan' ? planSubTab : activeTab)} style={{ marginLeft: 'auto', alignSelf: 'center' }} />
+          <HowThisWorksLink onClick={() => openPanel(activeTab === 'plan' ? (planSubTab === 'action-plan' ? null : planSubTab) : activeTab)} style={{ marginLeft: 'auto', alignSelf: 'center' }} />
         </div>
 
         {/* Body: content + optional process panel */}
@@ -1788,7 +1788,6 @@ export default function PatientPage() {
             {activeTab === 'sessions' && (
               <>
                 {sessionNotesList}
-                {SHOW_ACTION_PLANS && <ActionPlansSection patientId={patientId!} />}
               </>
             )}
 
@@ -1800,6 +1799,7 @@ export default function PatientPage() {
                   {([
                     { id: 'ladder', label: 'Ladder' },
                     { id: 'accommodations', label: 'Accommodations' },
+                    ...(SHOW_ACTION_PLANS ? [{ id: 'action-plan', label: 'Action plan' }] as const : []),
                   ] as const).map(t => (
                     <button key={t.id} onClick={() => setPlanSubTab(t.id)} aria-pressed={planSubTab === t.id} style={subTab(planSubTab === t.id)}>
                       {t.label}
@@ -1810,6 +1810,9 @@ export default function PatientPage() {
                 {planSubTab === 'accommodations' && (plan
                   ? <ParentPlanPanel planId={plan.id} patientId={patientId!} triggers={triggers ?? []} />
                   : <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', margin: 0 }}>Create the treatment plan on the Ladder tab first.</p>)}
+                {/* Action plans: the current one to check in on, its edit view, and the closed ones.
+                    Peter, 2026-11-27. docs/plans/action-plans-build.md */}
+                {planSubTab === 'action-plan' && <ActionPlansSection patientId={patientId!} />}
               </>
             )}
 

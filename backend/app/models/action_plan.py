@@ -19,7 +19,6 @@ CHILD_KINDS = ("exposure", "tool", "reward")
 class ActionPlan(Base):
     __tablename__ = "action_plans"
     __table_args__ = (
-        CheckConstraint("confidence IN ('low', 'medium', 'high')", name="ck_action_plans_confidence"),
         # One plan per session number, so two clicks cannot make two drafts.
         UniqueConstraint("patient_id", "session_number", name="uq_action_plans_patient_session"),
         Index("ix_action_plans_patient_id", "patient_id"),
@@ -35,8 +34,8 @@ class ActionPlan(Base):
     )
     session_number: Mapped[int] = mapped_column(Integer, nullable=False)
     session_date: Mapped[date] = mapped_column(Date, nullable=False, server_default=sql("CURRENT_DATE"))
-    # The child's confidence they can do it: low, medium or high. Publishing needs high.
-    confidence: Mapped[str | None] = mapped_column(String, nullable=True)
+    # The plan runs from session_date (its start) to ends_on, both included. Peter, 2026-11-27.
+    ends_on: Mapped[date] = mapped_column(Date, nullable=False)
     # Empty while a draft. Set, the parent and child see it.
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=sql("now()"))
@@ -53,8 +52,7 @@ class ActionPlanItem(Base):
         CheckConstraint(
             "kind IN ('exposure', 'tool', 'accommodation', 'parent_instruction', 'reward')",
             name="ck_action_plan_items_kind"),
-        CheckConstraint("outcome IN ('keep', 'done')", name="ck_action_plan_items_outcome"),
-        CheckConstraint("reward_given_by IN ('parent', 'clinician')", name="ck_action_plan_items_given_by"),
+        CheckConstraint("done_by IN ('clinician', 'child', 'parent')", name="ck_action_plan_items_done_by"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -90,11 +88,10 @@ class ActionPlanItem(Base):
     share_with_child: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=sql("false"), default=False
     )
-    # Reward only: was it given. Empty until the parent (or, at the next session, the clinician) says.
-    reward_given: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    reward_given_by: Mapped[str | None] = mapped_column(String, nullable=True)  # parent | clinician
-    reward_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    # Set at the next session: keep (carried to the new plan) or done.
-    outcome: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Checking in: ticked, by whom (clinician, child or parent) and when. An exposure is done by
+    # recording it instead. check_note is the clinician's alone.
+    done_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    done_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    check_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=sql("now()"))
 

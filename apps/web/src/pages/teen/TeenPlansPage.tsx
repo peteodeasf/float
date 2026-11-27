@@ -46,7 +46,7 @@ export default function TeenPlansPage() {
         {plan && (
           <div style={{ ...teen.type.body, fontSize: 13, color: teen.color.inkSoft, marginTop: 6 }}>
             From your session on{' '}
-            {new Date(plan.session_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {new Date(plan.starts_on + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </div>
         )}
       </div>

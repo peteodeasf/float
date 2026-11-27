@@ -1,7 +1,7 @@
 // The current action plan in the parent's app, with "was it given?" on each reward.
 // docs/plans/action-plans-build.md
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getParentActionPlan, parentMarksReward, type ActionPlan, type ActionPlanItem } from '../../api/action_plans'
+import { getParentActionPlan, parentTick, type ActionPlan, type ActionPlanItem } from '../../api/action_plans'
 import teen from '../../styles/teenTokens'
 
 const GROUPS: { kinds: ActionPlanItem['kind'][]; title: (child: string) => string }[] = [
@@ -24,14 +24,14 @@ function choice(on: boolean): React.CSSProperties {
 function RewardAnswer({ item }: { item: ActionPlanItem }) {
   const qc = useQueryClient()
   const mut = useMutation({
-    mutationFn: (given: boolean) => parentMarksReward(item.id, given),
+    mutationFn: (given: boolean) => parentTick(item.id, given),
     onSuccess: p => qc.setQueryData<ActionPlan | null>(['parent-action-plan'], p),
   })
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
       <span style={{ ...teen.type.body, fontSize: 13.5, color: teen.color.inkSoft }}>Did you give it?</span>
-      <button aria-pressed={item.reward_given === true} onClick={() => mut.mutate(true)} style={choice(item.reward_given === true)}>Yes</button>
-      <button aria-pressed={item.reward_given === false} onClick={() => mut.mutate(false)} style={choice(item.reward_given === false)}>Not yet</button>
+      <button aria-pressed={item.done} onClick={() => mut.mutate(true)} style={choice(item.done)}>Yes</button>
+      <button aria-pressed={!item.done} onClick={() => mut.mutate(false)} style={choice(!item.done)}>Not yet</button>
       {mut.isError && <span role="alert" style={{ fontSize: 13, color: '#b91c1c' }}>That didn't save.</span>}
     </div>
   )
@@ -45,8 +45,9 @@ export default function ParentActionPlanCard({ childName }: { childName: string 
     <div className="teen-card" style={{ marginTop: 16, padding: '18px 18px 8px' }}>
       <div style={teen.type.eyebrow}>Action plan</div>
       <div style={{ ...small, marginTop: 4 }}>
-        Until the next session · from{' '}
-        {new Date(plan.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {new Date(plan.starts_on + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {' – '}
+        {new Date(plan.ends_on + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
       </div>
       {GROUPS.map(g => {
         const items = plan.items.filter(i => g.kinds.includes(i.kind))

@@ -1918,6 +1918,9 @@ async def patient_save_after_state(
     experiment = await save_after_state(
         db, experiment_id, patient.organization_id, data, patient_id=patient.id
     )
+    if experiment.recorded_by is None:
+        experiment.recorded_by = "child"
+        await db.commit()
 
     if experiment.status == "completed":
         await notify_clinician_completed(db, user, patient, experiment)
@@ -1934,9 +1937,38 @@ async def get_my_action_plan(
     shared. None until one is published. docs/plans/action-plans-build.md"""
     from app.services import action_plan_service
     _, patient = context
-    plan = await action_plan_service.current_published(db, patient.id)
+    plan = await action_plan_service.current_for_family(db, patient.id)
     if plan is None:
         return None
+    return (await action_plan_service.plans_out(db, [plan], audience="child"))[0]
+
+
+class _TickIn(BaseModel):
+    done: bool
+
+
+@patient_router.put("/action-plan-items/{item_id}/tick")
+async def child_ticks(
+    item_id: uuid.UUID,
+    data: _TickIn,
+    context: tuple = Depends(get_patient_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The child ticks a tool, strategy or reward on their own plan. Not a parent-only line."""
+    from app.models.action_plan import ActionPlan, ActionPlanItem
+    from app.services import action_plan_service
+    _, patient = context
+    item = (await db.execute(
+        select(ActionPlanItem).join(ActionPlan, ActionPlan.id == ActionPlanItem.action_plan_id).where(
+            ActionPlanItem.id == item_id, ActionPlan.patient_id == patient.id,
+            ActionPlanItem.kind.in_(action_plan_service.FAMILY_TICKS), ActionPlanItem.parent_only.is_(False),
+        )
+    )).scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    action_plan_service.tick(item, data.done, "child")
+    await db.commit()
+    plan = await db.get(ActionPlan, item.action_plan_id)
     return (await action_plan_service.plans_out(db, [plan], audience="child"))[0]
 
 

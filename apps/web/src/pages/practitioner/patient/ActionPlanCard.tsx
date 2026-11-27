@@ -1,15 +1,15 @@
 /**
- * The action plan, as a card on the patient page's Sessions tab. It copies the patient page's cards
- * (the Treatment Plan card's header, the ladder's rows and section labels, the shared buttons and
- * chips), per CLAUDE.md "Match the existing design". Mockup agreed with Peter 2026-11-27:
- * https://claude.ai/artifact/1N6pVXRJUCJg6HZS9PKC7x. docs/plans/action-plans-build.md
+ * The action plan on the Plan tab's Action plan sub-tab: a view for checking in, and an edit view
+ * with Save. Both copy the patient page's cards (the Treatment Plan card's header, the ladder's rows
+ * and labels, the shared buttons and chips), per CLAUDE.md "Match the existing design".
+ * Mockup agreed with Peter 2026-11-27: https://claude.ai/artifact/1N6pVXRJUCJg6HZS9PKC7x.
+ * docs/plans/action-plans-build.md
  */
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  addActionPlanItem, clinicianMarksReward, createActionPlan, deleteActionPlan, deleteActionPlanItem,
-  publishActionPlan, updateActionPlanItem,
-  type ActionPlan, type ActionPlanItem, type NewItem,
+  setCheckNote, tickItem,
+  type ActionPlan, type ActionPlanItem, type ItemIn, type Recording,
 } from '../../../api/action_plans'
 import {
   getPatientExperiments, getPlanRungs, getTreatmentPlan, getTriggers,
@@ -17,14 +17,13 @@ import {
 } from '../../../api/treatment'
 import { listAccommodations } from '../../../api/accommodations'
 import { listTools, type ToolPage } from '../../../api/tools'
-import { btn, chip } from '../../../components/ui/buttons'
+import { btn } from '../../../components/ui/buttons'
 import { SessionSetupSheet } from './SessionSetupSheet'
-import { card } from './actionPlanCardStyle'
+import { RecordExposureSheet } from './RecordExposureSheet'
+import { card, range } from './actionPlanCardStyle'
 
-// The patient page's card and its parts (PatientPage.tsx cardStyle, the Treatment Plan header,
-// FlatLadder's rows and labels).
-const cardHeader: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', padding: '14px 20px', borderBottom: '1px solid var(--float-border)' }
-const sectionLabel: CSSProperties = { fontSize: 11, fontWeight: 700, color: 'var(--float-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }
+const cardHeader: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', padding: '12px 20px', borderBottom: '1px solid var(--float-border)' }
+const sectionLabel: CSSProperties = { fontSize: 11, fontWeight: 700, color: 'var(--float-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }
 const groupLabel: CSSProperties = { fontSize: 12, color: 'var(--float-text-hint)', margin: '0 0 10px' }
 const row: CSSProperties = { border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 13px', display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--float-surface)' }
 const rowTitle: CSSProperties = { flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }
@@ -32,45 +31,168 @@ const field: CSSProperties = { fontFamily: 'inherit', fontSize: 12, padding: '6p
 const titleField: CSSProperties = { ...field, flex: 1, fontSize: 14, fontWeight: 600, padding: '5px 8px' }
 const hint: CSSProperties = { fontSize: 12, color: 'var(--float-text-hint)', margin: 0 }
 const removeBtn: CSSProperties = { background: 'none', border: 'none', color: 'var(--float-text-hint)', cursor: 'pointer', fontSize: 14, padding: '0 2px' }
-const divider: CSSProperties = { borderTop: '1px solid var(--float-border)', paddingTop: 20 }
+const divider: CSSProperties = { borderTop: '1px solid var(--float-border)', paddingTop: 16 }
+const linkBtn: CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 600, color: 'var(--float-primary)' }
 const pill = (tone: 'ready' | 'warn' | 'none'): CSSProperties => ({
   fontSize: 11, fontWeight: 600, borderRadius: 'var(--float-radius-pill)', padding: '2px 8px', whiteSpace: 'nowrap',
   color: tone === 'ready' ? 'var(--float-success)' : tone === 'warn' ? 'var(--float-warning)' : 'var(--float-text-secondary)',
   background: tone === 'ready' ? 'var(--float-primary-light)' : 'var(--float-surface-sunken)',
 })
 
-const day = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const weekday = (iso: string) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+const errText = (e: unknown) => (e as { response?: { data?: { detail?: string } } } | null)?.response?.data?.detail ?? "That didn't save. Try again."
 
-/** A text box that saves when you leave it, and takes the saved value when it changes. */
-function SaveOnBlur({ value, placeholder, onSave, style, label, required }: {
-  value: string; placeholder?: string; onSave: (v: string) => void; style?: CSSProperties; label: string; required?: boolean
-}) {
-  const [draft, setDraft] = useState(value)
-  const [saved, setSaved] = useState(value)
-  if (value !== saved) { setSaved(value); setDraft(value) }
-  return (
-    <input aria-label={label} value={draft} placeholder={placeholder} style={style ?? field}
-      onChange={e => setDraft(e.target.value)}
-      onBlur={() => {
-        if (required && !draft.trim()) { setDraft(value); return }
-        if (draft.trim() !== value.trim()) onSave(draft)
-      }} />
-  )
+type Group = { match: (i: { kind: string; parent_only?: boolean | null }) => boolean }
+const SECTIONS: { label: (child: string) => string; groups: Group[] }[] = [
+  { label: c => `${c}'s work`, groups: [
+    { match: i => i.kind === 'exposure' },
+    { match: i => i.kind === 'tool' && !i.parent_only },
+  ] },
+  { label: () => 'Parent work', groups: [
+    { match: i => i.kind === 'accommodation' },
+    { match: i => i.kind === 'tool' && !!i.parent_only },
+    { match: i => i.kind === 'parent_instruction' },
+  ] },
+  { label: () => 'Rewards', groups: [{ match: i => i.kind === 'reward' }] },
+]
+
+// ── The view: checking in ────────────────────────────────────────────────────
+
+function whoTicked(i: ActionPlanItem): string {
+  const when = i.done_at ? ` · ${shortDate(i.done_at)}` : ''
+  if (i.done_by === 'child') return `In their app${when}`
+  if (i.done_by === 'parent') return `Parent, in their app${when}`
+  return `In session${when}`
 }
 
-function AddLine({ placeholder, onAdd, label }: { placeholder: string; onAdd: (text: string) => void; label: string }) {
-  const [text, setText] = useState('')
-  const add = () => { if (text.trim()) { onAdd(text.trim()); setText('') } }
+function recordingLine(r: Recording): string {
+  const parts = [r.recorded_by === 'clinician' ? 'in session' : r.recorded_by === 'child' ? 'by the child' : null]
+  if (r.fear_expected != null || r.fear_felt != null) parts.push(`Fear Level ${r.fear_expected ?? '–'} expected, ${r.fear_felt ?? '–'} felt`)
+  if (r.belief_before != null || r.belief_after != null) parts.push(`belief ${r.belief_before ?? '–'}% → ${r.belief_after ?? '–'}%`)
+  if (r.feared_outcome_occurred === false) parts.push("didn't happen")
+  if (r.feared_outcome_occurred === true) parts.push('it happened')
+  return parts.filter(Boolean).join(' · ')
+}
+
+function NoteField({ initial, onSave, onCancel }: { initial: string; onSave: (note: string) => void; onCancel: () => void }) {
+  const [draft, setDraft] = useState(initial)
   return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-      <input aria-label={label} value={text} placeholder={placeholder} style={{ ...field, flex: '1 1 240px' }}
-        onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') add() }} />
-      <button onClick={add} disabled={!text.trim()} style={btn('secondary', 'sm')}>Add</button>
+    <div style={{ display: 'flex', gap: 8, padding: '2px 0 6px 26px' }}>
+      <input aria-label="Check-in note" autoFocus value={draft} placeholder="A note only you will see" onChange={e => setDraft(e.target.value)} style={{ ...field, flex: 1 }}
+        onKeyDown={e => { if (e.key === 'Enter') onSave(draft); if (e.key === 'Escape') onCancel() }} />
+      <button onClick={() => onSave(draft)} style={btn('secondary', 'sm')}>Save</button>
+      <button onClick={onCancel} style={btn('quiet', 'sm')}>Cancel</button>
     </div>
   )
 }
 
-// ── Exposures: every ladder step, with whether it is ready ──────────────────
+export function PlanView({ patientId, childName, plan, onEdit, onNew }: {
+  patientId: string; childName: string; plan: ActionPlan; onEdit?: () => void; onNew?: () => void
+}) {
+  const qc = useQueryClient()
+  const save = (p: ActionPlan) => qc.setQueryData<ActionPlan[]>(['action-plans', patientId], old => (old ?? [p]).map(x => (x.id === p.id ? p : x)))
+  const tickMut = useMutation({ mutationFn: ({ id, done }: { id: string; done: boolean }) => tickItem(id, done), onSuccess: save })
+  const noteMut = useMutation({ mutationFn: ({ id, note }: { id: string; note: string }) => setCheckNote(id, note), onSuccess: save })
+  const [noting, setNoting] = useState<string | null>(null)
+  const [recording, setRecording] = useState<ActionPlanItem | null>(null)
+  const closed = plan.state === 'closed'
+
+  const line = (i: ActionPlanItem) => (
+    <div key={i.id} style={{ borderBottom: '1px solid var(--float-surface-sunken)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
+        <input type="checkbox" aria-label={i.label} checked={i.done} disabled={tickMut.isPending}
+          aria-readonly={i.kind === 'exposure'} title={i.kind === 'exposure' ? 'Done once it is recorded' : undefined}
+          // An exposure is ticked by recording it, so its box only shows the state.
+          onChange={() => { if (i.kind !== 'exposure') tickMut.mutate({ id: i.id, done: !i.done }) }}
+          style={{ width: 16, height: 16, flexShrink: 0, accentColor: 'var(--float-primary)', cursor: i.kind === 'exposure' ? 'default' : 'pointer' }} />
+        <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: 'var(--float-text)' }}>
+          {i.label}
+          {i.kind === 'reward' && i.reward_for && <span style={{ fontWeight: 400, color: 'var(--float-text-secondary)' }}> · for {i.reward_for}</span>}
+        </span>
+        {i.kind === 'exposure'
+          ? <>
+              <span style={{ fontSize: 12, fontWeight: i.recordings?.length ? 600 : 400, color: i.recordings?.length ? 'var(--float-success)' : 'var(--float-text-hint)' }}>
+                {i.recordings?.length ? `${i.recordings.length} recorded` : 'Not recorded yet'}
+              </span>
+              {i.avoidance_behavior_id && !closed && <button onClick={() => setRecording(i)} style={{ ...btn('secondary', 'sm'), height: 24, fontSize: 12 }}>Record one</button>}
+            </>
+          : i.done && <span style={{ fontSize: 12, color: 'var(--float-text-secondary)' }}>{i.kind === 'reward' ? 'Given · ' : ''}{whoTicked(i)}</span>}
+        {!i.check_note && noting !== i.id && <button onClick={() => setNoting(i.id)} style={linkBtn}>+ Note</button>}
+      </div>
+      {i.kind === 'exposure' && !!i.recordings?.length && (
+        <div style={{ padding: '0 0 6px 26px', display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12, color: 'var(--float-text-secondary)' }}>
+          {i.recordings.map(r => (
+            <span key={r.id}><b style={{ color: 'var(--float-text)', fontWeight: 600 }}>{r.completed_date ? weekday(r.completed_date) : ''}</b> · {recordingLine(r)}</span>
+          ))}
+        </div>
+      )}
+      {noting === i.id
+        ? <NoteField initial={i.check_note ?? ''} onSave={note => { noteMut.mutate({ id: i.id, note }); setNoting(null) }} onCancel={() => setNoting(null)} />
+        : i.check_note && (
+          <button onClick={() => setNoting(i.id)} title="Change the note"
+            style={{ ...linkBtn, display: 'block', fontWeight: 400, fontStyle: 'italic', color: 'var(--float-text-secondary)', textAlign: 'left', padding: '0 0 6px 26px' }}>
+            Note: {i.check_note}
+          </button>
+        )}
+    </div>
+  )
+
+  return (
+    <div style={{ ...card, overflow: 'hidden' }}>
+      <div style={cardHeader}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="text-sm font-semibold text-slate-700">Action plan</span>
+          <span style={{ fontSize: 12, color: 'var(--float-border-strong)' }}>&middot;</span>
+          <span style={{ fontSize: 13, color: 'var(--float-text-secondary)' }}>{range(plan)}</span>
+          <span style={pill(closed ? 'none' : 'ready')}>{closed ? 'Closed' : plan.state === 'upcoming' ? 'Starts soon' : 'Current'}</span>
+          <span style={{ fontSize: 12, color: 'var(--float-text-secondary)', marginLeft: 4 }}>{plan.done_count} of {plan.items.length} done</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {onEdit && !closed && <button onClick={onEdit} style={btn('secondary', 'sm')}>Edit</button>}
+          {onNew && <button onClick={onNew} style={btn('primary', 'sm')}>+ New action plan</button>}
+        </div>
+      </div>
+      <div style={{ padding: '14px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {SECTIONS.map((sec, n) => {
+          const items = sec.groups.flatMap(g => plan.items.filter(g.match))
+          if (items.length === 0) return null
+          return <div key={n}><div style={sectionLabel}>{sec.label(childName)}</div>{items.map(line)}</div>
+        })}
+        {(tickMut.isError || noteMut.isError) && (
+          <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>{errText(tickMut.error ?? noteMut.error)}</p>
+        )}
+      </div>
+      {recording?.avoidance_behavior_id && (
+        <RecordExposureSheet patientId={patientId} rungId={recording.avoidance_behavior_id} title={recording.label}
+          onClose={() => setRecording(null)}
+          onSaved={() => {
+            setRecording(null)
+            qc.invalidateQueries({ queryKey: ['action-plans', patientId] })
+            qc.invalidateQueries({ queryKey: ['experiments', patientId] })
+          }} />
+      )}
+    </div>
+  )
+}
+
+// ── The edit view: Save sends the whole plan ─────────────────────────────────
+
+/** A line being edited. `label` and the display fields are for showing it; the rest is what is saved. */
+type Draft = ItemIn & { key: string; label: string; tool_name?: string | null; summary?: string | null; fear_level?: number | null }
+
+let nextKey = 0
+const newKey = () => `new-${nextKey++}`
+
+function draftsFrom(plan: ActionPlan | null): Draft[] {
+  return (plan?.items ?? []).map(i => ({
+    key: i.id, id: i.id, kind: i.kind, label: i.label,
+    avoidance_behavior_id: i.avoidance_behavior_id, accommodation_behavior_id: i.accommodation_behavior_id,
+    tool_id: i.tool_id, tool_example_id: i.tool_example_id, text: i.text ?? null, reward_for: i.reward_for,
+    note: i.note, share_with_child: i.share_with_child, parent_only: i.parent_only,
+    tool_name: i.tool_name, summary: i.example_how_used || (!i.tool_name ? i.tool_summary : null), fear_level: i.fear_level,
+  }))
+}
 
 type Readiness = { tone: 'ready' | 'warn' | 'none'; label: string; experiment: PlannedExperiment | null }
 
@@ -88,7 +210,7 @@ function readinessOf(rungId: string, experiments: PlannedExperiment[]): Readines
 }
 
 function AddExposure({ patientId, onAdd, onClose, usedRungIds }: {
-  patientId: string; onAdd: (rungId: string) => void; onClose: () => void; usedRungIds: Set<string>
+  patientId: string; onAdd: (rung: AvoidanceBehavior) => void; onClose: () => void; usedRungIds: Set<string>
 }) {
   const qc = useQueryClient()
   const { data: tp } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId) })
@@ -97,7 +219,6 @@ function AddExposure({ patientId, onAdd, onClose, usedRungIds }: {
   const { data: triggers = [] } = useQuery({ queryKey: ['triggers', planId], queryFn: () => getTriggers(planId!), enabled: !!planId })
   const { data: experiments = [] } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId) })
   const [settingUp, setSettingUp] = useState<{ rung: AvoidanceBehavior; existing: PlannedExperiment | null } | null>(null)
-
   const steps = rungs.filter(r => !usedRungIds.has(r.id))
     .sort((a, b) => (a.distress_thermometer_when_refraining ?? 99) - (b.distress_thermometer_when_refraining ?? 99))
 
@@ -117,7 +238,7 @@ function AddExposure({ patientId, onAdd, onClose, usedRungIds }: {
             <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: 'var(--float-text)' }}>{r.name}</span>
             <span style={pill(ready.tone)}>{ready.label}</span>
             {ready.tone === 'ready'
-              ? <button onClick={() => onAdd(r.id)} style={btn('primary', 'sm')}>Add</button>
+              ? <button onClick={() => onAdd(r)} style={btn('primary', 'sm')}>Add</button>
               : <button onClick={() => setSettingUp({ rung: r, existing: ready.experiment })} style={btn('secondary', 'sm')}>
                   {ready.tone === 'warn' ? 'Edit' : 'Set it up'}
                 </button>}
@@ -131,10 +252,11 @@ function AddExposure({ patientId, onAdd, onClose, usedRungIds }: {
           existing={settingUp.existing}
           onClose={() => setSettingUp(null)}
           onSaved={saved => {
+            const rung = settingUp.rung
             setSettingUp(null)
             qc.invalidateQueries({ queryKey: ['experiments', patientId] })
             // Saved with High confidence: it goes on the plan. Otherwise it stays off, showing its level.
-            if (saved?.confidence_level === 'high') onAdd(settingUp.rung.id)
+            if (saved?.confidence_level === 'high') onAdd(rung)
           }}
         />
       )}
@@ -142,20 +264,18 @@ function AddExposure({ patientId, onAdd, onClose, usedRungIds }: {
   )
 }
 
-// ── Tools and strategies ─────────────────────────────────────────────────────
-
 /** Pick from the Library, then one of its examples or your own; or write one with no page. */
-function ToolAdder({ pages, onAdd, parentOnly }: {
-  pages: ToolPage[]; parentOnly: boolean
-  onAdd: (item: { tool_id?: string; tool_example_id?: string; text?: string; parent_only?: boolean }) => void
-}) {
+function ToolAdder({ pages, onAdd, parentOnly }: { pages: ToolPage[]; parentOnly: boolean; onAdd: (d: Draft) => void }) {
   const [page, setPage] = useState<ToolPage | null>(null)
   const [own, setOwn] = useState<string | null>(null)
+  const [free, setFree] = useState('')
   const reset = () => { setPage(null); setOwn(null) }
+  const fromPage = (p: ToolPage, label: string, extra: Partial<Draft>) =>
+    onAdd({ key: newKey(), kind: 'tool', tool_id: p.id, label, tool_name: label !== p.name ? p.name : null, parent_only: p.audience === 'parent', ...extra })
   const pick = (id: string) => {
     const p = pages.find(x => x.id === id)
     if (!p) return reset()
-    if (p.examples.length === 0) { onAdd({ tool_id: p.id }); reset() } else setPage(p)
+    if (p.examples.length === 0) { fromPage(p, p.name, { summary: p.summary }); reset() } else setPage(p)
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
@@ -169,7 +289,12 @@ function ToolAdder({ pages, onAdd, parentOnly }: {
         )}
         {page && (
           <select aria-label={`Which one from ${page.name}`} value={own !== null ? '__own' : ''}
-            onChange={e => { const v = e.target.value; if (v === '__own') setOwn(''); else if (v) { onAdd({ tool_id: page.id, tool_example_id: v }); reset() } }}
+            onChange={e => {
+              const v = e.target.value
+              if (v === '__own') { setOwn(''); return }
+              const ex = page.examples.find(x => x.id === v)
+              if (ex) { fromPage(page, ex.name, { tool_example_id: ex.id, summary: ex.how_used }); reset() }
+            }}
             style={{ ...field, height: 28 }}>
             <option value="">Which one?</option>
             {page.examples.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
@@ -177,296 +302,201 @@ function ToolAdder({ pages, onAdd, parentOnly }: {
           </select>
         )}
         {page && own !== null && <>
-          <input aria-label={`Your own from ${page.name}`} autoFocus value={own} placeholder="Write it here" style={{ ...field, flex: '1 1 200px' }}
-            onChange={e => setOwn(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && own.trim()) { onAdd({ tool_id: page.id, text: own.trim() }); reset() } }} />
-          <button disabled={!own.trim()} onClick={() => { onAdd({ tool_id: page.id, text: own.trim() }); reset() }} style={btn('secondary', 'sm')}>Add</button>
+          <input aria-label={`Your own from ${page.name}`} autoFocus value={own} placeholder="Write it here" style={{ ...field, flex: '1 1 200px' }} onChange={e => setOwn(e.target.value)} />
+          <button disabled={!own.trim()} onClick={() => { fromPage(page, own.trim(), { text: own.trim() }); reset() }} style={btn('secondary', 'sm')}>Add</button>
         </>}
       </div>
       {!page && (
-        <AddLine label="Write your own tool or strategy" placeholder={pages.length > 0 ? 'or write your own' : 'Write a tool or strategy'}
-          onAdd={text => onAdd({ text, parent_only: parentOnly })} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input aria-label="Write your own tool or strategy" value={free} placeholder={pages.length > 0 ? 'or write your own' : 'Write a tool or strategy'}
+            style={{ ...field, flex: '1 1 240px' }} onChange={e => setFree(e.target.value)} />
+          <button disabled={!free.trim()} onClick={() => { onAdd({ key: newKey(), kind: 'tool', text: free.trim(), label: free.trim(), parent_only: parentOnly }); setFree('') }}
+            style={btn('secondary', 'sm')}>Add</button>
+        </div>
       )}
     </div>
   )
 }
-
-// ── The plan, in the card ────────────────────────────────────────────────────
 
 function Section({ label, children, first }: { label: string; children: ReactNode; first?: boolean }) {
   return <div style={first ? undefined : divider}><div style={sectionLabel}>{label}</div>{children}</div>
 }
 
-export function PlanCard({ patientId, childName, plan, isLatest, onNew }: {
-  patientId: string; childName: string; plan: ActionPlan; isLatest: boolean; onNew: () => void
+function isoDay(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function PlanEditor({ patientId, childName, plan, saving, error, onSave, onCancel }: {
+  patientId: string; childName: string; plan: ActionPlan | null; saving: boolean; error: unknown
+  onSave: (body: { starts_on: string; ends_on: string; items: ItemIn[] }) => void; onCancel: () => void
 }) {
-  const qc = useQueryClient()
-  const refresh = () => qc.invalidateQueries({ queryKey: ['action-plans', patientId] })
-  const save = (p: ActionPlan) => qc.setQueryData<ActionPlan[]>(['action-plans', patientId], old => (old ?? [p]).map(x => (x.id === p.id ? p : x)))
+  const [startsOn, setStartsOn] = useState(() => plan?.starts_on ?? isoDay(new Date()))
+  const [endsOn, setEndsOn] = useState(() => plan?.ends_on ?? isoDay(new Date(Date.now() + 7 * 86400000)))
+  const [items, setItems] = useState<Draft[]>(() => draftsFrom(plan))
+  const [addingExposure, setAddingExposure] = useState(false)
+  const [instruction, setInstruction] = useState('')
+  const [reward, setReward] = useState({ text: '', reward_for: '' })
   const { data: tp } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId) })
   const { data: accommodations = [] } = useQuery({ queryKey: ['accommodations', tp?.id], queryFn: () => listAccommodations(tp!.id), enabled: !!tp?.id })
   const { data: tools = [] } = useQuery({ queryKey: ['tools'], queryFn: listTools })
-  const [addingExposure, setAddingExposure] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const addMut = useMutation({ mutationFn: (item: NewItem) => addActionPlanItem(plan.id, item), onSuccess: p => { save(p); setAddingExposure(false) } })
-  const editMut = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof updateActionPlanItem>[1] }) => updateActionPlanItem(id, data),
-    onSuccess: save,
-  })
-  const removeMut = useMutation({ mutationFn: (id: string) => deleteActionPlanItem(id), onSuccess: refresh })
-  const publishMut = useMutation({ mutationFn: () => publishActionPlan(plan.id), onSuccess: save })
-  const deleteMut = useMutation({ mutationFn: () => deleteActionPlan(plan.id), onSuccess: refresh })
-
-  const failed = [addMut, editMut, removeMut, publishMut, deleteMut].find(m => m.isError)?.error
-  const editable = isLatest
-  const shared = !!plan.published_at
-  const of = (kind: string) => plan.items.filter(i => i.kind === kind)
-  const childTools = of('tool').filter(i => !i.parent_only)
-  const parentTools = of('tool').filter(i => i.parent_only)
-  const usedRungs = new Set(of('exposure').map(i => i.avoidance_behavior_id).filter((x): x is string => !!x))
-  const usedTools = new Set(of('tool').map(i => i.tool_id))
+  const add = (d: Draft) => setItems(prev => [...prev, d])
+  const patch = (k: string, p: Partial<Draft>) => setItems(prev => prev.map(i => (i.key === k ? { ...i, ...p } : i)))
+  const remove = (k: string) => setItems(prev => prev.filter(i => i.key !== k))
+  const of = (match: (i: Draft) => boolean) => items.filter(match)
+  const usedRungs = new Set(items.filter(i => i.kind === 'exposure').map(i => i.avoidance_behavior_id).filter((x): x is string => !!x))
+  const usedTools = new Set(items.map(i => i.tool_id))
   const canAdd = (t: ToolPage) => t.examples.length > 0 || !usedTools.has(t.id)
-  const childPages = tools.filter(t => t.audience !== 'parent' && canAdd(t))
-  const parentPages = tools.filter(t => t.audience === 'parent' && canAdd(t))
   const working = accommodations.filter(a => a.status === 'started')
-  const accChoices = working.filter(a => !of('accommodation').some(i => i.accommodation_behavior_id === a.id))
+  const accChoices = working.filter(a => !items.some(i => i.accommodation_behavior_id === a.id))
+  const badDates = endsOn < startsOn
+  const emptyText = items.some(d => (d.kind === 'parent_instruction' || d.kind === 'reward' || (d.kind === 'tool' && !d.tool_id)) && !(d.text ?? '').trim())
+  const canSave = !saving && items.length > 0 && !badDates && !emptyText
 
-  const remove = (i: ActionPlanItem) => editable && (
-    <button aria-label={`Remove ${i.label}`} title="Remove" onClick={() => removeMut.mutate(i.id)} style={removeBtn}>×</button>
+  const removeX = (d: Draft) => <button aria-label={`Remove ${d.label}`} title="Remove" onClick={() => remove(d.key)} style={removeBtn}>×</button>
+  const noteBox = (d: Draft) => (
+    <input aria-label={`Note on ${d.label}`} value={d.note ?? ''} placeholder="Add a note the family will see" style={field}
+      onChange={e => patch(d.key, { note: e.target.value })} />
   )
-  const note = (i: ActionPlanItem) => editable
-    ? <SaveOnBlur label={`Note on ${i.label}`} value={i.note ?? ''} placeholder="Add a note" onSave={v => editMut.mutate({ id: i.id, data: { note: v } })} />
-    : i.note ? <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>{i.note}</span> : null
-  const title = (i: ActionPlanItem, required = false) => editable
-    ? <SaveOnBlur label="Wording on this plan" value={i.label} style={titleField} required={required} onSave={v => editMut.mutate({ id: i.id, data: { text: v } })} />
-    : <span style={rowTitle}>{i.label}</span>
-  const toolRow = (i: ActionPlanItem) => (
-    <div key={i.id} style={row}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{title(i, true)}{remove(i)}</div>
-      {i.tool_name && <span style={{ fontSize: 11, color: 'var(--float-text-hint)' }}>From {i.tool_name}</span>}
-      {!i.tool_id && <span style={{ fontSize: 11, color: 'var(--float-text-hint)' }}>Written in. No Library page.</span>}
-      {(i.example_how_used || (!i.tool_name && i.tool_summary)) && (
-        <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)', lineHeight: 1.5 }}>{i.example_how_used || i.tool_summary}</span>
-      )}
-      {note(i)}
+  // Rewording keeps the line's link; an example reworded becomes this plan's own words.
+  const wording = (d: Draft) => (
+    <input aria-label="Wording on this plan" value={d.label} style={titleField}
+      onChange={e => { const v = e.target.value; patch(d.key, { label: v, text: v, tool_example_id: d.kind === 'tool' ? null : d.tool_example_id }) }} />
+  )
+  const toolRow = (d: Draft) => (
+    <div key={d.key} style={row}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{wording(d)}{removeX(d)}</div>
+      {d.tool_name && <span style={{ fontSize: 11, color: 'var(--float-text-hint)' }}>From {d.tool_name}</span>}
+      {!d.tool_id && <span style={{ fontSize: 11, color: 'var(--float-text-hint)' }}>Written in. No Library page.</span>}
+      {d.summary && <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)', lineHeight: 1.5 }}>{d.summary}</span>}
+      {noteBox(d)}
     </div>
   )
-  const addTool = (item: { tool_id?: string; tool_example_id?: string; text?: string; parent_only?: boolean }) =>
-    addMut.mutate({ kind: 'tool', ...item })
+  const body = (): ItemIn[] => items.map(d => ({
+    id: d.id, kind: d.kind, avoidance_behavior_id: d.avoidance_behavior_id, accommodation_behavior_id: d.accommodation_behavior_id,
+    tool_id: d.tool_id, tool_example_id: d.tool_example_id, text: d.text, reward_for: d.reward_for, note: d.note,
+    share_with_child: d.share_with_child, parent_only: d.parent_only,
+  }))
 
   return (
     <div style={{ ...card, overflow: 'hidden' }}>
       <div style={cardHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="text-sm font-semibold text-slate-700">Action plan</span>
-          <span style={{ fontSize: 12, color: 'var(--float-border-strong)' }}>&middot;</span>
-          <span style={{ fontSize: 13, color: 'var(--float-text-secondary)' }}>Session {plan.session_number} · {day(plan.session_date)}</span>
-          <span style={pill(shared ? 'ready' : 'warn')}>{shared ? 'Shared' : 'Draft'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span className="text-sm font-semibold text-slate-700">{plan ? 'Edit action plan' : 'New action plan'}</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--float-text-secondary)' }}>
+            From <input type="date" value={startsOn} onChange={e => setStartsOn(e.target.value)} style={{ ...field, padding: '3px 6px' }} />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--float-text-secondary)' }}>
+            to <input type="date" value={endsOn} onChange={e => setEndsOn(e.target.value)} style={{ ...field, padding: '3px 6px' }} />
+          </label>
         </div>
-        {editable && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {!shared && (confirmDelete ? <>
-              <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>Delete this draft?</span>
-              <button onClick={() => deleteMut.mutate()} style={btn('danger', 'sm')}>Yes, delete</button>
-              <button onClick={() => setConfirmDelete(false)} style={btn('quiet', 'sm')}>Cancel</button>
-            </> : <button onClick={() => setConfirmDelete(true)} style={btn('quiet', 'sm')}>Delete draft</button>)}
-            {shared
-              ? <button onClick={onNew} style={btn('primary', 'sm')}>+ New action plan</button>
-              : <button onClick={() => publishMut.mutate()} disabled={plan.items.length === 0 || publishMut.isPending}
-                  style={{ ...btn('primary', 'sm'), opacity: plan.items.length === 0 ? 0.45 : 1 }}>
-                  {publishMut.isPending ? 'Sharing…' : 'Share with the family'}
-                </button>}
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onCancel} style={btn('quiet', 'sm')}>Cancel</button>
+          <button disabled={!canSave} onClick={() => onSave({ starts_on: startsOn, ends_on: endsOn, items: body() })}
+            style={{ ...btn('primary', 'sm'), opacity: canSave ? 1 : 0.45 }}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 22 }}>
         <Section label={`${childName}'s work`} first>
           <p style={groupLabel}>What to work on this week</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {of('exposure').map(i => (
-              <div key={i.id} style={row}>
+            {of(i => i.kind === 'exposure').map(d => (
+              <div key={d.key} style={row}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {title(i)}
-                  {i.fear_level != null && <>
+                  {wording(d)}
+                  {d.fear_level != null && <>
                     <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--float-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fear Level</span>
-                    <span style={{ width: 34, textAlign: 'center', fontSize: 14, fontWeight: 700, border: '1px solid var(--float-border)', borderRadius: 6, padding: '3px 0' }}>{i.fear_level}</span>
+                    <span style={{ width: 34, textAlign: 'center', fontSize: 14, fontWeight: 700, border: '1px solid var(--float-border)', borderRadius: 6, padding: '3px 0' }}>{d.fear_level}</span>
                   </>}
-                  {remove(i)}
+                  {removeX(d)}
                 </div>
-                {note(i)}
+                {noteBox(d)}
               </div>
             ))}
-            {!editable && of('exposure').length === 0 && <p style={hint}>No exposures.</p>}
           </div>
-          {editable && (addingExposure
+          {addingExposure
             ? <AddExposure patientId={patientId} usedRungIds={usedRungs} onClose={() => setAddingExposure(false)}
-                onAdd={rungId => addMut.mutate({ kind: 'exposure', avoidance_behavior_id: rungId })} />
-            : <button onClick={() => setAddingExposure(true)} style={{ ...btn('secondary', 'sm'), marginTop: 8 }}>+ Add an exposure</button>)}
+                onAdd={r => { add({ key: newKey(), kind: 'exposure', avoidance_behavior_id: r.id, label: r.name, fear_level: r.distress_thermometer_when_refraining }); setAddingExposure(false) }} />
+            : <button onClick={() => setAddingExposure(true)} style={{ ...btn('secondary', 'sm'), marginTop: 8 }}>+ Add an exposure</button>}
 
           <p style={{ ...groupLabel, marginTop: 18 }}>Tools and strategies</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{childTools.map(toolRow)}</div>
-          {editable && <ToolAdder pages={childPages} parentOnly={false} onAdd={addTool} />}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{of(i => i.kind === 'tool' && !i.parent_only).map(toolRow)}</div>
+          <ToolAdder pages={tools.filter(t => t.audience !== 'parent' && canAdd(t))} parentOnly={false} onAdd={add} />
         </Section>
 
         <Section label="Parent work">
           <p style={groupLabel}>What to work on this week</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {of('accommodation').map(i => (
-              <div key={i.id} style={row}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={rowTitle}>{i.label}</span>{remove(i)}</div>
-                {note(i)}
+            {of(i => i.kind === 'accommodation').map(d => (
+              <div key={d.key} style={row}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={rowTitle}>{d.label}</span>{removeX(d)}</div>
+                {noteBox(d)}
               </div>
             ))}
           </div>
-          {editable && (working.length === 0
-            ? <p style={{ ...hint, marginTop: 8 }}>None yet. Mark an accommodation "Working on it" on the Plan tab's Accommodations first.</p>
+          {working.length === 0
+            ? <p style={{ ...hint, marginTop: 8 }}>None yet. Mark an accommodation "Working on it" on the Accommodations sub-tab first.</p>
             : accChoices.length > 0 && (
-              <select aria-label="Add an accommodation" value="" onChange={e => e.target.value && addMut.mutate({ kind: 'accommodation', accommodation_behavior_id: e.target.value })}
+              <select aria-label="Add an accommodation" value=""
+                onChange={e => { const a = accChoices.find(x => x.id === e.target.value); if (a) add({ key: newKey(), kind: 'accommodation', accommodation_behavior_id: a.id, label: a.name }) }}
                 style={{ ...btn('secondary', 'sm'), marginTop: 8, paddingRight: 6 }}>
                 <option value="">+ Add an accommodation</option>
                 {accChoices.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
-            ))}
+            )}
 
-          {(parentTools.length > 0 || editable) && <>
-            <p style={{ ...groupLabel, marginTop: 18 }}>Strategies for the parent</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{parentTools.map(toolRow)}</div>
-            {editable && <ToolAdder pages={parentPages} parentOnly onAdd={addTool} />}
-          </>}
+          <p style={{ ...groupLabel, marginTop: 18 }}>Strategies for the parent</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{of(i => i.kind === 'tool' && !!i.parent_only).map(toolRow)}</div>
+          <ToolAdder pages={tools.filter(t => t.audience === 'parent' && canAdd(t))} parentOnly onAdd={add} />
 
           <p style={{ ...groupLabel, marginTop: 18 }}>How to help</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {of('parent_instruction').map(i => (
-              <div key={i.id} style={row}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{title(i, true)}{remove(i)}</div>
+            {of(i => i.kind === 'parent_instruction').map(d => (
+              <div key={d.key} style={row}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input aria-label="How to help" value={d.text ?? ''} style={titleField} onChange={e => patch(d.key, { text: e.target.value, label: e.target.value })} />
+                  {removeX(d)}
+                </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--float-text-secondary)' }}>
-                  <input type="checkbox" checked={!!i.share_with_child} disabled={!editable}
-                    onChange={e => editMut.mutate({ id: i.id, data: { share_with_child: e.target.checked } })} />
+                  <input type="checkbox" checked={!!d.share_with_child} onChange={e => patch(d.key, { share_with_child: e.target.checked })} />
                   {childName} sees this too
                 </label>
-                {note(i)}
+                {noteBox(d)}
               </div>
             ))}
           </div>
-          {editable && <AddLine label="Add a line for the parent" placeholder="Add a line for the parent" onAdd={text => addMut.mutate({ kind: 'parent_instruction', text })} />}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <input aria-label="Add a line for the parent" value={instruction} placeholder="Add a line for the parent" style={{ ...field, flex: 1 }} onChange={e => setInstruction(e.target.value)} />
+            <button disabled={!instruction.trim()} onClick={() => { add({ key: newKey(), kind: 'parent_instruction', text: instruction.trim(), label: instruction.trim() }); setInstruction('') }} style={btn('secondary', 'sm')}>Add</button>
+          </div>
         </Section>
 
         <Section label="Rewards">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {of('reward').map(i => (
-              <div key={i.id} style={row}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{title(i, true)}{remove(i)}</div>
-                {editable
-                  ? <SaveOnBlur label="What it is for" value={i.reward_for ?? ''} placeholder="What it is for" onSave={v => editMut.mutate({ id: i.id, data: { reward_for: v } })} />
-                  : i.reward_for && <span style={{ fontSize: 12, color: 'var(--float-text-secondary)' }}>For: {i.reward_for}</span>}
+            {of(i => i.kind === 'reward').map(d => (
+              <div key={d.key} style={row}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input aria-label="Reward" value={d.text ?? ''} style={titleField} onChange={e => patch(d.key, { text: e.target.value, label: e.target.value })} />
+                  {removeX(d)}
+                </div>
+                <input aria-label="What it is for" value={d.reward_for ?? ''} placeholder="What it is for" style={field} onChange={e => patch(d.key, { reward_for: e.target.value })} />
               </div>
             ))}
           </div>
-          {editable && <RewardAdder onAdd={(text, reward_for) => addMut.mutate({ kind: 'reward', text, reward_for })} />}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <input aria-label="New reward" value={reward.text} placeholder="The reward" style={{ ...field, flex: '1 1 200px' }} onChange={e => setReward({ ...reward, text: e.target.value })} />
+            <input aria-label="What the new reward is for" value={reward.reward_for} placeholder="What it is for" style={{ ...field, flex: '1 1 200px' }} onChange={e => setReward({ ...reward, reward_for: e.target.value })} />
+            <button disabled={!reward.text.trim()}
+              onClick={() => { add({ key: newKey(), kind: 'reward', text: reward.text.trim(), reward_for: reward.reward_for.trim() || null, label: reward.text.trim() }); setReward({ text: '', reward_for: '' }) }}
+              style={btn('secondary', 'sm')}>Add</button>
+          </div>
         </Section>
 
-        {failed && (
-          <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>
-            {(failed as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "That didn't save. Try again."}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function RewardAdder({ onAdd }: { onAdd: (text: string, rewardFor: string) => void }) {
-  const [what, setWhat] = useState('')
-  const [forWhat, setForWhat] = useState('')
-  const add = () => { if (what.trim()) { onAdd(what.trim(), forWhat.trim()); setWhat(''); setForWhat('') } }
-  return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-      <input aria-label="New reward" value={what} placeholder="The reward" style={{ ...field, flex: '1 1 200px' }} onChange={e => setWhat(e.target.value)} />
-      <input aria-label="What it is for" value={forWhat} placeholder="What it is for" style={{ ...field, flex: '1 1 200px' }}
-        onChange={e => setForWhat(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') add() }} />
-      <button onClick={add} disabled={!what.trim()} style={btn('secondary', 'sm')}>Add</button>
-    </div>
-  )
-}
-
-// ── Starting the next plan: last week's plan first ───────────────────────────
-
-const KIND_NAME: Record<string, string> = {
-  exposure: 'Exposure', tool: 'Tool or strategy', accommodation: 'Accommodation', parent_instruction: 'How to help', reward: 'Reward',
-}
-
-export function StartCard({ patientId, last, nextNumber, onStarted, onCancel }: {
-  patientId: string; last: ActionPlan | null; nextNumber: number; onStarted: () => void; onCancel: () => void
-}) {
-  const qc = useQueryClient()
-  const carryable = (last?.items ?? []).filter(i => i.kind !== 'reward')
-  const [keep, setKeep] = useState<Set<string>>(() => new Set(carryable.map(i => i.id)))
-  const rewards = (last?.items ?? []).filter(i => i.kind === 'reward' && i.reward_given_by !== 'parent')
-  const rewardMut = useMutation({
-    mutationFn: ({ id, given }: { id: string; given: boolean }) => clinicianMarksReward(id, given),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['action-plans', patientId] }),
-  })
-  const startMut = useMutation({
-    mutationFn: () => createActionPlan(patientId, [...keep]),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['action-plans', patientId] }); onStarted() },
-  })
-  const toggle = (id: string, on: boolean) => setKeep(prev => { const n = new Set(prev); if (on) n.add(id); else n.delete(id); return n })
-
-  return (
-    <div style={{ ...card, overflow: 'hidden' }}>
-      <div style={cardHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="text-sm font-semibold text-slate-700">New action plan</span>
-          <span style={{ fontSize: 12, color: 'var(--float-border-strong)' }}>&middot;</span>
-          <span style={{ fontSize: 13, color: 'var(--float-text-secondary)' }}>Session {nextNumber}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={onCancel} style={btn('quiet', 'sm')}>Cancel</button>
-          <button onClick={() => startMut.mutate()} disabled={startMut.isPending} style={btn('primary', 'sm')}>
-            {startMut.isPending ? 'Starting…' : 'Start the plan'}
-          </button>
-        </div>
-      </div>
-      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 22 }}>
-        {carryable.length > 0 && (
-          <Section label="Last week's plan" first>
-            <p style={groupLabel}>Session {last!.session_number}. Keep practicing what still needs work. The rest is marked done.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {carryable.map(i => (
-                <div key={i.id} style={{ ...row, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: 'var(--float-text-hint)' }}>{KIND_NAME[i.kind]}{i.tool_name ? ` · from ${i.tool_name}` : ''}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{i.label}</div>
-                  </div>
-                  <button aria-pressed={keep.has(i.id)} onClick={() => toggle(i.id, true)} style={chip(keep.has(i.id), 'sm')}>Keep practicing</button>
-                  <button aria-pressed={!keep.has(i.id)} onClick={() => toggle(i.id, false)} style={chip(!keep.has(i.id), 'sm')}>Done</button>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-        {rewards.length > 0 && (
-          <Section label="Rewards" first={carryable.length === 0}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {rewards.map(r => (
-                <div key={r.id} style={{ ...row, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{r.label}</div>
-                    {r.reward_for && <div style={{ fontSize: 12, color: 'var(--float-text-secondary)', marginTop: 2 }}>For: {r.reward_for}</div>}
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--float-text-secondary)' }}>Was it given?</span>
-                  <button aria-pressed={r.reward_given === true} onClick={() => rewardMut.mutate({ id: r.id, given: true })} style={chip(r.reward_given === true, 'sm')}>Yes</button>
-                  <button aria-pressed={r.reward_given === false} onClick={() => rewardMut.mutate({ id: r.id, given: false })} style={chip(r.reward_given === false, 'sm')}>No</button>
-                </div>
-              ))}
-            </div>
-            <p style={{ ...hint, marginTop: 8 }}>Shown only for a reward the parent hasn't answered in their app.</p>
-          </Section>
-        )}
-        {carryable.length === 0 && rewards.length === 0 && <p style={hint}>Nothing to carry over. Start the plan to add this week's work.</p>}
-        {startMut.isError && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>That didn't work. Try again.</p>}
+        {badDates && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>The plan has to end after it starts.</p>}
+        {!!error && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>{errText(error)}</p>}
       </div>
     </div>
   )
