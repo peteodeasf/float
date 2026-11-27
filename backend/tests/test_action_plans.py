@@ -222,3 +222,95 @@ async def test_a_clinician_cannot_record_another_childs_step(api, db):
     after = {"feared_outcome_occurred": False, "what_happened": "x", "distress_thermometer_actual": 3, "bip_after": 30, "what_learned": "x"}
     r = await api.post(f"/patients/{f['child'].id}/exposures/{g['rung'].id}/record", json=after)
     assert r.status_code == 404
+
+
+# ── Drafts: docs/plans/action-plan-drafts.md ─────────────────────────────────
+
+async def test_a_draft_can_be_empty_or_unfinished_and_the_family_never_sees_it(api, db):
+    f = await _family(db)
+    f["setup"].confidence_level = "medium"
+    await db.flush()
+    api.sign_in_as(f["clinician"].user)
+    r = await api.post(f"/patients/{f['child'].id}/action-plans", json={"items": [], "draft": True})
+    assert r.status_code == 201, r.text
+    plan = r.json()
+    assert plan["state"] == "draft"
+    unfinished = [
+        {"kind": "exposure", "avoidance_behavior_id": str(f["rung"].id)},  # not set up with High yet
+        {"kind": "reward", "text": ""},
+        {"kind": "tool", "text": ""},
+    ]
+    r = await api.put(f"/action-plans/{plan['id']}", json={"items": unfinished, "draft": True})
+    assert r.status_code == 200, r.text
+    assert r.json()["state"] == "draft" and len(r.json()["items"]) == 3
+
+    api.sign_in_as(f["child"].user)
+    assert (await api.get("/patient/action-plan")).json() is None
+    api.sign_in_as(f["parent"])
+    assert (await api.get("/parent/action-plan")).json() is None
+
+
+async def test_sharing_a_draft_checks_every_line(api, db):
+    f = await _family(db)
+    f["setup"].confidence_level = "medium"
+    await db.flush()
+    plan = await _create(api, f, draft=True)
+    assert plan["state"] == "draft"
+
+    r = await api.post(f"/action-plans/{plan['id']}/share")
+    assert r.status_code == 422 and "High" in r.text and "Eat lunch in the cafeteria on Tuesday" in r.text
+
+    f["setup"].confidence_level = "high"
+    await db.flush()
+    r = await api.post(f"/action-plans/{plan['id']}/share")
+    assert r.status_code == 200, r.text
+    assert r.json()["state"] == "current"
+    assert (await api.post(f"/action-plans/{plan['id']}/share")).status_code == 409
+    api.sign_in_as(f["child"].user)
+    assert (await api.get("/patient/action-plan")).json()["id"] == plan["id"]
+
+
+async def test_a_blank_line_blocks_sharing(api, db):
+    f = await _family(db)
+    api.sign_in_as(f["clinician"].user)
+    r = await api.post(f"/patients/{f['child'].id}/action-plans",
+                       json={"items": [{"kind": "reward", "text": "", "reward_for": "Lunch"}], "draft": True})
+    plan = r.json()
+    r = await api.put(f"/action-plans/{plan['id']}", json={"items": [{"kind": "reward", "text": ""}]})
+    assert r.status_code == 422 and "Write what it is" in r.text
+    saved = (await api.get(f"/patients/{f['child'].id}/action-plans")).json()[0]
+    assert saved["state"] == "draft"
+
+
+async def test_a_draft_does_not_end_the_running_plan_until_it_is_shared(api, db):
+    f = await _family(db)
+    first = await _create(api, f, starts_on=(date.today() - timedelta(days=3)).isoformat())
+    draft = await _create(api, f, draft=True)
+    by_id = {p["id"]: p for p in (await api.get(f"/patients/{f['child'].id}/action-plans")).json()}
+    assert by_id[first["id"]]["ends_on"] == (date.today() + timedelta(days=4)).isoformat()
+    api.sign_in_as(f["child"].user)
+    assert (await api.get("/patient/action-plan")).json()["id"] == first["id"]
+
+    api.sign_in_as(f["clinician"].user)
+    assert (await api.post(f"/action-plans/{draft['id']}/share")).status_code == 200
+    by_id = {p["id"]: p for p in (await api.get(f"/patients/{f['child'].id}/action-plans")).json()}
+    assert by_id[first["id"]]["ends_on"] == date.today().isoformat()
+
+
+async def test_the_family_cannot_tick_a_drafts_lines(api, db):
+    f = await _family(db)
+    plan = await _create(api, f, draft=True)
+    tool = _by_kind(plan, "tool")[0]
+    reward = _by_kind(plan, "reward")[0]
+    api.sign_in_as(f["child"].user)
+    assert (await api.put(f"/patient/action-plan-items/{tool['id']}/tick", json={"done": True})).status_code == 404
+    api.sign_in_as(f["parent"])
+    assert (await api.put(f"/parent/action-plan-items/{reward['id']}/tick", json={"done": True})).status_code == 404
+
+
+async def test_saving_a_shared_plan_as_draft_does_not_hide_it(api, db):
+    f = await _family(db)
+    plan = await _create(api, f)
+    keep = [{**line, "id": item["id"]} for line, item in zip(_lines(f), plan["items"])]
+    r = await api.put(f"/action-plans/{plan['id']}", json={"items": keep, "draft": True})
+    assert r.status_code == 200 and r.json()["state"] == "current"

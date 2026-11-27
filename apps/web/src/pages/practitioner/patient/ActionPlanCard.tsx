@@ -9,7 +9,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   setCheckNote, tickItem,
-  type ActionPlan, type ActionPlanItem, type ItemIn, type Recording,
+  type ActionPlan, type ActionPlanItem, type ItemIn, type PlanIn, type Recording,
 } from '../../../api/action_plans'
 import {
   getPatientExperiments, getPlanRungs, getTreatmentPlan, getTriggers,
@@ -90,8 +90,10 @@ function NoteField({ initial, onSave, onCancel }: { initial: string; onSave: (no
   )
 }
 
-export function PlanView({ patientId, childName, plan, onEdit, onNew }: {
+export function PlanView({ patientId, childName, plan, onEdit, onNew, onShare, sharing, shareError }: {
   patientId: string; childName: string; plan: ActionPlan; onEdit?: () => void; onNew?: () => void
+  /** A draft's Share with family. docs/plans/action-plan-drafts.md */
+  onShare?: () => void; sharing?: boolean; shareError?: unknown
 }) {
   const qc = useQueryClient()
   const save = (p: ActionPlan) => qc.setQueryData<ActionPlan[]>(['action-plans', patientId], old => (old ?? [p]).map(x => (x.id === p.id ? p : x)))
@@ -100,8 +102,22 @@ export function PlanView({ patientId, childName, plan, onEdit, onNew }: {
   const [noting, setNoting] = useState<string | null>(null)
   const [recording, setRecording] = useState<ActionPlanItem | null>(null)
   const closed = plan.state === 'closed'
+  // A draft is not shared yet: nothing on it can be ticked, recorded or noted.
+  const draft = plan.state === 'draft'
+  const { data: experiments = [] } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId), enabled: draft })
+  const unready = draft ? plan.items.filter(i => i.kind === 'exposure' && i.avoidance_behavior_id && readinessOf(i.avoidance_behavior_id, experiments).tone !== 'ready') : []
 
-  const line = (i: ActionPlanItem) => (
+  const draftLine = (i: ActionPlanItem) => (
+    <div key={i.id} style={{ borderBottom: '1px solid var(--float-surface-sunken)', display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
+      <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: i.label ? 'var(--float-text)' : 'var(--float-text-hint)' }}>
+        {i.label || 'Blank line'}
+        {i.kind === 'reward' && i.reward_for && <span style={{ fontWeight: 400, color: 'var(--float-text-secondary)' }}> · for {i.reward_for}</span>}
+      </span>
+      {unready.includes(i) && i.avoidance_behavior_id && <span style={pill(readinessOf(i.avoidance_behavior_id, experiments).tone)}>{readinessOf(i.avoidance_behavior_id, experiments).label}</span>}
+    </div>
+  )
+
+  const line = (i: ActionPlanItem) => draft ? draftLine(i) : (
     <div key={i.id} style={{ borderBottom: '1px solid var(--float-surface-sunken)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
         <input type="checkbox" aria-label={i.label} checked={i.done} disabled={tickMut.isPending}
@@ -148,11 +164,16 @@ export function PlanView({ patientId, childName, plan, onEdit, onNew }: {
           <span className="text-sm font-semibold text-slate-700">Action plan</span>
           <span style={{ fontSize: 12, color: 'var(--float-border-strong)' }}>&middot;</span>
           <span style={{ fontSize: 13, color: 'var(--float-text-secondary)' }}>{range(plan)}</span>
-          <span style={pill(closed ? 'none' : 'ready')}>{closed ? 'Closed' : plan.state === 'upcoming' ? 'Starts soon' : 'Current'}</span>
-          <span style={{ fontSize: 12, color: 'var(--float-text-secondary)', marginLeft: 4 }}>{plan.done_count} of {plan.items.length} done</span>
+          {draft
+            ? <span style={pill('warn')}>Draft · not shared</span>
+            : <>
+                <span style={pill(closed ? 'none' : 'ready')}>{closed ? 'Closed' : plan.state === 'upcoming' ? 'Starts soon' : 'Current'}</span>
+                <span style={{ fontSize: 12, color: 'var(--float-text-secondary)', marginLeft: 4 }}>{plan.done_count} of {plan.items.length} done</span>
+              </>}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {onEdit && !closed && <button onClick={onEdit} style={btn('secondary', 'sm')}>Edit</button>}
+          {onShare && <button onClick={onShare} disabled={sharing} style={btn('primary', 'sm')}>{sharing ? 'Sharing…' : 'Share with family'}</button>}
           {onNew && <button onClick={onNew} style={btn('primary', 'sm')}>+ New action plan</button>}
         </div>
       </div>
@@ -162,6 +183,13 @@ export function PlanView({ patientId, childName, plan, onEdit, onNew }: {
           if (items.length === 0) return null
           return <div key={n}><div style={sectionLabel}>{sec.label(childName)}</div>{items.map(line)}</div>
         })}
+        {draft && (
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--float-text-secondary)' }}>
+            {plan.items.length === 0 ? 'Nothing on it yet. ' : ''}{childName}'s family can't see this yet.
+            {unready.length > 0 && ' To share it, set up each exposure with High confidence.'}
+          </p>
+        )}
+        {!!shareError && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>{errText(shareError)}</p>}
         {(tickMut.isError || noteMut.isError) && (
           <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>{errText(tickMut.error ?? noteMut.error)}</p>
         )}
@@ -212,8 +240,10 @@ function readinessOf(rungId: string, experiments: PlannedExperiment[]): Readines
   return { tone: 'none', label: 'Not ready', experiment: set ?? null }
 }
 
-function AddExposure({ patientId, onAdd, onClose, usedRungIds }: {
+function AddExposure({ patientId, onAdd, onClose, usedRungIds, draft }: {
   patientId: string; onAdd: (rung: AvoidanceBehavior) => void; onClose: () => void; usedRungIds: Set<string>
+  /** A draft takes any step; sharing checks the set-up. */
+  draft: boolean
 }) {
   const qc = useQueryClient()
   const { data: tp } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId) })
@@ -242,9 +272,12 @@ function AddExposure({ patientId, onAdd, onClose, usedRungIds }: {
             <span style={pill(ready.tone)}>{ready.label}</span>
             {ready.tone === 'ready'
               ? <button onClick={() => onAdd(r)} style={btn('primary', 'sm')}>Add</button>
-              : <button onClick={() => setSettingUp({ rung: r, existing: ready.experiment })} style={btn('secondary', 'sm')}>
-                  {ready.tone === 'warn' ? 'Edit' : 'Set it up'}
-                </button>}
+              : <>
+                  <button onClick={() => setSettingUp({ rung: r, existing: ready.experiment })} style={btn('secondary', 'sm')}>
+                    {ready.tone === 'warn' ? 'Edit' : 'Set it up'}
+                  </button>
+                  {draft && <button onClick={() => onAdd(r)} style={btn('secondary', 'sm')}>Add to draft</button>}
+                </>}
           </div>
         )
       })}
@@ -345,8 +378,11 @@ function isoDay(d: Date) {
 
 export function PlanEditor({ patientId, childName, plan, saving, error, onSave, onCancel }: {
   patientId: string; childName: string; plan: ActionPlan | null; saving: boolean; error: unknown
-  onSave: (body: { starts_on: string; ends_on: string; items: ItemIn[] }) => void; onCancel: () => void
+  onSave: (body: PlanIn) => void; onCancel: () => void
 }) {
+  // A new plan or a draft saves as a draft or is shared; a shared plan just saves.
+  const isDraft = !plan || plan.state === 'draft'
+  const qc = useQueryClient()
   const [startsOn, setStartsOn] = useState(() => plan?.starts_on ?? isoDay(new Date()))
   const [endsOn, setEndsOn] = useState(() => plan?.ends_on ?? isoDay(new Date(Date.now() + 7 * 86400000)))
   const [items, setItems] = useState<Draft[]>(() => draftsFrom(plan))
@@ -356,6 +392,10 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
   const { data: tp } = useQuery({ queryKey: ['plan', patientId], queryFn: () => getTreatmentPlan(patientId) })
   const { data: accommodations = [] } = useQuery({ queryKey: ['accommodations', tp?.id], queryFn: () => listAccommodations(tp!.id), enabled: !!tp?.id })
   const { data: tools = [] } = useQuery({ queryKey: ['tools'], queryFn: listTools })
+  const { data: experiments = [] } = useQuery({ queryKey: ['experiments', patientId], queryFn: () => getPatientExperiments(patientId), enabled: isDraft })
+  const { data: rungs = [] } = useQuery({ queryKey: ['plan-rungs', tp?.id], queryFn: () => getPlanRungs(tp!.id), enabled: isDraft && !!tp?.id })
+  const { data: triggers = [] } = useQuery({ queryKey: ['triggers', tp?.id], queryFn: () => getTriggers(tp!.id), enabled: isDraft && !!tp?.id })
+  const [settingUp, setSettingUp] = useState<{ rung: AvoidanceBehavior; existing: PlannedExperiment | null } | null>(null)
 
   const add = (d: Draft) => setItems(prev => [...prev, d])
   const patch = (k: string, p: Partial<Draft>) => setItems(prev => prev.map(i => (i.key === k ? { ...i, ...p } : i)))
@@ -368,7 +408,11 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
   const accChoices = working.filter(a => !items.some(i => i.accommodation_behavior_id === a.id))
   const badDates = endsOn < startsOn
   const emptyText = items.some(d => (d.kind === 'parent_instruction' || d.kind === 'reward' || (d.kind === 'tool' && !d.tool_id)) && !(d.text ?? '').trim())
-  const canSave = !saving && items.length > 0 && !badDates && !emptyText
+  // On a draft, the exposures not yet set up with High confidence: they block sharing.
+  const readiness = (d: Draft) => (isDraft && d.kind === 'exposure' && d.avoidance_behavior_id ? readinessOf(d.avoidance_behavior_id, experiments) : null)
+  const unready = items.some(d => { const r = readiness(d); return r !== null && r.tone !== 'ready' })
+  const canShare = !saving && items.length > 0 && !badDates && !emptyText && !unready
+  const canSaveDraft = !saving && !badDates
 
   const removeX = (d: Draft) => <button aria-label={`Remove ${d.label}`} title="Remove" onClick={() => remove(d.key)} style={removeBtn}>×</button>
   const noteBox = (d: Draft) => (
@@ -399,7 +443,7 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
     <div style={{ ...card, overflow: 'hidden' }}>
       <div style={cardHeader}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span className="text-sm font-semibold text-slate-700">{plan ? 'Edit action plan' : 'New action plan'}</span>
+          <span className="text-sm font-semibold text-slate-700">{!plan ? 'New action plan' : isDraft ? 'Edit draft' : 'Edit action plan'}</span>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--float-text-secondary)' }}>
             From <input type="date" value={startsOn} onChange={e => setStartsOn(e.target.value)} style={{ ...field, padding: '3px 6px' }} />
           </label>
@@ -409,9 +453,16 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onCancel} style={btn('quiet', 'sm')}>Cancel</button>
-          <button disabled={!canSave} onClick={() => onSave({ starts_on: startsOn, ends_on: endsOn, items: body() })}
-            style={{ ...btn('primary', 'sm'), opacity: canSave ? 1 : 0.45 }}>
-            {saving ? 'Saving…' : 'Save'}
+          {isDraft && (
+            <button disabled={!canSaveDraft} onClick={() => onSave({ starts_on: startsOn, ends_on: endsOn, items: body(), draft: true })}
+              style={{ ...btn('secondary', 'sm'), opacity: canSaveDraft ? 1 : 0.45 }}>
+              Save draft
+            </button>
+          )}
+          <button disabled={!canShare} title={isDraft && !canShare ? 'Every line needs text, and every exposure a High set-up' : undefined}
+            onClick={() => onSave({ starts_on: startsOn, ends_on: endsOn, items: body(), draft: false })}
+            style={{ ...btn('primary', 'sm'), opacity: canShare ? 1 : 0.45 }}>
+            {saving ? 'Saving…' : isDraft ? 'Save and share' : 'Save'}
           </button>
         </div>
       </div>
@@ -423,6 +474,17 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
               <div key={d.key} style={row}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {wording(d)}
+                  {(() => {
+                    const r = readiness(d)
+                    if (!r || r.tone === 'ready') return null
+                    const rung = rungs.find(x => x.id === d.avoidance_behavior_id)
+                    return <>
+                      <span style={pill(r.tone)}>{r.label}</span>
+                      {rung && <button onClick={() => setSettingUp({ rung, existing: r.experiment })} style={btn('secondary', 'sm')}>
+                        {r.tone === 'warn' ? 'Edit set-up' : 'Set it up'}
+                      </button>}
+                    </>
+                  })()}
                   {d.fear_level != null && <>
                     <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--float-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fear Level</span>
                     <span style={{ width: 34, textAlign: 'center', fontSize: 14, fontWeight: 700, border: '1px solid var(--float-border)', borderRadius: 6, padding: '3px 0' }}>{d.fear_level}</span>
@@ -434,7 +496,7 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
             ))}
           </Lines>
           {addingExposure
-            ? <AddExposure patientId={patientId} usedRungIds={usedRungs} onClose={() => setAddingExposure(false)}
+            ? <AddExposure patientId={patientId} usedRungIds={usedRungs} draft={isDraft} onClose={() => setAddingExposure(false)}
                 onAdd={r => { add({ key: newKey(), kind: 'exposure', avoidance_behavior_id: r.id, label: r.name, fear_level: r.distress_thermometer_when_refraining }); setAddingExposure(false) }} />
             : <button onClick={() => setAddingExposure(true)} style={{ ...btn('secondary', 'sm'), alignSelf: 'flex-start' }}>+ Add an exposure</button>}
         </Group>
@@ -520,6 +582,15 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
           {badDates && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>The plan has to end after it starts.</p>}
           {!!error && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>{errText(error)}</p>}
         </div>
+      )}
+      {settingUp && (
+        <SessionSetupSheet
+          rung={settingUp.rung}
+          situationName={triggers.find(t => t.id === settingUp.rung.trigger_situation_id)?.name ?? null}
+          existing={settingUp.existing}
+          onClose={() => setSettingUp(null)}
+          onSaved={() => { setSettingUp(null); qc.invalidateQueries({ queryKey: ['experiments', patientId] }) }}
+        />
       )}
     </div>
   )

@@ -1960,7 +1960,7 @@ async def child_ticks(
     _, patient = context
     item = (await db.execute(
         select(ActionPlanItem).join(ActionPlan, ActionPlan.id == ActionPlanItem.action_plan_id).where(
-            ActionPlanItem.id == item_id, ActionPlan.patient_id == patient.id,
+            ActionPlanItem.id == item_id, ActionPlan.patient_id == patient.id, ActionPlan.published_at.is_not(None),
             ActionPlanItem.kind.in_(action_plan_service.FAMILY_TICKS), ActionPlanItem.parent_only.is_(False),
         )
     )).scalar_one_or_none()
