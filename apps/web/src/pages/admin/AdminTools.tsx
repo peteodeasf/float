@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { adminApiClient } from '../../context/AdminAuthContext'
 import { Button, Badge } from '../../components/ui/primitives'
 
@@ -28,15 +29,15 @@ const errorText = (e: unknown) =>
   (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Something went wrong. Try again.'
 
 export default function AdminTools() {
-  const [tools, setTools] = useState<AdminTool[]>([])
+  const qc = useQueryClient()
+  const { data: tools = [] } = useQuery<AdminTool[]>({
+    queryKey: ['admin-tools'],
+    queryFn: async () => (await adminApiClient.get('/admin/tools')).data,
+  })
+  const load = () => qc.invalidateQueries({ queryKey: ['admin-tools'] })
   const [editing, setEditing] = useState<null | 'new' | string>(null)
   const [draft, setDraft] = useState<Draft>(empty)
   const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setTools((await adminApiClient.get('/admin/tools')).data)
-  }, [])
-  useEffect(() => { load() }, [load])
 
   const save = async () => {
     setError(null)
@@ -71,7 +72,7 @@ export default function AdminTools() {
           Clinicians can pick it
         </label>
       </div>
-      {error && <p role="alert" style={{ fontSize: 13, color: '#b91c1c', margin: 0 }}>{error}</p>}
+      {error && <p role="alert" style={{ fontSize: 13, color: 'var(--float-danger)', margin: 0 }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <Button kind="primary" size="sm" onClick={save} disabled={!draft.name.trim()}>Save</Button>
         <Button size="sm" onClick={() => setEditing(null)}>Cancel</Button>

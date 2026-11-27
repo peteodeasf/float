@@ -59,14 +59,14 @@ export default function ActionPlansSection({ patientId }: { patientId: string })
           return (
             <button key={p.id} onClick={() => setOpen(p)}
               style={{ textAlign: 'left', background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#334155' }}>Session {p.session_number}</span>
-              <span style={{ fontSize: 12.5, color: '#6b7a79' }}>{day(p.session_date)} · {p.items.length} {p.items.length === 1 ? 'item' : 'items'}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--float-text)' }}>Session {p.session_number}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>{day(p.session_date)} · {p.items.length} {p.items.length === 1 ? 'item' : 'items'}</span>
               {p.published_at && unanswered > 0 && p === latest && (
-                <span style={{ fontSize: 11.5, color: '#6b7a79' }}>· {unanswered} {unanswered === 1 ? 'reward' : 'rewards'} not marked yet</span>
+                <span style={{ fontSize: 11.5, color: 'var(--float-text-secondary)' }}>· {unanswered} {unanswered === 1 ? 'reward' : 'rewards'} not marked yet</span>
               )}
               <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, borderRadius: 'var(--float-radius-pill)', padding: '2px 9px',
-                color: p.published_at ? '#3f8a78' : 'var(--float-primary-dark)', background: p.published_at ? '#eef7f4' : '#fff7e6',
-                border: `1px solid ${p.published_at ? '#bcdfd4' : '#f3dca8'}` }}>
+                color: p.published_at ? 'var(--float-primary)' : 'var(--float-warning)', background: p.published_at ? 'var(--float-primary-light)' : 'var(--float-surface-sunken)',
+                border: `1px solid ${p.published_at ? 'var(--float-border)' : 'var(--float-border-strong)'}` }}>
                 {p.published_at ? 'Shared' : 'Draft'}
               </span>
             </button>

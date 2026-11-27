@@ -5,7 +5,7 @@
  * then the new plan itself — for the child, for the parent, rewards, and the child's confidence.
  * Sharing it with the family needs confidence high.
  */
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -21,12 +21,12 @@ import { Chrome, primaryBtn, quietLink } from '../sessionKit'
 const heading: CSSProperties = { fontSize: 22, fontWeight: 800, color: 'var(--float-primary-dark)', margin: 0 }
 const sectionTitle: CSSProperties = { fontSize: 17, fontWeight: 800, color: 'var(--float-primary-dark)', margin: '0 0 4px' }
 const groupTitle: CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--float-text-secondary)', margin: '14px 0 8px' }
-const section: CSSProperties = { padding: '22px 0', borderTop: '1px solid #e3eeeb' }
-const row: CSSProperties = { background: 'var(--float-surface)', border: '1px solid #dde8e6', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }
-const input: CSSProperties = { width: '100%', boxSizing: 'border-box', fontSize: 14, padding: '7px 10px', borderRadius: 'var(--float-radius-control)', border: '1px solid #cfe3de', fontFamily: 'inherit' }
-const noteInput: CSSProperties = { ...input, fontSize: 13, padding: '5px 9px', color: '#4b5a59' }
+const section: CSSProperties = { padding: '22px 0', borderTop: '1px solid var(--float-border)' }
+const row: CSSProperties = { background: 'var(--float-surface)', border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }
+const input: CSSProperties = { width: '100%', boxSizing: 'border-box', fontSize: 14, padding: '7px 10px', borderRadius: 'var(--float-radius-control)', border: '1px solid var(--float-border-strong)', fontFamily: 'inherit' }
+const noteInput: CSSProperties = { ...input, fontSize: 13, padding: '5px 9px', color: 'var(--float-text-secondary)' }
 const hint: CSSProperties = { fontSize: 13, color: 'var(--float-text-hint)', margin: 0 }
-const removeBtn: CSSProperties = { background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }
+const removeBtn: CSSProperties = { background: 'none', border: 'none', color: 'var(--float-text-hint)', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }
 
 const CONFIDENCE: { key: Confidence; label: string }[] = [
   { key: 'low', label: 'Low' }, { key: 'medium', label: 'Medium' }, { key: 'high', label: 'High' },
@@ -47,8 +47,9 @@ function SaveOnBlur({ value, placeholder, onSave, style, label, required }: {
   value: string; placeholder?: string; onSave: (v: string) => void; style?: CSSProperties; label: string; required?: boolean
 }) {
   const [draft, setDraft] = useState(value)
-  // What the server saved, e.g. the rung's own wording after the plan's wording is cleared.
-  useEffect(() => setDraft(value), [value])
+  // Take what the server saved, e.g. the rung's own wording after the plan's wording is cleared.
+  const [saved, setSaved] = useState(value)
+  if (value !== saved) { setSaved(value); setDraft(value) }
   return (
     <input aria-label={label} value={draft} placeholder={placeholder} style={style ?? input}
       onChange={e => setDraft(e.target.value)}
@@ -101,7 +102,7 @@ export function LastPlanReview({ patientId, last, onStarted, onClose }: {
               <div key={i.id} style={{ ...row, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--float-text-hint)' }}>{KIND_NAME[i.kind]}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>{i.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{i.label}</div>
                 </div>
                 <button aria-pressed={keep.has(i.id)} onClick={() => toggle(i.id, true)} style={chip(keep.has(i.id), 'sm')}>Keep practicing</button>
                 <button aria-pressed={!keep.has(i.id)} onClick={() => toggle(i.id, false)} style={chip(!keep.has(i.id), 'sm')}>Done</button>
@@ -116,14 +117,14 @@ export function LastPlanReview({ patientId, last, onStarted, onClose }: {
             {rewards.map(r => (
               <div key={r.id} style={{ ...row, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>{r.label}</div>
-                  {r.reward_for && <div style={{ fontSize: 12.5, color: '#6b7a79' }}>For: {r.reward_for}</div>}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{r.label}</div>
+                  {r.reward_for && <div style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>For: {r.reward_for}</div>}
                 </div>
                 {r.reward_given_by === 'parent' ? (
-                  <span style={{ fontSize: 12.5, color: '#4b5a59' }}>Parent said: {r.reward_given ? 'given' : 'not given'}</span>
+                  <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>Parent said: {r.reward_given ? 'given' : 'not given'}</span>
                 ) : (
                   <>
-                    <span style={{ fontSize: 12.5, color: '#6b7a79' }}>Was it given?</span>
+                    <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>Was it given?</span>
                     <button aria-pressed={r.reward_given === true} onClick={() => rewardMut.mutate({ id: r.id, given: true })} style={chip(r.reward_given === true, 'sm')}>Yes</button>
                     <button aria-pressed={r.reward_given === false} onClick={() => rewardMut.mutate({ id: r.id, given: false })} style={chip(r.reward_given === false, 'sm')}>No</button>
                   </>
@@ -134,7 +135,7 @@ export function LastPlanReview({ patientId, last, onStarted, onClose }: {
         )}
 
         <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-          {startMut.isError && <p role="alert" style={{ fontSize: 13.5, color: '#b91c1c' }}>That didn't work. Try again.</p>}
+          {startMut.isError && <p role="alert" style={{ fontSize: 13.5, color: 'var(--float-danger)' }}>That didn't work. Try again.</p>}
           <button onClick={() => startMut.mutate()} disabled={startMut.isPending} style={{ ...primaryBtn, marginTop: 0 }}>
             {startMut.isPending ? 'Starting…' : 'Start the new plan'}
           </button>
@@ -207,7 +208,7 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
           Session {current.session_number} · {new Date(current.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           {shared ? ' · Shared with the family' : ' · Draft'}
         </p>
-        {readOnly && <p style={{ ...hint, marginTop: 6, color: '#4b5a59' }}>An older plan. Only the latest one can be changed.</p>}
+        {readOnly && <p style={{ ...hint, marginTop: 6, color: 'var(--float-text-secondary)' }}>An older plan. Only the latest one can be changed.</p>}
 
         <fieldset disabled={readOnly} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
 
@@ -221,7 +222,7 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
               <div key={i.id} style={row}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <SaveOnBlur label="Wording on this plan" value={i.label} onSave={v => editMut.mutate({ id: i.id, data: { text: v } })} />
-                  {i.fear_level != null && <span title="Fear Level" style={{ fontSize: 12, fontWeight: 700, color: '#4b5a59', flexShrink: 0 }}>{i.fear_level}</span>}
+                  {i.fear_level != null && <span title="Fear Level" style={{ fontSize: 12, fontWeight: 700, color: 'var(--float-text-secondary)', flexShrink: 0 }}>{i.fear_level}</span>}
                   {remove(i)}
                 </div>
                 {i.text && i.rung_name && <span style={{ fontSize: 11.5, color: 'var(--float-text-hint)' }}>On the ladder: {i.rung_name}</span>}
@@ -239,10 +240,10 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
             {of('tool').map(i => (
               <div key={i.id} style={row}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#334155' }}>{i.label}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{i.label}</span>
                   {remove(i)}
                 </div>
-                {i.tool_description && <span style={{ fontSize: 12.5, color: '#6b7a79' }}>{i.tool_description}</span>}
+                {i.tool_description && <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>{i.tool_description}</span>}
                 {noteBox(i)}
               </div>
             ))}
@@ -263,7 +264,7 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
             {of('accommodation').map(i => (
               <div key={i.id} style={row}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#334155' }}>{i.label}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{i.label}</span>
                   {remove(i)}
                 </div>
                 {noteBox(i)}
@@ -284,7 +285,7 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
                   <SaveOnBlur label="How to help" required value={i.label} onSave={v => editMut.mutate({ id: i.id, data: { text: v } })} />
                   {remove(i)}
                 </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#4b5a59', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--float-text-secondary)', cursor: 'pointer' }}>
                   <input type="checkbox" checked={!!i.share_with_child}
                     onChange={e => editMut.mutate({ id: i.id, data: { share_with_child: e.target.checked } })} />
                   {childName} sees this too
@@ -325,7 +326,7 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
             ))}
           </div>
           {current.confidence && current.confidence !== 'high' && (
-            <p style={{ ...hint, marginTop: 10, color: '#4b5a59' }}>Make the plan easier, then ask again. It can be shared once they say high.</p>
+            <p style={{ ...hint, marginTop: 10, color: 'var(--float-text-secondary)' }}>Make the plan easier, then ask again. It can be shared once they say high.</p>
           )}
         </div>
 
@@ -350,7 +351,7 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
             <button onClick={() => setConfirmDelete(true)} style={quietLink}>Delete draft</button>
           ))}
           {(addMut.isError || editMut.isError || publishMut.isError) && (
-            <p role="alert" style={{ fontSize: 13.5, color: '#b91c1c', margin: 0, width: '100%' }}>That didn't save. Try again.</p>
+            <p role="alert" style={{ fontSize: 13.5, color: 'var(--float-danger)', margin: 0, width: '100%' }}>That didn't save. Try again.</p>
           )}
         </div>
       </div>
@@ -364,7 +365,7 @@ function Picker({ label, options, onPick, empty }: {
   if (options.length === 0) return <p style={{ ...hint, marginTop: 8 }}>{empty}</p>
   return (
     <select aria-label={label} value="" onChange={e => { if (e.target.value) onPick(e.target.value) }}
-      style={{ ...input, marginTop: 8, color: '#3f8a78', fontWeight: 700, cursor: 'pointer', background: 'var(--float-surface)' }}>
+      style={{ ...input, marginTop: 8, color: 'var(--float-primary)', fontWeight: 700, cursor: 'pointer', background: 'var(--float-surface)' }}>
       <option value="">+ {label}</option>
       {options.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
     </select>
