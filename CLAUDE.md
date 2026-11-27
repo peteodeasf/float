@@ -26,6 +26,29 @@ bottom.
 Before calling a screen done, look at a real screenshot of it and check it against these four
 points — do not eyeball "balanced" from the code.
 
+## Match the existing design — required, no exceptions
+
+Nothing is built that does not look like the rest of the app. Peter, 2026-11-27, after the action
+plan screen shipped in a different style from the patient page it opens from.
+
+Before writing any screen code:
+
+1. **Name the existing screen the new one sits in or next to**, and open its component and styles.
+   Example: action plans live on the patient page, so they copy its cards (`PatientPage.tsx`).
+2. **Copy that screen's design:** where things sit (a card on the patient page, not a separate full
+   screen), card headers, section labels, buttons, inputs, colours, spacing. Use the shared
+   components in `apps/web/src/components/ui/` and the tokens in `apps/web/src/styles/tokens.css`.
+   Do not borrow the look of a different part of the app because it is nearby in the code.
+3. **Mock it first.** Build a mockup from the real screen's code (a Design canvas artifact) and get
+   Peter's OK before writing code. A mockup copies what is there today; it does not invent a layout.
+4. **Before calling it done,** put a screenshot of the new screen beside the screen it sits in and
+   check they look like one app. "It works" is not done.
+
+The full-screen session look (pale green background, `sessionKit.tsx`) is only for screens shown to
+a child during a session interview. It is never the default for a clinician screen.
+
+A different look only when Peter asks for one.
+
 ## Development process — required
 
 Follow the standard compound-engineering loop (**Ground → Plan → Review → Compound**)
@@ -38,6 +61,12 @@ defined in the global process. Grounded in this repo's artifacts:
   change to auth, data access, or role scoping (see non-negotiables).
 - **Compound:** capture non-obvious learnings in `docs/solutions/<slug>.md`; keep
   project vocabulary current in `CONCEPTS.md`.
+- **Ship:** once Peter has agreed to the work and `/verify` passes, commit it, push it, and make
+  sure it is in an open PR, then give him the link. Do not ask "commit and push?" first. Before
+  pushing to a branch that already has a PR, check the PR is still open
+  (`gh pr view <n> --json state`). If it has been merged, push to a new branch and open a new PR
+  straight away. Never merge. Peter, 2026-11-27, after work was pushed to an already-merged PR
+  and sat outside any open PR.
 
 ## Current stage: pre-launch
 
