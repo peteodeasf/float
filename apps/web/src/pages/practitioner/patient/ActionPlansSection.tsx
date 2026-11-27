@@ -1,11 +1,12 @@
 /**
- * The Plan tab's Action plan sub-tab: the current plan in its check-in view (Edit and New open the
- * edit view, which saves the whole plan), and the closed plans below, each opening in the same view.
+ * The Plan tab's Action plan sub-tab: a draft not yet shared (docs/plans/action-plan-drafts.md),
+ * the current plan in its check-in view (Edit and New open the edit view, which saves the whole
+ * plan), and the closed plans below, each opening in the same view.
  * Peter, 2026-11-27. docs/plans/action-plans-build.md
  */
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createActionPlan, getActionPlans, saveActionPlan, type ActionPlan, type PlanIn } from '../../../api/action_plans'
+import { createActionPlan, getActionPlans, saveActionPlan, shareActionPlan, type ActionPlan, type PlanIn } from '../../../api/action_plans'
 import { getPatient } from '../../../api/patients'
 import { btn } from '../../../components/ui/buttons'
 import { PlanEditor, PlanView } from './ActionPlanCard'
@@ -27,12 +28,20 @@ export default function ActionPlansSection({ patientId }: { patientId: string })
       : saveActionPlan(editing.id, body)),
     onSuccess: done,
   })
+  const shareMut = useMutation({
+    mutationFn: (planId: string) => shareActionPlan(planId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['action-plans', patientId] }),
+  })
 
   if (!plans) return null
+  const drafts = plans.filter(p => p.state === 'draft')
+  const shared = plans.filter(p => p.state !== 'draft')
   // Newest first, so when one plan ends the day the next begins, the new one is current.
-  const current = plans.find(p => p.state === 'current') ?? plans.find(p => p.state === 'upcoming') ?? null
+  const current = shared.find(p => p.state === 'current') ?? shared.find(p => p.state === 'upcoming') ?? null
   // Everything but the one shown above: closed plans, and one that ended today when a new one began.
-  const closed = plans.filter(p => p.id !== current?.id)
+  const closed = shared.filter(p => p.id !== current?.id)
+  // One draft at a time: New is offered only when there is none to finish.
+  const onNew = drafts.length ? undefined : () => setEditing('new')
 
   return (
     <>
@@ -40,20 +49,27 @@ export default function ActionPlansSection({ patientId }: { patientId: string })
         <PlanEditor key={editing === 'new' ? 'new' : editing.id} patientId={patientId} childName={childName}
           plan={editing === 'new' ? null : editing} saving={saveMut.isPending} error={saveMut.error}
           onSave={body => saveMut.mutate(body)} onCancel={() => { saveMut.reset(); setEditing(null) }} />
-      ) : current ? (
-        <PlanView patientId={patientId} childName={childName} plan={current}
-          onEdit={() => setEditing(current)} onNew={() => setEditing('new')} />
-      ) : (
-        <div style={{ ...card, padding: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <span className="text-sm font-semibold text-slate-700">Action plan</span>
-            <button onClick={() => setEditing('new')} style={btn('primary', 'sm')}>+ New action plan</button>
+      ) : <>
+        {drafts.map(d => (
+          <PlanView key={d.id} patientId={patientId} childName={childName} plan={d} onEdit={() => setEditing(d)}
+            onShare={() => shareMut.mutate(d.id)} sharing={shareMut.isPending && shareMut.variables === d.id}
+            shareError={shareMut.variables === d.id ? shareMut.error : null} />
+        ))}
+        {current ? (
+          <PlanView patientId={patientId} childName={childName} plan={current}
+            onEdit={() => setEditing(current)} onNew={onNew} />
+        ) : drafts.length === 0 && (
+          <div style={{ ...card, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <span className="text-sm font-semibold text-slate-700">Action plan</span>
+              {onNew && <button onClick={onNew} style={btn('primary', 'sm')}>+ New action plan</button>}
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--float-text-hint)', margin: '10px 0 0' }}>
+              {closed.length > 0 ? 'No plan is running now.' : `None yet. Make one in the last part of the session, with ${childName}.`}
+            </p>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--float-text-hint)', margin: '10px 0 0' }}>
-            {closed.length > 0 ? 'No plan is running now.' : `None yet. Make one in the last part of the session, with ${childName}.`}
-          </p>
-        </div>
-      )}
+        )}
+      </>}
 
       {closed.length > 0 && (
         <div style={{ ...card, padding: '14px 20px' }}>

@@ -71,6 +71,8 @@ class PlanIn(BaseModel):
     starts_on: Optional[date] = None
     ends_on: Optional[date] = None
     items: list[ItemIn]
+    # Save draft: the family does not see it yet. Ignored on a plan already shared.
+    draft: bool = False
 
 
 class TickIn(BaseModel):
@@ -116,10 +118,10 @@ async def create_action_plan(
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
-    """A new plan, saved whole; the family sees it straight away (Peter, 2026-11-27)."""
+    """A new plan, saved whole: a draft, or shared so the family sees it straight away."""
     _, practitioner = context
     plan = await svc.create_plan(db, patient_id, practitioner.organization_id, practitioner.id,
-                                 data.starts_on, data.ends_on, _items(data))
+                                 data.starts_on, data.ends_on, _items(data), draft=data.draft)
     return await _one(db, plan)
 
 
@@ -130,7 +132,17 @@ async def save_action_plan(
     plan: ActionPlan = Depends(get_permitted_action_plan),
 ):
     """The edit view's Save: the plan's dates and lines, whole."""
-    plan = await svc.save_plan(db, plan, data.starts_on, data.ends_on, _items(data))
+    plan = await svc.save_plan(db, plan, data.starts_on, data.ends_on, _items(data), draft=data.draft)
+    return await _one(db, plan)
+
+
+@router.post("/action-plans/{action_plan_id}/share")
+async def share_action_plan(
+    db: AsyncSession = Depends(get_db),
+    plan: ActionPlan = Depends(get_permitted_action_plan),
+):
+    """A draft's Share with family: refused until every line is complete."""
+    plan = await svc.share_plan(db, plan)
     return await _one(db, plan)
 
 

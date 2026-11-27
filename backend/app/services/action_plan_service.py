@@ -1,7 +1,8 @@
 """Action plans: saving them, checking in on them, and what each person may see.
 
-A plan runs from its start date to its end date. It is saved whole (the edit view's Save) and the
-family sees it as soon as it is saved. Each line can be ticked, by the clinician or, for tools,
+A plan runs from its start date to its end date. It is saved whole (the edit view's Save). It is
+a draft, which the family never sees, until it is shared; from then on the family sees each save
+straight away. A draft can hold anything; sharing checks every line (docs/plans/action-plan-drafts.md). Each line can be ticked, by the clinician or, for tools,
 strategies and rewards, by the child or parent in their app; an exposure counts as done once the
 child (or the clinician) has recorded it. Check-in notes are the clinician's alone.
 Peter, 2026-11-27. docs/plans/action-plans-build.md
@@ -31,6 +32,8 @@ def _404(what: str) -> HTTPException:
 
 
 def state_of(p: ActionPlan, today: date | None = None) -> str:
+    if p.published_at is None:
+        return "draft"
     today = today or date.today()
     if p.ends_on < today:
         return "closed"
@@ -227,8 +230,11 @@ async def current_for_family(db: AsyncSession, patient_id: uuid.UUID) -> ActionP
 
 # ── Saving a plan whole ──────────────────────────────────────────────────────
 
-async def _check_item(db: AsyncSession, patient_id: uuid.UUID, kind: str, data: dict, *, new: bool) -> None:
-    """A link must point at this child's own rung or accommodation, or a published page."""
+async def _check_item(db: AsyncSession, patient_id: uuid.UUID, kind: str, data: dict, *, new: bool,
+                      complete: bool = True) -> None:
+    """A link must point at this child's own rung or accommodation, or a published page.
+    complete=False is a draft's save: a line may be blank and an exposure not yet set up with High
+    confidence. Sharing checks both."""
     tp_ids = select(TreatmentPlan.id).where(TreatmentPlan.patient_id == patient_id)
     if kind not in ITEM_KINDS:
         raise HTTPException(status_code=422, detail="Unknown kind")
@@ -251,7 +257,7 @@ async def _check_item(db: AsyncSession, patient_id: uuid.UUID, kind: str, data: 
         # An exposure goes on the plan only once it is set up with the child's confidence High
         # (Peter, 2026-11-27). Checked when it is added; a line already on the plan keeps its place
         # after the child has done it.
-        if new:
+        if new and complete:
             ready = (await db.execute(
                 select(Experiment.id).where(
                     Experiment.patient_id == patient_id,
@@ -277,7 +283,7 @@ async def _check_item(db: AsyncSession, patient_id: uuid.UUID, kind: str, data: 
         if not tid:
             if data.get("tool_example_id"):
                 raise HTTPException(status_code=422, detail="An example needs its page")
-            if not (data.get("text") or "").strip():
+            if complete and not (data.get("text") or "").strip():
                 raise HTTPException(status_code=422, detail="Pick one from the list or write one")
             return
         if new:
@@ -294,7 +300,7 @@ async def _check_item(db: AsyncSession, patient_id: uuid.UUID, kind: str, data: 
             if own is None:
                 raise _404("Example")
     elif kind in ("parent_instruction", "reward"):
-        if not (data.get("text") or "").strip():
+        if complete and not (data.get("text") or "").strip():
             raise HTTPException(status_code=422, detail="Write what it is")
 
 
@@ -303,7 +309,7 @@ def _clean(v) -> str | None:
     return v or None
 
 
-async def _apply_items(db: AsyncSession, plan: ActionPlan, items: list[dict]) -> None:
+async def _apply_items(db: AsyncSession, plan: ActionPlan, items: list[dict], *, complete: bool = True) -> None:
     """The plan's lines become exactly `items`. A line sent with its id keeps its ticks and
     check-in note; the rest of the old lines go."""
     current = {i.id: i for i in (await items_of(db, [plan.id]))[plan.id]}
@@ -318,7 +324,7 @@ async def _apply_items(db: AsyncSession, plan: ActionPlan, items: list[dict]) ->
             raise HTTPException(status_code=422, detail="A line cannot change kind")
         same_link = row is not None and str(row.avoidance_behavior_id or "") == str(data.get("avoidance_behavior_id") or "") \
             and str(row.tool_id or "") == str(data.get("tool_id") or "")
-        await _check_item(db, plan.patient_id, kind, data, new=not same_link)
+        await _check_item(db, plan.patient_id, kind, data, new=not same_link, complete=complete)
         if row is None:
             row = ActionPlanItem(action_plan_id=plan.id, kind=kind)
             db.add(row)
@@ -356,40 +362,79 @@ def _dates(starts_on: date | None, ends_on: date | None) -> tuple[date, date]:
 
 
 async def create_plan(db: AsyncSession, patient_id: uuid.UUID, org_id: uuid.UUID, practitioner_id: uuid.UUID,
-                      starts_on: date | None, ends_on: date | None, items: list[dict]) -> ActionPlan:
-    """A new plan, shared on save. A plan still running when this one starts ends that same day, so
-    what is recorded at the session that ends it still counts for it."""
-    if not items:
+                      starts_on: date | None, ends_on: date | None, items: list[dict], *, draft: bool = False) -> ActionPlan:
+    """A new plan: a draft, or shared on save."""
+    if not items and not draft:
         raise HTTPException(status_code=422, detail="The plan has nothing on it")
     start, end = _dates(starts_on, ends_on)
     number = (await db.execute(
         select(func.coalesce(func.max(ActionPlan.session_number), 0)).where(ActionPlan.patient_id == patient_id)
     )).scalar() + 1
-    for older in (await db.execute(select(ActionPlan).where(
-            ActionPlan.patient_id == patient_id, ActionPlan.ends_on > start, ActionPlan.session_date <= start))).scalars():
-        older.ends_on = start
     plan = ActionPlan(patient_id=patient_id, organization_id=org_id, practitioner_id=practitioner_id,
-                      session_number=number, session_date=start, ends_on=end,
-                      published_at=datetime.now(timezone.utc))
+                      session_number=number, session_date=start, ends_on=end)
     db.add(plan)
     await db.flush()
-    await _apply_items(db, plan, items)
+    await _apply_items(db, plan, items, complete=not draft)
+    if not draft:
+        await _share(db, plan)
     await db.commit()
     await db.refresh(plan)
     return plan
 
 
 async def save_plan(db: AsyncSession, plan: ActionPlan, starts_on: date | None, ends_on: date | None,
-                    items: list[dict]) -> ActionPlan:
+                    items: list[dict], *, draft: bool = False) -> ActionPlan:
+    """A shared plan is saved complete and the family sees it at once; `draft` does not unshare it.
+    A draft stays one when `draft`, else it is shared."""
     if state_of(plan) == "closed":
         raise HTTPException(status_code=409, detail="A closed plan can't be changed")
-    if not items:
+    was_draft = plan.published_at is None
+    keep_draft = was_draft and draft
+    if not items and not keep_draft:
         raise HTTPException(status_code=422, detail="The plan has nothing on it")
     plan.session_date, plan.ends_on = _dates(starts_on or plan.session_date, ends_on or plan.ends_on)
-    await _apply_items(db, plan, items)
+    await _apply_items(db, plan, items, complete=not was_draft)
+    if was_draft and not draft:
+        await _share(db, plan)
     await db.commit()
     await db.refresh(plan)
     return plan
+
+
+async def share_plan(db: AsyncSession, plan: ActionPlan) -> ActionPlan:
+    if plan.published_at is not None:
+        raise HTTPException(status_code=409, detail="This plan is already shared")
+    await _share(db, plan)
+    await db.commit()
+    await db.refresh(plan)
+    return plan
+
+
+async def _share(db: AsyncSession, plan: ActionPlan) -> None:
+    """Check every line as the family will see it, then share. Every exposure is checked for a High
+    set-up here, since the family has not seen any of them yet. A shared plan still running when
+    this one starts ends that same day, so what is recorded at the session that ends it still
+    counts for it."""
+    await db.flush()
+    rows = (await items_of(db, [plan.id]))[plan.id]
+    if not rows:
+        raise HTTPException(status_code=422, detail="The plan has nothing on it")
+    rungs, accs, tools, examples = await _names(db, rows)
+    for r in rows:
+        data = {"avoidance_behavior_id": r.avoidance_behavior_id, "accommodation_behavior_id": r.accommodation_behavior_id,
+                "tool_id": r.tool_id, "tool_example_id": r.tool_example_id, "text": r.text}
+        try:
+            await _check_item(db, plan.patient_id, r.kind, data, new=True)
+        except HTTPException as e:
+            label = _item_out(r, rungs, accs, tools, examples, [], audience="clinician")["label"]
+            if label:
+                e.detail = f"{label}: {e.detail}"
+            raise
+    for older in (await db.execute(select(ActionPlan).where(
+            ActionPlan.patient_id == plan.patient_id, ActionPlan.id != plan.id, ActionPlan.published_at.is_not(None),
+            ActionPlan.ends_on > plan.session_date, ActionPlan.session_date <= plan.session_date))).scalars():
+        older.ends_on = plan.session_date
+    plan.published_at = datetime.now(timezone.utc)
 
 
 # ── Checking in ──────────────────────────────────────────────────────────────

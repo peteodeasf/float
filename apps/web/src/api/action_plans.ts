@@ -2,7 +2,8 @@
 import { apiClient, teenApiClient, parentApiClient } from './client'
 
 export type ItemKind = 'exposure' | 'tool' | 'accommodation' | 'parent_instruction' | 'reward'
-export type PlanState = 'current' | 'upcoming' | 'closed'
+/** draft: not shared with the family yet. docs/plans/action-plan-drafts.md */
+export type PlanState = 'draft' | 'current' | 'upcoming' | 'closed'
 
 /** One time the child (or the clinician, in session) recorded how an exposure went. */
 export interface Recording {
@@ -78,6 +79,8 @@ export interface PlanIn {
   starts_on?: string
   ends_on?: string
   items: ItemIn[]
+  /** Save draft: the family does not see it yet. Ignored on a plan already shared. */
+  draft?: boolean
 }
 
 export interface ExposureAfter {
@@ -93,12 +96,16 @@ export interface ExposureAfter {
 export const getActionPlans = async (patientId: string): Promise<ActionPlan[]> =>
   (await apiClient.get(`/patients/${patientId}/action-plans`)).data
 
-/** Saved whole; the family sees it straight away. */
+/** Saved whole; the family sees it straight away unless it is a draft. */
 export const createActionPlan = async (patientId: string, body: PlanIn): Promise<ActionPlan> =>
   (await apiClient.post(`/patients/${patientId}/action-plans`, body)).data
 
 export const saveActionPlan = async (planId: string, body: PlanIn): Promise<ActionPlan> =>
   (await apiClient.put(`/action-plans/${planId}`, body)).data
+
+/** A draft's Share with family. Refused until every line is complete. */
+export const shareActionPlan = async (planId: string): Promise<ActionPlan> =>
+  (await apiClient.post(`/action-plans/${planId}/share`)).data
 
 export const tickItem = async (itemId: string, done: boolean): Promise<ActionPlan> =>
   (await apiClient.put(`/action-plan-items/${itemId}/tick`, { done })).data
