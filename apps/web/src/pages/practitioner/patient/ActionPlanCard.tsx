@@ -24,14 +24,17 @@ import { card, range } from './actionPlanCardStyle'
 
 const cardHeader: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', padding: '12px 20px', borderBottom: '1px solid var(--float-border)' }
 const sectionLabel: CSSProperties = { fontSize: 11, fontWeight: 700, color: 'var(--float-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }
-const groupLabel: CSSProperties = { fontSize: 12, color: 'var(--float-text-hint)', margin: '0 0 10px' }
+// The editor's sections: a pale band with the Case Summary's teal heading, then named groups.
+// Mockup agreed with Peter 2026-11-27: https://claude.ai/artifact/3bRyryh7o8z9KDdaQ7TmqY.
+const sectionBand: CSSProperties = { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 20px', background: 'var(--float-surface-muted)', borderBottom: '1px solid var(--float-border)' }
+const sectionTitle: CSSProperties = { fontSize: 12, fontWeight: 700, color: 'var(--float-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }
+const groupTitle: CSSProperties = { fontSize: 13, fontWeight: 600, color: 'var(--float-text)' }
 const row: CSSProperties = { border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-card)', padding: '10px 13px', display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--float-surface)' }
 const rowTitle: CSSProperties = { flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }
 const field: CSSProperties = { fontFamily: 'inherit', fontSize: 12, padding: '6px 8px', border: '1px solid var(--float-border)', borderRadius: 6, boxSizing: 'border-box', color: 'var(--float-text)', background: 'var(--float-surface)' }
 const titleField: CSSProperties = { ...field, flex: 1, fontSize: 14, fontWeight: 600, padding: '5px 8px' }
 const hint: CSSProperties = { fontSize: 12, color: 'var(--float-text-hint)', margin: 0 }
 const removeBtn: CSSProperties = { background: 'none', border: 'none', color: 'var(--float-text-hint)', cursor: 'pointer', fontSize: 14, padding: '0 2px' }
-const divider: CSSProperties = { borderTop: '1px solid var(--float-border)', paddingTop: 16 }
 const linkBtn: CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 600, color: 'var(--float-primary)' }
 const pill = (tone: 'ready' | 'warn' | 'none'): CSSProperties => ({
   fontSize: 11, fontWeight: 600, borderRadius: 'var(--float-radius-pill)', padding: '2px 8px', whiteSpace: 'nowrap',
@@ -278,48 +281,62 @@ function ToolAdder({ pages, onAdd, parentOnly }: { pages: ToolPage[]; parentOnly
     if (p.examples.length === 0) { fromPage(p, p.name, { summary: p.summary }); reset() } else setPage(p)
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        {pages.length > 0 && (
-          <select aria-label="Add a tool or strategy" value={page?.id ?? ''} onChange={e => { setOwn(null); pick(e.target.value) }}
-            style={{ ...btn('secondary', 'sm'), paddingRight: 6 }}>
-            <option value="">+ Add a tool or strategy</option>
-            {pages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        )}
-        {page && (
-          <select aria-label={`Which one from ${page.name}`} value={own !== null ? '__own' : ''}
-            onChange={e => {
-              const v = e.target.value
-              if (v === '__own') { setOwn(''); return }
-              const ex = page.examples.find(x => x.id === v)
-              if (ex) { fromPage(page, ex.name, { tool_example_id: ex.id, summary: ex.how_used }); reset() }
-            }}
-            style={{ ...field, height: 28 }}>
-            <option value="">Which one?</option>
-            {page.examples.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
-            <option value="__own">Write your own</option>
-          </select>
-        )}
-        {page && own !== null && <>
-          <input aria-label={`Your own from ${page.name}`} autoFocus value={own} placeholder="Write it here" style={{ ...field, flex: '1 1 200px' }} onChange={e => setOwn(e.target.value)} />
-          <button disabled={!own.trim()} onClick={() => { fromPage(page, own.trim(), { text: own.trim() }); reset() }} style={btn('secondary', 'sm')}>Add</button>
-        </>}
-      </div>
-      {!page && (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input aria-label="Write your own tool or strategy" value={free} placeholder={pages.length > 0 ? 'or write your own' : 'Write a tool or strategy'}
-            style={{ ...field, flex: '1 1 240px' }} onChange={e => setFree(e.target.value)} />
-          <button disabled={!free.trim()} onClick={() => { onAdd({ key: newKey(), kind: 'tool', text: free.trim(), label: free.trim(), parent_only: parentOnly }); setFree('') }}
-            style={btn('secondary', 'sm')}>Add</button>
-        </div>
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      {pages.length > 0 && (
+        <select aria-label="Add a tool or strategy" value={page?.id ?? ''} onChange={e => { setOwn(null); pick(e.target.value) }}
+          style={{ ...btn('secondary', 'sm'), paddingRight: 6 }}>
+          <option value="">+ Add a tool or strategy</option>
+          {pages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
       )}
+      {page && (
+        <select aria-label={`Which one from ${page.name}`} value={own !== null ? '__own' : ''}
+          onChange={e => {
+            const v = e.target.value
+            if (v === '__own') { setOwn(''); return }
+            const ex = page.examples.find(x => x.id === v)
+            if (ex) { fromPage(page, ex.name, { tool_example_id: ex.id, summary: ex.how_used }); reset() }
+          }}
+          style={{ ...field, height: 28 }}>
+          <option value="">Which one?</option>
+          {page.examples.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+          <option value="__own">Write your own</option>
+        </select>
+      )}
+      {page && own !== null && <>
+        <input aria-label={`Your own from ${page.name}`} autoFocus value={own} placeholder="Write it here" style={{ ...field, flex: '1 1 200px' }} onChange={e => setOwn(e.target.value)} />
+        <button disabled={!own.trim()} onClick={() => { fromPage(page, own.trim(), { text: own.trim() }); reset() }} style={btn('secondary', 'sm')}>Add</button>
+      </>}
+      {!page && <>
+        <input aria-label="Write your own tool or strategy" value={free} placeholder={pages.length > 0 ? 'or write your own' : 'Write a tool or strategy'}
+          style={{ ...field, flex: '1 1 240px' }} onChange={e => setFree(e.target.value)} />
+        <button disabled={!free.trim()} onClick={() => { onAdd({ key: newKey(), kind: 'tool', text: free.trim(), label: free.trim(), parent_only: parentOnly }); setFree('') }}
+          style={btn('secondary', 'sm')}>Add</button>
+      </>}
     </div>
   )
 }
 
-function Section({ label, children, first }: { label: string; children: ReactNode; first?: boolean }) {
-  return <div style={first ? undefined : divider}><div style={sectionLabel}>{label}</div>{children}</div>
+function Section({ label, aside, children, first }: { label: string; aside: string; children: ReactNode; first?: boolean }) {
+  return (
+    <section>
+      <div style={first ? sectionBand : { ...sectionBand, borderTop: '1px solid var(--float-border)' }}>
+        <span style={sectionTitle}>{label}</span>
+        <span style={{ fontSize: 12, color: 'var(--float-text-secondary)' }}>{aside}</span>
+      </div>
+      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 28 }}>{children}</div>
+    </section>
+  )
+}
+
+/** A named group in a section: its title, its lines, then the controls that add to it. */
+function Group({ label, children }: { label: string; children: ReactNode }) {
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><span style={groupTitle}>{label}</span>{children}</div>
+}
+
+/** The lines in a group, or nothing when there are none, so an empty group has no extra gap. */
+function Lines({ children }: { children: ReactNode[] }) {
+  return children.length ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div> : null
 }
 
 function isoDay(d: Date) {
@@ -399,10 +416,9 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
         </div>
       </div>
 
-      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 22 }}>
-        <Section label={`${childName}'s work`} first>
-          <p style={groupLabel}>What to work on this week</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <Section label={`${childName}'s work`} aside={`What ${childName} practices this week`} first>
+        <Group label="Exposures">
+          <Lines>
             {of(i => i.kind === 'exposure').map(d => (
               <div key={d.key} style={row}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -416,44 +432,45 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
                 {noteBox(d)}
               </div>
             ))}
-          </div>
+          </Lines>
           {addingExposure
             ? <AddExposure patientId={patientId} usedRungIds={usedRungs} onClose={() => setAddingExposure(false)}
                 onAdd={r => { add({ key: newKey(), kind: 'exposure', avoidance_behavior_id: r.id, label: r.name, fear_level: r.distress_thermometer_when_refraining }); setAddingExposure(false) }} />
-            : <button onClick={() => setAddingExposure(true)} style={{ ...btn('secondary', 'sm'), marginTop: 8 }}>+ Add an exposure</button>}
-
-          <p style={{ ...groupLabel, marginTop: 18 }}>Tools and strategies</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{of(i => i.kind === 'tool' && !i.parent_only).map(toolRow)}</div>
+            : <button onClick={() => setAddingExposure(true)} style={{ ...btn('secondary', 'sm'), alignSelf: 'flex-start' }}>+ Add an exposure</button>}
+        </Group>
+        <Group label="Tools and strategies">
+          <Lines>{of(i => i.kind === 'tool' && !i.parent_only).map(toolRow)}</Lines>
           <ToolAdder pages={tools.filter(t => t.audience !== 'parent' && canAdd(t))} parentOnly={false} onAdd={add} />
-        </Section>
+        </Group>
+      </Section>
 
-        <Section label="Parent work">
-          <p style={groupLabel}>What to work on this week</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <Section label="Parent work" aside="What the parent works on this week">
+        <Group label="Accommodations">
+          <Lines>
             {of(i => i.kind === 'accommodation').map(d => (
               <div key={d.key} style={row}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={rowTitle}>{d.label}</span>{removeX(d)}</div>
                 {noteBox(d)}
               </div>
             ))}
-          </div>
+          </Lines>
           {working.length === 0
-            ? <p style={{ ...hint, marginTop: 8 }}>None yet. Mark an accommodation "Working on it" on the Accommodations sub-tab first.</p>
+            ? <p style={hint}>None yet. Mark an accommodation "Working on it" on the Accommodations sub-tab first.</p>
             : accChoices.length > 0 && (
               <select aria-label="Add an accommodation" value=""
                 onChange={e => { const a = accChoices.find(x => x.id === e.target.value); if (a) add({ key: newKey(), kind: 'accommodation', accommodation_behavior_id: a.id, label: a.name }) }}
-                style={{ ...btn('secondary', 'sm'), marginTop: 8, paddingRight: 6 }}>
+                style={{ ...btn('secondary', 'sm'), alignSelf: 'flex-start', paddingRight: 6 }}>
                 <option value="">+ Add an accommodation</option>
                 {accChoices.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             )}
-
-          <p style={{ ...groupLabel, marginTop: 18 }}>Strategies for the parent</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{of(i => i.kind === 'tool' && !!i.parent_only).map(toolRow)}</div>
+        </Group>
+        <Group label="Strategies for the parent">
+          <Lines>{of(i => i.kind === 'tool' && !!i.parent_only).map(toolRow)}</Lines>
           <ToolAdder pages={tools.filter(t => t.audience === 'parent' && canAdd(t))} parentOnly onAdd={add} />
-
-          <p style={{ ...groupLabel, marginTop: 18 }}>How to help</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        </Group>
+        <Group label="How to help">
+          <Lines>
             {of(i => i.kind === 'parent_instruction').map(d => (
               <div key={d.key} style={row}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -467,15 +484,17 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
                 {noteBox(d)}
               </div>
             ))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          </Lines>
+          <div style={{ display: 'flex', gap: 8 }}>
             <input aria-label="Add a line for the parent" value={instruction} placeholder="Add a line for the parent" style={{ ...field, flex: 1 }} onChange={e => setInstruction(e.target.value)} />
             <button disabled={!instruction.trim()} onClick={() => { add({ key: newKey(), kind: 'parent_instruction', text: instruction.trim(), label: instruction.trim() }); setInstruction('') }} style={btn('secondary', 'sm')}>Add</button>
           </div>
-        </Section>
+        </Group>
+      </Section>
 
-        <Section label="Rewards">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <Section label="Rewards" aside={`What ${childName} earns, and for what`}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Lines>
             {of(i => i.kind === 'reward').map(d => (
               <div key={d.key} style={row}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -485,19 +504,23 @@ export function PlanEditor({ patientId, childName, plan, saving, error, onSave, 
                 <input aria-label="What it is for" value={d.reward_for ?? ''} placeholder="What it is for" style={field} onChange={e => patch(d.key, { reward_for: e.target.value })} />
               </div>
             ))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          </Lines>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input aria-label="New reward" value={reward.text} placeholder="The reward" style={{ ...field, flex: '1 1 200px' }} onChange={e => setReward({ ...reward, text: e.target.value })} />
             <input aria-label="What the new reward is for" value={reward.reward_for} placeholder="What it is for" style={{ ...field, flex: '1 1 200px' }} onChange={e => setReward({ ...reward, reward_for: e.target.value })} />
             <button disabled={!reward.text.trim()}
               onClick={() => { add({ key: newKey(), kind: 'reward', text: reward.text.trim(), reward_for: reward.reward_for.trim() || null, label: reward.text.trim() }); setReward({ text: '', reward_for: '' }) }}
               style={btn('secondary', 'sm')}>Add</button>
           </div>
-        </Section>
+        </div>
+      </Section>
 
-        {badDates && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>The plan has to end after it starts.</p>}
-        {!!error && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>{errText(error)}</p>}
-      </div>
+      {(badDates || !!error) && (
+        <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {badDates && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>The plan has to end after it starts.</p>}
+          {!!error && <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--float-danger)' }}>{errText(error)}</p>}
+        </div>
+      )}
     </div>
   )
 }
