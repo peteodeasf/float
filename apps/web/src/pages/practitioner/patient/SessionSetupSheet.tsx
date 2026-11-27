@@ -53,7 +53,8 @@ export function SessionSetupSheet({
   /** A pending exposure already set up on this rung, or null. Prefills the sheet and shows a banner. */
   existing?: PlannedExperiment | null
   onClose: () => void
-  onSaved: () => void
+  /** Gets the saved exposure, so a caller can act on its confidence (the action plan adds it at High). */
+  onSaved: (saved?: PlannedExperiment) => void
 }) {
   const qc = useQueryClient()
 
@@ -123,9 +124,9 @@ export function SessionSetupSheet({
         ...(dayNow && bucket ? { scheduled_date: at.toISOString(), scheduled_time_bucket: bucket } : {}),
       })
     },
-    onSuccess: () => {
+    onSuccess: saved => {
       qc.invalidateQueries({ queryKey: ['experiments'] })
-      onSaved()
+      onSaved(saved)
     },
   })
 

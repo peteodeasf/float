@@ -256,7 +256,7 @@ function knowFor(step: Step, d: GuideInput): Know[] {
       ]
     case 'weekly':
       return [
-        { title: "I'd rather it be too easy than too hard", body: 'Only give the plan when the child rates their confidence high. Otherwise make it easier and ask again.' },
+        { title: "I'd rather it be too easy than too hard", body: 'An exposure goes on the plan only when the child rates their confidence high. Otherwise make it easier and ask again.' },
         { title: 'Set when, not just what', body: 'Agree the days and times. Evenings are a bad time for hard things.' },
         { title: 'Praise the work, accept the setbacks', body: '"These things come up, and that is why we go over it carefully."' },
       ]
@@ -327,7 +327,7 @@ export function guideFor(d: GuideInput): Guide {
     routine: stage === 'weekly' ? [
       'Check-in, about 5 minutes: the week, the nickname, the Fear Level',
       "Go through last week's action plan, exposure by exposure",
-      'Build the next action plan: confidence must be high',
+      'Build the next action plan: each exposure set up with high confidence',
       'The parent joins for the last 5 to 10 minutes',
     ] : undefined,
     know: knowFor(step, d),

@@ -3,7 +3,7 @@
 docs/plans/action-plans-build.md
 """
 from app.models.tool import Tool
-from app.models.experiment import AccommodationBehavior
+from app.models.experiment import AccommodationBehavior, Experiment
 
 from tests.factories import (
     grant_patient_to, make_org, make_patient, make_plan, make_practitioner, make_rung, make_situation,
@@ -24,7 +24,10 @@ async def _family(db):
     acc = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
                                 name="Checks homework every night", status="started")
     tool = Tool(name="The worry hill", summary="A short video", is_published=True)
-    db.add_all([acc, tool])
+    # Set up in session with High confidence, so it can go on a plan.
+    ready = Experiment(patient_id=child.id, organization_id=org.id, avoidance_behavior_id=rung.id,
+                       status="planned", confidence_level="high")
+    db.add_all([acc, tool, ready])
     await db.flush()
     return {"org": org, "child": child, "clinician": clinician, "parent": parent,
             "rung": rung, "acc": acc, "tool": tool}
@@ -59,25 +62,47 @@ async def test_a_plan_is_built_and_the_rung_keeps_its_own_wording(api, db):
     assert f["rung"].name == "Eat lunch in the cafeteria"
 
 
-async def test_publishing_needs_high_confidence(api, db):
+async def test_an_exposure_goes_on_only_once_set_up_with_high_confidence(api, db):
+    f = await _family(db)
+    plan_row = (await db.execute(__import__("sqlalchemy").select(Experiment).where(
+        Experiment.avoidance_behavior_id == f["rung"].id))).scalar_one()
+    api.sign_in_as(f["clinician"].user)
+    plan = (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).json()
+    url = f"/action-plans/{plan['id']}/items"
+    body = {"kind": "exposure", "avoidance_behavior_id": str(f["rung"].id)}
+
+    plan_row.confidence_level = "medium"
+    await db.flush()
+    r = await api.post(url, json=body)
+    assert r.status_code == 422 and "High" in r.text
+
+    plan_row.status = "completed"  # done already: not a set-up exposure any more
+    plan_row.confidence_level = "high"
+    await db.flush()
+    assert (await api.post(url, json=body)).status_code == 422
+
+    plan_row.status = "planned"
+    await db.flush()
+    assert (await api.post(url, json=body)).status_code == 201
+
+
+async def test_a_plan_is_shared_without_a_plan_wide_confidence(api, db):
     f = await _family(db)
     plan = await _full_plan(api, f)
-    url = f"/action-plans/{plan['id']}"
-    assert (await api.post(f"{url}/publish")).status_code == 422
-    await api.patch(url, json={"confidence": "medium"})
-    assert (await api.post(f"{url}/publish")).status_code == 422
-    await api.patch(url, json={"confidence": "high"})
-    r = await api.post(f"{url}/publish")
+    r = await api.post(f"/action-plans/{plan['id']}/publish")
     assert r.status_code == 200 and r.json()["published_at"]
 
 
-async def test_tools_only_from_the_list(api, db):
+async def test_a_tool_can_be_written_in(api, db):
     f = await _family(db)
     api.sign_in_as(f["clinician"].user)
     plan = (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).json()
-    r = await api.post(f"/action-plans/{plan['id']}/items", json={"kind": "tool", "text": "My own tool"})
-    assert r.status_code == 422
-
+    url = f"/action-plans/{plan['id']}/items"
+    assert (await api.post(url, json={"kind": "tool"})).status_code == 422
+    r = await api.post(url, json={"kind": "tool", "text": "Squeeze a stress ball"})
+    assert r.status_code == 201
+    item = r.json()["items"][0]
+    assert (item["label"], item["tool_id"], item["parent_only"]) == ("Squeeze a stress ball", None, False)
 
 async def test_another_childs_rung_cannot_go_on_the_plan(api, db):
     f = await _family(db)
@@ -92,7 +117,6 @@ async def test_another_childs_rung_cannot_go_on_the_plan(api, db):
 
 
 async def _publish(api, plan):
-    await api.patch(f"/action-plans/{plan['id']}", json={"confidence": "high"})
     return (await api.post(f"/action-plans/{plan['id']}/publish")).json()
 
 

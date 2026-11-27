@@ -207,7 +207,6 @@ async def test_a_parent_only_strategy_on_the_plan_is_not_shown_to_the_child(api,
     polite = await _page(db, "Polite ignoring", audience="parent")
     plan = await _plan(api, f)
     await api.post(f"/action-plans/{plan['id']}/items", json={"kind": "tool", "tool_id": str(polite.id)})
-    await api.patch(f"/action-plans/{plan['id']}", json={"confidence": "high"})
     await api.post(f"/action-plans/{plan['id']}/publish")
     api.sign_in_as(f["child"].user)
     assert (await api.get("/patient/action-plan")).json()["items"] == []
@@ -235,3 +234,26 @@ async def test_a_bad_id_in_a_block_is_refused_not_a_crash(api, db):
     api.sign_in_as(await make_float_admin(db))
     r = await api.post("/admin/tools", json={"name": "X", "blocks": [{"type": "image", "image_id": "nope"}]})
     assert r.status_code == 422
+
+
+async def test_a_written_in_line_reaches_the_child_but_a_parent_one_does_not(api, db):
+    f = await _family(db)
+    plan = await _plan(api, f)
+    url = f"/action-plans/{plan['id']}/items"
+    await api.post(url, json={"kind": "tool", "text": "Squeeze a stress ball"})
+    await api.post(url, json={"kind": "tool", "text": "Count to ten before answering", "parent_only": True})
+    await api.post(f"/action-plans/{plan['id']}/publish")
+    api.sign_in_as(f["child"].user)
+    assert [i["label"] for i in (await api.get("/patient/action-plan")).json()["items"]] == ["Squeeze a stress ball"]
+
+
+async def test_a_parent_strategy_stays_hidden_from_the_child_after_its_page_is_deleted(api, db):
+    f = await _family(db)
+    polite = await _page(db, "Polite ignoring", audience="parent")
+    plan = await _plan(api, f)
+    await api.post(f"/action-plans/{plan['id']}/items", json={"kind": "tool", "tool_id": str(polite.id), "text": "Ignore the third ask"})
+    await api.post(f"/action-plans/{plan['id']}/publish")
+    await db.delete(polite)
+    await db.flush()
+    api.sign_in_as(f["child"].user)
+    assert (await api.get("/patient/action-plan")).json()["items"] == []
