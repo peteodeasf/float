@@ -34,7 +34,7 @@ const ALLOW = new Set([
   // The session-interview theme — a deliberate warm-teal palette shared across these screens and
   // sessionKit, distinct from the cool clinical look. Its own visual system; not on --float-* yet.
   'SessionPage.tsx', 'ArrowPage.tsx', 'ToolsPage.tsx', 'FlatLadder.tsx', 'SessionSetupSheet.tsx',
-  'BehaviorPanel.tsx', 'ParentPlanPanel.tsx',
+  'BehaviorPanel.tsx', 'ParentPlanPanel.tsx', 'RecordExposureSheet.tsx',
   'RecordSessionPage.tsx', 'JustSayIt.tsx',
   'ChildRatingSheet.tsx', 'ParentConversationSheet.tsx', 'ParentExperimentSheet.tsx',
   // The education guide has its own guide style.

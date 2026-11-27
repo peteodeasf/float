@@ -1,27 +1,42 @@
-"""Action plans: building them, carrying items over, and what each person may see.
+"""Action plans: saving them, checking in on them, and what each person may see.
 
-docs/plans/action-plans-build.md
+A plan runs from its start date to its end date. It is saved whole (the edit view's Save) and the
+family sees it as soon as it is saved. Each line can be ticked, by the clinician or, for tools,
+strategies and rewards, by the child or parent in their app; an exposure counts as done once the
+child (or the clinician) has recorded it. Check-in notes are the clinician's alone.
+Peter, 2026-11-27. docs/plans/action-plans-build.md
 """
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, func, or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, func, or_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.behavior_types import LADDER_TYPES
-from app.models.action_plan import ActionPlan, ActionPlanItem, CHILD_KINDS
+from app.models.action_plan import ActionPlan, ActionPlanItem, CHILD_KINDS, ITEM_KINDS
 from app.models.tool import Tool, ToolExample
 from app.models.experiment import AccommodationBehavior, Experiment
 from app.models.treatment import AvoidanceBehavior, TreatmentPlan, TriggerSituation
 
 # A set-up exposure the child hasn't done yet.
 PENDING_EXPERIMENT = ("planned", "committed")
+# What the child and parent may tick in their apps.
+FAMILY_TICKS = ("tool", "reward")
+DEFAULT_LENGTH = timedelta(days=7)
 
 
 def _404(what: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{what} not found")
+
+
+def state_of(p: ActionPlan, today: date | None = None) -> str:
+    today = today or date.today()
+    if p.ends_on < today:
+        return "closed"
+    if p.session_date > today:
+        return "upcoming"
+    return "current"
 
 
 async def items_of(db: AsyncSession, plan_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[ActionPlanItem]]:
@@ -54,13 +69,45 @@ async def _names(db: AsyncSession, items: list[ActionPlanItem]) -> tuple[dict, d
     return rungs, accs, tools, examples
 
 
-def _parent_only(i: ActionPlanItem, tools: dict) -> bool:
-    """A strategy for the parent alone, such as Polite ignoring. The child never sees it. Kept on
-    the line when it is added, so it holds after the page is changed or deleted."""
-    return i.kind == "tool" and i.parent_only
+async def _recordings(db: AsyncSession, plans: list[ActionPlan]) -> dict[tuple[uuid.UUID, uuid.UUID], list[Experiment]]:
+    """Exposures recorded during each plan, keyed by (plan id, rung id)."""
+    out: dict[tuple[uuid.UUID, uuid.UUID], list[Experiment]] = {}
+    if not plans:
+        return out
+    start = min(p.session_date for p in plans)
+    end = max(p.ends_on for p in plans)
+    rows = (await db.execute(
+        select(Experiment).where(
+            Experiment.patient_id.in_({p.patient_id for p in plans}),
+            Experiment.status == "completed",
+            Experiment.avoidance_behavior_id.is_not(None),
+            Experiment.completed_date >= datetime.combine(start, time.min, tzinfo=timezone.utc),
+            Experiment.completed_date < datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc),
+        ).order_by(Experiment.completed_date)
+    )).scalars().all()
+    for p in plans:
+        lo = datetime.combine(p.session_date, time.min, tzinfo=timezone.utc)
+        hi = datetime.combine(p.ends_on + timedelta(days=1), time.min, tzinfo=timezone.utc)
+        for e in rows:
+            if e.patient_id == p.patient_id and lo <= e.completed_date < hi:
+                out.setdefault((p.id, e.avoidance_behavior_id), []).append(e)
+    return out
 
 
-def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, *, for_child: bool = False) -> dict:
+def _recording_out(e: Experiment) -> dict:
+    return {
+        "id": str(e.id),
+        "completed_date": e.completed_date.isoformat() if e.completed_date else None,
+        "recorded_by": e.recorded_by,
+        "fear_expected": float(e.distress_thermometer_expected) if e.distress_thermometer_expected is not None else None,
+        "fear_felt": float(e.distress_thermometer_actual) if e.distress_thermometer_actual is not None else None,
+        "belief_before": float(e.bip_before) if e.bip_before is not None else None,
+        "belief_after": float(e.bip_after) if e.bip_after is not None else None,
+        "feared_outcome_occurred": e.feared_outcome_occurred,
+    }
+
+
+def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, recordings, *, audience: str) -> dict:
     """The line as shown. `label` is what to print; the links stay for the clinician's app."""
     rung = rungs.get(i.avoidance_behavior_id)
     tool = tools.get(i.tool_id)
@@ -75,6 +122,7 @@ def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, *, for_child: boo
         label = acc.name if acc else ""
     else:
         label = i.text or ""
+    recs = recordings if i.kind == "exposure" else []
     out = {
         "id": str(i.id),
         "kind": i.kind,
@@ -86,8 +134,12 @@ def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, *, for_child: boo
         "tool_name": tool.name if tool and label != tool.name else None,
         "tool_summary": tool.summary if tool else None,
         "example_how_used": example.how_used if example and not i.text else None,
+        # Done: ticked, or for an exposure, recorded at least once during the plan.
+        "done": bool(recs) if i.kind == "exposure" else i.done_at is not None,
+        "done_by": i.done_by if i.kind != "exposure" else None,
+        "done_at": i.done_at.isoformat() if i.done_at and i.kind != "exposure" else None,
     }
-    if for_child:
+    if audience == "child":
         return out
     out.update({
         "position": i.position,
@@ -100,10 +152,10 @@ def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, *, for_child: boo
         "tool_example_id": str(i.tool_example_id) if i.tool_example_id else None,
         "parent_only": i.parent_only,
         "share_with_child": i.share_with_child,
-        "reward_given": i.reward_given,
-        "reward_given_by": i.reward_given_by,
-        "outcome": i.outcome,
     })
+    if audience == "clinician":
+        out["check_note"] = i.check_note
+        out["recordings"] = [_recording_out(e) for e in recs]
     return out
 
 
@@ -112,25 +164,30 @@ def _plan_out(p: ActionPlan, items: list[dict]) -> dict:
         "id": str(p.id),
         "patient_id": str(p.patient_id),
         "session_number": p.session_number,
-        "session_date": p.session_date.isoformat(),
-        "confidence": p.confidence,
-        "published_at": p.published_at.isoformat() if p.published_at else None,
+        "starts_on": p.session_date.isoformat(),
+        "ends_on": p.ends_on.isoformat(),
+        "state": state_of(p),
+        "done_count": sum(1 for i in items if i["done"]),
         "items": items,
     }
 
 
 async def plans_out(db: AsyncSession, plans: list[ActionPlan], *, audience: str = "clinician") -> list[dict]:
-    """audience: clinician (everything), parent (every item, no carry-over marks needed but harmless),
-    child (their own items and shared parent instructions, nothing about whether a reward was given)."""
+    """audience: clinician (everything, check-in notes and recordings included), parent (every line,
+    no check-in notes), child (their own lines and shared parent instructions)."""
     by_plan = await items_of(db, [p.id for p in plans])
     rungs, accs, tools, examples = await _names(db, [i for its in by_plan.values() for i in its])
+    recordings = await _recordings(db, plans)
     out = []
     for p in plans:
         its = by_plan[p.id]
         if audience == "child":
-            its = [i for i in its if (i.kind in CHILD_KINDS and not _parent_only(i, tools))
+            its = [i for i in its if (i.kind in CHILD_KINDS and not (i.kind == "tool" and i.parent_only))
                    or (i.kind == "parent_instruction" and i.share_with_child)]
-        rendered = [_item_out(i, rungs, accs, tools, examples, for_child=audience == "child") for i in its]
+        rendered = [
+            _item_out(i, rungs, accs, tools, examples, recordings.get((p.id, i.avoidance_behavior_id), []), audience=audience)
+            for i in its
+        ]
         if audience == "clinician":
             for r in rendered:
                 if not r["label"]:
@@ -142,96 +199,45 @@ async def plans_out(db: AsyncSession, plans: list[ActionPlan], *, audience: str 
             rendered = [r for r, k in zip(rendered, keep) if k]
         if audience == "child":
             for r, i in zip(rendered, its):
-                # A note on a parent instruction is for the parent.
                 if i.kind == "parent_instruction":
-                    r["note"] = None
+                    r["note"] = None  # a note on a parent instruction is for the parent
         out.append(_plan_out(p, rendered))
     return out
-
-
-async def require_latest(db: AsyncSession, plan: ActionPlan) -> None:
-    """Only the newest plan can be changed. An older one is the record of what the family was asked
-    to do that week, and the next plan carried items over from it."""
-    newest = (await db.execute(
-        select(func.max(ActionPlan.session_number)).where(ActionPlan.patient_id == plan.patient_id)
-    )).scalar()
-    if plan.session_number != newest:
-        raise HTTPException(status_code=409, detail="Only the latest action plan can be changed")
 
 
 async def list_for_patient(db: AsyncSession, patient_id: uuid.UUID, org_id: uuid.UUID) -> list[ActionPlan]:
     return list((await db.execute(
         select(ActionPlan)
         .where(ActionPlan.patient_id == patient_id, ActionPlan.organization_id == org_id)
-        .order_by(ActionPlan.session_number.desc())
+        .order_by(ActionPlan.session_date.desc(), ActionPlan.session_number.desc())
     )).scalars().all())
 
 
-async def current_published(db: AsyncSession, patient_id: uuid.UUID) -> ActionPlan | None:
+async def current_for_family(db: AsyncSession, patient_id: uuid.UUID) -> ActionPlan | None:
+    """The plan running today, else the most recent one that has started."""
+    today = date.today()
     return (await db.execute(
         select(ActionPlan)
-        .where(ActionPlan.patient_id == patient_id, ActionPlan.published_at.is_not(None))
-        .order_by(ActionPlan.session_number.desc())
+        .where(ActionPlan.patient_id == patient_id, ActionPlan.session_date <= today,
+               ActionPlan.published_at.is_not(None))
+        .order_by(ActionPlan.session_date.desc(), ActionPlan.session_number.desc())
         .limit(1)
     )).scalar_one_or_none()
 
 
-async def create_plan(
-    db: AsyncSession, patient_id: uuid.UUID, org_id: uuid.UUID, practitioner_id: uuid.UUID,
-    keep_item_ids: list[uuid.UUID], session_date: date | None,
-) -> ActionPlan:
-    """A new draft. Items on the last plan listed in keep_item_ids are copied over and marked keep;
-    the rest of the last plan's items are marked done."""
-    plans = await list_for_patient(db, patient_id, org_id)
-    if plans and plans[0].published_at is None:
-        raise HTTPException(status_code=409, detail="There is already a draft action plan")
-    last = plans[0] if plans else None
+# ── Saving a plan whole ──────────────────────────────────────────────────────
 
-    plan = ActionPlan(
-        patient_id=patient_id, organization_id=org_id, practitioner_id=practitioner_id,
-        session_number=(max((p.session_number for p in plans), default=0) + 1),
-        session_date=session_date or date.today(),
-    )
-    db.add(plan)
-    await db.flush()
-
-    keep = set(keep_item_ids)
-    if last:
-        last_items = (await items_of(db, [last.id]))[last.id]
-        unknown = keep - {i.id for i in last_items}
-        if unknown:
-            raise HTTPException(status_code=422, detail="Only items on the last plan can be kept")
-        for pos, i in enumerate(last_items):
-            i.outcome = "keep" if i.id in keep else "done"
-            if i.id in keep:
-                db.add(ActionPlanItem(
-                    action_plan_id=plan.id, kind=i.kind, position=pos,
-                    avoidance_behavior_id=i.avoidance_behavior_id,
-                    accommodation_behavior_id=i.accommodation_behavior_id,
-                    tool_id=i.tool_id, tool_example_id=i.tool_example_id, parent_only=i.parent_only, text=i.text, reward_for=i.reward_for, note=i.note,
-                    share_with_child=i.share_with_child,
-                ))
-    elif keep:
-        raise HTTPException(status_code=422, detail="Only items on the last plan can be kept")
-    try:
-        await db.commit()
-    except IntegrityError:
-        # Two requests at once: the other one made this session's plan.
-        await db.rollback()
-        raise HTTPException(status_code=409, detail="There is already a draft action plan")
-    await db.refresh(plan)
-    return plan
-
-
-async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict) -> None:
-    """A link must point at this child's own rung or accommodation, or an active tool."""
-    tp_ids = select(TreatmentPlan.id).where(TreatmentPlan.patient_id == plan.patient_id)
+async def _check_item(db: AsyncSession, patient_id: uuid.UUID, kind: str, data: dict, *, new: bool) -> None:
+    """A link must point at this child's own rung or accommodation, or a published page."""
+    tp_ids = select(TreatmentPlan.id).where(TreatmentPlan.patient_id == patient_id)
+    if kind not in ITEM_KINDS:
+        raise HTTPException(status_code=422, detail="Unknown kind")
     if kind == "exposure":
         rid = data.get("avoidance_behavior_id")
+        if not rid and not new:
+            return  # its step was deleted since; the line stays as it was
         if not rid:
             raise HTTPException(status_code=422, detail="Pick a step from the ladder")
-        # A step on the ladder (not a safety behaviour), on this child's plan directly or through
-        # its situation.
         ok = (await db.execute(
             select(AvoidanceBehavior.id)
             .outerjoin(TriggerSituation, TriggerSituation.id == AvoidanceBehavior.trigger_situation_id)
@@ -242,18 +248,20 @@ async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict
         )).scalar_one_or_none()
         if ok is None:
             raise _404("Step")
-        # Peter, 2026-11-27: an exposure goes on the plan only once it is set up (the same setup
-        # questions as the Plan tab) with the child's confidence High.
-        ready = (await db.execute(
-            select(Experiment.id).where(
-                Experiment.patient_id == plan.patient_id,
-                Experiment.avoidance_behavior_id == rid,
-                Experiment.status.in_(PENDING_EXPERIMENT),
-                Experiment.confidence_level == "high",
-            ).limit(1)
-        )).scalar_one_or_none()
-        if ready is None:
-            raise HTTPException(status_code=422, detail="Set it up with High confidence first")
+        # An exposure goes on the plan only once it is set up with the child's confidence High
+        # (Peter, 2026-11-27). Checked when it is added; a line already on the plan keeps its place
+        # after the child has done it.
+        if new:
+            ready = (await db.execute(
+                select(Experiment.id).where(
+                    Experiment.patient_id == patient_id,
+                    Experiment.avoidance_behavior_id == rid,
+                    Experiment.status.in_(PENDING_EXPERIMENT),
+                    Experiment.confidence_level == "high",
+                ).limit(1)
+            )).scalar_one_or_none()
+            if ready is None:
+                raise HTTPException(status_code=422, detail="Set it up with High confidence first")
     elif kind == "accommodation":
         aid = data.get("accommodation_behavior_id")
         if not aid:
@@ -267,16 +275,16 @@ async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict
     elif kind == "tool":
         tid = data.get("tool_id")
         if not tid:
-            # Written in by the clinician, with no Library page (Peter, 2026-11-27).
             if data.get("tool_example_id"):
                 raise HTTPException(status_code=422, detail="An example needs its page")
             if not (data.get("text") or "").strip():
                 raise HTTPException(status_code=422, detail="Pick one from the list or write one")
             return
-        ok = (await db.execute(
-            select(Tool.id).where(Tool.id == tid, Tool.is_published.is_(True)))).scalar_one_or_none()
-        if ok is None:
-            raise _404("Tool")
+        if new:
+            ok = (await db.execute(
+                select(Tool.id).where(Tool.id == tid, Tool.is_published.is_(True)))).scalar_one_or_none()
+            if ok is None:
+                raise _404("Tool")
         eid = data.get("tool_example_id")
         if eid:
             if (data.get("text") or "").strip():
@@ -288,8 +296,47 @@ async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict
     elif kind in ("parent_instruction", "reward"):
         if not (data.get("text") or "").strip():
             raise HTTPException(status_code=422, detail="Write what it is")
-    else:
-        raise HTTPException(status_code=422, detail="Unknown kind")
+
+
+def _clean(v) -> str | None:
+    v = (v or "").strip() if isinstance(v, str) else v
+    return v or None
+
+
+async def _apply_items(db: AsyncSession, plan: ActionPlan, items: list[dict]) -> None:
+    """The plan's lines become exactly `items`. A line sent with its id keeps its ticks and
+    check-in note; the rest of the old lines go."""
+    current = {i.id: i for i in (await items_of(db, [plan.id]))[plan.id]}
+    keep: set[uuid.UUID] = set()
+    for pos, data in enumerate(items):
+        kind = data.get("kind")
+        iid = uuid.UUID(str(data["id"])) if data.get("id") else None
+        row = current.get(iid) if iid else None
+        if iid and row is None:
+            raise _404("Line")
+        if row is not None and row.kind != kind:
+            raise HTTPException(status_code=422, detail="A line cannot change kind")
+        same_link = row is not None and str(row.avoidance_behavior_id or "") == str(data.get("avoidance_behavior_id") or "") \
+            and str(row.tool_id or "") == str(data.get("tool_id") or "")
+        await _check_item(db, plan.patient_id, kind, data, new=not same_link)
+        if row is None:
+            row = ActionPlanItem(action_plan_id=plan.id, kind=kind)
+            db.add(row)
+        else:
+            keep.add(row.id)
+        row.position = pos
+        row.avoidance_behavior_id = data.get("avoidance_behavior_id") if kind == "exposure" else None
+        row.accommodation_behavior_id = data.get("accommodation_behavior_id") if kind == "accommodation" else None
+        row.tool_id = data.get("tool_id") if kind == "tool" else None
+        row.tool_example_id = data.get("tool_example_id") if kind == "tool" and not _clean(data.get("text")) else None
+        row.parent_only = await _tool_is_parent_only(db, data) if kind == "tool" else False
+        row.text = _clean(data.get("text")) if kind in ("exposure", "tool", "parent_instruction", "reward") else None
+        row.reward_for = _clean(data.get("reward_for")) if kind == "reward" else None
+        row.note = _clean(data.get("note"))
+        row.share_with_child = bool(data.get("share_with_child")) if kind == "parent_instruction" else False
+    gone = [i for i in current if i not in keep]
+    if gone:
+        await db.execute(delete(ActionPlanItem).where(ActionPlanItem.id.in_(gone)))
 
 
 async def _tool_is_parent_only(db: AsyncSession, data: dict) -> bool:
@@ -300,69 +347,56 @@ async def _tool_is_parent_only(db: AsyncSession, data: dict) -> bool:
     return tool is not None and tool.audience == "parent"
 
 
-async def add_item(db: AsyncSession, plan: ActionPlan, kind: str, data: dict) -> ActionPlanItem:
-    await _check_links(db, plan, kind, data)
-    position = (await db.execute(
-        select(func.coalesce(func.max(ActionPlanItem.position), -1))
-        .where(ActionPlanItem.action_plan_id == plan.id)
-    )).scalar() + 1
-
-    def clean(v):
-        v = (v or "").strip()
-        return v or None
-
-    item = ActionPlanItem(
-        action_plan_id=plan.id, kind=kind, position=position,
-        avoidance_behavior_id=data.get("avoidance_behavior_id") if kind == "exposure" else None,
-        accommodation_behavior_id=data.get("accommodation_behavior_id") if kind == "accommodation" else None,
-        tool_id=data.get("tool_id") if kind == "tool" else None,
-        tool_example_id=data.get("tool_example_id") if kind == "tool" else None,
-        parent_only=await _tool_is_parent_only(db, data) if kind == "tool" else False,
-        text=clean(data.get("text")) if kind in ("exposure", "tool", "parent_instruction", "reward") else None,
-        reward_for=clean(data.get("reward_for")) if kind == "reward" else None,
-        note=clean(data.get("note")),
-        share_with_child=bool(data.get("share_with_child")) if kind == "parent_instruction" else False,
-    )
-    db.add(item)
-    await db.commit()
-    await db.refresh(item)
-    return item
+def _dates(starts_on: date | None, ends_on: date | None) -> tuple[date, date]:
+    start = starts_on or date.today()
+    end = ends_on or start + DEFAULT_LENGTH
+    if end < start:
+        raise HTTPException(status_code=422, detail="The plan has to end after it starts")
+    return start, end
 
 
-def update_item(item: ActionPlanItem, data: dict) -> None:
-    def clean(v):
-        v = (v or "").strip()
-        return v or None
-
-    if "text" in data and item.kind in ("exposure", "tool", "parent_instruction", "reward"):
-        t = clean(data["text"])
-        if t is None and (item.kind in ("parent_instruction", "reward") or (item.kind == "tool" and item.tool_id is None)):
-            raise HTTPException(status_code=422, detail="Write what it is")
-        item.text = t
-        if item.kind == "tool" and t:
-            item.tool_example_id = None  # written in now, not the picked example
-    if "reward_for" in data and item.kind == "reward":
-        item.reward_for = clean(data["reward_for"])
-    if "note" in data:
-        item.note = clean(data["note"])
-    if "share_with_child" in data and item.kind == "parent_instruction":
-        item.share_with_child = bool(data["share_with_child"])
-    if "position" in data and data["position"] is not None:
-        item.position = int(data["position"])
-
-
-def mark_reward(item: ActionPlanItem, given: bool, by: str) -> None:
-    if item.kind != "reward":
-        raise HTTPException(status_code=422, detail="Only a reward can be marked given")
-    item.reward_given = given
-    item.reward_given_by = by
-    item.reward_answered_at = datetime.now(timezone.utc)
-
-
-def publish(plan: ActionPlan, item_count: int) -> None:
-    """Confidence is checked per exposure when it is added, not for the whole plan
-    (Peter, 2026-11-27)."""
-    if item_count == 0:
+async def create_plan(db: AsyncSession, patient_id: uuid.UUID, org_id: uuid.UUID, practitioner_id: uuid.UUID,
+                      starts_on: date | None, ends_on: date | None, items: list[dict]) -> ActionPlan:
+    """A new plan, shared on save. A plan still running when this one starts ends that same day, so
+    what is recorded at the session that ends it still counts for it."""
+    if not items:
         raise HTTPException(status_code=422, detail="The plan has nothing on it")
-    if plan.published_at is None:
-        plan.published_at = datetime.now(timezone.utc)
+    start, end = _dates(starts_on, ends_on)
+    number = (await db.execute(
+        select(func.coalesce(func.max(ActionPlan.session_number), 0)).where(ActionPlan.patient_id == patient_id)
+    )).scalar() + 1
+    for older in (await db.execute(select(ActionPlan).where(
+            ActionPlan.patient_id == patient_id, ActionPlan.ends_on > start, ActionPlan.session_date <= start))).scalars():
+        older.ends_on = start
+    plan = ActionPlan(patient_id=patient_id, organization_id=org_id, practitioner_id=practitioner_id,
+                      session_number=number, session_date=start, ends_on=end,
+                      published_at=datetime.now(timezone.utc))
+    db.add(plan)
+    await db.flush()
+    await _apply_items(db, plan, items)
+    await db.commit()
+    await db.refresh(plan)
+    return plan
+
+
+async def save_plan(db: AsyncSession, plan: ActionPlan, starts_on: date | None, ends_on: date | None,
+                    items: list[dict]) -> ActionPlan:
+    if state_of(plan) == "closed":
+        raise HTTPException(status_code=409, detail="A closed plan can't be changed")
+    if not items:
+        raise HTTPException(status_code=422, detail="The plan has nothing on it")
+    plan.session_date, plan.ends_on = _dates(starts_on or plan.session_date, ends_on or plan.ends_on)
+    await _apply_items(db, plan, items)
+    await db.commit()
+    await db.refresh(plan)
+    return plan
+
+
+# ── Checking in ──────────────────────────────────────────────────────────────
+
+def tick(item: ActionPlanItem, done: bool, by: str) -> None:
+    """by: clinician, child or parent. An exposure is done by recording it, not by a tick."""
+    if item.kind == "exposure":
+        raise HTTPException(status_code=422, detail="Record the exposure instead")
+    item.done_at = datetime.now(timezone.utc) if done else None
+    item.done_by = by if done else None

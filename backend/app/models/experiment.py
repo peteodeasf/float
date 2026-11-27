@@ -28,6 +28,9 @@ class Experiment(Base):
     scheduled_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Who recorded how it went: the child in their app, or the clinician in session. Empty on
+    # exposures recorded before this was kept.
+    recorded_by: Mapped[str | None] = mapped_column(String, nullable=True)
     completed_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

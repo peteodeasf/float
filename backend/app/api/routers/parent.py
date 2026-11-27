@@ -611,8 +611,8 @@ async def mark_parent_message_read(
 # ── The action plan ───────────────────────────────────────────────────────────
 # docs/plans/action-plans-build.md
 
-class RewardGivenIn(BaseModel):
-    given: bool
+class TickIn(BaseModel):
+    done: bool
 
 
 @parent_router.get("/action-plan")
@@ -620,36 +620,37 @@ async def parent_action_plan(
     context: tuple = Depends(get_parent_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """The current published plan, every item. None until there is one."""
+    """The plan running now (else the latest that has started), every line but check-in notes."""
     from app.services import action_plan_service
     _, children = context
     child = _first_child(children)
-    plan = await action_plan_service.current_published(db, child.id)
+    plan = await action_plan_service.current_for_family(db, child.id)
     if plan is None:
         return None
     return (await action_plan_service.plans_out(db, [plan], audience="parent"))[0]
 
 
-@parent_router.put("/action-plan-items/{item_id}/reward-given")
-async def parent_marks_reward(
+@parent_router.put("/action-plan-items/{item_id}/tick")
+async def parent_ticks(
     item_id: uuid.UUID,
-    data: RewardGivenIn,
+    data: TickIn,
     context: tuple = Depends(get_parent_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """Was this reward given? Only on a reward on this family's current plan."""
-    from app.models.action_plan import ActionPlanItem
+    """The parent ticks a tool, strategy or reward on their child's plan (a reward: it was given)."""
+    from app.models.action_plan import ActionPlan, ActionPlanItem
     from app.services import action_plan_service
     _, children = context
     child = _first_child(children)
-    plan = await action_plan_service.current_published(db, child.id)
-    item = None
-    if plan is not None:
-        item = (await db.execute(select(ActionPlanItem).where(
-            ActionPlanItem.id == item_id, ActionPlanItem.action_plan_id == plan.id,
-        ))).scalar_one_or_none()
+    item = (await db.execute(
+        select(ActionPlanItem).join(ActionPlan, ActionPlan.id == ActionPlanItem.action_plan_id).where(
+            ActionPlanItem.id == item_id, ActionPlan.patient_id == child.id,
+            ActionPlanItem.kind.in_(action_plan_service.FAMILY_TICKS),
+        )
+    )).scalar_one_or_none()
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found")
-    action_plan_service.mark_reward(item, data.given, "parent")
+    action_plan_service.tick(item, data.done, "parent")
     await db.commit()
+    plan = await db.get(ActionPlan, item.action_plan_id)
     return (await action_plan_service.plans_out(db, [plan], audience="parent"))[0]

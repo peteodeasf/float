@@ -167,53 +167,6 @@ async def test_images_on_drafts_are_hidden_from_everyone_but_the_admin(api, db):
 
 # ── Action plans ──
 
-async def _plan(api, f):
-    api.sign_in_as(f["clinician"].user)
-    return (await api.post(f"/patients/{f['child'].id}/action-plans", json={})).json()
-
-
-async def test_a_plan_takes_an_example_or_one_written_for_it(api, db):
-    f = await _family(db)
-    mottos = await _page(db, "Mottos", examples=[("Wait and see", "Say it, then find out"), ("Can't know", None)])
-    other = await _page(db, "Take 5", examples=[("Five minutes", None)])
-    plan = await _plan(api, f)
-    url = f"/action-plans/{plan['id']}/items"
-    wait = (await api.get(f"/tools/{mottos.id}")).json()["examples"][0]
-
-    r = await api.post(url, json={"kind": "tool", "tool_id": str(mottos.id), "tool_example_id": wait["id"]})
-    assert r.status_code == 201, r.text
-    r = await api.post(url, json={"kind": "tool", "tool_id": str(mottos.id), "text": "Brave, not perfect"})
-    items = r.json()["items"]
-    assert [(i["label"], i["tool_name"], i["example_how_used"]) for i in items] == [
-        ("Wait and see", "Mottos", "Say it, then find out"),
-        ("Brave, not perfect", "Mottos", None),
-    ]
-    # An example from another page is refused.
-    other_ex = (await api.get(f"/tools/{other.id}")).json()["examples"][0]
-    r = await api.post(url, json={"kind": "tool", "tool_id": str(mottos.id), "tool_example_id": other_ex["id"]})
-    assert r.status_code == 404
-
-
-async def test_a_draft_page_cannot_go_on_a_plan(api, db):
-    f = await _family(db)
-    draft = await _page(db, "Draft", published=False)
-    plan = await _plan(api, f)
-    r = await api.post(f"/action-plans/{plan['id']}/items", json={"kind": "tool", "tool_id": str(draft.id)})
-    assert r.status_code == 404
-
-
-async def test_a_parent_only_strategy_on_the_plan_is_not_shown_to_the_child(api, db):
-    f = await _family(db)
-    polite = await _page(db, "Polite ignoring", audience="parent")
-    plan = await _plan(api, f)
-    await api.post(f"/action-plans/{plan['id']}/items", json={"kind": "tool", "tool_id": str(polite.id)})
-    await api.post(f"/action-plans/{plan['id']}/publish")
-    api.sign_in_as(f["child"].user)
-    assert (await api.get("/patient/action-plan")).json()["items"] == []
-    api.sign_in_as(f["parent"])
-    assert [i["label"] for i in (await api.get("/parent/action-plan")).json()["items"]] == ["Polite ignoring"]
-
-
 async def test_a_child_cannot_load_an_image_from_a_parent_only_page(api, db):
     f = await _family(db)
     img = ToolImage(content_type="image/png", data=b"png")
@@ -236,24 +189,60 @@ async def test_a_bad_id_in_a_block_is_refused_not_a_crash(api, db):
     assert r.status_code == 422
 
 
-async def test_a_written_in_line_reaches_the_child_but_a_parent_one_does_not(api, db):
+async def _save(api, f, items):
+    api.sign_in_as(f["clinician"].user)
+    return await api.post(f"/patients/{f['child'].id}/action-plans", json={"items": items})
+
+
+async def test_a_plan_takes_an_example_or_one_written_for_it(api, db):
     f = await _family(db)
-    plan = await _plan(api, f)
-    url = f"/action-plans/{plan['id']}/items"
-    await api.post(url, json={"kind": "tool", "text": "Squeeze a stress ball"})
-    await api.post(url, json={"kind": "tool", "text": "Count to ten before answering", "parent_only": True})
-    await api.post(f"/action-plans/{plan['id']}/publish")
+    mottos = await _page(db, "Mottos", examples=[("Wait and see", "Say it, then find out"), ("Can't know", None)])
+    other = await _page(db, "Take 5", examples=[("Five minutes", None)])
+    api.sign_in_as(f["clinician"].user)
+    wait = (await api.get(f"/tools/{mottos.id}")).json()["examples"][0]
+    other_ex = (await api.get(f"/tools/{other.id}")).json()["examples"][0]
+
+    r = await _save(api, f, [{"kind": "tool", "tool_id": str(mottos.id), "tool_example_id": wait["id"]},
+                             {"kind": "tool", "tool_id": str(mottos.id), "text": "Brave, not perfect"}])
+    assert r.status_code == 201, r.text
+    assert [(i["label"], i["tool_name"], i["example_how_used"]) for i in r.json()["items"]] == [
+        ("Wait and see", "Mottos", "Say it, then find out"),
+        ("Brave, not perfect", "Mottos", None),
+    ]
+    r = await _save(api, f, [{"kind": "tool", "tool_id": str(mottos.id), "tool_example_id": other_ex["id"]}])
+    assert r.status_code == 404
+
+
+async def test_a_draft_page_cannot_go_on_a_plan(api, db):
+    f = await _family(db)
+    draft = await _page(db, "Draft", published=False)
+    assert (await _save(api, f, [{"kind": "tool", "tool_id": str(draft.id)}])).status_code == 404
+
+
+async def test_parent_only_lines_never_reach_the_child(api, db):
+    f = await _family(db)
+    polite = await _page(db, "Polite ignoring", audience="parent")
+    r = await _save(api, f, [
+        {"kind": "tool", "tool_id": str(polite.id), "text": "Ignore the third ask"},
+        {"kind": "tool", "text": "Squeeze a stress ball"},
+        {"kind": "tool", "text": "Count to ten before answering", "parent_only": True},
+    ])
+    assert r.status_code == 201, r.text
+    api.sign_in_as(f["child"].user)
+    assert [i["label"] for i in (await api.get("/patient/action-plan")).json()["items"]] == ["Squeeze a stress ball"]
+    api.sign_in_as(f["parent"])
+    assert len((await api.get("/parent/action-plan")).json()["items"]) == 3
+
+    # Still hidden after the page is deleted.
+    await db.delete(polite)
+    await db.flush()
     api.sign_in_as(f["child"].user)
     assert [i["label"] for i in (await api.get("/patient/action-plan")).json()["items"]] == ["Squeeze a stress ball"]
 
 
-async def test_a_parent_strategy_stays_hidden_from_the_child_after_its_page_is_deleted(api, db):
+async def test_a_child_cannot_tick_a_parent_only_line(api, db):
     f = await _family(db)
-    polite = await _page(db, "Polite ignoring", audience="parent")
-    plan = await _plan(api, f)
-    await api.post(f"/action-plans/{plan['id']}/items", json={"kind": "tool", "tool_id": str(polite.id), "text": "Ignore the third ask"})
-    await api.post(f"/action-plans/{plan['id']}/publish")
-    await db.delete(polite)
-    await db.flush()
+    r = await _save(api, f, [{"kind": "tool", "text": "Count to ten", "parent_only": True}])
+    item = r.json()["items"][0]
     api.sign_in_as(f["child"].user)
-    assert (await api.get("/patient/action-plan")).json()["items"] == []
+    assert (await api.put(f"/patient/action-plan-items/{item['id']}/tick", json={"done": True})).status_code == 404

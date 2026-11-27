@@ -2,7 +2,19 @@
 import { apiClient, teenApiClient, parentApiClient } from './client'
 
 export type ItemKind = 'exposure' | 'tool' | 'accommodation' | 'parent_instruction' | 'reward'
-export type Confidence = 'low' | 'medium' | 'high'
+export type PlanState = 'current' | 'upcoming' | 'closed'
+
+/** One time the child (or the clinician, in session) recorded how an exposure went. */
+export interface Recording {
+  id: string
+  completed_date: string | null
+  recorded_by: 'child' | 'clinician' | null
+  fear_expected: number | null
+  fear_felt: number | null
+  belief_before: number | null
+  belief_after: number | null
+  feared_outcome_occurred: boolean | null
+}
 
 export interface ActionPlanItem {
   id: string
@@ -17,6 +29,10 @@ export interface ActionPlanItem {
   tool_summary?: string | null
   /** How the picked example is used. */
   example_how_used?: string | null
+  /** Ticked, or for an exposure, recorded at least once during the plan. */
+  done: boolean
+  done_by: 'clinician' | 'child' | 'parent' | null
+  done_at: string | null
   // The clinician's and parent's view only.
   position?: number
   text?: string | null
@@ -25,77 +41,86 @@ export interface ActionPlanItem {
   fear_level?: number | null
   accommodation_behavior_id?: string | null
   tool_example_id?: string | null
-  /** A tool line for the parent alone. */
   parent_only?: boolean
   share_with_child?: boolean
-  reward_given?: boolean | null
-  reward_given_by?: 'parent' | 'clinician' | null
-  outcome?: 'keep' | 'done' | null
+  // The clinician's only.
+  check_note?: string | null
+  recordings?: Recording[]
 }
 
 export interface ActionPlan {
   id: string
   patient_id: string
   session_number: number
-  session_date: string
-  confidence: Confidence | null
-  published_at: string | null
+  starts_on: string
+  ends_on: string
+  state: PlanState
+  done_count: number
   items: ActionPlanItem[]
 }
 
-export interface NewItem {
+/** A line as the edit view saves it. `id` keeps an existing line's ticks and notes. */
+export interface ItemIn {
+  id?: string
   kind: ItemKind
-  avoidance_behavior_id?: string
-  accommodation_behavior_id?: string
-  tool_id?: string
-  tool_example_id?: string
-  text?: string
-  reward_for?: string
-  note?: string
+  avoidance_behavior_id?: string | null
+  accommodation_behavior_id?: string | null
+  tool_id?: string | null
+  tool_example_id?: string | null
+  text?: string | null
+  reward_for?: string | null
+  note?: string | null
   share_with_child?: boolean
   parent_only?: boolean
+}
+
+export interface PlanIn {
+  starts_on?: string
+  ends_on?: string
+  items: ItemIn[]
+}
+
+export interface ExposureAfter {
+  feared_outcome_occurred: boolean
+  what_happened: string
+  was_surprised?: boolean | null
+  distress_thermometer_actual: number
+  bip_after: number
+  what_learned: string
 }
 
 // Clinician
 export const getActionPlans = async (patientId: string): Promise<ActionPlan[]> =>
   (await apiClient.get(`/patients/${patientId}/action-plans`)).data
 
-export const createActionPlan = async (patientId: string, keepItemIds: string[]): Promise<ActionPlan> =>
-  (await apiClient.post(`/patients/${patientId}/action-plans`, { keep_item_ids: keepItemIds })).data
+/** Saved whole; the family sees it straight away. */
+export const createActionPlan = async (patientId: string, body: PlanIn): Promise<ActionPlan> =>
+  (await apiClient.post(`/patients/${patientId}/action-plans`, body)).data
 
-export const updateActionPlan = async (
-  planId: string, data: { session_date?: string; confidence?: Confidence },
-): Promise<ActionPlan> => (await apiClient.patch(`/action-plans/${planId}`, data)).data
+export const saveActionPlan = async (planId: string, body: PlanIn): Promise<ActionPlan> =>
+  (await apiClient.put(`/action-plans/${planId}`, body)).data
 
-export const publishActionPlan = async (planId: string): Promise<ActionPlan> =>
-  (await apiClient.post(`/action-plans/${planId}/publish`)).data
+export const tickItem = async (itemId: string, done: boolean): Promise<ActionPlan> =>
+  (await apiClient.put(`/action-plan-items/${itemId}/tick`, { done })).data
 
-export const deleteActionPlan = async (planId: string): Promise<void> => {
-  await apiClient.delete(`/action-plans/${planId}`)
-}
+/** A check-in note: the clinician's alone. */
+export const setCheckNote = async (itemId: string, note: string): Promise<ActionPlan> =>
+  (await apiClient.put(`/action-plan-items/${itemId}/check-note`, { note })).data
 
-export const addActionPlanItem = async (planId: string, item: NewItem): Promise<ActionPlan> =>
-  (await apiClient.post(`/action-plans/${planId}/items`, item)).data
-
-export const updateActionPlanItem = async (
-  itemId: string, data: { text?: string; reward_for?: string; note?: string; share_with_child?: boolean },
-): Promise<ActionPlan> => (await apiClient.patch(`/action-plan-items/${itemId}`, data)).data
-
-export const deleteActionPlanItem = async (itemId: string): Promise<void> => {
-  await apiClient.delete(`/action-plan-items/${itemId}`)
-}
-
-export const clinicianMarksReward = async (itemId: string, given: boolean): Promise<ActionPlan> =>
-  (await apiClient.put(`/action-plan-items/${itemId}/reward-given`, { given })).data
-
+export const recordExposure = async (patientId: string, rungId: string, after: ExposureAfter) =>
+  (await apiClient.post(`/patients/${patientId}/exposures/${rungId}/record`, after)).data
 
 // Child
 export const getMyActionPlan = async (): Promise<ActionPlan | null> =>
   (await teenApiClient.get('/patient/action-plan')).data
 
+export const childTick = async (itemId: string, done: boolean): Promise<ActionPlan> =>
+  (await teenApiClient.put(`/patient/action-plan-items/${itemId}/tick`, { done })).data
+
 // Parent
 export const getParentActionPlan = async (): Promise<ActionPlan | null> =>
   (await parentApiClient.get('/parent/action-plan')).data
 
-export const parentMarksReward = async (itemId: string, given: boolean): Promise<ActionPlan> =>
-  (await parentApiClient.put(`/parent/action-plan-items/${itemId}/reward-given`, { given })).data
+/** A tool, strategy or reward. On a reward: it was given. */
+export const parentTick = async (itemId: string, done: boolean): Promise<ActionPlan> =>
+  (await parentApiClient.put(`/parent/action-plan-items/${itemId}/tick`, { done })).data

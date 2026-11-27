@@ -158,7 +158,7 @@ async def _victim_world(db):
     # The tool is shared content like the tips, so it carries no marker.
     action_plan = ActionPlan(patient_id=patient.id, organization_id=org.id,
                              practitioner_id=plan.practitioner_id, session_number=1,
-                             confidence="high", published_at=date.today())
+                             ends_on=date.today(), published_at=date.today())
     shared_tool = Tool(name="Shared tool", is_published=True)
     # Float's own image, shared content like the tips: no marker.
     shared_image = ToolImage(content_type="image/png", data=b"png")
