@@ -11,8 +11,12 @@ export interface ActionPlanItem {
   label: string
   note: string | null
   reward_for: string | null
-  tool_description: string | null
-  tool_link: string | null
+  tool_id?: string | null
+  /** The page a line comes from when it is one of its examples ("Mottos"). */
+  tool_name?: string | null
+  tool_summary?: string | null
+  /** How the picked example is used. */
+  example_how_used?: string | null
   // The clinician's and parent's view only.
   position?: number
   text?: string | null
@@ -20,7 +24,8 @@ export interface ActionPlanItem {
   rung_name?: string | null
   fear_level?: number | null
   accommodation_behavior_id?: string | null
-  tool_id?: string | null
+  tool_example_id?: string | null
+  tool_audience?: 'child' | 'parent' | 'both' | null
   share_with_child?: boolean
   reward_given?: boolean | null
   reward_given_by?: 'parent' | 'clinician' | null
@@ -37,18 +42,12 @@ export interface ActionPlan {
   items: ActionPlanItem[]
 }
 
-export interface Tool {
-  id: string
-  name: string
-  description: string | null
-  link: string | null
-}
-
 export interface NewItem {
   kind: ItemKind
   avoidance_behavior_id?: string
   accommodation_behavior_id?: string
   tool_id?: string
+  tool_example_id?: string
   text?: string
   reward_for?: string
   note?: string
@@ -87,7 +86,6 @@ export const deleteActionPlanItem = async (itemId: string): Promise<void> => {
 export const clinicianMarksReward = async (itemId: string, given: boolean): Promise<ActionPlan> =>
   (await apiClient.put(`/action-plan-items/${itemId}/reward-given`, { given })).data
 
-export const getTools = async (): Promise<Tool[]> => (await apiClient.get('/tools')).data
 
 // Child
 export const getMyActionPlan = async (): Promise<ActionPlan | null> =>

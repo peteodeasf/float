@@ -2,7 +2,7 @@
 
 docs/plans/action-plans-build.md
 """
-from app.models.action_plan import Tool
+from app.models.tool import Tool
 from app.models.experiment import AccommodationBehavior
 
 from tests.factories import (
@@ -23,7 +23,7 @@ async def _family(db):
                            behavior_type="scenario")
     acc = AccommodationBehavior(treatment_plan_id=plan.id, organization_id=org.id,
                                 name="Checks homework every night", status="started")
-    tool = Tool(name="The worry hill", description="A short video")
+    tool = Tool(name="The worry hill", summary="A short video", is_published=True)
     db.add_all([acc, tool])
     await db.flush()
     return {"org": org, "child": child, "clinician": clinician, "parent": parent,
@@ -195,16 +195,6 @@ async def _tp(db, f):
     from sqlalchemy import select
     from app.models.treatment import TreatmentPlan
     return (await db.execute(select(TreatmentPlan).where(TreatmentPlan.patient_id == f["child"].id))).scalar_one()
-
-
-async def test_a_tool_link_must_be_a_web_address(api, db):
-    from tests.factories import make_float_admin
-    admin = await make_float_admin(db)
-    api.sign_in_as(admin)
-    r = await api.post("/admin/tools", json={"name": "Bad", "link": "javascript:alert(1)"})
-    assert r.status_code == 400
-    r = await api.post("/admin/tools", json={"name": "Good", "link": "https://example.com/hill"})
-    assert r.status_code == 200, r.text
 
 
 async def test_an_older_plan_cannot_be_changed_and_a_shared_one_cannot_be_deleted(api, db):

@@ -13,7 +13,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.action_plan import ActionPlan, ActionPlanItem, Tool
+from app.models.action_plan import ActionPlan, ActionPlanItem
 from app.models.patient import PatientProfile
 from app.api.routers.patients import get_practitioner_context, get_permitted_patient
 from app.services import action_plan_service as svc
@@ -67,6 +67,7 @@ class ItemCreate(BaseModel):
     avoidance_behavior_id: Optional[uuid.UUID] = None
     accommodation_behavior_id: Optional[uuid.UUID] = None
     tool_id: Optional[uuid.UUID] = None
+    tool_example_id: Optional[uuid.UUID] = None
     text: Optional[str] = None
     reward_for: Optional[str] = None
     note: Optional[str] = None
@@ -211,14 +212,3 @@ async def clinician_marks_reward(
     plan = (await db.execute(select(ActionPlan).where(ActionPlan.id == item.action_plan_id))).scalar_one()
     return await _one(db, plan)
 
-
-@router.get("/tools")
-async def list_tools(
-    _context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db),
-):
-    """The tools list, for picking. Shared across clinics, like the tips."""
-    rows = (await db.execute(
-        select(Tool).where(Tool.is_active.is_(True)).order_by(Tool.display_order, Tool.name)
-    )).scalars().all()
-    return [{"id": str(t.id), "name": t.name, "description": t.description, "link": t.link} for t in rows]

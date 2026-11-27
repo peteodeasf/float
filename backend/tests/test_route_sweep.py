@@ -27,7 +27,8 @@ from fastapi.routing import APIRoute
 
 from datetime import date
 
-from app.models.action_plan import ActionPlan, ActionPlanItem, Tool
+from app.models.action_plan import ActionPlan, ActionPlanItem
+from app.models.tool import Tool, ToolHighlight, ToolImage, ToolOpen
 from app.models.guide_progress import GuideProgress
 from app.models.downward_arrow import DownwardArrow
 from app.models.experiment import Experiment, AccommodationBehavior
@@ -158,9 +159,15 @@ async def _victim_world(db):
     action_plan = ActionPlan(patient_id=patient.id, organization_id=org.id,
                              practitioner_id=plan.practitioner_id, session_number=1,
                              confidence="high", published_at=date.today())
-    shared_tool = Tool(name="Shared tool")
-    db.add_all([action_plan, shared_tool])
+    shared_tool = Tool(name="Shared tool", is_published=True)
+    # Float's own image, shared content like the tips: no marker.
+    shared_image = ToolImage(content_type="image/png", data=b"png")
+    db.add_all([action_plan, shared_tool, shared_image])
     await db.flush()
+    # The victim's highlight: its list returns the child's (marked) name.
+    db.add(ToolHighlight(tool_id=shared_tool.id, patient_id=patient.id, organization_id=org.id,
+                         for_child=True, highlighted_by=plan.practitioner_id))
+    db.add(ToolOpen(tool_id=shared_tool.id, user_id=patient.user.id, patient_id=patient.id))
     action_item = ActionPlanItem(action_plan_id=action_plan.id, kind="reward",
                                  text=f"{CANARY} reward", reward_for=f"{CANARY} for")
     db.add(action_item)
@@ -186,6 +193,7 @@ async def _victim_world(db):
         "guide": guide, "tag": tag, "tip": tip,
         "house_clinician": house_clinician, "recording": recording, "review_round": review_round,
         "action_plan": action_plan, "action_item": action_item, "tool": shared_tool,
+        "image": shared_image,
     }
 
 
@@ -218,6 +226,7 @@ def _param_values(w):
         "action_plan_id": w["action_plan"].id,
         "item_id": w["action_item"].id,
         "tool_id": w["tool"].id,
+        "image_id": w["image"].id,
         "segment": 1,
         "seq": 0,
     }

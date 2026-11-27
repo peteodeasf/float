@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import LibraryVideos from '../../components/videos/LibraryVideos'
+import LibraryTools from '../../components/tools/LibraryTools'
 import { clinicianModules, type EducationModule } from '../../data/education'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import { ModuleIcon } from '../../components/education/figures'
@@ -73,6 +74,7 @@ export default function EducationIndexPage({ basePath = '/education' }: { basePa
         )}
 
         <LibraryVideos />
+        <LibraryTools />
 
         {GROUPS.map(g => (
           <section key={g.title} className="edu-group" aria-labelledby={`g-${g.title}`}>

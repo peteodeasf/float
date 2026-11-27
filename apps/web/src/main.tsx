@@ -57,6 +57,7 @@ import EducationIndexPage from './pages/practitioner/EducationIndexPage'
 import SettingsPage from './pages/practitioner/SettingsPage'
 import CodesignSignupsPage from './pages/practitioner/CodesignSignupsPage'
 import EducationModulePage from './pages/practitioner/EducationModulePage'
+import ToolPage from './pages/practitioner/ToolPage'
 import TeenClosedPage from './pages/teen/TeenClosedPage'
 import ParentClosedPage from './pages/parent/ParentClosedPage'
 import { getTeenMe, getParentMe } from './api/me'
@@ -158,6 +159,9 @@ createRoot(document.getElementById('root')!).render(
               } />
               <Route path="/settings" element={
                 <ProtectedRoute><SettingsPage /></ProtectedRoute>
+              } />
+              <Route path="/education/tools/:toolId" element={
+                <ProtectedRoute><ToolPage /></ProtectedRoute>
               } />
               <Route path="/education/:moduleId" element={
                 <ProtectedRoute><EducationModulePage /></ProtectedRoute>

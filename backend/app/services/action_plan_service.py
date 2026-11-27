@@ -11,7 +11,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.behavior_types import LADDER_TYPES
-from app.models.action_plan import ActionPlan, ActionPlanItem, Tool, CHILD_KINDS
+from app.models.action_plan import ActionPlan, ActionPlanItem, CHILD_KINDS
+from app.models.tool import Tool, ToolExample
 from app.models.experiment import AccommodationBehavior
 from app.models.treatment import AvoidanceBehavior, TreatmentPlan, TriggerSituation
 
@@ -34,7 +35,7 @@ async def items_of(db: AsyncSession, plan_ids: list[uuid.UUID]) -> dict[uuid.UUI
     return out
 
 
-async def _names(db: AsyncSession, items: list[ActionPlanItem]) -> tuple[dict, dict, dict]:
+async def _names(db: AsyncSession, items: list[ActionPlanItem]) -> tuple[dict, dict, dict, dict]:
     rung_ids = {i.avoidance_behavior_id for i in items if i.avoidance_behavior_id}
     acc_ids = {i.accommodation_behavior_id for i in items if i.accommodation_behavior_id}
     tool_ids = {i.tool_id for i in items if i.tool_id}
@@ -44,18 +45,32 @@ async def _names(db: AsyncSession, items: list[ActionPlanItem]) -> tuple[dict, d
         select(AccommodationBehavior).where(AccommodationBehavior.id.in_(acc_ids)))).scalars()} if acc_ids else {}
     tools = {t.id: t for t in (await db.execute(
         select(Tool).where(Tool.id.in_(tool_ids)))).scalars()} if tool_ids else {}
-    return rungs, accs, tools
+    ex_ids = {i.tool_example_id for i in items if i.tool_example_id}
+    examples = {e.id: e for e in (await db.execute(
+        select(ToolExample).where(ToolExample.id.in_(ex_ids)))).scalars()} if ex_ids else {}
+    return rungs, accs, tools, examples
 
 
-def _item_out(i: ActionPlanItem, rungs, accs, tools, *, for_child: bool = False) -> dict:
+def _parent_only(i: ActionPlanItem, tools: dict) -> bool:
+    """A strategy written for the parent alone, such as Polite ignoring. The child never sees it."""
+    if i.kind != "tool":
+        return False
+    tool = tools.get(i.tool_id)
+    # A page since deleted: its audience is unknown, so the child does not see the line.
+    return tool is None or tool.audience == "parent"
+
+
+def _item_out(i: ActionPlanItem, rungs, accs, tools, examples, *, for_child: bool = False) -> dict:
     """The line as shown. `label` is what to print; the links stay for the clinician's app."""
     rung = rungs.get(i.avoidance_behavior_id)
     tool = tools.get(i.tool_id)
     acc = accs.get(i.accommodation_behavior_id)
+    example = examples.get(i.tool_example_id)
     if i.kind == "exposure":
         label = i.text or (rung.name if rung else "")
     elif i.kind == "tool":
-        label = tool.name if tool else ""
+        # An example written for this plan, else the one picked, else the page itself.
+        label = i.text or (example.name if example else "") or (tool.name if tool else "")
     elif i.kind == "accommodation":
         label = acc.name if acc else ""
     else:
@@ -66,8 +81,11 @@ def _item_out(i: ActionPlanItem, rungs, accs, tools, *, for_child: bool = False)
         "label": label,
         "note": i.note,
         "reward_for": i.reward_for,
-        "tool_description": tool.description if tool else None,
-        "tool_link": tool.link if tool else None,
+        "tool_id": str(i.tool_id) if i.tool_id else None,
+        # The page it comes from, when the line is one of its examples ("Mottos").
+        "tool_name": tool.name if tool and label != tool.name else None,
+        "tool_summary": tool.summary if tool else None,
+        "example_how_used": example.how_used if example and not i.text else None,
     }
     if for_child:
         return out
@@ -79,7 +97,8 @@ def _item_out(i: ActionPlanItem, rungs, accs, tools, *, for_child: bool = False)
         "fear_level": float(rung.distress_thermometer_when_refraining)
         if rung and rung.distress_thermometer_when_refraining is not None else None,
         "accommodation_behavior_id": str(i.accommodation_behavior_id) if i.accommodation_behavior_id else None,
-        "tool_id": str(i.tool_id) if i.tool_id else None,
+        "tool_example_id": str(i.tool_example_id) if i.tool_example_id else None,
+        "tool_audience": tool.audience if tool else None,
         "share_with_child": i.share_with_child,
         "reward_given": i.reward_given,
         "reward_given_by": i.reward_given_by,
@@ -104,14 +123,14 @@ async def plans_out(db: AsyncSession, plans: list[ActionPlan], *, audience: str 
     """audience: clinician (everything), parent (every item, no carry-over marks needed but harmless),
     child (their own items and shared parent instructions, nothing about whether a reward was given)."""
     by_plan = await items_of(db, [p.id for p in plans])
-    rungs, accs, tools = await _names(db, [i for its in by_plan.values() for i in its])
+    rungs, accs, tools, examples = await _names(db, [i for its in by_plan.values() for i in its])
     out = []
     for p in plans:
         its = by_plan[p.id]
         if audience == "child":
-            its = [i for i in its if i.kind in CHILD_KINDS
+            its = [i for i in its if (i.kind in CHILD_KINDS and not _parent_only(i, tools))
                    or (i.kind == "parent_instruction" and i.share_with_child)]
-        rendered = [_item_out(i, rungs, accs, tools, for_child=audience == "child") for i in its]
+        rendered = [_item_out(i, rungs, accs, tools, examples, for_child=audience == "child") for i in its]
         if audience == "clinician":
             for r in rendered:
                 if not r["label"]:
@@ -189,7 +208,7 @@ async def create_plan(
                     action_plan_id=plan.id, kind=i.kind, position=pos,
                     avoidance_behavior_id=i.avoidance_behavior_id,
                     accommodation_behavior_id=i.accommodation_behavior_id,
-                    tool_id=i.tool_id, text=i.text, reward_for=i.reward_for, note=i.note,
+                    tool_id=i.tool_id, tool_example_id=i.tool_example_id, text=i.text, reward_for=i.reward_for, note=i.note,
                     share_with_child=i.share_with_child,
                 ))
     elif keep:
@@ -236,11 +255,19 @@ async def _check_links(db: AsyncSession, plan: ActionPlan, kind: str, data: dict
     elif kind == "tool":
         tid = data.get("tool_id")
         if not tid:
-            raise HTTPException(status_code=422, detail="Pick a tool from the list")
+            raise HTTPException(status_code=422, detail="Pick a tool or strategy from the list")
         ok = (await db.execute(
-            select(Tool.id).where(Tool.id == tid, Tool.is_active.is_(True)))).scalar_one_or_none()
+            select(Tool.id).where(Tool.id == tid, Tool.is_published.is_(True)))).scalar_one_or_none()
         if ok is None:
             raise _404("Tool")
+        eid = data.get("tool_example_id")
+        if eid:
+            if (data.get("text") or "").strip():
+                raise HTTPException(status_code=422, detail="Pick an example or write one, not both")
+            own = (await db.execute(
+                select(ToolExample.id).where(ToolExample.id == eid, ToolExample.tool_id == tid))).scalar_one_or_none()
+            if own is None:
+                raise _404("Example")
     elif kind in ("parent_instruction", "reward"):
         if not (data.get("text") or "").strip():
             raise HTTPException(status_code=422, detail="Write what it is")
@@ -264,7 +291,8 @@ async def add_item(db: AsyncSession, plan: ActionPlan, kind: str, data: dict) ->
         avoidance_behavior_id=data.get("avoidance_behavior_id") if kind == "exposure" else None,
         accommodation_behavior_id=data.get("accommodation_behavior_id") if kind == "accommodation" else None,
         tool_id=data.get("tool_id") if kind == "tool" else None,
-        text=clean(data.get("text")) if kind in ("exposure", "parent_instruction", "reward") else None,
+        tool_example_id=data.get("tool_example_id") if kind == "tool" else None,
+        text=clean(data.get("text")) if kind in ("exposure", "tool", "parent_instruction", "reward") else None,
         reward_for=clean(data.get("reward_for")) if kind == "reward" else None,
         note=clean(data.get("note")),
         share_with_child=bool(data.get("share_with_child")) if kind == "parent_instruction" else False,
@@ -280,11 +308,13 @@ def update_item(item: ActionPlanItem, data: dict) -> None:
         v = (v or "").strip()
         return v or None
 
-    if "text" in data and item.kind in ("exposure", "parent_instruction", "reward"):
+    if "text" in data and item.kind in ("exposure", "tool", "parent_instruction", "reward"):
         t = clean(data["text"])
-        if t is None and item.kind != "exposure":
+        if t is None and item.kind in ("parent_instruction", "reward"):
             raise HTTPException(status_code=422, detail="Write what it is")
         item.text = t
+        if item.kind == "tool" and t:
+            item.tool_example_id = None  # written in now, not the picked example
     if "reward_for" in data and item.kind == "reward":
         item.reward_for = clean(data["reward_for"])
     if "note" in data:
