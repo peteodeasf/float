@@ -2,14 +2,10 @@
 // One switch each, read from every place the feature shows up, so turning it back on is one edit.
 
 /**
- * Action plans: a clinician writes a session summary and publishes it to the child's app.
+ * Action plans: what the family practices between sessions. Shown on the clinician's Sessions tab,
+ * the parent's home and the child's Plan tab.
  *
- * Switched off 2026-09-01. Peter wants to see how the rest of the app flows before deciding
- * whether an action plan adds anything on top of the treatment plan, the exposure ladder and the
- * child's own app. Nothing was deleted — the endpoints, the editor and the child's page all still
- * work. Setting this to true brings back the clinician's Action plans section on the Sessions tab
- * and the child's Plan tab together.
- *
- * Open item in docs/backlog.md.
+ * Off 2026-09-01 while Peter decided whether to keep them; rebuilt and back on 2026-11-25.
+ * docs/plans/action-plans-build.md
  */
-export const SHOW_ACTION_PLANS = false
+export const SHOW_ACTION_PLANS = true

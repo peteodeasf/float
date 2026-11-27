@@ -36,7 +36,6 @@ from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse, P
 from app.services.email_service import send_teen_invitation_email, send_parent_invitation_email
 from app.services.codesign_viewers import can_view_codesign
 from app.schemas.experiment import ExperimentCreate, ExperimentBeforeState, ExperimentAfterState
-from app.models.action_plan import ActionPlan
 from app.models.session_note import SessionNote
 from app.models.message import Message
 from app.models.experiment import Experiment
@@ -154,20 +153,6 @@ async def get_permitted_plan(
     patient_id = await patient_of_record(db, TreatmentPlan, plan_id)
     await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
     result = await db.execute(select(TreatmentPlan).where(TreatmentPlan.id == plan_id))
-    return result.scalar_one()
-
-
-async def get_permitted_action_plan(
-    plan_id: uuid.UUID,
-    request: Request,
-    context: tuple = Depends(get_practitioner_context),
-    db: AsyncSession = Depends(get_db),
-) -> ActionPlan:
-    """Same, for /action-plans/{plan_id} — a different table that happens to share the name."""
-    user, practitioner = context
-    patient_id = await patient_of_record(db, ActionPlan, plan_id)
-    await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
-    result = await db.execute(select(ActionPlan).where(ActionPlan.id == plan_id))
     return result.scalar_one()
 
 
@@ -1925,20 +1910,19 @@ async def patient_save_after_state(
     return experiment
 
 
-@patient_router.get("/action-plans")
-async def get_my_action_plans(
+@patient_router.get("/action-plan")
+async def get_my_action_plan(
     context: tuple = Depends(get_patient_context),
     db: AsyncSession = Depends(get_db)
 ):
+    """The child's current action plan: their own items, and parent instructions the clinician
+    shared. None until one is published. docs/plans/action-plans-build.md"""
+    from app.services import action_plan_service
     _, patient = context
-    from app.models.action_plan import ActionPlan
-    result = await db.execute(
-        select(ActionPlan).where(
-            ActionPlan.patient_id == patient.id,
-            ActionPlan.visible_to_patient == True
-        ).order_by(ActionPlan.session_number.desc())
-    )
-    return result.scalars().all()
+    plan = await action_plan_service.current_published(db, patient.id)
+    if plan is None:
+        return None
+    return (await action_plan_service.plans_out(db, [plan], audience="child"))[0]
 
 
 @patient_router.get("/messages")

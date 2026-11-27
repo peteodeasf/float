@@ -81,3 +81,16 @@ everywhere at once if it changes, rather than letting two names drift apart.
 The action plan and the child's progress, made on request from the patient's data, in a clinician
 view, a parent view and a patient view. Peter, 2026-11-20: named **Progress report**; it was called
 "reference sheet" before. Not built yet. See [`docs/plans/education.md`](docs/plans/education.md).
+
+## Action plan
+
+What the family practices between one session and the next, made with the child in the last part
+of a session. A list of items: exposures from the ladder, tools from the tools list, accommodations
+the parent is working on, "how to help" lines for the parent, and rewards. Shared with the family
+only once the child's confidence is high. See [`docs/plans/action-plans-build.md`](docs/plans/action-plans-build.md).
+
+## Tools list
+
+The coping tools and strategies a clinician can put on an action plan: a technique with a
+description, or something to learn or watch, such as "The worry hill". Written by Peter in the admin
+app. Clinicians pick from it only; they cannot type their own (Peter, 2026-11-25).

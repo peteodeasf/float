@@ -25,11 +25,8 @@ import { ProgressTab } from './patient/ProgressTab'
 import { tabFromParam, type TabId } from '../../lib/patientTabs'
 export { FlatLadder } from './patient/FlatLadder'
 export { BehaviorPanel } from './patient/BehaviorPanel'
-import { getActionPlans, createActionPlan, updateActionPlan, publishActionPlan, deleteActionPlan, type ActionPlan } from '../../api/action_plans'
+import ActionPlansSection from './patient/ActionPlansSection'
 import { fetchFormulation, createFormulation, updateFormulation } from '../../api/formulation'
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
 import PractitionerNav from '../../components/ui/PractitionerNav'
 import ParentPlanPanel from '../../components/practitioner/ParentPlanPanel'
 import ParentProgressSection from '../../components/practitioner/ParentProgressSection'
@@ -45,7 +42,6 @@ import { LADDER_MAX_WIDTH } from './patient/shared'
 import { SHOW_ACTION_PLANS } from '../../lib/featureFlags'
 
 
-const ACTION_PLAN_TEMPLATE = `<h2>Exposures</h2><ul><li></li></ul><h2>Behaviors to resist</h2><ul><li></li></ul><h2>Parent instructions</h2><ul><li></li></ul><h2>Coping tools</h2><ul><li></li></ul><h2>Notes</h2><p></p>`
 
 function DTBadge({ value, max }: { value: number | null | undefined; max?: number | null }) {
   if (value == null) return null
@@ -436,21 +432,6 @@ export default function PatientPage() {
     if (formulationSaveTimerRef.current) clearTimeout(formulationSaveTimerRef.current)
   }, [])
 
-  // Action plans
-  const [showPlanEditor, setShowPlanEditor] = useState(false)
-  const [editingPlan, setEditingPlan] = useState<ActionPlan | null>(null)
-  const [planDate, setPlanDate] = useState(new Date().toISOString().split('T')[0])
-  const [planNickname, setPlanNickname] = useState('')
-  const [planNextAppt, setPlanNextAppt] = useState('')
-  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null)
-  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const editor = useEditor({
-    extensions: [StarterKit, Placeholder.configure({ placeholder: 'Start writing...' })],
-    content: '',
-    editorProps: { attributes: { class: 'prose prose-sm max-w-none focus:outline-none min-h-[180px] px-3 py-2' } },
-  })
-
   // Queries
   const { data: patient } = useQuery({ queryKey: ['patient', patientId], queryFn: () => getPatient(patientId!), enabled: !!patientId })
 
@@ -504,7 +485,6 @@ export default function PatientPage() {
   }, [patient?.parent_contacts, monitoringForm])
   const { data: sessionNotes } = useQuery({ queryKey: ['session-notes', patientId], queryFn: () => getSessionNotes(patientId!), enabled: !!patientId })
   const { data: guideTicks, isLoading: guideTicksLoading } = useQuery({ queryKey: ['guide-ticks', patientId], queryFn: () => getGuideTicks(patientId!), enabled: !!patientId })
-  const { data: actionPlans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId!), enabled: !!patientId })
   const { data: messages } = useQuery({ queryKey: ['messages', patientId], queryFn: () => getMessages(patientId!), enabled: !!patientId, refetchInterval: 5000, refetchIntervalInBackground: true, refetchOnWindowFocus: true })
   const { data: parents = [] } = useQuery({ queryKey: ['parents', patientId], queryFn: () => listParents(patientId!), enabled: !!patientId })
   // Opening a different patient goes back to the child's thread: a parent id from the last patient
@@ -776,55 +756,11 @@ export default function PatientPage() {
   })
   const deleteNoteMut = useMutation({ mutationFn: (id: string) => deleteSessionNote(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['session-notes', patientId] }) })
 
-  // Action plans
-  const getEditorContent = useCallback(() => editor?.getHTML() || '', [editor])
-  const resetPlanEditor = useCallback(() => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); setShowPlanEditor(false); setEditingPlan(null); editor?.commands.setContent('') }, [editor])
-  const createPlanActionMut = useMutation({ mutationFn: () => createActionPlan(patientId!, { session_date: planDate, nickname: planNickname || undefined, content: getEditorContent(), next_appointment: planNextAppt || undefined }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }) })
-  const updatePlanActionMut = useMutation({ mutationFn: () => updateActionPlan(editingPlan!.id, { session_date: planDate, nickname: planNickname || undefined, content: getEditorContent(), next_appointment: planNextAppt || undefined }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }) })
-  const publishPlanMut = useMutation({ mutationFn: (id: string) => publishActionPlan(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }) })
-  const deletePlanMut = useMutation({ mutationFn: (id: string) => deleteActionPlan(id), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['action-plans', patientId] }); setDeletingPlanId(null) } })
-
-  const handleSavePlan = () => {
-    console.log('[ActionPlan] Save draft clicked', { editingPlanId: editingPlan?.id, hasContent: !!getEditorContent() })
-    if (editingPlan) {
-      updatePlanActionMut.mutate(undefined, { onSuccess: () => resetPlanEditor() })
-    } else {
-      createPlanActionMut.mutate(undefined, { onSuccess: () => resetPlanEditor() })
-    }
-  }
-
-  const handlePublishPlan = () => {
-    console.log('[ActionPlan] Publish clicked', { editingPlanId: editingPlan?.id })
-    if (editingPlan) {
-      updatePlanActionMut.mutate(undefined, { onSuccess: () => { publishPlanMut.mutate(editingPlan.id, { onSuccess: () => resetPlanEditor() }) } })
-    } else {
-      createPlanActionMut.mutate(undefined, { onSuccess: (d: ActionPlan) => { publishPlanMut.mutate(d.id, { onSuccess: () => resetPlanEditor() }) } })
-    }
-  }
-
-  const openEditPlan = (ap: ActionPlan) => {
-    setEditingPlan(ap)
-    setPlanDate(ap.session_date)
-    setPlanNickname(ap.nickname || '')
-    setPlanNextAppt(ap.next_appointment || '')
-    editor?.commands.setContent(ap.content || '')
-    setShowPlanEditor(true)
-  }
-
-  useEffect(() => {
-    if (showPlanEditor && editingPlan && editor) {
-      autoSaveTimerRef.current = setInterval(() => updatePlanActionMut.mutate(), 30000)
-      return () => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current) }
-    }
-  }, [showPlanEditor, editingPlan, editor])
-
-
   const cardStyle = { background: 'var(--float-surface)', borderRadius: 'var(--float-radius-card)', border: '1px solid var(--float-border-strong)', boxShadow: '0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', padding: '20px', width: '100%', boxSizing: 'border-box' as const }
 
   // Tab badge counts. Unread = messages the child sent that the clinician hasn't read — not the
   // clinician's own outgoing messages the child hasn't opened yet.
   const unreadMessageCount = (messages ?? []).filter(m => !m.read_at && !!patient && m.sender_user_id === patient.user_id).length
-  const draftPlanCount = (actionPlans ?? []).filter(ap => !ap.visible_to_patient).length
 
   // Opening the Chat tab marks the messages the clinician is now reading as read, so the badge
   // clears — mirrors what the teen app does when the child opens their thread. Nothing marked the
@@ -873,7 +809,6 @@ export default function PatientPage() {
     && monitoringForm !== undefined
     && sessionNotes !== undefined
     && patientExperiments !== undefined
-    && actionPlans !== undefined
     && plan !== undefined
     && (!plan?.id || triggers !== undefined)
   useEffect(() => {
@@ -1589,92 +1524,6 @@ export default function PatientPage() {
     </div>
   )
 
-  const actionPlansContent = (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="text-sm font-semibold text-slate-700">Action plans</span>
-          {actionPlans && actionPlans.length > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{actionPlans.length}</span>}
-          {/* Was a badge on the old filter chip. A draft is one the patient cannot see yet. */}
-          {draftPlanCount > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'var(--float-primary)', color: '#fff' }}>{draftPlanCount} draft</span>}
-        </div>
-        {!showPlanEditor && <button onClick={() => { resetPlanEditor(); editor?.commands.setContent(ACTION_PLAN_TEMPLATE); setPlanDate(new Date().toISOString().split('T')[0]); setPlanNickname(plan?.nickname || ''); setPlanNextAppt(''); setShowPlanEditor(true) }} className="text-xs text-teal-600 font-medium bg-transparent border-none cursor-pointer">+ New plan</button>}
-      </div>
-      {showPlanEditor && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
-            {plan?.nickname ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', fontSize: '12px' }}>
-                <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>&ldquo;{plan.nickname}&rdquo;</span>
-                <button
-                  onClick={() => { setNicknameVal(plan.nickname || ''); setEditingNickname(true) }}
-                  className="text-[11px] text-slate-400 hover:text-teal-600 bg-transparent border-none cursor-pointer"
-                >
-                  edit in treatment plan →
-                </button>
-              </div>
-            ) : (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <input value={planNickname} onChange={e => setPlanNickname(e.target.value)} placeholder="Nickname" className="text-xs border border-slate-200 rounded" style={{ padding: '4px 8px' }} />
-                <span style={{ fontSize: '11px', color: 'var(--float-text-hint)' }}>Add a nickname in the treatment plan to pre-populate this field.</span>
-              </div>
-            )}
-          </div>
-          <div style={{ border: '1px solid var(--float-border)', borderRadius: 'var(--float-radius-control)', overflow: 'hidden', background: 'var(--float-surface)' }}>
-            <EditorContent editor={editor} />
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={handleSavePlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending} style={btn('primary', 'sm')}>
-              {(createPlanActionMut.isPending || updatePlanActionMut.isPending) && !publishPlanMut.isPending ? 'Saving...' : 'Save draft'}
-            </button>
-            <button onClick={handlePublishPlan} disabled={createPlanActionMut.isPending || updatePlanActionMut.isPending || publishPlanMut.isPending} className="bg-green-600 text-white rounded text-xs font-medium border-none cursor-pointer disabled:opacity-50" style={{ padding: '6px 12px' }}>
-              {publishPlanMut.isPending ? 'Publishing...' : (editingPlan?.visible_to_patient ? 'Republish' : 'Publish')}
-            </button>
-            <button onClick={resetPlanEditor} className="text-xs text-slate-400 bg-transparent border-none cursor-pointer">Cancel</button>
-          </div>
-        </div>
-      )}
-      {actionPlans && actionPlans.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {actionPlans.filter(ap => !showPlanEditor || ap.id !== editingPlan?.id).map(ap => (
-            <div key={ap.id} style={{ padding: '12px 14px', background: 'var(--float-surface-muted)', borderRadius: 'var(--float-radius-control)', fontSize: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
-                  <span className="font-medium text-slate-700">#{ap.session_number}</span>
-                  <span className="text-slate-400">{new Date(ap.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                  {ap.nickname && <span style={{ fontStyle: 'italic', color: 'var(--float-primary)' }}>"{ap.nickname}"</span>}
-                  <span className={`px-1.5 py-0.5 rounded font-medium ${ap.visible_to_patient ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ap.visible_to_patient ? 'Published' : 'Draft'}</span>
-                </div>
-              </div>
-              {ap.content && (
-                <div className="prose prose-sm max-w-none" style={{ fontSize: '12px', color: 'var(--float-text-secondary)', marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: ap.content }} />
-              )}
-              {deletingPlanId === ap.id ? (
-                <div style={{ background: 'var(--float-danger-bg)', borderRadius: 'var(--float-radius-control)', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--float-danger)' }}>Delete this plan?</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button onClick={() => deletePlanMut.mutate(ap.id)} disabled={deletePlanMut.isPending} className="text-[11px] text-white font-medium border-none cursor-pointer disabled:opacity-50" style={{ background: 'var(--float-danger)', padding: '4px 10px', borderRadius: 'var(--float-radius-control)' }}>Yes, delete</button>
-                    <button onClick={() => setDeletingPlanId(null)} className="text-[11px] text-slate-500 bg-transparent border-none cursor-pointer">Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <button onClick={() => openEditPlan(ap)} className="text-teal-600 font-medium bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Edit</button>
-                  <button onClick={() => publishPlanMut.mutate(ap.id)} disabled={publishPlanMut.isPending} className="text-green-700 font-medium bg-transparent border-none cursor-pointer disabled:opacity-50" style={{ fontSize: '11px' }}>{ap.visible_to_patient ? 'Republish' : 'Publish'}</button>
-                  <button onClick={() => setDeletingPlanId(ap.id)} className="text-red-500 bg-transparent border-none cursor-pointer" style={{ fontSize: '11px' }}>Delete</button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : !showPlanEditor && (
-        <p style={{ fontSize: '13px', color: 'var(--float-text-hint)', lineHeight: '1.5', margin: 0 }}>
-          Action plans are session summaries written directly to the patient. After each session, write what they'll work on and publish it to their app.
-        </p>
-      )}
-    </div>
-  )
 
   // The pre-session brief lived here. Removed 2026-09-01 at Peter's request — he may bring
   // it back, so the numbers it read (last action plan, last experiment confidence and
@@ -1939,7 +1788,7 @@ export default function PatientPage() {
             {activeTab === 'sessions' && (
               <>
                 {sessionNotesList}
-                {SHOW_ACTION_PLANS && actionPlansContent}
+                {SHOW_ACTION_PLANS && <ActionPlansSection patientId={patientId!} />}
               </>
             )}
 

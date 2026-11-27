@@ -1,80 +1,102 @@
+"""Action plans, clinician side. docs/plans/action-plans-build.md
+
+The parent's and the child's routes are in parent.py and patients.py; the tools list's admin
+routes are in admin.py.
+"""
 import uuid
-from datetime import date, datetime
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date
+from typing import Literal, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.action_plan import ActionPlan
-from app.models.user import User
-from app.models.patient import PractitionerProfile, PatientProfile
-from app.api.routers.patients import get_practitioner_context, get_permitted_patient, get_permitted_action_plan
+from app.models.action_plan import ActionPlan, ActionPlanItem, Tool
+from app.models.patient import PatientProfile
+from app.api.routers.patients import get_practitioner_context, get_permitted_patient
+from app.services import action_plan_service as svc
+from app.services.patient_access_service import get_patient_for_practitioner, patient_of_record
+
+
+# --- Access: an action plan, or an item on one, resolves to its patient first ---
+
+async def get_permitted_action_plan(
+    action_plan_id: uuid.UUID,
+    request: Request,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> ActionPlan:
+    user, practitioner = context
+    patient_id = await patient_of_record(db, ActionPlan, action_plan_id)
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
+    return (await db.execute(select(ActionPlan).where(ActionPlan.id == action_plan_id))).scalar_one()
+
+
+async def get_permitted_action_plan_item(
+    item_id: uuid.UUID,
+    request: Request,
+    context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+) -> ActionPlanItem:
+    user, practitioner = context
+    item = (await db.execute(select(ActionPlanItem).where(ActionPlanItem.id == item_id))).scalar_one_or_none()
+    if item is None:
+        raise svc._404("Item")
+    patient_id = await patient_of_record(db, ActionPlan, item.action_plan_id)
+    await get_patient_for_practitioner(db, patient_id, user.id, practitioner, request)
+    return item
 
 
 # --- Schemas ---
 
-class ActionPlanCreate(BaseModel):
+class PlanCreate(BaseModel):
     session_date: Optional[date] = None
-    nickname: Optional[str] = None
-    content: Optional[str] = None
-    exposures: list[str] = []
-    behaviors_to_resist: list[str] = []
-    parent_instructions: list[str] = []
-    coping_tools: list[str] = []
-    cognitive_strategies: list[str] = []
-    additional_notes: Optional[str] = None
-    next_appointment: Optional[str] = None
+    # Items on the last plan to carry over. The rest of the last plan is marked done.
+    keep_item_ids: list[uuid.UUID] = []
 
 
-class ActionPlanUpdate(BaseModel):
+class PlanUpdate(BaseModel):
     session_date: Optional[date] = None
-    nickname: Optional[str] = None
-    content: Optional[str] = None
-    exposures: Optional[list[str]] = None
-    behaviors_to_resist: Optional[list[str]] = None
-    parent_instructions: Optional[list[str]] = None
-    coping_tools: Optional[list[str]] = None
-    cognitive_strategies: Optional[list[str]] = None
-    additional_notes: Optional[str] = None
-    next_appointment: Optional[str] = None
+    confidence: Optional[Literal["low", "medium", "high"]] = None
 
 
-class ActionPlanResponse(BaseModel):
-    id: uuid.UUID
-    patient_id: uuid.UUID
-    organization_id: uuid.UUID
-    practitioner_id: uuid.UUID
-    session_number: int
-    session_date: date
-    nickname: Optional[str]
-    content: Optional[str]
-    exposures: list[str]
-    behaviors_to_resist: list[str]
-    parent_instructions: list[str]
-    coping_tools: list[str]
-    cognitive_strategies: list[str]
-    additional_notes: Optional[str]
-    next_appointment: Optional[str]
-    visible_to_patient: bool
-    visible_to_parent: bool
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
+class ItemCreate(BaseModel):
+    kind: Literal["exposure", "tool", "accommodation", "parent_instruction", "reward"]
+    avoidance_behavior_id: Optional[uuid.UUID] = None
+    accommodation_behavior_id: Optional[uuid.UUID] = None
+    tool_id: Optional[uuid.UUID] = None
+    text: Optional[str] = None
+    reward_for: Optional[str] = None
+    note: Optional[str] = None
+    share_with_child: bool = False
 
 
-# --- Router ---
+class ItemUpdate(BaseModel):
+    text: Optional[str] = None
+    reward_for: Optional[str] = None
+    note: Optional[str] = None
+    share_with_child: Optional[bool] = None
+    position: Optional[int] = None
+
+
+class RewardGiven(BaseModel):
+    given: bool
+
 
 router = APIRouter(tags=["action-plans"])
 
 
-@router.get(
-    "/patients/{patient_id}/action-plans",
-    response_model=list[ActionPlanResponse]
-)
+async def _plan_of(db, item: ActionPlanItem) -> ActionPlan:
+    return (await db.execute(select(ActionPlan).where(ActionPlan.id == item.action_plan_id))).scalar_one()
+
+
+async def _one(db, plan: ActionPlan) -> dict:
+    return (await svc.plans_out(db, [plan]))[0]
+
+
+@router.get("/patients/{patient_id}/action-plans")
 async def list_action_plans(
     patient_id: uuid.UUID,
     context: tuple = Depends(get_practitioner_context),
@@ -82,168 +104,121 @@ async def list_action_plans(
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
-    result = await db.execute(
-        select(ActionPlan)
-        .where(
-            ActionPlan.patient_id == patient_id,
-            ActionPlan.organization_id == practitioner.organization_id
-        )
-        .order_by(ActionPlan.session_number.desc())
-    )
-    return result.scalars().all()
+    plans = await svc.list_for_patient(db, patient_id, practitioner.organization_id)
+    return await svc.plans_out(db, plans)
 
 
-@router.post(
-    "/patients/{patient_id}/action-plans",
-    response_model=ActionPlanResponse,
-    status_code=status.HTTP_201_CREATED
-)
+@router.post("/patients/{patient_id}/action-plans", status_code=status.HTTP_201_CREATED)
 async def create_action_plan(
     patient_id: uuid.UUID,
-    data: ActionPlanCreate,
+    data: PlanCreate,
     context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
     _access: PatientProfile = Depends(get_permitted_patient),
 ):
     _, practitioner = context
-
-    # Auto-increment session_number per patient
-    result = await db.execute(
-        select(func.coalesce(func.max(ActionPlan.session_number), 0))
-        .where(
-            ActionPlan.patient_id == patient_id,
-            ActionPlan.organization_id == practitioner.organization_id
-        )
-    )
-    next_number = result.scalar() + 1
-
-    plan = ActionPlan(
-        patient_id=patient_id,
-        organization_id=practitioner.organization_id,
-        practitioner_id=practitioner.id,
-        session_number=next_number,
-        session_date=data.session_date or date.today(),
-        nickname=data.nickname,
-        content=data.content,
-        exposures=data.exposures,
-        behaviors_to_resist=data.behaviors_to_resist,
-        parent_instructions=data.parent_instructions,
-        coping_tools=data.coping_tools,
-        cognitive_strategies=data.cognitive_strategies,
-        additional_notes=data.additional_notes,
-        next_appointment=data.next_appointment,
-    )
-    db.add(plan)
-    await db.commit()
-    await db.refresh(plan)
-    return plan
+    plan = await svc.create_plan(db, patient_id, practitioner.organization_id, practitioner.id,
+                                 data.keep_item_ids, data.session_date)
+    return await _one(db, plan)
 
 
-@router.put(
-    "/action-plans/{plan_id}",
-    response_model=ActionPlanResponse
-)
+@router.patch("/action-plans/{action_plan_id}")
 async def update_action_plan(
-    plan_id: uuid.UUID,
-    data: ActionPlanUpdate,
-    context: tuple = Depends(get_practitioner_context),
+    data: PlanUpdate,
     db: AsyncSession = Depends(get_db),
-    _access: ActionPlan = Depends(get_permitted_action_plan),
+    plan: ActionPlan = Depends(get_permitted_action_plan),
 ):
-    _, practitioner = context
-    result = await db.execute(
-        select(ActionPlan).where(
-            ActionPlan.id == plan_id,
-            ActionPlan.organization_id == practitioner.organization_id
-        )
-    )
-    plan = result.scalar_one_or_none()
-    if not plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Action plan not found"
-        )
-
+    await svc.require_latest(db, plan)
     if data.session_date is not None:
         plan.session_date = data.session_date
-    if data.nickname is not None:
-        plan.nickname = data.nickname
-    if data.content is not None:
-        plan.content = data.content
-    if data.exposures is not None:
-        plan.exposures = data.exposures
-    if data.behaviors_to_resist is not None:
-        plan.behaviors_to_resist = data.behaviors_to_resist
-    if data.parent_instructions is not None:
-        plan.parent_instructions = data.parent_instructions
-    if data.coping_tools is not None:
-        plan.coping_tools = data.coping_tools
-    if data.cognitive_strategies is not None:
-        plan.cognitive_strategies = data.cognitive_strategies
-    if data.additional_notes is not None:
-        plan.additional_notes = data.additional_notes
-    if data.next_appointment is not None:
-        plan.next_appointment = data.next_appointment
-
+    if data.confidence is not None:
+        plan.confidence = data.confidence
     await db.commit()
     await db.refresh(plan)
-    return plan
+    return await _one(db, plan)
 
 
-@router.put(
-    "/action-plans/{plan_id}/publish",
-    response_model=ActionPlanResponse
-)
+@router.post("/action-plans/{action_plan_id}/publish")
 async def publish_action_plan(
-    plan_id: uuid.UUID,
-    context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
-    _access: ActionPlan = Depends(get_permitted_action_plan),
+    plan: ActionPlan = Depends(get_permitted_action_plan),
 ):
-    _, practitioner = context
-    result = await db.execute(
-        select(ActionPlan).where(
-            ActionPlan.id == plan_id,
-            ActionPlan.organization_id == practitioner.organization_id
-        )
-    )
-    plan = result.scalar_one_or_none()
-    if not plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Action plan not found"
-        )
-
-    plan.visible_to_patient = True
-    plan.visible_to_parent = True
+    await svc.require_latest(db, plan)
+    count = (await db.execute(
+        select(func.count()).select_from(ActionPlanItem).where(ActionPlanItem.action_plan_id == plan.id)
+    )).scalar()
+    svc.publish(plan, count)
     await db.commit()
     await db.refresh(plan)
-    return plan
+    return await _one(db, plan)
 
 
-@router.delete(
-    "/action-plans/{plan_id}",
-    status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/action-plans/{action_plan_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_action_plan(
-    plan_id: uuid.UUID,
-    context: tuple = Depends(get_practitioner_context),
     db: AsyncSession = Depends(get_db),
-    _access: ActionPlan = Depends(get_permitted_action_plan),
+    plan: ActionPlan = Depends(get_permitted_action_plan),
 ):
-    _, practitioner = context
-    result = await db.execute(
-        select(ActionPlan).where(
-            ActionPlan.id == plan_id,
-            ActionPlan.organization_id == practitioner.organization_id
-        )
-    )
-    plan = result.scalar_one_or_none()
-    if not plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Action plan not found"
-        )
-
+    """A draft only. A shared plan is what the family was told."""
+    if plan.published_at is not None:
+        raise HTTPException(status_code=409, detail="A shared action plan cannot be deleted")
     await db.delete(plan)
     await db.commit()
+
+
+@router.post("/action-plans/{action_plan_id}/items", status_code=status.HTTP_201_CREATED)
+async def add_action_plan_item(
+    data: ItemCreate,
+    db: AsyncSession = Depends(get_db),
+    plan: ActionPlan = Depends(get_permitted_action_plan),
+):
+    await svc.require_latest(db, plan)
+    await svc.add_item(db, plan, data.kind, data.model_dump())
+    return await _one(db, plan)
+
+
+@router.patch("/action-plan-items/{item_id}")
+async def update_action_plan_item(
+    data: ItemUpdate,
+    db: AsyncSession = Depends(get_db),
+    item: ActionPlanItem = Depends(get_permitted_action_plan_item),
+):
+    await svc.require_latest(db, await _plan_of(db, item))
+    svc.update_item(item, data.model_dump(exclude_unset=True))
+    await db.commit()
+    plan = (await db.execute(select(ActionPlan).where(ActionPlan.id == item.action_plan_id))).scalar_one()
+    return await _one(db, plan)
+
+
+@router.delete("/action-plan-items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_action_plan_item(
+    db: AsyncSession = Depends(get_db),
+    item: ActionPlanItem = Depends(get_permitted_action_plan_item),
+):
+    await svc.require_latest(db, await _plan_of(db, item))
+    await db.delete(item)
+    await db.commit()
+
+
+@router.put("/action-plan-items/{item_id}/reward-given")
+async def clinician_marks_reward(
+    data: RewardGiven,
+    db: AsyncSession = Depends(get_db),
+    item: ActionPlanItem = Depends(get_permitted_action_plan_item),
+):
+    """At the next session, for a reward the parent has not answered."""
+    svc.mark_reward(item, data.given, "clinician")
+    await db.commit()
+    plan = (await db.execute(select(ActionPlan).where(ActionPlan.id == item.action_plan_id))).scalar_one()
+    return await _one(db, plan)
+
+
+@router.get("/tools")
+async def list_tools(
+    _context: tuple = Depends(get_practitioner_context),
+    db: AsyncSession = Depends(get_db),
+):
+    """The tools list, for picking. Shared across clinics, like the tips."""
+    rows = (await db.execute(
+        select(Tool).where(Tool.is_active.is_(True)).order_by(Tool.display_order, Tool.name)
+    )).scalars().all()
+    return [{"id": str(t.id), "name": t.name, "description": t.description, "link": t.link} for t in rows]

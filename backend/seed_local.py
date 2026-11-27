@@ -27,7 +27,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.security import hash_password
-from app.models.action_plan import ActionPlan
+from app.models.action_plan import ActionPlan, ActionPlanItem
 from app.models.downward_arrow import DownwardArrow
 from app.models.experiment import Experiment
 from app.models.organization import Organization
@@ -238,6 +238,15 @@ async def _treatment(db, practice, clinician, child) -> None:
         )
     db.add_all(behaviors.values())
     await db.flush()
+    # A step on the ladder: the cafeteria without the headphones.
+    without_headphones = AvoidanceBehavior(
+        trigger_situation_id=situations["cafeteria"].id, treatment_plan_id=plan.id,
+        organization_id=org_id, name="Eat lunch in the cafeteria without headphones",
+        behavior_type="combination", without_behavior_id=behaviors["headphones"].id,
+        distress_thermometer_when_refraining=5,
+    )
+    db.add(without_headphones)
+    await db.flush()
 
     db.add(DownwardArrow(
         trigger_situation_id=situations["cafeteria"].id,
@@ -308,22 +317,23 @@ async def _treatment(db, practice, clinician, child) -> None:
             session_date=days_ago(n), content=content,
         ))
 
-    db.add(ActionPlan(
+    # Last week's action plan, shared with the family. docs/plans/action-plans-build.md
+    action_plan = ActionPlan(
         patient_id=child.id, organization_id=org_id, practitioner_id=clinician.id,
-        session_number=3, session_date=days_ago(7), visible_to_patient=True,
-        content="""<p>Hi Sarah,</p>
-<p>Great work this week — <strong>The Voice is getting quieter</strong> and your numbers show it. BIP down to 20%, fear level down to 2. That's real progress.</p>
-<p><strong>Your experiments this week:</strong></p>
-<ul>
-<li>Monday, Wednesday, Friday at lunch — sit in the cafeteria as usual</li>
-<li>This time: make eye contact with someone nearby and smile</li>
-<li>You don't need to say anything — just a smile is enough</li>
-</ul>
-<p><strong>Your prediction to test:</strong> "Everyone will find out I have no friends and nobody will want to be my friend."</p>
-<p>After each experiment, record what actually happened. Was The Voice right?</p>
-<p>I believe you can do this.</p>
-<p>— Dr. Walker</p>""",
-    ))
+        session_number=3, session_date=days_ago(7), confidence="high",
+        published_at=datetime.combine(days_ago(7), datetime.min.time(), tzinfo=timezone.utc),
+    )
+    db.add(action_plan)
+    await db.flush()
+    for pos, item in enumerate([
+        dict(kind="exposure", avoidance_behavior_id=without_headphones.id,
+             text="Eat lunch in the cafeteria without headphones, Monday, Wednesday and Friday",
+             note="Make eye contact with someone nearby and smile"),
+        dict(kind="parent_instruction", share_with_child=True,
+             text="When Sarah is anxious, say once: I know this is hard. I believe you can do this."),
+        dict(kind="reward", text="Pick the movie on Friday", reward_for="Three cafeteria lunches"),
+    ]):
+        db.add(ActionPlanItem(action_plan_id=action_plan.id, position=pos, **item))
     await db.flush()
 
 

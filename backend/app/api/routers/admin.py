@@ -16,6 +16,7 @@ from app.models.setup_link import SetupLink
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
 from app.models.jit_content import Tag, JitTip, JitTipTag
+from app.models.action_plan import Tool
 from app.services import practice_service
 from app.services.email_service import (
     send_password_reset_email,
@@ -1125,4 +1126,79 @@ async def delete_jit_tip(
     if not tip:
         raise HTTPException(status_code=404, detail="Tip not found")
     await db.delete(tip)
+    await db.commit()
+
+
+# ── The tools list (action plans pick from it) ────────────────────────────────
+# docs/plans/action-plans-build.md
+
+class ToolPayload(BaseModel):
+    name: str
+    description: str | None = None
+    link: str | None = None
+    display_order: int = 0
+    is_active: bool = True
+
+
+def _tool_out(t: Tool) -> dict:
+    return {"id": str(t.id), "name": t.name, "description": t.description, "link": t.link,
+            "display_order": t.display_order, "is_active": t.is_active}
+
+
+def _apply_tool(t: Tool, body: ToolPayload) -> None:
+    if not body.name.strip():
+        raise HTTPException(status_code=400, detail="A name is required")
+    t.name = body.name.strip()
+    t.description = (body.description or "").strip() or None
+    link = (body.link or "").strip() or None
+    # It becomes a link in the child's and parent's apps, so only a web address.
+    if link and not link.lower().startswith(("https://", "http://")):
+        raise HTTPException(status_code=400, detail="The link has to start with https://")
+    t.link = link
+    t.display_order = body.display_order
+    t.is_active = body.is_active
+
+
+@router.get("/tools")
+async def admin_list_tools(_: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(select(Tool).order_by(Tool.display_order, Tool.name))).scalars().all()
+    return [_tool_out(t) for t in rows]
+
+
+@router.post("/tools")
+async def admin_create_tool(
+    body: ToolPayload, _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db),
+):
+    t = Tool()
+    _apply_tool(t, body)
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    return _tool_out(t)
+
+
+@router.put("/tools/{tool_id}")
+async def admin_update_tool(
+    tool_id: uuid.UUID, body: ToolPayload,
+    _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db),
+):
+    t = (await db.execute(select(Tool).where(Tool.id == tool_id))).scalar_one_or_none()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    _apply_tool(t, body)
+    t.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(t)
+    return _tool_out(t)
+
+
+@router.delete("/tools/{tool_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def admin_delete_tool(
+    tool_id: uuid.UUID, _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db),
+):
+    """Plans that used it keep the line; the link to the tool is cleared."""
+    t = (await db.execute(select(Tool).where(Tool.id == tool_id))).scalar_one_or_none()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    await db.delete(t)
     await db.commit()

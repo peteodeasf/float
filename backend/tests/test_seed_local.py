@@ -86,7 +86,8 @@ async def test_seed_builds_the_childs_treatment(db):
         return (await db.execute(select(func.count()).select_from(model).where(*where))).scalar_one()
 
     assert await count(TriggerSituation, TriggerSituation.treatment_plan_id == plan.id) == 3
-    assert await count(AvoidanceBehavior, AvoidanceBehavior.treatment_plan_id == plan.id) == 5
+    # Five behaviours and one ladder step (the cafeteria without headphones) for the action plan.
+    assert await count(AvoidanceBehavior, AvoidanceBehavior.treatment_plan_id == plan.id) == 6
     assert await count(DownwardArrow, DownwardArrow.patient_id == child.id) == 1
     assert await count(Experiment, Experiment.patient_id == child.id, Experiment.status == "completed") == 9
     assert await count(Experiment, Experiment.patient_id == child.id, Experiment.status == "committed") == 3
