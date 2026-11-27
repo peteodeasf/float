@@ -59,11 +59,7 @@ export default function ParentActionPlanCard({ childName }: { childName: string 
                 <li key={i.id} style={{ padding: '10px 0', borderTop: `1px solid ${teen.color.lineCard}` }}>
                   <div style={{ fontFamily: teen.font.sans, fontSize: 14.5, fontWeight: 600, color: teen.color.ink, lineHeight: 1.4 }}>{i.label}</div>
                   {i.reward_for && <div style={small}>For: {i.reward_for}</div>}
-                  {i.tool_description && <div style={small}>{i.tool_description}</div>}
-                  {i.tool_link && (
-                    <a href={i.tool_link} target="_blank" rel="noopener noreferrer"
-                      style={{ ...small, fontWeight: 700, color: teen.color.teal, display: 'inline-block' }}>Open it</a>
-                  )}
+                  {(i.example_how_used || (!i.tool_name && i.tool_summary)) && <div style={small}>{i.example_how_used || i.tool_summary}</div>}
                   {i.note && <div style={small}>{i.note}</div>}
                   {i.kind === 'reward' && <RewardAnswer item={i} />}
                 </li>

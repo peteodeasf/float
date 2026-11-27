@@ -74,8 +74,12 @@ class ActionPlanItem(Base):
     tool_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("tools.id", ondelete="SET NULL"), nullable=True
     )
+    # A tool with examples (the mottos): the one picked. A written one is `text` instead.
+    tool_example_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("tool_examples.id", ondelete="SET NULL"), nullable=True
+    )
     # Exposure: this plan's wording, empty for the rung's own. Parent instruction: the instruction.
-    # Reward: what the reward is.
+    # Reward: what the reward is. Tool: an example the clinician wrote for this plan only.
     text: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Reward only: what it is given for.
     reward_for: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -92,20 +96,3 @@ class ActionPlanItem(Base):
     outcome: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=sql("now()"))
 
-
-class Tool(Base):
-    """A coping tool or strategy: a technique, or something to learn or watch ("The worry hill").
-    Platform-wide, written in the admin app. Action plans pick from this list only."""
-
-    __tablename__ = "tools"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4, server_default=sql("gen_random_uuid()")
-    )
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    link: Mapped[str | None] = mapped_column(String, nullable=True)
-    display_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default=sql("0"), default=0)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sql("true"), default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=sql("now()"))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=sql("now()"))

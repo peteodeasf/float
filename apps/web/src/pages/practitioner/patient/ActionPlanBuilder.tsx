@@ -10,11 +10,12 @@ import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   addActionPlanItem, clinicianMarksReward, getActionPlans, createActionPlan, deleteActionPlan, deleteActionPlanItem,
-  getTools, publishActionPlan, updateActionPlan, updateActionPlanItem,
+  publishActionPlan, updateActionPlan, updateActionPlanItem,
   type ActionPlan, type ActionPlanItem, type Confidence, type NewItem,
 } from '../../../api/action_plans'
 import { getPlanRungs, getTreatmentPlan } from '../../../api/treatment'
 import { listAccommodations } from '../../../api/accommodations'
+import { listTools, type ToolPage } from '../../../api/tools'
 import { chip, btn } from '../../../components/ui/buttons'
 import { Chrome, primaryBtn, quietLink } from '../sessionKit'
 
@@ -157,7 +158,7 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
   const planId = treatmentPlan?.id
   const { data: rungs } = useQuery({ queryKey: ['plan-rungs', planId], queryFn: () => getPlanRungs(planId!), enabled: !!planId })
   const { data: accommodations } = useQuery({ queryKey: ['accommodations', planId], queryFn: () => listAccommodations(planId!), enabled: !!planId })
-  const { data: tools } = useQuery({ queryKey: ['tools'], queryFn: getTools })
+  const { data: tools } = useQuery({ queryKey: ['tools'], queryFn: listTools })
 
   // The latest version of this plan, from the list the Sessions tab already holds.
   const { data: plans } = useQuery({ queryKey: ['action-plans', patientId], queryFn: () => getActionPlans(patientId) })
@@ -179,12 +180,33 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
 
   const of = (kind: string) => current.items.filter(i => i.kind === kind)
   const usedRungs = new Set(of('exposure').map(i => i.avoidance_behavior_id))
+  // A page with examples can go on more than once (two mottos); one without, once.
   const usedTools = new Set(of('tool').map(i => i.tool_id))
+  const canAdd = (t: ToolPage) => t.examples.length > 0 || !usedTools.has(t.id)
+  const forParentOnly = (audience: string | null | undefined) => audience === 'parent'
+  const childTools = of('tool').filter(i => !forParentOnly(i.tool_audience))
+  const parentTools = of('tool').filter(i => forParentOnly(i.tool_audience))
   const usedAccs = new Set(of('accommodation').map(i => i.accommodation_behavior_id))
   // Easiest first, like the ladder.
   const rungChoices = (rungs ?? []).filter(r => !usedRungs.has(r.id))
     .sort((a, b) => (a.distress_thermometer_when_refraining ?? 99) - (b.distress_thermometer_when_refraining ?? 99))
-  const toolChoices = (tools ?? []).filter(t => !usedTools.has(t.id))
+  const childToolChoices = (tools ?? []).filter(t => t.audience !== 'parent' && canAdd(t))
+  const parentToolChoices = (tools ?? []).filter(t => t.audience === 'parent' && canAdd(t))
+  const addTool = (toolId: string, exampleId?: string, text?: string) =>
+    addMut.mutate({ kind: 'tool', tool_id: toolId, tool_example_id: exampleId, text })
+  const toolRow = (i: ActionPlanItem) => (
+    <div key={i.id} style={row}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{i.label}</span>
+        {remove(i)}
+      </div>
+      {i.tool_name && <span style={{ fontSize: 11.5, color: 'var(--float-text-hint)' }}>From {i.tool_name}</span>}
+      {(i.example_how_used || (!i.tool_name && i.tool_summary)) && (
+        <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>{i.example_how_used || i.tool_summary}</span>
+      )}
+      {noteBox(i)}
+    </div>
+  )
   // Only accommodations the parent is working on: one goes on a plan once the parent is willing.
   const working = (accommodations ?? []).filter(a => a.status === 'started')
   const accChoices = working.filter(a => !usedAccs.has(a.id))
@@ -235,24 +257,13 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
             options={rungChoices.map(r => ({ id: r.id, name: r.distress_thermometer_when_refraining != null ? `${r.name} (${r.distress_thermometer_when_refraining})` : r.name }))}
             onPick={id => addMut.mutate({ kind: 'exposure', avoidance_behavior_id: id })} />
 
-          <div style={groupTitle}>Tools</div>
+          <div style={groupTitle}>Tools and strategies</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {of('tool').map(i => (
-              <div key={i.id} style={row}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--float-text)' }}>{i.label}</span>
-                  {remove(i)}
-                </div>
-                {i.tool_description && <span style={{ fontSize: 12.5, color: 'var(--float-text-secondary)' }}>{i.tool_description}</span>}
-                {noteBox(i)}
-              </div>
-            ))}
+            {childTools.map(toolRow)}
           </div>
           {tools && tools.length === 0
-            ? <p style={{ ...hint, marginTop: 8 }}>The tools list is empty. Tools are added in the admin app.</p>
-            : <Picker label="Add a tool" empty="Every tool is already on the plan."
-                options={toolChoices.map(t => ({ id: t.id, name: t.name }))}
-                onPick={id => addMut.mutate({ kind: 'tool', tool_id: id })} />}
+            ? <p style={{ ...hint, marginTop: 8 }}>There are no tools or strategies yet. They are added in the admin app.</p>
+            : <ToolPicker pages={childToolChoices} onAdd={addTool} empty="Every tool and strategy is already on the plan." />}
         </div>
 
         {/* For the parent */}
@@ -276,6 +287,14 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
             : <Picker label="Add an accommodation" empty="Every accommodation they are working on is on the plan."
                 options={accChoices.map(a => ({ id: a.id, name: a.name }))}
                 onPick={id => addMut.mutate({ kind: 'accommodation', accommodation_behavior_id: id })} />}
+
+          {(parentTools.length > 0 || parentToolChoices.length > 0) && <>
+            <div style={groupTitle}>Strategies for the parent</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {parentTools.map(toolRow)}
+            </div>
+            <ToolPicker pages={parentToolChoices} onAdd={addTool} empty="Every parent strategy is already on the plan." />
+          </>}
 
           <div style={groupTitle}>How to help</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -356,6 +375,55 @@ export function ActionPlanBuilder({ patientId, childName, plan, onClose, readOnl
         </div>
       </div>
     </Sheet>
+  )
+}
+
+/** Pick a tool or strategy; for a page with examples (the mottos), then pick one or write one. */
+function ToolPicker({ pages, onAdd, empty }: {
+  pages: ToolPage[]; onAdd: (toolId: string, exampleId?: string, text?: string) => void; empty: string
+}) {
+  const [page, setPage] = useState<ToolPage | null>(null)
+  const [own, setOwn] = useState<string | null>(null)
+  const reset = () => { setPage(null); setOwn(null) }
+  if (pages.length === 0 && !page) return <p style={{ ...hint, marginTop: 8 }}>{empty}</p>
+  const pick = (id: string) => {
+    const p = pages.find(x => x.id === id)
+    if (!p) return
+    if (p.examples.length === 0) onAdd(p.id)
+    else setPage(p)
+  }
+  const ownText = own ?? ''
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <select aria-label="Add a tool or strategy" value={page?.id ?? ''} onChange={e => { setOwn(null); if (e.target.value) pick(e.target.value); else reset() }}
+          style={{ ...input, flex: '1 1 240px', color: 'var(--float-primary)', fontWeight: 700, cursor: 'pointer', background: 'var(--float-surface)' }}>
+          <option value="">+ Add a tool or strategy</option>
+          {pages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        {page && (
+          <select aria-label={`Which one from ${page.name}?`} value={own !== null ? '__own' : ''}
+            onChange={e => {
+              const v = e.target.value
+              if (v === '__own') setOwn('')
+              else if (v) { onAdd(page.id, v); reset() }
+            }}
+            style={{ ...input, flex: '1 1 240px', cursor: 'pointer', background: 'var(--float-surface)' }}>
+            <option value="">Which one?</option>
+            {page.examples.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+            <option value="__own">Write your own</option>
+          </select>
+        )}
+      </div>
+      {page && own !== null && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input aria-label="Your own" autoFocus value={ownText} placeholder="Write it here" style={input}
+            onChange={e => setOwn(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && ownText.trim()) { onAdd(page.id, undefined, ownText.trim()); reset() } }} />
+          <button onClick={() => { onAdd(page.id, undefined, ownText.trim()); reset() }} disabled={!ownText.trim()} style={btn('secondary', 'sm')}>Add</button>
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -89,8 +89,11 @@ of a session. A list of items: exposures from the ladder, tools from the tools l
 the parent is working on, "how to help" lines for the parent, and rewards. Shared with the family
 only once the child's confidence is high. See [`docs/plans/action-plans-build.md`](docs/plans/action-plans-build.md).
 
-## Tools list
+## Tools and strategies
 
-The coping tools and strategies a clinician can put on an action plan: a technique with a
-description, or something to learn or watch, such as "The worry hill". Written by Peter in the admin
-app. Clinicians pick from it only; they cannot type their own (Peter, 2026-11-25).
+Pages in the Library explaining a tool (an idea, such as the Worry Hill) or a strategy (something to
+do, such as Mottos or Take 5): text, images and videos, and optional examples, each with how it's
+used. Written by Peter in the admin app. Every family can read the published pages written for them;
+a clinician highlights one for a family to put it first. On an action plan a clinician picks a page,
+and for a page with examples picks one or writes their own (Peter, 2026-11-27). See
+[`docs/plans/tools-and-strategies.md`](docs/plans/tools-and-strategies.md).

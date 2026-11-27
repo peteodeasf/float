@@ -1,8 +1,8 @@
 import secrets
 import uuid
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +16,8 @@ from app.models.setup_link import SetupLink
 from app.models.patient import PatientProfile, PractitionerProfile, ParentPatientLink
 from app.models.experiment import Experiment
 from app.models.jit_content import Tag, JitTip, JitTipTag
-from app.models.action_plan import Tool
+from app.models.tool import Tool, ToolImage
+from app.services import tool_service
 from app.services import practice_service
 from app.services.email_service import (
     send_password_reset_email,
@@ -1129,40 +1130,47 @@ async def delete_jit_tip(
     await db.commit()
 
 
-# ── The tools list (action plans pick from it) ────────────────────────────────
-# docs/plans/action-plans-build.md
+# ── Tools and strategies (pages in the Library) ───────────────────────────────
+# docs/plans/tools-and-strategies.md
+
+class ToolExampleIn(BaseModel):
+    id: str | None = None
+    name: str
+    how_used: str | None = None
+
 
 class ToolPayload(BaseModel):
     name: str
-    description: str | None = None
-    link: str | None = None
+    kind: Literal["tool", "strategy"] = "tool"
+    audience: Literal["child", "parent", "both"] = "both"
+    summary: str | None = None
+    blocks: list[dict] = []
+    examples: list[ToolExampleIn] = []
     display_order: int = 0
-    is_active: bool = True
+    is_published: bool = False
 
 
-def _tool_out(t: Tool) -> dict:
-    return {"id": str(t.id), "name": t.name, "description": t.description, "link": t.link,
-            "display_order": t.display_order, "is_active": t.is_active}
-
-
-def _apply_tool(t: Tool, body: ToolPayload) -> None:
+async def _apply_tool(db: AsyncSession, t: Tool, body: ToolPayload) -> None:
     if not body.name.strip():
         raise HTTPException(status_code=400, detail="A name is required")
+    blocks = tool_service.clean_blocks(body.blocks)
+    await tool_service.check_block_targets(db, blocks)
     t.name = body.name.strip()
-    t.description = (body.description or "").strip() or None
-    link = (body.link or "").strip() or None
-    # It becomes a link in the child's and parent's apps, so only a web address.
-    if link and not link.lower().startswith(("https://", "http://")):
-        raise HTTPException(status_code=400, detail="The link has to start with https://")
-    t.link = link
+    t.kind, t.audience = body.kind, body.audience
+    t.summary = (body.summary or "").strip() or None
+    t.blocks = blocks
     t.display_order = body.display_order
-    t.is_active = body.is_active
+    t.is_published = body.is_published
+    tool_service.touch(t)
+
+
+async def _admin_tool_out(db: AsyncSession, t: Tool) -> dict:
+    return (await tool_service.tools_out(db, [t], admin=True))[0]
 
 
 @router.get("/tools")
 async def admin_list_tools(_: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(Tool).order_by(Tool.display_order, Tool.name))).scalars().all()
-    return [_tool_out(t) for t in rows]
+    return await tool_service.tools_out(db, await tool_service.list_tools(db, published_only=False), admin=True)
 
 
 @router.post("/tools")
@@ -1170,11 +1178,13 @@ async def admin_create_tool(
     body: ToolPayload, _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db),
 ):
     t = Tool()
-    _apply_tool(t, body)
+    await _apply_tool(db, t, body)
     db.add(t)
+    await db.flush()
+    await tool_service.replace_examples(db, t, [e.model_dump() for e in body.examples])
     await db.commit()
     await db.refresh(t)
-    return _tool_out(t)
+    return await _admin_tool_out(db, t)
 
 
 @router.put("/tools/{tool_id}")
@@ -1182,23 +1192,39 @@ async def admin_update_tool(
     tool_id: uuid.UUID, body: ToolPayload,
     _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db),
 ):
-    t = (await db.execute(select(Tool).where(Tool.id == tool_id))).scalar_one_or_none()
+    t = await db.get(Tool, tool_id)
     if not t:
-        raise HTTPException(status_code=404, detail="Tool not found")
-    _apply_tool(t, body)
-    t.updated_at = datetime.now(timezone.utc)
+        raise HTTPException(status_code=404, detail="Page not found")
+    await _apply_tool(db, t, body)
+    await tool_service.replace_examples(db, t, [e.model_dump() for e in body.examples])
     await db.commit()
     await db.refresh(t)
-    return _tool_out(t)
+    return await _admin_tool_out(db, t)
 
 
 @router.delete("/tools/{tool_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def admin_delete_tool(
     tool_id: uuid.UUID, _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db),
 ):
-    """Plans that used it keep the line; the link to the tool is cleared."""
-    t = (await db.execute(select(Tool).where(Tool.id == tool_id))).scalar_one_or_none()
+    """Action plans that used it keep the line; the link to the page is cleared."""
+    t = await db.get(Tool, tool_id)
     if not t:
-        raise HTTPException(status_code=404, detail="Tool not found")
+        raise HTTPException(status_code=404, detail="Page not found")
     await db.delete(t)
     await db.commit()
+
+
+@router.post("/tool-images")
+async def admin_upload_tool_image(
+    file: UploadFile = File(...), _: User = Depends(get_admin_context), db: AsyncSession = Depends(get_db),
+):
+    if file.content_type not in tool_service.IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Use a PNG, JPEG, GIF or WebP image")
+    data = await file.read(tool_service.IMAGE_MAX_BYTES + 1)
+    if len(data) > tool_service.IMAGE_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="The image has to be 2 MB or smaller")
+    img = ToolImage(content_type=file.content_type, data=data)
+    db.add(img)
+    await db.commit()
+    await db.refresh(img)
+    return {"id": str(img.id)}

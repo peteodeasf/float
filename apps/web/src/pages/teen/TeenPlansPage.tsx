@@ -21,14 +21,8 @@ function Line({ item }: { item: ActionPlanItem }) {
       {item.kind === 'reward' && item.reward_for && (
         <div style={{ ...teen.type.body, fontSize: 13.5, color: teen.color.inkSoft, marginTop: 3 }}>For: {item.reward_for}</div>
       )}
-      {item.tool_description && (
-        <div style={{ ...teen.type.body, fontSize: 13.5, color: teen.color.inkSoft, marginTop: 3 }}>{item.tool_description}</div>
-      )}
-      {item.tool_link && (
-        <a href={item.tool_link} target="_blank" rel="noopener noreferrer"
-          style={{ ...teen.type.body, fontSize: 13.5, fontWeight: 700, color: teen.color.teal, display: 'inline-block', marginTop: 4 }}>
-          Open it
-        </a>
+      {(item.example_how_used || (!item.tool_name && item.tool_summary)) && (
+        <div style={{ ...teen.type.body, fontSize: 13.5, color: teen.color.inkSoft, marginTop: 3 }}>{item.example_how_used || item.tool_summary}</div>
       )}
       {item.note && (
         <div style={{ ...teen.type.body, fontSize: 13.5, color: teen.color.inkSoft, marginTop: 3 }}>{item.note}</div>

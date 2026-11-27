@@ -11,7 +11,7 @@ from app.api.routers import (
     trigger_situations, avoidance_behaviors,
     ladders, experiments, progress,
     downward_arrows, messages, monitoring,
-    session_notes, session_recordings, action_plans, admin, waitlist, codesign,
+    session_notes, session_recordings, action_plans, tools, admin, waitlist, codesign,
     formulation, guide, videos, accommodations, situation_tags, library,
     insights, admin_reviews, setup, access_requests, practice, teen_testing, feedback,
 )
@@ -65,6 +65,7 @@ app.include_router(formulation.router)
 app.include_router(guide.router)
 app.include_router(videos.router)
 app.include_router(action_plans.router)
+app.include_router(tools.router)
 app.include_router(admin.router)
 app.include_router(admin_reviews.router)
 app.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
