@@ -13,14 +13,16 @@ import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  getSituationDownwardArrow,
+  getBehaviors, getSituationDownwardArrow,
   getStepArrows, setUpInSession, type AvoidanceBehavior, type PlannedExperiment,
 } from '../../../api/treatment'
 import { Chrome, Context, FearScale, clampDt, dtOf, primaryBtn, quietLink } from '../sessionKit'
 import {
   CONFIDENCE, QUESTION, TIME_BUCKETS, type BucketKey, type ConfidenceKey,
 } from '../../../lib/setupQuestions'
-import { getNextSchoolDayISO } from './shared'
+import { encodeSafetyBehaviors, readSafetyAnswer } from '../../../lib/temptingBehaviors'
+import { useSafetyPicker } from '../../../lib/useSafetyPicker'
+import { SAFETY_QUESTION_TYPES, getNextSchoolDayISO } from './shared'
 
 const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: 'var(--float-primary-dark)', marginBottom: 10, display: 'block' }
 const section: CSSProperties = { padding: '18px 0', borderTop: '1px solid #e3eeeb' }
@@ -42,19 +44,14 @@ const bucketOf = (iso: string): BucketKey => {
 export function SessionSetupSheet({
   rung,
   situationName,
-  isRecommended,
   existing,
-  onRecommend,
   onClose,
   onSaved,
 }: {
   rung: AvoidanceBehavior
   situationName: string | null
-  isRecommended: boolean
   /** A pending exposure already set up on this rung, or null. Prefills the sheet and shows a banner. */
   existing?: PlannedExperiment | null
-  /** Moves "Do this next" to this step, or takes it off. */
-  onRecommend: () => void
   onClose: () => void
   onSaved: () => void
 }) {
@@ -79,7 +76,23 @@ export function SessionSetupSheet({
   )?.feared_outcome
   const stepFear = arrowOn(rung.id) ?? arrowOn(rung.parent_behavior_id)
   const [typedFear, setTypedFear] = useState<string | null>(null)
-  const fear = typedFear ?? stepFear ?? arrow?.feared_outcome ?? ''
+  const fear = typedFear ?? (existing?.prediction || null) ?? stepFear ?? arrow?.feared_outcome ?? ''
+
+  // The safety and avoidance behaviors and rituals on this situation, to pick from.
+  const { data: situationBehaviors } = useQuery({
+    queryKey: ['behaviors', rung.trigger_situation_id],
+    queryFn: () => getBehaviors(rung.trigger_situation_id!),
+    enabled: !!rung.trigger_situation_id,
+  })
+  const planSafety = [...new Set((situationBehaviors ?? [])
+    .filter(b => SAFETY_QUESTION_TYPES.has(b.behavior_type))
+    .map(b => b.name.trim())
+    .filter(Boolean))]
+  const [know, setKnow] = useState(existing?.how_will_i_know ?? '')
+  const {
+    picked: safety, own: ownSafety, setOwn: setOwnSafety,
+    options: safetyOptions, toggle: toggleSafety, addOwn: addOwnSafety, answer: safetyAnswer,
+  } = useSafetyPicker(planSafety, readSafetyAnswer(existing?.tempting_behaviors) ?? [])
 
   const stepDt = dtOf(rung.distress_thermometer_when_refraining)
   // Prefill from an exposure already set up on this rung, when there is one.
@@ -95,7 +108,6 @@ export function SessionSetupSheet({
   const [day, setDay] = useState(existing?.scheduled_date ? localDay(existing.scheduled_date) : getNextSchoolDayISO())
   const [bucket, setBucket] = useState<BucketKey | null>(existing?.scheduled_date ? bucketOf(existing.scheduled_date) : null)
   const [confidence, setConfidence] = useState<ConfidenceKey | null>((existing?.confidence_level as ConfidenceKey) ?? null)
-  const [wantNext, setWantNext] = useState(isRecommended)
 
   const saveMut = useMutation({
     mutationFn: () => {
@@ -103,14 +115,15 @@ export function SessionSetupSheet({
       at.setHours(TIME_BUCKETS.find(b => b.key === bucket)?.hour ?? 12, 0, 0, 0)
       return setUpInSession(rung.id, {
         prediction: fear.trim(),
+        how_will_i_know: know.trim(),
         bip_before: bip,
         distress_thermometer_expected: level,
+        tempting_behaviors: encodeSafetyBehaviors(safetyAnswer),
         confidence_level: confidence!,
         ...(dayNow && bucket ? { scheduled_date: at.toISOString(), scheduled_time_bucket: bucket } : {}),
       })
     },
     onSuccess: () => {
-      if (wantNext !== isRecommended) onRecommend()
       qc.invalidateQueries({ queryKey: ['experiments'] })
       onSaved()
     },
@@ -152,6 +165,13 @@ export function SessionSetupSheet({
           </div>
 
           <div style={section}>
+            <label htmlFor="setup-know" style={question}>{QUESTION.know}</label>
+            <textarea id="setup-know" rows={2} value={know} onChange={e => setKnow(e.target.value)}
+              placeholder="In their words"
+              style={{ width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 12px', borderRadius: 'var(--float-radius-control)', border: '1px solid #cfe3de', resize: 'vertical', fontFamily: 'inherit' }} />
+          </div>
+
+          <div style={section}>
             <label htmlFor="setup-believe" style={question}>{QUESTION.believe}</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <input id="setup-believe" type="range" min={0} max={100} value={bip}
@@ -166,6 +186,37 @@ export function SessionSetupSheet({
           <div style={section}>
             <span style={question}>{QUESTION.level}</span>
             <FearScale value={level} onPick={setLevel} label="Fear Level" />
+          </div>
+
+          <div style={section}>
+            <span style={question}>{QUESTION.safety}</span>
+            {safetyOptions.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                {safetyOptions.map(name => (
+                  <button key={name} aria-pressed={safety.includes(name)} onClick={() => toggleSafety(name)} style={choice(safety.includes(name))}>
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={ownSafety} onChange={e => setOwnSafety(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOwnSafety() } }}
+                placeholder="Another, in their words" aria-label="Add another"
+                style={{ flex: 1, fontSize: 14, padding: '8px 10px', borderRadius: 'var(--float-radius-control)', border: '1px solid #cfe3de' }} />
+              <button onClick={addOwnSafety} disabled={!ownSafety.trim()} style={choice(false)}>Add</button>
+            </div>
+          </div>
+
+          <div style={section}>
+            <span style={question}>{QUESTION.confident}</span>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {CONFIDENCE.map(c => (
+                <button key={c.key} aria-pressed={confidence === c.key} onClick={() => setConfidence(c.key)} style={choice(confidence === c.key)}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div style={section}>
@@ -187,24 +238,7 @@ export function SessionSetupSheet({
             )}
           </div>
 
-          <div style={section}>
-            <span style={question}>{QUESTION.ready}</span>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {CONFIDENCE.map(c => (
-                <button key={c.key} aria-pressed={confidence === c.key} onClick={() => setConfidence(c.key)} style={choice(confidence === c.key)}>
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div style={{ ...section, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {/* Advice, not a lock: the child can still pick any step. Only one step carries it, so
-                ticking this takes it off whichever step had it. */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-              <input type="checkbox" checked={wantNext} onChange={e => setWantNext(e.target.checked)} style={{ cursor: 'pointer' }} />
-              Tell them to do this one next
-            </label>
             {saveMut.isError && (
               <p role="alert" style={{ fontSize: 13.5, color: '#b91c1c', margin: 0 }}>That didn't save. Try again.</p>
             )}

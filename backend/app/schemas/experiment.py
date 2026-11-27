@@ -17,6 +17,7 @@ class ExperimentPlanCreate(BaseModel):
 class ExperimentBeforeState(BaseModel):
     plan_description: str
     prediction: str
+    how_will_i_know: Optional[str] = None
     bip_before: float
     distress_thermometer_expected: float
     tempting_behaviors: Optional[str] = None
@@ -35,8 +36,12 @@ class ExperimentSessionSetup(BaseModel):
     child picks it at home and the step waits on their ladder until they do.
     """
     prediction: str = Field(min_length=1)
+    how_will_i_know: Optional[str] = None
     bip_before: float = Field(ge=0, le=100)
     distress_thermometer_expected: float = Field(ge=1, le=10)
+    # The safety and avoidance behaviors or rituals the child might want to do, as the child app
+    # stores them: {"safety": [...]}. lib/temptingBehaviors.ts
+    tempting_behaviors: Optional[str] = None
     confidence_level: Literal['low', 'medium', 'high']
     scheduled_date: Optional[datetime] = None
     scheduled_time_bucket: Optional[Literal['morning', 'afternoon', 'evening']] = None
@@ -45,6 +50,7 @@ class ExperimentSessionSetup(BaseModel):
 class ExperimentAfterState(BaseModel):
     feared_outcome_occurred: bool
     what_happened: str
+    was_surprised: Optional[bool] = None
     distress_thermometer_actual: float
     bip_after: float
     what_learned: str
@@ -64,6 +70,7 @@ class ExperimentResponse(BaseModel):
     # Before state
     plan_description: Optional[str] = None
     prediction: Optional[str] = None
+    how_will_i_know: Optional[str] = None
     bip_before: Optional[float] = None
     distress_thermometer_expected: Optional[float] = None
     tempting_behaviors: Optional[str] = None
@@ -73,6 +80,7 @@ class ExperimentResponse(BaseModel):
     # After state
     feared_outcome_occurred: Optional[bool] = None
     what_happened: Optional[str] = None
+    was_surprised: Optional[bool] = None
     distress_thermometer_actual: Optional[float] = None
     bip_after: Optional[float] = None
     what_learned: Optional[str] = None
@@ -99,6 +107,11 @@ class ExperimentListResponse(BaseModel):
     distress_thermometer_actual: Optional[float] = None
     feared_outcome_occurred: Optional[bool] = None
     what_learned: Optional[str] = None
+    prediction: Optional[str] = None
+    how_will_i_know: Optional[str] = None
+    tempting_behaviors: Optional[str] = None
+    what_happened: Optional[str] = None
+    was_surprised: Optional[bool] = None
     behavior_name: Optional[str] = None
     situation_name: Optional[str] = None
     trigger_situation_id: Optional[uuid.UUID] = None

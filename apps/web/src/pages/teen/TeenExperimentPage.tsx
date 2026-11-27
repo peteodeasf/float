@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { teenApiClient } from '../../api/client'
 import TeenScreen from '../../components/teen/TeenScreen'
 import BeliefSlider from '../../components/teen/BeliefSlider'
+import Chip from '../../components/teen/Chip'
 import Thermometer from '../../components/teen/Thermometer'
 import teen from '../../styles/teenTokens'
 import {
@@ -20,23 +21,26 @@ import {
   type SetupKey,
   type SetupSoFar,
 } from '../../lib/setupQuestions'
+import { encodeSafetyBehaviors, readSafetyAnswer, safetyLabel } from '../../lib/temptingBehaviors'
+import { useSafetyPicker } from '../../lib/useSafetyPicker'
 
 type Finishing = SetupSoFar & { id: string; status: string }
 
 const NOTHING_DONE: Record<SetupKey, boolean> = {
-  fear: false, believe: false, level: false, when: false, ready: false,
+  fear: false, know: false, believe: false, level: false, safety: false, confident: false, when: false,
 }
 
-// The child sets the plan up on one screen — the fear, how much they believe it, and the fear
-// level they expect — laid out like the recording screen. Then when, then how ready. Three steps.
-const STEPS: SetupKey[][] = [['fear', 'believe', 'level'], ['when', 'ready']]
+// Dr. Walker's worksheet, then when. Five screens. The safety question has a screen of its own: with
+// the confidence question under it, a child with three safety behaviors pushed the button off a
+// phone screen. docs/plans/exposure-worksheet-questions.md
+const STEPS: SetupKey[][] = [['fear', 'know'], ['believe', 'level'], ['safety'], ['confident'], ['when']]
 const stepIndexOf = (k: SetupKey) => STEPS.findIndex(s => s.includes(k))
 
 /**
  * Setting an exposure up — the child's version.
  *
  * Peter, 2026-09-10: "child setup ux should be different than clinician. it should be more
- * interactive and engaging." So one question per screen, with things to tap and drag, a bar of five
+ * interactive and engaging." So a few questions per screen, with things to tap and drag, a bar
  * showing how far they are, and a card at the end. The questions and words are the ones the
  * clinician's sheet uses (lib/setupQuestions.ts).
  *
@@ -87,6 +91,11 @@ export default function TeenExperimentPage() {
   }, [behaviorData, finishingId, pending, finishing, seeded, navigate])
 
   const [fear, setFear] = useState('')
+  const [know, setKnow] = useState('')
+  const {
+    picked: safety, setPicked: setSafety, own: ownSafety, setOwn: setOwnSafety,
+    options: safetyOptions, toggle: toggleSafety, addOwn: addOwnSafety, answer: safetyAnswer,
+  } = useSafetyPicker(behaviorData?.safety_behaviors ?? [])
   const [bip, setBip] = useState(50)
   const [level, setLevel] = useState<number | null>(null)
   const [days, setDays] = useState<number[]>([])
@@ -98,6 +107,8 @@ export default function TeenExperimentPage() {
     if (finishingId && !finishing) return
     const inSession = !!finishing && done.fear
     setFear((inSession && finishing?.prediction) || clinicianFear || '')
+    if (inSession && finishing?.how_will_i_know) setKnow(finishing.how_will_i_know)
+    if (inSession) setSafety(readSafetyAnswer(finishing?.tempting_behaviors) ?? [])
     if (inSession && finishing?.bip_before != null) setBip(Math.round(finishing.bip_before))
     setLevel(
       inSession && finishing?.distress_thermometer_expected != null
@@ -110,7 +121,7 @@ export default function TeenExperimentPage() {
     if (inSession && finishing?.confidence_level) setConfidence(finishing.confidence_level as ConfidenceKey)
     if (!hasSummary) setPhase('ask')
     setSeeded(true)
-  }, [seeded, behaviorData, finishingId, finishing, done.fear, hasSummary, clinicianFear])
+  }, [seeded, behaviorData, finishingId, finishing, done.fear, hasSummary, clinicianFear, setSafety])
 
   // ── which screens to walk through ──
   const missing = SETUP_ORDER.filter(k => !done[k])
@@ -120,7 +131,7 @@ export default function TeenExperimentPage() {
   const currentStep = queue[pos]
   const isLast = pos === queue.length - 1
 
-  // Progress is by step now (three), not by answer. A step counts as filled when every answer in
+  // Progress is by step (screen), not by answer. A step counts as filled when every answer in
   // it is done, or once it has been walked past in this queue.
   const doneStepIdx = new Set<number>()
   STEPS.forEach((s, i) => { if (s.every(k => done[k])) doneStepIdx.add(i) })
@@ -155,11 +166,15 @@ export default function TeenExperimentPage() {
 
   const canNext: Record<SetupKey, boolean> = {
     fear: fear.trim().length > 0,
+    know: know.trim().length > 0,
     believe: true,
     level: level != null,
+    // Picking none is an answer.
+    safety: true,
+    confident: confidence != null,
     when: (dayFixed || days.length > 0) && !!bucket,
-    ready: confidence != null,
   }
+
 
   // ── saving ──
   const [saving, setSaving] = useState(false)
@@ -174,8 +189,10 @@ export default function TeenExperimentPage() {
   const answers = (scheduled_date?: string) => ({
     plan_description: stepName,
     prediction: fear.trim(),
+    how_will_i_know: know.trim(),
     bip_before: bip,
     distress_thermometer_expected: level ?? 5,
+    tempting_behaviors: encodeSafetyBehaviors(safetyAnswer),
     confidence_level: confidence ?? 'medium',
     scheduled_time_bucket: bucket,
     ...(scheduled_date ? { scheduled_date } : {}),
@@ -285,9 +302,11 @@ export default function TeenExperimentPage() {
     const valueOf = (k: SetupKey): string => {
       if (!finishing) return ''
       if (k === 'fear') return `“${finishing.prediction}”`
+      if (k === 'know') return finishing.how_will_i_know ?? ''
       if (k === 'believe') return `${Math.round(finishing.bip_before ?? 0)}%`
       if (k === 'level') return `${Math.round(finishing.distress_thermometer_expected ?? 0)}`
-      if (k === 'ready') return confidenceLabel(finishing.confidence_level) ?? ''
+      if (k === 'safety') return safetyLabel(readSafetyAnswer(finishing.tempting_behaviors) ?? [])
+      if (k === 'confident') return confidenceLabel(finishing.confidence_level) ?? ''
       return finishing.scheduled_date ? dayLabel(finishing.scheduled_date) : ''
     }
     const notYet = (k: SetupKey) =>
@@ -399,156 +418,211 @@ export default function TeenExperimentPage() {
     )
   }
 
-  // ──────────────────────── PLAN (fear + belief + level) ────────────────────────
-  // One screen, spread down the page like the recording screen.
+  // ──────────────────────────── THE QUESTIONS ────────────────────────────
+  // One or two to a screen. Content flows from the top with one even gap between blocks; slack pools
+  // above the button. See the screen-layout rule in CLAUDE.md.
   const backLabel = pos === 0 && !hasSummary ? 'Back to your ladder' : 'Back'
   const curIdx = STEPS.indexOf(currentStep)
   const count = `${doneStepIdx.has(curIdx) ? filled : filled + 1} of ${STEPS.length}`
+  const stepReady = currentStep.every(k => canNext[k])
 
-  if (currentStep.includes('fear')) {
-    const planReady = currentStep.every(k => canNext[k])
-    return (
-      <TeenScreen>
-        {topBar(backLabel, count)}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `16px ${teen.space.pad} 0` }}>
-          {/* Content flows from the top with one even gap between blocks; slack pools above the
-              button. See the screen-layout rule in CLAUDE.md. */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
-            {/* What are you afraid will happen? — the feared outcome, and a box to change it. */}
-            <div>
-              <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: 0 }}>
-                What are you afraid will happen?
-              </h1>
-              {clinicianFear && (
-                <>
-                  <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 14 }}>Your fear</div>
-                  <div style={{ fontFamily: teen.font.sans, fontSize: 16, color: teen.color.ink, lineHeight: 1.35, marginTop: 6 }}>
-                    “{clinicianFear}”
-                  </div>
-                </>
-              )}
-              <input
-                value={clinicianFear ? (fear !== clinicianFear ? fear : '') : fear}
-                onChange={e => { const v = e.target.value; setFear(!v && clinicianFear ? clinicianFear : v) }}
-                placeholder={clinicianFear ? 'Something else…' : 'e.g. Everyone will stare'}
-                aria-label="Say it your own way"
-                style={{ marginTop: 11, width: '100%', boxSizing: 'border-box', background: teen.color.cardPure, border: `1px solid ${teen.color.lineChip}`, borderRadius: teen.radius.card, padding: '11px 13px', fontFamily: teen.font.sans, fontSize: 14, color: teen.color.ink, outline: 'none' }}
-              />
-            </div>
+  const heading = (k: SetupKey, mb = 12) => (
+    <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: `0 0 ${mb}px` }}>{QUESTION[k]}</h1>
+  )
+  const textBox: React.CSSProperties = {
+    width: '100%', boxSizing: 'border-box', background: teen.color.cardPure, border: `1px solid ${teen.color.lineChip}`,
+    borderRadius: teen.radius.card, padding: '11px 13px', fontFamily: teen.font.sans, fontSize: 14, color: teen.color.ink, outline: 'none',
+  }
 
-            {/* How strong is your belief? */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 11 }}>
-                <span style={teen.type.label}>How strongly do you believe that will happen?</span>
-                <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
+  const block = (k: SetupKey): ReactNode => {
+    if (k === 'fear') {
+      // The feared outcome from the downward arrow, and a box to say it another way.
+      return (
+        <div key={k}>
+          {heading(k, 0)}
+          {clinicianFear && (
+            <>
+              <div style={{ ...teen.type.eyebrow, color: teen.color.tealMid, marginTop: 14 }}>Your fear</div>
+              <div style={{ fontFamily: teen.font.sans, fontSize: 16, color: teen.color.ink, lineHeight: 1.35, marginTop: 6 }}>
+                “{clinicianFear}”
               </div>
-              <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe it will happen" />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 600, color: teen.color.textTertiary }}>
-                <span>Not at all</span>
-                <span>Completely</span>
-              </div>
-            </div>
-
-            {/* What fear level do you expect? */}
-            <div>
-              <div style={{ ...teen.type.label, marginBottom: 10 }}>What fear level do you expect?</div>
-              <Thermometer value={level} onChange={setLevel} height={46} label="Expected Fear Level" />
-            </div>
+            </>
+          )}
+          <input
+            value={clinicianFear ? (fear !== clinicianFear ? fear : '') : fear}
+            onChange={e => { const v = e.target.value; setFear(!v && clinicianFear ? clinicianFear : v) }}
+            placeholder={clinicianFear ? 'Something else…' : 'e.g. Everyone will stare'}
+            aria-label="Say it your own way"
+            style={{ ...textBox, marginTop: 11 }}
+          />
+        </div>
+      )
+    }
+    if (k === 'know') {
+      return (
+        <div key={k}>
+          {heading(k)}
+          <textarea
+            value={know}
+            onChange={e => setKnow(e.target.value)}
+            rows={3}
+            aria-label={QUESTION.know}
+            style={{ ...textBox, resize: 'none', lineHeight: 1.4 }}
+          />
+        </div>
+      )
+    }
+    if (k === 'believe') {
+      return (
+        <div key={k}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 11 }}>
+            <span style={teen.type.label}>{QUESTION.believe}</span>
+            <span style={{ ...teen.type.data, fontSize: teen.dataSize.sm }}>{bip}%</span>
           </div>
-
-          <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {saveFailed && (
-              <p role="alert" style={{ ...teen.type.body, fontSize: 14, color: '#b91c1c', margin: 0 }}>
-                That didn't save. Please try again.
-              </p>
-            )}
-            <button className="teen-btn teen-btn--primary" disabled={!planReady || saving || !seeded} onClick={goNext}>
-              {isLast ? (saving ? 'Locking in…' : 'Lock it in') : 'Next'}
+          <BeliefSlider value={bip} onChange={setBip} label="How strongly you believe your prediction is correct" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: teen.font.sans, fontSize: 12, fontWeight: 600, color: teen.color.textTertiary }}>
+            <span>Not at all</span>
+            <span>Completely</span>
+          </div>
+        </div>
+      )
+    }
+    if (k === 'level') {
+      return (
+        <div key={k}>
+          <div style={{ ...teen.type.label, marginBottom: 10 }}>{QUESTION.level}</div>
+          <Thermometer value={level} onChange={setLevel} height={46} label="Expected Fear Level" />
+        </div>
+      )
+    }
+    if (k === 'safety') {
+      return (
+        <div key={k}>
+          {heading(k, 8)}
+          <p style={{ ...teen.type.body, margin: '0 0 12px', color: teen.color.textSecondary }}>
+            Pick any that fit, or add your own.
+          </p>
+          {safetyOptions.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+              {safetyOptions.map(name => (
+                <Chip key={name} label={name} selected={safety.includes(name)} onClick={() => toggleSafety(name)} />
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: safetyOptions.length ? 10 : 0 }}>
+            <input
+              value={ownSafety}
+              onChange={e => setOwnSafety(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOwnSafety() } }}
+              placeholder="Something else…"
+              aria-label="Add your own"
+              style={{ ...textBox, flex: 1, width: 'auto' }}
+            />
+            <button
+              type="button"
+              className="teen-btn teen-btn--outline"
+              onClick={addOwnSafety}
+              disabled={!ownSafety.trim()}
+              style={{ width: 'auto', padding: '0 18px', minHeight: 44 }}
+            >
+              Add
             </button>
           </div>
         </div>
-      </TeenScreen>
+      )
+    }
+    if (k === 'confident') {
+      return (
+        <div key={k}>
+          {heading(k, 8)}
+          {/* "Them" is the previous screen's answer, so show it here. */}
+          {safetyAnswer.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '4px 0 12px' }}>
+              {safetyAnswer.map(name => (
+                <span key={name} style={{ background: teen.color.cardPure, border: `1px solid ${teen.color.lineChip}`, borderRadius: teen.radius.pill, padding: '5px 11px', fontFamily: teen.font.sans, fontSize: 13, fontWeight: 600, color: teen.color.ink }}>
+                  {name}
+                </span>
+              ))}
+            </div>
+          )}
+          <p style={{ ...teen.type.body, margin: '0 0 12px', color: teen.color.textSecondary }}>
+            Any answer is fine. It helps your clinician.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            {CONFIDENCE.map((c, i) => (
+              <button
+                key={c.key}
+                aria-pressed={confidence === c.key}
+                onClick={() => setConfidence(c.key)}
+                style={{ ...tile(confidence === c.key), display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', fontSize: 18, fontWeight: 700, textAlign: 'left' }}
+              >
+                <span aria-hidden="true" style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
+                  {/* High fills all three bars. */}
+                  {[10, 16, 22].map((h, j) => (
+                    <span key={h} style={{ width: 7, height: h, borderRadius: 2, background: j < CONFIDENCE.length - i ? teen.color.teal : teen.color.track }} />
+                  ))}
+                </span>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )
+    }
+    // when
+    return (
+      <div key={k}>
+        {heading(k)}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {dayFixed && finishing?.scheduled_date ? (
+            <div style={{ alignSelf: 'flex-start', padding: '10px 14px', borderRadius: teen.radius.btn, background: teen.color.ink, color: teen.color.white, fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700 }}>
+              {new Date(finishing.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </div>
+          ) : (
+            <>
+              <span style={{ ...teen.type.eyebrow, fontSize: 12 }}>Pick a day — or a few</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5 }}>
+                {next7.map((d, i) => {
+                  const on = days.includes(i)
+                  return (
+                    <button
+                      key={i}
+                      aria-pressed={on}
+                      onClick={() => setDays(prev => (prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]))}
+                      style={{
+                        ...tile(on), padding: '9px 0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                        background: on ? teen.color.ink : teen.color.cardPure, borderColor: on ? teen.color.ink : teen.color.lineChip, color: on ? teen.color.white : teen.color.ink,
+                      }}
+                    >
+                      <span style={{ fontSize: 11, fontWeight: 700, color: on ? teen.color.mint : teen.color.textSecondary }}>
+                        {i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </span>
+                      <span style={{ fontSize: 16, fontWeight: 700 }}>{d.getDate()}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
+          <span style={{ ...teen.type.eyebrow, fontSize: 12 }}>What time of day?</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
+            {TIME_BUCKETS.map(b => (
+              <button key={b.key} aria-pressed={bucket === b.key} onClick={() => setBucket(b.key)} style={{ ...tile(bucket === b.key), padding: '13px 4px', fontSize: 15, fontWeight: 700 }}>
+                {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     )
   }
-
-  // ──────────────────────────── WHEN + READY ────────────────────────────
-  // Both on one screen, same layout rule as the plan step (CLAUDE.md).
-  const stepReady = currentStep.every(k => canNext[k])
 
   return (
     <TeenScreen>
       {topBar(backLabel, count)}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `16px ${teen.space.pad} 0` }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
-          {/* When will you do it? */}
-          <div>
-            <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 12px' }}>{QUESTION.when}</h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {dayFixed && finishing?.scheduled_date ? (
-                <div style={{ alignSelf: 'flex-start', padding: '10px 14px', borderRadius: teen.radius.btn, background: teen.color.ink, color: teen.color.white, fontFamily: teen.font.sans, fontSize: 15, fontWeight: 700 }}>
-                  {new Date(finishing.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                </div>
-              ) : (
-                <>
-                  <span style={{ ...teen.type.eyebrow, fontSize: 12 }}>Pick a day — or a few</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5 }}>
-                    {next7.map((d, i) => {
-                      const on = days.includes(i)
-                      return (
-                        <button
-                          key={i}
-                          aria-pressed={on}
-                          onClick={() => setDays(prev => (prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]))}
-                          style={{
-                            ...tile(on), padding: '9px 0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                            background: on ? teen.color.ink : teen.color.cardPure, borderColor: on ? teen.color.ink : teen.color.lineChip, color: on ? teen.color.white : teen.color.ink,
-                          }}
-                        >
-                          <span style={{ fontSize: 11, fontWeight: 700, color: on ? teen.color.mint : teen.color.textSecondary }}>
-                            {i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })}
-                          </span>
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>{d.getDate()}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-              <span style={{ ...teen.type.eyebrow, fontSize: 12 }}>What time of day?</span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
-                {TIME_BUCKETS.map(b => (
-                  <button key={b.key} aria-pressed={bucket === b.key} onClick={() => setBucket(b.key)} style={{ ...tile(bucket === b.key), padding: '13px 4px', fontSize: 15, fontWeight: 700 }}>
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* How ready do you feel? */}
-          <div>
-            <h1 style={{ ...teen.type.headline, fontSize: teen.headSize.md, margin: '0 0 8px' }}>{QUESTION.ready}</h1>
-            <p style={{ ...teen.type.body, margin: '0 0 12px', color: teen.color.textSecondary }}>
-              Any answer is fine. It helps your clinician.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-              {CONFIDENCE.map((c, i) => (
-                <button
-                  key={c.key}
-                  aria-pressed={confidence === c.key}
-                  onClick={() => setConfidence(c.key)}
-                  style={{ ...tile(confidence === c.key), display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', fontSize: 18, fontWeight: 700, textAlign: 'left' }}
-                >
-                  <span aria-hidden="true" style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
-                    {[10, 16, 22].map((h, j) => (
-                      <span key={h} style={{ width: 7, height: h, borderRadius: 2, background: j <= i ? teen.color.teal : teen.color.track }} />
-                    ))}
-                  </span>
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {currentStep.map(block)}
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -558,7 +632,7 @@ export default function TeenExperimentPage() {
             </p>
           )}
           <button className="teen-btn teen-btn--primary" disabled={!stepReady || saving || !seeded} onClick={goNext}>
-            {saving ? 'Locking in…' : 'Lock it in'}
+            {isLast ? (saving ? 'Locking in…' : 'Lock it in') : 'Next'}
           </button>
         </div>
       </div>

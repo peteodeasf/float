@@ -67,6 +67,11 @@ LADDER_TYPES = {SCENARIO, COMBINATION}
 #: that an avoidance was words only and never a rung (2026-10-16).
 COMBINATION_OF = frozenset({SAFETY, AVOIDANCE})
 
+#: What the exposure setup question "Which safety or avoidance behaviors or rituals might you want
+#: to do?" offers the child to pick from. The frontend's copy is SAFETY_QUESTION_TYPES in
+#: apps/web/src/pages/practitioner/patient/shared.tsx. docs/plans/exposure-worksheet-questions.md
+SAFETY_QUESTION_TYPES = frozenset({SAFETY, AVOIDANCE, RITUAL, *ALIASES})
+
 
 def normalise(value: str | None) -> str:
     """Fold a stored value onto the canonical set.

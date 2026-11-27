@@ -102,8 +102,10 @@ async def save_session_setup(
         scheduled_time_bucket=data.scheduled_time_bucket,
         plan_description=behavior.name,
         prediction=data.prediction,
+        how_will_i_know=(data.how_will_i_know or "").strip() or None,
         bip_before=data.bip_before,
         distress_thermometer_expected=data.distress_thermometer_expected,
+        tempting_behaviors=data.tempting_behaviors,
         confidence_level=data.confidence_level,
     )
     db.add(experiment)
@@ -200,6 +202,12 @@ async def get_experiments_for_patient(
             "distress_thermometer_actual": exp.distress_thermometer_actual,
             "feared_outcome_occurred": exp.feared_outcome_occurred,
             "what_learned": exp.what_learned,
+            # The rest of Dr. Walker's worksheet, for the clinician's exposure row.
+            "prediction": exp.prediction,
+            "how_will_i_know": exp.how_will_i_know,
+            "tempting_behaviors": exp.tempting_behaviors,
+            "what_happened": exp.what_happened,
+            "was_surprised": exp.was_surprised,
             "behavior_name": behavior.name if behavior else None,
             "situation_name": situation.name if situation else None,
             "trigger_situation_id": situation.id if situation else None,
@@ -225,6 +233,7 @@ async def save_before_state(
 
     experiment.plan_description = data.plan_description
     experiment.prediction = data.prediction
+    experiment.how_will_i_know = (data.how_will_i_know or "").strip() or None
     experiment.bip_before = data.bip_before
     experiment.distress_thermometer_expected = data.distress_thermometer_expected
     experiment.tempting_behaviors = data.tempting_behaviors
@@ -265,6 +274,7 @@ async def save_after_state(
 
     experiment.feared_outcome_occurred = data.feared_outcome_occurred
     experiment.what_happened = data.what_happened
+    experiment.was_surprised = data.was_surprised
     experiment.distress_thermometer_actual = data.distress_thermometer_actual
     experiment.bip_after = data.bip_after
     experiment.what_learned = data.what_learned
