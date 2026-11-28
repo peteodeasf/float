@@ -99,6 +99,9 @@ class ExperimentListResponse(BaseModel):
     scheduled_date: Optional[datetime] = None
     scheduled_time_bucket: Optional[str] = None
     completed_date: Optional[datetime] = None
+    # The child found it too hard: when, and their reason if they gave one.
+    too_hard_at: Optional[datetime] = None
+    too_hard_reason: Optional[str] = None
     plan_description: Optional[str] = None
     confidence_level: Optional[str] = None
     bip_before: Optional[float] = None

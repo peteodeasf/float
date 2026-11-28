@@ -1424,7 +1424,7 @@ export default function PatientPage() {
 
   const progressContent = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <ProgressTab experiments={patientExperiments ?? []} />
+      <ProgressTab patientId={patientId!} planId={plan?.id ?? null} childName={patient?.name?.split(' ')[0] || 'Child'} experiments={patientExperiments ?? []} />
       {/* The parent's progress: their experiments and weekly check-ins. Peter, 2026-09-13:
           tracking is here, the plan is on the Plan tab. */}
       {plan?.id && <ParentProgressSection planId={plan.id} />}

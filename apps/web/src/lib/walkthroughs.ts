@@ -106,18 +106,19 @@ export const WALKTHROUGHS: Record<WalkthroughId, Walkthrough> = {
 
   progress: {
     title: 'How progress works',
-    for: "How the child's exposures are going, and the parent's weekly check-ins.",
-    before: 'At least one completed exposure, for the graph and averages.',
+    for: 'How the family got on with the action plan: each exposure, the to-dos, the parent and the rewards.',
+    before: 'An action plan shared with the family, with exposures on it.',
     steps: [
-      { title: 'Read the numbers across the top', body: "Total exposures, this week's completed, longest streak, and the average change in belief and Fear Level." },
+      { title: 'This plan or All plans', body: 'This plan is the one running now. All plans puts every plan side by side.', show: 'progress-switch' },
+      { title: 'Read each exposure', body: 'A column per day it was scheduled or done: ✓ done, ◐ tried but too hard, ✗ not done, ○ coming up. Below: Fear Level and Belief before and after, and whether the feared outcome happened.' },
+      { title: 'Check the rest of the plan', body: "The child's to-dos, the parent's accommodations with their weekly check-in, and whether each reward was given." },
       { title: 'Switch the graph', body: 'Progress over time has one line per situation. Choose Belief in Prediction or Fear Level.', show: 'graph-metric' },
-      { title: 'Pick a week and a day', body: 'Use the arrows to change week. Click a day to see its exposures, each with Predicted and Actual.', show: 'previous-week' },
       { title: "Check the parent's work", body: 'Under Parent, Weekly check-ins shows each answer.', show: 'weekly-checkins' },
     ],
     seesLabel: 'What the family sees',
     sees: 'This tab is only in the clinician app. The parent sees the child\'s ladder, what is planned and what is done, only if you tick "Parents can see the child\'s progress" under Access → Parent. The parent never sees the child\'s ratings or what the child writes.',
     know: [
-      'A missed exposure has an amber dot. Green is done, red is too hard, and teal is scheduled.',
+      'Not done means a scheduled day passed with nothing recorded. Too hard means the child tried and said so; their reason shows from 28 Nov 2026.',
       'Exposures set up in session and ones the child set up in their app both count.',
     ],
   },

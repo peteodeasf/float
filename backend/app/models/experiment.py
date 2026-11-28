@@ -71,6 +71,8 @@ class Experiment(Base):
     too_hard_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # The child's reason, when they gave one. docs/plans/progress-tab-action-plan.md
+    too_hard_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     reminder_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
