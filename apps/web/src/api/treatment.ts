@@ -389,6 +389,9 @@ export interface PlannedExperiment {
   status: string
   scheduled_date: string | null
   completed_date: string | null
+  /** The child found it too hard: when, and their reason if they gave one. */
+  too_hard_at?: string | null
+  too_hard_reason?: string | null
   plan_description: string | null
   confidence_level: string | null
   bip_before: number | null

@@ -163,7 +163,8 @@ async def get_experiments_for_patient(
     db: AsyncSession,
     patient_id: uuid.UUID,
     organization_id: uuid.UUID,
-    limit: int = 50
+    # The Progress tab's All plans view needs every exposure (was 50).
+    limit: int = 1000
 ) -> list[dict]:
     from app.models.treatment import AvoidanceBehavior, TriggerSituation
 
@@ -194,6 +195,8 @@ async def get_experiments_for_patient(
             "status": exp.status,
             "scheduled_date": exp.scheduled_date,
             "completed_date": exp.completed_date,
+            "too_hard_at": exp.too_hard_at,
+            "too_hard_reason": exp.too_hard_reason,
             "plan_description": exp.plan_description,
             "confidence_level": exp.confidence_level,
             "bip_before": exp.bip_before,
@@ -358,6 +361,7 @@ async def mark_too_hard(
     experiment = await _own_experiment(db, experiment_id, patient.id)
     experiment.status = "too_hard"
     experiment.too_hard_at = when
+    experiment.too_hard_reason = (reason or "").strip() or None
 
     if reason:
         practitioner = await _practitioner_for(db, patient, fallback=False)
