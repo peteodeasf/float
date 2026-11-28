@@ -88,30 +88,37 @@ async def save_session_setup(
 ) -> Experiment:
     """Save an exposure set up with the child in session.
 
-    With a day and a time of day it is fully set up — committed, on the child's ladder as ready.
-    Without either, it is `planned`: the answers are in and the child picks when at home.
+    With days and a time of day it is fully set up: committed, on the child's ladder as ready.
+    Each day picked is its own exposure with the same answers; the first is returned (Peter,
+    2026-11-28). With no day it is `planned`: the answers are in and the child picks when at home.
+    The child app is unchanged in this round, so that stays (docs/plans/action-plan-centred-treatment.md).
     """
-    ready = data.scheduled_date is not None and data.scheduled_time_bucket is not None
-    experiment = Experiment(
-        avoidance_behavior_id=behavior.id,
-        patient_id=patient_id,
-        organization_id=organization_id,
-        status="committed" if ready else "planned",
-        committed_at=datetime.now(timezone.utc) if ready else None,
-        scheduled_date=data.scheduled_date,
-        scheduled_time_bucket=data.scheduled_time_bucket,
-        plan_description=behavior.name,
-        prediction=data.prediction,
-        how_will_i_know=(data.how_will_i_know or "").strip() or None,
-        bip_before=data.bip_before,
-        distress_thermometer_expected=data.distress_thermometer_expected,
-        tempting_behaviors=data.tempting_behaviors,
-        confidence_level=data.confidence_level,
-    )
-    db.add(experiment)
+    dates = list(data.scheduled_dates or ([data.scheduled_date] if data.scheduled_date else []))
+    if data.scheduled_time_bucket is None:
+        dates = []
+    created = []
+    for when in sorted(dates) or [None]:
+        experiment = Experiment(
+            avoidance_behavior_id=behavior.id,
+            patient_id=patient_id,
+            organization_id=organization_id,
+            status="committed" if when else "planned",
+            committed_at=datetime.now(timezone.utc) if when else None,
+            scheduled_date=when,
+            scheduled_time_bucket=data.scheduled_time_bucket if when else None,
+            plan_description=behavior.name,
+            prediction=data.prediction,
+            how_will_i_know=(data.how_will_i_know or "").strip() or None,
+            bip_before=data.bip_before,
+            distress_thermometer_expected=data.distress_thermometer_expected,
+            tempting_behaviors=data.tempting_behaviors,
+            confidence_level=data.confidence_level,
+        )
+        db.add(experiment)
+        created.append(experiment)
     await db.commit()
-    await db.refresh(experiment)
-    return experiment
+    await db.refresh(created[0])
+    return created[0]
 
 
 async def get_experiment(

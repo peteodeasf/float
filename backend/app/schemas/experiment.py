@@ -33,7 +33,8 @@ class ExperimentSessionSetup(BaseModel):
     """An exposure set up with the child in session: the child answers, the clinician types.
 
     Peter, 2026-09-10 — the answers are still the child's. The day is optional: left empty, the
-    child picks it at home and the step waits on their ladder until they do.
+    child picks it at home and the step waits on their ladder until they do. `scheduled_dates` is
+    several days, each its own exposure, all at `scheduled_time_bucket` (Peter, 2026-11-28).
     """
     prediction: str = Field(min_length=1)
     how_will_i_know: Optional[str] = None
@@ -44,6 +45,7 @@ class ExperimentSessionSetup(BaseModel):
     tempting_behaviors: Optional[str] = None
     confidence_level: Literal['low', 'medium', 'high']
     scheduled_date: Optional[datetime] = None
+    scheduled_dates: Optional[list[datetime]] = Field(default=None, max_length=31)
     scheduled_time_bucket: Optional[Literal['morning', 'afternoon', 'evening']] = None
 
 

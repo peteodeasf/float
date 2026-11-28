@@ -428,8 +428,9 @@ export const planExperimentForBehavior = async (
   return response.data
 }
 
-/** The child's answers, typed by the clinician in session. With a day and a time of day the
- *  exposure is ready on the child's ladder; without, the child picks when at home. */
+/** The child's answers, typed by the clinician in session. Each day in `scheduled_dates` is its
+ *  own exposure, at one time of day, ready on the child's ladder; with no day, the child picks when
+ *  at home. docs/plans/action-plan-centred-treatment.md */
 export interface SessionSetupData {
   prediction: string
   how_will_i_know?: string
@@ -438,7 +439,7 @@ export interface SessionSetupData {
   /** {"safety": [...]}, written by lib/temptingBehaviors.ts */
   tempting_behaviors?: string
   confidence_level: 'low' | 'medium' | 'high'
-  scheduled_date?: string
+  scheduled_dates?: string[]
   scheduled_time_bucket?: 'morning' | 'afternoon' | 'evening'
 }
 
