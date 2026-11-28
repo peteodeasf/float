@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const api = vi.hoisted(() => ({ setUpInSession: vi.fn() }))
@@ -90,19 +90,27 @@ describe("the clinician's Set it up", () => {
     })
   })
 
-  it('a day picked now needs a time of day too, and is sent with it', async () => {
+  it('picks several days, which need a time of day too, and sends each one', async () => {
     const { onSaved } = open()
     click('High')
-    click('Pick a day now')
-    fireEvent.change(screen.getByLabelText('Day'), { target: { value: '2026-09-14' } })
+    click('Pick days')
+    expect(save()).toBeDisabled()
+    const days = within(screen.getByRole('group', { name: 'Days' })).getAllByRole('button')
+    expect(days).toHaveLength(14)
+    fireEvent.click(days[3])
+    fireEvent.click(days[1])
     expect(save()).toBeDisabled()
     click('Evening')
+    expect(screen.getByText('2 days, each in the evening. Each day is its own exposure.')).toBeInTheDocument()
     click('Save')
 
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalled())
     const sent = api.setUpInSession.mock.calls[0][1]
     expect(sent.scheduled_time_bucket).toBe('evening')
-    expect(new Date(sent.scheduled_date).getHours()).toBe(19)
+    expect(sent.scheduled_dates).toHaveLength(2)
+    const [first, second] = sent.scheduled_dates.map((d: string) => new Date(d))
+    expect(first.getHours()).toBe(19)
+    expect(Math.round((second.getTime() - first.getTime()) / 86400000)).toBe(2)
     expect(sent.confidence_level).toBe('high')
   })
 

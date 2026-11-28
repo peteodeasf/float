@@ -91,6 +91,26 @@ async def test_the_child_finishes_it_by_picking_the_day(api, db):
     assert done["scheduled_time_bucket"] == "evening"
 
 
+async def test_several_days_are_each_their_own_exposure(api, db):
+    _, plan, step, clinician = await _setup(db)
+
+    api.sign_in_as(clinician.user)
+    r = await api.post(f"/behaviors/{step.id}/session-setup", json={
+        **ANSWERS, "scheduled_dates": [_in(5), _in(2), _in(9)], "scheduled_time_bucket": "evening",
+    })
+    assert r.status_code == 201, r.text
+
+    api.sign_in_as(plan.patient.user)
+    mine = [e for e in (await api.get("/patient/experiments/pending")).json()
+            if e["avoidance_behavior_id"] == str(step.id)]
+    assert len(mine) == 3
+    assert {e["status"] for e in mine} == {"committed"}
+    assert {e["scheduled_time_bucket"] for e in mine} == {"evening"}
+    assert {e["prediction"] for e in mine} == {ANSWERS["prediction"]}
+    # The first day comes back.
+    assert r.json()["scheduled_date"][:19] == min(e["scheduled_date"][:19] for e in mine)
+
+
 async def test_a_clinician_without_access_cannot_set_one_up(api, db):
     org, _, step, _ = await _setup(db)
     outsider = await make_practitioner(db, org)

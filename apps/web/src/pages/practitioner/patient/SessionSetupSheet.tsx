@@ -3,10 +3,11 @@
  *
  * The child answers out loud and the clinician types (Peter, 2026-09-10). The questions and their
  * words are the child app's own (lib/setupQuestions.ts), on one sheet here because in session it has
- * to be quick. The day can be left for the child to pick at home; the step then shows on their
- * ladder as set up with the clinician and waiting for a day.
+ * to be quick. Any number of days in the next two weeks, at one time of day, each its own exposure
+ * (Peter, 2026-11-28). The day can still be left for the child to pick at home; the step then shows
+ * on their ladder as set up with the clinician and waiting for a day.
  *
- * Plan: docs/plans/teen-home-ladder-and-session-setup.md
+ * Plans: docs/plans/teen-home-ladder-and-session-setup.md, docs/plans/action-plan-centred-treatment.md
  */
 import { chip } from '../../../components/ui/buttons'
 import { useState, type CSSProperties } from 'react'
@@ -22,7 +23,7 @@ import {
 } from '../../../lib/setupQuestions'
 import { encodeSafetyBehaviors, readSafetyAnswer } from '../../../lib/temptingBehaviors'
 import { useSafetyPicker } from '../../../lib/useSafetyPicker'
-import { SAFETY_QUESTION_TYPES, getNextSchoolDayISO } from './shared'
+import { SAFETY_QUESTION_TYPES } from './shared'
 
 const question: CSSProperties = { fontSize: 16, fontWeight: 800, color: 'var(--float-primary-dark)', marginBottom: 10, display: 'block' }
 const section: CSSProperties = { padding: '18px 0', borderTop: '1px solid #e3eeeb' }
@@ -40,6 +41,21 @@ const bucketOf = (iso: string): BucketKey => {
   const h = new Date(iso).getHours()
   return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
 }
+
+/** Today and the 13 days after: a two-week plan fits. */
+const DAYS_AHEAD = 14
+const nextDays = (): Date[] => Array.from({ length: DAYS_AHEAD }, (_, i) => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + i)
+  return d
+})
+const dayTile = (on: boolean): CSSProperties => ({
+  fontFamily: 'inherit', padding: '8px 0', borderRadius: 10, cursor: 'pointer',
+  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+  border: `1px solid ${on ? 'var(--float-primary)' : 'var(--float-border-strong)'}`,
+  background: on ? 'var(--float-primary)' : '#fff', color: on ? '#fff' : 'var(--float-text)',
+})
 
 export function SessionSetupSheet({
   rung,
@@ -103,17 +119,25 @@ export function SessionSetupSheet({
       ? clampDt(existing.distress_thermometer_expected)!
       : stepDt != null ? clampDt(stepDt) : 5,
   )
-  // Left for home unless they pick one now. Peter: picking the day "is more likely to be something
-  // done by the child."
-  const [dayNow, setDayNow] = useState(!!existing?.scheduled_date)
-  const [day, setDay] = useState(existing?.scheduled_date ? localDay(existing.scheduled_date) : getNextSchoolDayISO())
+  const [days] = useState(nextDays)
+  const [pickDays, setPickDays] = useState(!!existing?.scheduled_date)
+  // yyyy-mm-dd, local. An existing day is kept when it is still ahead.
+  const [picked, setPicked] = useState<string[]>(() => {
+    const d = existing?.scheduled_date ? localDay(existing.scheduled_date) : null
+    return d && days.some(x => localDay(x.toISOString()) === d) ? [d] : []
+  })
+  const togglePicked = (d: string) => setPicked(prev => (prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]))
   const [bucket, setBucket] = useState<BucketKey | null>(existing?.scheduled_date ? bucketOf(existing.scheduled_date) : null)
   const [confidence, setConfidence] = useState<ConfidenceKey | null>((existing?.confidence_level as ConfidenceKey) ?? null)
 
   const saveMut = useMutation({
     mutationFn: () => {
-      const at = new Date(`${day}T00:00:00`)
-      at.setHours(TIME_BUCKETS.find(b => b.key === bucket)?.hour ?? 12, 0, 0, 0)
+      const hour = TIME_BUCKETS.find(b => b.key === bucket)?.hour ?? 12
+      const stamps = [...picked].sort().map(d => {
+        const at = new Date(`${d}T00:00:00`)
+        at.setHours(hour, 0, 0, 0)
+        return at.toISOString()
+      })
       return setUpInSession(rung.id, {
         prediction: fear.trim(),
         how_will_i_know: know.trim(),
@@ -121,7 +145,7 @@ export function SessionSetupSheet({
         distress_thermometer_expected: level,
         tempting_behaviors: encodeSafetyBehaviors(safetyAnswer),
         confidence_level: confidence!,
-        ...(dayNow && bucket ? { scheduled_date: at.toISOString(), scheduled_time_bucket: bucket } : {}),
+        ...(pickDays && bucket && stamps.length ? { scheduled_dates: stamps, scheduled_time_bucket: bucket } : {}),
       })
     },
     onSuccess: saved => {
@@ -130,7 +154,7 @@ export function SessionSetupSheet({
     },
   })
 
-  const canSave = !!fear.trim() && !!confidence && (!dayNow || (!!day && !!bucket)) && !saveMut.isPending
+  const canSave = !!fear.trim() && !!confidence && (!pickDays || (picked.length > 0 && !!bucket)) && !saveMut.isPending
 
   const existingWhen = existing?.scheduled_date
     ? `${new Date(existing.scheduled_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ${bucketOf(existing.scheduled_date)}`
@@ -223,20 +247,38 @@ export function SessionSetupSheet({
           <div style={section}>
             <span style={question}>{QUESTION.when}</span>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button aria-pressed={!dayNow} onClick={() => setDayNow(false)} style={choice(!dayNow)}>They pick the day at home</button>
-              <button aria-pressed={dayNow} onClick={() => setDayNow(true)} style={choice(dayNow)}>Pick a day now</button>
+              <button aria-pressed={!pickDays} onClick={() => setPickDays(false)} style={choice(!pickDays)}>They pick the day at home</button>
+              <button aria-pressed={pickDays} onClick={() => setPickDays(true)} style={choice(pickDays)}>Pick days</button>
             </div>
-            {dayNow && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                <input type="date" aria-label="Day" value={day} onChange={e => setDay(e.target.value)}
-                  style={{ fontSize: 14, padding: '8px 10px', borderRadius: 'var(--float-radius-control)', border: '1px solid #cfe3de' }} />
+            {pickDays && <>
+              <div role="group" aria-label="Days" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, marginTop: 14 }}>
+                {days.map((d, i) => {
+                  const key = localDay(d.toISOString())
+                  const on = picked.includes(key)
+                  return (
+                    <button key={key} aria-pressed={on} onClick={() => togglePicked(key)} style={dayTile(on)}
+                      aria-label={d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: on ? 'var(--float-primary-light)' : 'var(--float-text-secondary)' }}>
+                        {i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </span>
+                      <span style={{ fontSize: 15, fontWeight: 700 }}>{d.getDate()}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                 {TIME_BUCKETS.map(b => (
                   <button key={b.key} aria-pressed={bucket === b.key} onClick={() => setBucket(b.key)} style={choice(bucket === b.key)}>
                     {b.label}
                   </button>
                 ))}
               </div>
-            )}
+              {picked.length > 1 && (
+                <p style={{ fontSize: 13, color: '#4b5a59', margin: '10px 0 0' }}>
+                  {picked.length} days{bucket ? `, each in the ${bucket}` : ''}. Each day is its own exposure.
+                </p>
+              )}
+            </>}
           </div>
 
           <div style={{ ...section, display: 'flex', flexDirection: 'column', gap: 14 }}>
